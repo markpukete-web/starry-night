@@ -4,6 +4,11 @@ Durable cross-session plan. `tasks/lessons.md` holds the memory; this holds the 
 Locked sections in CLAUDE.md are Mark's. Proposed changes to them go under "Proposed to Mark"
 below — never edited in place.
 
+> **Human-facing record (Obsidian):** `~/File Vault/The Starry-night` — dashboard (`_Map`), Status
+> (where we are), Sky evolution (visual journey), Concepts (glossary), Timeline. The repo files here
+> stay the source of truth; the vault is the navigable layer over them. At session start, read
+> `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
+
 ## Phase 0 — reference pipeline  (active; gate: Mark reviews captures at the end)
 
 - [x] Fetch standard-high-res public-domain scan → `reference/starry-night-source.jpg` (3840×3041)
