@@ -38,20 +38,32 @@ compose them, judging the feel at each step. Gate: Mark reviews captures (the mo
 - [x] Judged the three readings; picked **hybrid**; `docs/decisions/0002-movable-definition.md`.
       **Phase 1 gate reached — awaiting Mark's review.**
 
-## 3D rebuild — beauty pass (active, 2026-06-13)
+## 3D rebuild — the sky (active, 2026-06-13 → 06-14)
 
-Pivoted to the orbitable 3D diorama. Done: enveloping churning sky dome, bloom (luminous night),
-real forms (lathe cypress, village + church, rolling hills, moonlit floating slab). A cohesive
-beautiful milestone for Mark. Open: the sky reads as dabs not continuous swirls (streamline strokes
-would fix it); smooth the cypress facets; mobile + reduced-motion + perf (GPU churn if needed).
+Orbitable 3D diorama under an enveloping churning sky. The sky is the soul of the piece and is the
+furthest along — past the **first full animated sky** in substance, now being polished to Mark's eye.
+
+- [x] Real forms — lathe cypress, village + church + steeple, rolling hills, moonlit floating slab
+- [x] Bloom for a luminous night
+- [x] Native vortex-field sky — bold swirls, 360°, no seam / symmetry / gaps
+- [x] Anchored to the painting — central double-swirl, Venus, the nine real stars + moon at their true
+      positions, centred on the camera's view (`uvToFrontDir`, ~123° arc, camera-aligned basis)
+- [x] Rolling swirls, not funnels — spiral inflow gives Van Gogh's logarithmic-spiral comma form
+- [x] Glowing swirl eyes — sign-aware luminous cores; no dark drains, front and back
+- [x] Dev playground — full leva panel (sky / sky colours / light & bloom); defaults = the tuned look
+
+Open (Mark: "keep polishing"):
+- [ ] Swirls read a touch soft under bloom — crisper
+- [ ] Smooth the cypress facets
+- [ ] Bake Mark's chosen leva values in as the new defaults once he's played with the panel
 
 ## Backlog / later gates (post movable-decision)
 
-- First full animated sky (real, optimised build; flow-field.png is 3.2MB → slim it)
-- Foreground complete: authored parallax layers (cypress, village + steeple, hills)
-- `prefers-reduced-motion` dignified still state (locked acceptance criterion)
-- Mobile portrait framing (contain vs guided pan); stroke budget + DPR caps; perf
-- Pre-release
+- [ ] `prefers-reduced-motion` dignified still state (locked acceptance criterion) — **not built yet**
+- [ ] Mobile portrait framing (cover-crop loses moon/cypress); stroke budget + DPR caps; perf check
+      on a real mid-tier mobile
+- [ ] Ship hygiene: slim `flow-field.png` (3.2 MB); strip `leva` from the production build
+- [ ] Gates remaining: **foreground complete** · **pre-release**
 
 ## Parked ideas (scope-growth — do NOT build without Mark)
 
