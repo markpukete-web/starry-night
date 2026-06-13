@@ -6,7 +6,7 @@ import { useImageData } from './scene/useImageData'
 import { SkyDome } from './scene/SkyDome'
 import { Diorama } from './scene/Diorama'
 
-const STROKE_COUNT = 6000
+const STROKE_COUNT = 12000
 
 /** The 3D diorama beneath an enveloping dome of churning brushstroke sky. */
 function World({ churnSpeed }: { churnSpeed: number }) {

@@ -38,11 +38,11 @@ export function makeBrushTexture(): CanvasTexture {
       const ny = (y / (h - 1)) * 2 - 1 // -1..1 across width
       const along = Math.max(0, 1 - nx * nx) // tapered ends
       const across = Math.max(0, 1 - ny * ny)
-      const shape = Math.pow(along, 0.6) * Math.pow(across, 1.3)
-      const a = Math.min(1, shape * 1.4)
-      // fake impasto relief: bright core, darker rim, so strokes read as raised paint at true
-      // colour (multiplied by the stroke's instanceColor) without washing the image lighter.
-      const rel = Math.round((0.5 + 0.5 * Math.sqrt(shape)) * 255)
+      const shape = Math.pow(along, 0.45) * Math.pow(across, 1.1)
+      const a = Math.min(1, shape * 1.25)
+      // fake impasto relief: bright core, gently darker rim, so strokes read as raised paint at
+      // true colour (multiplied by the stroke's instanceColor) without washing the image lighter.
+      const rel = Math.round((0.65 + 0.35 * Math.sqrt(shape)) * 255)
       const idx = (y * w + x) * 4
       img.data[idx] = rel
       img.data[idx + 1] = rel

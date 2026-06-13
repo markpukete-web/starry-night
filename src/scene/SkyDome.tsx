@@ -43,7 +43,7 @@ export function SkyDome({ flow, colourSrc, count, speed = 0.05 }: Props) {
   const gradient = useMemo(
     () =>
       new ShaderMaterial({
-        uniforms: { uTop: { value: new Color('#0b1736') }, uBottom: { value: new Color('#21386c') } },
+        uniforms: { uTop: { value: new Color('#16294f') }, uBottom: { value: new Color('#2c4d88') } },
         vertexShader: skyVert,
         fragmentShader: skyFrag,
         side: BackSide,
@@ -84,8 +84,8 @@ export function SkyDome({ flow, colourSrc, count, speed = 0.05 }: Props) {
       sign[i] = rng() < 0.5 ? -1 : 1
       life[i] = 3 + rng() * 5
       age[i] = rng() * life[i]
-      len[i] = 0.16 + 0.22 * rng()
-      wr[i] = 0.26 + 0.16 * rng()
+      len[i] = 0.28 + 0.3 * rng()
+      wr[i] = 0.42 + 0.2 * rng()
     }
     for (let i = 0; i < count; i++) seed(i)
     return { az, el, sign, age, life, len, wr, seed }
