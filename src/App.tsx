@@ -1,12 +1,12 @@
 import { Canvas } from '@react-three/fiber'
-import { OrbitControls } from '@react-three/drei'
+import { OrbitControls, Stats } from '@react-three/drei'
 import { Leva, useControls } from 'leva'
 import { Suspense } from 'react'
 import { useImageData } from './scene/useImageData'
 import { SkyDome } from './scene/SkyDome'
 import { Diorama } from './scene/Diorama'
 
-const STROKE_COUNT = 14000
+const STROKE_COUNT = 6000
 
 /** The 3D diorama beneath an enveloping dome of churning brushstroke sky. */
 function World({ churnSpeed }: { churnSpeed: number }) {
@@ -31,7 +31,7 @@ export default function App() {
       <Canvas
         frameloop="always"
         camera={{ position: [2.4, 1.7, 4.4], fov: 42 }}
-        dpr={[1, 2]}
+        dpr={[1, 1.5]}
         gl={{ preserveDrawingBuffer: true }}
       >
         <color attach="background" args={['#0b1736']} />
@@ -39,14 +39,17 @@ export default function App() {
           <World churnSpeed={churnSpeed} />
         </Suspense>
         <OrbitControls
+          makeDefault
           target={[0, 0.7, 0]}
           enablePan={false}
           enableDamping
+          rotateSpeed={0.8}
           minDistance={3}
           maxDistance={6.5}
           minPolarAngle={0.2}
           maxPolarAngle={1.5}
         />
+        {import.meta.env.DEV && <Stats />}
       </Canvas>
     </>
   )

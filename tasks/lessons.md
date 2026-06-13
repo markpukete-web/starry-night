@@ -144,3 +144,17 @@ Hard-won; reuse this, don't rediscover it.
   and raising to ~14k strokes brings the swirl structure back. Still wants thicker/overlapping
   strokes to read as continuous impasto rather than dashes-on-dark — next refinement.
 - Superseded/deleted: `BrushstrokeSky` (the flat-plane sky) — `SkyDome` replaces it.
+
+## Perf reality check — headless is software-rendered (2026-06-13)
+
+- The Playwright/headless browser used for captures is SOFTWARE-rendered: even the gradient sphere
+  + a few boxes (strokes removed, count=0) runs at ~1 fps / ~900 ms per frame. That is a fixed
+  floor and tells you NOTHING about the real machine — never tune perf to the headless fps. Use it
+  for capture stills only; get real fps from Mark's machine (added a dev-only drei `<Stats/>`).
+- The dome puts the camera INSIDE a shell of transparent strokes → heavy overdraw on a real GPU,
+  which the headless can't reveal. This is almost certainly why Mark could rotate the flat version
+  but not the dome. Lightened: single-sided strokes (negated `perp` so the basis is right-handed
+  and FrontSide shows them), 6k not 14k strokes, dpr capped 1.5.
+- If still slow on Mark's machine: move the churn to the GPU (animate stroke position/orientation
+  in a vertex shader from a time uniform) so the main thread stays free for input — the per-frame
+  CPU rebuild of thousands of instances is the thing that starves OrbitControls.

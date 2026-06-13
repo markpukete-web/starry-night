@@ -3,7 +3,6 @@ import { useFrame } from '@react-three/fiber'
 import {
   BackSide,
   Color,
-  DoubleSide,
   InstancedMesh,
   Matrix4,
   MeshBasicMaterial,
@@ -62,7 +61,6 @@ export function SkyDome({ flow, colourSrc, count, speed = 0.05 }: Props) {
       depthWrite: false,
       depthTest: true,
       toneMapped: false,
-      side: DoubleSide, // dome basis is left-handed; show strokes regardless of facing
       blending: NormalBlending,
     })
     const im = new InstancedMesh(geo, mat, count)
@@ -86,7 +84,7 @@ export function SkyDome({ flow, colourSrc, count, speed = 0.05 }: Props) {
       sign[i] = rng() < 0.5 ? -1 : 1
       life[i] = 3 + rng() * 5
       age[i] = rng() * life[i]
-      len[i] = 0.2 + 0.28 * rng()
+      len[i] = 0.16 + 0.22 * rng()
       wr[i] = 0.26 + 0.16 * rng()
     }
     for (let i = 0; i < count; i++) seed(i)
@@ -123,7 +121,8 @@ export function SkyDome({ flow, colourSrc, count, speed = 0.05 }: Props) {
         N.set(-se * sa, ce, -se * ca) // north tangent
         Nin.set(-ce * sa, -se, -ce * ca) // inward normal (faces the centre)
         axis.copy(E).multiplyScalar(Math.cos(theta)).addScaledVector(N, Math.sin(theta))
-        perp.copy(E).multiplyScalar(-Math.sin(theta)).addScaledVector(N, Math.cos(theta))
+        // perp negated so the basis is right-handed with the inward normal -> single-sided (FrontSide)
+        perp.copy(E).multiplyScalar(Math.sin(theta)).addScaledVector(N, -Math.cos(theta))
         m.makeBasis(axis, perp, Nin)
         scl.set(L, L * wr[i], 1)
         m.scale(scl)
