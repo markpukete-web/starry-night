@@ -290,3 +290,20 @@ Hard-won; reuse this, don't rediscover it.
   glow ON it. Softening the counter-roll (1.7→1.4) also shrinks the stagnation comma at its source.
 - Glow sprites: depthTest on (diorama occludes correctly), depthWrite off, renderOrder 1 so they
   draw over the strokes; placed at radius DOME_R−0.15 (just inside the stroke shell).
+
+## Dev playground — leva controls, and a disposal trap (2026-06-14)
+
+- The leva panel only ever exposed `churnSpeed`; every sky rewrite hardcoded the rest. Re-exposed a
+  full set across three folders: churn speed · stroke count · stroke width · swirl tightness (the
+  spiral-inflow factor) · colour pop (`uSat`) · sky top/horizon colours · bloom + threshold + spread ·
+  eye glow · moon · stars. Every default reproduces the tuned look exactly, so the panel changes
+  nothing until you touch it.
+- Live vs rebuild: uniform/material/light knobs update live (churn, saturation via `uSat`, gradient
+  colours via `gradient.uniforms.*.value.set()` in an effect, bloom props, glow sprite opacity,
+  emissive intensities). The geometry-shaping knobs (count, width, tightness) are in the geometry
+  `useMemo` deps, so changing them rebuilds the strokes — fine for a dev panel, slight hitch on drag.
+- **DISPOSAL TRAP (fixed):** the cleanup effect disposed geometry AND the materials together, keyed on
+  all of them. The moment geometry became rebuildable, a rebuild fired that cleanup and disposed the
+  STABLE materials (`useMemo([])`, never recreated) → blank/broken render. Fix: dispose geometry in
+  its own effect keyed on `[geometry]`; dispose the stable materials in a separate effect keyed on `[]`
+  (unmount only). Rule: a resource's disposal effect must be keyed on *that resource alone*.

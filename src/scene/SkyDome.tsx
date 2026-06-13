@@ -140,7 +140,7 @@ const strokeVert = /* glsl */ `
 `
 const strokeFrag = /* glsl */ `
   precision highp float;
-  uniform float uTime; uniform float uSpeed;
+  uniform float uTime; uniform float uSpeed; uniform float uSat;
   varying float vLen; varying float vAcross; varying float vPhase; varying vec3 vColor;
   void main() {
     float edge = sin(clamp(vAcross, 0.0, 1.0) * 3.14159);
@@ -148,16 +148,41 @@ const strokeFrag = /* glsl */ `
     float flow = 0.5 + 0.5 * sin(vLen * 6.0 - uTime * uSpeed + vPhase);
     vec3 col = vColor * (0.62 + 0.34 * flow);
     float lum = dot(col, vec3(0.299, 0.587, 0.114));
-    col = clamp(mix(vec3(lum), col, 1.3), 0.0, 2.0);
+    col = clamp(mix(vec3(lum), col, uSat), 0.0, 2.0);
     float a = edge * taper * 0.95;
     if (a < 0.01) discard;
     gl_FragColor = vec4(col, a);
   }
 `
 
-type Props = { flow: ImageData2D; colourSrc: ImageData2D; count: number; speed?: number }
+type Props = {
+  flow: ImageData2D
+  colourSrc: ImageData2D
+  count: number
+  speed?: number
+  strokeWidth?: number
+  swirlTightness?: number
+  saturation?: number
+  skyTop?: string
+  skyBottom?: string
+  glowIntensity?: number
+  moonBright?: number
+  starBright?: number
+}
 
-export function SkyDome({ colourSrc, count, speed = 0.05 }: Props) {
+export function SkyDome({
+  colourSrc,
+  count,
+  speed = 0.05,
+  strokeWidth = 1,
+  swirlTightness = 0.45,
+  saturation = 1.3,
+  skyTop = '#16294f',
+  skyBottom = '#2c4d88',
+  glowIntensity = 1,
+  moonBright = 1.7,
+  starBright = 2.5,
+}: Props) {
   const vortices = useMemo(() => buildVortices(), [])
 
   const gradient = useMemo(
@@ -176,7 +201,7 @@ export function SkyDome({ colourSrc, count, speed = 0.05 }: Props) {
   const material = useMemo(
     () =>
       new ShaderMaterial({
-        uniforms: { uTime: { value: 0 }, uSpeed: { value: 2 } },
+        uniforms: { uTime: { value: 0 }, uSpeed: { value: 2 }, uSat: { value: 1.3 } },
         vertexShader: strokeVert,
         fragmentShader: strokeFrag,
         transparent: true,
@@ -223,7 +248,7 @@ export function SkyDome({ colourSrc, count, speed = 0.05 }: Props) {
         // spiral inflow — winds streamlines toward the eye so the swirl fills (Van Gogh's swirls
         // are logarithmic spirals, not hollow circles); vanishes at the exact centre, so no singularity
         tin.copy(v.dir).addScaledVector(p, -p.dot(v.dir)) // tangent at p pointing toward the eye
-        out.addScaledVector(tin, 0.45 * w)
+        out.addScaledVector(tin, swirlTightness * w)
       }
       out.addScaledVector(p, -out.dot(p)) // keep only the tangent component
       return out
@@ -232,7 +257,7 @@ export function SkyDome({ colourSrc, count, speed = 0.05 }: Props) {
     for (let i = 0; i < count; i++) {
       const seed = dirAzEl(rng() * Math.PI * 2, HORIZON + 0.04 + rng() * 1.5)
       const phase = rng() * Math.PI * 2
-      const halfW = 0.055 + 0.06 * rng()
+      const halfW = (0.055 + 0.06 * rng()) * strokeWidth
       const [cr, cg, cb] = sampleColour(colourSrc, 0.05 + rng() * 0.9, rng() * 0.5) // a Van Gogh sky colour
 
       const P: Vector3[] = []
@@ -286,21 +311,30 @@ export function SkyDome({ colourSrc, count, speed = 0.05 }: Props) {
     geo.setAttribute('aPhase', new BufferAttribute(new Float32Array(aPhase), 1))
     geo.setIndex(indices)
     return geo
-  }, [colourSrc, count, vortices])
+  }, [colourSrc, count, vortices, strokeWidth, swirlTightness])
 
   useFrame((_, dt) => {
     material.uniforms.uTime.value += dt
     material.uniforms.uSpeed.value = speed * 40
+    material.uniforms.uSat.value = saturation
   })
 
+  // live-update the gradient colours from the controls
+  useEffect(() => {
+    gradient.uniforms.uTop.value.set(skyTop)
+    gradient.uniforms.uBottom.value.set(skyBottom)
+  }, [gradient, skyTop, skyBottom])
+
+  // dispose geometry whenever it is rebuilt (count/width/tightness change) or on unmount;
+  // the stable materials are disposed only on unmount.
+  useEffect(() => () => geometry.dispose(), [geometry])
   useEffect(
     () => () => {
-      geometry.dispose()
       material.dispose()
       gradient.dispose()
       glowTex.dispose()
     },
-    [geometry, material, gradient, glowTex],
+    [material, gradient, glowTex],
   )
 
   const moon = vortices.find((v) => v.moon)
@@ -318,7 +352,7 @@ export function SkyDome({ colourSrc, count, speed = 0.05 }: Props) {
 
       <mesh position={moonPos}>
         <sphereGeometry args={[0.55, 32, 32]} />
-        <meshStandardMaterial color="#f2c233" emissive="#f2c233" emissiveIntensity={1.7} toneMapped={false} />
+        <meshStandardMaterial color="#f2c233" emissive="#f2c233" emissiveIntensity={moonBright} toneMapped={false} />
       </mesh>
       <pointLight position={moonPos} intensity={20} distance={24} color="#f0d98a" />
 
@@ -327,7 +361,7 @@ export function SkyDome({ colourSrc, count, speed = 0.05 }: Props) {
         return (
           <mesh key={i} position={p}>
             <sphereGeometry args={[v.scale, 16, 16]} />
-            <meshStandardMaterial color="#f6e08a" emissive="#f6e08a" emissiveIntensity={2.5} toneMapped={false} />
+            <meshStandardMaterial color="#f6e08a" emissive="#f6e08a" emissiveIntensity={starBright} toneMapped={false} />
           </mesh>
         )
       })}
@@ -345,7 +379,7 @@ export function SkyDome({ colourSrc, count, speed = 0.05 }: Props) {
         const gs = 2.0 + v.radius * 1.8
         return (
           <sprite key={i} position={p} scale={[gs, gs, 1]} renderOrder={1}>
-            <spriteMaterial map={glowTex} blending={AdditiveBlending} transparent depthWrite={false} toneMapped={false} />
+            <spriteMaterial map={glowTex} blending={AdditiveBlending} transparent opacity={glowIntensity} depthWrite={false} toneMapped={false} />
           </sprite>
         )
       })}
