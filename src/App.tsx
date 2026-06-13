@@ -7,7 +7,7 @@ import { useImageData } from './scene/useImageData'
 import { SkyDome } from './scene/SkyDome'
 import { Diorama } from './scene/Diorama'
 
-const STROKE_COUNT = 2800 // streamline ribbons (each traces a swirl path)
+const STROKE_COUNT = 3200 // streamline ribbons (each traces a swirl path)
 
 /** The 3D diorama beneath an enveloping dome of churning brushstroke sky. */
 function World({ churnSpeed }: { churnSpeed: number }) {

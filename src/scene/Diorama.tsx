@@ -26,19 +26,23 @@ function Cypress({ position, height = 2.8, rot = 0, scale = 1 }: { position: Vec
   const geo = useMemo(() => {
     const pts: Vector2[] = (
       [
-        [0.14, 0.0],
-        [0.34, 0.07],
-        [0.42, 0.2],
-        [0.32, 0.34],
-        [0.36, 0.5],
-        [0.24, 0.64],
-        [0.26, 0.77],
-        [0.13, 0.89],
-        [0.05, 0.96],
+        [0.12, 0.0],
+        [0.26, 0.03],
+        [0.36, 0.09],
+        [0.42, 0.17],
+        [0.38, 0.26],
+        [0.32, 0.35],
+        [0.35, 0.44],
+        [0.33, 0.54],
+        [0.27, 0.63],
+        [0.25, 0.72],
+        [0.19, 0.81],
+        [0.12, 0.89],
+        [0.06, 0.95],
         [0.0, 1.0],
       ] as [number, number][]
     ).map(([r, y]) => new Vector2(r, y * height))
-    return new LatheGeometry(pts, 24)
+    return new LatheGeometry(pts, 32)
   }, [height])
   return (
     <mesh geometry={geo} position={position} rotation={[0, rot, 0]} scale={scale}>
