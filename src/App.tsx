@@ -1,5 +1,6 @@
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Stats } from '@react-three/drei'
+import { Bloom, EffectComposer } from '@react-three/postprocessing'
 import { Leva, useControls } from 'leva'
 import { Suspense } from 'react'
 import { useImageData } from './scene/useImageData'
@@ -49,6 +50,9 @@ export default function App() {
           minPolarAngle={0.2}
           maxPolarAngle={1.5}
         />
+        <EffectComposer>
+          <Bloom intensity={1.2} luminanceThreshold={0.35} luminanceSmoothing={0.9} radius={0.7} mipmapBlur />
+        </EffectComposer>
         {import.meta.env.DEV && <Stats />}
       </Canvas>
     </>
