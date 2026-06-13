@@ -3,28 +3,19 @@ import { OrbitControls } from '@react-three/drei'
 import { Leva, useControls } from 'leva'
 import { Suspense } from 'react'
 import { useImageData } from './scene/useImageData'
-import { BrushstrokeSky } from './scene/BrushstrokeSky'
+import { SkyDome } from './scene/SkyDome'
 import { Diorama } from './scene/Diorama'
 
-const STROKE_COUNT = 7000
-const SKY_ASPECT = 1.263
+const STROKE_COUNT = 14000
 
-/** The 3D diorama plus the churning brushstroke sky as a backdrop behind it. */
+/** The 3D diorama beneath an enveloping dome of churning brushstroke sky. */
 function World({ churnSpeed }: { churnSpeed: number }) {
   const flow = useImageData('/reference/flow-field.png')
   const colourSrc = useImageData('/reference/painting.jpg')
   return (
     <>
       <Diorama />
-      {flow && colourSrc && (
-        <group position={[0, 2.2, -3.3]} scale={[8.5, 8.5, 1]}>
-          <mesh>
-            <planeGeometry args={[SKY_ASPECT, 1]} />
-            <meshBasicMaterial color="#16264a" toneMapped={false} />
-          </mesh>
-          <BrushstrokeSky flow={flow} colourSrc={colourSrc} aspect={SKY_ASPECT} count={STROKE_COUNT} speed={churnSpeed} />
-        </group>
-      )}
+      {flow && colourSrc && <SkyDome flow={flow} colourSrc={colourSrc} count={STROKE_COUNT} speed={churnSpeed} />}
     </>
   )
 }
@@ -39,11 +30,11 @@ export default function App() {
       <Leva hidden={!import.meta.env.DEV} />
       <Canvas
         frameloop="always"
-        camera={{ position: [3.0, 2.1, 5.2], fov: 42 }}
+        camera={{ position: [2.4, 1.7, 4.4], fov: 42 }}
         dpr={[1, 2]}
         gl={{ preserveDrawingBuffer: true }}
       >
-        <color attach="background" args={['#0a0f1f']} />
+        <color attach="background" args={['#0b1736']} />
         <Suspense fallback={null}>
           <World churnSpeed={churnSpeed} />
         </Suspense>
@@ -52,11 +43,9 @@ export default function App() {
           enablePan={false}
           enableDamping
           minDistance={3}
-          maxDistance={9}
-          minPolarAngle={0.35}
-          maxPolarAngle={1.45}
-          minAzimuthAngle={-Math.PI / 2.4}
-          maxAzimuthAngle={Math.PI / 2.4}
+          maxDistance={6.5}
+          minPolarAngle={0.2}
+          maxPolarAngle={1.5}
         />
       </Canvas>
     </>

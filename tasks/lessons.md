@@ -128,3 +128,19 @@ Hard-won; reuse this, don't rediscover it.
 - Rough state to fix next: under-lit (forms near-black), flat sky panel shows its edge (wants a
   dome/enveloping sky), placeholder forms, and the painted moon/stars on the backdrop double the
   3D ones. Painterly materials + real authored forms are the next work.
+
+## 3D enveloping sky dome (2026-06-13)
+
+- Mark's catch: a flat sky panel only works head-on; orbiting reveals it's a 2D card in a void.
+  Fix = `SkyDome`: a gradient night-sky sphere (BackSide — fills every direction, kills the void)
+  plus brushstrokes distributed across the dome interior, oriented by the flow wrapped onto the
+  dome (azimuth→u, elevation→v). Orbit is now free (full azimuth).
+- Two instancing gotchas, both made the dome strokes INVISIBLE and cost real time:
+  1. `InstancedMesh` frustum-culls against an ORIGIN-centred bounding sphere; the strokes live at
+     radius ~8, so looking outward culled the whole mesh → set `frustumCulled = false`.
+  2. The dome tangent basis (inward normal) is LEFT-handed, so quads were back-face culled →
+     `side: DoubleSide` (or fix the handedness so axis×perp = inward).
+- Density matters a lot: 8k strokes over a big dome = sparse confetti. Pulling the dome in (R≈9)
+  and raising to ~14k strokes brings the swirl structure back. Still wants thicker/overlapping
+  strokes to read as continuous impasto rather than dashes-on-dark — next refinement.
+- Superseded/deleted: `BrushstrokeSky` (the flat-plane sky) — `SkyDome` replaces it.

@@ -52,9 +52,9 @@ export function Diorama() {
 
   return (
     <group>
-      <hemisphereLight args={['#4a5a82', '#0a0e18', 0.7]} />
-      <ambientLight intensity={0.25} color="#2a3a5a" />
-      <directionalLight position={[2.5, 4.5, 2]} intensity={0.8} color="#a9bbe6" />
+      <hemisphereLight args={['#5a6e9c', '#0e1420', 1.0]} />
+      <ambientLight intensity={0.35} color="#2a3a5a" />
+      <directionalLight position={[2.5, 4.5, 2]} intensity={1.1} color="#b6c6ee" />
       <pointLight position={[1.6, 2.2, -1.4]} intensity={14} distance={16} color="#f0d98a" />
 
       {/* floating base slab */}
