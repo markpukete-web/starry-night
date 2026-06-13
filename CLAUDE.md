@@ -11,47 +11,117 @@ Standalone by decision (2026-06-12): its own repo, its own deploy. It is **not**
 markma.dev and not bound by that project's spec. Once finished it links from the portfolio and
 lives at `starrynight.markma.dev` (Vercel Hobby + Cloudflare DNS subdomain, CNAME grey-cloud).
 
-## The bar
+## The bar (locked — only Mark edits this section)
 
-The swirl motion must read as **Van Gogh's brushstrokes**, not generic noise soup. Faithfulness to
-the painting's motion, colour, and impasto energy is the whole point. Prior art to study before
-building: Petros Vrellis' interactive Starry Night (flow-field brushstroke animation); the
-Techartist time-dial diorama (markma.dev repo,
-`docs/superpowers/references/2026-06-12-techartist-time-dial-diorama.md`) for preset-switch
-interaction shape.
+The swirl motion must read as **Van Gogh's brushstrokes**, not generic noise soup. Faithfulness
+to the painting's motion, colour, and impasto energy is the whole point. Motion and colour are
+derived from the painting itself (see Phase 0), never re-derived from memory or generic noise.
+
+Prior art to study — study, never copy implementation or assets: Petros Vrellis' interactive
+Starry Night (flow-field brushstroke animation); the Techartist time-dial diorama (markma.dev
+repo, `docs/superpowers/references/2026-06-12-techartist-time-dial-diorama.md`) for the
+preset-switch interaction shape, which is Phase 2 material at the earliest.
+
+## Operating mode — autonomous, self-improving (decided 2026-06-13)
+
+This project deliberately runs with more autonomy than markma.dev v3. Fable 5 plans, builds,
+self-reviews, and improves its own process between Mark's milestone gates. Use dynamic workflows
+(`/effort ultracode`) for substantial passes; plain sessions for small fixes. Read
+`tasks/lessons.md` at the start of every session — it is the project's memory.
+
+### Phase 0 — reference pipeline (before any scene work)
+
+1. Fetch the high-resolution public-domain scan into `reference/` and treat it as the source of
+   truth for colour and stroke direction.
+2. Build an offline script (`scripts/derive-reference.ts`) that outputs:
+   - `public/reference/flow-field.png` — per-pixel stroke orientation via structure-tensor
+     analysis of the scan
+   - `public/reference/palette.json` — dominant colours per region (sky, moon, stars, cypress,
+     village, hills)
+3. Commit the derived assets and document the method in
+   `docs/decisions/0001-reference-pipeline.md`.
+
+### Phase 1 — design spikes (Claude decides, Mark reviews at the gate)
+
+"What does movable mean" is settled by building, not discussing. Produce two or three small
+spikes — e.g. flow-field instanced-brushstroke sky; 2.5D depth parallax; hybrid of both. Judge
+each against the acceptance criteria and the painting, pick one, and record the rationale in
+`docs/decisions/0002-movable-definition.md`. Default candidate to beat: hybrid — animated
+brushstroke sky over a layered parallax foreground (cypress, village, steeple) with a
+constrained pan/tilt camera. Free orbit breaks the composition and is out of scope.
+
+### Build loop (every substantial change)
+
+Plan → implement one slice → run the app → drive it across desktop + mobile viewports with
+Playwright and capture screenshots → visually review the captures against the reference crops
+and acceptance criteria, naming what looks wrong → retune mechanical fails → re-capture to
+confirm → append what was learnt to `tasks/lessons.md` → next slice.
+
+Never report a slice as done without having looked at the captures.
+
+### Self-improvement rules
+
+- Maintain `tasks/todo.md` (the plan, checkable items) and `tasks/lessons.md` (append after
+  every correction, failed approach, or surprising result).
+- Claude MAY edit: `tasks/*`, `docs/decisions/*`, the **Tunables** section below, and its own
+  skills in `.claude/skills/`.
+- Claude MUST NOT edit: **The bar**, **Gates**, **Out of scope**, or the acceptance criteria
+  list. Propose changes in `tasks/todo.md`; Mark applies them.
+
+### Stop and ask Mark when
+
+- A milestone gate is reached.
+- Acceptance criteria still fail after the retune cap on the same slice.
+- A dependency beyond the approved list is wanted.
+- Anything touches deploy, DNS, or analytics.
+- Scope is tempted to grow — note the idea in `tasks/todo.md` instead of building it.
+
+## Gates (Mark's taste calls — locked)
+
+Mark reviews captures, not code, at five points: end of Phase 0; end of Phase 1 (the movable
+decision); first full animated sky; foreground complete; pre-release. Between gates, Claude
+proceeds without asking. Taste and release calls are Mark's, always — Claude flags what looks
+wrong; Mark decides what feels right.
+
+## Acceptance criteria (machine-checked every loop — locked)
+
+- Stroke motion is driven by the derived flow field; alignment with the painting's orientation
+  map, not generic curl noise.
+- Colours sampled from `palette.json`; no drift beyond the tolerance in Tunables.
+- Performance: 60 fps desktop, 30 fps mid-tier mobile, devicePixelRatio capped per Tunables.
+- `prefers-reduced-motion` yields a dignified still state — the painting, well lit, no churn.
+- Camera stays within the pan/tilt limits in Tunables; the composition always reads as the
+  painting.
 
 ## Stack (decided)
 
 Vite + React + TypeScript + three.js + React Three Fiber + drei. npm. Same proven stack as
-markma.dev v3 — capability transfers both ways. The current `App.tsx` scene is a scaffold
-smoke-test placeholder, not design.
+markma.dev v3 — capability transfers both ways. Approved additions: `leva` (dev-only tuning
+panel), `@react-three/postprocessing` (bloom, optional). Any other dependency: stop and ask.
+The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
 
-## Open — settle in the first design session before building
+## Tunables (Claude may adjust; log every change in tasks/lessons.md)
 
-- What "movable" means precisely: flow-field instanced-brushstroke sky vs 2.5D depth-parallax vs
-  3D foreground (cypress, village, steeple) under an animated sky — or a hybrid.
-- Camera model: free orbit, constrained pan/tilt, or guided.
-- Interaction beyond looking: any dial/toggle mechanic, or pure observation.
-- Mobile/touch behaviour and performance budget.
+- Instanced stroke budget: start 8,000 desktop / 3,000 mobile
+- Palette tolerance: ΔE < 10 per region to begin; tighten as quality improves
+- devicePixelRatio cap: 2 desktop / 1.5 mobile
+- Camera limits: ±10° pitch, ±15° yaw from composition centre
+- Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)
 
 - **British English** throughout.
 - **Conventional commits**; the log reads as a build-in-public timeline.
-- **Look before the gate:** before asking Mark to review any visual change, run the app, capture
-  with Playwright (desktop + mobile), self-judge against the painting, retune on mechanical fails.
-  Never present "tests green" as done without looking.
-- **Taste and release calls are Mark's.** Claude flags what looks wrong; Mark decides what feels
-  right.
-- **Ground in the reference first.** The actual painting (high-resolution public-domain scan) is
-  the source of truth for colour and stroke direction — study it before building, don't re-derive
-  from memory.
-- **Classify before building:** authored assets for identity objects, procedural for fill —
-  judged per element in the design session.
-- `prefers-reduced-motion` respected: the piece must have a dignified still state.
+- **Ground in the reference first** — the scan, not memory.
+- **Visual review is part of every loop, not just the gates.** Playwright captures the frames;
+  Claude reads them against the reference and fixes what it can see. A slice isn't done until the
+  captures have been looked at and compared, not merely generated.
+- **Classify before building:** authored assets for identity objects, procedural for fill.
 - **Honest AI framing:** human-led product thinking supported by AI coding tools.
 
-## Out of scope
+## Out of scope (locked)
 
 - Audio, VR/AR, other paintings, gallery/series framing — this is one painting done deeply.
 - Anything that puts Starry Night inside the markma.dev world. It links out, full stop.
+- Free-orbit camera.
+- Preset dials (time-of-day, weather) before the core piece passes the pre-release gate.
