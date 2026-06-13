@@ -28,16 +28,18 @@ compose them, judging the feel at each step. Gate: Mark reviews captures (the mo
       from the painting; orientation confirmed against the brushwork
 - [x] Slice 3 — brushstroke sky (churning): advect strokes along the flow — reads as Van Gogh's
       sky moving; sky-only placement + relief brush keep it faithful
-- [ ] Slice 4 — 2.5D parallax foreground (cypress/village/hills via region masks) + constrained
-      pan/tilt camera (±10° pitch, ±15° yaw from Tunables)
-- [ ] Slice 5 — reduced-motion still state; mobile pass: portrait framing (contain vs guided
-      pan), stroke budget, DPR caps
-- [ ] Judge the three readings (churn-only / parallax-only / hybrid) vs acceptance criteria +
-      painting; pick one; `docs/decisions/0002-movable-definition.md`; **stop at Phase 1 gate**
+- [x] Slice 4 — cypress parallax (masked cutout) + constrained pan/tilt camera (±15° yaw,
+      ±10° pitch). Hybrid confirmed. (Village/steeple/hills layers → "foreground complete" gate.)
+- [x] Judged the three readings; picked **hybrid**; `docs/decisions/0002-movable-definition.md`.
+      **Phase 1 gate reached — awaiting Mark's review.**
 
-## Backlog / later gates
+## Backlog / later gates (post movable-decision)
 
-- First full animated sky · foreground (cypress, village, steeple) · pre-release
+- First full animated sky (real, optimised build; flow-field.png is 3.2MB → slim it)
+- Foreground complete: authored parallax layers (cypress, village + steeple, hills)
+- `prefers-reduced-motion` dignified still state (locked acceptance criterion)
+- Mobile portrait framing (contain vs guided pan); stroke budget + DPR caps; perf
+- Pre-release
 
 ## Parked ideas (scope-growth — do NOT build without Mark)
 

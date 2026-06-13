@@ -96,3 +96,18 @@ Hard-won; reuse this, don't rediscover it.
   painting while the impasto flows (carrying birth colour instead would smear the image).
 - Architecture: `src/scene/{useImageData, brush, BrushstrokeSky}`. CPU advection of 8k strokes
   per frame is comfortable on desktop.
+
+## Phase 1 — Slice 4 (camera + parallax, done 2026-06-13)
+
+- Constrained pan/tilt camera (`src/scene/CameraRig`): orbits the origin within ±15°/±10°,
+  pointer + slow idle Lissajous drift, smoothed. Needs a cover ×1.15 margin or tilting reveals
+  the plane edge.
+- A moving camera over a FLAT plane is barely perceptible (4a) — depth is what makes it read.
+- Parallax via masked cutout (`src/scene/layers` makeMaskedTexture): cypress cut from the
+  painting by luminance, placed at z ≈ 0.3 over the full-painting back plane. Shifts convincingly
+  against the sky; minor edge softness, no glaring ghost at ±15°. Enough to decide — authored
+  layers come at the "foreground complete" gate.
+- Layering gotcha: the brushstroke sky uses depthTest:false, so the cypress layer needs
+  renderOrder:10 + depthTest:false to sit ON TOP of the strokes (else strokes draw over the
+  foreground).
+- Hybrid confirmed as the movable definition → 0002.
