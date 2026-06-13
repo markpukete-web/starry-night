@@ -268,3 +268,25 @@ Hard-won; reuse this, don't rediscover it.
   the pointer on gl.domElement, not window). Window-targeted moves are ignored. `c.__r3f` is not
   exposed in this build, so driving the camera via the R3F store isn't available — drive the
   controls through real events.
+
+## Plugging the swirl eyes with luminous cores (2026-06-14) — Mark: "plug the eyes so they glow"
+
+- The swirl centres read as small dark voids: where the flow → 0 nothing is stroked, so the dark
+  gradient shows through. Fix = a soft warm radial glow sprite (CanvasTexture, AdditiveBlending,
+  toneMapped off) at each big swirl's eye; Bloom amplifies the bright core so the centre reads as
+  LIGHT. Faithful too — Van Gogh's swirl hearts are luminous yellow-white.
+- The void is NOT at the vortex centre. Spiral inflow + the counter-roll push the visual eye
+  "up-current": up, AND to one side set by the swirl's rotation sign. A glow placed at v.dir lights
+  AROUND the comma and (worse) flooding it bigger only throws the dark crescent into relief. What
+  worked: offset the glow `+0.09·upTangent − sign·0.10·horizontal` (horizontal = dir × upTangent).
+  The sign term is the key — it flips the side for CW vs CCW swirls, so one rule lands the glow on
+  every swirl's comma (front hero and both invented back swirls).
+- Sequence that wasted passes: (1) centred glow → lit below the eye; (2) softer/smaller → eye still
+  dark; (3) bigger+brighter flood → highlighted the crescent; (4) straight-up nudge → closer but
+  the void is up-LEFT not up. Only the sign-aware horizontal term actually plugged it. Lesson:
+  when a fill keeps missing a hole, the hole has a DIRECTION — find what sets it (here, circulation
+  sign) instead of scaling the fill.
+- Don't chase the void by enlarging the glow; a flood makes a dark-hole-in-light. Land a medium
+  glow ON it. Softening the counter-roll (1.7→1.4) also shrinks the stagnation comma at its source.
+- Glow sprites: depthTest on (diorama occludes correctly), depthWrite off, renderOrder 1 so they
+  draw over the strokes; placed at radius DOME_R−0.15 (just inside the stroke shell).

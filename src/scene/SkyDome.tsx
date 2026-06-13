@@ -1,9 +1,11 @@
 import { useEffect, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import {
+  AdditiveBlending,
   BackSide,
   BufferAttribute,
   BufferGeometry,
+  CanvasTexture,
   Color,
   DoubleSide,
   NormalBlending,
@@ -21,11 +23,30 @@ const POINTS = 13
 const STEP = 0.05 // radians per integration step on the sphere
 const HORIZON = -0.22 // strokes live above roughly the horizon
 
-type Vortex = { dir: Vector3; strength: number; sign: number; radius: number; star: boolean; moon: boolean; scale: number }
+type Vortex = { dir: Vector3; strength: number; sign: number; radius: number; star: boolean; moon: boolean; scale: number; core: boolean }
 
 function dirAzEl(az: number, el: number): Vector3 {
   const ce = Math.cos(el)
   return new Vector3(ce * Math.sin(az), Math.sin(el), ce * Math.cos(az))
+}
+
+// A soft warm radial glow — placed at a swirl's eye so the calm centre reads as light, not a hole.
+// Bloom amplifies the bright core; additive blending lets it melt into the surrounding strokes.
+function makeGlowTexture(): CanvasTexture {
+  const s = 128
+  const cnv = document.createElement('canvas')
+  cnv.width = cnv.height = s
+  const ctx = cnv.getContext('2d')!
+  const g = ctx.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2)
+  g.addColorStop(0, 'rgba(255,250,224,0.92)') // luminous but soft — a glowing heart, not a hard star
+  g.addColorStop(0.28, 'rgba(248,237,184,0.5)')
+  g.addColorStop(0.62, 'rgba(225,213,150,0.18)')
+  g.addColorStop(1, 'rgba(225,213,150,0)')
+  ctx.fillStyle = g
+  ctx.fillRect(0, 0, s, s)
+  const tex = new CanvasTexture(cnv)
+  tex.needsUpdate = true
+  return tex
 }
 
 // The painting's real sky, in painting UV (u: 0 left → 1 right, v: 0 top → 1 bottom).
@@ -73,12 +94,12 @@ function uvToFrontDir(u: number, v: number): Vector3 {
 function buildVortices(): Vortex[] {
   const rng = mulberry32(0x5747a1)
   const V: Vortex[] = []
-  const add = (dir: Vector3, strength: number, sign: number, radius: number, star = false, moon = false, scale = 0.15) =>
-    V.push({ dir, strength, sign, radius, star, moon, scale })
+  const add = (dir: Vector3, strength: number, sign: number, radius: number, star = false, moon = false, scale = 0.15, core = false) =>
+    V.push({ dir, strength, sign, radius, star, moon, scale, core })
 
   // FRONT — the painting itself. The central double-swirl dominates; Venus is the big morning star.
-  add(uvToFrontDir(0.43, 0.34), 2.2, 1, 0.62) // main roll of the iconic swirl
-  add(uvToFrontDir(0.57, 0.3), 1.7, -1, 0.46) // its counter-roll (forms the S)
+  add(uvToFrontDir(0.43, 0.34), 2.2, 1, 0.62, false, false, 0.15, true) // main roll of the iconic swirl (glowing eye)
+  add(uvToFrontDir(0.58, 0.29), 1.4, -1, 0.46, false, false, 0.15, true) // its counter-roll (forms the S) — softened so the stagnation comma shrinks; glows too
   add(uvToFrontDir(VENUS_UV[0], VENUS_UV[1]), 1.0, -1, 0.32, true, false, 0.24) // Venus
   STAR_UVS.forEach((uv, i) =>
     add(uvToFrontDir(uv[0], uv[1]), 0.6 + 0.2 * rng(), i % 2 === 0 ? 1 : -1, 0.18 + 0.07 * rng(), true, false, 0.13 + 0.04 * rng()),
@@ -88,9 +109,9 @@ function buildVortices(): Vortex[] {
   // BACK — invented in the same hand to complete the 360°, centred opposite the front.
   // Each big swirl is a double (roll + counter-roll), like the front hero, so the flow sweeps
   // across the eye in a comma instead of leaving a hollow concentric drain.
-  add(dirAzEl(BACK_AZ + 0.5, 0.34), 2.0, -1, 0.55)
+  add(dirAzEl(BACK_AZ + 0.5, 0.34), 2.0, -1, 0.55, false, false, 0.15, true)
   add(dirAzEl(BACK_AZ + 0.78, 0.3), 1.5, 1, 0.42)
-  add(dirAzEl(BACK_AZ - 0.7, 0.22), 1.7, 1, 0.46)
+  add(dirAzEl(BACK_AZ - 0.7, 0.22), 1.7, 1, 0.46, false, false, 0.15, true)
   add(dirAzEl(BACK_AZ - 0.98, 0.18), 1.3, -1, 0.4)
   for (let i = 0; i < 10; i++) {
     add(dirAzEl(BACK_AZ + (rng() - 0.5) * 3.6, -0.05 + rng() * 1.3), 0.6 + 0.3 * rng(), rng() < 0.5 ? -1 : 1, 0.18 + 0.08 * rng(), true, false, 0.12 + 0.04 * rng())
@@ -166,6 +187,8 @@ export function SkyDome({ colourSrc, count, speed = 0.05 }: Props) {
       }),
     [],
   )
+
+  const glowTex = useMemo(() => makeGlowTexture(), [])
 
   const geometry = useMemo(() => {
     const rng = mulberry32(0x13ade7)
@@ -275,13 +298,15 @@ export function SkyDome({ colourSrc, count, speed = 0.05 }: Props) {
       geometry.dispose()
       material.dispose()
       gradient.dispose()
+      glowTex.dispose()
     },
-    [geometry, material, gradient],
+    [geometry, material, gradient, glowTex],
   )
 
   const moon = vortices.find((v) => v.moon)
   const moonPos = moon ? moon.dir.clone().multiplyScalar(DOME_R) : new Vector3(0, 4, -4)
   const stars = vortices.filter((v) => v.star)
+  const cores = vortices.filter((v) => v.core)
 
   return (
     <group>
@@ -304,6 +329,24 @@ export function SkyDome({ colourSrc, count, speed = 0.05 }: Props) {
             <sphereGeometry args={[v.scale, 16, 16]} />
             <meshStandardMaterial color="#f6e08a" emissive="#f6e08a" emissiveIntensity={2.5} toneMapped={false} />
           </mesh>
+        )
+      })}
+
+      {/* luminous core at each big swirl's eye — the calm centre reads as light, not a dark hole.
+          The spiral inflow pushes the visual eye slightly "up-current" of the vortex centre, so
+          nudge the glow toward world-up to land it on the dark crescent rather than haloing it. */}
+      {cores.map((v, i) => {
+        // the spiral's void sits up-current of the centre — up, and to one side set by the swirl's
+        // rotation sign. Offset along up + sign·horizontal to land the glow on the dark comma.
+        const upT = new Vector3(0, 1, 0).addScaledVector(v.dir, -v.dir.y).normalize()
+        const horiz = new Vector3().crossVectors(v.dir, upT).normalize()
+        const eye = v.dir.clone().addScaledVector(upT, 0.09).addScaledVector(horiz, -v.sign * 0.1).normalize()
+        const p = eye.multiplyScalar(DOME_R - 0.15)
+        const gs = 2.0 + v.radius * 1.8
+        return (
+          <sprite key={i} position={p} scale={[gs, gs, 1]} renderOrder={1}>
+            <spriteMaterial map={glowTex} blending={AdditiveBlending} transparent depthWrite={false} toneMapped={false} />
+          </sprite>
         )
       })}
     </group>
