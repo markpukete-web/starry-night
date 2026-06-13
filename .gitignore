@@ -28,3 +28,6 @@ scratch/
 # Phase 0: heavy, deterministically regenerable analysis intermediates + gate captures.
 # Recreate with `npm run derive-reference`. The shipped assets live in public/reference/.
 reference/derived/
+
+# Local visual-review scratch (Playwright MCP writes snapshots/logs here)
+.playwright-mcp/

@@ -41,6 +41,7 @@ const OUT_PALETTE = resolve(ROOT, 'public/reference/palette.json');
 const OUT_LIC = resolve(ROOT, 'reference/derived/flow-lic.png');
 const OUT_LIC_OVERLAY = resolve(ROOT, 'reference/derived/flow-lic-overlay.png');
 const OUT_COHERENCE = resolve(ROOT, 'reference/derived/coherence.png');
+const OUT_PAINTING = resolve(ROOT, 'public/reference/painting.jpg'); // web-sized texture for the app
 
 const ANALYSIS_WIDTH = 1280; // px; flow-field + captures are produced at this width
 const PRE_BLUR = 1.2; // σ, denoise before gradients
@@ -310,6 +311,9 @@ const srcH = Number(/pixelHeight:\s*(\d+)/.exec(srcInfo)?.[1] ?? 0);
 
 console.log(`source ${srcW}×${srcH} -> analysis width ${ANALYSIS_WIDTH}`);
 execFileSync('sips', ['-s', 'format', 'png', '-Z', String(ANALYSIS_WIDTH), SOURCE, '--out', WORK], { stdio: 'ignore' });
+// Web-sized painting texture the renderer loads (the 5.3 MB source is too heavy to ship).
+execFileSync('sips', ['-s', 'format', 'jpeg', '-s', 'formatOptions', '82', '-Z', '1600', SOURCE, '--out', OUT_PAINTING], { stdio: 'ignore' });
+console.log('wrote painting.jpg (web texture)');
 
 const t0 = Date.now();
 const work = decodePNG(readFileSync(WORK));
