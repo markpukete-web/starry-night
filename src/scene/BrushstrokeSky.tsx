@@ -39,7 +39,7 @@ export function BrushstrokeSky({ flow, colourSrc, aspect, count, skyV = 0.66, sp
       map: brushTex,
       transparent: true,
       depthWrite: false,
-      depthTest: false,
+      depthTest: true, // 3D scene: foreground forms occlude the sky
       toneMapped: false,
       blending: NormalBlending,
     })

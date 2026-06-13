@@ -49,3 +49,10 @@ compose them, judging the feel at each step. Gate: Mark reviews captures (the mo
 
 - CLAUDE.md L27 names "Fable 5" as the autonomous operator; the operator this session is
   Opus 4.8. Reconcile the wording if desired — operating contract is unaffected either way.
+- **2026-06-13 — DIRECTION CHANGE (Mark's call): full 3D diorama.** Mark wants Starry Night as a
+  real orbitable 3D world (techartist reference), not a flat painting + overlay. This relaxes two
+  LOCKED items — please update when you're happy:
+  - "Out of scope → Free-orbit camera" — now in scope (constrained orbit, tasteful limits).
+  - Acceptance criterion "Camera stays within pan/tilt limits; composition always reads as the
+    painting" — needs rewording for an orbitable diorama.
+  Kept: painterly impasto (the bar), flow-derived churn, palette fidelity. 0002 revised to suit.

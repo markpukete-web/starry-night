@@ -111,3 +111,20 @@ Hard-won; reuse this, don't rediscover it.
   renderOrder:10 + depthTest:false to sit ON TOP of the strokes (else strokes draw over the
   foreground).
 - Hybrid confirmed as the movable definition → 0002.
+
+## Phase 1 → 3D pivot (Mark's redirect, 2026-06-13)
+
+- Mark's reference (techartist time-dial diorama, `~/Downloads/Videos/techartist_`) is a genuine
+  ORBITABLE 3D world — forms standing in real space, camera orbiting. He found the flat painting +
+  sky overlay "not 3D enough", and the cover-framing cropped the painting to a fraction. → Pivot
+  to a full 3D diorama (Mark's call; relaxes the locked "no free orbit" — see todo "Proposed to
+  Mark"). Framing first fix: contain (whole painting), then superseded by the 3D stage.
+- First blocky spike (`src/scene/Diorama`): floating base slab, cypress (cone), village boxes +
+  lit windows + steeple, hill mounds, emissive moon + stars, the churning brushstroke sky as a
+  backdrop plane behind, OrbitControls (azimuth ±75°, polar ~20–83°, no pan). It IS 3D and orbits.
+- Carried over intact: the flow-field churn (`BrushstrokeSky`, now depthTest:true so forms occlude
+  it), palette colours, the capture loop. Deleted as superseded: `CameraRig` + `layers.ts` (the 2D
+  pan/tilt rig + cypress cutout) — the 3D world uses OrbitControls and real forms instead.
+- Rough state to fix next: under-lit (forms near-black), flat sky panel shows its edge (wants a
+  dome/enveloping sky), placeholder forms, and the painted moon/stars on the backdrop double the
+  3D ones. Painterly materials + real authored forms are the next work.

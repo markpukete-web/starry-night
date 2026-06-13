@@ -1,71 +1,64 @@
-import { Canvas, useThree } from '@react-three/fiber'
-import { useTexture } from '@react-three/drei'
-import { Suspense, useEffect, useMemo } from 'react'
-import { SRGBColorSpace } from 'three'
+import { Canvas } from '@react-three/fiber'
+import { OrbitControls } from '@react-three/drei'
+import { Leva, useControls } from 'leva'
+import { Suspense } from 'react'
 import { useImageData } from './scene/useImageData'
 import { BrushstrokeSky } from './scene/BrushstrokeSky'
-import { CameraRig } from './scene/CameraRig'
-import { makeMaskedTexture } from './scene/layers'
+import { Diorama } from './scene/Diorama'
 
-const STROKE_COUNT = 8000
+const STROKE_COUNT = 7000
+const SKY_ASPECT = 1.263
 
-/**
- * The painting on a cover-framed plane, with the brushstroke sky composited over it.
- * Painting plane and strokes share one cover-scaled group so they stay aligned.
- */
-function Scene() {
-  const tex = useTexture('/reference/painting.jpg')
-  tex.colorSpace = SRGBColorSpace
+/** The 3D diorama plus the churning brushstroke sky as a backdrop behind it. */
+function World({ churnSpeed }: { churnSpeed: number }) {
   const flow = useImageData('/reference/flow-field.png')
   const colourSrc = useImageData('/reference/painting.jpg')
-
-  const viewport = useThree((s) => s.viewport)
-  const invalidate = useThree((s) => s.invalidate)
-  const img = tex.image as { width: number; height: number } | undefined
-  const aspect = img ? img.width / img.height : 1.263
-  // margin so the pan/tilt camera never reveals the plane edge
-  const cover = Math.max(viewport.width / aspect, viewport.height) * 1.15
-
-  // cypress cut out of the painting onto a nearer plane → parallax under the pan/tilt camera
-  const cypressTex = useMemo(
-    () => (colourSrc ? makeMaskedTexture(colourSrc, { rect: [0, 0.08, 0.22, 1], maxLum: 0.34 }) : null),
-    [colourSrc],
-  )
-
-  useEffect(() => invalidate(), [tex, flow, colourSrc, cover, invalidate])
-
   return (
-    <group scale={[cover, cover, 1]}>
-      <mesh>
-        <planeGeometry args={[aspect, 1]} />
-        <meshBasicMaterial map={tex} toneMapped={false} />
-      </mesh>
+    <>
+      <Diorama />
       {flow && colourSrc && (
-        <BrushstrokeSky flow={flow} colourSrc={colourSrc} aspect={aspect} count={STROKE_COUNT} />
+        <group position={[0, 2.2, -3.3]} scale={[8.5, 8.5, 1]}>
+          <mesh>
+            <planeGeometry args={[SKY_ASPECT, 1]} />
+            <meshBasicMaterial color="#16264a" toneMapped={false} />
+          </mesh>
+          <BrushstrokeSky flow={flow} colourSrc={colourSrc} aspect={SKY_ASPECT} count={STROKE_COUNT} speed={churnSpeed} />
+        </group>
       )}
-      {cypressTex && (
-        <mesh position={[0, 0, 0.3]} renderOrder={10}>
-          <planeGeometry args={[aspect, 1]} />
-          <meshBasicMaterial map={cypressTex} transparent depthTest={false} depthWrite={false} toneMapped={false} />
-        </mesh>
-      )}
-    </group>
+    </>
   )
 }
 
 export default function App() {
+  const { churnSpeed } = useControls('sky', {
+    churnSpeed: { value: 0.05, min: 0, max: 0.2, step: 0.005, label: 'churn speed' },
+  })
+
   return (
-    <Canvas
-      frameloop="always"
-      camera={{ position: [0, 0, 2], fov: 45 }}
-      dpr={[1, 2]}
-      gl={{ preserveDrawingBuffer: true }}
-    >
-      <color attach="background" args={['#0a0f1f']} />
-      <CameraRig />
-      <Suspense fallback={null}>
-        <Scene />
-      </Suspense>
-    </Canvas>
+    <>
+      <Leva hidden={!import.meta.env.DEV} />
+      <Canvas
+        frameloop="always"
+        camera={{ position: [3.0, 2.1, 5.2], fov: 42 }}
+        dpr={[1, 2]}
+        gl={{ preserveDrawingBuffer: true }}
+      >
+        <color attach="background" args={['#0a0f1f']} />
+        <Suspense fallback={null}>
+          <World churnSpeed={churnSpeed} />
+        </Suspense>
+        <OrbitControls
+          target={[0, 0.7, 0]}
+          enablePan={false}
+          enableDamping
+          minDistance={3}
+          maxDistance={9}
+          minPolarAngle={0.35}
+          maxPolarAngle={1.45}
+          minAzimuthAngle={-Math.PI / 2.4}
+          maxAzimuthAngle={Math.PI / 2.4}
+        />
+      </Canvas>
+    </>
   )
 }
