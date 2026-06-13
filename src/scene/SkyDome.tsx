@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import {
   BackSide,
@@ -6,7 +6,6 @@ import {
   BufferGeometry,
   Color,
   DoubleSide,
-  Mesh,
   NormalBlending,
   ShaderMaterial,
   Vector3,
@@ -14,13 +13,43 @@ import {
 import type { ImageData2D } from './useImageData'
 import { mulberry32, sampleColour, sampleFlow } from './brush'
 
-const DOME_R = 9 // gradient sky sphere
-const STROKE_R = 7.6 // streamline shell (inside the dome)
-const TILE = 1 // wrap the painting's flow once around the dome
-const EL_MIN = -0.12
-const EL_MAX = 1.5 // up to near the zenith
-const POINTS = 18 // points traced per streamline
-const STEP = 0.032 // integration step (radians)
+// The sky as a curved CANOPY that shows the painting's real composition facing the viewer (so the
+// bold whorls and star-halos stay true), plus a gradient sphere filling every direction for orbit.
+const CANOPY_R = 6
+const SPAN_AZ = Math.PI * 1.25 // horizontal arc the painting wraps onto (~225°), seam pushed to the sides
+const AZ_CENTER = Math.PI // canopy faces -Z, toward the default camera at +Z
+const EL_TOP = 0.9 // painting sky-top -> ~52° up
+const EL_BOT = -0.15 // painting sky-bottom -> just below the horizon, meeting the diorama
+const POINTS = 12 // points per streamline
+const STEP_UV = 0.013 // integration step in painting-UV space
+const SKY_V = 0.58 // only the sky part of the painting (above the hills)
+
+const MOON_UV: [number, number] = [0.855, 0.16]
+const STAR_UVS: [number, number][] = [
+  [0.1, 0.06],
+  [0.22, 0.06],
+  [0.33, 0.08],
+  [0.07, 0.18],
+  [0.21, 0.3],
+  [0.09, 0.45],
+  [0.3, 0.69],
+  [0.55, 0.09],
+  [0.61, 0.17],
+  [0.72, 0.34],
+]
+
+/** Painting UV -> a point on the curved canopy (mild curvature, so the composition stays faithful). */
+function uvToPos(u: number, v: number, out = new Vector3()): Vector3 {
+  const az = AZ_CENTER - (u - 0.5) * SPAN_AZ // painting-right -> screen-right
+  // map the painting's SKY band (v in [0, SKY_V]) across the full elevation, so it reaches the horizon
+  const el = EL_TOP - (EL_TOP - EL_BOT) * Math.min(1, v / SKY_V)
+  const ce = Math.cos(el)
+  return out.set(CANOPY_R * ce * Math.sin(az), CANOPY_R * Math.sin(el), CANOPY_R * ce * Math.cos(az))
+}
+const uvToArr = (uv: [number, number]): [number, number, number] => {
+  const p = uvToPos(uv[0], uv[1])
+  return [p.x, p.y, p.z]
+}
 
 const skyVert = /* glsl */ `
   varying vec3 vDir;
@@ -30,28 +59,26 @@ const skyFrag = /* glsl */ `
   varying vec3 vDir; uniform vec3 uTop; uniform vec3 uBottom;
   void main() { float t = clamp(vDir.y * 0.5 + 0.5, 0.0, 1.0); gl_FragColor = vec4(mix(uBottom, uTop, pow(t, 0.85)), 1.0); }
 `
-
-// Streamline ribbon: soft across, tapered ends, with paint flowing along its length over time.
 const strokeVert = /* glsl */ `
-  attribute float aLen; attribute float aAcross; attribute float aPhase; attribute vec3 aColor;
-  varying float vLen; varying float vAcross; varying float vPhase; varying vec3 vColor;
+  attribute float aLen; attribute float aAcross; attribute float aPhase; attribute float aFade; attribute vec3 aColor;
+  varying float vLen; varying float vAcross; varying float vPhase; varying float vFade; varying vec3 vColor;
   void main() {
-    vLen = aLen; vAcross = aAcross; vPhase = aPhase; vColor = aColor;
+    vLen = aLen; vAcross = aAcross; vPhase = aPhase; vFade = aFade; vColor = aColor;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
   }
 `
 const strokeFrag = /* glsl */ `
   precision highp float;
   uniform float uTime; uniform float uSpeed;
-  varying float vLen; varying float vAcross; varying float vPhase; varying vec3 vColor;
+  varying float vLen; varying float vAcross; varying float vPhase; varying float vFade; varying vec3 vColor;
   void main() {
-    float edge = sin(clamp(vAcross, 0.0, 1.0) * 3.14159);                 // soft across the ribbon
-    float taper = smoothstep(0.0, 0.14, vLen) * smoothstep(1.0, 0.85, vLen); // fade the ends
-    float flow = 0.5 + 0.5 * sin(vLen * 7.0 - uTime * uSpeed + vPhase);   // paint flowing along the stroke
+    float edge = sin(clamp(vAcross, 0.0, 1.0) * 3.14159);
+    float taper = smoothstep(0.0, 0.14, vLen) * smoothstep(1.0, 0.82, vLen);
+    float flow = 0.5 + 0.5 * sin(vLen * 6.0 - uTime * uSpeed + vPhase);
     vec3 col = vColor * (0.62 + 0.34 * flow);
     float lum = dot(col, vec3(0.299, 0.587, 0.114));
-    col = clamp(mix(vec3(lum), col, 1.3), 0.0, 2.0);                     // deepen toward the painting's saturation
-    float a = edge * taper * 0.92;
+    col = clamp(mix(vec3(lum), col, 1.3), 0.0, 2.0);
+    float a = edge * taper * vFade * 0.97;
     if (a < 0.01) discard;
     gl_FragColor = vec4(col, a);
   }
@@ -59,12 +86,6 @@ const strokeFrag = /* glsl */ `
 
 type Props = { flow: ImageData2D; colourSrc: ImageData2D; count: number; speed?: number }
 
-/**
- * Phase 1 (3D) — the sky as an enveloping dome of CHURNING SWIRLS. A gradient night sphere fills
- * every direction; over it, thousands of streamline ribbons trace the derived flow field's swirl
- * paths (so they read as Van Gogh's continuous brushstrokes, not dabs), with the paint flowing
- * along each stroke in the shader. GPU-animated — the main thread stays free for the orbit.
- */
 export function SkyDome({ flow, colourSrc, count, speed = 0.05 }: Props) {
   const gradient = useMemo(
     () =>
@@ -94,8 +115,8 @@ export function SkyDome({ flow, colourSrc, count, speed = 0.05 }: Props) {
     [],
   )
 
-  // Build all streamline ribbons into one geometry (once). Each streamline is integrated along the
-  // flow field over the dome; a ribbon of triangles is laid along it, coloured from the painting.
+  // Streamlines integrated in the painting's own UV space (so they trace the real swirls), then
+  // laid onto the curved canopy. Chunky comma strokes, coloured from the painting.
   const geometry = useMemo(() => {
     const rng = mulberry32(0x5712a3)
     const positions: number[] = []
@@ -103,40 +124,35 @@ export function SkyDome({ flow, colourSrc, count, speed = 0.05 }: Props) {
     const aLen: number[] = []
     const aAcross: number[] = []
     const aPhase: number[] = []
+    const aFade: number[] = []
     const indices: number[] = []
     let vbase = 0
-
-    const uvOf = (az: number, el: number): [number, number] => [
-      (((az / (Math.PI * 2)) * TILE) % 1 + 1) % 1,
-      Math.min(1, Math.max(0, 1 - el / (Math.PI / 2))) * 0.6,
-    ]
-    const pt = (az: number, el: number): Vector3 => {
-      const ce = Math.cos(el)
-      return new Vector3(STROKE_R * ce * Math.sin(az), STROKE_R * Math.sin(el), STROKE_R * ce * Math.cos(az))
-    }
 
     const t = new Vector3()
     const n = new Vector3()
     const perp = new Vector3()
-    const edgeL = new Vector3()
-    const edgeR = new Vector3()
+    const eL = new Vector3()
+    const eR = new Vector3()
 
     for (let i = 0; i < count; i++) {
-      let az = rng() * Math.PI * 2
-      let el = EL_MIN + rng() * (EL_MAX - EL_MIN)
+      let u = rng()
+      let vv = rng() * SKY_V
+      for (let a = 0; a < 8; a++) {
+        const cc = sampleColour(colourSrc, u, vv)
+        if (0.299 * cc[0] + 0.587 * cc[1] + 0.114 * cc[2] > 0.3) break // keep seeds in the bright sky, off the cypress
+        u = rng()
+        vv = rng() * SKY_V
+      }
       const sign = rng() < 0.5 ? -1 : 1
       const phase = rng() * Math.PI * 2
-      const halfW = 0.045 + 0.05 * rng()
+      const halfW = 0.07 + 0.06 * rng()
 
-      const trail: { az: number; el: number }[] = []
-      // carry a heading: the flow orientation is undirected (mod π), so without this the step can
-      // flip 180° between samples and the streamline zigzags. Never reverse on the previous step.
+      const trail: [number, number][] = []
       let hx = 0
       let hy = 0
       for (let k = 0; k < POINTS; k++) {
-        trail.push({ az, el })
-        const [u, v] = uvOf(az, el)
-        const { theta } = sampleFlow(flow, u, v)
+        trail.push([u, vv])
+        const { theta } = sampleFlow(flow, u, vv)
         let cx = Math.cos(theta)
         let cy = Math.sin(theta)
         if (k === 0) {
@@ -150,28 +166,38 @@ export function SkyDome({ flow, colourSrc, count, speed = 0.05 }: Props) {
         }
         hx = cx
         hy = cy
-        az += (cx * STEP) / Math.max(0.25, Math.cos(el))
-        el += cy * STEP
-        if (el < EL_MIN - 0.15 || el > EL_MAX + 0.15) break
+        u += cx * STEP_UV
+        vv += cy * STEP_UV
+        if (u < 0 || u > 1 || vv < 0 || vv > SKY_V) break
       }
       if (trail.length < 3) continue
 
-      const P = trail.map((p) => pt(p.az, p.el))
+      const P = trail.map(([tu, tvv]) => uvToPos(tu, tvv, new Vector3()))
       const M = P.length
       for (let k = 0; k < M; k++) {
-        t.subVectors(P[Math.min(M - 1, k + 1)], P[Math.max(0, k - 1)]).normalize()
-        n.copy(P[k]).multiplyScalar(-1).normalize() // inward
-        perp.crossVectors(t, n).normalize()
-        edgeL.copy(P[k]).addScaledVector(perp, halfW)
-        edgeR.copy(P[k]).addScaledVector(perp, -halfW)
-        const [u, v] = uvOf(trail[k].az, trail[k].el)
-        const [r, g, b] = sampleColour(colourSrc, u, v)
         const lenN = k / (M - 1)
-        positions.push(edgeL.x, edgeL.y, edgeL.z, edgeR.x, edgeR.y, edgeR.z)
+        const w = halfW * (1 - 0.5 * lenN)
+        t.subVectors(P[Math.min(M - 1, k + 1)], P[Math.max(0, k - 1)]).normalize()
+        n.copy(P[k]).multiplyScalar(-1).normalize()
+        perp.crossVectors(t, n).normalize()
+        eL.copy(P[k]).addScaledVector(perp, w)
+        eR.copy(P[k]).addScaledVector(perp, -w)
+        const c = sampleColour(colourSrc, trail[k][0], trail[k][1])
+        let r = c[0]
+        let g = c[1]
+        const b = c[2]
+        if (r > b) {
+          r = b + (r - b) * 0.45
+          g = b + (g - b) * 0.7
+        }
+        const uu = trail[k][0]
+        const fade = Math.min(1, uu / 0.12) * Math.min(1, (1 - uu) / 0.12) // melt the canopy's L/R edges into the sky
+        positions.push(eL.x, eL.y, eL.z, eR.x, eR.y, eR.z)
         colors.push(r, g, b, r, g, b)
         aLen.push(lenN, lenN)
         aAcross.push(0, 1)
         aPhase.push(phase, phase)
+        aFade.push(fade, fade)
         if (k < M - 1) {
           const v0 = vbase + k * 2
           indices.push(v0, v0 + 1, v0 + 2, v0 + 1, v0 + 3, v0 + 2)
@@ -186,11 +212,10 @@ export function SkyDome({ flow, colourSrc, count, speed = 0.05 }: Props) {
     geo.setAttribute('aLen', new BufferAttribute(new Float32Array(aLen), 1))
     geo.setAttribute('aAcross', new BufferAttribute(new Float32Array(aAcross), 1))
     geo.setAttribute('aPhase', new BufferAttribute(new Float32Array(aPhase), 1))
+    geo.setAttribute('aFade', new BufferAttribute(new Float32Array(aFade), 1))
     geo.setIndex(indices)
     return geo
   }, [flow, colourSrc, count])
-
-  const meshRef = useRef<Mesh>(null)
 
   useFrame((_, dt) => {
     material.uniforms.uTime.value += dt
@@ -206,13 +231,30 @@ export function SkyDome({ flow, colourSrc, count, speed = 0.05 }: Props) {
     [geometry, material, gradient],
   )
 
+  const moonPos = uvToArr(MOON_UV)
+
   return (
     <group>
       <mesh renderOrder={-1}>
-        <sphereGeometry args={[DOME_R, 32, 24]} />
+        <sphereGeometry args={[CANOPY_R + 4, 32, 24]} />
         <primitive object={gradient} attach="material" />
       </mesh>
-      <mesh ref={meshRef} geometry={geometry} material={material} frustumCulled={false} />
+      <mesh geometry={geometry} material={material} frustumCulled={false} />
+
+      {/* moon at its painting location, sitting in the swirls */}
+      <mesh position={moonPos}>
+        <sphereGeometry args={[0.55, 32, 32]} />
+        <meshStandardMaterial color="#f2c233" emissive="#f2c233" emissiveIntensity={1.7} toneMapped={false} />
+      </mesh>
+      <pointLight position={moonPos} intensity={20} distance={24} color="#f0d98a" />
+
+      {/* stars at their painting locations */}
+      {STAR_UVS.map((uv, i) => (
+        <mesh key={i} position={uvToArr(uv)}>
+          <sphereGeometry args={[0.13, 16, 16]} />
+          <meshStandardMaterial color="#f6e08a" emissive="#f6e08a" emissiveIntensity={2.1} toneMapped={false} />
+        </mesh>
+      ))}
     </group>
   )
 }

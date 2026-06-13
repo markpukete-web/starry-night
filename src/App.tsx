@@ -7,7 +7,7 @@ import { useImageData } from './scene/useImageData'
 import { SkyDome } from './scene/SkyDome'
 import { Diorama } from './scene/Diorama'
 
-const STROKE_COUNT = 3200 // streamline ribbons (each traces a swirl path)
+const STROKE_COUNT = 5000 // canopy streamlines tracing the painting's real swirls
 
 /** The 3D diorama beneath an enveloping dome of churning brushstroke sky. */
 function World({ churnSpeed }: { churnSpeed: number }) {
@@ -31,7 +31,7 @@ export default function App() {
       <Leva hidden={!import.meta.env.DEV} />
       <Canvas
         frameloop="always"
-        camera={{ position: [2.4, 1.7, 4.4], fov: 42 }}
+        camera={{ position: [2.2, 1.5, 4.6], fov: 46 }}
         dpr={[1, 1.5]}
         gl={{ preserveDrawingBuffer: true }}
       >
@@ -41,12 +41,12 @@ export default function App() {
         </Suspense>
         <OrbitControls
           makeDefault
-          target={[0, 0.7, 0]}
+          target={[0, 1.05, 0]}
           enablePan={false}
           enableDamping
           rotateSpeed={0.8}
           minDistance={3}
-          maxDistance={6.5}
+          maxDistance={5.5}
           minPolarAngle={0.2}
           maxPolarAngle={1.5}
         />

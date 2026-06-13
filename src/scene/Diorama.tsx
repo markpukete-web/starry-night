@@ -82,25 +82,11 @@ function Hill({ position, scale }: { position: Vec3; scale: Vec3 }) {
 }
 
 export function Diorama() {
-  const stars = useMemo<Vec3[]>(
-    () => [
-      [-1.9, 2.5, -2.0],
-      [-0.7, 2.95, -2.2],
-      [0.4, 2.6, -2.0],
-      [1.15, 2.95, -2.3],
-      [-1.25, 2.0, -1.8],
-      [0.85, 2.1, -1.9],
-      [-2.3, 1.6, -1.5],
-    ],
-    [],
-  )
-
   return (
     <group>
       <hemisphereLight args={['#6878a6', '#10161f', 1.05]} />
       <ambientLight intensity={0.4} color="#33466a" />
       <directionalLight position={[3, 5, 2.5]} intensity={1.3} color="#bcccf0" />
-      <pointLight position={[1.65, 2.25, -1.4]} intensity={16} distance={18} color="#f0d98a" />
 
       {/* floating base slab */}
       <mesh position={[0, -0.32, 0]}>
@@ -137,19 +123,6 @@ export function Diorama() {
       <Cypress position={[-1.55, 0, 0.85]} height={2.8} rot={0.4} />
       <Cypress position={[-1.25, 0, 1.05]} height={1.7} rot={-0.5} scale={0.85} />
 
-      {/* moon */}
-      <mesh position={[1.65, 2.25, -1.4]}>
-        <sphereGeometry args={[0.36, 32, 32]} />
-        <meshStandardMaterial color={C.moon} emissive={C.moon} emissiveIntensity={1.6} toneMapped={false} />
-      </mesh>
-
-      {/* stars */}
-      {stars.map((p, i) => (
-        <mesh key={i} position={p}>
-          <sphereGeometry args={[0.075, 16, 16]} />
-          <meshStandardMaterial color={C.star} emissive={C.star} emissiveIntensity={2} toneMapped={false} />
-        </mesh>
-      ))}
     </group>
   )
 }

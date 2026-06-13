@@ -187,3 +187,19 @@ Hard-won; reuse this, don't rediscover it.
     travelling along `vLen` with `uTime`), so the main thread stays free and the orbit stays
     smooth — far better than the per-frame CPU instance rebuild the dabs needed.
 - Bloom over the glowing ribbons gives the luminous Van Gogh night.
+
+## "Have both" — the curved-canopy sky (2026-06-13) ★
+
+- Full-dome wrapping DISTORTS the painting's bold swirls (TILE=1 stretches them to horizontal
+  waves; TILE=3 → busy small repetition). Mark, with the original beside it: "doesn't have the
+  same feeling." The fix that worked: a CURVED CANOPY. Integrate the streamlines in the painting's
+  OWN UV space (so they trace the real swirls — the central whorl actually reads), then map each
+  UV point to a gently curved front canopy (`uvToPos`: SPAN_AZ ~225°, an elevation band reaching
+  the horizon). Undistorted bold swirls in front; the gradient sphere fills the rest for orbit.
+  Mark: "Now THAT'S the feeling."
+- Details that mattered: seed only in the bright sky (luminance gate, off the dark cypress); map
+  the painting's sky band v∈[0,SKY_V] across the FULL elevation so the sky reaches the horizon (no
+  ceiling gap); fade strokes at the painting's L/R edges (`aFade`) to melt the canopy seam; place
+  the 3D moon + stars at their painting UVs via the same `uvToPos` so they sit inside the swirls.
+- Still open: the seam is visible orbiting ~90° to the side (the wrap edge + a little brown bleed
+  from the cypress column). Front and moderate orbit are lovely; full side-on needs more blending.
