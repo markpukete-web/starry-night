@@ -17,11 +17,23 @@ below — never edited in place.
 - [x] `docs/decisions/0001-reference-pipeline.md` — source, method, params, encodings
 - [x] Commit; **stop at Phase 0 gate** and present to Mark ← awaiting Mark's review
 
-## Phase 1 — movable definition  (queued; settled by building, not discussing)
+## Phase 1 — movable definition  (active; settled by building, not discussing)
 
-- [ ] 2–3 small spikes; default candidate to beat: hybrid (brushstroke sky + parallax
-      foreground, constrained pan/tilt camera)
-- [ ] Judge vs acceptance criteria + painting; pick one; `docs/decisions/0002-movable-definition.md`
+Spikes share a scene foundation; the hybrid subsumes the other two, so build components and
+compose them, judging the feel at each step. Gate: Mark reviews captures (the movable decision).
+
+- [x] Slice 1 — scene foundation: painting plane, cover-framed, true colour. Desktop ✓.
+      Mobile portrait cover-crops the moon/cypress → portrait framing deferred to Slice 5.
+- [x] Slice 2 — brushstroke sky (static): instanced strokes oriented by the flow field, tinted
+      from the painting; orientation confirmed against the brushwork
+- [x] Slice 3 — brushstroke sky (churning): advect strokes along the flow — reads as Van Gogh's
+      sky moving; sky-only placement + relief brush keep it faithful
+- [ ] Slice 4 — 2.5D parallax foreground (cypress/village/hills via region masks) + constrained
+      pan/tilt camera (±10° pitch, ±15° yaw from Tunables)
+- [ ] Slice 5 — reduced-motion still state; mobile pass: portrait framing (contain vs guided
+      pan), stroke budget, DPR caps
+- [ ] Judge the three readings (churn-only / parallax-only / hybrid) vs acceptance criteria +
+      painting; pick one; `docs/decisions/0002-movable-definition.md`; **stop at Phase 1 gate**
 
 ## Backlog / later gates
 
