@@ -7,7 +7,7 @@ import { useImageData } from './scene/useImageData'
 import { SkyDome } from './scene/SkyDome'
 import { Diorama } from './scene/Diorama'
 
-const STROKE_COUNT = 5000 // canopy streamlines tracing the painting's real swirls
+const STROKE_COUNT = 8000 // streamlines tracing the painting's swirls, mirror-tiled around the dome
 
 /** The 3D diorama beneath an enveloping dome of churning brushstroke sky. */
 function World({ churnSpeed }: { churnSpeed: number }) {

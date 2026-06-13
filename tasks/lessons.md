@@ -203,3 +203,16 @@ Hard-won; reuse this, don't rediscover it.
   the 3D moon + stars at their painting UVs via the same `uvToPos` so they sit inside the swirls.
 - Still open: the seam is visible orbiting ~90° to the side (the wrap edge + a little brown bleed
   from the cypress column). Front and moderate orbit are lovely; full side-on needs more blending.
+
+## 360° sky — mirror-tiling (2026-06-13)
+
+- Mark: "make it 360" (the canopy left a gap by the cypress). A flat image can't wrap a dome
+  seamlessly without EITHER a seam (repeat) OR symmetry (mirror). Chose MIRROR: tile the painting
+  `TILES=2` around the dome, odd copies flipped (`azFor`), so adjacent copies meet at the same
+  painting edge — seamless, no gap, swirls all the way round. The front still shows the real
+  composition; orbit is unbroken.
+- Recolour foreground bleed (cypress brown/green = where b is the lowest channel) to a sky tone —
+  this removed the brown vertical lines that had marked (and advertised) the mirror joins.
+- Trade-off left: a faint bilateral symmetry when you look UP at the back where the two copies
+  converge. Front + moderate orbit are clean. To reduce it: TILES=3 (narrower copies), an abstract
+  procedural back, or constrain the look-up angle.
