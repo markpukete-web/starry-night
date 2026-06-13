@@ -230,3 +230,7 @@ Hard-won; reuse this, don't rediscover it.
   conflict. This version is procedural Van-Gogh-STYLE vortices, not the derived flow field. Possible
   reconciliation: anchor the FRONT vortices to the painting's real swirl/star positions (derived),
   continue the style around the back. FLAGGED to Mark — his locked bar vs his 360° ask, his call.
+- RESOLVED (Mark chose "anchor"): the front vortices (central double-whorl, the 10 real stars, the
+  moon) are placed at the painting's actual positions via `uvToFrontDir` — head-on it's the real
+  composition (derived); the back is invented in the same vortex style for the 360° it can't
+  derive. Best of both, and it honours the bar where the painting actually exists.

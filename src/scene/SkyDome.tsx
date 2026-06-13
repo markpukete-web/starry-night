@@ -28,24 +28,48 @@ function dirAzEl(az: number, el: number): Vector3 {
   return new Vector3(ce * Math.sin(az), Math.sin(el), ce * Math.cos(az))
 }
 
+// The painting's real sky composition (its star positions; the central whorl), in painting UV.
+const STAR_UVS: [number, number][] = [
+  [0.1, 0.06],
+  [0.22, 0.06],
+  [0.33, 0.08],
+  [0.07, 0.18],
+  [0.21, 0.3],
+  [0.09, 0.45],
+  [0.3, 0.68],
+  [0.55, 0.09],
+  [0.61, 0.17],
+  [0.72, 0.34],
+]
+const MOON_UV: [number, number] = [0.855, 0.16]
+
+// Map a painting UV onto the FRONT hemisphere (the part facing the camera), keeping the composition.
+function uvToFrontDir(u: number, v: number): Vector3 {
+  const az = Math.PI - (u - 0.5) * Math.PI
+  const el = Math.max(-0.04, 0.95 - (v / 0.7) * 0.95)
+  return dirAzEl(az, el)
+}
+
 function buildVortices(): Vortex[] {
   const rng = mulberry32(0x5747a1)
   const V: Vortex[] = []
   const add = (dir: Vector3, strength: number, sign: number, radius: number, star = false, moon = false) =>
     V.push({ dir, strength, sign, radius, star, moon })
 
-  // the central whorl (front is -Z, az = π), as two neighbouring counter-rotating swirls
-  add(dirAzEl(Math.PI, 0.32), 1.7, 1, 0.6)
-  add(dirAzEl(Math.PI + 0.32, 0.16), 1.3, -1, 0.5)
-  // moon, front-right and up — a vortex with its glowing body
-  add(dirAzEl(Math.PI - 0.55, 0.52), 1.2, 1, 0.42, false, true)
-  // stars scattered over the whole sphere, each a vortex so it gets a swirling halo
-  for (let i = 0; i < 20; i++) {
-    add(dirAzEl(rng() * Math.PI * 2, -0.05 + rng() * 1.45), 0.7 + 0.45 * rng(), rng() < 0.5 ? -1 : 1, 0.2 + 0.1 * rng(), true)
+  // FRONT — derived from the painting: the central double-whorl, the real stars, the moon.
+  add(uvToFrontDir(0.44, 0.34), 1.8, 1, 0.55)
+  add(uvToFrontDir(0.53, 0.42), 1.4, -1, 0.42)
+  STAR_UVS.forEach((uv, i) => add(uvToFrontDir(uv[0], uv[1]), 0.7 + 0.2 * rng(), i % 2 === 0 ? 1 : -1, 0.2 + 0.08 * rng(), true))
+  add(uvToFrontDir(MOON_UV[0], MOON_UV[1]), 1.1, 1, 0.4, false, true)
+
+  // BACK — invented in the same style to complete the 360° (a flat painting has no back).
+  add(dirAzEl(0.2, 0.34), 1.5, -1, 0.5)
+  add(dirAzEl(-0.3, 0.2), 1.2, 1, 0.42)
+  for (let i = 0; i < 10; i++) {
+    add(dirAzEl(1.55 * Math.PI + rng() * 0.9 * Math.PI, -0.05 + rng() * 1.3), 0.65 + 0.3 * rng(), rng() < 0.5 ? -1 : 1, 0.2 + 0.08 * rng(), true)
   }
-  // fill swirls (no body) so the flow is defined and turbulent everywhere
-  for (let i = 0; i < 26; i++) {
-    add(dirAzEl(rng() * Math.PI * 2, -0.1 + rng() * 1.5), 0.5 + 0.45 * rng(), rng() < 0.5 ? -1 : 1, 0.28 + 0.16 * rng())
+  for (let i = 0; i < 16; i++) {
+    add(dirAzEl(1.45 * Math.PI + rng() * 1.1 * Math.PI, -0.1 + rng() * 1.5), 0.5 + 0.4 * rng(), rng() < 0.5 ? -1 : 1, 0.28 + 0.16 * rng())
   }
   return V
 }
@@ -245,8 +269,8 @@ export function SkyDome({ colourSrc, count, speed = 0.05 }: Props) {
         const p = v.dir.clone().multiplyScalar(DOME_R)
         return (
           <mesh key={i} position={p}>
-            <sphereGeometry args={[0.12, 16, 16]} />
-            <meshStandardMaterial color="#f6e08a" emissive="#f6e08a" emissiveIntensity={2.1} toneMapped={false} />
+            <sphereGeometry args={[0.15, 16, 16]} />
+            <meshStandardMaterial color="#f6e08a" emissive="#f6e08a" emissiveIntensity={2.5} toneMapped={false} />
           </mesh>
         )
       })}
