@@ -1,8 +1,21 @@
 # 0002 — What "movable" means (Phase 1)
 
-**Status:** decided (Claude's pick), awaiting Mark's gate review · **Date:** 2026-06-13
+**Status:** revised — the flat hybrid below was superseded by a full 3D diorama (Mark's redirect,
+2026-06-13). · **Date:** 2026-06-13
 
-## Decision
+## Update (2026-06-13) — movable = a 3D diorama
+
+Building the flat hybrid, Mark judged it "not 3D enough" (reference: the techartist orbitable
+diorama) and redirected. **Movable = a genuine, orbitable 3D diorama of Starry Night** — the
+cypress, village + steeple and hills as real forms on a floating slab, the moon and stars as 3D
+bodies, and the sky as an enveloping DOME of churning brushstrokes you stand beneath. Free orbit is
+now in scope (relaxes the locked item — flagged to Mark in `tasks/todo.md`). The painterly bar, the
+flow-derived churn and the palette all carry over. Perf note: the dome's overdraw must be watched —
+single-sided strokes; ~120 fps confirmed on Mark's machine at 6k strokes.
+
+The original flat-hybrid analysis below is kept as the route that led here.
+
+## Decision (original — flat hybrid, superseded)
 
 **Movable = hybrid:** an animated **brushstroke sky** over a **2.5D parallax foreground**, viewed
 through a **constrained pan/tilt camera**. This was CLAUDE.md's default-to-beat; building the
