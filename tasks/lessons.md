@@ -158,3 +158,16 @@ Hard-won; reuse this, don't rediscover it.
 - If still slow on Mark's machine: move the churn to the GPU (animate stroke position/orientation
   in a vertex shader from a time uniform) so the main thread stays free for input — the per-frame
   CPU rebuild of thousands of instances is the thing that starves OrbitControls.
+- Confirmed: 120 fps on Mark's machine at 6k single-sided strokes — lots of headroom (now 12k).
+
+## Beauty pass — 3D diorama (2026-06-13)
+
+- Bloom (`@react-three/postprocessing` EffectComposer + Bloom) is the biggest mood win: moon,
+  stars, windows and bright sky strokes glow; dark forms read as silhouettes against a luminous
+  sky — very Van Gogh. Settings: intensity 1.2, luminanceThreshold 0.35, mipmapBlur, radius 0.7.
+- Forms (`src/scene/Diorama`): cypress as a LatheGeometry flame profile (×2 for the licking
+  shape), gable-roofed houses + a church/steeple, flatter faceted rolling hills, a floating slab.
+  Lifted the material base colours + moonlight so forms have modelling instead of reading black.
+- The sky is denser/brighter impasto but still reads as oriented DABS, not the painting's
+  continuous swirls — a limit of dome-mapping + discrete quads. If Mark wants the true swirls, the
+  next step is streamline strokes (longer curved marks tracing the flow) — a bigger build.

@@ -33,6 +33,13 @@ compose them, judging the feel at each step. Gate: Mark reviews captures (the mo
 - [x] Judged the three readings; picked **hybrid**; `docs/decisions/0002-movable-definition.md`.
       **Phase 1 gate reached — awaiting Mark's review.**
 
+## 3D rebuild — beauty pass (active, 2026-06-13)
+
+Pivoted to the orbitable 3D diorama. Done: enveloping churning sky dome, bloom (luminous night),
+real forms (lathe cypress, village + church, rolling hills, moonlit floating slab). A cohesive
+beautiful milestone for Mark. Open: the sky reads as dabs not continuous swirls (streamline strokes
+would fix it); smooth the cypress facets; mobile + reduced-motion + perf (GPU churn if needed).
+
 ## Backlog / later gates (post movable-decision)
 
 - First full animated sky (real, optimised build; flow-field.png is 3.2MB → slim it)
