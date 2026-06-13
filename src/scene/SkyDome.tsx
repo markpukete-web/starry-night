@@ -11,49 +11,43 @@ import {
   Vector3,
 } from 'three'
 import type { ImageData2D } from './useImageData'
-import { mulberry32, sampleColour, sampleFlow } from './brush'
+import { mulberry32, sampleColour } from './brush'
 
-// The sky as a full 360° dome of the painting's real swirls. The painting is mirror-tiled around
-// the dome (each copy flips at its edge) so it wraps seamlessly — bold real composition in front,
-// continuous swirls all the way around, no seam, no gap.
-const CANOPY_R = 6
-const TILES = 2 // painting copies around the dome (mirrored)
-const FRONT_SPAN = (Math.PI * 2) / TILES // each copy spans this azimuth
-const AZ_CENTER = Math.PI // the front copy faces -Z, toward the default camera at +Z
-const EL_TOP = 0.92 // painting sky-top -> up
-const EL_BOT = -0.18 // painting sky-bottom -> just below the horizon
-const POINTS = 12
-const STEP_UV = 0.013
-const SKY_V = 0.58 // only the painting's sky band (above the hills)
+// The sky as a full sphere of swirls grown NATIVELY on the dome — a flow field of vortices (the
+// stars' halos and the central whorl), with streamlines flowing through it. Bold round Van Gogh
+// swirls everywhere, organic, with no seam, no symmetry and no gaps. Stars sit at vortex centres.
+const DOME_R = 6
+const POINTS = 13
+const STEP = 0.05 // radians per integration step on the sphere
+const HORIZON = -0.22 // strokes live above roughly the horizon
 
-const MOON_UV: [number, number] = [0.855, 0.16]
-const STAR_UVS: [number, number][] = [
-  [0.1, 0.06],
-  [0.22, 0.06],
-  [0.33, 0.08],
-  [0.07, 0.18],
-  [0.21, 0.3],
-  [0.09, 0.45],
-  [0.3, 0.69],
-  [0.55, 0.09],
-  [0.61, 0.17],
-  [0.72, 0.34],
-]
+type Vortex = { dir: Vector3; strength: number; sign: number; radius: number; star: boolean; moon: boolean }
 
-function azFor(u: number, tile: number): number {
-  // even tiles run one way, odd tiles mirror — so adjacent copies meet at the same painting edge.
-  return tile % 2 === 0 ? AZ_CENTER - (u - 0.5) * FRONT_SPAN : AZ_CENTER + Math.PI + (u - 0.5) * FRONT_SPAN
-}
-function elFor(v: number): number {
-  return EL_TOP - (EL_TOP - EL_BOT) * Math.min(1, v / SKY_V)
-}
-function posFromAzEl(az: number, el: number, out = new Vector3()): Vector3 {
+function dirAzEl(az: number, el: number): Vector3 {
   const ce = Math.cos(el)
-  return out.set(CANOPY_R * ce * Math.sin(az), CANOPY_R * Math.sin(el), CANOPY_R * ce * Math.cos(az))
+  return new Vector3(ce * Math.sin(az), Math.sin(el), ce * Math.cos(az))
 }
-const uvToArr = (uv: [number, number]): [number, number, number] => {
-  const p = posFromAzEl(azFor(uv[0], 0), elFor(uv[1]))
-  return [p.x, p.y, p.z]
+
+function buildVortices(): Vortex[] {
+  const rng = mulberry32(0x5747a1)
+  const V: Vortex[] = []
+  const add = (dir: Vector3, strength: number, sign: number, radius: number, star = false, moon = false) =>
+    V.push({ dir, strength, sign, radius, star, moon })
+
+  // the central whorl (front is -Z, az = π), as two neighbouring counter-rotating swirls
+  add(dirAzEl(Math.PI, 0.32), 1.7, 1, 0.6)
+  add(dirAzEl(Math.PI + 0.32, 0.16), 1.3, -1, 0.5)
+  // moon, front-right and up — a vortex with its glowing body
+  add(dirAzEl(Math.PI - 0.55, 0.52), 1.2, 1, 0.42, false, true)
+  // stars scattered over the whole sphere, each a vortex so it gets a swirling halo
+  for (let i = 0; i < 20; i++) {
+    add(dirAzEl(rng() * Math.PI * 2, -0.05 + rng() * 1.45), 0.7 + 0.45 * rng(), rng() < 0.5 ? -1 : 1, 0.2 + 0.1 * rng(), true)
+  }
+  // fill swirls (no body) so the flow is defined and turbulent everywhere
+  for (let i = 0; i < 26; i++) {
+    add(dirAzEl(rng() * Math.PI * 2, -0.1 + rng() * 1.5), 0.5 + 0.45 * rng(), rng() < 0.5 ? -1 : 1, 0.28 + 0.16 * rng())
+  }
+  return V
 }
 
 const skyVert = /* glsl */ `
@@ -91,7 +85,9 @@ const strokeFrag = /* glsl */ `
 
 type Props = { flow: ImageData2D; colourSrc: ImageData2D; count: number; speed?: number }
 
-export function SkyDome({ flow, colourSrc, count, speed = 0.05 }: Props) {
+export function SkyDome({ colourSrc, count, speed = 0.05 }: Props) {
+  const vortices = useMemo(() => buildVortices(), [])
+
   const gradient = useMemo(
     () =>
       new ShaderMaterial({
@@ -121,7 +117,7 @@ export function SkyDome({ flow, colourSrc, count, speed = 0.05 }: Props) {
   )
 
   const geometry = useMemo(() => {
-    const rng = mulberry32(0x5712a3)
+    const rng = mulberry32(0x13ade7)
     const positions: number[] = []
     const colors: number[] = []
     const aLen: number[] = []
@@ -130,52 +126,57 @@ export function SkyDome({ flow, colourSrc, count, speed = 0.05 }: Props) {
     const indices: number[] = []
     let vbase = 0
 
+    const f = new Vector3()
+    const cross = new Vector3()
     const t = new Vector3()
     const n = new Vector3()
     const perp = new Vector3()
     const eL = new Vector3()
     const eR = new Vector3()
 
+    // tangent flow direction (circulation summed over vortices) at a point p on the unit sphere
+    const flowAt = (p: Vector3, out: Vector3) => {
+      out.set(0, 0, 0)
+      for (let i = 0; i < vortices.length; i++) {
+        const v = vortices[i]
+        const cosA = Math.min(1, Math.max(-1, p.dot(v.dir)))
+        const ang = Math.acos(cosA)
+        const w = v.strength * Math.exp(-(ang * ang) / (v.radius * v.radius))
+        if (w < 0.001) continue
+        cross.crossVectors(p, v.dir).multiplyScalar(v.sign * w) // tangent, circulating around v.dir
+        out.add(cross)
+      }
+      out.addScaledVector(p, -out.dot(p)) // keep only the tangent component
+      return out
+    }
+
     for (let i = 0; i < count; i++) {
-      const tile = i % TILES
-      let u = rng()
-      let vv = rng() * SKY_V
-      for (let a = 0; a < 8; a++) {
-        const cc = sampleColour(colourSrc, u, vv)
-        if (0.299 * cc[0] + 0.587 * cc[1] + 0.114 * cc[2] > 0.3) break // bright sky only, off the cypress
-        u = rng()
-        vv = rng() * SKY_V
-      }
-      const sign = rng() < 0.5 ? -1 : 1
+      const seed = dirAzEl(rng() * Math.PI * 2, HORIZON + 0.04 + rng() * 1.5)
       const phase = rng() * Math.PI * 2
-      const halfW = 0.06 + 0.07 * rng()
+      const halfW = 0.055 + 0.06 * rng()
+      const [cr, cg, cb] = sampleColour(colourSrc, 0.05 + rng() * 0.9, rng() * 0.5) // a Van Gogh sky colour
 
-      const trail: [number, number][] = []
-      let hx = 0
-      let hy = 0
+      const P: Vector3[] = []
+      const p = seed.clone()
+      const dir = new Vector3()
+      let have = false
       for (let k = 0; k < POINTS; k++) {
-        trail.push([u, vv])
-        const { theta } = sampleFlow(flow, u, vv)
-        let cx = Math.cos(theta)
-        let cy = Math.sin(theta)
-        if (k === 0) {
-          if (sign < 0) {
-            cx = -cx
-            cy = -cy
-          }
-        } else if (cx * hx + cy * hy < 0) {
-          cx = -cx
-          cy = -cy
+        P.push(p.clone())
+        flowAt(p, f)
+        if (f.lengthSq() < 1e-8) {
+          if (!have) break
+          f.copy(dir)
+        } else {
+          f.normalize()
+          if (have && f.dot(dir) < 0) f.multiplyScalar(-1)
         }
-        hx = cx
-        hy = cy
-        u += cx * STEP_UV
-        vv += cy * STEP_UV
-        if (u < 0 || u > 1 || vv < 0 || vv > SKY_V) break
+        dir.copy(f)
+        have = true
+        p.addScaledVector(f, STEP).normalize()
+        if (p.y < HORIZON) break
       }
-      if (trail.length < 3) continue
+      if (P.length < 3) continue
 
-      const P = trail.map(([tu, tvv]) => posFromAzEl(azFor(tu, tile), elFor(tvv), new Vector3()))
       const M = P.length
       for (let k = 0; k < M; k++) {
         const lenN = k / (M - 1)
@@ -183,26 +184,10 @@ export function SkyDome({ flow, colourSrc, count, speed = 0.05 }: Props) {
         t.subVectors(P[Math.min(M - 1, k + 1)], P[Math.max(0, k - 1)]).normalize()
         n.copy(P[k]).multiplyScalar(-1).normalize()
         perp.crossVectors(t, n).normalize()
-        eL.copy(P[k]).addScaledVector(perp, w)
-        eR.copy(P[k]).addScaledVector(perp, -w)
-        const c = sampleColour(colourSrc, trail[k][0], trail[k][1])
-        let r = c[0]
-        let g = c[1]
-        let b = c[2]
-        if (b < r && b < g) {
-          // foreground (cypress brown/green) leaked into the sky -> recolour to a sky tone so the
-          // mirror lines disappear
-          const l = 0.3 * r + 0.5 * g + 0.2 * b
-          r = l * 0.82
-          g = l * 0.9
-          b = Math.min(1, l * 1.15 + 0.08)
-        } else if (r > b) {
-          // warm (the moon) -> pull toward blue so the tiling doesn't repeat yellow patches
-          r = b + (r - b) * 0.45
-          g = b + (g - b) * 0.7
-        }
+        eL.copy(P[k]).multiplyScalar(DOME_R).addScaledVector(perp, w)
+        eR.copy(P[k]).multiplyScalar(DOME_R).addScaledVector(perp, -w)
         positions.push(eL.x, eL.y, eL.z, eR.x, eR.y, eR.z)
-        colors.push(r, g, b, r, g, b)
+        colors.push(cr, cg, cb, cr, cg, cb)
         aLen.push(lenN, lenN)
         aAcross.push(0, 1)
         aPhase.push(phase, phase)
@@ -222,7 +207,7 @@ export function SkyDome({ flow, colourSrc, count, speed = 0.05 }: Props) {
     geo.setAttribute('aPhase', new BufferAttribute(new Float32Array(aPhase), 1))
     geo.setIndex(indices)
     return geo
-  }, [flow, colourSrc, count])
+  }, [colourSrc, count, vortices])
 
   useFrame((_, dt) => {
     material.uniforms.uTime.value += dt
@@ -238,26 +223,33 @@ export function SkyDome({ flow, colourSrc, count, speed = 0.05 }: Props) {
     [geometry, material, gradient],
   )
 
+  const moon = vortices.find((v) => v.moon)
+  const moonPos = moon ? moon.dir.clone().multiplyScalar(DOME_R) : new Vector3(0, 4, -4)
+  const stars = vortices.filter((v) => v.star)
+
   return (
     <group>
       <mesh renderOrder={-1}>
-        <sphereGeometry args={[CANOPY_R + 4, 32, 24]} />
+        <sphereGeometry args={[DOME_R + 4, 32, 24]} />
         <primitive object={gradient} attach="material" />
       </mesh>
       <mesh geometry={geometry} material={material} frustumCulled={false} />
 
-      <mesh position={uvToArr(MOON_UV)}>
+      <mesh position={moonPos}>
         <sphereGeometry args={[0.55, 32, 32]} />
         <meshStandardMaterial color="#f2c233" emissive="#f2c233" emissiveIntensity={1.7} toneMapped={false} />
       </mesh>
-      <pointLight position={uvToArr(MOON_UV)} intensity={20} distance={24} color="#f0d98a" />
+      <pointLight position={moonPos} intensity={20} distance={24} color="#f0d98a" />
 
-      {STAR_UVS.map((uv, i) => (
-        <mesh key={i} position={uvToArr(uv)}>
-          <sphereGeometry args={[0.13, 16, 16]} />
-          <meshStandardMaterial color="#f6e08a" emissive="#f6e08a" emissiveIntensity={2.1} toneMapped={false} />
-        </mesh>
-      ))}
+      {stars.map((v, i) => {
+        const p = v.dir.clone().multiplyScalar(DOME_R)
+        return (
+          <mesh key={i} position={p}>
+            <sphereGeometry args={[0.12, 16, 16]} />
+            <meshStandardMaterial color="#f6e08a" emissive="#f6e08a" emissiveIntensity={2.1} toneMapped={false} />
+          </mesh>
+        )
+      })}
     </group>
   )
 }

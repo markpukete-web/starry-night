@@ -216,3 +216,17 @@ Hard-won; reuse this, don't rediscover it.
 - Trade-off left: a faint bilateral symmetry when you look UP at the back where the two copies
   converge. Front + moderate orbit are clean. To reduce it: TILES=3 (narrower copies), an abstract
   procedural back, or constrain the look-up angle.
+
+## Vortex-field sky — bold swirls 360°, no symmetry (2026-06-13) ★★ the answer
+
+- Mirror-tiling gave butterfly symmetry AND gaps. Wrapping a flat painting onto a dome can't avoid
+  both. The fix that finally worked: grow the swirls NATIVELY on the sphere. A flow field of
+  VORTICES (a couple of big central whorls + one vortex per star + fill vortices), streamlines
+  integrated through it ON the sphere surface → bold round Van Gogh swirls everywhere, organic,
+  no seam, no symmetry, no gaps. Stars sit AT vortex centres so they get real swirling halos.
+  Colours sampled from the painting's sky. `flowAt(p) = Σ sign·strength·exp(-(ang/r)²)·(p × c)`.
+- TENSION with the locked bar ("motion derived from the painting, never generic noise"): a flat
+  painting has no "back", so a true 360° sky MUST invent it — faithfulness and full 360° genuinely
+  conflict. This version is procedural Van-Gogh-STYLE vortices, not the derived flow field. Possible
+  reconciliation: anchor the FRONT vortices to the painting's real swirl/star positions (derived),
+  continue the style around the back. FLAGGED to Mark — his locked bar vs his 360° ask, his call.
