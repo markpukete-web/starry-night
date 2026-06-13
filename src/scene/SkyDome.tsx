@@ -21,55 +21,82 @@ const POINTS = 13
 const STEP = 0.05 // radians per integration step on the sphere
 const HORIZON = -0.22 // strokes live above roughly the horizon
 
-type Vortex = { dir: Vector3; strength: number; sign: number; radius: number; star: boolean; moon: boolean }
+type Vortex = { dir: Vector3; strength: number; sign: number; radius: number; star: boolean; moon: boolean; scale: number }
 
 function dirAzEl(az: number, el: number): Vector3 {
   const ce = Math.cos(el)
   return new Vector3(ce * Math.sin(az), Math.sin(el), ce * Math.cos(az))
 }
 
-// The painting's real sky composition (its star positions; the central whorl), in painting UV.
+// The painting's real sky, in painting UV (u: 0 left → 1 right, v: 0 top → 1 bottom).
+// Venus — the big "morning star" with the wide halo, centre-left — is called out so it reads large.
+const VENUS_UV: [number, number] = [0.27, 0.33]
+const MOON_UV: [number, number] = [0.84, 0.15]
 const STAR_UVS: [number, number][] = [
-  [0.1, 0.06],
-  [0.22, 0.06],
-  [0.33, 0.08],
-  [0.07, 0.18],
-  [0.21, 0.3],
-  [0.09, 0.45],
-  [0.3, 0.68],
-  [0.55, 0.09],
-  [0.61, 0.17],
-  [0.72, 0.34],
+  [0.13, 0.13],
+  [0.2, 0.065],
+  [0.31, 0.13],
+  [0.4, 0.1],
+  [0.1, 0.42],
+  [0.52, 0.2],
+  [0.59, 0.095],
+  [0.66, 0.27],
+  [0.72, 0.175],
 ]
-const MOON_UV: [number, number] = [0.855, 0.16]
 
-// Map a painting UV onto the FRONT hemisphere (the part facing the camera), keeping the composition.
+// Front anchor — the painting faces the camera's default look direction, so it reads centred on load.
+// Build an orthonormal basis (fwd, right, up) at that bearing and lay the painting onto a gentle arc,
+// so its swirls keep the painting's relative positions instead of being stretched flat across 180°.
+const CAM_POS = new Vector3(2.2, 1.5, 4.6)
+const CAM_TARGET = new Vector3(0, 1.05, 0)
+const FRONT_AZ = Math.atan2(CAM_TARGET.x - CAM_POS.x, CAM_TARGET.z - CAM_POS.z)
+const FRONT_EL = 0.2 // lift the composition centre a touch above the horizon
+const FWD = dirAzEl(FRONT_AZ, FRONT_EL)
+const RIGHT = new Vector3().crossVectors(FWD, new Vector3(0, 1, 0)).normalize()
+const TRUEUP = new Vector3().crossVectors(RIGHT, FWD).normalize()
+const BACK_AZ = FRONT_AZ - Math.PI
+const SPAN_H = 2.15 // ~123° of front arc carries the painting's width (was 180° — too stretched)
+const SPAN_V = SPAN_H / 1.26 // keep the painting's aspect (~3840×3041)
+
+// Map a painting UV onto the front arc, preserving the composition's relative geometry.
 function uvToFrontDir(u: number, v: number): Vector3 {
-  const az = Math.PI - (u - 0.5) * Math.PI
-  const el = Math.max(-0.04, 0.95 - (v / 0.7) * 0.95)
-  return dirAzEl(az, el)
+  const h = (u - 0.5) * SPAN_H
+  const w = (0.5 - v) * SPAN_V
+  const cw = Math.cos(w)
+  return new Vector3()
+    .addScaledVector(FWD, cw * Math.cos(h))
+    .addScaledVector(RIGHT, cw * Math.sin(h))
+    .addScaledVector(TRUEUP, Math.sin(w))
+    .normalize()
 }
 
 function buildVortices(): Vortex[] {
   const rng = mulberry32(0x5747a1)
   const V: Vortex[] = []
-  const add = (dir: Vector3, strength: number, sign: number, radius: number, star = false, moon = false) =>
-    V.push({ dir, strength, sign, radius, star, moon })
+  const add = (dir: Vector3, strength: number, sign: number, radius: number, star = false, moon = false, scale = 0.15) =>
+    V.push({ dir, strength, sign, radius, star, moon, scale })
 
-  // FRONT — derived from the painting: the central double-whorl, the real stars, the moon.
-  add(uvToFrontDir(0.44, 0.34), 1.8, 1, 0.55)
-  add(uvToFrontDir(0.53, 0.42), 1.4, -1, 0.42)
-  STAR_UVS.forEach((uv, i) => add(uvToFrontDir(uv[0], uv[1]), 0.7 + 0.2 * rng(), i % 2 === 0 ? 1 : -1, 0.2 + 0.08 * rng(), true))
+  // FRONT — the painting itself. The central double-swirl dominates; Venus is the big morning star.
+  add(uvToFrontDir(0.43, 0.34), 2.2, 1, 0.62) // main roll of the iconic swirl
+  add(uvToFrontDir(0.57, 0.3), 1.7, -1, 0.46) // its counter-roll (forms the S)
+  add(uvToFrontDir(VENUS_UV[0], VENUS_UV[1]), 1.0, -1, 0.32, true, false, 0.24) // Venus
+  STAR_UVS.forEach((uv, i) =>
+    add(uvToFrontDir(uv[0], uv[1]), 0.6 + 0.2 * rng(), i % 2 === 0 ? 1 : -1, 0.18 + 0.07 * rng(), true, false, 0.13 + 0.04 * rng()),
+  )
   add(uvToFrontDir(MOON_UV[0], MOON_UV[1]), 1.1, 1, 0.4, false, true)
 
-  // BACK — invented in the same style to complete the 360° (a flat painting has no back).
-  add(dirAzEl(0.2, 0.34), 1.5, -1, 0.5)
-  add(dirAzEl(-0.3, 0.2), 1.2, 1, 0.42)
+  // BACK — invented in the same hand to complete the 360°, centred opposite the front.
+  // Each big swirl is a double (roll + counter-roll), like the front hero, so the flow sweeps
+  // across the eye in a comma instead of leaving a hollow concentric drain.
+  add(dirAzEl(BACK_AZ + 0.5, 0.34), 2.0, -1, 0.55)
+  add(dirAzEl(BACK_AZ + 0.78, 0.3), 1.5, 1, 0.42)
+  add(dirAzEl(BACK_AZ - 0.7, 0.22), 1.7, 1, 0.46)
+  add(dirAzEl(BACK_AZ - 0.98, 0.18), 1.3, -1, 0.4)
   for (let i = 0; i < 10; i++) {
-    add(dirAzEl(1.55 * Math.PI + rng() * 0.9 * Math.PI, -0.05 + rng() * 1.3), 0.65 + 0.3 * rng(), rng() < 0.5 ? -1 : 1, 0.2 + 0.08 * rng(), true)
+    add(dirAzEl(BACK_AZ + (rng() - 0.5) * 3.6, -0.05 + rng() * 1.3), 0.6 + 0.3 * rng(), rng() < 0.5 ? -1 : 1, 0.18 + 0.08 * rng(), true, false, 0.12 + 0.04 * rng())
   }
   for (let i = 0; i < 16; i++) {
-    add(dirAzEl(1.45 * Math.PI + rng() * 1.1 * Math.PI, -0.1 + rng() * 1.5), 0.5 + 0.4 * rng(), rng() < 0.5 ? -1 : 1, 0.28 + 0.16 * rng())
+    add(dirAzEl(BACK_AZ + (rng() - 0.5) * 4.0, -0.1 + rng() * 1.5), 0.5 + 0.4 * rng(), rng() < 0.5 ? -1 : 1, 0.28 + 0.16 * rng())
   }
   return V
 }
@@ -157,6 +184,7 @@ export function SkyDome({ colourSrc, count, speed = 0.05 }: Props) {
     const perp = new Vector3()
     const eL = new Vector3()
     const eR = new Vector3()
+    const tin = new Vector3()
 
     // tangent flow direction (circulation summed over vortices) at a point p on the unit sphere
     const flowAt = (p: Vector3, out: Vector3) => {
@@ -169,6 +197,10 @@ export function SkyDome({ colourSrc, count, speed = 0.05 }: Props) {
         if (w < 0.001) continue
         cross.crossVectors(p, v.dir).multiplyScalar(v.sign * w) // tangent, circulating around v.dir
         out.add(cross)
+        // spiral inflow — winds streamlines toward the eye so the swirl fills (Van Gogh's swirls
+        // are logarithmic spirals, not hollow circles); vanishes at the exact centre, so no singularity
+        tin.copy(v.dir).addScaledVector(p, -p.dot(v.dir)) // tangent at p pointing toward the eye
+        out.addScaledVector(tin, 0.45 * w)
       }
       out.addScaledVector(p, -out.dot(p)) // keep only the tangent component
       return out
@@ -269,7 +301,7 @@ export function SkyDome({ colourSrc, count, speed = 0.05 }: Props) {
         const p = v.dir.clone().multiplyScalar(DOME_R)
         return (
           <mesh key={i} position={p}>
-            <sphereGeometry args={[0.15, 16, 16]} />
+            <sphereGeometry args={[v.scale, 16, 16]} />
             <meshStandardMaterial color="#f6e08a" emissive="#f6e08a" emissiveIntensity={2.5} toneMapped={false} />
           </mesh>
         )

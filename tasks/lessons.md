@@ -234,3 +234,37 @@ Hard-won; reuse this, don't rediscover it.
   moon) are placed at the painting's actual positions via `uvToFrontDir` — head-on it's the real
   composition (derived); the back is invented in the same vortex style for the 360° it can't
   derive. Best of both, and it honours the bar where the painting actually exists.
+
+## Anchoring the swirl to the painting's real geometry (2026-06-13) — Mark: "swirl position not the same"
+
+- The first anchor pass placed the front vortices via a naive `uvToFrontDir` that spread the
+  painting across 180° of dome (az = π − (u−0.5)π) and centred it on az=180°. But the camera's
+  default look bearing is az≈205° (it sits at +X,+Z, not on −Z), so the whole composition was both
+  STRETCHED (180° is far too wide — a gallery view is ~50°, an immersive dome ~120°) and SLID
+  off-axis. Result: swirls landed in the wrong places relative to where you look.
+- Fix = three things together:
+  1. **Camera-anchored basis.** Derive (FWD, RIGHT, TRUEUP) from the actual default camera
+     bearing; lay the painting onto a gentle arc around FWD. Now u=0.5 sits exactly where the
+     camera looks, so it reads centred on load. `FRONT_AZ = atan2(target.x−cam.x, target.z−cam.z)`.
+  2. **Compress the arc.** SPAN_H 180°→123°, SPAN_V = SPAN_H/1.26 (painting aspect). Keeps the
+     swirls clustered in the painting's relative positions instead of smeared.
+  3. **One dominant hero.** The central double-swirl must out-mass everything (strength 2.2 / r0.62
+     + counter-roll), with Venus as a genuinely larger star (own bigger orb). Equal-strength
+     vortices read as "lots of swirls", never as THE swirl.
+- **Spiral inflow is the unlock for swirl FORM.** Pure circulation (p×dir) draws concentric rings
+  with a hollow dark eye — a drain, not a Van Gogh swirl. Adding a small tangent-toward-centre
+  component (`tin = dir − p(p·dir)`, scaled ~0.45·w) makes streamlines spiral INWARD → logarithmic
+  spirals that fill the eye in that signature comma/rolling-wave shape. Van Gogh's swirls ARE log
+  spirals; this is faithful, not a hack. It vanishes at the exact centre (sin(ang)→0) so no
+  singularity. This single change turned the hero from a funnel into the real rolling swirl.
+- Isolated strong vortices still leave a small dark eye (concentric, nothing sweeps across the
+  centre). The front hero fills because it's a DOUBLE swirl (roll + counter-roll) — the counter
+  sweeps flow across the eye as a comma. So every big swirl wants a counter-roll companion; gave
+  the invented back swirls theirs too. A tiny calm eye remains and reads as the natural swirl
+  centre (acceptable; the painting has them). Don't raise the global inflow to chase it — that
+  tightens the hero and busies the flowing strokes between swirls.
+- Headless orbit for back-capture: synthetic pointer drags must dispatch pointerdown + every
+  pointermove (with buttons:1) + pointerup ON THE CANVAS element (three's OrbitControls captures
+  the pointer on gl.domElement, not window). Window-targeted moves are ignored. `c.__r3f` is not
+  exposed in this build, so driving the camera via the R3F store isn't available — drive the
+  controls through real events.
