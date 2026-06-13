@@ -171,3 +171,19 @@ Hard-won; reuse this, don't rediscover it.
 - The sky is denser/brighter impasto but still reads as oriented DABS, not the painting's
   continuous swirls — a limit of dome-mapping + discrete quads. If Mark wants the true swirls, the
   next step is streamline strokes (longer curved marks tracing the flow) — a bigger build.
+
+## True swirls — streamline-ribbon sky (2026-06-13) ★ the soul
+
+- The dab approach never read as Van Gogh's continuous swirls. The fix that finally landed:
+  `SkyDome` builds STREAMLINE RIBBONS — each stroke integrates along the flow field over the dome
+  (POINTS steps) and a thin triangle ribbon is laid along that path, coloured from the painting.
+  ~2800 of them → continuous flowing brushstrokes that trace the actual swirls. Mark: "I can see
+  the soul of the painting."
+- Two essentials:
+  - Heading continuity: the flow orientation is undirected (mod π), so integrate by carrying a
+    heading and never reversing on the previous step — otherwise streamlines zigzag badly where
+    the orientation flips 180°.
+  - GPU animation: the geometry is built ONCE; the churn is a shader flow term (a brightness pulse
+    travelling along `vLen` with `uTime`), so the main thread stays free and the orbit stays
+    smooth — far better than the per-frame CPU instance rebuild the dabs needed.
+- Bloom over the glowing ribbons gives the luminous Van Gogh night.
