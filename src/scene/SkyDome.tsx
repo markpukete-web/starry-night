@@ -48,8 +48,10 @@ const strokeFrag = /* glsl */ `
     float edge = sin(clamp(vAcross, 0.0, 1.0) * 3.14159);                 // soft across the ribbon
     float taper = smoothstep(0.0, 0.14, vLen) * smoothstep(1.0, 0.85, vLen); // fade the ends
     float flow = 0.5 + 0.5 * sin(vLen * 7.0 - uTime * uSpeed + vPhase);   // paint flowing along the stroke
-    vec3 col = vColor * (0.8 + 0.55 * flow);
-    float a = edge * taper * 0.9;
+    vec3 col = vColor * (0.62 + 0.34 * flow);
+    float lum = dot(col, vec3(0.299, 0.587, 0.114));
+    col = clamp(mix(vec3(lum), col, 1.3), 0.0, 2.0);                     // deepen toward the painting's saturation
+    float a = edge * taper * 0.92;
     if (a < 0.01) discard;
     gl_FragColor = vec4(col, a);
   }

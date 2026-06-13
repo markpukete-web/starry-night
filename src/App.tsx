@@ -51,7 +51,7 @@ export default function App() {
           maxPolarAngle={1.5}
         />
         <EffectComposer>
-          <Bloom intensity={1.2} luminanceThreshold={0.35} luminanceSmoothing={0.9} radius={0.7} mipmapBlur />
+          <Bloom intensity={1.1} luminanceThreshold={0.55} luminanceSmoothing={0.9} radius={0.7} mipmapBlur />
         </EffectComposer>
         {import.meta.env.DEV && <Stats />}
       </Canvas>

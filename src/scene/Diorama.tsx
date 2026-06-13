@@ -9,14 +9,14 @@ import { LatheGeometry, Vector2 } from 'three'
 
 const C = {
   ground: '#1b2740',
-  hills: '#1e3252',
+  hills: '#223450',
   house: '#2a3f66',
   roof: '#3c2f42',
   steeple: '#a6b6c6',
   window: '#f6c651',
   cypress: '#162420',
-  moon: '#ecd680',
-  star: '#f4ecc8',
+  moon: '#f2c233',
+  star: '#f6e08a',
 }
 
 type Vec3 = [number, number, number]
