@@ -1,22 +1,21 @@
 import { useMemo } from 'react'
-import { LatheGeometry, Vector2 } from 'three'
+import { CatmullRomCurve3, LatheGeometry, Vector2, Vector3 } from 'three'
+import { PALETTE } from './palette'
 
 /**
  * Phase 1 (3D) — the Starry Night diorama as real forms: a lathe cypress, gable-roofed village
- * with a church + steeple, rolling hills, glowing moon and stars, on a floating slab. Colours
- * seeded from the derived palette, lifted so moonlight gives the forms modelling.
+ * with a church + steeple, rolling hills, on a floating slab. Surface colours are sourced from the
+ * derived palette (palette.json, via PALETTE); the lit windows are emissive light, not surface.
  */
 
 const C = {
-  ground: '#1b2740',
-  hills: '#223450',
-  house: '#2a3f66',
-  roof: '#3c2f42',
-  steeple: '#a6b6c6',
-  window: '#f6c651',
-  cypress: '#162420',
-  moon: '#f2c233',
-  star: '#f6e08a',
+  ground: PALETTE.ground,
+  hills: PALETTE.hills,
+  house: PALETTE.house,
+  roof: PALETTE.roof,
+  steeple: PALETTE.steeple,
+  window: '#f6c651', // lit window — emissive light, not a painted surface
+  cypress: PALETTE.cypress,
 }
 
 type Vec3 = [number, number, number]
@@ -24,25 +23,31 @@ type Vec3 = [number, number, number]
 /** A flame-shaped cypress as a surface of revolution with an organic, bulging profile. */
 function Cypress({ position, height = 2.8, rot = 0, scale = 1 }: { position: Vec3; height?: number; rot?: number; scale?: number }) {
   const geo = useMemo(() => {
-    const pts: Vector2[] = (
-      [
-        [0.12, 0.0],
-        [0.26, 0.03],
-        [0.36, 0.09],
-        [0.42, 0.17],
-        [0.38, 0.26],
-        [0.32, 0.35],
-        [0.35, 0.44],
-        [0.33, 0.54],
-        [0.27, 0.63],
-        [0.25, 0.72],
-        [0.19, 0.81],
-        [0.12, 0.89],
-        [0.06, 0.95],
-        [0.0, 1.0],
-      ] as [number, number][]
-    ).map(([r, y]) => new Vector2(r, y * height))
-    return new LatheGeometry(pts, 32)
+    const base: [number, number][] = [
+      [0.12, 0.0],
+      [0.26, 0.03],
+      [0.36, 0.09],
+      [0.42, 0.17],
+      [0.38, 0.26],
+      [0.32, 0.35],
+      [0.35, 0.44],
+      [0.33, 0.54],
+      [0.27, 0.63],
+      [0.25, 0.72],
+      [0.19, 0.81],
+      [0.12, 0.89],
+      [0.06, 0.95],
+      [0.0, 1.0],
+    ]
+    // Resample the silhouette through a centripetal spline (no overshoot) so the lathe reads as a
+    // smooth licking flame rather than a stack of facets between sparse profile points.
+    const curve = new CatmullRomCurve3(
+      base.map(([r, y]) => new Vector3(r, y, 0)),
+      false,
+      'centripetal',
+    )
+    const pts = curve.getPoints(64).map((p) => new Vector2(Math.max(0, p.x), p.y * height))
+    return new LatheGeometry(pts, 48)
   }, [height])
   return (
     <mesh geometry={geo} position={position} rotation={[0, rot, 0]} scale={scale}>

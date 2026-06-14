@@ -13,7 +13,8 @@ import {
   Vector3,
 } from 'three'
 import type { ImageData2D } from './useImageData'
-import { mulberry32, sampleColour } from './brush'
+import { mulberry32, sampleColour, sampleFlow } from './brush'
+import { PALETTE } from './palette'
 
 // The sky as a full sphere of swirls grown NATIVELY on the dome — a flow field of vortices (the
 // stars' halos and the central whorl), with streamlines flowing through it. Bold round Van Gogh
@@ -49,10 +50,58 @@ function makeGlowTexture(): CanvasTexture {
   return tex
 }
 
+// The moon's soft concentric halo — warm gold fading to nothing. Additive, so it blossoms under
+// Bloom into the glowing orb Van Gogh wrapped around the crescent (palette moon: #c0b451 / #b0a84f).
+function makeMoonHalo(): CanvasTexture {
+  const s = 256
+  const cnv = document.createElement('canvas')
+  cnv.width = cnv.height = s
+  const ctx = cnv.getContext('2d')!
+  const g = ctx.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2)
+  g.addColorStop(0, 'rgba(255,240,182,0.95)')
+  g.addColorStop(0.25, 'rgba(247,214,110,0.42)')
+  g.addColorStop(0.55, 'rgba(228,188,86,0.15)')
+  g.addColorStop(1, 'rgba(228,188,86,0)')
+  ctx.fillStyle = g
+  ctx.fillRect(0, 0, s, s)
+  const tex = new CanvasTexture(cnv)
+  tex.needsUpdate = true
+  return tex
+}
+
+// The carved crescent — a bright gold disc with an offset disc erased out of it, so the lit sliver
+// hugs the upper-right and its concavity faces down-left toward the composition, as in the painting.
+function makeMoonCrescent(): CanvasTexture {
+  const s = 256
+  const cnv = document.createElement('canvas')
+  cnv.width = cnv.height = s
+  const ctx = cnv.getContext('2d')!
+  const cx = s / 2
+  const cy = s / 2
+  const R = s * 0.32
+  const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, R)
+  g.addColorStop(0, 'rgba(255,247,206,1)')
+  g.addColorStop(0.7, 'rgba(243,206,99,1)')
+  g.addColorStop(1, 'rgba(230,184,74,1)')
+  ctx.fillStyle = g
+  ctx.beginPath()
+  ctx.arc(cx, cy, R, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.globalCompositeOperation = 'destination-out'
+  ctx.beginPath()
+  ctx.arc(cx - R * 0.5, cy + R * 0.5, R * 0.96, 0, Math.PI * 2)
+  ctx.fill()
+  const tex = new CanvasTexture(cnv)
+  tex.needsUpdate = true
+  return tex
+}
+
 // The painting's real sky, in painting UV (u: 0 left → 1 right, v: 0 top → 1 bottom).
 // Venus — the big "morning star" with the wide halo, centre-left — is called out so it reads large.
 const VENUS_UV: [number, number] = [0.27, 0.33]
-const MOON_UV: [number, number] = [0.84, 0.15]
+// The moon sits top-right as in the painting, but pulled slightly down-and-in from the very corner
+// so the crescent and its halo clear the default desktop frame instead of escaping the top edge.
+const MOON_UV: [number, number] = [0.8, 0.2]
 const STAR_UVS: [number, number][] = [
   [0.13, 0.13],
   [0.2, 0.065],
@@ -89,6 +138,22 @@ function uvToFrontDir(u: number, v: number): Vector3 {
     .addScaledVector(RIGHT, cw * Math.sin(h))
     .addScaledVector(TRUEUP, Math.sin(w))
     .normalize()
+}
+
+// Inverse of uvToFrontDir: recover a dome direction's painting UV (and the arc angles h, w).
+// onArc is false off the painting, so the flow-field bias only ever touches the front composition.
+function frontUV(p: Vector3): { u: number; v: number; h: number; w: number; onArc: boolean } {
+  const w = Math.asin(Math.min(1, Math.max(-1, p.dot(TRUEUP))))
+  const fwd = p.dot(FWD)
+  const h = Math.atan2(p.dot(RIGHT), fwd)
+  const u = 0.5 + h / SPAN_H
+  const v = 0.5 - w / SPAN_V
+  return { u, v, h, w, onArc: fwd > 0 && u >= 0 && u <= 1 && v >= 0 && v <= 1 }
+}
+
+function smoothstep(e0: number, e1: number, x: number): number {
+  const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0)))
+  return t * t * (3 - 2 * t)
 }
 
 function buildVortices(): Vortex[] {
@@ -146,7 +211,10 @@ const strokeFrag = /* glsl */ `
     float edge = sin(clamp(vAcross, 0.0, 1.0) * 3.14159);
     float taper = smoothstep(0.0, 0.14, vLen) * smoothstep(1.0, 0.82, vLen);
     float flow = 0.5 + 0.5 * sin(vLen * 6.0 - uTime * uSpeed + vPhase);
-    vec3 col = vColor * (0.62 + 0.34 * flow);
+    // relief across the stroke — a lit centre ridge falling to darker flanks, so each ribbon reads
+    // as a crisp impasto mark rather than a soft smear (it stays defined under Bloom).
+    float ridge = 0.82 + 0.36 * edge;
+    vec3 col = vColor * (0.62 + 0.34 * flow) * ridge;
     float lum = dot(col, vec3(0.299, 0.587, 0.114));
     col = clamp(mix(vec3(lum), col, uSat), 0.0, 2.0);
     float a = edge * taper * 0.95;
@@ -156,6 +224,8 @@ const strokeFrag = /* glsl */ `
 `
 
 type Props = {
+  // the derived flow field — sampled on the front arc to bias fine stroke orientation toward the
+  // painting's real brushwork (coherence-weighted; the hybrid reconciliation of the locked bar).
   flow: ImageData2D
   colourSrc: ImageData2D
   count: number
@@ -168,27 +238,32 @@ type Props = {
   glowIntensity?: number
   moonBright?: number
   starBright?: number
+  paused?: boolean
+  flowBias?: number
 }
 
 export function SkyDome({
+  flow,
   colourSrc,
   count,
   speed = 0.05,
   strokeWidth = 1,
   swirlTightness = 0.45,
   saturation = 1.3,
-  skyTop = '#16294f',
-  skyBottom = '#2c4d88',
+  skyTop = PALETTE.skyZenith,
+  skyBottom = PALETTE.skyHorizon,
   glowIntensity = 1,
   moonBright = 1.7,
   starBright = 2.5,
+  paused = false,
+  flowBias = 0.6,
 }: Props) {
   const vortices = useMemo(() => buildVortices(), [])
 
   const gradient = useMemo(
     () =>
       new ShaderMaterial({
-        uniforms: { uTop: { value: new Color('#16294f') }, uBottom: { value: new Color('#2c4d88') } },
+        uniforms: { uTop: { value: new Color(PALETTE.skyZenith) }, uBottom: { value: new Color(PALETTE.skyHorizon) } },
         vertexShader: skyVert,
         fragmentShader: skyFrag,
         side: BackSide,
@@ -214,6 +289,8 @@ export function SkyDome({
   )
 
   const glowTex = useMemo(() => makeGlowTexture(), [])
+  const moonHaloTex = useMemo(() => makeMoonHalo(), [])
+  const moonCrescentTex = useMemo(() => makeMoonCrescent(), [])
 
   const geometry = useMemo(() => {
     const rng = mulberry32(0x13ade7)
@@ -254,6 +331,43 @@ export function SkyDome({
       return out
     }
 
+    // Hybrid reconciliation of the locked bar: on the front arc, bias the streamline orientation
+    // toward the painting's DERIVED flow field (coherence-weighted) — strongest in the calm flow
+    // BETWEEN swirls, fading to zero at the big-swirl eyes so the approved comma forms stand. The
+    // vortices remain the macro composition + motion engine; this only refines fine orientation.
+    const coreVorts = vortices.filter((v) => v.core)
+    const eU = new Vector3()
+    const eV = new Vector3()
+    const fb = new Vector3()
+    const flowBiasAt = (p: Vector3, ref: Vector3, out: Vector3): number => {
+      if (flowBias <= 0) return 0
+      const { u, v, h, w, onArc } = frontUV(p)
+      if (!onArc) return 0
+      const fade = smoothstep(0, 0.12, u) * smoothstep(1, 0.88, u) * smoothstep(0, 0.14, v) * smoothstep(1, 0.85, v)
+      if (fade < 0.01) return 0
+      const { theta, coh } = sampleFlow(flow, u, v)
+      if (coh < 0.02) return 0
+      // the painting's axes as orthonormal sphere tangents at p: eU = +u (right), eV = +v (down)
+      const sh = Math.sin(h)
+      const ch = Math.cos(h)
+      eU.copy(RIGHT).multiplyScalar(ch).addScaledVector(FWD, -sh)
+      eV.copy(FWD).multiplyScalar(ch).addScaledVector(RIGHT, sh).multiplyScalar(Math.sin(w)).addScaledVector(TRUEUP, -Math.cos(w))
+      out.copy(eU).multiplyScalar(Math.cos(theta)).addScaledVector(eV, Math.sin(theta))
+      out.addScaledVector(p, -out.dot(p))
+      if (out.lengthSq() < 1e-8) return 0
+      out.normalize()
+      if (out.dot(ref) < 0) out.multiplyScalar(-1) // orientation is undirected — align to the heading
+      // protect the swirl eyes: fade the bias out where a big "core" vortex dominates
+      let nearEye = 0
+      for (let i = 0; i < coreVorts.length; i++) {
+        const cv = coreVorts[i]
+        const ang = Math.acos(Math.min(1, Math.max(-1, p.dot(cv.dir))))
+        const e = Math.exp(-(ang * ang) / (cv.radius * cv.radius))
+        if (e > nearEye) nearEye = e
+      }
+      return Math.min(0.85, flowBias * coh * (1 - nearEye) * fade)
+    }
+
     for (let i = 0; i < count; i++) {
       const seed = dirAzEl(rng() * Math.PI * 2, HORIZON + 0.04 + rng() * 1.5)
       const phase = rng() * Math.PI * 2
@@ -273,6 +387,13 @@ export function SkyDome({
         } else {
           f.normalize()
           if (have && f.dot(dir) < 0) f.multiplyScalar(-1)
+        }
+        // hybrid: nudge the heading toward the painting's derived flow on the front arc
+        const b = flowBiasAt(p, f, fb)
+        if (b > 0) {
+          f.multiplyScalar(1 - b).addScaledVector(fb, b)
+          f.addScaledVector(p, -f.dot(p))
+          if (f.lengthSq() > 1e-8) f.normalize()
         }
         dir.copy(f)
         have = true
@@ -311,12 +432,18 @@ export function SkyDome({
     geo.setAttribute('aPhase', new BufferAttribute(new Float32Array(aPhase), 1))
     geo.setIndex(indices)
     return geo
-  }, [colourSrc, count, vortices, strokeWidth, swirlTightness])
+  }, [flow, colourSrc, count, vortices, strokeWidth, swirlTightness, flowBias])
 
+  // Drive the churn from the render loop — frozen when paused, so prefers-reduced-motion yields a
+  // still, lit painting (no churn). These write a memoised material's uniforms: R3F render-target
+  // mutations that intentionally sit outside React's immutable data flow, hence the scoped disable.
   useFrame((_, dt) => {
+    if (paused) return
+    /* eslint-disable react-hooks/immutability -- R3F render-loop uniform writes are intentional mutations */
     material.uniforms.uTime.value += dt
     material.uniforms.uSpeed.value = speed * 40
     material.uniforms.uSat.value = saturation
+    /* eslint-enable react-hooks/immutability */
   })
 
   // live-update the gradient colours from the controls
@@ -333,8 +460,10 @@ export function SkyDome({
       material.dispose()
       gradient.dispose()
       glowTex.dispose()
+      moonHaloTex.dispose()
+      moonCrescentTex.dispose()
     },
-    [material, gradient, glowTex],
+    [material, gradient, glowTex, moonHaloTex, moonCrescentTex],
   )
 
   const moon = vortices.find((v) => v.moon)
@@ -350,10 +479,16 @@ export function SkyDome({
       </mesh>
       <mesh geometry={geometry} material={material} frustumCulled={false} />
 
-      <mesh position={moonPos}>
-        <sphereGeometry args={[0.55, 32, 32]} />
-        <meshStandardMaterial color="#f2c233" emissive="#f2c233" emissiveIntensity={moonBright} toneMapped={false} />
-      </mesh>
+      {/* the moon — a glowing gold orb with a soft halo and a carved crescent, not a flat disc.
+          Sprites face the eye from every orbit angle; Bloom blossoms the additive halo. */}
+      <group position={moonPos}>
+        <sprite scale={[4.2, 4.2, 1]} renderOrder={1}>
+          <spriteMaterial map={moonHaloTex} blending={AdditiveBlending} transparent opacity={Math.min(1, 0.5 * moonBright)} depthWrite={false} toneMapped={false} />
+        </sprite>
+        <sprite scale={[1.9, 1.9, 1]} renderOrder={2}>
+          <spriteMaterial map={moonCrescentTex} transparent opacity={1} depthWrite={false} toneMapped={false} />
+        </sprite>
+      </group>
       <pointLight position={moonPos} intensity={20} distance={24} color="#f0d98a" />
 
       {stars.map((v, i) => {
