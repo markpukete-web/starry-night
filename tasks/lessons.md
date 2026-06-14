@@ -552,3 +552,18 @@ Polish + completion pass closing toward the foreground-complete gate.
   portrait still can't fit the moon (the documented ~42°-off-arc limit; Mark's portrait-bearing call).
 - `npm run build` + `npm run lint` green. The 1.38 MB bundle warning is pre-existing (three) — ship
   hygiene backlog, not a gate blocker.
+
+## Gate feedback — "make the cypress taller and more dominant" (Mark, 2026-06-14)
+
+First taste call at the foreground-complete gate.
+
+- **Taller alone = a thin spike.** The cypress radius is independent of its height, so just raising
+  `height` stretches it into a needle. Added a `girth` multiplier on the radius so it gains MASS, not
+  just length — dominance = tall AND substantial.
+- **Overshot first (height 3.8 / girth 1.45):** the flame tip clipped off the top of the frame and the
+  middle went bulbous (blob, not flame). Dialled to height 3.35 / girth 1.3 — tip sits just inside the
+  top edge, reads as a flame, now the clear dark counterweight to the sky. Pulled the base inboard
+  (x −1.4 → −1.35) so the wider flame stays on the island without swallowing the village (the trunk
+  base is thin; the bulge clears the houses).
+- Lesson for "make X dominant": grow mass + height together and check the silhouette stays in frame —
+  a giant that clips the frame edge reads as broken, not big.

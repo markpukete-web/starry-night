@@ -262,7 +262,7 @@ function RollingHills() {
  * moonlit edges, so it reads as the painting's living flame rather than a black blob. `seed` varies
  * the tongues between the clustered flames.
  */
-function Cypress({ position, height = 2.8, rot = 0, scale = 1, seed = 0 }: { position: Vec3; height?: number; rot?: number; scale?: number; seed?: number }) {
+function Cypress({ position, height = 2.8, rot = 0, scale = 1, seed = 0, girth = 1 }: { position: Vec3; height?: number; rot?: number; scale?: number; seed?: number; girth?: number }) {
   const geo = useMemo(() => {
     const base: [number, number][] = [
       [0.12, 0.0], [0.26, 0.03], [0.36, 0.09], [0.42, 0.17], [0.38, 0.26], [0.32, 0.35],
@@ -302,7 +302,7 @@ function Cypress({ position, height = 2.8, rot = 0, scale = 1, seed = 0 }: { pos
         let bump = (ridge - 0.5) * 0.95 + (fine - 0.5) * 0.4
         bump = bump > 0 ? bump * 1.5 : bump * 0.6 // sharpen the outward tongues
         const taper = 0.4 + 0.6 * (1 - t) // tongues stronger low, calmer toward the tip
-        const R = baseR * (1 + bump * 0.55 * taper)
+        const R = baseR * girth * (1 + bump * 0.55 * taper)
         const a = a0 + twist
         pos[p] = Math.cos(a) * R + sway
         pos[p + 1] = t * height
@@ -335,7 +335,7 @@ function Cypress({ position, height = 2.8, rot = 0, scale = 1, seed = 0 }: { pos
     g.setIndex(idx)
     g.computeVertexNormals()
     return g
-  }, [height, seed])
+  }, [height, seed, girth])
 
   return (
     <mesh geometry={geo} position={position} rotation={[0, rot, 0]} scale={scale}>
@@ -468,9 +468,9 @@ export function Diorama() {
         <Church position={[0.02, 0, 0.5]} />
       </group>
 
-      {/* cypress, front-left (two flames) */}
-      <Cypress position={[-1.4, 0, 0.8]} height={2.8} rot={0.4} />
-      <Cypress position={[-1.15, 0, 1.0]} height={1.7} rot={-0.5} scale={0.85} seed={13} />
+      {/* cypress, front-left (two flames) — tall and dominant, the dark counterweight to the sky */}
+      <Cypress position={[-1.35, 0, 0.8]} height={3.35} rot={0.4} girth={1.3} />
+      <Cypress position={[-1.12, 0, 1.02]} height={2.2} rot={-0.5} scale={0.9} seed={13} girth={1.2} />
 
       {/* dark foreground shrubs, dotted along the ground as in the painting */}
       <Bush position={[0.9, 0.05, 0.98]} r={0.17} seed={1} />
