@@ -51,17 +51,34 @@ furthest along — past the **first full animated sky** in substance, now being 
 - [x] Rolling swirls, not funnels — spiral inflow gives Van Gogh's logarithmic-spiral comma form
 - [x] Glowing swirl eyes — sign-aware luminous cores; no dark drains, front and back
 - [x] Dev playground — full leva panel (sky / sky colours / light & bloom); defaults = the tuned look
+- [x] Swirls crisper under bloom — tighter bloom (threshold 0.6 / radius 0.55) + cross-stroke relief ridge
+- [x] Smooth the cypress facets — centripetal-spline the lathe profile (no facets; smooth flame)
+- [x] Moon is a glowing crescent, not a flat disc — additive gold halo + carved crescent sprites
+- [x] Hybrid flow-field bias — front-arc strokes follow the painting's derived orientation (coherence-
+      weighted, eyes protected); honours the locked bar L88. `flowBias` panel knob (default 0.6)
+- [x] Palette contract (P1) — surfaces (cypress/hills/houses/roofs/slab/steeple) + dome gradient now
+      sourced from `palette.json` via `src/scene/palette.ts`; strokes keep the painting's true colour,
+      emissive lights stay warm. Honours the locked colour criterion.
+- [x] Moon framing (P2) — nudged off the very corner (`MOON_UV` 0.80,0.20) so the crescent + halo clear
+      the desktop frame
 
 Open (Mark: "keep polishing"):
-- [ ] Swirls read a touch soft under bloom — crisper
-- [ ] Smooth the cypress facets
+- [ ] Steeple reads a touch muted at the derived `#556c81` (was an invented lighter grey) — lift if you
+      want the church spire to pop more (stay within palette tolerance)
+- [ ] Tune `flowBias` strength (0.6 subtle → 1.0 more brushwork) and bake the chosen value
 - [ ] Bake Mark's chosen leva values in as the new defaults once he's played with the panel
+- [ ] Moon prominence is a taste call — current is a tasteful crescent; can blossom larger/brighter if Mark wants
+      it nearer the painting's dominant corner-moon (widen the `moon` control range when baking defaults)
 
 ## Backlog / later gates (post movable-decision)
 
-- [ ] `prefers-reduced-motion` dignified still state (locked acceptance criterion) — **not built yet**
-- [ ] Mobile portrait framing (cover-crop loses moon/cypress); stroke budget + DPR caps; perf check
-      on a real mid-tier mobile
+- [x] `prefers-reduced-motion` dignified still state (locked criterion) — `paused` freezes the churn;
+      verified static via `page.emulateMedia({reducedMotion})` (identical frames under reduce)
+- [x] `npm run lint` clean — scoped R3F immutability disables + script-hygiene fixes
+- [x] README refreshed from "scaffold" to the orbitable-diorama reality
+- [ ] Mobile portrait framing — responsive fov now keeps the cypress edge + central whorl + steeple;
+      the MOON still can't fit a portrait frame (≈42° off-centre on the arc) → needs a portrait-specific
+      camera bearing (Mark's composition call). Plus stroke budget + DPR caps; perf on real mid-tier mobile
 - [ ] Ship hygiene: slim `flow-field.png` (3.2 MB); strip `leva` from the production build
 - [ ] Gates remaining: **foreground complete** · **pre-release**
 
@@ -80,3 +97,14 @@ Open (Mark: "keep polishing"):
   - Acceptance criterion "Camera stays within pan/tilt limits; composition always reads as the
     painting" — needs rewording for an orbitable diorama.
   Kept: painterly impasto (the bar), flow-derived churn, palette fidelity. 0002 revised to suit.
+- **2026-06-14 — flow-field reconciliation: RESOLVED → hybrid built (Mark's call).** The locked-bar
+  gap (L88) is closed on the front: `SkyDome` now samples `flow-field.png` (coherence-weighted) to
+  bias fine stroke orientation on the front arc — strongest between swirls, faded to zero at the eyes;
+  vortices still own the macro composition + motion. `flow`/`sampleFlow` are live. Built as an A/B
+  (`flowBias` panel knob, default 0.6; captures in `scratch/ab-{A,B}-{front,side,mobile}.jpeg`).
+  - Open for Mark: **dial the bias strength** (0.6 is subtle-but-present; push toward 1.0 for more
+    pronounced brushwork, or back off) and bake the chosen value as the default.
+  - Still genuinely irreducible: the INVENTED BACK can't be flow-derived (a flat painting has no back)
+    — that tension is documented and accepted; the bar is honoured where the painting actually exists.
+    If you still want L88's wording to acknowledge the front-derived / back-invented split, that's a
+    locked-section edit for you.

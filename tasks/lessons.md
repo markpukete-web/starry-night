@@ -307,3 +307,134 @@ Hard-won; reuse this, don't rediscover it.
   STABLE materials (`useMemo([])`, never recreated) → blank/broken render. Fix: dispose geometry in
   its own effect keyed on `[geometry]`; dispose the stable materials in a separate effect keyed on `[]`
   (unmount only). Rule: a resource's disposal effect must be keyed on *that resource alone*.
+
+## Sky polish — moon, crisper swirls, smooth cypress (2026-06-14)
+
+Mark's "finish the sky" pass — the three open polish items plus the flat moon. All three landed in
+one capture pass (front + mobile + a synthetic side-orbit); no retune needed.
+
+- **The flat moon → a glowing crescent.** The old moon was a single emissive sphere (r 0.55): a
+  hard-edged disc that bloom only rimmed. Replaced with two billboarded sprites at the same dome
+  position — an additive warm-gold HALO (`makeMoonHalo`) that blossoms under Bloom into the orb, and
+  a carved CRESCENT (`makeMoonCrescent`: fill a gold radial disc, then `destination-out` an offset
+  disc so the lit sliver hugs the upper-right with its concavity facing down-left, as in the
+  painting). Sprites (not a sphere) so the moon keeps its crescent face from every orbit angle, and
+  so Bloom does the glowing — exactly the swirl-eye recipe, just warmer and larger. Palette gold
+  confirmed the hue (`#c0b451` / `#b0a84f`), not the prior pure `#f2c233`.
+  - Wiring: `moonBright` now drives halo opacity (`min(1, 0.5·moonBright)`); the crescent stays full
+    bright. The control saturates by ~moonBright 2 — fine for a dev knob, widen later if Mark wants
+    a brighter moon. Kept the moon `pointLight` (it lights the diorama forms, doesn't render).
+- **Crisper swirls = tighter bloom + a stroke relief ridge.** Two levers together: (1) Bloom
+  defaults threshold 0.55→0.6 and radius 0.7→0.55, so only the bright filaments/cores bloom instead
+  of hazing the whole sky; (2) a cross-stroke relief in `strokeFrag` — `ridge = 0.82 + 0.36·edge`
+  (lit centre falling to darker flanks) multiplied into the colour, so each ribbon reads as a crisp
+  impasto mark rather than a soft smear. The two compound: tighter bloom stops washing out the
+  relief the ridge adds. Visibly crisper front and side without losing the luminous eyes.
+- **Smooth cypress facets = spline the lathe profile.** The `LatheGeometry` faceted vertically
+  between its 14 sparse profile points. Fix: resample the silhouette through a `CatmullRomCurve3`
+  (`'centripetal'` so it doesn't overshoot into a negative radius at the r→0 tip) to 64 points,
+  lathe segments 32→48. Reads as a smooth licking flame now. NB this is the one foreground form
+  touched this pass — the rest of the diorama (slab, houses, materials) is still the "foreground
+  complete" gate, deliberately untouched.
+
+## Codex review response — reduced motion, lint, framing, README (2026-06-14)
+
+Codex reviewed the committed diorama and flagged six things; verified each against the code before
+acting (the clear five fixed, the locked-bar one escalated to Mark).
+
+- **prefers-reduced-motion (locked L92) was genuinely missing** — `uTime` advanced unconditionally.
+  Fix: a `usePrefersReducedMotion` matchMedia hook in App → `paused` prop on `SkyDome`; `useFrame`
+  early-returns when paused, freezing the churn clock. Static stars/moon/bloom + no auto-camera =
+  a still, lit painting. VERIFIED with `page.emulateMedia({reducedMotion})`: two frames 1.3s apart
+  are byte-identical under reduce, and differ under no-preference (control). Kept `frameloop=always`
+  (freezing uTime is enough; didn't risk the demand-mode blank-frame trap).
+- **`react-hooks/immutability` (lint) vs R3F.** The new react-hooks v7 rule rejects *property
+  assignment* on hook-derived objects (`material.uniforms.x.value = …`, `camera.fov = …`) — but NOT
+  method calls (`.value.set(…)`, which is why the gradient effect never tripped). This is
+  fundamentally at odds with R3F's render-loop mutation model. Resolution: scoped, justified
+  `eslint-disable react-hooks/immutability` at each genuine render-target mutation (the useFrame
+  uniform writes; the responsive-camera fov). Not a project-wide disable — the rule still guards real
+  React code. If these proliferate, revisit as an `overrides` block for `src/scene/**`.
+- **The 5 script-hygiene lint errors** in `derive-reference.ts` were real: drop the dead `=0` inits
+  on r/g/b (every branch reassigns; `a=255` stays so it's kept), `let`→`const` for `boxes` and `d`.
+- **Responsive framing (fov-only).** Moon was clipped at the default desktop fov; portrait lost the
+  cypress + moon. `ResponsiveFraming` sets `camera.fov` by aspect (portrait 70 · narrow-landscape 52
+  · wide 48) and ONLY the fov — position/target stay fixed so SkyDome's camera-anchored swirl basis
+  stays centred (its basis derives from the camera bearing, not fov). Desktop now shows the full
+  moon; portrait regains the cypress edge + central whorl + steeple.
+  - **Hard limit found:** fov alone CANNOT bring the moon into portrait. The moon anchor sits ~42°
+    right of view-centre on the arc; portrait horizontal-fov half-angle maxes ~18–20° before
+    fisheye. Getting the moon into portrait needs a portrait-specific camera *bearing* (or moving the
+    moon) — a real composition decision, left for Mark with the rest of the mobile-portrait work.
+- **README** Status was still "Scaffold… smoke test"; rewrote it to the current orbitable-diorama
+  reality, carefully NOT overclaiming flow-field fidelity (see below).
+- **THE BIG ONE — flow field unused (locked L88), ESCALATED not silently changed.** Confirmed: App
+  loads `flow-field.png` and passes it to `SkyDome`, but `flow` is never destructured and `sampleFlow`
+  (brush.ts) is unused. Motion is procedural vortices anchored at the painting's real star/swirl/moon
+  POSITIONS (composition derived) but the per-pixel ORIENTATION map is not sampled. Codex is right
+  it's drift from the literal bar. But this is the vortex sky Mark explicitly approved ("★★ the
+  answer", "the soul"), and the bar is a LOCKED section. Per the code-review discipline (architectural
+  conflict with the partner's prior decision → stop and discuss), did NOT rip out the approved look —
+  left `flow` wired with a `// reserved … pending the flow-field reconciliation` comment and put the
+  reconciliation to Mark as a decision (honour-literally / reword-bar / hybrid-bias). His call.
+
+## Hybrid flow-field bias — honouring the bar without losing the vortices (2026-06-14)
+
+Mark chose the hybrid: vortices stay the macro composition + motion engine; add a coherence-weighted
+flow-field bias to FINE stroke orientation on the front arc, strongest between swirls, zero at the
+eyes. Built as a leva-toggled A/B (`flowBias`, default 0.6) at a fixed seed so current-vs-hybrid is a
+clean comparison. `flow` + `sampleFlow` are now live — the locked bar L88 is honoured where the
+painting exists.
+
+- **The mechanism.** During streamline integration, after the vortex tangent `f` is computed, on the
+  front arc blend `f` toward the painting's derived orientation: `f = normalize((1-b)·f + b·flowDir)`.
+  - `frontUV(p)` is the analytic inverse of `uvToFrontDir` (recover u,v,h,w; `onArc` gate) so the bias
+    only ever touches the front composition; the invented back is untouched (and has no flow data).
+  - The painting's image axes become orthonormal sphere tangents at p: `eU = RIGHT·cos h − FWD·sin h`
+    (+u/right), `eV = sin w·(FWD·cos h + RIGHT·sin h) − TRUEUP·cos w` (+v/down). They fall out exactly
+    orthonormal. `flowDir = cos θ·eU + sin θ·eV` from `sampleFlow`'s θ (image x-right, y-down).
+  - Undirected orientation (mod π): sign-align `flowDir` to the carried heading, same as the vortex
+    integration, or streamlines zigzag where θ wraps.
+  - `b = min(0.85, flowBias · coh · (1 − nearEye) · edgeFade)`. `coh` = the field's energy-gated
+    coherence (strong brushwork → strong bias; smooth sky → keep the vortex). `nearEye` = max gaussian
+    over the `core` vortices → bias → 0 at the hero/counter-roll eyes (comma forms protected).
+    `edgeFade` = smoothstep margins on u,v so there's no seam where the biased front meets the rest.
+- **A/B result (front/side/mobile, same seed).** Front: the eyes are untouched (protection works) and
+  the strokes BETWEEN swirls gain finer, more varied brushwork — less uniform/"digital", more Van
+  Gogh. Side: near-identical (that orbit is mostly the invented back — proves the bias is front-only).
+  Mobile: eye preserved, a touch more texture. At 0.6 the effect is real but subtle; it's a panel
+  knob now, so Mark can push 0.6→1.0 for more pronounced brushwork or back off.
+- **Perf:** the bias adds an inverse-map + a few-vortex loop per integration step (~count·POINTS
+  calls), all in the one-time geometry `useMemo` build — negligible. Geometry rebuilds when `flowBias`
+  changes (it's in the deps), a slight hitch on the slider, fine for dev.
+
+## `tsc --noEmit` is a NO-OP in this project — use `tsc -b` (2026-06-14)
+
+Bare `npx tsc --noEmit` reported clean while the app threw `sampleFlow is not defined` at runtime (I'd
+used it without importing it). Cause: the root `tsconfig.json` is a solution file (only `references`),
+so `--noEmit` against it checks nothing. The REAL typecheck is `tsc -b` (what `npm run build` runs).
+Use `tsc -b` (or `npm run build`) to verify types — and never trust tsc alone over actually loading
+the app; the console readback caught this where tsc didn't.
+
+## Palette contract + moon framing (2026-06-14, Codex P1/P2)
+
+- **P1 — palette.json is now load-bearing (locked colour criterion).** It had ZERO runtime use; the
+  diorama colours were hand-picked hex and the sky gradient was hardcoded. New `src/scene/palette.ts`
+  imports `palette.json` (build-time JSON import — needed `resolveJsonModule: true`; `moduleResolution
+  bundler` alone doesn't enable it) and exports named surface colours, each from a region's median-cut
+  swatch. Now derived: cypress, hills, houses, roofs, the slab, the steeple, and the dome gradient
+  (skyTop/skyBottom). The hand-picked **purple roof vanished** → derived dark; the scene reads as one
+  palette family.
+  - **Two deliberate, faithful exceptions (documented in palette.ts):** (1) the sky STROKES keep
+    sampling `painting.jpg` directly — that's the palette's own source, so they carry the painting's
+    true local colour rather than its 5-colour reduction (strictly *more* faithful, zero drift). (2)
+    Emissive LIGHT — moon, stars, lit windows — stays warm/bright; it's light, not a painted surface
+    (Van Gogh's own moon/windows are luminous points). So "sampled from palette.json" holds for every
+    painted surface; light and the richer-than-palette strokes are the principled carve-outs.
+  - Mapping picks the region swatch nearest the old tuned hex, so the shift is small for the dark
+    forms; the steeple is now the lightest village swatch (#556c81) — a touch more muted than the old
+    invented #a6b6c6 (reads as the church spire; flag if Mark wants it to pop more).
+- **P2 — the moon was still escaping the top-right corner.** fov alone wasn't enough (it's anchored at
+  the painting's corner). Fix: nudge `MOON_UV` 0.84,0.15 → 0.80,0.20 (down + in) — still unmistakably
+  the top-right moon, but the crescent + halo now clear the desktop frame. Moves the moon sprite and
+  its vortex together, so the swirl halo stays consistent. Verified: full moon in frame, front + mobile.
