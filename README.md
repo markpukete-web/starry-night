@@ -14,4 +14,4 @@ npm run dev
 
 ## Status
 
-Scaffold. Phase 0 comes first — deriving a flow field and colour palette from the painting itself, so the motion follows Van Gogh's actual brushstrokes rather than generic noise. Phase 1 spikes then decide what "movable" means. The placeholder scene is just a smoke test.
+In active development. Phase 0 (deriving a flow field and colour palette from the painting) is done, and "movable" has been settled by building: it is an **orbitable 3D diorama** beneath an enveloping dome of churning brushstroke sky — bold Van Gogh swirls anchored to the painting's real star and swirl positions, a glowing crescent moon, and the cypress, village and steeple on a floating slab, lit for a luminous night. Currently polishing the sky and forms toward the foreground and pre-release gates.
