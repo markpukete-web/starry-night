@@ -505,3 +505,27 @@ slender-spired church.
 - Houses verified close-up (cropped the capture with `sips`): gable normals correct, no black/inverted
   faces, windows glow. Roofs at the derived `#26282b` read near-black — acceptable as the night
   village; lift later only if Mark wants them to model more.
+
+## Foreground F4 — the cypress as a flame (2026-06-14)
+
+The cypress was a smooth `LatheGeometry` surface of revolution — a black gummy spindle with none of
+Van Gogh's flame. Rebuilt as a displaced tube.
+
+- **A surface of revolution can't be a flame** — it's too regular. The fix: build the tube as a
+  (RINGS×SEG) grid from the same flame profile (CatmullRom), then displace each vertex's radius by
+  coherent angular noise that DRIFTS UPWARD with height (`vnoise(cos a, sin a + t·k)`), so the bumps
+  become vertical licking tongues that spiral. Twist (`a += t·1.5`) + a sine sway off-vertical give the
+  living, leaning flame.
+- **Sample noise on the circle (`cos a`, `sin a`), not on the raw angle** — `vnoise(a·k)` has a seam
+  at a=0/2π; the circle coords wrap continuously, no seam up the cypress.
+- **Sharpen tongues asymmetrically:** `bump = bump>0 ? bump·1.5 : bump·0.6` pushes the outward licks
+  out while keeping the troughs shallow → reads as tongues, not lumps. Taper the displacement toward
+  the tip so the top stays a clean point.
+- **Green-black modelling** from vertex colours (core `#10150f` → `#26301f` cypress green → `#3a4640`
+  moonlit edge, keyed on tongue exposure + height) so it's a living dark-green flame, not flat black —
+  faithful (the painting's cypress IS near-black green; the green only reads up close, which is right).
+- **`seed` per flame** so the two clustered cypresses aren't identical (same noise → twins otherwise).
+- **HMR gotcha:** dropping the `Vector2`/`LatheGeometry` imports the same turn as the rewrite left a
+  transient HMR state that threw `Vector2 is not defined` and lost the WebGL context. The file was
+  consistent — a reload cleared it. When an HMR error references a line that looks wrong, reload before
+  believing it; don't chase a ghost.
