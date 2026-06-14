@@ -1,5 +1,12 @@
 import { useMemo } from 'react'
-import { BufferAttribute, BufferGeometry, CatmullRomCurve3, Color, Vector3 } from 'three'
+import {
+  BufferAttribute,
+  BufferGeometry,
+  CatmullRomCurve3,
+  Color,
+  IcosahedronGeometry,
+  Vector3,
+} from 'three'
 import { PALETTE } from './palette'
 
 /**
@@ -410,6 +417,30 @@ function Church({ position }: { position: Vec3 }) {
   )
 }
 
+/** A small dark foreground shrub — a noise-displaced faceted clump in the cypress-green family, the
+ *  dark bushes Van Gogh dotted along the painting's foreground. Procedural fill. */
+function Bush({ position, r = 0.16, seed = 0 }: { position: Vec3; r?: number; seed?: number }) {
+  const geo = useMemo(() => {
+    const g = new IcosahedronGeometry(r, 1)
+    const pos = g.attributes.position
+    const v = new Vector3()
+    for (let i = 0; i < pos.count; i++) {
+      v.fromBufferAttribute(pos, i)
+      const n = vnoise(v.x * 6 + seed, v.z * 6 + seed)
+      v.multiplyScalar(0.75 + 0.55 * n)
+      v.y *= 0.82
+      pos.setXYZ(i, v.x, v.y, v.z)
+    }
+    g.computeVertexNormals()
+    return g
+  }, [r, seed])
+  return (
+    <mesh geometry={geo} position={position}>
+      <meshStandardMaterial color="#232622" roughness={1} flatShading />
+    </mesh>
+  )
+}
+
 export function Diorama() {
   return (
     <group>
@@ -440,6 +471,13 @@ export function Diorama() {
       {/* cypress, front-left (two flames) */}
       <Cypress position={[-1.4, 0, 0.8]} height={2.8} rot={0.4} />
       <Cypress position={[-1.15, 0, 1.0]} height={1.7} rot={-0.5} scale={0.85} seed={13} />
+
+      {/* dark foreground shrubs, dotted along the ground as in the painting */}
+      <Bush position={[0.9, 0.05, 0.98]} r={0.17} seed={1} />
+      <Bush position={[1.2, 0.05, 0.62]} r={0.14} seed={7} />
+      <Bush position={[0.28, 0.04, 1.06]} r={0.11} seed={9} />
+      <Bush position={[-0.72, 0.05, 1.02]} r={0.13} seed={4} />
+      <Bush position={[1.45, 0.04, 0.05]} r={0.12} seed={5} />
 
     </group>
   )

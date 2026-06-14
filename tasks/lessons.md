@@ -529,3 +529,26 @@ Van Gogh's flame. Rebuilt as a displaced tube.
   transient HMR state that threw `Vector2 is not defined` and lost the WebGL context. The file was
   consistent — a reload cleared it. When an HMR error references a line that looks wrong, reload before
   believing it; don't chase a ghost.
+
+## Foreground F5 — shrubs, full capture pass + reduced-motion re-verify (2026-06-14)
+
+Polish + completion pass closing toward the foreground-complete gate.
+
+- **Foreground shrubs** (`Bush`): small noise-displaced faceted icosahedra in the cypress-green family
+  (`#232622`, palette), dotted along the ground as Van Gogh did — they fill the bare island top
+  front-right and add foreground interest. Procedural fill (CLAUDE.md classification).
+- **Left the forms' shading as-is** — silhouette + palette vertex colours + flatShading facets + bloom
+  already carry the painterly mood. Full brushstroke-texture forms (wrapping meshes in oriented strokes
+  like the sky) would be a bigger, riskier build — noted as a possible post-gate enhancement rather
+  than risking the gate state.
+- **Reduced-motion (locked) re-verified after all the geometry changes** via `browser_run_code_unsafe`
+  → `page.emulateMedia({reducedMotion})`: under `reduce`, two frames 1.4s apart are byte-identical
+  (churn frozen); under `no-preference` they differ (control). The foreground is static geometry (no
+  `useFrame`), so it never threatened the criterion — but verified, not assumed.
+- **`browser_run_code_unsafe` drives the Playwright `page` APIs** the plain MCP tools don't expose
+  (emulateMedia, viewport, multi-step capture). The reduced-motion A/B is a single self-contained
+  script — add this to the visual-review toolkit alongside the canvas-readback recipe.
+- Full capture pass: desktop front, desktop orbit, mobile portrait — all read as Starry Night. Mobile
+  portrait still can't fit the moon (the documented ~42°-off-arc limit; Mark's portrait-bearing call).
+- `npm run build` + `npm run lint` green. The 1.38 MB bundle warning is pre-existing (three) — ship
+  hygiene backlog, not a gate blocker.

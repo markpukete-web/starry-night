@@ -20,9 +20,12 @@ review. It's an orbitable 3D diorama under a churning, anchored, glowing vortex 
   state, responsive framing. Lint + `tsc -b` + `npm run build` all green. Committed through `b2dc008`.
 
 **Next up (priority order):**
-1. **Foreground-complete gate (the next big body + a Mark gate).** The diorama FORMS are still
-   placeholder-ish — blocky houses, plain slab, simple steeple, dark cypress. Authored, painterly
-   forms with real materials is the next major work. The sky is done; the foreground is not.
+1. **Foreground-complete gate — REACHED 2026-06-14, awaiting Mark's review.** The placeholder forms
+   are re-authored (F1–F5): organic floating island (not a slab), rolling moonlit hills (not balloon
+   spheres), a clustered village with a pale slender-spired church, the cypress as a real Van Gogh
+   flame, foreground shrubs. Captures: `scratch/f5-{front,orbit,mobile}.jpeg`. Build + lint green;
+   reduced-motion re-verified. **Possible post-gate enhancement:** brushstroke-texture the forms
+   (wrap meshes in oriented strokes like the sky) for true impasto — deferred to avoid risking the gate.
 2. **Tuning, once Mark plays with the leva panel** — `flowBias` strength (0.6 → ?), steeple lift,
    moon prominence; then bake the chosen values in as defaults.
 3. **Mobile-portrait moon** — needs a portrait-specific camera bearing (a composition call).
@@ -104,17 +107,19 @@ whose pale slender-spired church is the heart, warm-lit windows. Classify (CLAUD
 church = authored identity; houses + hills + island = procedural fill. Order = stage → dressing →
 hero → polish; capture + review each slice.
 
-- [ ] F1 — floating island + foreground lighting base. Replace the chocolate-bar slab with an organic
-      painterly landmass (terrain rising to the back, earthy underside fading to dark); re-light so
-      forms model in moonlight instead of going flat-black. The "diorama toy" tell dies here.
-- [ ] F2 — rolling hills. The painting's blue-grey ridges behind the village, brushy undulation,
-      catching cool moonlight (palette `hills`); they currently vanish.
-- [ ] F3 — village + church. Cluster varied little houses; make the church the pale, slender-spired
-      centrepiece; warm window glow (emissive light, not surface).
-- [ ] F4 — the cypress, re-authored. Van Gogh's flame: tall, twisting, feathered/spiky silhouette,
-      deep green-black with modelling — not a smooth black blob.
-- [ ] F5 — painterly material + impasto pass; final foreground lighting tune; full capture pass.
-- [ ] **Foreground-complete gate** — present captures to Mark.
+- [x] F1 — floating island + foreground lighting base. Organic painterly landmass (irregular
+      coastline, rocky root fading to near-black) replaces the chocolate-bar slab; cool moon key +
+      deep-blue fill so forms model. The "diorama toy" tell is gone.
+- [x] F2 — rolling hills. Wavy heightfield band behind the village (taller on the right as in the
+      painting), brightened blue-grey vertex bands with a moonlit crest — no longer balloon spheres.
+- [x] F3 — village + church. Six clustered gable-roofed houses + a pale slender-spired church
+      (lifted from the steeple blue) as the focal point; warm emissive windows.
+- [x] F4 — the cypress, re-authored. Displaced flame tube: licking tongues drifting upward, twist +
+      sway, deep green-black modelling — Van Gogh's flame, not a smooth blob.
+- [x] F5 — foreground shrubs (`Bush`) complete the ground; lighting tuned; reduced-motion re-verified
+      (frozen under `reduce`, churns under control); full capture pass (desktop/orbit/mobile).
+- [x] **Foreground-complete gate reached (2026-06-14)** — captures in `scratch/f5-{front,orbit,mobile}.jpeg`
+      presented to Mark ← **awaiting Mark's review.** Full `npm run build` + `npm run lint` green.
 
 ## Backlog / later gates (post movable-decision)
 
