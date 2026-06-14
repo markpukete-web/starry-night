@@ -9,6 +9,29 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
+## Where we are now (2026-06-14, end of session) — read this first
+
+The **sky has passed every locked acceptance criterion** and cleared two rounds of external (Codex)
+review. It's an orbitable 3D diorama under a churning, anchored, glowing vortex sky:
+
+- **Soul is there:** anchored swirls, rolling comma form, glowing crescent moon, glowing eyes, 360°.
+- **Locked contracts now honoured:** flow-derived motion (hybrid front-arc bias of the derived flow
+  field), palette-derived colours (`palette.json` is load-bearing), `prefers-reduced-motion` still
+  state, responsive framing. Lint + `tsc -b` + `npm run build` all green. Committed through `b2dc008`.
+
+**Next up (priority order):**
+1. **Foreground-complete gate (the next big body + a Mark gate).** The diorama FORMS are still
+   placeholder-ish — blocky houses, plain slab, simple steeple, dark cypress. Authored, painterly
+   forms with real materials is the next major work. The sky is done; the foreground is not.
+2. **Tuning, once Mark plays with the leva panel** — `flowBias` strength (0.6 → ?), steeple lift,
+   moon prominence; then bake the chosen values in as defaults.
+3. **Mobile-portrait moon** — needs a portrait-specific camera bearing (a composition call).
+4. **Ship hygiene** — slim `flow-field.png` (3.2 MB), strip `leva` from the production build.
+5. **Pre-release gate.**
+
+Two locked-section edits still await Mark (see "Proposed to Mark" at the bottom): the free-orbit /
+camera-criterion rewording, and the Fable-5 → Opus operator wording.
+
 ## Phase 0 — reference pipeline  (active; gate: Mark reviews captures at the end)
 
 - [x] Fetch standard-high-res public-domain scan → `reference/starry-night-source.jpg` (3840×3041)
