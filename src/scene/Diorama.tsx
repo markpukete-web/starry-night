@@ -171,6 +171,86 @@ function FloatingIsland() {
   )
 }
 
+/**
+ * The painting's rolling blue-grey hills behind the village — a wavy heightfield band (not smooth
+ * spheres) that swells and rolls across the back, rising taller on the right as in the painting.
+ * Vertex colours band from dark troughs through the derived `hills` blue to a moonlit crest
+ * (`#5c6872`), so the ridges read in the moonlight instead of vanishing into black.
+ */
+function RollingHills() {
+  const geo = useMemo(() => {
+    const X0 = -1.25
+    const X1 = 1.25
+    const Z0 = 0.7 // front (at the village's foot)
+    const Z1 = -0.85 // back (kept inside the island footprint)
+    const NX = 90
+    const NZ = 46
+    const MAXH = 0.95
+
+    const cols = NX + 1
+    const rows = NZ + 1
+    const pos = new Float32Array(cols * rows * 3)
+    const col = new Float32Array(cols * rows * 3)
+
+    const hillDark = new Color('#1d2735') // troughs
+    const hillMid = new Color('#3a4a63') // mid slopes (derived hills blue, lifted to read at night)
+    const hillLit = new Color('#74808d') // moonlit crest (toward the hills region's lightest swatch)
+
+    const hillH = (x: number, z: number) => {
+      const b = Math.min(1, Math.max(0, (Z0 - z) / (Z0 - Z1))) // 0 front → 1 back
+      const rightBias = 0.55 + 0.45 * smooth(-1.5, 1.3, x) // taller on the right
+      const swell = 0.55 + 0.25 * Math.sin(x * 2 + 0.6) + 0.2 * Math.sin(x * 3.3 - z * 1.5 + 2)
+      const n = (vnoise(x * 1.4 + 5, z * 1.4 + 9) - 0.5) * 0.4
+      return Math.max(0, MAXH * smooth(0, 1, b) * rightBias * (swell + n))
+    }
+
+    const cc = new Color()
+    let p = 0
+    for (let j = 0; j < rows; j++) {
+      const z = Z0 + (Z1 - Z0) * (j / NZ)
+      for (let i = 0; i < cols; i++) {
+        const x = X0 + (X1 - X0) * (i / NX)
+        const h = hillH(x, z)
+        pos[p] = x
+        pos[p + 1] = h - 0.05 // bury the foot a touch so hills emerge from the ground, no seam
+        pos[p + 2] = z
+        const t = h / MAXH
+        cc.copy(hillDark)
+          .lerp(hillMid, smooth(0, 0.42, t))
+          .lerp(hillLit, smooth(0.42, 0.95, t))
+        col[p] = cc.r
+        col[p + 1] = cc.g
+        col[p + 2] = cc.b
+        p += 3
+      }
+    }
+
+    const idx: number[] = []
+    for (let j = 0; j < NZ; j++) {
+      for (let i = 0; i < NX; i++) {
+        const a = j * cols + i
+        const b = a + 1
+        const c = a + cols
+        const d = c + 1
+        idx.push(a, b, c, b, d, c) // upward normals
+      }
+    }
+
+    const g = new BufferGeometry()
+    g.setAttribute('position', new BufferAttribute(pos, 3))
+    g.setAttribute('color', new BufferAttribute(col, 3))
+    g.setIndex(idx)
+    g.computeVertexNormals()
+    return g
+  }, [])
+
+  return (
+    <mesh geometry={geo}>
+      <meshStandardMaterial vertexColors roughness={1} flatShading />
+    </mesh>
+  )
+}
+
 /** A flame-shaped cypress as a surface of revolution with an organic, bulging profile. */
 function Cypress({ position, height = 2.8, rot = 0, scale = 1 }: { position: Vec3; height?: number; rot?: number; scale?: number }) {
   const geo = useMemo(() => {
@@ -228,15 +308,6 @@ function House({ position, w = 0.4, h = 0.3, d = 0.4, lit = false, rot = 0 }: { 
   )
 }
 
-function Hill({ position, scale }: { position: Vec3; scale: Vec3 }) {
-  return (
-    <mesh position={position} scale={scale}>
-      <sphereGeometry args={[1, 28, 18]} />
-      <meshStandardMaterial color={C.hills} roughness={1} flatShading />
-    </mesh>
-  )
-}
-
 export function Diorama() {
   return (
     <group>
@@ -250,10 +321,8 @@ export function Diorama() {
       {/* the floating island the village stands on */}
       <FloatingIsland />
 
-      {/* rolling hills along the back (sit on the island's back-rise) */}
-      <Hill position={[-1.1, 0.16, -1.05]} scale={[1.7, 0.42, 0.7]} />
-      <Hill position={[0.5, 0.15, -1.2]} scale={[1.5, 0.34, 0.65]} />
-      <Hill position={[1.45, 0.13, -0.95]} scale={[1.3, 0.3, 0.6]} />
+      {/* rolling hills behind the village */}
+      <RollingHills />
 
       {/* village + church */}
       <House position={[-0.55, 0, 0.55]} w={0.42} h={0.3} d={0.4} lit />

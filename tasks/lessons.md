@@ -463,3 +463,23 @@ screamed "toy diorama") with an organic floating landmass, and lifted the foregr
   rerenders — a Math.random island would reshuffle on every HMR/leva tweak.
 - Orbit capture exposed the next problem: the `Hill` spheres read as smooth balloon-lumps from the
   side → F2 (rolling brushy ridges).
+
+## Foreground F2 — rolling hills (2026-06-14)
+
+Replaced the three smooth `Hill` spheres (balloon-lumps from any orbit angle) with `RollingHills`: a
+wavy heightfield band behind the village, rising taller on the right as in the painting.
+
+- **Heightfield, not spheres.** A grid (NX×NZ) in (x, depth); height = rolling swells (a couple of
+  sines in x drifting with z) × a back-rise envelope × a right-bias, + value noise. Reads as the
+  painting's rolling ridges; the spheres never could.
+- **The first pass was far too DARK** — the moonlit crest colour was there but didn't show, because
+  the hills' front slopes face the camera (i.e. AWAY from the upper-right moon key), so dark vertex
+  colour × low light = near-black, and the whole foreground collapsed into one mass. Vertex colour
+  MULTIPLIES light, so a faithful-but-dark palette swatch still goes black on an unlit face. Fix:
+  brighten the band — troughs `#1d2735`, mid `#3a4a63`, crest `#74808d` — and widen the lit band
+  (`smooth(0.42,0.95,t)`). Now the ridges read as luminous blue-grey, the moonlit crest popping on the
+  right exactly like the painting. Lesson: for dark-scene forms, push the base colour brighter than the
+  reference swatch — the night lighting eats most of it back.
+- **Keep it inside the island footprint.** The island narrows at the back; a full-width hill band
+  (x ±1.45 to z −1.5) floated off the back corners. Clamped to x ±1.25, z 0.7 → −0.85 (well inside),
+  foot buried −0.05 so hills emerge from the ground with no seam. Verified on orbit: nothing floats.
