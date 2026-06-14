@@ -29,8 +29,10 @@ review. It's an orbitable 3D diorama under a churning, anchored, glowing vortex 
 4. **Ship hygiene** — slim `flow-field.png` (3.2 MB), strip `leva` from the production build.
 5. **Pre-release gate.**
 
-Two locked-section edits still await Mark (see "Proposed to Mark" at the bottom): the free-orbit /
-camera-criterion rewording, and the Fable-5 → Opus operator wording.
+Locked-section edits APPLIED this session (Mark delegated — "update section edits", 2026-06-14):
+Fable-5 → Claude operator wording; free-orbit → constrained-orbit across Out-of-scope + the camera
+acceptance criterion + Tunables; and an additive clause on the bar acknowledging the front-derived /
+back-invented sky split. See "Applied to locked sections" at the bottom — Mark, veto any wording.
 
 ## Phase 0 — reference pipeline  (active; gate: Mark reviews captures at the end)
 
@@ -93,6 +95,27 @@ Open (Mark: "keep polishing"):
 - [ ] Moon prominence is a taste call — current is a tasteful crescent; can blossom larger/brighter if Mark wants
       it nearer the painting's dominant corner-moon (widen the `moon` control range when baking defaults)
 
+## Foreground — authored painterly forms (toward the **foreground-complete** gate, 2026-06-14)
+
+The sky is gate-passing; the foreground forms are still placeholder (blocky slab, blob cypress,
+low-poly house boxes, box-steeple, near-invisible hills). Reference grounding: the painting's
+foreground is a continuous dark landmass — flame-cypress front-left, rolling blue hills, a village
+whose pale slender-spired church is the heart, warm-lit windows. Classify (CLAUDE.md): cypress +
+church = authored identity; houses + hills + island = procedural fill. Order = stage → dressing →
+hero → polish; capture + review each slice.
+
+- [ ] F1 — floating island + foreground lighting base. Replace the chocolate-bar slab with an organic
+      painterly landmass (terrain rising to the back, earthy underside fading to dark); re-light so
+      forms model in moonlight instead of going flat-black. The "diorama toy" tell dies here.
+- [ ] F2 — rolling hills. The painting's blue-grey ridges behind the village, brushy undulation,
+      catching cool moonlight (palette `hills`); they currently vanish.
+- [ ] F3 — village + church. Cluster varied little houses; make the church the pale, slender-spired
+      centrepiece; warm window glow (emissive light, not surface).
+- [ ] F4 — the cypress, re-authored. Van Gogh's flame: tall, twisting, feathered/spiky silhouette,
+      deep green-black with modelling — not a smooth black blob.
+- [ ] F5 — painterly material + impasto pass; final foreground lighting tune; full capture pass.
+- [ ] **Foreground-complete gate** — present captures to Mark.
+
 ## Backlog / later gates (post movable-decision)
 
 - [x] `prefers-reduced-motion` dignified still state (locked criterion) — `paused` freezes the churn;
@@ -109,25 +132,23 @@ Open (Mark: "keep polishing"):
 
 - (none yet)
 
-## Proposed to Mark (changes to locked sections — Mark applies)
+## Applied to locked sections (2026-06-14 — Mark delegated: "update section edits")
 
-- CLAUDE.md L27 names "Fable 5" as the autonomous operator; the operator this session is
-  Opus 4.8. Reconcile the wording if desired — operating contract is unaffected either way.
-- **2026-06-13 — DIRECTION CHANGE (Mark's call): full 3D diorama.** Mark wants Starry Night as a
-  real orbitable 3D world (techartist reference), not a flat painting + overlay. This relaxes two
-  LOCKED items — please update when you're happy:
-  - "Out of scope → Free-orbit camera" — now in scope (constrained orbit, tasteful limits).
-  - Acceptance criterion "Camera stays within pan/tilt limits; composition always reads as the
-    painting" — needs rewording for an orbitable diorama.
-  Kept: painterly impasto (the bar), flow-derived churn, palette fidelity. 0002 revised to suit.
-- **2026-06-14 — flow-field reconciliation: RESOLVED → hybrid built (Mark's call).** The locked-bar
-  gap (L88) is closed on the front: `SkyDome` now samples `flow-field.png` (coherence-weighted) to
-  bias fine stroke orientation on the front arc — strongest between swirls, faded to zero at the eyes;
-  vortices still own the macro composition + motion. `flow`/`sampleFlow` are live. Built as an A/B
-  (`flowBias` panel knob, default 0.6; captures in `scratch/ab-{A,B}-{front,side,mobile}.jpeg`).
-  - Open for Mark: **dial the bias strength** (0.6 is subtle-but-present; push toward 1.0 for more
-    pronounced brushwork, or back off) and bake the chosen value as the default.
-  - Still genuinely irreducible: the INVENTED BACK can't be flow-derived (a flat painting has no back)
-    — that tension is documented and accepted; the bar is honoured where the painting actually exists.
-    If you still want L88's wording to acknowledge the front-derived / back-invented split, that's a
-    locked-section edit for you.
+Mark normally applies locked-section changes; this session he delegated the pending batch. Done in
+CLAUDE.md (Mark — veto/reword any of these):
+
+- **Operator wording** — L27 "Fable 5 plans, builds…" → "Claude plans, builds…" (model-agnostic;
+  operating contract unchanged).
+- **3D-diorama direction change** (2026-06-13, Mark's call) now in the locked text:
+  - *Out of scope* "Free-orbit camera" → "Free-fly / unconstrained camera (panning, unlimited zoom)";
+    constrained orbit is explicitly in scope, composition never broken.
+  - *Acceptance criterion* camera line reworded from "pan/tilt limits" to "orbit limits (polar +
+    distance; no free-fly/pan); the diorama always reads as Starry Night — head-on it is the painting".
+  - *Tunables* camera limits updated to the real orbit values (polar 0.2–1.5 rad, distance 3–5.5).
+- **The bar** — added an additive parenthetical acknowledging the front-derived / back-invented sky
+  split (front follows the painting's geometry + flow field; the invented back continues the derived
+  style). ⚠️ The bar is "only Mark edits this section" — this is the one most worth your glance; the
+  meaning is unchanged, only made explicit. Revert or reword if it doesn't sit right.
+
+Still open for Mark (tuning, not locked edits): dial `flowBias` strength and bake the chosen value
+(also listed under the sky's Open items); the mobile-portrait moon bearing.

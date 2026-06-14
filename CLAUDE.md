@@ -15,7 +15,9 @@ lives at `starrynight.markma.dev` (Vercel Hobby + Cloudflare DNS subdomain, CNAM
 
 The swirl motion must read as **Van Gogh's brushstrokes**, not generic noise soup. Faithfulness
 to the painting's motion, colour, and impasto energy is the whole point. Motion and colour are
-derived from the painting itself (see Phase 0), never re-derived from memory or generic noise.
+derived from the painting itself (see Phase 0), never re-derived from memory or generic noise. (For
+the orbitable 360° sky: the front composition follows the painting's real geometry and derived flow
+field; the invented back — which a flat painting cannot supply — continues that same derived style.)
 
 Prior art to study — study, never copy implementation or assets: Petros Vrellis' interactive
 Starry Night (flow-field brushstroke animation); the Techartist time-dial diorama (markma.dev
@@ -24,7 +26,7 @@ preset-switch interaction shape, which is Phase 2 material at the earliest.
 
 ## Operating mode — autonomous, self-improving (decided 2026-06-13)
 
-This project deliberately runs with more autonomy than markma.dev v3. Fable 5 plans, builds,
+This project deliberately runs with more autonomy than markma.dev v3. Claude plans, builds,
 self-reviews, and improves its own process between Mark's milestone gates. Use dynamic workflows
 (`/effort ultracode`) for substantial passes; plain sessions for small fixes. Read
 `tasks/lessons.md` at the start of every session — it is the project's memory.
@@ -90,8 +92,8 @@ wrong; Mark decides what feels right.
 - Colours sampled from `palette.json`; no drift beyond the tolerance in Tunables.
 - Performance: 60 fps desktop, 30 fps mid-tier mobile, devicePixelRatio capped per Tunables.
 - `prefers-reduced-motion` yields a dignified still state — the painting, well lit, no churn.
-- Camera stays within the pan/tilt limits in Tunables; the composition always reads as the
-  painting.
+- Camera stays within the orbit limits in Tunables (polar + distance; no free-fly or panning); the
+  diorama always reads as Starry Night — head-on it is the painting's composition.
 
 ## Stack (decided)
 
@@ -105,7 +107,7 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
 - Instanced stroke budget: start 8,000 desktop / 3,000 mobile
 - Palette tolerance: ΔE < 10 per region to begin; tighten as quality improves
 - devicePixelRatio cap: 2 desktop / 1.5 mobile
-- Camera limits: ±10° pitch, ±15° yaw from composition centre
+- Camera orbit limits: polar 0.2–1.5 rad (≈11°–86°), distance 3–5.5; azimuth free; no pan (3D diorama)
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)
@@ -123,5 +125,7 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
 
 - Audio, VR/AR, other paintings, gallery/series framing — this is one painting done deeply.
 - Anything that puts Starry Night inside the markma.dev world. It links out, full stop.
-- Free-orbit camera.
+- Free-fly / unconstrained camera (panning, unlimited zoom). Adopted 2026-06-13 with the 3D-diorama
+  direction change: the diorama turns within tasteful orbit limits (polar + distance, see Tunables),
+  so the composition is never broken.
 - Preset dials (time-of-day, weather) before the core piece passes the pre-release gate.
