@@ -438,3 +438,28 @@ the app; the console readback caught this where tsc didn't.
   the painting's corner). Fix: nudge `MOON_UV` 0.84,0.15 → 0.80,0.20 (down + in) — still unmistakably
   the top-right moon, but the crescent + halo now clear the desktop frame. Moves the moon sprite and
   its vortex together, so the swirl halo stays consistent. Verified: full moon in frame, front + mobile.
+
+## Foreground F1 — the floating island + lighting base (2026-06-14)
+
+Start of the foreground-complete push. Replaced the blocky "chocolate-bar" slab (a hard box that
+screamed "toy diorama") with an organic floating landmass, and lifted the foreground lighting.
+
+- **The island is one radial-grid `BufferGeometry`** (`FloatingIsland`): a top surface (centre →
+  coast) that wraps over an irregular elliptical coastline and continues down a tapering, rocky root.
+  Winding `(a,b,c)/(b,d,c)` + `computeVertexNormals` faces the whole closed-ish blob outward (verified
+  — lit correctly, no inside-out black).
+- **Reads as "land dissolving into night", not a slab:** per-vertex colour fades the root from the
+  earthy `hills` tone to near-black `#05070d` by depth, so the underside melts away. The hard flat rim
+  was the remaining "plate" tell — fixed with a per-angle `rimWobble` that varies the coastline HEIGHT
+  (bushy silhouette), not just the plan-view radius.
+- **Don't dome the top by lifting the centre** — forms sit at y=0, so a raised crown floats them. Kept
+  the crown ~flat (forms grounded); got the mound read from the wobbled rim + rocky root below instead.
+- **Footprint discipline:** first pass (RX 2.1 / RZ 1.55) left a dead empty apron of ground in front
+  of the village → tightened to 1.95 / 1.25 and pulled the cypress inboard so it isn't sliding off the
+  rim.
+- **Lighting:** cool moon key from upper-right `[4,6,3]` `#cdd8f5` 1.6 + deep-blue hemisphere/ambient
+  fill so forms model instead of flat-black. The moon's own warm pointLight stays in SkyDome.
+- **Deterministic value noise** (sin-hash `vnoise`, NOT Math.random) so geometry is stable across
+  rerenders — a Math.random island would reshuffle on every HMR/leva tweak.
+- Orbit capture exposed the next problem: the `Hill` spheres read as smooth balloon-lumps from the
+  side → F2 (rolling brushy ridges).
