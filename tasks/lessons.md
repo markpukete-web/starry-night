@@ -483,3 +483,25 @@ wavy heightfield band behind the village, rising taller on the right as in the p
 - **Keep it inside the island footprint.** The island narrows at the back; a full-width hill band
   (x ±1.45 to z −1.5) floated off the back corners. Clamped to x ±1.25, z 0.7 → −0.85 (well inside),
   foot buried −0.05 so hills emerge from the ground with no seam. Verified on orbit: nothing floats.
+
+## Foreground F3 — village + church (2026-06-14)
+
+The houses were uniform low-poly boxes with tent-cone roofs; the church was a chunky box-steeple.
+Re-authored the village as the painting's huddle of gable-roofed houses dominated by a pale,
+slender-spired church.
+
+- **Gable roofs, not cones.** A tiny triangular-prism geometry (`gableRoofGeo`, 6 verts, ridge along
+  z) reads as a proper pitched roof with a gable end facing the camera — far more "village" than the
+  4-sided pyramid cones, which read as tents. flatShading for crisp facets.
+- **The church is the focal point** = the one place worth lifting off the literal palette. The derived
+  steeple swatch `#556c81` is too muted to be the village's pale star, so the church uses `#8b9bad`
+  (body) / `#a6b4c4` (spire tip) — lifts of that same blue, documented in code as a deliberate,
+  faithful exception (the painting's church IS the pale moonlit accent that stands out against the dark
+  hills, echoing the cypress vertical). A slender bell tower + a thin 8-sided spire + a lit belfry
+  window. It now unmistakably reads as the church.
+- **Cluster, don't space out.** Six varied houses (size/rotation/lit) huddled around the church at the
+  hills' foot, in a `group` sunk −0.02 so they seat on the bumpy terrain instead of floating. Warm
+  windows stay emissive `meshBasicMaterial toneMapped={false}` (bloom catches them).
+- Houses verified close-up (cropped the capture with `sips`): gable normals correct, no black/inverted
+  faces, windows glow. Roofs at the derived `#26282b` read near-black — acceptable as the night
+  village; lift later only if Mark wants them to model more.

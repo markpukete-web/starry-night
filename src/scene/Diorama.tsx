@@ -27,6 +27,11 @@ const C = {
   cypress: PALETTE.cypress,
 }
 
+// The church reads as the pale focal point of the village: lifted from the derived steeple blue
+// (#556c81) so it catches the moonlight and stands out against the dark hills, as in the painting.
+const CHURCH_PALE = '#8b9bad'
+const CHURCH_TIP = '#a6b4c4'
+
 type Vec3 = [number, number, number]
 
 // --- deterministic value noise (stable across React rerenders; no Math.random) ---
@@ -287,23 +292,75 @@ function Cypress({ position, height = 2.8, rot = 0, scale = 1 }: { position: Vec
   )
 }
 
+/** A triangular-prism gable roof: width w (x), ridge height h (y), depth d (z); ridge runs along z. */
+function gableRoofGeo(w: number, h: number, d: number) {
+  const hw = w / 2
+  const hd = d / 2
+  const v = new Float32Array([
+    -hw, 0, hd, hw, 0, hd, 0, h, hd, // front cap 0,1,2
+    -hw, 0, -hd, hw, 0, -hd, 0, h, -hd, // back cap 3,4,5
+  ])
+  const idx = [0, 1, 2, 5, 4, 3, 0, 2, 5, 0, 5, 3, 1, 4, 5, 1, 5, 2]
+  const g = new BufferGeometry()
+  g.setAttribute('position', new BufferAttribute(v, 3))
+  g.setIndex(idx)
+  g.computeVertexNormals()
+  return g
+}
+
+/** A small gable-roofed house. The warm window is emissive light (bloom catches it), not surface. */
 function House({ position, w = 0.4, h = 0.3, d = 0.4, lit = false, rot = 0 }: { position: Vec3; w?: number; h?: number; d?: number; lit?: boolean; rot?: number }) {
+  const roof = useMemo(() => gableRoofGeo(w * 1.06, h * 0.55, d * 1.06), [w, h, d])
   return (
     <group position={position} rotation={[0, rot, 0]}>
       <mesh position={[0, h / 2, 0]}>
         <boxGeometry args={[w, h, d]} />
-        <meshStandardMaterial color={C.house} roughness={0.9} />
+        <meshStandardMaterial color={C.house} roughness={0.95} flatShading />
       </mesh>
-      <mesh position={[0, h + h * 0.26, 0]} rotation={[0, Math.PI / 4, 0]}>
-        <coneGeometry args={[w * 0.78, h * 0.55, 4]} />
-        <meshStandardMaterial color={C.roof} roughness={0.9} />
+      <mesh geometry={roof} position={[0, h, 0]}>
+        <meshStandardMaterial color={C.roof} roughness={0.9} flatShading />
       </mesh>
       {lit && (
-        <mesh position={[0, h * 0.45, d / 2 + 0.002]}>
-          <planeGeometry args={[w * 0.26, h * 0.3]} />
+        <mesh position={[0, h * 0.42, d / 2 + 0.003]}>
+          <planeGeometry args={[w * 0.24, h * 0.3]} />
           <meshBasicMaterial color={C.window} toneMapped={false} />
         </mesh>
       )}
+    </group>
+  )
+}
+
+/**
+ * The village church — the pale, slender-spired focal point. A low nave with a gable roof, a slender
+ * bell tower at the front and a thin pointed spire, in the lifted-pale steeple blue so it stands out
+ * against the dark hills (echoing the cypress's vertical, as in the painting).
+ */
+function Church({ position }: { position: Vec3 }) {
+  const naveRoof = useMemo(() => gableRoofGeo(0.5, 0.2, 0.64), [])
+  return (
+    <group position={position}>
+      <mesh position={[0, 0.17, 0]}>
+        <boxGeometry args={[0.46, 0.34, 0.6]} />
+        <meshStandardMaterial color={CHURCH_PALE} roughness={0.85} flatShading />
+      </mesh>
+      <mesh geometry={naveRoof} position={[0, 0.34, 0]}>
+        <meshStandardMaterial color={C.roof} roughness={0.9} flatShading />
+      </mesh>
+      {/* slender bell tower at the front */}
+      <mesh position={[0, 0.42, 0.26]}>
+        <boxGeometry args={[0.15, 0.84, 0.15]} />
+        <meshStandardMaterial color={CHURCH_PALE} roughness={0.85} flatShading />
+      </mesh>
+      {/* the spire — thin and pointed */}
+      <mesh position={[0, 1.04, 0.26]}>
+        <coneGeometry args={[0.1, 0.42, 8]} />
+        <meshStandardMaterial color={CHURCH_TIP} roughness={0.8} flatShading />
+      </mesh>
+      {/* a small lit belfry window */}
+      <mesh position={[0, 0.5, 0.34]}>
+        <planeGeometry args={[0.05, 0.09]} />
+        <meshBasicMaterial color={C.window} toneMapped={false} />
+      </mesh>
     </group>
   )
 }
@@ -324,24 +381,15 @@ export function Diorama() {
       {/* rolling hills behind the village */}
       <RollingHills />
 
-      {/* village + church */}
-      <House position={[-0.55, 0, 0.55]} w={0.42} h={0.3} d={0.4} lit />
-      <House position={[0.0, 0, 0.7]} w={0.36} h={0.26} d={0.36} lit rot={0.3} />
-      <House position={[0.55, 0, 0.5]} w={0.34} h={0.24} d={0.34} />
-      <House position={[1.0, 0, 0.7]} w={0.3} h={0.22} d={0.3} lit rot={-0.2} />
-      <group position={[0.25, 0, 0.4]}>
-        <mesh position={[0, 0.22, 0]}>
-          <boxGeometry args={[0.34, 0.44, 0.5]} />
-          <meshStandardMaterial color={C.house} roughness={0.9} />
-        </mesh>
-        <mesh position={[0, 0.62, 0]}>
-          <boxGeometry args={[0.17, 0.7, 0.17]} />
-          <meshStandardMaterial color={C.steeple} roughness={0.8} />
-        </mesh>
-        <mesh position={[0, 1.07, 0]}>
-          <coneGeometry args={[0.15, 0.34, 4]} />
-          <meshStandardMaterial color={C.steeple} roughness={0.8} />
-        </mesh>
+      {/* village — houses huddled around the church, at the foot of the hills */}
+      <group position={[0, -0.02, 0]}>
+        <House position={[-0.62, 0, 0.62]} w={0.4} h={0.28} d={0.38} lit rot={0.15} />
+        <House position={[-0.3, 0, 0.74]} w={0.32} h={0.24} d={0.34} lit rot={-0.25} />
+        <House position={[0.36, 0, 0.66]} w={0.34} h={0.24} d={0.34} rot={0.2} />
+        <House position={[0.66, 0, 0.78]} w={0.3} h={0.22} d={0.3} lit rot={-0.15} />
+        <House position={[0.95, 0, 0.62]} w={0.34} h={0.26} d={0.32} lit rot={0.3} />
+        <House position={[0.5, 0, 0.45]} w={0.28} h={0.2} d={0.28} rot={-0.4} />
+        <Church position={[0.02, 0, 0.5]} />
       </group>
 
       {/* cypress, front-left (two flames) */}
