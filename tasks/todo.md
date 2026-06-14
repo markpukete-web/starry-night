@@ -11,24 +11,41 @@ below — never edited in place.
 
 ## Where we are now (2026-06-14, end of session) — read this first
 
-The **sky has passed every locked acceptance criterion** and cleared two rounds of external (Codex)
-review. It's an orbitable 3D diorama under a churning, anchored, glowing vortex sky:
+> **GATE OPEN: foreground-complete. Mark is mid-review, continuing tomorrow. Do NOT proceed past it.**
+> The whole diorama is built and passing the locked criteria; what's left at the gate is Mark's taste.
 
-- **Soul is there:** anchored swirls, rolling comma form, glowing crescent moon, glowing eyes, 360°.
-- **Locked contracts now honoured:** flow-derived motion (hybrid front-arc bias of the derived flow
-  field), palette-derived colours (`palette.json` is load-bearing), `prefers-reduced-motion` still
-  state, responsive framing. Lint + `tsc -b` + `npm run build` all green. Committed through `b2dc008`.
+**Open these captures first:** `scratch/f6b-cypress-front.jpeg` (current hero — dominant cypress) ·
+`scratch/f5-orbit.jpeg` (it's a real 3D diorama) · `scratch/f5-mobile.jpeg` (mobile portrait).
 
-**Next up (priority order):**
-1. **Foreground-complete gate — REACHED 2026-06-14, awaiting Mark's review.** The placeholder forms
-   are re-authored (F1–F5): organic floating island (not a slab), rolling moonlit hills (not balloon
-   spheres), a clustered village with a pale slender-spired church, the cypress as a real Van Gogh
-   flame, foreground shrubs. Captures: `scratch/f5-{front,orbit,mobile}.jpeg`. Build + lint green;
-   reduced-motion re-verified. **Possible post-gate enhancement:** brushstroke-texture the forms
-   (wrap meshes in oriented strokes like the sky) for true impasto — deferred to avoid risking the gate.
-2. **Tuning, once Mark plays with the leva panel** — `flowBias` strength (0.6 → ?), steeple lift,
-   moon prominence; then bake the chosen values in as defaults.
-3. **Mobile-portrait moon** — needs a portrait-specific camera bearing (a composition call).
+**What the scene is now:** an orbitable 3D floating-island diorama under the churning, anchored,
+glowing vortex sky (the sky was already done + twice Codex-reviewed). This session rebuilt the entire
+foreground (F1–F5), then made the cypress dominant per Mark's first gate note:
+- **F1** organic floating island (irregular coastline, rocky root fading to dark) — killed the slab.
+- **F2** rolling moonlit blue-grey hills (heightfield) — killed the balloon spheres.
+- **F3** clustered gable-roofed village + a pale slender-spired church as the focal point, warm windows.
+- **F4** the cypress as a real Van Gogh flame (displaced tube: licking tongues, twist, green-black).
+- **F5** foreground shrubs + full capture pass; **reduced-motion re-verified** (frozen under reduce).
+- **+ gate feedback** — cypress made taller & more dominant via a `girth` knob.
+
+All committed to `main` this session: `f9a5847` (docs/locked edits) → `0b9cdd6` F1 → `f7fb9d4` F2 →
+`d41a51f` F3 → `693e393` F4 → `c4bcd9b` F5 → `621fde9` cypress. `npm run build` + `npm run lint` green.
+
+### ▶ PICK UP HERE tomorrow — the gate review is the live thread
+Mark is deciding (from `scratch/f6b-cypress-front.jpeg`) whether the foreground is right. The options
+he's weighing — wait for his call, don't pre-empt:
+- **push the cypress further** (taller / wider / more central — lever: `girth` + `height` on the two
+  `<Cypress>` in `src/scene/Diorama.tsx`), or
+- **other taste tweaks he flagged interest in:** church paler-or-bigger · hills bolder, or
+- **approve the gate** → then start the post-gate queue below.
+To run it: `npm run dev` (was on **:5174**); the leva panel is live for him to drive. Visual-review
+loop + capture recipe are in `lessons.md` (canvas readback; `browser_run_code_unsafe` for emulateMedia).
+
+**Post-gate queue (only AFTER Mark approves the gate):**
+1. **Tuning** once Mark plays with the panel — `flowBias` (0.6 → ?), steeple lift, moon prominence;
+   bake chosen values as defaults.
+2. **Mobile-portrait moon** — needs a portrait-specific camera bearing (composition call).
+3. **Possible impasto enhancement** — brushstroke-texture the forms (wrap meshes in oriented strokes
+   like the sky); deferred at the gate to avoid risk. Mark's call whether to do it.
 4. **Ship hygiene** — slim `flow-field.png` (3.2 MB), strip `leva` from the production build.
 5. **Pre-release gate.**
 
@@ -118,8 +135,11 @@ hero → polish; capture + review each slice.
       sway, deep green-black modelling — Van Gogh's flame, not a smooth blob.
 - [x] F5 — foreground shrubs (`Bush`) complete the ground; lighting tuned; reduced-motion re-verified
       (frozen under `reduce`, churns under control); full capture pass (desktop/orbit/mobile).
-- [x] **Foreground-complete gate reached (2026-06-14)** — captures in `scratch/f5-{front,orbit,mobile}.jpeg`
-      presented to Mark ← **awaiting Mark's review.** Full `npm run build` + `npm run lint` green.
+- [x] Gate feedback #1 — cypress made taller & more dominant (`girth` knob on `<Cypress>`); capture
+      `scratch/f6b-cypress-front.jpeg`, commit `621fde9`.
+- [ ] **Foreground-complete gate — OPEN, Mark mid-review (since 2026-06-14).** Captures presented
+      (`scratch/f6b-cypress-front.jpeg` + `scratch/f5-{orbit,mobile}.jpeg`). Mark is making taste calls
+      (see "PICK UP HERE" at the top); gate NOT yet approved — do not proceed past it. Build + lint green.
 
 ## Backlog / later gates (post movable-decision)
 
