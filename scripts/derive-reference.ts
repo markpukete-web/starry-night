@@ -138,9 +138,9 @@ function decodePNG(buf: Buffer): { width: number; height: number; rgba: Uint8Arr
 
   const rgba = new Uint8Array(width * height * 4);
   for (let i = 0, p = 0; i < width * height; i++) {
-    let r = 0;
-    let g = 0;
-    let b = 0;
+    let r: number;
+    let g: number;
+    let b: number;
     let a = 255;
     if (channels === 3) {
       r = recon[p++];
@@ -253,7 +253,7 @@ function rgbToLab(r: number, g: number, b: number): number[] {
 
 function medianCut(samples: number[][], count: number): { rgb: number[]; weight: number }[] {
   if (samples.length === 0) return [];
-  let boxes = [samples];
+  const boxes = [samples];
   while (boxes.length < count) {
     let bi = -1;
     let bestRange = -1;
@@ -447,7 +447,7 @@ function licAt(px0: number, py0: number): number {
   for (let sign = 0; sign < 2; sign++) {
     let x = px0 + 0.5;
     let y = py0 + 0.5;
-    let d = sampleDir(x, y);
+    const d = sampleDir(x, y);
     let dx = sign === 0 ? d[0] : -d[0];
     let dy = sign === 0 ? d[1] : -d[1];
     for (let i = 0; i < LIC_LENGTH; i++) {
