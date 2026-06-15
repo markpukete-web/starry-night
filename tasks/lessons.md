@@ -627,3 +627,11 @@ provenance pass, just bolder factors.
   village, front + orbit.
 - **Kept the crest (#8797a5) just BELOW the church pale (#8b9bad)** so the church still out-reads the hills
   as the village's focal point — the one rule that stops "bolder hills" from swallowing the pale spire.
+
+## Foreground-complete gate PASSED (Mark, 2026-06-15) — entering the post-gate phase
+
+Mark passed the foreground-complete gate after the bolder-hills tweak (g3). 4th of the 5 locked gates done
+(end of Phase 0 ✓ · Phase 1 movable-decision ✓ · first full animated sky ✓ · foreground complete ✓); only
+the pre-release gate remains. Carried forward 4 post-gate items (see todo "Post-gate queue"): original-art
+comparison (faithfulness audit) · mobile moon framing (portrait bearing) · reset control · final sky/flow
+tuning (bake flowBias + leva values). Now proceeding autonomously on that queue between here and pre-release.
