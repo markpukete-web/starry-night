@@ -39,9 +39,12 @@ lives in `tasks/lessons.md` (newest at the bottom of each section); this file ho
 The post-gate composition pass + ship hygiene are done. **Final value bake CONFIRMED (Mark, 2026-06-15):**
 he supplied the full leva set and ALL 14 values match the current baked defaults exactly — the look this
 session converged on IS the locked ship look (no code change needed). Everything before the final gate is
-done. **Next: the pre-release gate** — assemble the gate capture set (desktop front + orbit · mobile portrait
-· reduced-motion still) for Mark's review; he makes the release call. NB actual deploy (Vercel + Cloudflare
-DNS, `starrynight.markma.dev`) is a separate stop-and-ask per CLAUDE.md. Nothing pushed yet.
+done. **At the pre-release gate** — capture set READY: `scratch/release-{front,orbit,mobile,reduced}.jpeg`.
+Locked criteria status: flow-driven motion ✓ · palette colours ✓ (documented lifts) · reduced-motion frozen
+✓ (byte-identical frames) · orbit limits ✓; **performance is the one left to confirm on real hardware** —
+headless is software-rendered, Mark's machine was 120 fps on the sky pre-foreground; needs a re-check with
+the foreground + a mid-tier mobile. Awaiting Mark's release call. NB actual deploy (Vercel + Cloudflare DNS,
+`starrynight.markma.dev`) is a separate stop-and-ask per CLAUDE.md. Nothing pushed yet.
 To run: `npm run dev` (was on **:5174**); leva panel live. Visual-review + capture recipe in `lessons.md`
 (canvas readback; `browser_run_code_unsafe` for emulateMedia/viewport).
 
