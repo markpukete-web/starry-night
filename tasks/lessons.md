@@ -678,3 +678,14 @@ flow math.
 - A/B (`g7-reset` → `g8-front`): blue field richer, swirls/moon/stars untouched, the Van-Gogh contrast
   actually reads BETTER — not muddy, motion intact. Kept. Lesson: to deepen a night sky without killing the
   glow, darken on a luminance curve (shadows/mids down, highlights held), never a flat multiply.
+
+## Central whorl lowered + tightened (Mark approved, 2026-06-15)
+
+The stroke-math step Mark sequenced after the corrections: move the authored central swirl LOWER + make it
+LESS OVERSIZED, with the flow-field left as fine verification only (the big anchor stays authored). Changed
+the two central vortices in `buildVortices`: main roll `v 0.34→0.40 / r 0.62→0.54 / strength 2.2→2.05`;
+counter-roll `v 0.29→0.35 / r 0.46→0.40`. A/B (`g8-front`→`g9-front`): the glowing eye drops from the high
+corner to mid-sky just above the church spire — MORE faithful to the painting (the swirl hangs over the
+village), and the spire now reaches into the base of the whorl. Still the unmistakable hero swirl; sky
+depth, highlights, moon, stars and motion all intact. Lesson: lowering the hero anchor toward the village
+tightened the swirl↔steeple relationship — the painting's own arrangement, not something to invent.

@@ -163,8 +163,8 @@ function buildVortices(): Vortex[] {
     V.push({ dir, strength, sign, radius, star, moon, scale, core })
 
   // FRONT — the painting itself. The central double-swirl dominates; Venus is the big morning star.
-  add(uvToFrontDir(0.43, 0.34), 2.2, 1, 0.62, false, false, 0.15, true) // main roll of the iconic swirl (glowing eye)
-  add(uvToFrontDir(0.58, 0.29), 1.4, -1, 0.46, false, false, 0.15, true) // its counter-roll (forms the S) — softened so the stagnation comma shrinks; glows too
+  add(uvToFrontDir(0.43, 0.4), 2.05, 1, 0.54, false, false, 0.15, true) // main roll of the iconic swirl (glowing eye) — lowered + less oversized (Mark, 2026-06-15)
+  add(uvToFrontDir(0.58, 0.35), 1.4, -1, 0.4, false, false, 0.15, true) // its counter-roll (forms the S) — lowered + tightened to match; glows too
   add(uvToFrontDir(VENUS_UV[0], VENUS_UV[1]), 1.0, -1, 0.32, true, false, 0.24) // Venus
   STAR_UVS.forEach((uv, i) =>
     add(uvToFrontDir(uv[0], uv[1]), 0.6 + 0.2 * rng(), i % 2 === 0 ? 1 : -1, 0.18 + 0.07 * rng(), true, false, 0.13 + 0.04 * rng()),

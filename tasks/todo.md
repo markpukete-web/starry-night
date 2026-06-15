@@ -44,10 +44,11 @@ composition contract (cypress nearly-reaching-not-clipping · whorl lower/smalle
 village anchor). (2) **Reset control** built + round-trip verified (direct-set home; drei `target0` bug —
 see lessons). (3) **Front-view taste corrections** per the contract — cypress slimmer, softer star/moon
 bloom, quieter sky exposure (all baked as leva defaults).
-**Sky deepened one notch** (`g8-front` A/B vs `g7-reset`): blue field + low/mid strokes darker, highlights /
-moon / stars preserved, motion intact (brightness-selective curve; see lessons). **Next (the stroke-math
-step in Mark's order):** central whorl lower/less-oversized, with the flow-field as fine verification only
-(not a hammer). Then mobile moon framing (needs Mark's bearing) + the final sky/flow value bake.
+**Whorl pass done + approved** (`g9-front`): the central swirl lowered to mid-sky over the church + tightened
+(less oversized), hero read intact, flow untouched. The front-view composition contract is now MET (cypress ·
+deeper sky · whorl · painted moon · pale village anchor). **Next:** mobile moon framing — needs Mark's
+portrait bearing (the moon sits ~42° off-centre on the arc; fov alone can't reach it) — then the final
+sky/flow value bake + ship hygiene → pre-release gate.
 To run it: `npm run dev` (was on **:5174**); the leva panel is live for him to drive. Visual-review
 loop + capture recipe are in `lessons.md` (canvas readback; `browser_run_code_unsafe` for emulateMedia).
 
