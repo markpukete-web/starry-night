@@ -35,15 +35,13 @@ village + pale-spired church · Van Gogh flame-cypress · shrubs) under the chur
 sky. The full build history — the foreground F1–F5 rebuild, the sky's evolution, and every session lesson —
 lives in `tasks/lessons.md` (newest at the bottom of each section); this file holds the current intent.
 
-### ▶ PICK UP HERE — one item left, then the pre-release gate
-The post-gate composition pass is done + approved (corrections · sky deepen · whorl · mobile moon), and
-**ship hygiene is DONE** (leva stripped from prod: 1,383→1,183 kB · `flow-field.png` slimmed 3.38→0.91 MB —
-both verified no-visual-change; see lessons). One item remains before the final gate:
-- **Final sky/flow value bake** — *Mark's taste.* Every change baked its value as the leva default, so the
-  current look IS the candidate ship look. **Awaiting Mark** (asked, no answer yet): drive the panel to dial
-  final values (flowBias — keep subtle / fine-verification only · churn · bloom · moon/stars · sky colours),
-  OR confirm the current defaults ship as-is.
-Then → **pre-release gate** (Mark reviews captures — the final gate).
+### ▶ PICK UP HERE — at the pre-release gate (the final gate)
+The post-gate composition pass + ship hygiene are done. **Final value bake CONFIRMED (Mark, 2026-06-15):**
+he supplied the full leva set and ALL 14 values match the current baked defaults exactly — the look this
+session converged on IS the locked ship look (no code change needed). Everything before the final gate is
+done. **Next: the pre-release gate** — assemble the gate capture set (desktop front + orbit · mobile portrait
+· reduced-motion still) for Mark's review; he makes the release call. NB actual deploy (Vercel + Cloudflare
+DNS, `starrynight.markma.dev`) is a separate stop-and-ask per CLAUDE.md. Nothing pushed yet.
 To run: `npm run dev` (was on **:5174**); leva panel live. Visual-review + capture recipe in `lessons.md`
 (canvas readback; `browser_run_code_unsafe` for emulateMedia/viewport).
 
@@ -59,8 +57,8 @@ items (2026-06-15) merged with the prior backlog, in proposed order:
 3. **Mobile moon framing** — ✓ DONE (2026-06-15, approved): a portrait-specific camera BEARING (~24° toward
    the moon, `PORTRAIT_AZ` via `homePositionFor`), reset made aspect-aware so the moon stays after a reset.
    Composition shifts a touch left (documented trade Mark accepted). A/B `g11-mobile-after` · reset `g12`.
-4. **Final sky/flow tuning** — bake `flowBias` (0.6 → ?) + the chosen leva values (steeple lift, moon
-   prominence, churn speed) as the new defaults. Needs Mark's values from the panel; informed by (1).
+4. **Final sky/flow value bake** — ✓ CONFIRMED (Mark, 2026-06-15): supplied the full leva set; all 14 values
+   match the current baked defaults exactly (the session's tuning converged on his ship look). No change.
 5. **Possible impasto enhancement** (optional, Mark's call) — brushstroke-texture the forms like the sky.
 6. **Ship hygiene** — ✓ DONE (2026-06-15): `leva` stripped from the prod bundle (build-time alias → stub;
    1,383→1,183 kB) · `flow-field.png` slimmed 3.38→0.91 MB (2× box-downsample, `scripts/slim-flow-field.ts`).
