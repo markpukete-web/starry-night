@@ -44,9 +44,10 @@ composition contract (cypress nearly-reaching-not-clipping · whorl lower/smalle
 village anchor). (2) **Reset control** built + round-trip verified (direct-set home; drei `target0` bug —
 see lessons). (3) **Front-view taste corrections** per the contract — cypress slimmer, softer star/moon
 bloom, quieter sky exposure (all baked as leva defaults).
-**Next (the stroke-math step in Mark's order):** central whorl lower/less-oversized + deeper-blue sky, with
-the flow-field as fine verification only (not a hammer). Then mobile moon framing (needs Mark's bearing) +
-the final sky/flow value bake. Awaiting Mark: is the sky deep enough, or push the exposure darker?
+**Sky deepened one notch** (`g8-front` A/B vs `g7-reset`): blue field + low/mid strokes darker, highlights /
+moon / stars preserved, motion intact (brightness-selective curve; see lessons). **Next (the stroke-math
+step in Mark's order):** central whorl lower/less-oversized, with the flow-field as fine verification only
+(not a hammer). Then mobile moon framing (needs Mark's bearing) + the final sky/flow value bake.
 To run it: `npm run dev` (was on **:5174**); the leva panel is live for him to drive. Visual-review
 loop + capture recipe are in `lessons.md` (canvas readback; `browser_run_code_unsafe` for emulateMedia).
 

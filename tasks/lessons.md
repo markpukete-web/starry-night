@@ -662,3 +662,19 @@ math, with the flow-field used only as fine verification afterward (not a visual
   - LESSON: when a 3D control "no-ops", expose the object on `window` and READ its real state
     (position/target/target0) — don't theorise. I wasted a pass on a wrong damping-inertia theory before
     reading the numbers. And don't trust drei's `reset()`/`target0` when you set `target` via a prop.
+
+## Sky deepened one notch — tone-aware, motion preserved (Mark, 2026-06-15)
+
+Mark: push the sky one notch darker, keep it subtle — deepen the blue FIELD and low/mid stroke values,
+PRESERVE the yellow/white highlight strokes + moon + stars; back off if it loses motion or turns muddy. No
+flow math.
+
+- The trick is a BRIGHTNESS-SELECTIVE darken in `strokeFrag`, not a global one: `deepen = mix(0.78, 1.0,
+  smoothstep(0.42, 0.82, baseLum(vColor)))` — low/mid (blue) strokes ×0.78, bright (highlight) strokes ×1.0.
+  So the luminous swirl filaments survive while the blue deepens. A global brightness cut would have
+  flattened the motion; the tone curve keeps the bright-vs-deep contrast that IS the motion.
+- Plus the dome gradient deepened ×0.85 (`PALETTE.skyZenith`/`skyHorizon` × factor via `deepenHex` —
+  provenance kept) to darken the field behind the strokes.
+- A/B (`g7-reset` → `g8-front`): blue field richer, swirls/moon/stars untouched, the Van-Gogh contrast
+  actually reads BETTER — not muddy, motion intact. Kept. Lesson: to deepen a night sky without killing the
+  glow, darken on a luminance curve (shadows/mids down, highlights held), never a flat multiply.

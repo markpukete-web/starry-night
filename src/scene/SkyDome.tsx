@@ -214,7 +214,11 @@ const strokeFrag = /* glsl */ `
     // relief across the stroke — a lit centre ridge falling to darker flanks, so each ribbon reads
     // as a crisp impasto mark rather than a soft smear (it stays defined under Bloom).
     float ridge = 0.82 + 0.36 * edge;
-    vec3 col = vColor * (0.54 + 0.32 * flow) * ridge; // quieter sky exposure so the deep blue reads (Mark, 2026-06-15)
+    // deepen the blue field one notch: pull down the low/mid (blue) strokes but PRESERVE the bright
+    // yellow/white highlight strokes, so the luminous swirl motion survives (Mark, 2026-06-15).
+    float baseLum = dot(vColor, vec3(0.299, 0.587, 0.114));
+    float deepen = mix(0.78, 1.0, smoothstep(0.42, 0.82, baseLum));
+    vec3 col = vColor * deepen * (0.54 + 0.32 * flow) * ridge;
     float lum = dot(col, vec3(0.299, 0.587, 0.114));
     col = clamp(mix(vec3(lum), col, uSat), 0.0, 2.0);
     float a = edge * taper * 0.95;
