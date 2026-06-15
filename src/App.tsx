@@ -13,6 +13,10 @@ import { PALETTE } from './scene/palette'
 // The default "home" composition the reset returns to — also the Canvas camera position + orbit target.
 const HOME_POSITION: [number, number, number] = [2.2, 1.5, 4.6]
 const HOME_TARGET: [number, number, number] = [0, 1.05, 0]
+// Portrait can't fit the moon by fov alone (it sits ~37° off the composition centre), so portrait bears
+// the camera toward the moon's corner by this azimuth (radians, rotated about the orbit target). Negative
+// pans the view right so the moon (top-right of the composition) comes into the narrow frame.
+const PORTRAIT_AZ = -0.42
 
 // Deepen a derived sky swatch by a documented linear factor — provenance kept (swatch × factor), the
 // dome gradient sits below the strokes so deepening it darkens the blue field without dimming the swirls.
@@ -41,8 +45,18 @@ function ResponsiveFraming() {
   const size = useThree((s) => s.size)
   useEffect(() => {
     const aspect = size.width / size.height
+    const portrait = aspect < 1
     // eslint-disable-next-line react-hooks/immutability -- the R3F-managed camera is mutated by design
-    camera.fov = aspect < 1 ? 70 : aspect < 1.4 ? 52 : 48
+    camera.fov = portrait ? 70 : aspect < 1.4 ? 52 : 48
+    // Portrait bears the camera toward the moon's corner (rotate HOME_POSITION around the orbit target
+    // about Y). The swirl basis stays landscape-anchored, so the composition shifts a touch left as the
+    // moon comes in — the documented trade. set() is a method call, so no immutability disable needed.
+    const a = portrait ? PORTRAIT_AZ : 0
+    const ox = HOME_POSITION[0] - HOME_TARGET[0]
+    const oz = HOME_POSITION[2] - HOME_TARGET[2]
+    const cos = Math.cos(a)
+    const sin = Math.sin(a)
+    camera.position.set(HOME_TARGET[0] + ox * cos + oz * sin, HOME_POSITION[1], HOME_TARGET[2] - ox * sin + oz * cos)
     camera.updateProjectionMatrix()
   }, [camera, size])
   return null
