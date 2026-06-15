@@ -44,9 +44,11 @@ Locked criteria status: flow-driven motion ✓ · palette colours ✓ (documente
 ✓ (byte-identical frames) · orbit limits ✓; **performance is the one left to confirm on real hardware** —
 headless is software-rendered, Mark's machine was 120 fps on the sky pre-foreground; needs a re-check with
 the foreground + a mid-tier mobile. Awaiting Mark's release call. NB actual deploy (Vercel + Cloudflare DNS,
-`starrynight.markma.dev`) is a separate stop-and-ask per CLAUDE.md — NOT done by Claude. **Pushed to
-`origin/main` 2026-06-15** on Mark's go (if Vercel auto-deploy is wired to the repo, that push may have
-triggered a production deploy — Claude ran no deploy/DNS commands).
+`starrynight.markma.dev`) per CLAUDE.md. **Pushed to `origin/main` 2026-06-15** on Mark's go. **Vercel
+deploy IN FOCUS (Mark, 2026-06-15):** deploy the app to Vercel now (a `vercel.app` URL). The custom
+subdomain + Cloudflare DNS (`starrynight.markma.dev`, currently 404) stay PARKED — Mark hasn't set it up;
+do NOT touch DNS. Production build verified panel-free (leva stripped; DOM: 0 leva elements, only the reset
+button). One acceptance box still open: real-hardware fps (desktop + mid-tier mobile) — Mark's to check.
 To run: `npm run dev` (was on **:5174**); leva panel live. Visual-review + capture recipe in `lessons.md`
 (canvas readback; `browser_run_code_unsafe` for emulateMedia/viewport).
 
