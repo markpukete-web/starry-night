@@ -743,3 +743,8 @@ Two release-readiness wins, both verified no-visual-change against the dev look.
   `g14-front-slimflow`) is visually identical — swirl structure + stroke orientation unchanged. Locked-bar
   flow fidelity preserved. (NB: re-running `derive-reference.ts` regenerates the full-res png → re-run the
   slimmer after.)
+  - **Idempotence guard (review catch, Mark).** The slimmer read + wrote the same path, so a stray second
+    run would take 640→320→… and silently degrade the locked asset (the full-res only survives in git
+    history). Fixed with a guard: only downsample the full-res 1280×1013 derive output; skip otherwise.
+    Lesson: any in-place, destructive asset transform needs an idempotence guard (or a separate
+    preserved-source → output) — assume it WILL get run twice.
