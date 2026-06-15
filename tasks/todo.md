@@ -39,10 +39,14 @@ All committed to `main` this session: `f9a5847` (docs/locked edits) → `0b9cdd6
 `d41a51f` F3 → `693e393` F4 → `c4bcd9b` F5 → `621fde9` cypress. `npm run build` + `npm run lint` green.
 
 ### ▶ PICK UP HERE — post-gate phase (gate passed 2026-06-15)
-Mark carried forward 4 post-gate items (original-art comparison · mobile moon framing · reset control ·
-final sky/flow tuning) — see the **Post-gate queue** below for the ordered plan + input-dependencies.
-Comparison scope defaulting to a faithfulness AUDIT (flag if he meant an in-app overlay); reset control is
-the cleanest fully-autonomous build; moon-bearing + baked sky values need Mark's taste input when reached.
+Done so far: (1) **original-art audit** — confirmed audit-not-feature; Mark turned it into a front-view
+composition contract (cypress nearly-reaching-not-clipping · whorl lower/smaller · painted moon · pale
+village anchor). (2) **Reset control** built + round-trip verified (direct-set home; drei `target0` bug —
+see lessons). (3) **Front-view taste corrections** per the contract — cypress slimmer, softer star/moon
+bloom, quieter sky exposure (all baked as leva defaults).
+**Next (the stroke-math step in Mark's order):** central whorl lower/less-oversized + deeper-blue sky, with
+the flow-field as fine verification only (not a hammer). Then mobile moon framing (needs Mark's bearing) +
+the final sky/flow value bake. Awaiting Mark: is the sky deep enough, or push the exposure darker?
 To run it: `npm run dev` (was on **:5174**); the leva panel is live for him to drive. Visual-review
 loop + capture recipe are in `lessons.md` (canvas readback; `browser_run_code_unsafe` for emulateMedia).
 
@@ -52,8 +56,9 @@ items (2026-06-15) merged with the prior backlog, in proposed order:
    `reference/derived/` crops: set the current captures beside the painting, name colour / swirl-position /
    composition / moon drift, feed the tuning in (4). *Scope default = a review-audit; flag if Mark wants an
    in-app "compare to original" overlay (that's a new product surface — confirm before building).*
-2. **Reset control** — return the camera to the default view after orbiting (`OrbitControls.reset()` or a
-   smooth animated return; a small unobtrusive on-canvas button). Self-contained, no taste dependency.
+2. **Reset control** — ✓ DONE (2026-06-15): a subtle on-canvas "↺ Reset view" button sets the camera to the
+   single-source `HOME_POSITION`/`HOME_TARGET` and `update()`s. (drei's `reset()`/`target0` is stale —
+   saved [0,0,0] before the target prop; see lessons.) Round-trip verified — orbit far → click → snaps home.
 3. **Mobile moon framing** — the moon anchor sits ~42° off view-centre on the arc, so fov alone can't bring
    it into portrait (documented hard limit). Add a portrait-specific camera BEARING in `ResponsiveFraming`
    (currently fov-only). Needs Mark's composition call on the bearing.

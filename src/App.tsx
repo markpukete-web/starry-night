@@ -9,6 +9,10 @@ import { SkyDome } from './scene/SkyDome'
 import { Diorama } from './scene/Diorama'
 import { PALETTE } from './scene/palette'
 
+// The default "home" composition the reset returns to — also the Canvas camera position + orbit target.
+const HOME_POSITION: [number, number, number] = [2.2, 1.5, 4.6]
+const HOME_TARGET: [number, number, number] = [0, 1.05, 0]
+
 /** prefers-reduced-motion: a dignified still painting, no churn (locked acceptance criterion). */
 function usePrefersReducedMotion() {
   const [reduced, setReduced] = useState(
@@ -36,6 +40,26 @@ function ResponsiveFraming() {
     camera.fov = aspect < 1 ? 70 : aspect < 1.4 ? 52 : 48
     camera.updateProjectionMatrix()
   }, [camera, size])
+  return null
+}
+
+type Vec3Set = { set: (x: number, y: number, z: number) => void }
+type ControlsLike = { object: { position: Vec3Set }; target: Vec3Set; update?: () => void }
+
+/** Reset the camera to the default composition when the reset button bumps `tick`. Lives inside the
+ *  Canvas so it reaches the makeDefault OrbitControls via the R3F store. Sets position + target
+ *  directly rather than calling controls.reset(): drei saves a stale target0 of [0,0,0] before the
+ *  `target` prop applies, so reset() alone looks at the origin instead of the composition centre.
+ *  set()/update() are method calls (not hook-value assignments), so no immutability disable is needed. */
+function ResetView({ tick }: { tick: number }) {
+  const controls = useThree((s) => s.controls) as ControlsLike | null
+  useEffect(() => {
+    if (tick > 0 && controls) {
+      controls.object.position.set(...HOME_POSITION)
+      controls.target.set(...HOME_TARGET)
+      controls.update?.()
+    }
+  }, [tick, controls])
   return null
 }
 
@@ -97,12 +121,12 @@ export default function App() {
     skyBottom: { value: PALETTE.skyHorizon, label: 'sky · horizon' },
   })
   const light = useControls('light & bloom', {
-    bloom: { value: 1.1, min: 0, max: 3, step: 0.05, label: 'bloom' },
-    bloomThreshold: { value: 0.6, min: 0, max: 1, step: 0.01, label: 'bloom threshold' },
+    bloom: { value: 1.0, min: 0, max: 3, step: 0.05, label: 'bloom' },
+    bloomThreshold: { value: 0.63, min: 0, max: 1, step: 0.01, label: 'bloom threshold' },
     bloomRadius: { value: 0.55, min: 0, max: 1, step: 0.05, label: 'bloom spread' },
     glow: { value: 1, min: 0, max: 1, step: 0.02, label: 'eye glow' },
-    moon: { value: 1.7, min: 0, max: 4, step: 0.1, label: 'moon' },
-    stars: { value: 2.5, min: 0, max: 5, step: 0.1, label: 'stars' },
+    moon: { value: 1.45, min: 0, max: 4, step: 0.1, label: 'moon' },
+    stars: { value: 2.0, min: 0, max: 5, step: 0.1, label: 'stars' },
   })
 
   const c: SkyControls = {
@@ -120,24 +144,26 @@ export default function App() {
   }
 
   const reduced = usePrefersReducedMotion()
+  const [resetTick, setResetTick] = useState(0)
 
   return (
     <>
       <Leva hidden={!import.meta.env.DEV} />
       <Canvas
         frameloop="always"
-        camera={{ position: [2.2, 1.5, 4.6], fov: 48 }}
+        camera={{ position: HOME_POSITION, fov: 48 }}
         dpr={[1, 1.5]}
         gl={{ preserveDrawingBuffer: true }}
       >
         <color attach="background" args={['#0b1736']} />
         <ResponsiveFraming />
+        <ResetView tick={resetTick} />
         <Suspense fallback={null}>
           <World c={c} reduced={reduced} />
         </Suspense>
         <OrbitControls
           makeDefault
-          target={[0, 1.05, 0]}
+          target={HOME_TARGET}
           enablePan={false}
           enableDamping
           rotateSpeed={0.8}
@@ -157,6 +183,34 @@ export default function App() {
         </EffectComposer>
         {import.meta.env.DEV && <Stats />}
       </Canvas>
+      {/* Reset the camera to the painting's default composition after orbiting. */}
+      <button
+        type="button"
+        onClick={() => setResetTick((t) => t + 1)}
+        onMouseOver={(e) => (e.currentTarget.style.opacity = '1')}
+        onMouseOut={(e) => (e.currentTarget.style.opacity = '0.68')}
+        aria-label="Reset the view to the painting's composition"
+        style={{
+          position: 'fixed',
+          right: 16,
+          bottom: 16,
+          zIndex: 10,
+          opacity: 0.68,
+          padding: '8px 15px',
+          borderRadius: 999,
+          background: 'rgba(13,23,54,0.55)',
+          color: '#e7ecf7',
+          border: '1px solid rgba(231,236,247,0.28)',
+          backdropFilter: 'blur(6px)',
+          WebkitBackdropFilter: 'blur(6px)',
+          font: '500 13px/1 ui-sans-serif, system-ui, sans-serif',
+          letterSpacing: '0.03em',
+          cursor: 'pointer',
+          transition: 'opacity .2s ease',
+        }}
+      >
+        ↺ Reset view
+      </button>
     </>
   )
 }

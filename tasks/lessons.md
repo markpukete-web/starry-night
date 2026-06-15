@@ -635,3 +635,30 @@ Mark passed the foreground-complete gate after the bolder-hills tweak (g3). 4th 
 the pre-release gate remains. Carried forward 4 post-gate items (see todo "Post-gate queue"): original-art
 comparison (faithfulness audit) · mobile moon framing (portrait bearing) · reset control · final sky/flow
 tuning (bake flowBias + leva values). Now proceeding autonomously on that queue between here and pre-release.
+
+## Front-view taste corrections + reset control (Mark, 2026-06-15, post-gate)
+
+Mark set the original painting as a front-view composition CONTRACT — cypress nearly reaching but not
+clipping; central whorl lower/less-oversized; moon painted not sticker-bright; village/church a small pale
+anchor — and asked for tiny corrections IN ORDER (cypress → bloom → sky exposure) BEFORE any stroke/flow
+math, with the flow-field used only as fine verification afterward (not a visual hammer).
+
+- **Corrections (all small, baked as the leva defaults):** main cypress girth 1.2→1.1 + height 3.05→3.0
+  (slimmer, still nearly reaching the top); star/moon bloom softened (bloom 1.1→1.0, threshold 0.6→0.63,
+  moon 1.7→1.45, stars 2.5→2.0) so the moon/stars read painted not sticker; sky exposure quieted via the
+  stroke brightness term in `strokeFrag` (`0.62+0.34·flow` → `0.54+0.32·flow`) — that's EXPOSURE, not the
+  flow MATH Mark deferred. The sky is deeper but still reads pale; more darkening + the whorl reposition
+  are the next (stroke-math) step.
+
+- **Reset control — the bug hunt that mattered.** A subtle on-canvas "↺ Reset view" button. The first two
+  attempts (forwarded ref; then `makeDefault` store + `controls.reset()`) BOTH left the camera orbited. A
+  window-exposed diagnostic bisected it: onClick fired (tick 0→1), controls present, reset() callable — so
+  reset WAS running. Reading `controls.object.position` / `target` / `target0` before+after revealed the
+  cause: **drei saves OrbitControls `target0` = [0,0,0] at construction, BEFORE the `target` prop
+  ([0,1.05,0]) is applied**, so `reset()` reverts the look-at to the ORIGIN → the camera tilts down at the
+  void (not an orbit at all). Fix: don't use `reset()`; set `controls.object.position` + `controls.target`
+  directly to a single-source `HOME_POSITION`/`HOME_TARGET`, then `update()`. `.set()`/`.update()` are
+  method calls, so react-hooks/immutability doesn't fire (no disable needed). Round-trip verified (g7-reset).
+  - LESSON: when a 3D control "no-ops", expose the object on `window` and READ its real state
+    (position/target/target0) — don't theorise. I wasted a pass on a wrong damping-inertia theory before
+    reading the numbers. And don't trust drei's `reset()`/`target0` when you set `target` via a prop.
