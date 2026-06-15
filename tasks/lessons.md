@@ -689,3 +689,19 @@ corner to mid-sky just above the church spire — MORE faithful to the painting 
 village), and the spire now reaches into the base of the whorl. Still the unmistakable hero swirl; sky
 depth, highlights, moon, stars and motion all intact. Lesson: lowering the hero anchor toward the village
 tightened the swirl↔steeple relationship — the painting's own arrangement, not something to invent.
+
+## Mobile moon framing — portrait camera bearing (Mark approved, 2026-06-15)
+
+The documented hard limit: in portrait the moon anchor sits ~37° off the composition centre and the portrait
+horizontal-fov half-angle maxes ~18°, so fov alone can't fit it. Fix = a portrait-specific camera BEARING:
+rotate the camera ~24° toward the moon's corner about the orbit target (`PORTRAIT_AZ`, applied via
+`homePositionFor(aspect)`). Landscape is untouched (rotation 0 unless aspect<1).
+
+- The swirl basis stays landscape-anchored, so the composition shifts a touch left as the moon comes in —
+  cypress to the left edge, whorl up-left, moon upper-right. Reads as a complete Starry Night portrait WITH
+  the moon (the trade Mark accepted on the A/B `g10-mobile-before` → `g11-mobile-after`).
+- SIGN gotcha: positive `PORTRAIT_AZ` pushed the moon FURTHER off (the whorl moved right); negative pans the
+  view right so the moon comes in. Got it from the capture, not analysis — empirical is faster for camera signs.
+- Reset made aspect-aware: `homePositionFor(aspect)` is shared by `ResponsiveFraming` AND `ResetView`, so the
+  reset button returns to the portrait bearing on a phone (moon stays) instead of the landscape home.
+  Verified: orbit in portrait → reset → moon back in frame (`g12-portrait-reset`).

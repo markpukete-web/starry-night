@@ -44,11 +44,11 @@ composition contract (cypress nearly-reaching-not-clipping · whorl lower/smalle
 village anchor). (2) **Reset control** built + round-trip verified (direct-set home; drei `target0` bug —
 see lessons). (3) **Front-view taste corrections** per the contract — cypress slimmer, softer star/moon
 bloom, quieter sky exposure (all baked as leva defaults).
-**Whorl pass done + approved** (`g9-front`): the central swirl lowered to mid-sky over the church + tightened
-(less oversized), hero read intact, flow untouched. The front-view composition contract is now MET (cypress ·
-deeper sky · whorl · painted moon · pale village anchor). **Next:** mobile moon framing — needs Mark's
-portrait bearing (the moon sits ~42° off-centre on the arc; fov alone can't reach it) — then the final
-sky/flow value bake + ship hygiene → pre-release gate.
+**Whorl + mobile moon framing done + approved.** Front-view contract MET (cypress · deeper sky · whorl ·
+painted moon · pale village anchor); portrait now frames the moon via a camera bearing (`g11-mobile-after`),
+reset aspect-aware (`g12-portrait-reset`). **Next:** the final sky/flow value bake (review + confirm the
+current baked leva defaults as the shipped values — flowBias, churn, bloom, moon/stars, colours) + ship
+hygiene (slim `flow-field.png` 3.2 MB · strip `leva` from the prod build) → **pre-release gate**.
 To run it: `npm run dev` (was on **:5174**); the leva panel is live for him to drive. Visual-review
 loop + capture recipe are in `lessons.md` (canvas readback; `browser_run_code_unsafe` for emulateMedia).
 
@@ -61,9 +61,9 @@ items (2026-06-15) merged with the prior backlog, in proposed order:
 2. **Reset control** — ✓ DONE (2026-06-15): a subtle on-canvas "↺ Reset view" button sets the camera to the
    single-source `HOME_POSITION`/`HOME_TARGET` and `update()`s. (drei's `reset()`/`target0` is stale —
    saved [0,0,0] before the target prop; see lessons.) Round-trip verified — orbit far → click → snaps home.
-3. **Mobile moon framing** — the moon anchor sits ~42° off view-centre on the arc, so fov alone can't bring
-   it into portrait (documented hard limit). Add a portrait-specific camera BEARING in `ResponsiveFraming`
-   (currently fov-only). Needs Mark's composition call on the bearing.
+3. **Mobile moon framing** — ✓ DONE (2026-06-15, approved): a portrait-specific camera BEARING (~24° toward
+   the moon, `PORTRAIT_AZ` via `homePositionFor`), reset made aspect-aware so the moon stays after a reset.
+   Composition shifts a touch left (documented trade Mark accepted). A/B `g11-mobile-after` · reset `g12`.
 4. **Final sky/flow tuning** — bake `flowBias` (0.6 → ?) + the chosen leva values (steeple lift, moon
    prominence, churn speed) as the new defaults. Needs Mark's values from the panel; informed by (1).
 5. **Possible impasto enhancement** (optional, Mark's call) — brushstroke-texture the forms like the sky.

@@ -18,6 +18,18 @@ const HOME_TARGET: [number, number, number] = [0, 1.05, 0]
 // pans the view right so the moon (top-right of the composition) comes into the narrow frame.
 const PORTRAIT_AZ = -0.42
 
+// The camera "home" position for an aspect — portrait rotates it toward the moon's corner about the
+// orbit target (Y axis). Shared by the responsive framing and the reset, so reset returns to the
+// aspect-appropriate home (the moon stays in frame after a reset on portrait, not just on load).
+function homePositionFor(aspect: number): [number, number, number] {
+  const a = aspect < 1 ? PORTRAIT_AZ : 0
+  const ox = HOME_POSITION[0] - HOME_TARGET[0]
+  const oz = HOME_POSITION[2] - HOME_TARGET[2]
+  const cos = Math.cos(a)
+  const sin = Math.sin(a)
+  return [HOME_TARGET[0] + ox * cos + oz * sin, HOME_POSITION[1], HOME_TARGET[2] - ox * sin + oz * cos]
+}
+
 // Deepen a derived sky swatch by a documented linear factor — provenance kept (swatch × factor), the
 // dome gradient sits below the strokes so deepening it darkens the blue field without dimming the swirls.
 const deepenHex = (hex: string, f: number) => '#' + new Color(hex).multiplyScalar(f).getHexString()
@@ -48,15 +60,10 @@ function ResponsiveFraming() {
     const portrait = aspect < 1
     // eslint-disable-next-line react-hooks/immutability -- the R3F-managed camera is mutated by design
     camera.fov = portrait ? 70 : aspect < 1.4 ? 52 : 48
-    // Portrait bears the camera toward the moon's corner (rotate HOME_POSITION around the orbit target
-    // about Y). The swirl basis stays landscape-anchored, so the composition shifts a touch left as the
-    // moon comes in — the documented trade. set() is a method call, so no immutability disable needed.
-    const a = portrait ? PORTRAIT_AZ : 0
-    const ox = HOME_POSITION[0] - HOME_TARGET[0]
-    const oz = HOME_POSITION[2] - HOME_TARGET[2]
-    const cos = Math.cos(a)
-    const sin = Math.sin(a)
-    camera.position.set(HOME_TARGET[0] + ox * cos + oz * sin, HOME_POSITION[1], HOME_TARGET[2] - ox * sin + oz * cos)
+    // Portrait bears the camera toward the moon's corner; landscape stays at HOME (see homePositionFor).
+    // set() is a method call, so no immutability disable is needed.
+    const [hx, hy, hz] = homePositionFor(aspect)
+    camera.position.set(hx, hy, hz)
     camera.updateProjectionMatrix()
   }, [camera, size])
   return null
@@ -72,13 +79,15 @@ type ControlsLike = { object: { position: Vec3Set }; target: Vec3Set; update?: (
  *  set()/update() are method calls (not hook-value assignments), so no immutability disable is needed. */
 function ResetView({ tick }: { tick: number }) {
   const controls = useThree((s) => s.controls) as ControlsLike | null
+  const size = useThree((s) => s.size)
   useEffect(() => {
     if (tick > 0 && controls) {
-      controls.object.position.set(...HOME_POSITION)
+      const [x, y, z] = homePositionFor(size.width / size.height)
+      controls.object.position.set(x, y, z)
       controls.target.set(...HOME_TARGET)
       controls.update?.()
     }
-  }, [tick, controls])
+  }, [tick, controls, size])
   return null
 }
 
