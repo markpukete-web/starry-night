@@ -14,7 +14,7 @@ below — never edited in place.
 > **✅ FOREGROUND-COMPLETE GATE PASSED (Mark, 2026-06-15).** 4th of 5 gates; only the **pre-release gate**
 > remains. In the post-gate phase — proceed autonomously on the queue; the gate review is Mark's.
 
-**This session (2026-06-15) — all committed to `main`, NOT pushed.** The foreground-complete gate review
+**This session (2026-06-15) — all committed AND pushed to `origin/main`** (2026-06-15, Mark's go). The foreground-complete gate review
 response (island seam fix · palette provenance · cypress reframe · spec de-stale) → **gate passed** → a run
 of post-gate polish: bolder hills · original-art audit (→ Mark's front-view composition contract) · reset
 control · front-view corrections (cypress slimmer · softer star/moon bloom · quieter sky exposure) · sky
@@ -44,7 +44,9 @@ Locked criteria status: flow-driven motion ✓ · palette colours ✓ (documente
 ✓ (byte-identical frames) · orbit limits ✓; **performance is the one left to confirm on real hardware** —
 headless is software-rendered, Mark's machine was 120 fps on the sky pre-foreground; needs a re-check with
 the foreground + a mid-tier mobile. Awaiting Mark's release call. NB actual deploy (Vercel + Cloudflare DNS,
-`starrynight.markma.dev`) is a separate stop-and-ask per CLAUDE.md. Nothing pushed yet.
+`starrynight.markma.dev`) is a separate stop-and-ask per CLAUDE.md — NOT done by Claude. **Pushed to
+`origin/main` 2026-06-15** on Mark's go (if Vercel auto-deploy is wired to the repo, that push may have
+triggered a production deploy — Claude ran no deploy/DNS commands).
 To run: `npm run dev` (was on **:5174**); leva panel live. Visual-review + capture recipe in `lessons.md`
 (canvas readback; `browser_run_code_unsafe` for emulateMedia/viewport).
 
