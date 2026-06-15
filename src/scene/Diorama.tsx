@@ -26,10 +26,13 @@ const C = {
   cypress: PALETTE.cypress,
 }
 
-// The church reads as the pale focal point of the village: lifted from the derived steeple blue
-// (#556c81) so it catches the moonlight and stands out against the dark hills, as in the painting.
-const CHURCH_PALE = '#8b9bad'
-const CHURCH_TIP = '#a6b4c4'
+// The church is the pale focal point of the village: the derived steeple blue (PALETTE.steeple
+// #556c81) lifted toward moonlight so it stands out against the dark hills, as in the painting. A
+// documented artistic lift, kept provably sampled from palette.json; the factors are fit to reproduce
+// the prior hand-tuned hue (ΔE < 1), so this is provenance, not a retune.
+const WHITE = new Color('#ffffff')
+const CHURCH_PALE = new Color(PALETTE.steeple).multiplyScalar(1.45).lerp(WHITE, 0.14) // ≈ #8b9bad
+const CHURCH_TIP = new Color(PALETTE.steeple).multiplyScalar(1.77).lerp(WHITE, 0.26) // ≈ #a6b4c4
 
 type Vec3 = [number, number, number]
 
@@ -77,10 +80,12 @@ function FloatingIsland() {
     const pos = new Float32Array(rows * cols * 3)
     const col = new Float32Array(rows * cols * 3)
 
+    // the whole island is the derived hills earth across a night range: shaded crevices, lifted
+    // moonlit ridges, and a near-black root where it dissolves into the night. All × PALETTE.hills.
     const earth = new Color(PALETTE.hills) // #263041 — bluish moonlit earth
     const earthLow = earth.clone().multiplyScalar(0.45) // crevices
-    const earthHi = new Color('#3a4a63') // ridges catching moonlight (toward hills' #5c6872)
-    const abyss = new Color('#05070d')
+    const earthHi = earth.clone().multiplyScalar(2.33) // ridges catching moonlight ≈ #3a4a63
+    const abyss = earth.clone().multiplyScalar(0.075) // root dissolving into night ≈ #05070d
 
     // organic elliptical coastline radius at a given angle
     const coastR = (ang: number) => {
@@ -100,7 +105,9 @@ function FloatingIsland() {
     }
     // per-angle height wobble at the coastline so the rim is a bushy, organic silhouette, not a
     // flat disc edge (the "floating plate" tell)
-    const rimWobble = (ang: number) => (vnoise(ang * 1.9 + 4, 7) - 0.5) * 0.35
+    // sampled on the circle (cos/sin), NOT raw ang, so it's continuous across the 0/2π seam
+    const rimWobble = (ang: number) =>
+      (vnoise(Math.cos(ang) * 1.9 + 4, Math.sin(ang) * 1.9 + 7) - 0.5) * 0.35
 
     const cc = new Color()
     let p = 0
@@ -122,13 +129,14 @@ function FloatingIsland() {
         } else {
           const k = (r - RT) / RS // 0 coast → 1 tip
           const taper = 1 - smooth(0, 1, k) * 0.78
-          const rocky = 1 + (vnoise(ang * 2.5, k * 4 + 11) - 0.5) * 0.4 * k
+          // circular angular sampling (continuous at the 0/2π seam); k rides on the y axis
+          const rocky = 1 + (vnoise(Math.cos(ang) * 2.5 + 11, Math.sin(ang) * 2.5 + k * 4) - 0.5) * 0.4 * k
           const rad = Math.max(0.05, edge * taper * rocky)
           x = Math.cos(ang) * rad
           z = Math.sin(ang) * rad
           const rimY = terrainY(Math.cos(ang) * edge, Math.sin(ang) * edge) - 0.1 + rimWobble(ang)
           const drop = DEPTH * (k * k * 0.7 + k * 0.3) // ease-in plunge
-          y = rimY - drop + (vnoise(ang * 3, k * 5 + 5) - 0.5) * 0.18 * (1 - k)
+          y = rimY - drop + (vnoise(Math.cos(ang) * 3 + 5, Math.sin(ang) * 3 + k * 5) - 0.5) * 0.18 * (1 - k)
           depth = k
         }
         pos[p] = x
@@ -196,9 +204,11 @@ function RollingHills() {
     const pos = new Float32Array(cols * rows * 3)
     const col = new Float32Array(cols * rows * 3)
 
-    const hillDark = new Color('#1d2735') // troughs
-    const hillMid = new Color('#3a4a63') // mid slopes (derived hills blue, lifted to read at night)
-    const hillLit = new Color('#74808d') // moonlit crest (toward the hills region's lightest swatch)
+    // the derived hills blue lifted across a night range so the ridges read in the moonlight: shaded
+    // troughs, lifted mid-slopes, the hills region's lightest swatch lifted for the moonlit crest.
+    const hillDark = new Color(PALETTE.hills).multiplyScalar(0.673) // troughs ≈ #1d2735
+    const hillMid = new Color(PALETTE.hills).multiplyScalar(2.33) // mid slopes ≈ #3a4a63
+    const hillLit = new Color(PALETTE.hillsCrest).multiplyScalar(1.585) // moonlit crest ≈ #74808d
 
     const hillH = (x: number, z: number) => {
       const b = Math.min(1, Math.max(0, (Z0 - z) / (Z0 - Z1))) // 0 front → 1 back
@@ -278,9 +288,11 @@ function Cypress({ position, height = 2.8, rot = 0, scale = 1, seed = 0, girth =
     const pos = new Float32Array(rows * cols * 3)
     const col = new Float32Array(rows * cols * 3)
 
-    const cDark = new Color('#10150f') // deep green-black core
-    const cGreen = new Color('#26301f') // cypress green (palette #232622 / #333426 family)
-    const cLit = new Color('#3a4640') // moonlit blue-green edge
+    // green-black modelling, all sampled from palette.json: the cypress dark swatch deepened to the
+    // core, the cypress green swatch for the tongues, the coolest village swatch lifted for the rim.
+    const cDark = new Color(PALETTE.cypress).multiplyScalar(0.573) // deep green-black core ≈ #10150f
+    const cGreen = new Color(PALETTE.cypressGreen).multiplyScalar(0.725) // green tongues ≈ #26301f
+    const cLit = new Color(PALETTE.villageCool).multiplyScalar(1.122) // moonlit edge ≈ #3a4640
 
     const cc = new Color()
     let p = 0
@@ -436,7 +448,7 @@ function Bush({ position, r = 0.16, seed = 0 }: { position: Vec3; r?: number; se
   }, [r, seed])
   return (
     <mesh geometry={geo} position={position}>
-      <meshStandardMaterial color="#232622" roughness={1} flatShading />
+      <meshStandardMaterial color={PALETTE.cypressShade} roughness={1} flatShading />
     </mesh>
   )
 }
@@ -469,7 +481,7 @@ export function Diorama() {
       </group>
 
       {/* cypress, front-left (two flames) — tall and dominant, the dark counterweight to the sky */}
-      <Cypress position={[-1.35, 0, 0.8]} height={3.35} rot={0.4} girth={1.3} />
+      <Cypress position={[-1.3, 0, 0.8]} height={3.05} rot={0.4} girth={1.2} />
       <Cypress position={[-1.12, 0, 1.02]} height={2.2} rot={-0.5} scale={0.9} seed={13} girth={1.2} />
 
       {/* dark foreground shrubs, dotted along the ground as in the painting */}

@@ -9,13 +9,20 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## Where we are now (2026-06-14, end of session) — read this first
+## Where we are now (2026-06-15) — read this first
 
-> **GATE OPEN: foreground-complete. Mark is mid-review, continuing tomorrow. Do NOT proceed past it.**
+> **GATE OPEN: foreground-complete. Mark is reviewing; gate NOT yet approved — do NOT proceed past it.**
 > The whole diorama is built and passing the locked criteria; what's left at the gate is Mark's taste.
 
-**Open these captures first:** `scratch/f6b-cypress-front.jpeg` (current hero — dominant cypress) ·
-`scratch/f5-orbit.jpeg` (it's a real 3D diorama) · `scratch/f5-mobile.jpeg` (mobile portrait).
+**2026-06-15 — review-response pass (done, verified, committed).** Mark relayed a 4-point review at the
+gate; all four addressed (detail in `lessons.md` → "Review-response pass"): P1 cypress reframed (3.05/1.2 —
+clears the frame, still the dominant counterweight); P2 island seam bug fixed (circular angular noise — the
+orbit shard is gone); P2 palette provenance (foreground colours now derive from palette.json swatches ×
+documented factors, visual preserved, ΔE<1 on the church); P3 spec de-staled (`CLAUDE.md:53`). Build + lint
+green; committed to main (not pushed).
+
+**Open these captures first:** `scratch/g1-front.jpeg` (current hero) · `scratch/g1-orbit2.jpeg` (seam-free
+island, real 3D) · `scratch/g1-mobile.jpeg` (mobile portrait).
 
 **What the scene is now:** an orbitable 3D floating-island diorama under the churning, anchored,
 glowing vortex sky (the sky was already done + twice Codex-reviewed). This session rebuilt the entire
@@ -30,13 +37,12 @@ foreground (F1–F5), then made the cypress dominant per Mark's first gate note:
 All committed to `main` this session: `f9a5847` (docs/locked edits) → `0b9cdd6` F1 → `f7fb9d4` F2 →
 `d41a51f` F3 → `693e393` F4 → `c4bcd9b` F5 → `621fde9` cypress. `npm run build` + `npm run lint` green.
 
-### ▶ PICK UP HERE tomorrow — the gate review is the live thread
-Mark is deciding (from `scratch/f6b-cypress-front.jpeg`) whether the foreground is right. The options
-he's weighing — wait for his call, don't pre-empt:
-- **push the cypress further** (taller / wider / more central — lever: `girth` + `height` on the two
-  `<Cypress>` in `src/scene/Diorama.tsx`), or
-- **other taste tweaks he flagged interest in:** church paler-or-bigger · hills bolder, or
-- **approve the gate** → then start the post-gate queue below.
+### ▶ PICK UP HERE — still the gate review (Mark's taste call)
+The 2026-06-15 review items are resolved; the gate itself is still Mark's to approve. Options he may weigh
+next — wait for his call, don't pre-empt:
+- **approve the foreground-complete gate** → start the post-gate queue below, or
+- **further taste tweaks:** cypress size again (lever: `height` + `girth` on the two `<Cypress>` in
+  `src/scene/Diorama.tsx`) · church · hills bolder · moon prominence.
 To run it: `npm run dev` (was on **:5174**); the leva panel is live for him to drive. Visual-review
 loop + capture recipe are in `lessons.md` (canvas readback; `browser_run_code_unsafe` for emulateMedia).
 
@@ -137,9 +143,10 @@ hero → polish; capture + review each slice.
       (frozen under `reduce`, churns under control); full capture pass (desktop/orbit/mobile).
 - [x] Gate feedback #1 — cypress made taller & more dominant (`girth` knob on `<Cypress>`); capture
       `scratch/f6b-cypress-front.jpeg`, commit `621fde9`.
-- [ ] **Foreground-complete gate — OPEN, Mark mid-review (since 2026-06-14).** Captures presented
-      (`scratch/f6b-cypress-front.jpeg` + `scratch/f5-{orbit,mobile}.jpeg`). Mark is making taste calls
-      (see "PICK UP HERE" at the top); gate NOT yet approved — do not proceed past it. Build + lint green.
+- [ ] **Foreground-complete gate — OPEN, Mark reviewing (2026-06-14 → 06-15).** 2026-06-15 review-response
+      pass done (seam fix · palette provenance · cypress reframe · spec de-stale); captures
+      `scratch/g1-{front,orbit2,mobile}.jpeg`. Gate NOT yet approved — Mark's taste call; do not proceed
+      past it. Build + lint green.
 
 ## Backlog / later gates (post movable-decision)
 

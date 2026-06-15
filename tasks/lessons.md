@@ -567,3 +567,45 @@ First taste call at the foreground-complete gate.
   base is thin; the bulge clears the houses).
 - Lesson for "make X dominant": grow mass + height together and check the silhouette stays in frame —
   a giant that clips the frame edge reads as broken, not big.
+
+## Review-response pass — seam, palette provenance, cypress reframe (Mark's review, 2026-06-15)
+
+Mark relayed a four-point review at the open foreground gate; verified each against the code before
+acting (receiving-code-review discipline), fixed the mechanical ones, took his calls on the taste/locked.
+
+- **Island seam was a real bug — same class as the F4 cypress.** `rimWobble` + the two root-noise
+  lookups sampled the RAW angle (`vnoise(ang*k, …)`), discontinuous at 0/2π → two coincident-in-xz
+  vertices at different heights = a triangular shard/flap on the coastline, visible in orbit (clear in
+  `f5-orbit.jpeg`, gone in `g1-orbit2.jpeg`). Fix = sample on the circle `vnoise(cos·k+ox, sin·k+oy)`,
+  with k riding the y axis for the root rings. `coastR` was already safe (integer sine harmonics are
+  periodic). LESSON: when you fix a seam in ONE place (F4 cypress), grep the whole file for raw-angle
+  noise (`vnoise(ang`) — the island predated that lesson and silently kept the bug.
+
+- **Palette provenance without a retune (Mark's locked-criterion call).** The foreground had hand-picked
+  lifted hexes (church, hills, cypress modelling, island earth, bush) outside palette.json — drift by the
+  letter of the locked colour criterion. Converted each to `PALETTE.<swatch> × documented factor`
+  (multiplyScalar, or lerp-toward-white), with factors chosen to REPRODUCE the current hex, not change it.
+  - **Fit in LINEAR space, not sRGB.** three.js Color stores linear and `multiplyScalar`/`lerp` act on
+    linear; vertex colours are linear. So the lift factor must be fit in linear (least-squares
+    `f = (s·t)/(s·s)`), else the reproduced colour is wrong — the sRGB-eyeballed 1.53 was really 2.33 in
+    linear. Scripts: `scratch/palette-fit.mjs`, `scratch/church-fit.mjs`.
+  - Most surfaces hit ΔE<2 with a single scalar (island = hills ×{0.075, 0.45, 1, 2.33}; the hills band;
+    the cypress greens). The focal CHURCH needed ΔE<1, so a 2-param fit `steeple ×a →white t` (pale
+    ×1.45→.14, tip ×1.77→.26) — landed ΔE 0.5/0.4, visually identical.
+  - New named swatches exposed in `palette.ts`: villageCool #36403f, hillsCrest #5c6872, cypressGreen
+    #333426, cypressShade #232622. The light + painting-sampled-stroke carve-outs are unchanged.
+  - The distinction that matters: PROVENANCE (swatch × logged factor, visual preserved), NOT a taste
+    retune. Mark was explicit — "not darker." Captures confirm no colour shift.
+
+- **Cypress reframe (gate feedback #2).** 3.35/1.3 was marginally over the line — tip pressed the top,
+  crowded the left, risked clipping on portrait fov (trips the F6 "a giant that clips reads as broken"
+  lesson). Mark's call: height 3.05 / girth 1.2 / x −1.3 (a little inboard). Still the dominant left
+  counterweight; tip now clears the top with margin, church readable, left sky breathes. Front+mobile+orbit.
+
+- **Spec de-stale (Mark delegated).** `CLAUDE.md:53` still said "constrained pan/tilt camera. Free orbit …
+  out of scope," contradicting the locked `:128` (constrained orbit IS in scope; only free-fly out).
+  Reworded line 53 to match. Line 53 is outside Claude's edit-allowlist — Mark delegated this one
+  explicitly (as with the 2026-06-14 locked-edit batch).
+
+Build + lint green; committed to main (not pushed). Gate stays OPEN — these were review responses, not the
+gate approval, which is Mark's taste call.

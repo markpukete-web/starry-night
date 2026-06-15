@@ -7,6 +7,9 @@
 //     carry the painting's true local colour rather than its 5-colour reduction (zero drift).
 //   • Emissive LIGHT (moon, stars, lit windows) is light, not surface, so it stays warm and bright;
 //     Van Gogh's own moon and windows are luminous points, not paint-coloured.
+//   • A few foreground surfaces apply a DOCUMENTED scalar/lerp lift to their swatch (at the use site
+//     in Diorama.tsx) so the dark forms read in the night lighting — provenance kept (swatch × logged
+//     factor, fit to preserve the prior hand-tuned look), per the 2026-06-15 palette-provenance pass.
 import palette from '../../public/reference/palette.json'
 
 type Swatch = { hex: string; srgb: number[]; lab: number[]; weight: number }
@@ -23,4 +26,8 @@ export const PALETTE = {
   house: hex('village', 1), //   #2a3f6f — house walls
   roof: hex('village', 3), //    #26282b — roofs
   steeple: hex('village', 2), // #556c81 — the lit spire
+  villageCool: hex('village', 4), // #36403f — coolest village swatch (cypress moonlit rim)
+  hillsCrest: hex('hills', 4), //  #5c6872 — lightest hills swatch (moonlit crest)
+  cypressGreen: hex('cypress', 4), // #333426 — cypress green (the flame's tongues)
+  cypressShade: hex('cypress', 3), // #232622 — cypress shade (foreground bushes)
 }

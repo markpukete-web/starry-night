@@ -50,7 +50,7 @@ spikes — e.g. flow-field instanced-brushstroke sky; 2.5D depth parallax; hybri
 each against the acceptance criteria and the painting, pick one, and record the rationale in
 `docs/decisions/0002-movable-definition.md`. Default candidate to beat: hybrid — animated
 brushstroke sky over a layered parallax foreground (cypress, village, steeple) with a
-constrained pan/tilt camera. Free orbit breaks the composition and is out of scope.
+constrained camera — tasteful orbit limits, not free-fly (panning, unlimited zoom). See Out of scope.
 
 ### Build loop (every substantial change)
 
