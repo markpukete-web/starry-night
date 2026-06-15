@@ -9,48 +9,44 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## Where we are now (2026-06-15) — read this first
+## Where we are now (2026-06-15, end of session) — read this first
 
-> **✅ FOREGROUND-COMPLETE GATE PASSED (Mark, 2026-06-15).** 4th of 5 gates done; only the pre-release gate
-> remains. Now in the post-gate phase — proceed on the queue below (autonomous between gates).
+> **✅ FOREGROUND-COMPLETE GATE PASSED (Mark, 2026-06-15).** 4th of 5 gates; only the **pre-release gate**
+> remains. In the post-gate phase — proceed autonomously on the queue; the gate review is Mark's.
 
-**2026-06-15 — review-response pass (done, verified, committed).** Mark relayed a 4-point review at the
-gate; all four addressed (detail in `lessons.md` → "Review-response pass"): P1 cypress reframed (3.05/1.2 —
-clears the frame, still the dominant counterweight); P2 island seam bug fixed (circular angular noise — the
-orbit shard is gone); P2 palette provenance (foreground colours now derive from palette.json swatches ×
-documented factors, visual preserved, ΔE<1 on the church); P3 spec de-staled (`CLAUDE.md:53`). Build + lint
-green; committed to main (not pushed). **Then** made the hills bolder per Mark — a brighter luminous rolling
-band, kept just below the church pale (`lessons.md` → "Hills made bolder").
+**This session (2026-06-15) — all committed to `main`, NOT pushed.** The foreground-complete gate review
+response (island seam fix · palette provenance · cypress reframe · spec de-stale) → **gate passed** → a run
+of post-gate polish: bolder hills · original-art audit (→ Mark's front-view composition contract) · reset
+control · front-view corrections (cypress slimmer · softer star/moon bloom · quieter sky exposure) · sky
+deepened one notch (tone-aware) · central whorl lowered + tightened · mobile moon framing (portrait camera
+bearing + aspect-aware reset). Each step verified by capture; `npm run build` + `npm run lint` green
+throughout. Recent commits: `303325d` `8280ebf` `b9e94b7` `b317c97` `adc48ba` `d12fc35` (see `git log`).
 
-**Open these captures first:** `scratch/g3-front.jpeg` (current hero — bolder hills) · `scratch/g3-orbit.jpeg`
-(orbit) · `scratch/g1-orbit2.jpeg` (seam-free island) · `scratch/g1-mobile.jpeg` (mobile portrait).
+**State of the piece:** the front composition MEETS Mark's painting contract — cypress nearly-reaching-not-
+clipping · deep-blue sky · whorl over the church · painted (not sticker) moon · pale village anchor. Portrait
+reads as Starry Night WITH the moon; the reset button works on both aspects. Sky + foreground colours are
+derived from `palette.json`; reduced-motion freezes the churn. The leva dev panel is live for final tuning.
 
-**What the scene is now:** an orbitable 3D floating-island diorama under the churning, anchored,
-glowing vortex sky (the sky was already done + twice Codex-reviewed). This session rebuilt the entire
-foreground (F1–F5), then made the cypress dominant per Mark's first gate note:
-- **F1** organic floating island (irregular coastline, rocky root fading to dark) — killed the slab.
-- **F2** rolling moonlit blue-grey hills (heightfield) — killed the balloon spheres.
-- **F3** clustered gable-roofed village + a pale slender-spired church as the focal point, warm windows.
-- **F4** the cypress as a real Van Gogh flame (displaced tube: licking tongues, twist, green-black).
-- **F5** foreground shrubs + full capture pass; **reduced-motion re-verified** (frozen under reduce).
-- **+ gate feedback** — cypress made taller & more dominant via a `girth` knob.
+**Open these captures first:** `scratch/g9-front.jpeg` (desktop hero) · `scratch/g11-mobile-after.jpeg`
+(portrait + moon) · `scratch/g12-portrait-reset.jpeg` (reset keeps the moon).
 
-All committed to `main` this session: `f9a5847` (docs/locked edits) → `0b9cdd6` F1 → `f7fb9d4` F2 →
-`d41a51f` F3 → `693e393` F4 → `c4bcd9b` F5 → `621fde9` cypress. `npm run build` + `npm run lint` green.
+**The scene** is an orbitable 3D floating-island diorama (organic island · rolling moonlit hills · gable
+village + pale-spired church · Van Gogh flame-cypress · shrubs) under the churning, anchored, glowing vortex
+sky. The full build history — the foreground F1–F5 rebuild, the sky's evolution, and every session lesson —
+lives in `tasks/lessons.md` (newest at the bottom of each section); this file holds the current intent.
 
-### ▶ PICK UP HERE — post-gate phase (gate passed 2026-06-15)
-Done so far: (1) **original-art audit** — confirmed audit-not-feature; Mark turned it into a front-view
-composition contract (cypress nearly-reaching-not-clipping · whorl lower/smaller · painted moon · pale
-village anchor). (2) **Reset control** built + round-trip verified (direct-set home; drei `target0` bug —
-see lessons). (3) **Front-view taste corrections** per the contract — cypress slimmer, softer star/moon
-bloom, quieter sky exposure (all baked as leva defaults).
-**Whorl + mobile moon framing done + approved.** Front-view contract MET (cypress · deeper sky · whorl ·
-painted moon · pale village anchor); portrait now frames the moon via a camera bearing (`g11-mobile-after`),
-reset aspect-aware (`g12-portrait-reset`). **Next:** the final sky/flow value bake (review + confirm the
-current baked leva defaults as the shipped values — flowBias, churn, bloom, moon/stars, colours) + ship
-hygiene (slim `flow-field.png` 3.2 MB · strip `leva` from the prod build) → **pre-release gate**.
-To run it: `npm run dev` (was on **:5174**); the leva panel is live for him to drive. Visual-review
-loop + capture recipe are in `lessons.md` (canvas readback; `browser_run_code_unsafe` for emulateMedia).
+### ▶ PICK UP HERE — two items to the pre-release gate
+The whole post-gate composition pass is done + approved (corrections · sky deepen · whorl · mobile moon).
+Two items remain before the final gate:
+1. **Final sky/flow value bake** — *Mark's taste.* Every change baked its value as the leva default, so the
+   current look IS the candidate ship look. **Awaiting Mark** (asked at session end, no answer yet): drive
+   the panel to dial final values (flowBias — keep subtle / fine-verification only · churn · bloom ·
+   moon/stars · sky colours), OR confirm the current defaults ship as-is.
+2. **Ship hygiene** — *autonomous, no visual change.* Slim `flow-field.png` (3.2 MB) · strip `leva` from the
+   production build. Can start without Mark.
+Then → **pre-release gate** (Mark reviews captures — the final gate).
+To run: `npm run dev` (was on **:5174**); leva panel live. Visual-review + capture recipe in `lessons.md`
+(canvas readback; `browser_run_code_unsafe` for emulateMedia/viewport).
 
 **Post-gate queue (foreground-complete gate PASSED 2026-06-15 — now ACTIVE).** Mark's carried-forward
 items (2026-06-15) merged with the prior backlog, in proposed order:

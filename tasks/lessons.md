@@ -705,3 +705,20 @@ rotate the camera ~24° toward the moon's corner about the orbit target (`PORTRA
 - Reset made aspect-aware: `homePositionFor(aspect)` is shared by `ResponsiveFraming` AND `ResetView`, so the
   reset button returns to the portrait bearing on a phone (moon stays) instead of the landscape home.
   Verified: orbit in portrait → reset → moon back in frame (`g12-portrait-reset`).
+
+## Session wrap — 2026-06-15
+
+Big session. Foreground-complete gate **review response** (island seam fix · palette provenance · cypress
+reframe · spec de-stale) → **GATE PASSED** → a full post-gate composition pass: bolder hills · original-art
+audit (→ Mark's front-view composition contract) · reset control · front-view corrections (cypress slimmer ·
+softer star/moon bloom · quieter sky exposure) · sky deepened one notch (tone-aware) · central whorl lowered
++ tightened · mobile moon framing (portrait bearing + aspect-aware reset). All committed to `main` (NOT
+pushed); `build` + `lint` green throughout; each step verified by capture.
+
+**OPEN THREAD for next session** — two items to the pre-release gate (see todo "PICK UP HERE"):
+1. **Final sky/flow value bake** (Mark's taste) — every change baked its value as the leva default, so the
+   current look is the candidate; Mark either dials the panel or confirms the defaults ship. flowBias stays
+   subtle/fine-verification only.
+2. **Ship hygiene** (autonomous) — slim `flow-field.png` (3.2 MB) · strip `leva` from the prod build.
+Then → **pre-release gate**. Mark was asked at session end how to play the final stretch — NO ANSWER YET, so
+resume by surfacing that choice; ship hygiene can proceed autonomously in the meantime.
