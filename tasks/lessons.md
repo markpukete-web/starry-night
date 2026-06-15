@@ -720,5 +720,26 @@ pushed); `build` + `lint` green throughout; each step verified by capture.
    current look is the candidate; Mark either dials the panel or confirms the defaults ship. flowBias stays
    subtle/fine-verification only.
 2. **Ship hygiene** (autonomous) — slim `flow-field.png` (3.2 MB) · strip `leva` from the prod build.
-Then → **pre-release gate**. Mark was asked at session end how to play the final stretch — NO ANSWER YET, so
-resume by surfacing that choice; ship hygiene can proceed autonomously in the meantime.
+Then → **pre-release gate**. Ship hygiene (item 2) is now DONE — see the next section. Item 1 (final sky/flow
+value bake, Mark's taste) is the remaining open thread — resume by surfacing that choice.
+
+## Ship hygiene — leva stripped, flow-field slimmed (2026-06-15, autonomous)
+
+Two release-readiness wins, both verified no-visual-change against the dev look.
+
+- **leva out of the prod bundle.** The tuning panel is dev-only but its library was still bundled. Alias
+  `leva` → a tiny stub (`src/dev/leva-stub.ts`) at build time only (`vite.config.ts`, `command === 'build'`);
+  the stub's `useControls(name, schema)` returns each control's baked `.value`, so the shipped defaults are
+  identical and leva (+ its deps) is dropped. App code unchanged; dev `serve` keeps the real panel. `tsc`
+  checks App against the REAL leva types (the alias is a vite-build swap, post-typecheck), so no type
+  conflict. Bundle 1,383 → 1,183 kB (gzip 390 → 324). Verified the prod build via `vite preview` renders
+  identically (`g13-prod-front` == `g9-front`); no panel in prod.
+- **flow-field.png 3.38 MB → 0.91 MB.** `encodePNG` already deflates at level 9 (filter:none) and the data is
+  high-entropy noise, so lossless re-encode is a dead end — resolution is the only lever. `scripts/slim-flow-
+  field.ts` does a 2× box-downsample in RAW value space (NOT `sips`, which would gamma-average the data
+  channels and distort orientation). Averaging the double-angle channels (R=cos2θ, G=sin2θ) IS the correct
+  orientation average — the whole reason for that encoding — so half-res is faithful, and the flow bias is a
+  subtle fine correction anyway. Verified: with the fixed stroke seed, the front A/B (`g9-front` →
+  `g14-front-slimflow`) is visually identical — swirl structure + stroke orientation unchanged. Locked-bar
+  flow fidelity preserved. (NB: re-running `derive-reference.ts` regenerates the full-res png → re-run the
+  slimmer after.)

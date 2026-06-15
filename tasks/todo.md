@@ -35,15 +35,14 @@ village + pale-spired church · Van Gogh flame-cypress · shrubs) under the chur
 sky. The full build history — the foreground F1–F5 rebuild, the sky's evolution, and every session lesson —
 lives in `tasks/lessons.md` (newest at the bottom of each section); this file holds the current intent.
 
-### ▶ PICK UP HERE — two items to the pre-release gate
-The whole post-gate composition pass is done + approved (corrections · sky deepen · whorl · mobile moon).
-Two items remain before the final gate:
-1. **Final sky/flow value bake** — *Mark's taste.* Every change baked its value as the leva default, so the
-   current look IS the candidate ship look. **Awaiting Mark** (asked at session end, no answer yet): drive
-   the panel to dial final values (flowBias — keep subtle / fine-verification only · churn · bloom ·
-   moon/stars · sky colours), OR confirm the current defaults ship as-is.
-2. **Ship hygiene** — *autonomous, no visual change.* Slim `flow-field.png` (3.2 MB) · strip `leva` from the
-   production build. Can start without Mark.
+### ▶ PICK UP HERE — one item left, then the pre-release gate
+The post-gate composition pass is done + approved (corrections · sky deepen · whorl · mobile moon), and
+**ship hygiene is DONE** (leva stripped from prod: 1,383→1,183 kB · `flow-field.png` slimmed 3.38→0.91 MB —
+both verified no-visual-change; see lessons). One item remains before the final gate:
+- **Final sky/flow value bake** — *Mark's taste.* Every change baked its value as the leva default, so the
+  current look IS the candidate ship look. **Awaiting Mark** (asked, no answer yet): drive the panel to dial
+  final values (flowBias — keep subtle / fine-verification only · churn · bloom · moon/stars · sky colours),
+  OR confirm the current defaults ship as-is.
 Then → **pre-release gate** (Mark reviews captures — the final gate).
 To run: `npm run dev` (was on **:5174**); leva panel live. Visual-review + capture recipe in `lessons.md`
 (canvas readback; `browser_run_code_unsafe` for emulateMedia/viewport).
@@ -63,7 +62,10 @@ items (2026-06-15) merged with the prior backlog, in proposed order:
 4. **Final sky/flow tuning** — bake `flowBias` (0.6 → ?) + the chosen leva values (steeple lift, moon
    prominence, churn speed) as the new defaults. Needs Mark's values from the panel; informed by (1).
 5. **Possible impasto enhancement** (optional, Mark's call) — brushstroke-texture the forms like the sky.
-6. **Ship hygiene** — slim `flow-field.png` (3.2 MB); strip `leva` from the production build.
+6. **Ship hygiene** — ✓ DONE (2026-06-15): `leva` stripped from the prod bundle (build-time alias → stub;
+   1,383→1,183 kB) · `flow-field.png` slimmed 3.38→0.91 MB (2× box-downsample, `scripts/slim-flow-field.ts`).
+   Both verified no-visual-change. (`painting.jpg` 1.06 MB is the remaining sizeable asset — left as-is; it
+   carries the stroke colour and is the palette's own source.)
 7. **Pre-release gate** (the final gate).
 
 Locked-section edits APPLIED this session (Mark delegated — "update section edits", 2026-06-14):
