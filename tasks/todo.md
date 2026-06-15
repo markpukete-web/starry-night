@@ -45,10 +45,13 @@ Locked criteria status: flow-driven motion ✓ · palette colours ✓ (documente
 headless is software-rendered, Mark's machine was 120 fps on the sky pre-foreground; needs a re-check with
 the foreground + a mid-tier mobile. Awaiting Mark's release call. NB actual deploy (Vercel + Cloudflare DNS,
 `starrynight.markma.dev`) per CLAUDE.md. **Pushed to `origin/main` 2026-06-15** on Mark's go. **Vercel
-deploy IN FOCUS (Mark, 2026-06-15):** deploy the app to Vercel now (a `vercel.app` URL). The custom
-subdomain + Cloudflare DNS (`starrynight.markma.dev`, currently 404) stay PARKED — Mark hasn't set it up;
-do NOT touch DNS. Production build verified panel-free (leva stripped; DOM: 0 leva elements, only the reset
-button). One acceptance box still open: real-hardware fps (desktop + mid-tier mobile) — Mark's to check.
+PREVIEW deployed (2026-06-15):** linked project `starry-night` (`prj_1bvAN2…`, scope `markpukete-web`);
+`vercel --yes` → READY at `starry-night-6e5cztkfg-markpukete-webs-projects.vercel.app`. BUT it returns
+**401 — Vercel Deployment Protection (Vercel Authentication) is ON**, so the URL isn't public (viewable only
+logged into Mark's Vercel account). Pending Mark's go: (a) `vercel --prod` for the production URL, (b) toggle
+Deployment Protection off for public access (project Settings — access decision, Mark's call), (c) custom
+subdomain + Cloudflare DNS (still PARKED — not set up). Prod build verified panel-free (DOM: 0 leva
+elements). Open acceptance box: real-hardware fps — Mark's to check.
 To run: `npm run dev` (was on **:5174**); leva panel live. Visual-review + capture recipe in `lessons.md`
 (canvas readback; `browser_run_code_unsafe` for emulateMedia/viewport).
 
