@@ -19,10 +19,11 @@ gate; all four addressed (detail in `lessons.md` → "Review-response pass"): P1
 clears the frame, still the dominant counterweight); P2 island seam bug fixed (circular angular noise — the
 orbit shard is gone); P2 palette provenance (foreground colours now derive from palette.json swatches ×
 documented factors, visual preserved, ΔE<1 on the church); P3 spec de-staled (`CLAUDE.md:53`). Build + lint
-green; committed to main (not pushed).
+green; committed to main (not pushed). **Then** made the hills bolder per Mark — a brighter luminous rolling
+band, kept just below the church pale (`lessons.md` → "Hills made bolder").
 
-**Open these captures first:** `scratch/g1-front.jpeg` (current hero) · `scratch/g1-orbit2.jpeg` (seam-free
-island, real 3D) · `scratch/g1-mobile.jpeg` (mobile portrait).
+**Open these captures first:** `scratch/g3-front.jpeg` (current hero — bolder hills) · `scratch/g3-orbit.jpeg`
+(orbit) · `scratch/g1-orbit2.jpeg` (seam-free island) · `scratch/g1-mobile.jpeg` (mobile portrait).
 
 **What the scene is now:** an orbitable 3D floating-island diorama under the churning, anchored,
 glowing vortex sky (the sky was already done + twice Codex-reviewed). This session rebuilt the entire
@@ -42,7 +43,7 @@ The 2026-06-15 review items are resolved; the gate itself is still Mark's to app
 next — wait for his call, don't pre-empt:
 - **approve the foreground-complete gate** → start the post-gate queue below, or
 - **further taste tweaks:** cypress size again (lever: `height` + `girth` on the two `<Cypress>` in
-  `src/scene/Diorama.tsx`) · church · hills bolder · moon prominence.
+  `src/scene/Diorama.tsx`) · church · moon prominence. (Hills made bolder 2026-06-15 — `g3-front/orbit`.)
 To run it: `npm run dev` (was on **:5174**); the leva panel is live for him to drive. Visual-review
 loop + capture recipe are in `lessons.md` (canvas readback; `browser_run_code_unsafe` for emulateMedia).
 

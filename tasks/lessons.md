@@ -609,3 +609,21 @@ acting (receiving-code-review discipline), fixed the mechanical ones, took his c
 
 Build + lint green; committed to main (not pushed). Gate stays OPEN — these were review responses, not the
 gate approval, which is Mark's taste call.
+
+## Hills made bolder (Mark, 2026-06-15)
+
+Mark's post-review taste call: the hills read too dark/recessive (both of us had flagged it). Bolder =
+brighter + more present, NOT a new palette — kept the `swatch × documented factor` provenance from the
+provenance pass, just bolder factors.
+
+- **First pass was too timid** (hills ×1.3/2.9, crest ×2.1, MAXH 1.1) — barely moved from the front,
+  because the F2 lighting trap bites: the hills' near slopes face AWAY from the upper-right moon key, so
+  the vertex colour has to carry the boldness and a small lift gets eaten by the low light. Reconfirms F2:
+  push the colour harder than feels right for night forms.
+- **Firm pass that landed (g3):** hills ×{1.5 trough, 3.5 mid}, hillsCrest ×2.25 crest (≈ #8797a5); a WIDE
+  lit band (crest from t≈0.22, not 0.42, so the ridge FLANKS light, not just the very top — this matters
+  more than the crest value because the flanks are what the camera sees); MAXH 1.1→1.3; swell amplitude up
+  (0.25/0.2 → 0.32/0.24) for more pronounced rolling. Now a luminous blue-grey rolling presence behind the
+  village, front + orbit.
+- **Kept the crest (#8797a5) just BELOW the church pale (#8b9bad)** so the church still out-reads the hills
+  as the village's focal point — the one rule that stops "bolder hills" from swallowing the pale spire.

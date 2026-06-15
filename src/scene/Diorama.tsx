@@ -197,23 +197,25 @@ function RollingHills() {
     const Z1 = -0.85 // back (kept inside the island footprint)
     const NX = 90
     const NZ = 46
-    const MAXH = 0.95
+    const MAXH = 1.3 // bolder: a taller rolling presence behind the village
 
     const cols = NX + 1
     const rows = NZ + 1
     const pos = new Float32Array(cols * rows * 3)
     const col = new Float32Array(cols * rows * 3)
 
-    // the derived hills blue lifted across a night range so the ridges read in the moonlight: shaded
-    // troughs, lifted mid-slopes, the hills region's lightest swatch lifted for the moonlit crest.
-    const hillDark = new Color(PALETTE.hills).multiplyScalar(0.673) // troughs ≈ #1d2735
-    const hillMid = new Color(PALETTE.hills).multiplyScalar(2.33) // mid slopes ≈ #3a4a63
-    const hillLit = new Color(PALETTE.hillsCrest).multiplyScalar(1.585) // moonlit crest ≈ #74808d
+    // the derived hills blue lifted BOLDER across a night range so the ridges read as luminous blue-grey
+    // (Mark, 2026-06-15): troughs lifted off near-black, brighter mid-slopes, a bright moonlit crest from
+    // the hills region's lightest swatch — kept just below the church pale (#8b9bad) so the church still
+    // out-reads it as the focal point. Still derived from palette.json swatches × documented factors.
+    const hillDark = new Color(PALETTE.hills).multiplyScalar(1.5) // troughs ≈ #303b50
+    const hillMid = new Color(PALETTE.hills).multiplyScalar(3.5) // mid slopes ≈ #4a5b77
+    const hillLit = new Color(PALETTE.hillsCrest).multiplyScalar(2.25) // moonlit crest ≈ #8797a5
 
     const hillH = (x: number, z: number) => {
       const b = Math.min(1, Math.max(0, (Z0 - z) / (Z0 - Z1))) // 0 front → 1 back
       const rightBias = 0.55 + 0.45 * smooth(-1.5, 1.3, x) // taller on the right
-      const swell = 0.55 + 0.25 * Math.sin(x * 2 + 0.6) + 0.2 * Math.sin(x * 3.3 - z * 1.5 + 2)
+      const swell = 0.55 + 0.32 * Math.sin(x * 2 + 0.6) + 0.24 * Math.sin(x * 3.3 - z * 1.5 + 2)
       const n = (vnoise(x * 1.4 + 5, z * 1.4 + 9) - 0.5) * 0.4
       return Math.max(0, MAXH * smooth(0, 1, b) * rightBias * (swell + n))
     }
@@ -230,8 +232,8 @@ function RollingHills() {
         pos[p + 2] = z
         const t = h / MAXH
         cc.copy(hillDark)
-          .lerp(hillMid, smooth(0, 0.42, t))
-          .lerp(hillLit, smooth(0.42, 0.95, t))
+          .lerp(hillMid, smooth(0, 0.34, t))
+          .lerp(hillLit, smooth(0.22, 0.82, t)) // wide lit band so the ridge flanks catch the moon, not just the crest
         col[p] = cc.r
         col[p + 1] = cc.g
         col[p + 2] = cc.b
