@@ -106,7 +106,7 @@ export type SkyControls = {
 }
 
 /** The 3D diorama beneath an enveloping dome of churning brushstroke sky. */
-function World({ c, reduced }: { c: SkyControls; reduced: boolean }) {
+function World({ c, paused }: { c: SkyControls; paused: boolean }) {
   const flow = useImageData('/reference/flow-field.png')
   const colourSrc = useImageData('/reference/painting.jpg')
   return (
@@ -127,10 +127,38 @@ function World({ c, reduced }: { c: SkyControls; reduced: boolean }) {
           glowIntensity={c.glow}
           moonBright={c.moon}
           starBright={c.stars}
-          paused={reduced}
+          paused={paused}
         />
       )}
     </>
+  )
+}
+
+function VisitorButton({
+  active,
+  disabled,
+  icon,
+  label,
+  onClick,
+}: {
+  active?: boolean
+  disabled?: boolean
+  icon: string
+  label: string
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      className={`visitor-control${active ? ' is-active' : ''}`}
+      aria-label={label}
+      aria-pressed={active}
+      data-tooltip={label}
+      disabled={disabled}
+      onClick={onClick}
+    >
+      <span aria-hidden="true">{icon}</span>
+    </button>
   )
 }
 
@@ -173,9 +201,28 @@ export default function App() {
 
   const reduced = usePrefersReducedMotion()
   const [resetTick, setResetTick] = useState(0)
+  const [visitorPaused, setVisitorPaused] = useState(false)
+  const [showOriginal, setShowOriginal] = useState(false)
+  const [fullscreen, setFullscreen] = useState(false)
+  const motionPaused = reduced || visitorPaused
+  const fullscreenSupported = typeof document !== 'undefined' && Boolean(document.fullscreenEnabled)
+
+  useEffect(() => {
+    const onFullscreenChange = () => setFullscreen(Boolean(document.fullscreenElement))
+    document.addEventListener('fullscreenchange', onFullscreenChange)
+    return () => document.removeEventListener('fullscreenchange', onFullscreenChange)
+  }, [])
+
+  const toggleFullscreen = () => {
+    if (document.fullscreenElement) {
+      void document.exitFullscreen().catch(() => undefined)
+    } else if (document.documentElement.requestFullscreen) {
+      void document.documentElement.requestFullscreen().catch(() => undefined)
+    }
+  }
 
   return (
-    <>
+    <main className="visitor-shell">
       <Leva hidden={!import.meta.env.DEV} />
       <Canvas
         frameloop="always"
@@ -187,7 +234,7 @@ export default function App() {
         <ResponsiveFraming />
         <ResetView tick={resetTick} />
         <Suspense fallback={null}>
-          <World c={c} reduced={reduced} />
+          <World c={c} paused={motionPaused} />
         </Suspense>
         <OrbitControls
           makeDefault
@@ -211,34 +258,38 @@ export default function App() {
         </EffectComposer>
         {import.meta.env.DEV && <Stats />}
       </Canvas>
-      {/* Reset the camera to the painting's default composition after orbiting. */}
-      <button
-        type="button"
-        onClick={() => setResetTick((t) => t + 1)}
-        onMouseOver={(e) => (e.currentTarget.style.opacity = '1')}
-        onMouseOut={(e) => (e.currentTarget.style.opacity = '0.68')}
-        aria-label="Reset the view to the painting's composition"
-        style={{
-          position: 'fixed',
-          right: 16,
-          bottom: 16,
-          zIndex: 10,
-          opacity: 0.68,
-          padding: '8px 15px',
-          borderRadius: 999,
-          background: 'rgba(13,23,54,0.55)',
-          color: '#e7ecf7',
-          border: '1px solid rgba(231,236,247,0.28)',
-          backdropFilter: 'blur(6px)',
-          WebkitBackdropFilter: 'blur(6px)',
-          font: '500 13px/1 ui-sans-serif, system-ui, sans-serif',
-          letterSpacing: '0.03em',
-          cursor: 'pointer',
-          transition: 'opacity .2s ease',
-        }}
-      >
-        ↺ Reset view
-      </button>
-    </>
+      <header className="visitor-title" aria-label="Artwork">
+        <h1>The Starry Night</h1>
+        <p>Vincent van Gogh, 1889 · Mark Ma</p>
+      </header>
+      {showOriginal && (
+        <aside className="visitor-reference" aria-label="Original painting reference">
+          <img src="/reference/painting.jpg" alt="The original Starry Night painting" draggable={false} />
+        </aside>
+      )}
+      <nav className="visitor-dock" aria-label="Artwork controls">
+        <VisitorButton icon="↺" label="Reset view" onClick={() => setResetTick((t) => t + 1)} />
+        <VisitorButton
+          active={motionPaused}
+          disabled={reduced}
+          icon={motionPaused ? '▶' : 'Ⅱ'}
+          label={reduced ? 'Motion paused by system setting' : visitorPaused ? 'Play motion' : 'Pause motion'}
+          onClick={() => setVisitorPaused((p) => !p)}
+        />
+        <VisitorButton
+          active={showOriginal}
+          icon="◨"
+          label={showOriginal ? 'Hide original' : 'Show original'}
+          onClick={() => setShowOriginal((shown) => !shown)}
+        />
+        <VisitorButton
+          active={fullscreen}
+          disabled={!fullscreenSupported}
+          icon="⛶"
+          label={fullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+          onClick={toggleFullscreen}
+        />
+      </nav>
+    </main>
   )
 }
