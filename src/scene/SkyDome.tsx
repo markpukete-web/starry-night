@@ -1,24 +1,15 @@
 import { useEffect, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import {
-  AdditiveBlending,
-  BackSide,
-  BufferAttribute,
-  BufferGeometry,
-  CanvasTexture,
-  Color,
-  DoubleSide,
-  NormalBlending,
-  ShaderMaterial,
-  Vector3,
+  AdditiveBlending, BackSide, CanvasTexture, Color, NoColorSpace, ShaderMaterial, Vector3,
 } from 'three'
 import type { ImageData2D } from './useImageData'
-import { mulberry32, sampleColour, sampleFlow } from './brush'
+import { makeBrushTexture } from './brush'
 import { PALETTE } from './palette'
-import {
-  DOME_R, FWD, HORIZON, POINTS, RIGHT, STEP, TRUEUP,
-  buildVortices, dirAzEl, frontUV, smoothstep,
-} from './skyMapping'
+import { DOME_R, buildVortices } from './skyMapping'
+import { makeFlowField } from './flowField'
+import { buildDabField } from './dabField'
+import { buildDabGeometry, makeDabMaterial } from './dabGeometry'
 
 // The sky as a full sphere of swirls grown NATIVELY on the dome — a flow field of vortices (the
 // stars' halos and the central whorl), with streamlines flowing through it. Bold round Van Gogh
@@ -98,37 +89,6 @@ const skyFrag = /* glsl */ `
   varying vec3 vDir; uniform vec3 uTop; uniform vec3 uBottom;
   void main() { float t = clamp(vDir.y * 0.5 + 0.5, 0.0, 1.0); gl_FragColor = vec4(mix(uBottom, uTop, pow(t, 0.85)), 1.0); }
 `
-const strokeVert = /* glsl */ `
-  attribute float aLen; attribute float aAcross; attribute float aPhase; attribute vec3 aColor;
-  varying float vLen; varying float vAcross; varying float vPhase; varying vec3 vColor;
-  void main() {
-    vLen = aLen; vAcross = aAcross; vPhase = aPhase; vColor = aColor;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-  }
-`
-const strokeFrag = /* glsl */ `
-  precision highp float;
-  uniform float uTime; uniform float uSpeed; uniform float uSat;
-  varying float vLen; varying float vAcross; varying float vPhase; varying vec3 vColor;
-  void main() {
-    float edge = sin(clamp(vAcross, 0.0, 1.0) * 3.14159);
-    float taper = smoothstep(0.0, 0.14, vLen) * smoothstep(1.0, 0.82, vLen);
-    float flow = 0.5 + 0.5 * sin(vLen * 6.0 - uTime * uSpeed + vPhase);
-    // relief across the stroke — a lit centre ridge falling to darker flanks, so each ribbon reads
-    // as a crisp impasto mark rather than a soft smear (it stays defined under Bloom).
-    float ridge = 0.82 + 0.36 * edge;
-    // deepen the blue field one notch: pull down the low/mid (blue) strokes but PRESERVE the bright
-    // yellow/white highlight strokes, so the luminous swirl motion survives (Mark, 2026-06-15).
-    float baseLum = dot(vColor, vec3(0.299, 0.587, 0.114));
-    float deepen = mix(0.78, 1.0, smoothstep(0.42, 0.82, baseLum));
-    vec3 col = vColor * deepen * (0.54 + 0.32 * flow) * ridge;
-    float lum = dot(col, vec3(0.299, 0.587, 0.114));
-    col = clamp(mix(vec3(lum), col, uSat), 0.0, 2.0);
-    float a = edge * taper * 0.95;
-    if (a < 0.01) discard;
-    gl_FragColor = vec4(col, a);
-  }
-`
 
 type Props = {
   // the derived flow field — sampled on the front arc to bias fine stroke orientation toward the
@@ -153,9 +113,7 @@ export function SkyDome({
   flow,
   colourSrc,
   count,
-  speed = 0.05,
   strokeWidth = 1,
-  swirlTightness = 0.45,
   saturation = 1.3,
   skyTop = PALETTE.skyZenith,
   skyBottom = PALETTE.skyHorizon,
@@ -180,166 +138,22 @@ export function SkyDome({
     [],
   )
 
-  const material = useMemo(
-    () =>
-      new ShaderMaterial({
-        uniforms: { uTime: { value: 0 }, uSpeed: { value: 2 }, uSat: { value: 1.3 } },
-        vertexShader: strokeVert,
-        fragmentShader: strokeFrag,
-        transparent: true,
-        depthWrite: false,
-        depthTest: true,
-        side: DoubleSide,
-        blending: NormalBlending,
-      }),
-    [],
-  )
+  const brushTex = useMemo(() => {
+    const t = makeBrushTexture()
+    t.colorSpace = NoColorSpace // relief/alpha map, not colour — no sRGB decode on b.r/b.a
+    return t
+  }, [])
+  const material = useMemo(() => makeDabMaterial(brushTex), [brushTex])
 
   const glowTex = useMemo(() => makeGlowTexture(), [])
   const moonHaloTex = useMemo(() => makeMoonHalo(), [])
   const moonCrescentTex = useMemo(() => makeMoonCrescent(), [])
 
   const geometry = useMemo(() => {
-    const rng = mulberry32(0x13ade7)
-    const positions: number[] = []
-    const colors: number[] = []
-    const aLen: number[] = []
-    const aAcross: number[] = []
-    const aPhase: number[] = []
-    const indices: number[] = []
-    let vbase = 0
-
-    const f = new Vector3()
-    const cross = new Vector3()
-    const t = new Vector3()
-    const n = new Vector3()
-    const perp = new Vector3()
-    const eL = new Vector3()
-    const eR = new Vector3()
-    const tin = new Vector3()
-
-    // tangent flow direction (circulation summed over vortices) at a point p on the unit sphere
-    const flowAt = (p: Vector3, out: Vector3) => {
-      out.set(0, 0, 0)
-      for (let i = 0; i < vortices.length; i++) {
-        const v = vortices[i]
-        const cosA = Math.min(1, Math.max(-1, p.dot(v.dir)))
-        const ang = Math.acos(cosA)
-        const w = v.strength * Math.exp(-(ang * ang) / (v.radius * v.radius))
-        if (w < 0.001) continue
-        cross.crossVectors(p, v.dir).multiplyScalar(v.sign * w) // tangent, circulating around v.dir
-        out.add(cross)
-        // spiral inflow — winds streamlines toward the eye so the swirl fills (Van Gogh's swirls
-        // are logarithmic spirals, not hollow circles); vanishes at the exact centre, so no singularity
-        tin.copy(v.dir).addScaledVector(p, -p.dot(v.dir)) // tangent at p pointing toward the eye
-        out.addScaledVector(tin, swirlTightness * w)
-      }
-      out.addScaledVector(p, -out.dot(p)) // keep only the tangent component
-      return out
-    }
-
-    // Hybrid reconciliation of the locked bar: on the front arc, bias the streamline orientation
-    // toward the painting's DERIVED flow field (coherence-weighted) — strongest in the calm flow
-    // BETWEEN swirls, fading to zero at the big-swirl eyes so the approved comma forms stand. The
-    // vortices remain the macro composition + motion engine; this only refines fine orientation.
-    const coreVorts = vortices.filter((v) => v.core)
-    const eU = new Vector3()
-    const eV = new Vector3()
-    const fb = new Vector3()
-    const flowBiasAt = (p: Vector3, ref: Vector3, out: Vector3): number => {
-      if (flowBias <= 0) return 0
-      const { u, v, h, w, onArc } = frontUV(p)
-      if (!onArc) return 0
-      const fade = smoothstep(0, 0.12, u) * smoothstep(1, 0.88, u) * smoothstep(0, 0.14, v) * smoothstep(1, 0.85, v)
-      if (fade < 0.01) return 0
-      const { theta, coh } = sampleFlow(flow, u, v)
-      if (coh < 0.02) return 0
-      // the painting's axes as orthonormal sphere tangents at p: eU = +u (right), eV = +v (down)
-      const sh = Math.sin(h)
-      const ch = Math.cos(h)
-      eU.copy(RIGHT).multiplyScalar(ch).addScaledVector(FWD, -sh)
-      eV.copy(FWD).multiplyScalar(ch).addScaledVector(RIGHT, sh).multiplyScalar(Math.sin(w)).addScaledVector(TRUEUP, -Math.cos(w))
-      out.copy(eU).multiplyScalar(Math.cos(theta)).addScaledVector(eV, Math.sin(theta))
-      out.addScaledVector(p, -out.dot(p))
-      if (out.lengthSq() < 1e-8) return 0
-      out.normalize()
-      if (out.dot(ref) < 0) out.multiplyScalar(-1) // orientation is undirected — align to the heading
-      // protect the swirl eyes: fade the bias out where a big "core" vortex dominates
-      let nearEye = 0
-      for (let i = 0; i < coreVorts.length; i++) {
-        const cv = coreVorts[i]
-        const ang = Math.acos(Math.min(1, Math.max(-1, p.dot(cv.dir))))
-        const e = Math.exp(-(ang * ang) / (cv.radius * cv.radius))
-        if (e > nearEye) nearEye = e
-      }
-      return Math.min(0.85, flowBias * coh * (1 - nearEye) * fade)
-    }
-
-    for (let i = 0; i < count; i++) {
-      const seed = dirAzEl(rng() * Math.PI * 2, HORIZON + 0.04 + rng() * 1.5)
-      const phase = rng() * Math.PI * 2
-      const halfW = (0.055 + 0.06 * rng()) * strokeWidth
-      const [cr, cg, cb] = sampleColour(colourSrc, 0.05 + rng() * 0.9, rng() * 0.5) // a Van Gogh sky colour
-
-      const P: Vector3[] = []
-      const p = seed.clone()
-      const dir = new Vector3()
-      let have = false
-      for (let k = 0; k < POINTS; k++) {
-        P.push(p.clone())
-        flowAt(p, f)
-        if (f.lengthSq() < 1e-8) {
-          if (!have) break
-          f.copy(dir)
-        } else {
-          f.normalize()
-          if (have && f.dot(dir) < 0) f.multiplyScalar(-1)
-        }
-        // hybrid: nudge the heading toward the painting's derived flow on the front arc
-        const b = flowBiasAt(p, f, fb)
-        if (b > 0) {
-          f.multiplyScalar(1 - b).addScaledVector(fb, b)
-          f.addScaledVector(p, -f.dot(p))
-          if (f.lengthSq() > 1e-8) f.normalize()
-        }
-        dir.copy(f)
-        have = true
-        p.addScaledVector(f, STEP).normalize()
-        if (p.y < HORIZON) break
-      }
-      if (P.length < 3) continue
-
-      const M = P.length
-      for (let k = 0; k < M; k++) {
-        const lenN = k / (M - 1)
-        const w = halfW * (1 - 0.5 * lenN)
-        t.subVectors(P[Math.min(M - 1, k + 1)], P[Math.max(0, k - 1)]).normalize()
-        n.copy(P[k]).multiplyScalar(-1).normalize()
-        perp.crossVectors(t, n).normalize()
-        eL.copy(P[k]).multiplyScalar(DOME_R).addScaledVector(perp, w)
-        eR.copy(P[k]).multiplyScalar(DOME_R).addScaledVector(perp, -w)
-        positions.push(eL.x, eL.y, eL.z, eR.x, eR.y, eR.z)
-        colors.push(cr, cg, cb, cr, cg, cb)
-        aLen.push(lenN, lenN)
-        aAcross.push(0, 1)
-        aPhase.push(phase, phase)
-        if (k < M - 1) {
-          const v0 = vbase + k * 2
-          indices.push(v0, v0 + 1, v0 + 2, v0 + 1, v0 + 3, v0 + 2)
-        }
-      }
-      vbase += M * 2
-    }
-
-    const geo = new BufferGeometry()
-    geo.setAttribute('position', new BufferAttribute(new Float32Array(positions), 3))
-    geo.setAttribute('aColor', new BufferAttribute(new Float32Array(colors), 3))
-    geo.setAttribute('aLen', new BufferAttribute(new Float32Array(aLen), 1))
-    geo.setAttribute('aAcross', new BufferAttribute(new Float32Array(aAcross), 1))
-    geo.setAttribute('aPhase', new BufferAttribute(new Float32Array(aPhase), 1))
-    geo.setIndex(indices)
-    return geo
-  }, [flow, colourSrc, count, vortices, strokeWidth, swirlTightness, flowBias])
+    const field = makeFlowField({ flow, vortices, swirlTightness: 0.45, flowBias })
+    const dabs = buildDabField({ field, colourSrc, count })
+    return buildDabGeometry(dabs)
+  }, [flow, colourSrc, count, vortices, flowBias])
 
   // Drive the churn from the render loop — frozen when paused, so prefers-reduced-motion yields a
   // still, lit painting (no churn). These write a memoised material's uniforms: R3F render-target
@@ -348,7 +162,7 @@ export function SkyDome({
     if (paused) return
     /* eslint-disable react-hooks/immutability -- R3F render-loop uniform writes are intentional mutations */
     material.uniforms.uTime.value += dt
-    material.uniforms.uSpeed.value = speed * 40
+    material.uniforms.uWidth.value = strokeWidth
     material.uniforms.uSat.value = saturation
     /* eslint-enable react-hooks/immutability */
   })
@@ -365,12 +179,13 @@ export function SkyDome({
   useEffect(
     () => () => {
       material.dispose()
+      brushTex.dispose()
       gradient.dispose()
       glowTex.dispose()
       moonHaloTex.dispose()
       moonCrescentTex.dispose()
     },
-    [material, gradient, glowTex, moonHaloTex, moonCrescentTex],
+    [material, brushTex, gradient, glowTex, moonHaloTex, moonCrescentTex],
   )
 
   const moon = vortices.find((v) => v.moon)
