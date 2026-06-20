@@ -15,21 +15,14 @@ import {
 import type { ImageData2D } from './useImageData'
 import { mulberry32, sampleColour, sampleFlow } from './brush'
 import { PALETTE } from './palette'
+import {
+  DOME_R, FWD, HORIZON, POINTS, RIGHT, STEP, TRUEUP,
+  buildVortices, dirAzEl, frontUV, smoothstep,
+} from './skyMapping'
 
 // The sky as a full sphere of swirls grown NATIVELY on the dome — a flow field of vortices (the
 // stars' halos and the central whorl), with streamlines flowing through it. Bold round Van Gogh
 // swirls everywhere, organic, with no seam, no symmetry and no gaps. Stars sit at vortex centres.
-const DOME_R = 6
-const POINTS = 13
-const STEP = 0.05 // radians per integration step on the sphere
-const HORIZON = -0.22 // strokes live above roughly the horizon
-
-type Vortex = { dir: Vector3; strength: number; sign: number; radius: number; star: boolean; moon: boolean; scale: number; core: boolean }
-
-function dirAzEl(az: number, el: number): Vector3 {
-  const ce = Math.cos(el)
-  return new Vector3(ce * Math.sin(az), Math.sin(el), ce * Math.cos(az))
-}
 
 // A soft warm radial glow — placed at a swirl's eye so the calm centre reads as light, not a hole.
 // Bloom amplifies the bright core; additive blending lets it melt into the surrounding strokes.
@@ -96,96 +89,6 @@ function makeMoonCrescent(): CanvasTexture {
   return tex
 }
 
-// The painting's real sky, in painting UV (u: 0 left → 1 right, v: 0 top → 1 bottom).
-// Venus — the big "morning star" with the wide halo, centre-left — is called out so it reads large.
-const VENUS_UV: [number, number] = [0.27, 0.33]
-// The moon sits top-right as in the painting, but pulled slightly down-and-in from the very corner
-// so the crescent and its halo clear the default desktop frame instead of escaping the top edge.
-const MOON_UV: [number, number] = [0.8, 0.2]
-const STAR_UVS: [number, number][] = [
-  [0.13, 0.13],
-  [0.2, 0.065],
-  [0.31, 0.13],
-  [0.4, 0.1],
-  [0.1, 0.42],
-  [0.52, 0.2],
-  [0.59, 0.095],
-  [0.66, 0.27],
-  [0.72, 0.175],
-]
-
-// Front anchor — the painting faces the camera's default look direction, so it reads centred on load.
-// Build an orthonormal basis (fwd, right, up) at that bearing and lay the painting onto a gentle arc,
-// so its swirls keep the painting's relative positions instead of being stretched flat across 180°.
-const CAM_POS = new Vector3(2.2, 1.5, 4.6)
-const CAM_TARGET = new Vector3(0, 1.05, 0)
-const FRONT_AZ = Math.atan2(CAM_TARGET.x - CAM_POS.x, CAM_TARGET.z - CAM_POS.z)
-const FRONT_EL = 0.2 // lift the composition centre a touch above the horizon
-const FWD = dirAzEl(FRONT_AZ, FRONT_EL)
-const RIGHT = new Vector3().crossVectors(FWD, new Vector3(0, 1, 0)).normalize()
-const TRUEUP = new Vector3().crossVectors(RIGHT, FWD).normalize()
-const BACK_AZ = FRONT_AZ - Math.PI
-const SPAN_H = 2.15 // ~123° of front arc carries the painting's width (was 180° — too stretched)
-const SPAN_V = SPAN_H / 1.26 // keep the painting's aspect (~3840×3041)
-
-// Map a painting UV onto the front arc, preserving the composition's relative geometry.
-function uvToFrontDir(u: number, v: number): Vector3 {
-  const h = (u - 0.5) * SPAN_H
-  const w = (0.5 - v) * SPAN_V
-  const cw = Math.cos(w)
-  return new Vector3()
-    .addScaledVector(FWD, cw * Math.cos(h))
-    .addScaledVector(RIGHT, cw * Math.sin(h))
-    .addScaledVector(TRUEUP, Math.sin(w))
-    .normalize()
-}
-
-// Inverse of uvToFrontDir: recover a dome direction's painting UV (and the arc angles h, w).
-// onArc is false off the painting, so the flow-field bias only ever touches the front composition.
-function frontUV(p: Vector3): { u: number; v: number; h: number; w: number; onArc: boolean } {
-  const w = Math.asin(Math.min(1, Math.max(-1, p.dot(TRUEUP))))
-  const fwd = p.dot(FWD)
-  const h = Math.atan2(p.dot(RIGHT), fwd)
-  const u = 0.5 + h / SPAN_H
-  const v = 0.5 - w / SPAN_V
-  return { u, v, h, w, onArc: fwd > 0 && u >= 0 && u <= 1 && v >= 0 && v <= 1 }
-}
-
-function smoothstep(e0: number, e1: number, x: number): number {
-  const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0)))
-  return t * t * (3 - 2 * t)
-}
-
-function buildVortices(): Vortex[] {
-  const rng = mulberry32(0x5747a1)
-  const V: Vortex[] = []
-  const add = (dir: Vector3, strength: number, sign: number, radius: number, star = false, moon = false, scale = 0.15, core = false) =>
-    V.push({ dir, strength, sign, radius, star, moon, scale, core })
-
-  // FRONT — the painting itself. The central double-swirl dominates; Venus is the big morning star.
-  add(uvToFrontDir(0.43, 0.4), 2.05, 1, 0.54, false, false, 0.15, true) // main roll of the iconic swirl (glowing eye) — lowered + less oversized (Mark, 2026-06-15)
-  add(uvToFrontDir(0.58, 0.35), 1.4, -1, 0.4, false, false, 0.15, true) // its counter-roll (forms the S) — lowered + tightened to match; glows too
-  add(uvToFrontDir(VENUS_UV[0], VENUS_UV[1]), 1.0, -1, 0.32, true, false, 0.24) // Venus
-  STAR_UVS.forEach((uv, i) =>
-    add(uvToFrontDir(uv[0], uv[1]), 0.6 + 0.2 * rng(), i % 2 === 0 ? 1 : -1, 0.18 + 0.07 * rng(), true, false, 0.13 + 0.04 * rng()),
-  )
-  add(uvToFrontDir(MOON_UV[0], MOON_UV[1]), 1.1, 1, 0.4, false, true)
-
-  // BACK — invented in the same hand to complete the 360°, centred opposite the front.
-  // Each big swirl is a double (roll + counter-roll), like the front hero, so the flow sweeps
-  // across the eye in a comma instead of leaving a hollow concentric drain.
-  add(dirAzEl(BACK_AZ + 0.5, 0.34), 2.0, -1, 0.55, false, false, 0.15, true)
-  add(dirAzEl(BACK_AZ + 0.78, 0.3), 1.5, 1, 0.42)
-  add(dirAzEl(BACK_AZ - 0.7, 0.22), 1.7, 1, 0.46, false, false, 0.15, true)
-  add(dirAzEl(BACK_AZ - 0.98, 0.18), 1.3, -1, 0.4)
-  for (let i = 0; i < 10; i++) {
-    add(dirAzEl(BACK_AZ + (rng() - 0.5) * 3.6, -0.05 + rng() * 1.3), 0.6 + 0.3 * rng(), rng() < 0.5 ? -1 : 1, 0.18 + 0.08 * rng(), true, false, 0.12 + 0.04 * rng())
-  }
-  for (let i = 0; i < 16; i++) {
-    add(dirAzEl(BACK_AZ + (rng() - 0.5) * 4.0, -0.1 + rng() * 1.5), 0.5 + 0.4 * rng(), rng() < 0.5 ? -1 : 1, 0.28 + 0.16 * rng())
-  }
-  return V
-}
 
 const skyVert = /* glsl */ `
   varying vec3 vDir;
