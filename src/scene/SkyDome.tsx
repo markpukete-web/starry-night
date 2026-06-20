@@ -254,7 +254,7 @@ export function SkyDome({
         // rotation sign. Offset along up + sign·horizontal to land the glow on the dark comma.
         const upT = new Vector3(0, 1, 0).addScaledVector(v.dir, -v.dir.y).normalize()
         const horiz = new Vector3().crossVectors(v.dir, upT).normalize()
-        const eye = v.dir.clone().addScaledVector(upT, 0.09).addScaledVector(horiz, -v.sign * 0.1).normalize()
+        const eye = v.dir.clone().addScaledVector(upT, 0.03).addScaledVector(horiz, -v.sign * 0.04).normalize()
         const p = eye.multiplyScalar(DOME_R - 0.15)
         const gs = 3.2 + v.radius * 5.0 // larger soft glow so the front whorl reads as a luminous heart
         return (

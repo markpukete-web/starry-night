@@ -11,6 +11,6 @@
   "bloomThreshold": 0.85,
   "bloomRadius": 0.55,
   "glow": 1,
-  "moon": 1.45,
-  "stars": 1.4
+  "moon": 1.0,
+  "stars": 0.9
 }
