@@ -113,7 +113,9 @@ export function SkyDome({
   flow,
   colourSrc,
   count,
+  speed = 0.05,
   strokeWidth = 1,
+  swirlTightness = 0.06,
   saturation = 1.3,
   skyTop = PALETTE.skyZenith,
   skyBottom = PALETTE.skyHorizon,
@@ -162,10 +164,19 @@ export function SkyDome({
     if (paused) return
     /* eslint-disable react-hooks/immutability -- R3F render-loop uniform writes are intentional mutations */
     material.uniforms.uTime.value += dt
+    material.uniforms.uDriftSpeed.value = speed * 4 // churn 0.05 → ~0.2 cycles/s; tunable
+    material.uniforms.uDrift.value = swirlTightness  // the repurposed 'drift (arc)' control
     material.uniforms.uWidth.value = strokeWidth
     material.uniforms.uSat.value = saturation
     /* eslint-enable react-hooks/immutability */
   })
+
+  // Freeze to a fully-covered still when paused (prefers-reduced-motion OR the visitor pause button):
+  // uTime stops advancing AND uFreeze floors every dab's fade to full, so no birth/death holes appear.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/immutability -- intentional R3F uniform write
+    material.uniforms.uFreeze.value = paused ? 1 : 0
+  }, [material, paused])
 
   // live-update the gradient colours from the controls
   useEffect(() => {

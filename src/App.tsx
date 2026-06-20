@@ -168,7 +168,7 @@ export default function App() {
     churnSpeed: { value: 0.05, min: 0, max: 0.2, step: 0.005, label: 'churn speed' },
     strokes: { value: 8000, min: 1500, max: 14000, step: 500, label: 'stroke count' },
     strokeWidth: { value: 1, min: 0.4, max: 2.2, step: 0.05, label: 'stroke width' },
-    swirlTightness: { value: 0.45, min: 0, max: 1, step: 0.05, label: 'swirl tightness' },
+    swirlTightness: { value: 0.06, min: 0, max: 0.2, step: 0.005, label: 'drift (arc)' },
     flowBias: { value: 0.6, min: 0, max: 1, step: 0.05, label: 'flow bias (front)' },
     saturation: { value: 1.3, min: 0.5, max: 2.2, step: 0.05, label: 'colour pop' },
   })
