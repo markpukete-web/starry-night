@@ -192,8 +192,8 @@ export default function App() {
     skyBottom: { value: deepenHex(PALETTE.skyHorizon, 0.85), label: 'sky · horizon' },
   })
   const light = useControls('light & bloom', {
-    bloom: { value: 0.85, min: 0, max: 3, step: 0.05, label: 'bloom' },
-    bloomThreshold: { value: 0.72, min: 0, max: 1, step: 0.01, label: 'bloom threshold' },
+    bloom: { value: 0.72, min: 0, max: 3, step: 0.05, label: 'bloom' },
+    bloomThreshold: { value: 0.85, min: 0, max: 1, step: 0.01, label: 'bloom threshold' },
     bloomRadius: { value: 0.55, min: 0, max: 1, step: 0.05, label: 'bloom spread' },
     glow: { value: 1, min: 0, max: 1, step: 0.02, label: 'eye glow' },
     moon: { value: 1.45, min: 0, max: 4, step: 0.1, label: 'moon' },
@@ -239,7 +239,8 @@ export default function App() {
 
   return (
     <main className="visitor-shell">
-      <Leva hidden={!import.meta.env.DEV} />
+      {/* dev-only tuning panel — widened so the control names aren't truncated ("bloom threshold" etc.) */}
+      <Leva hidden={!import.meta.env.DEV} theme={{ sizes: { rootWidth: '400px', controlWidth: '150px' } }} />
       <Canvas
         frameloop="always"
         camera={{ position: HOME_POSITION, fov: 48 }}
