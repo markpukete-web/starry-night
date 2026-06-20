@@ -18,6 +18,9 @@ Newest at the bottom of each section.
 - 2026-06-13 — Phase 0 derivation is **dependency-free**: macOS `sips` for JPEG→PNG + resize,
   Node built-in `zlib` for PNG read/write, plain arithmetic for the structure tensor. Avoided
   sharp / jpeg-js / pngjs so no stop-and-ask was needed and the stack stays lean.
+- 2026-06-20 — Pre-release sign-off withdrawn by Mark for visual quality. The project re-enters a
+  fidelity gate: lead with sky flow, judged visually against the original art; then refine cypress
+  and village. Do not treat publish mechanics as the next task until this gate passes.
 
 ## Environment facts (this machine)
 

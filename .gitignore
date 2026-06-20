@@ -31,3 +31,6 @@ reference/derived/
 
 # Local visual-review scratch (Playwright MCP writes snapshots/logs here)
 .playwright-mcp/
+
+# Local brainstorming companion screens/server state
+.superpowers/

@@ -9,7 +9,29 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## Where we are now (2026-06-15, end of session) — read this first
+## Where we are now (2026-06-20) — read this first
+
+> **QUALITY GATE REOPENED (Mark, 2026-06-20).** The foreground-complete gate remains passed, but
+> pre-release sign-off is withdrawn. Do not proceed to publish mechanics until the new fidelity gate passes.
+
+Mark's current direction: the project should feel much closer to the original painting in 3D. The lead issue
+is sky flow: the current sky does not visually match the original art closely enough. Cypress and village also
+need refinement, but the next pass starts with sky flow. Spec:
+`docs/superpowers/specs/2026-06-20-sky-flow-fidelity-design.md`.
+
+### ▶ PICK UP HERE — sky-flow fidelity gate
+
+1. Put the original painting beside the current front capture and identify the largest visual flow mismatch.
+2. Rework the front-facing sky so the still frame tracks the original's star halos, central whorl, moon-area
+   flow, and broken impasto stroke direction more closely.
+3. Restore motion only after the still frame feels closer; motion must travel along the refined original-like
+   paths.
+4. Capture front, orbit, mobile, and reduced-motion after each material pass; Mark reviews captures.
+5. After sky-flow sign-off, refine cypress and village toward the same original-art fidelity standard.
+
+Publish/DNS/portfolio work is parked until this gate passes.
+
+## Previous status (2026-06-15, superseded by reopened quality gate)
 
 > **✅ FOREGROUND-COMPLETE GATE PASSED (Mark, 2026-06-15).** 4th of 5 gates; only the **pre-release gate**
 > remains. In the post-gate phase — proceed autonomously on the queue; the gate review is Mark's.
@@ -35,7 +57,7 @@ village + pale-spired church · Van Gogh flame-cypress · shrubs) under the chur
 sky. The full build history — the foreground F1–F5 rebuild, the sky's evolution, and every session lesson —
 lives in `tasks/lessons.md` (newest at the bottom of each section); this file holds the current intent.
 
-### ▶ PICK UP HERE — at the pre-release gate (the final gate)
+### Superseded pickup — pre-release gate paused
 The post-gate composition pass + ship hygiene are done. **Final value bake CONFIRMED (Mark, 2026-06-15):**
 he supplied the full leva set and ALL 14 values match the current baked defaults exactly — the look this
 session converged on IS the locked ship look (no code change needed). Everything before the final gate is
@@ -43,7 +65,8 @@ done. **At the pre-release gate** — capture set READY: `scratch/release-{front
 Locked criteria status: flow-driven motion ✓ · palette colours ✓ (documented lifts) · reduced-motion frozen
 ✓ (byte-identical frames) · orbit limits ✓; **performance is the one left to confirm on real hardware** —
 headless is software-rendered, Mark's machine was 120 fps on the sky pre-foreground; needs a re-check with
-the foreground + a mid-tier mobile. Awaiting Mark's release call. NB actual deploy (Vercel + Cloudflare DNS,
+the foreground + a mid-tier mobile. Pre-release is paused until the reopened quality gate passes. NB actual
+deploy (Vercel + Cloudflare DNS,
 `starrynight.markma.dev`) per CLAUDE.md. **Pushed to `origin/main` 2026-06-15** on Mark's go. **Vercel
 PREVIEW deployed (2026-06-15):** linked project `starry-night` (`prj_1bvAN2…`, scope `markpukete-web`);
 `vercel --yes` → READY at `starry-night-6e5cztkfg-markpukete-webs-projects.vercel.app`. BUT it returns

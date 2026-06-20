@@ -14,4 +14,7 @@ npm run dev
 
 ## Status
 
-In active development. Phase 0 (deriving a flow field and colour palette from the painting) is done, and "movable" has been settled by building: it is an **orbitable 3D diorama** beneath an enveloping dome of churning brushstroke sky — bold Van Gogh swirls anchored to the painting's real star and swirl positions, a glowing crescent moon, and the cypress, village and steeple on a floating slab, lit for a luminous night. Currently polishing the sky and forms toward the foreground and pre-release gates.
+Pre-release sign-off is currently withdrawn for a quality-refinement gate. The piece is an orbitable 3D
+diorama with visitor controls, reduced motion, and a full foreground, but the next roadmap item is to bring
+the sky flow materially closer to the original painting before release. After the sky-flow fidelity pass, the
+cypress and village get a second painterly refinement pass.
