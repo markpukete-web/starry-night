@@ -157,19 +157,27 @@ export function SkyDome({
     return buildDabGeometry(dabs)
   }, [flow, colourSrc, count, vortices, flowBias])
 
-  // Drive the churn from the render loop — frozen when paused, so prefers-reduced-motion yields a
-  // still, lit painting (no churn). These write a memoised material's uniforms: R3F render-target
-  // mutations that intentionally sit outside React's immutable data flow, hence the scoped disable.
+  // Advance the churn clock from the render loop — frozen when paused, so prefers-reduced-motion and
+  // the pause button yield a still painting (no churn). An R3F render-target mutation that
+  // intentionally sits outside React's immutable data flow, hence the scoped disable.
   useFrame((_, dt) => {
     if (paused) return
-    /* eslint-disable react-hooks/immutability -- R3F render-loop uniform writes are intentional mutations */
+    // eslint-disable-next-line react-hooks/immutability -- R3F render-loop uniform write is intentional
     material.uniforms.uTime.value += dt
-    material.uniforms.uDriftSpeed.value = speed * 4 // churn 0.05 → ~0.2 cycles/s; tunable
-    material.uniforms.uDrift.value = swirlTightness  // the repurposed 'drift (arc)' control
+  })
+
+  // Mirror the tuning props into the material uniforms via an effect (NOT useFrame) so they apply even
+  // while paused. Otherwise an initial prefers-reduced-motion load — where useFrame early-returns every
+  // frame — would keep the material defaults (width 1) and render a thinner, less-covered still than
+  // the tuned scene. (uTime stays in useFrame so drift only advances when playing.)
+  useEffect(() => {
+    /* eslint-disable react-hooks/immutability -- intentional R3F uniform writes */
     material.uniforms.uWidth.value = strokeWidth
     material.uniforms.uSat.value = saturation
+    material.uniforms.uDriftSpeed.value = speed * 4 // churn 0.05 → ~0.2 cycles/s; tunable
+    material.uniforms.uDrift.value = swirlTightness // the repurposed 'drift (arc)' control
     /* eslint-enable react-hooks/immutability */
-  })
+  }, [material, strokeWidth, saturation, speed, swirlTightness])
 
   // Freeze to a fully-covered still when paused (prefers-reduced-motion OR the visitor pause button):
   // uTime stops advancing AND uFreeze floors every dab's fade to full, so no birth/death holes appear.
