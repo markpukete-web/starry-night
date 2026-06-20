@@ -181,8 +181,8 @@ export default function App() {
   // Dev-only playground (the leva panel). Defaults reproduce the tuned look exactly.
   const sky = useControls('sky', {
     churnSpeed: { value: 0.05, min: 0, max: 0.2, step: 0.005, label: 'churn speed' },
-    strokes: { value: 10000, min: 1500, max: 14000, step: 500, label: 'stroke count' },
-    strokeWidth: { value: 1.45, min: 0.4, max: 2.2, step: 0.05, label: 'stroke width' },
+    strokes: { value: 12000, min: 1500, max: 14000, step: 500, label: 'stroke count' },
+    strokeWidth: { value: 1.05, min: 0.4, max: 2.2, step: 0.05, label: 'stroke width' },
     swirlTightness: { value: 0.06, min: 0, max: 0.2, step: 0.005, label: 'drift (arc)' },
     flowBias: { value: 0.6, min: 0, max: 1, step: 0.05, label: 'flow bias (front)' },
     saturation: { value: 1.3, min: 0.5, max: 2.2, step: 0.05, label: 'colour pop' },
@@ -203,7 +203,7 @@ export default function App() {
   const compact = useIsCompact()
   const c: SkyControls = {
     churnSpeed: sky.churnSpeed,
-    strokes: compact ? Math.round(sky.strokes * 0.32) : sky.strokes,
+    strokes: compact ? Math.round(sky.strokes * 0.28) : sky.strokes,
     strokeWidth: compact ? sky.strokeWidth * 1.3 : sky.strokeWidth,
     swirlTightness: sky.swirlTightness,
     flowBias: sky.flowBias,
