@@ -1,0 +1,16 @@
+{
+  "churnSpeed": 0.05,
+  "strokes": 12000,
+  "strokeWidth": 1.05,
+  "swirlTightness": 0.06,
+  "flowBias": 0.6,
+  "saturation": 1.3,
+  "skyTop": "#293759",
+  "skyBottom": "#3a568c",
+  "bloom": 0.72,
+  "bloomThreshold": 0.85,
+  "bloomRadius": 0.55,
+  "glow": 1,
+  "moon": 1.45,
+  "stars": 1.4
+}

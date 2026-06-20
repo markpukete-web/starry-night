@@ -15,3 +15,9 @@ export function useControls(nameOrSchema: string | Schema, maybeSchema?: Schema)
 export function Leva(): null {
   return null
 }
+
+// `button` exists only so the dev-only "set as default" control compiles in the production bundle; it
+// is never rendered or clicked there (the panel is absent), so this is an inert placeholder.
+export function button(): { type: 'BUTTON' } {
+  return { type: 'BUTTON' }
+}

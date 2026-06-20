@@ -1,14 +1,15 @@
 import { Canvas, useThree } from '@react-three/fiber'
 import { OrbitControls, Stats } from '@react-three/drei'
 import { Bloom, EffectComposer } from '@react-three/postprocessing'
-import { Leva, useControls } from 'leva'
-import { Suspense, useEffect, useState } from 'react'
+import { Leva, button, useControls } from 'leva'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import type { PerspectiveCamera } from 'three'
 import { Color } from 'three'
 import { useImageData } from './scene/useImageData'
 import { SkyDome } from './scene/SkyDome'
 import { Diorama } from './scene/Diorama'
 import { PALETTE } from './scene/palette'
+import TUNING from './scene/sky-tuning.json'
 
 // The default "home" composition the reset returns to — also the Canvas camera position + orbit target.
 const HOME_POSITION: [number, number, number] = [2.2, 1.5, 4.6]
@@ -33,6 +34,21 @@ function homePositionFor(aspect: number): [number, number, number] {
 // Deepen a derived sky swatch by a documented linear factor — provenance kept (swatch × factor), the
 // dome gradient sits below the strokes so deepening it darkens the blue field without dimming the swirls.
 const deepenHex = (hex: string, f: number) => '#' + new Color(hex).multiplyScalar(f).getHexString()
+
+/** Dev-only: POST the current panel values to the Vite middleware, which rewrites
+ *  src/scene/sky-tuning.json (the source of the baked defaults). Never runs in production. */
+async function saveTuning(values: Record<string, number | string>): Promise<void> {
+  try {
+    const res = await fetch('/__set-tuning', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(values),
+    })
+    console.log(res.ok ? '✓ saved sky-tuning.json — these are the new defaults' : `✗ save failed (${res.status})`)
+  } catch (err) {
+    console.error('✗ save failed', err)
+  }
+}
 
 /** prefers-reduced-motion: a dignified still painting, no churn (locked acceptance criterion). */
 function usePrefersReducedMotion() {
@@ -179,26 +195,57 @@ function VisitorButton({
 
 export default function App() {
   // Dev-only playground (the leva panel). Defaults reproduce the tuned look exactly.
+  // Control defaults are sourced from sky-tuning.json so the "set as default" button can persist them.
   const sky = useControls('sky', {
-    churnSpeed: { value: 0.05, min: 0, max: 0.2, step: 0.005, label: 'churn speed' },
-    strokes: { value: 12000, min: 1500, max: 14000, step: 500, label: 'stroke count' },
-    strokeWidth: { value: 1.05, min: 0.4, max: 2.2, step: 0.05, label: 'stroke width' },
-    swirlTightness: { value: 0.06, min: 0, max: 0.2, step: 0.005, label: 'drift (arc)' },
-    flowBias: { value: 0.6, min: 0, max: 1, step: 0.05, label: 'flow bias (front)' },
-    saturation: { value: 1.3, min: 0.5, max: 2.2, step: 0.05, label: 'colour pop' },
+    churnSpeed: { value: TUNING.churnSpeed, min: 0, max: 0.2, step: 0.005, label: 'churn speed' },
+    strokes: { value: TUNING.strokes, min: 1500, max: 14000, step: 500, label: 'stroke count' },
+    strokeWidth: { value: TUNING.strokeWidth, min: 0.4, max: 2.2, step: 0.05, label: 'stroke width' },
+    swirlTightness: { value: TUNING.swirlTightness, min: 0, max: 0.2, step: 0.005, label: 'drift (arc)' },
+    flowBias: { value: TUNING.flowBias, min: 0, max: 1, step: 0.05, label: 'flow bias (front)' },
+    saturation: { value: TUNING.saturation, min: 0.5, max: 2.2, step: 0.05, label: 'colour pop' },
   })
   const colours = useControls('sky colours', {
-    skyTop: { value: deepenHex(PALETTE.skyZenith, 0.85), label: 'sky · top' },
-    skyBottom: { value: deepenHex(PALETTE.skyHorizon, 0.85), label: 'sky · horizon' },
+    skyTop: { value: TUNING.skyTop ?? deepenHex(PALETTE.skyZenith, 0.85), label: 'sky · top' },
+    skyBottom: { value: TUNING.skyBottom ?? deepenHex(PALETTE.skyHorizon, 0.85), label: 'sky · horizon' },
   })
   const light = useControls('light & bloom', {
-    bloom: { value: 0.72, min: 0, max: 3, step: 0.05, label: 'bloom' },
-    bloomThreshold: { value: 0.85, min: 0, max: 1, step: 0.01, label: 'bloom threshold' },
-    bloomRadius: { value: 0.55, min: 0, max: 1, step: 0.05, label: 'bloom spread' },
-    glow: { value: 1, min: 0, max: 1, step: 0.02, label: 'eye glow' },
-    moon: { value: 1.45, min: 0, max: 4, step: 0.1, label: 'moon' },
-    stars: { value: 1.4, min: 0, max: 5, step: 0.1, label: 'stars' },
+    bloom: { value: TUNING.bloom, min: 0, max: 3, step: 0.05, label: 'bloom' },
+    bloomThreshold: { value: TUNING.bloomThreshold, min: 0, max: 1, step: 0.01, label: 'bloom threshold' },
+    bloomRadius: { value: TUNING.bloomRadius, min: 0, max: 1, step: 0.05, label: 'bloom spread' },
+    glow: { value: TUNING.glow, min: 0, max: 1, step: 0.02, label: 'eye glow' },
+    moon: { value: TUNING.moon, min: 0, max: 4, step: 0.1, label: 'moon' },
+    stars: { value: TUNING.stars, min: 0, max: 5, step: 0.1, label: 'stars' },
   })
+
+  // Dev-only: snapshot the live panel values; the "set as default" button persists them (writes
+  // sky-tuning.json). Ref so the button reads the latest values without re-registering each change.
+  const tuningRef = useRef<Record<string, number | string>>({})
+  useEffect(() => {
+    tuningRef.current = {
+      churnSpeed: sky.churnSpeed,
+      strokes: sky.strokes,
+      strokeWidth: sky.strokeWidth,
+      swirlTightness: sky.swirlTightness,
+      flowBias: sky.flowBias,
+      saturation: sky.saturation,
+      skyTop: colours.skyTop,
+      skyBottom: colours.skyBottom,
+      bloom: light.bloom,
+      bloomThreshold: light.bloomThreshold,
+      bloomRadius: light.bloomRadius,
+      glow: light.glow,
+      moon: light.moon,
+      stars: light.stars,
+    }
+  })
+  // Stable schema created ONCE — otherwise a new button object every render makes Leva re-register the
+  // whole panel on each change, which breaks a slider you're actively dragging (stroke count/width).
+  const saveButton = useMemo(
+    // eslint-disable-next-line react-hooks/refs -- read inside the button onClick (an event handler), not during render
+    () => ({ '★ set as default': button(() => void saveTuning(tuningRef.current)) }),
+    [],
+  )
+  useControls(saveButton)
 
   const compact = useIsCompact()
   const c: SkyControls = {
