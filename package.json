@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "derive-reference": "node scripts/derive-reference.ts",
-    "test:sky": "node --test scripts/sky-mapping.test.ts"
+    "test:sky": "node --test scripts/sky-mapping.test.ts scripts/flow-field.test.ts"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",
