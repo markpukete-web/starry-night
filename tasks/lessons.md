@@ -769,3 +769,28 @@ Two release-readiness wins, both verified no-visual-change against the dev look.
 - Captures (gitignored scratch/): bd1-front (static milestone), bd2-front (drift), bd3-front
   (tuned desktop), bd3-mobile (tuned mobile). Big lift on Mark's two tells: substance (chrome→paint)
   and flow — the sky now reads as packed Van Gogh brushstrokes tracing the painting's swirls.
+
+## Sky brush-dab redesign — built & reviewed, fidelity tuning FAILED (2026-06-20)
+
+Branch `sky-brushdab` (16 commits, NOT merged/pushed, gate OPEN). The sky was rebuilt from extruded ribbons
+("liquid chrome") into a field of GPU-instanced brush-dabs placed along the derived flow, drifting Vrellis-style.
+Built subagent-driven (Tasks 1–7, 11 node tests, all gates green), reviewed by a 6-lens internal pass + a Codex
+whole-branch pass. Landed: moon crescent un-flipped; reduced-motion full-coverage still (`uFreeze`); swirl-eye
+protection; thinner/crisper dabs (stars un-blurred); anchor-densified seeding; a dev-only "set as default"
+button (writes `src/scene/sky-tuning.json`, security-hardened endpoint); stars/moon lowered.
+
+**The substance/flow direction works (chrome→paint is a clear win). The fine FIDELITY tuning failed.** Mark
+stopped the session: piece-by-piece live slider tuning + stacking several art changes between captures did NOT
+converge to the painting, and the last passes (centring the whorl eye-glow + adding a 2nd whorl) made the
+central whorls read as a two-eyed "face" — worse. The 2nd-whorl experiment was discarded (uncommitted).
+
+**Lessons (apply next session):**
+- **One change per capture.** Stacking eye-glow + 2nd-whorl + brightness in one go made it impossible to tell
+  what helped vs hurt, and produced the "face". Change ONE variable, capture, judge against the original, repeat.
+- **Frame-by-frame, region-by-region.** Crop MATCHED regions of our front vs `reference/starry-night-source.jpg`
+  (whorl, Venus, star halos, moon corner) and diff each — don't eyeball the whole frame.
+- **`canvas.toDataURL()` captures the GL scene only** (no DOM UI overlays) — the MCP page-screenshot times out on
+  the always-on render loop, so use toDataURL for clean scene crops; use a real page screenshot only to show the UI.
+- The committed eye-glow-centring (offset 0.09/0.1 → 0.03/0.04) is suspect — it makes the swirl eye a dark hole
+  ringed by bright dabs (an "eye"); revisit/revert first next session.
+- Captures live in gitignored `scratch/bd*` as the visual journey; `git log main..HEAD` is the session trail.

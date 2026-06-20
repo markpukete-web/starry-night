@@ -19,17 +19,40 @@ is sky flow: the current sky does not visually match the original art closely en
 need refinement, but the next pass starts with sky flow. Spec:
 `docs/superpowers/specs/2026-06-20-sky-flow-fidelity-design.md`.
 
-### ▶ PICK UP HERE — sky-flow fidelity gate
+### Sky brush-dab redesign — built & reviewed, but NOT passing (branch `sky-brushdab`, 2026-06-20)
 
-1. Put the original painting beside the current front capture and identify the largest visual flow mismatch.
-2. Rework the front-facing sky so the still frame tracks the original's star halos, central whorl, moon-area
-   flow, and broken impasto stroke direction more closely.
-3. Restore motion only after the still frame feels closer; motion must travel along the refined original-like
-   paths.
-4. Capture front, orbit, mobile, and reduced-motion after each material pass; Mark reviews captures.
-5. After sky-flow sign-off, refine cypress and village toward the same original-art fidelity standard.
+A full sky redesign was built on branch **`sky-brushdab`** — **16 commits, NOT merged, NOT pushed → gate OPEN.**
+`npm run build`/`lint`/`test:sky` green throughout. What it is: the sky is now a field of GPU-instanced
+**brush-dabs** placed along the derived flow and drifting Vrellis-style, replacing the extruded-ribbon
+"liquid chrome" sky. Spec `docs/superpowers/specs/2026-06-20-sky-brushdab-design.md`; plan
+`docs/superpowers/plans/2026-06-20-sky-brushdab.md`. Built subagent-driven (Tasks 1–7, 11 node tests),
+reviewed by a 6-lens internal pass **and** a Codex whole-branch pass.
 
-Publish/DNS/portfolio work is parked until this gate passes.
+Fixes that landed: moon crescent un-flipped to match the painting; reduced-motion full-coverage still
+(`uFreeze`); swirl-eye protection restored; thinner/crisper dabs so stars aren't blurred; anchor-densified
+seeding; a dev-only **"set as default"** tuning button (writes `src/scene/sky-tuning.json` via a
+security-hardened endpoint); stars/moon brightness lowered.
+
+> **❌ FAILED AT THIS STAGE (Mark, 2026-06-20).** Piece-by-piece live tuning did NOT converge to the original.
+> The last passes — centring the whorl eye-glow + adding a second whorl — made the central whorls read as a
+> **two-eyed "face"**, worse not better. The second-whorl experiment was discarded (was uncommitted). The
+> eye-glow-centring change (offset 0.03/0.04, commit on `sky-brushdab`) is still in and is **suspect**. Overall
+> the sky still does not read close enough to Van Gogh's. **Pre-release fidelity gate NOT passed.**
+
+### ▶ PICK UP HERE — frame-by-frame fidelity comparison (Mark's call, next session)
+
+Stop ad-hoc live tuning. Do a **methodical frame-by-frame, session-by-session comparison** against the original:
+1. Capture the current front (canvas-only `toDataURL`, no UI) beside `reference/starry-night-source.jpg`. Crop
+   **matched regions** (central whorl, Venus, star halos, moon corner) and judge each against the painting one at a time.
+2. Change **ONE thing per capture** — do not stack multiple art changes between captures (this session's mistake).
+3. Re-examine the eye-glow-centring change — it reads as a dark-eye "face"; consider reverting toward the prior
+   offset (0.09/0.1) or a different eye treatment.
+4. Keep `git log main..HEAD` as the session trail; the `scratch/bd*` captures are the visual journey.
+
+The brush-dab DIRECTION is sound (chrome→paint, flow-derived). The failure is the fine fidelity tuning, which
+needs the disciplined frame-by-frame method — not live slider guessing.
+
+Publish/DNS/portfolio work stays parked until this gate passes.
 
 ## Previous status (2026-06-15, superseded by reopened quality gate)
 
