@@ -23,10 +23,13 @@ function makeGlowTexture(): CanvasTexture {
   cnv.width = cnv.height = s
   const ctx = cnv.getContext('2d')!
   const g = ctx.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2)
-  g.addColorStop(0, 'rgba(255,250,224,0.92)') // luminous but soft — a glowing heart, not a hard star
-  g.addColorStop(0.28, 'rgba(248,237,184,0.5)')
-  g.addColorStop(0.62, 'rgba(225,213,150,0.18)')
-  g.addColorStop(1, 'rgba(225,213,150,0)')
+  // A large, gentle radial bloom — bright soft core easing through a long warm falloff, so the swirl
+  // eye reads as a luminous heart (the glowing portal Mark wants at the default angle), not a hard blob.
+  g.addColorStop(0, 'rgba(255,250,226,0.72)') // luminous but soft — a glowing heart, not a hard star
+  g.addColorStop(0.13, 'rgba(252,242,200,0.42)')
+  g.addColorStop(0.36, 'rgba(236,222,162,0.18)')
+  g.addColorStop(0.66, 'rgba(228,214,150,0.05)')
+  g.addColorStop(1, 'rgba(228,214,150,0)')
   ctx.fillStyle = g
   ctx.fillRect(0, 0, s, s)
   const tex = new CanvasTexture(cnv)
@@ -253,7 +256,7 @@ export function SkyDome({
         const horiz = new Vector3().crossVectors(v.dir, upT).normalize()
         const eye = v.dir.clone().addScaledVector(upT, 0.09).addScaledVector(horiz, -v.sign * 0.1).normalize()
         const p = eye.multiplyScalar(DOME_R - 0.15)
-        const gs = 2.0 + v.radius * 1.8
+        const gs = 3.2 + v.radius * 5.0 // larger soft glow so the front whorl reads as a luminous heart
         return (
           <sprite key={i} position={p} scale={[gs, gs, 1]} renderOrder={1}>
             <spriteMaterial map={glowTex} blending={AdditiveBlending} transparent opacity={glowIntensity} depthWrite={false} toneMapped={false} />
