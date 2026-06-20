@@ -751,3 +751,21 @@ Two release-readiness wins, both verified no-visual-change against the dev look.
     history). Fixed with a guard: only downsample the full-res 1280×1013 derive output; skip otherwise.
     Lesson: any in-place, destructive asset transform needs an idempotence guard (or a separate
     preserved-source → output) — assume it WILL get run twice.
+
+## Sky brush-dab tunables (2026-06-20)
+
+- Dev Leva control `swirl tightness` repurposed → dab `drift (arc)` (uDrift); vortex spiral-inflow
+  tightness fixed at the tuned 0.45 inside makeFlowField. `flow bias` kept as the front painting-flow
+  bias (NOT repurposed to jitter — it is the painting-fidelity knob). `churn speed` → drift SPEED
+  (uDriftSpeed = speed*4). Dab size is the live `stroke width` (uWidth); per-dab size/drift variation
+  is baked, absolute scale/arc are live uniforms (no rebuild on tweak).
+- Tuned desktop defaults after the static→drift captures: strokes 8000→10000 (denser), stroke width
+  1→1.45 (fatter — kills the "confetti/sparks" sparseness), bloom 1.0→0.85, bloom threshold 0.63→0.72
+  and stars 2.0→1.4 (tamed the white star/whorl blow-out; stars read as gold haloed whorls now).
+- Mobile budget: added `useIsCompact()` (max-width 768px) — strokes ×0.32 (~3200, near the Tunables
+  3,000 figure) and stroke width ×1.3 so fatter dabs keep coverage at the lower count. dpr stays
+  capped [1,1.5]. NOTE: real mid-tier-device fps is UNVERIFIED in this environment (headless rAF
+  reads 0); confirm 30fps on a real phone before release.
+- Captures (gitignored scratch/): bd1-front (static milestone), bd2-front (drift), bd3-front
+  (tuned desktop), bd3-mobile (tuned mobile). Big lift on Mark's two tells: substance (chrome→paint)
+  and flow — the sky now reads as packed Van Gogh brushstrokes tracing the painting's swirls.

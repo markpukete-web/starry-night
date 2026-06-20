@@ -48,6 +48,21 @@ function usePrefersReducedMotion() {
   return reduced
 }
 
+/** Compact (mobile) viewport: drop the instanced dab budget toward the Tunables mobile figure
+ *  (~3,000) so phones stay near 30 fps, while desktop keeps the denser count. */
+function useIsCompact() {
+  const [compact, setCompact] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches,
+  )
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)')
+    const onChange = () => setCompact(mq.matches)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+  return compact
+}
+
 // Keep the painting's identity anchors (cypress left, steeple centre, moon top-right) in frame across
 // aspect ratios by widening the field of view on narrow/portrait viewports. Only the fov changes —
 // position and target stay fixed, so SkyDome's camera-anchored swirls stay centred (its basis is
@@ -166,8 +181,8 @@ export default function App() {
   // Dev-only playground (the leva panel). Defaults reproduce the tuned look exactly.
   const sky = useControls('sky', {
     churnSpeed: { value: 0.05, min: 0, max: 0.2, step: 0.005, label: 'churn speed' },
-    strokes: { value: 8000, min: 1500, max: 14000, step: 500, label: 'stroke count' },
-    strokeWidth: { value: 1, min: 0.4, max: 2.2, step: 0.05, label: 'stroke width' },
+    strokes: { value: 10000, min: 1500, max: 14000, step: 500, label: 'stroke count' },
+    strokeWidth: { value: 1.45, min: 0.4, max: 2.2, step: 0.05, label: 'stroke width' },
     swirlTightness: { value: 0.06, min: 0, max: 0.2, step: 0.005, label: 'drift (arc)' },
     flowBias: { value: 0.6, min: 0, max: 1, step: 0.05, label: 'flow bias (front)' },
     saturation: { value: 1.3, min: 0.5, max: 2.2, step: 0.05, label: 'colour pop' },
@@ -177,18 +192,19 @@ export default function App() {
     skyBottom: { value: deepenHex(PALETTE.skyHorizon, 0.85), label: 'sky · horizon' },
   })
   const light = useControls('light & bloom', {
-    bloom: { value: 1.0, min: 0, max: 3, step: 0.05, label: 'bloom' },
-    bloomThreshold: { value: 0.63, min: 0, max: 1, step: 0.01, label: 'bloom threshold' },
+    bloom: { value: 0.85, min: 0, max: 3, step: 0.05, label: 'bloom' },
+    bloomThreshold: { value: 0.72, min: 0, max: 1, step: 0.01, label: 'bloom threshold' },
     bloomRadius: { value: 0.55, min: 0, max: 1, step: 0.05, label: 'bloom spread' },
     glow: { value: 1, min: 0, max: 1, step: 0.02, label: 'eye glow' },
     moon: { value: 1.45, min: 0, max: 4, step: 0.1, label: 'moon' },
-    stars: { value: 2.0, min: 0, max: 5, step: 0.1, label: 'stars' },
+    stars: { value: 1.4, min: 0, max: 5, step: 0.1, label: 'stars' },
   })
 
+  const compact = useIsCompact()
   const c: SkyControls = {
     churnSpeed: sky.churnSpeed,
-    strokes: sky.strokes,
-    strokeWidth: sky.strokeWidth,
+    strokes: compact ? Math.round(sky.strokes * 0.32) : sky.strokes,
+    strokeWidth: compact ? sky.strokeWidth * 1.3 : sky.strokeWidth,
     swirlTightness: sky.swirlTightness,
     flowBias: sky.flowBias,
     saturation: sky.saturation,
