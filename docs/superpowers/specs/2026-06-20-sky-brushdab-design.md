@@ -50,8 +50,10 @@ silvery wash as a side effect; we do not chase it further.
   faces the home bearing). Orbit limits unchanged (Tunables: polar 0.2–1.5, distance 3–5.5, no pan).
 - The moon (halo + carved crescent sprites), the stars, and the swirl-eye glow sprites — they are
   identity light and already read well. They remain the elements that bloom.
-- Colours derived from the painting (`/reference/painting.jpg`) on the front and from `palette.json`
-  (`PALETTE`) on the invented back. No colour re-derivation from memory.
+- Colours derived from the painting (`/reference/painting.jpg`): front dabs sample it at their own
+  painting UV; back/invented dabs sample random sky pixels of the same painting (palette-consistent —
+  the painting is what `palette.json` is derived from, and this matches the proven prior ribbon code).
+  `palette.json` (`PALETTE`) drives the dome gradient. No colour re-derivation from memory.
 - The derived flow field (`/reference/flow-field.png`) as the front orientation source.
 - `prefers-reduced-motion` and the visitor pause button → a dignified still painting.
 
