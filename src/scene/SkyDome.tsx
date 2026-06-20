@@ -53,8 +53,9 @@ function makeMoonHalo(): CanvasTexture {
   return tex
 }
 
-// The carved crescent — a bright gold disc with an offset disc erased out of it, so the lit sliver
-// hugs the upper-right and its concavity faces down-left toward the composition, as in the painting.
+// The carved crescent — a bright gold disc with an offset disc erased out of it, so the lit belly
+// sits lower-left and the concavity opens to the upper-right, as in the painting (the bite is taken
+// from the upper-right). Earlier this was mirrored (bite lower-left) — Mark spotted the flip 2026-06-20.
 function makeMoonCrescent(): CanvasTexture {
   const s = 256
   const cnv = document.createElement('canvas')
@@ -73,7 +74,7 @@ function makeMoonCrescent(): CanvasTexture {
   ctx.fill()
   ctx.globalCompositeOperation = 'destination-out'
   ctx.beginPath()
-  ctx.arc(cx - R * 0.5, cy + R * 0.5, R * 0.96, 0, Math.PI * 2)
+  ctx.arc(cx + R * 0.5, cy - R * 0.5, R * 0.96, 0, Math.PI * 2)
   ctx.fill()
   const tex = new CanvasTexture(cnv)
   tex.needsUpdate = true
