@@ -80,11 +80,11 @@ export function buildVortices(): Vortex[] {
   const add = (dir: Vector3, strength: number, sign: number, radius: number, star = false, moon = false, scale = 0.15, core = false) =>
     V.push({ dir, strength, sign, radius, star, moon, scale, core })
 
-  add(uvToFrontDir(0.43, 0.4), 2.05, 1, 0.54, false, false, 0.15, true)
-  // Counter-roll pulled closer to the main roll + a touch stronger/wider so the two INTERLOCK as one
-  // double-comma: the counter's circulation now sweeps flow across the main roll's stagnation centre,
-  // filling the dark eye-notch with strokes (the faithful S-form, not a separate second swirl).
-  add(uvToFrontDir(0.52, 0.37), 1.5, -1, 0.44, false, false, 0.15, true)
+  // The central whorl = a BROAD, GENTLE double-comma, not a tight strong vortex. A strong tight roll
+  // converges strokes into a hard puckered eye with a black pinhole at the singularity (flow→0 there);
+  // a gentler/broader roll spreads the circulation so strokes fill the centre instead of ringing a hole.
+  add(uvToFrontDir(0.43, 0.4), 1.55, 1, 0.62, false, false, 0.15, true)
+  add(uvToFrontDir(0.52, 0.37), 1.25, -1, 0.52, false, false, 0.15, true)
   add(uvToFrontDir(VENUS_UV[0], VENUS_UV[1]), 1.0, -1, 0.32, true, false, 0.24)
   STAR_UVS.forEach((uv, i) =>
     add(uvToFrontDir(uv[0], uv[1]), 0.6 + 0.2 * rng(), i % 2 === 0 ? 1 : -1, 0.18 + 0.07 * rng(), true, false, 0.13 + 0.04 * rng()),
