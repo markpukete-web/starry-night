@@ -37,11 +37,11 @@ function VisitorButton({
       className={`visitor-control${active ? ' is-active' : ''}`}
       aria-label={label}
       aria-pressed={active}
-      data-tooltip={label}
       disabled={disabled}
       onClick={onClick}
     >
       <span aria-hidden="true">{icon}</span>
+      <span className="visitor-control-label">{label}</span>
     </button>
   )
 }

@@ -74,21 +74,24 @@ button {
   -webkit-backdrop-filter: blur(10px) saturate(1.15);
 }
 
+/* Labelled pill buttons — icon + text, so the controls (especially 'Show original') are obvious and
+   never get lost as cryptic corner icons. */
 .visitor-control {
-  position: relative;
-  display: grid;
-  width: 44px;
-  height: 44px;
-  place-items: center;
-  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 14px;
   border: 1px solid rgba(244, 234, 211, 0.2);
-  border-radius: 50%;
-  background: rgba(12, 24, 55, 0.54);
+  border-radius: 20px;
+  background: rgba(12, 24, 55, 0.6);
   color: #f7e7b5;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
   cursor: pointer;
-  font-size: 20px;
+  font-size: 13px;
+  font-weight: 620;
   line-height: 1;
+  white-space: nowrap;
   transition:
     background-color 160ms ease,
     border-color 160ms ease,
@@ -96,10 +99,14 @@ button {
     transform 160ms ease;
 }
 
+.visitor-control > span[aria-hidden] {
+  font-size: 17px;
+}
+
 .visitor-control:hover {
   transform: translateY(-1px);
-  border-color: rgba(246, 198, 81, 0.52);
-  background: rgba(41, 55, 91, 0.72);
+  border-color: rgba(246, 198, 81, 0.6);
+  background: rgba(41, 55, 91, 0.78);
   color: #fff8da;
 }
 
@@ -113,8 +120,8 @@ button {
 }
 
 .visitor-control.is-active {
-  border-color: rgba(246, 198, 81, 0.62);
-  background: rgba(116, 78, 30, 0.42);
+  border-color: rgba(246, 198, 81, 0.7);
+  background: rgba(116, 78, 30, 0.5);
   color: #fff1bf;
 }
 
@@ -122,46 +129,6 @@ button {
   cursor: not-allowed;
   opacity: 0.46;
   transform: none;
-}
-
-.visitor-control::after {
-  position: absolute;
-  right: 50%;
-  bottom: calc(100% + 10px);
-  width: max-content;
-  max-width: 180px;
-  padding: 7px 9px;
-  border: 1px solid rgba(244, 234, 211, 0.18);
-  border-radius: 6px;
-  background: rgba(6, 12, 28, 0.9);
-  color: #f4ead3;
-  content: attr(data-tooltip);
-  font-size: 12px;
-  font-weight: 620;
-  line-height: 1.15;
-  opacity: 0;
-  pointer-events: none;
-  transform: translate(50%, 4px);
-  transition:
-    opacity 140ms ease,
-    transform 140ms ease;
-  white-space: nowrap;
-}
-
-.visitor-control:hover::after,
-.visitor-control:focus-visible::after {
-  opacity: 1;
-  transform: translate(50%, 0);
-}
-
-.visitor-control:last-child::after {
-  right: 0;
-  transform: translate(0, 4px);
-}
-
-.visitor-control:last-child:hover::after,
-.visitor-control:last-child:focus-visible::after {
-  transform: translate(0, 0);
 }
 
 /* Small original-painting reference in the corner — visible AT THE SAME TIME as the living painting

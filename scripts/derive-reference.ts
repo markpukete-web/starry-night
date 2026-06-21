@@ -565,11 +565,23 @@ console.log('wrote signed-flow.png');
 // static so the painted crescent does not smear (Codex plan-review).
 const MOON_UV = [0.85, 0.16];
 const MOON_R = 0.07;
+const smooth01 = (x: number) => {
+  const t = x < 0 ? 0 : x > 1 ? 1 : x;
+  return t * t * (3 - 2 * t);
+};
 const maskRaw = new Float64Array(W * H);
 for (let i = 0; i < W * H; i++) {
-  let m = (lumB[i] - 70) / 40; // smoothstep 70..110 luminance
-  m = m < 0 ? 0 : m > 1 ? 1 : m;
-  maskRaw[i] = m * m * (3 - 2 * m);
+  const l = lumB[i];
+  const lm = smooth01((l - 70) / 40); // bright enough to be sky
+  const r = px[i * 4];
+  const g = px[i * 4 + 1];
+  const b = px[i * 4 + 2];
+  // sky is BLUE; the cypress (and village) are green/brown — exclude them by chroma so their lighter
+  // strokes don't churn (the creepy "churning tree"). Keep very-bright pixels (yellow star/swirl
+  // highlights) as sky regardless, since they read as light, not foreground.
+  const blue = smooth01((b - 0.5 * (r + g)) / 35);
+  const bright = smooth01((l - 150) / 50);
+  maskRaw[i] = lm * Math.max(blue, bright);
 }
 const maskBlur = gaussianBlur(maskRaw, W, H, 2.5);
 const maskF = new Float64Array(W * H);
