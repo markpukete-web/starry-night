@@ -12,7 +12,7 @@ import { PALETTE } from './scene/palette'
 import TUNING from './scene/sky-tuning.json'
 
 // The default "home" composition the reset returns to — also the Canvas camera position + orbit target.
-const HOME_POSITION: [number, number, number] = [2.2, 1.5, 4.6]
+const HOME_POSITION: [number, number, number] = [0.6, 1.05, 5.05]
 const HOME_TARGET: [number, number, number] = [0, 1.05, 0]
 // Portrait can't fit the moon by fov alone (it sits ~37° off the composition centre), so portrait bears
 // the camera toward the moon's corner by this azimuth (radians, rotated about the orbit target). Negative
@@ -309,7 +309,7 @@ export default function App() {
           minDistance={3}
           maxDistance={5.5}
           minPolarAngle={0.2}
-          maxPolarAngle={1.5}
+          maxPolarAngle={1.62}
         />
         <EffectComposer>
           <Bloom

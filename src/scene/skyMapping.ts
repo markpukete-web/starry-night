@@ -35,7 +35,10 @@ const WHORL_FILL: [number, number][] = [
 // (flow bias steers a dab's direction; this steers where dabs LAND).
 export const ANCHOR_UVS: [number, number][] = [...WHORL_FILL, VENUS_UV, ...STAR_UVS]
 
-const CAM_POS = new Vector3(2.2, 1.5, 4.6)
+// MUST stay equal to App's HOME_POSITION/HOME_TARGET — the swirl basis (FRONT_AZ) is derived from this
+// camera bearing so the painting's composition (whorl, moon, Venus, stars) centres on where the camera
+// looks. Moved nearly head-on (small azimuth) to match the flat painting's composition (Mark, 2026-06-21).
+const CAM_POS = new Vector3(0.6, 1.05, 5.05)
 const CAM_TARGET = new Vector3(0, 1.05, 0)
 export const FRONT_AZ = Math.atan2(CAM_TARGET.x - CAM_POS.x, CAM_TARGET.z - CAM_POS.z)
 const FRONT_EL = 0.2
