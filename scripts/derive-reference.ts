@@ -42,6 +42,9 @@ const OUT_LIC = resolve(ROOT, 'reference/derived/flow-lic.png');
 const OUT_LIC_OVERLAY = resolve(ROOT, 'reference/derived/flow-lic-overlay.png');
 const OUT_COHERENCE = resolve(ROOT, 'reference/derived/coherence.png');
 const OUT_PAINTING = resolve(ROOT, 'public/reference/painting.jpg'); // web-sized texture for the app
+const OUT_SIGNED_FLOW = resolve(ROOT, 'public/reference/signed-flow.png'); // directed flow for advection
+const OUT_SKY_MASK = resolve(ROOT, 'public/reference/sky-mask.png'); // where the living painting churns
+const OUT_MASK_OVERLAY = resolve(ROOT, 'reference/derived/sky-mask-overlay.png'); // mask validation capture
 
 const ANALYSIS_WIDTH = 1280; // px; flow-field + captures are produced at this width
 const PRE_BLUR = 1.2; // σ, denoise before gradients
@@ -503,6 +506,97 @@ writeFileSync(OUT_LIC, encodePNG(W, H, greyImg));
 writeFileSync(OUT_LIC_OVERLAY, encodePNG(W, H, overlay));
 writeFileSync(OUT_COHERENCE, encodePNG(W, H, cohImg));
 console.log(`wrote LIC captures (${((Date.now() - t0) / 1000).toFixed(1)}s)`);
+
+// ------------------------------------------ signed flow + sky mask (Phase 0) ----
+// A DIRECTED flow for GPU advection: take the undirected orientation and sign-align it to a SMOOTH
+// circulation field built from the painting's swirl centres, so the living-painting shader rotates each
+// swirl the right way (a stateless half-plane hack cannot — Codex plan-review). The circulation field is
+// smooth and directed everywhere (gaussian tails overlap), so there is no branch-cut seam at the vortices.
+
+// Swirl centres in UV (x right, y down), rotation sign, gaussian falloff radius. Central whorl dominates;
+// the bright stars add local halo swirl. Signs are validated by the living-painting capture (flip if a
+// swirl turns the wrong way).
+const SWIRLS: [number, number, number, number][] = [
+  [0.45, 0.41, +1, 0.2], // central whorl (dominant)
+  [0.52, 0.37, -1, 0.12], // counter-roll of the double comma
+  [0.27, 0.33, -1, 0.07], // Venus / bright left star
+  [0.13, 0.13, +1, 0.05],
+  [0.31, 0.13, -1, 0.05],
+  [0.4, 0.1, +1, 0.05],
+  [0.52, 0.2, -1, 0.05],
+  [0.59, 0.1, +1, 0.05],
+  [0.66, 0.27, -1, 0.05],
+  [0.72, 0.18, +1, 0.05],
+  [0.1, 0.42, +1, 0.05],
+];
+
+const signed = new Uint8Array(W * H * 4);
+for (let y = 0; y < H; y++)
+  for (let x = 0; x < W; x++) {
+    const i = y * W + x;
+    const u = (x + 0.5) / W;
+    const v = (y + 0.5) / H;
+    let cxr = 0;
+    let cyr = 0;
+    for (const [sx, sy, s, r] of SWIRLS) {
+      const dux = u - sx;
+      const dvy = v - sy;
+      const w = Math.exp(-(dux * dux + dvy * dvy) / (r * r));
+      cxr += s * -dvy * w; // tangential = sign · perp(p − centre)
+      cyr += s * dux * w;
+    }
+    const th = 0.5 * Math.atan2(sin2[i], cos2[i]);
+    let dx = Math.cos(th);
+    let dy = Math.sin(th);
+    if (dx * cxr + dy * cyr < 0) {
+      dx = -dx;
+      dy = -dy;
+    }
+    signed[i * 4] = Math.round((dx * 0.5 + 0.5) * 255);
+    signed[i * 4 + 1] = Math.round((dy * 0.5 + 0.5) * 255);
+    signed[i * 4 + 2] = Math.round(coh[i] * 255);
+    signed[i * 4 + 3] = 255;
+  }
+writeFileSync(OUT_SIGNED_FLOW, encodePNG(W, H, signed));
+console.log('wrote signed-flow.png');
+
+// Sky mask: bright = sky (the living painting churns here), dark foreground (cypress/village/hills) stays
+// still. Eroded inward so advected sky never samples across a silhouette, and the moon disc is forced
+// static so the painted crescent does not smear (Codex plan-review).
+const MOON_UV = [0.85, 0.16];
+const MOON_R = 0.07;
+const maskRaw = new Float64Array(W * H);
+for (let i = 0; i < W * H; i++) {
+  let m = (lumB[i] - 70) / 40; // smoothstep 70..110 luminance
+  m = m < 0 ? 0 : m > 1 ? 1 : m;
+  maskRaw[i] = m * m * (3 - 2 * m);
+}
+const maskBlur = gaussianBlur(maskRaw, W, H, 2.5);
+const maskF = new Float64Array(W * H);
+for (let y = 0; y < H; y++)
+  for (let x = 0; x < W; x++) {
+    const i = y * W + x;
+    let m = (maskBlur[i] - 0.5) / 0.4; // erode: keep only the confident interior (smoothstep 0.5..0.9)
+    m = m < 0 ? 0 : m > 1 ? 1 : m;
+    m = m * m * (3 - 2 * m);
+    const u = (x + 0.5) / W;
+    const v = (y + 0.5) / H;
+    const md = Math.hypot(u - MOON_UV[0], v - MOON_UV[1]);
+    const moon = md <= MOON_R ? 0 : md >= MOON_R * 1.5 ? 1 : (md - MOON_R) / (MOON_R * 0.5);
+    maskF[i] = m * moon;
+  }
+const maskImg = new Uint8Array(W * H * 4);
+const maskOverlay = new Uint8Array(W * H * 4);
+for (let i = 0; i < W * H; i++) {
+  const v = Math.round(maskF[i] * 255);
+  maskImg[i * 4] = maskImg[i * 4 + 1] = maskImg[i * 4 + 2] = v;
+  maskImg[i * 4 + 3] = 255;
+  for (let c = 0; c < 3; c++) maskOverlay[i * 4 + c] = Math.round(px[i * 4 + c] * (0.25 + 0.75 * maskF[i]));
+  maskOverlay[i * 4 + 3] = 255;
+}
+writeFileSync(OUT_SKY_MASK, encodePNG(W, H, maskImg));
+writeFileSync(OUT_MASK_OVERLAY, encodePNG(W, H, maskOverlay));
+console.log(`wrote sky-mask.png + overlay (${((Date.now() - t0) / 1000).toFixed(1)}s)`);
 
 // --------------------------------------------------------- palette ---------
 
