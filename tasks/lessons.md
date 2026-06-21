@@ -900,3 +900,38 @@ full sky pass autonomously, one change per capture, all committed.
 - All 8 commits this session `git log main..HEAD`; build/lint/tsc green throughout. Captures:
   `scratch/{deblur,angle,eyelevel,p4,p4b,p5b,notch}-wide.jpeg`; `scratch/cmp/{angle-3way,notch-whorl,SESSION-before-after,GRAND-*}.jpg`.
   Perf: ~22k dabs at eye-level still UNVERIFIED on real hardware — confirm fps on Mark's machine + a phone.
+
+## Brush-dab churn engine — the dabs NEVER rendered (DoubleSide bug) (2026-06-22)
+
+After the brush-dab engine was built, reviewed, and committed (2865909), Codex code-review flagged two
+must-fixes; applying + verifying them surfaced that the engine had been **completely non-functional** —
+the live "churn" everyone saw was 100% the base flow-map advection (the smooth "water" Mark rejected).
+
+- **THE BUG: a y-flip reverses winding → FrontSide culls every instance.** `imgToClip` (skyFraming)
+  does `1.0 - uncontain.y` to map image-UV (y-down) → clip (y-up). That flip reverses the dab quad's
+  triangle winding to back-facing, so the default `side: FrontSide` material culled all 18,000 dabs.
+  The base full-screen quad does NOT flip y in its vertex shader, so it rendered fine — which masked
+  the problem. **Fix: `side: DoubleSide` on the dab material.** Lesson: any shader that flips an axis in
+  the vertex stage flips winding too — set DoubleSide (or invert the index) or the geometry vanishes
+  silently with NO console error.
+- **Capture pitfall: `canvas.toDataURL()` via Playwright returned a STALE, byte-identical frame** every
+  call (same md5) even with `preserveDrawingBuffer` and rAF ticking at 120fps — made a moving scene look
+  frozen (motion-diff 0). The RELIABLE method: in-page `ctx.drawImage(canvas,…)` into an offscreen 2D
+  canvas, then `getImageData` and diff/export from THAT. Use drawImage→getImageData for all motion checks,
+  not toDataURL round-trips.
+- **Diagnosis path that worked:** zero motion with base static → suspect dabs → forced dabs solid red
+  ignoring mask/fade (still 0 red) → ruled out assets (fetch+getImageData OK) and geometry (logged 18k
+  instances, valid homes) → only rendering left → winding/culling. Lesson: when an instanced layer shows
+  nothing, prove render-vs-not with a constant-colour debug frag BEFORE blaming the data.
+- **Codex's two must-fixes (both applied):** (1) base `flowAmount`/`uAmp` default 0 so the dabs are the
+  sole churn and the base holds the painting 1:1 (also kills the water-flow read); (2) per-fragment
+  footprint mask — sample `uMask` at the fragment's own image-UV (`vImg`), not the dab centre, so a dab
+  edge lapping onto cypress/village/moon fades out (the creepy-tree shimmer). Codex reviews source only —
+  it explicitly could NOT confirm registration "without capture evidence" and missed the culling bug; the
+  runtime capture caught it. Lesson: pair every Codex source review with a runtime capture pass.
+- **Verified result:** whole sky churns as discrete brush-dabs flowing along the swirl streamlines
+  (heatmap `scratch/dab-heatmap.png` — dab-shaped streaks, not blur); stars/moon/cypress/village static
+  (sky-mask holes); reduced-motion frozen byte-identical; tsc/lint green. Commit applies all three fixes.
+  Open/taste for Mark: the star+swirl halos are masked static (dark holes) — reference video has them
+  ROTATING; widening the mask to let halos churn is a possible next refinement. Perf at 18k UNVERIFIED on
+  real hardware/phone.

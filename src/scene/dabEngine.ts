@@ -1,5 +1,6 @@
 import {
   BufferAttribute,
+  DoubleSide,
   InstancedBufferAttribute,
   InstancedBufferGeometry,
   NormalBlending,
@@ -98,7 +99,7 @@ const dabVert = /* glsl */ `
   attribute float aLen;
   uniform float uTime, uSpeed, uViewA, uTexA, uFreeze, uSize, uDrift;
   varying vec2 vUv;
-  varying vec2 vCenter;
+  varying vec2 vImg;
   varying vec2 vHome;
   varying float vFade;
   ${IMG_TO_CLIP_GLSL}
@@ -112,7 +113,7 @@ const dabVert = /* glsl */ `
     vec2 imgPos = center + position.x * halfLen * along + position.y * (halfWid * 2.0) * across;
     gl_Position = vec4(imgToClip(imgPos, uViewA, uTexA), 0.0, 1.0);
     vUv = uv;
-    vCenter = center;
+    vImg = imgPos;                                            // this fragment's painting-UV (footprint mask)
     vHome = aHome;
     vFade = sin(3.14159265 * t) * (1.0 - uFreeze);            // born→peak→die; frozen → 0 (base only)
   }
@@ -122,13 +123,14 @@ const dabFrag = /* glsl */ `
   precision highp float;
   uniform sampler2D uPainting, uMask;
   varying vec2 vUv;
-  varying vec2 vCenter;
+  varying vec2 vImg;
   varying vec2 vHome;
   varying float vFade;
   void main() {
     vec2 q = vUv * 2.0 - 1.0;                                 // local stroke coords [-1,1]
     float brush = smoothstep(1.0, 0.15, length(q));           // soft elongated impasto mark
-    float mask = texture2D(uMask, vCenter).r;                 // footprint mask: drifting off-sky fades out
+    float mask = texture2D(uMask, vImg).r;                    // per-fragment footprint mask: dab edge that
+                                                             // laps onto cypress/village/moon fades to nothing
     float a = brush * vFade * mask;
     if (a < 0.02) discard;
     vec3 col = texture2D(uPainting, vHome).rgb;               // the painting's OWN colour at the dab origin
@@ -155,5 +157,6 @@ export function makeBrushDabMaterial(painting: Texture, mask: Texture): ShaderMa
     depthTest: false,
     depthWrite: false,
     blending: NormalBlending,
+    side: DoubleSide, // imgToClip flips Y → quad winding reverses; without this FrontSide culls every dab
   })
 }
