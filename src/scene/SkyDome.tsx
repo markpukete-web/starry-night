@@ -23,10 +23,13 @@ function makeMoonHalo(): CanvasTexture {
   cnv.width = cnv.height = s
   const ctx = cnv.getContext('2d')!
   const g = ctx.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2)
-  g.addColorStop(0, 'rgba(255,240,182,0.95)')
-  g.addColorStop(0.25, 'rgba(247,214,110,0.42)')
-  g.addColorStop(0.55, 'rgba(228,188,86,0.15)')
-  g.addColorStop(1, 'rgba(228,188,86,0)')
+  // Bigger, warmer cream→gold halo (P4) — the painting wraps the crescent in a broad luminous glow, so
+  // carry more opacity further out before the falloff; Bloom then blossoms it into the dominant moon.
+  g.addColorStop(0, 'rgba(255,238,176,0.98)')
+  g.addColorStop(0.22, 'rgba(248,210,104,0.55)')
+  g.addColorStop(0.5, 'rgba(234,182,78,0.24)')
+  g.addColorStop(0.78, 'rgba(226,168,66,0.07)')
+  g.addColorStop(1, 'rgba(226,168,66,0)')
   ctx.fillStyle = g
   ctx.fillRect(0, 0, s, s)
   const tex = new CanvasTexture(cnv)
@@ -71,9 +74,10 @@ function makeMoonCrescent(): CanvasTexture {
   const cy = s / 2
   const R = s * 0.32
   const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, R)
-  g.addColorStop(0, 'rgba(255,247,206,1)')
-  g.addColorStop(0.7, 'rgba(243,206,99,1)')
-  g.addColorStop(1, 'rgba(230,184,74,1)')
+  // Warm orange-gold, not pale lemon (P4) — the painting's moon is a deep gold crescent.
+  g.addColorStop(0, 'rgba(255,238,182,1)')
+  g.addColorStop(0.6, 'rgba(241,192,84,1)')
+  g.addColorStop(1, 'rgba(222,158,56,1)')
   ctx.fillStyle = g
   ctx.beginPath()
   ctx.arc(cx, cy, R, 0, Math.PI * 2)
@@ -229,10 +233,10 @@ export function SkyDome({
       {/* the moon — a glowing gold orb with a soft halo and a carved crescent, not a flat disc.
           Sprites face the eye from every orbit angle; Bloom blossoms the additive halo. */}
       <group position={moonPos}>
-        <sprite scale={[4.2, 4.2, 1]} renderOrder={1}>
-          <spriteMaterial map={moonHaloTex} blending={AdditiveBlending} transparent opacity={Math.min(1, 0.5 * moonBright)} depthWrite={false} toneMapped={false} />
+        <sprite scale={[4.6, 4.6, 1]} renderOrder={1}>
+          <spriteMaterial map={moonHaloTex} blending={AdditiveBlending} transparent opacity={Math.min(1, 0.45 * moonBright)} depthWrite={false} toneMapped={false} />
         </sprite>
-        <sprite scale={[1.9, 1.9, 1]} renderOrder={2}>
+        <sprite scale={[2.15, 2.15, 1]} renderOrder={2}>
           <spriteMaterial map={moonCrescentTex} transparent opacity={1} depthWrite={false} toneMapped={false} />
         </sprite>
       </group>
