@@ -33,26 +33,37 @@ Fixes that landed: moon crescent un-flipped to match the painting; reduced-motio
 seeding; a dev-only **"set as default"** tuning button (writes `src/scene/sky-tuning.json` via a
 security-hardened endpoint); stars/moon brightness lowered.
 
-> **❌ FAILED AT THIS STAGE (Mark, 2026-06-20).** Piece-by-piece live tuning did NOT converge to the original.
-> The last passes — centring the whorl eye-glow + adding a second whorl — made the central whorls read as a
-> **two-eyed "face"**, worse not better. The second-whorl experiment was discarded (was uncommitted). The
-> eye-glow-centring change (offset 0.03/0.04, commit on `sky-brushdab`) is still in and is **suspect**. Overall
-> the sky still does not read close enough to Van Gogh's. **Pre-release fidelity gate NOT passed.**
+### Fidelity pass DONE — methodical frame-by-frame against the original (2026-06-21, 8 commits, on branch)
 
-### ▶ PICK UP HERE — frame-by-frame fidelity comparison (Mark's call, next session)
+The disciplined frame-by-frame method worked where ad-hoc slider tuning had failed. Grounded in a deep-research
+run (history/astronomy/turbulence/film refs → `tasks/wgssvj03w.output`) + matched-region crops vs
+`reference/starry-night-source.jpg` (`scratch/cmp/`). One change per capture. All green, all committed (not pushed):
 
-Stop ad-hoc live tuning. Do a **methodical frame-by-frame, session-by-session comparison** against the original:
-1. Capture the current front (canvas-only `toDataURL`, no UI) beside `reference/starry-night-source.jpg`. Crop
-   **matched regions** (central whorl, Venus, star halos, moon corner) and judge each against the painting one at a time.
-2. Change **ONE thing per capture** — do not stack multiple art changes between captures (this session's mistake).
-3. Re-examine the eye-glow-centring change — it reads as a dark-eye "face"; consider reverting toward the prior
-   offset (0.09/0.1) or a different eye treatment.
-4. Keep `git log main..HEAD` as the session trail; the `scratch/bd*` captures are the visual journey.
+- **P1** long-ribbon dabs (decoupled length so they join into continuous strokes, not confetti) + density 12k→22k.
+- **P2** removed the swirl eye-glow entirely (the painting's swirl hearts are paint, not light — the glow read as
+  a dark-hole "portal"/"eye"). The inverted-glow insight: the painting glows STARS, not swirls; we were reversed.
+- **P3** radiant star halos (small bright core in a big halo), Venus the brightest. The dead `glow` control now
+  drives them. + crisper halo falloff.
+- **De-blur** (Mark live): decouple ribbon length from width so width is a pure crispness knob; strokeWidth →0.8.
+- **Camera** (Mark live): home moved head-on + eye-level to match the flat painting (azimuth 26°→7°, dropped to
+  target height; maxPolar 1.5→1.62 to allow a level home). Village seen front-on, not bird's-eye.
+- **P4** warm orange-gold moon in a contained glow (was pale lemon + small halo).
+- **P5/P5b** deepen toward cobalt night (tone-aware: blue field down, highlights held) + saturation/gradient.
+- **Whorl notch** filled by interlocking the two central rolls into a true double-comma (counter-roll pulled in).
 
-The brush-dab DIRECTION is sound (chrome→paint, flow-derived). The failure is the fine fidelity tuning, which
-needs the disciplined frame-by-frame method — not live slider guessing.
+Captures: `scratch/cmp/SESSION-before-after.jpg`, `GRAND-painting-vs-ours.jpg`, `angle-3way.jpg`, `notch-whorl.jpg`.
 
-Publish/DNS/portfolio work stays parked until this gate passes.
+### ▶ PICK UP HERE — Mark review + remaining
+
+- **Mark to review** the live sky (localhost:5173, leva panel) / the captures — taste + how-deep-cobalt calls.
+- **Perf UNVERIFIED**: ~22k dabs at eye-level — confirm 60fps desktop / 30fps mobile on real hardware.
+- **Foreground (P6, not started this pass)**: cypress still reads as a smooth dark blob (vs the painting's slim
+  flame at the far-left edge); the landmass is a flat slab (vs rolling hills). Foreground-complete gate already
+  passed, so treat as fidelity polish, not a rebuild — confirm scope with Mark.
+- Diorama vs flat painting: still a floating island with empty blue around it (the 3D concept). If Mark wants it
+  closer to the painting's full-frame foreground, that's a composition call.
+
+Publish/DNS/portfolio work stays parked until the fidelity gate passes (Mark's call).
 
 ## Previous status (2026-06-15, superseded by reopened quality gate)
 

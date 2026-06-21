@@ -107,7 +107,9 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
 - Instanced stroke budget: start 8,000 desktop / 3,000 mobile
 - Palette tolerance: ΔE < 10 per region to begin; tighten as quality improves
 - devicePixelRatio cap: 2 desktop / 1.5 mobile
-- Camera orbit limits: polar 0.2–1.5 rad (≈11°–86°), distance 3–5.5; azimuth free; no pan (3D diorama)
+- Camera orbit limits: polar 0.2–1.62 rad (≈11°–93°), distance 3–5.5; azimuth free; no pan (3D diorama).
+  Max polar raised 1.5→1.62 on 2026-06-21 so the home view sits eye-level head-on to match the painting
+  (Mark live review); still a hard limit, no free-fly/pan.
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)

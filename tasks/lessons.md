@@ -835,3 +835,68 @@ findings recorded below) and a methodical frame-by-frame diff of the front vs `r
   sweep through) — deferred to avoid the earlier "two-eyed face" regression; flagged to Mark.
 - Build/lint/tsc green throughout; NOT committed. Captures: `scratch/diff-front{,-p1p2,-p1p2b}.jpeg`, pairs in
   `scratch/cmp/RESULT-*.jpg`. Perf: 22k dabs unverified on real hardware (headless rAF reads 0) — confirm fps.
+- Committed (sky-brushdab): P1+P2 `421c84d`.
+
+## Sky fidelity P3 (star halos) + P5 (deepen) — 2026-06-21
+
+Continued the same session, one change per capture, Mark reviewing each step.
+
+- **P3 — radiant star halos (the inverted-glow fix).** Replaced the flat emissive gold-disc stars with a small
+  bright core inside a big additive halo sprite (`makeStarHaloTexture`), so each reads as the painting's "tiny
+  intense centre in a wide spiralling glow". Halo size scales with the star's own `scale`, so Venus (the largest,
+  0.24) is the single brightest star after the moon — the one solid celestial anchor from the research. The dead
+  `glow` control (orphaned by the P2 de-glow) now drives star-halo opacity. Committed `7ae4930`.
+  - Balance lesson: first pass (halo ×11, core ×0.6) read as core-heavy gold BALLS; ×15 / core ×0.42 gave the
+    right small-core-in-big-halo read but went MILKY in the dense band. Crisping the halo texture falloff
+    (brightness concentrated in inner third, short tail to zero by ~0.6) helped only marginally (`87effc2`).
+- **The milkiness is a CONTRAST problem, not a halo one.** The diagnostic 3-way (painting/soft/crisp) + the full
+  frame showed the real cause: our stroke field is too LIGHT/pastel, so bright halos have no deep field to pop
+  against — they wash together. The painting's stars pop because they sit on deep cobalt. → the halo-tighten has
+  gone as far as it usefully can; the lever is colour (P5). Lesson: when added glows read "milky/washed", check the
+  BACKGROUND VALUE before tuning the glow — a bright field defeats any halo.
+- **P5 — deepen toward cobalt night (tone-aware).** Added a brightness-selective deepen to `dabFrag` (NOT the old
+  ribbon `strokeFrag`, which the brush-dab redesign replaced): `col *= mix(0.58, 1.0, smoothstep(0.32, 0.8, bl))`
+  where `bl` = base-stroke luminance — pulls the low/mid blue field strokes down while holding the bright highlight
+  filaments + near-star creams. The sky now reads as night and the stars/filaments pop. A flat darken would kill
+  the motion; the tone curve keeps the bright-vs-deep contrast that IS the motion (same principle as the 2026-06-15
+  ribbon deepen, re-applied to the dab shader). NOT yet committed — depth is a taste call (could go a notch deeper /
+  raise saturation to fully match the painting's cobalt).
+- Still open on the sky: small residual whorl-centre notch; P4 moon (pale crescent → fat orange-gold + big warm
+  halo); possibly deeper P5 / more saturation. Then P6 foreground (cypress blob, flat hills). Captures:
+  `scratch/diff-front-p3{,b,c}.jpeg`, `-p5.jpeg`; pairs `scratch/cmp/{p3c-stars-3way,p5-*,GRAND-*}.jpg`.
+- Committed: P3 `7ae4930`, crisp halo `87effc2`, P5 deepen+de-blur `0dc758d`.
+
+## Sky fidelity — live-review round: blur, angle, moon, colour, notch (2026-06-21)
+
+Mark reviewed live on localhost and gave two notes (angle wrong + blurry), then said "keep going" → finished a
+full sky pass autonomously, one change per capture, all committed.
+
+- **De-blur — DECOUPLE length from width.** The ribbons read as a smeary blend because the P1 length factor was
+  COUPLED to the width control (`halfLen = iScale·uWidth·2.6`), so they were both long AND fat. Fix: make length
+  absolute (`halfLen = iScale·2.7`) and let width (`halfWid = iScale·uWidth·0.5`) be a pure crispness knob; drop
+  strokeWidth 1.05→0.8. Now thinner = crisper distinct strokes WITHOUT losing along-flow continuity. Lesson: keep
+  a stroke's LENGTH (continuity) and WIDTH (crispness) on independent controls — coupling them means you can't
+  de-blur without re-introducing dashes.
+- **Angle — head-on eye-level is TWO coupled changes.** Mark: the 3/4 downward diorama view didn't match the flat
+  painting. (1) Azimuth: rotate the home nearly head-on (HOME_POSITION + skyMapping CAM_POS x 2.2→0.6, kept EQUAL
+  so the swirl basis re-centres on the new bearing — they MUST stay equal). (2) Elevation: the orbit `maxPolarAngle`
+  (1.5 rad) was CAPPING how level the home could sit — it forced a downward look. Dropped the camera to the target
+  height (y 1.5→1.05) AND raised maxPolar 1.5→1.62 so a level home is allowed. Result: village seen front-on, not
+  bird's-eye. Lesson: a "looking down too much" home can be the POLAR LIMIT, not just the camera height — check the
+  orbit clamp. CLAUDE.md Tunables updated (polar max 1.62); still constrained, no free-fly.
+- **Moon P4.** Pale lemon → warm orange-gold crescent; broaden+warm the halo. First pass FLOODED the corner pale
+  (halo scale 5.6 / op 0.6 + bloom) → dialled back to scale 4.6 / op×0.45 = a contained glow that pops against the
+  deepened night. Lesson: an additive halo that's too big/bright washes its whole corner under Bloom — size it to
+  pop, not flood.
+- **Colour P5b.** Deeper still: tone floor 0.58→0.48, saturation 1.3→1.45, gradient zenith/horizon deepened.
+  Subtle on the strokes (they carry the painting's own light swirl colours) but the between-stroke field + lower sky
+  read richer. Diminishing returns here — the strokes ARE the painting's bright colours, so the field can only go so
+  deep without darkening the highlights.
+- **Whorl notch — the faithful fix (worked).** The de-glow exposed the stagnation void; filled it by INTERLOCKING
+  the two central rolls (counter-roll uv 0.58,0.35→0.52,0.37, r0.40→0.44, str1.4→1.5) so the counter's circulation
+  sweeps flow across the main eye = the painting's double-comma S. Notch essentially gone. Lesson: this is NOT the
+  "two-eyed face" risk (that was a SEPARATE extra whorl) — merging two existing rolls into one interlocked swirl is
+  the opposite move and is safe + faithful.
+- All 8 commits this session `git log main..HEAD`; build/lint/tsc green throughout. Captures:
+  `scratch/{deblur,angle,eyelevel,p4,p4b,p5b,notch}-wide.jpeg`; `scratch/cmp/{angle-3way,notch-whorl,SESSION-before-after,GRAND-*}.jpg`.
+  Perf: ~22k dabs at eye-level still UNVERIFIED on real hardware — confirm fps on Mark's machine + a phone.
