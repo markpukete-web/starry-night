@@ -33,7 +33,7 @@ const frag = /* glsl */ `
   void main() {
     vec2 img = containUv(vUv, uViewA, uTexA);
     if (img.x < 0.0 || img.x > 1.0 || img.y < 0.0 || img.y > 1.0) {
-      gl_FragColor = vec4(0.04, 0.06, 0.13, 1.0); // deep-night letterbox bars
+      gl_FragColor = vec4(0.043, 0.102, 0.227, 1.0); // deep-night letterbox bars (matches #0b1a3a)
       return;
     }
     vec4 fl = texture2D(uFlow, img);

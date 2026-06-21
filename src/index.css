@@ -164,27 +164,22 @@ button {
   transform: translate(0, 0);
 }
 
-.visitor-reference {
+/* Full-screen original-painting overlay for A/B comparison — contain-fit on the same deep-night
+   letterbox as the living painting, so toggling flips cleanly between the still original and the
+   churning render at the identical framing. */
+.original-overlay {
   position: fixed;
-  left: 16px;
-  bottom: 84px;
+  inset: 0;
   z-index: 11;
-  width: min(270px, calc(100vw - 32px));
-  padding: 8px;
-  border: 1px solid rgba(244, 234, 211, 0.18);
-  border-radius: 8px;
-  background: rgba(7, 13, 29, 0.68);
-  box-shadow: 0 18px 46px rgba(4, 7, 19, 0.34);
-  backdrop-filter: blur(10px) saturate(1.12);
-  -webkit-backdrop-filter: blur(10px) saturate(1.12);
+  background: #0b1a3a;
 }
 
-.visitor-reference img {
-  display: block;
+.original-overlay img {
+  position: absolute;
+  inset: 0;
   width: 100%;
-  aspect-ratio: 3840 / 3041;
-  border-radius: 6px;
-  object-fit: cover;
+  height: 100%;
+  object-fit: contain;
   user-select: none;
 }
 
@@ -209,18 +204,6 @@ button {
     bottom: max(14px, env(safe-area-inset-bottom));
     left: 50%;
     transform: translateX(-50%);
-  }
-
-  .visitor-reference {
-    right: 14px;
-    bottom: calc(78px + env(safe-area-inset-bottom));
-    left: 14px;
-    width: auto;
-  }
-
-  .visitor-reference img {
-    max-height: 30vh;
-    object-fit: contain;
   }
 }
 
