@@ -528,7 +528,19 @@ const SWIRLS: [number, number, number, number][] = [
   [0.66, 0.27, -1, 0.05],
   [0.72, 0.18, +1, 0.05],
   [0.1, 0.42, +1, 0.05],
+  [0.85, 0.16, +1, 0.11], // moon halo — its bright rings spin around the static crescent (guard below)
 ];
+
+const smooth01 = (x: number) => {
+  const t = x < 0 ? 0 : x > 1 ? 1 : x;
+  return t * t * (3 - 2 * t);
+};
+const MOON_UV = [0.85, 0.16];
+const MOON_R = 0.07;
+// Swirls whose HALOS we force to churn AND orbit (stars, the double-comma rolls, the moon halo). Excludes
+// the dominant central whorl (r 0.2, already animating) and any swirl on the cypress column (u<0.2 & v>0.3)
+// so we never paint churn onto the tree. Shared by the signed-flow orbit-forcing and the sky-mask discs.
+const HALO_SWIRLS = SWIRLS.filter(([u, v, , r]) => r <= 0.12 && !(u < 0.2 && v > 0.3));
 
 const signed = new Uint8Array(W * H * 4);
 for (let y = 0; y < H; y++)
@@ -552,6 +564,24 @@ for (let y = 0; y < H; y++)
       dx = -dx;
       dy = -dy;
     }
+    // Inside a star/moon halo the structure-tensor orientation is noisy or radial, so a sign-flip alone
+    // leaves dabs drifting in/out instead of circling. Blend the direction toward the PURE tangential
+    // circulation there so the halo dabs actually ORBIT (Mark: 'let the halos spin', incl. round the moon).
+    // Open sky (wOrbit→0) keeps the painting's own brush orientation, so fidelity holds away from centres.
+    let wOrbit = 0;
+    for (const [sx, sy, , r] of HALO_SWIRLS) {
+      const rr = Math.max(r, 0.05) * 1.25;
+      const d = Math.hypot(u - sx, v - sy);
+      wOrbit = Math.max(wOrbit, 1 - smooth01((d - rr * 0.3) / (rr * 0.7)));
+    }
+    const cmag = Math.hypot(cxr, cyr);
+    if (wOrbit > 0 && cmag > 1e-9) {
+      dx = dx * (1 - wOrbit) + (cxr / cmag) * wOrbit;
+      dy = dy * (1 - wOrbit) + (cyr / cmag) * wOrbit;
+      const m2 = Math.hypot(dx, dy) || 1;
+      dx /= m2;
+      dy /= m2;
+    }
     signed[i * 4] = Math.round((dx * 0.5 + 0.5) * 255);
     signed[i * 4 + 1] = Math.round((dy * 0.5 + 0.5) * 255);
     signed[i * 4 + 2] = Math.round(coh[i] * 255);
@@ -562,13 +592,8 @@ console.log('wrote signed-flow.png');
 
 // Sky mask: bright = sky (the living painting churns here), dark foreground (cypress/village/hills) stays
 // still. Eroded inward so advected sky never samples across a silhouette, and the moon disc is forced
-// static so the painted crescent does not smear (Codex plan-review).
-const MOON_UV = [0.85, 0.16];
-const MOON_R = 0.07;
-const smooth01 = (x: number) => {
-  const t = x < 0 ? 0 : x > 1 ? 1 : x;
-  return t * t * (3 - 2 * t);
-};
+// static so the painted crescent does not smear (Codex plan-review). MOON_UV/MOON_R + smooth01 + HALO_SWIRLS
+// are defined above, shared with the signed-flow orbit-forcing so the masked halos are exactly the orbited ones.
 const maskRaw = new Float64Array(W * H);
 for (let i = 0; i < W * H; i++) {
   const l = lumB[i];
@@ -587,6 +612,9 @@ for (let i = 0; i < W * H; i++) {
 // Light erosion — just a small calm buffer at the cypress edge (the chroma test already holds the tree
 // static, so we don't need the wide erosion that was freezing most of the sky).
 const maskBlur = gaussianBlur(maskRaw, W, H, 3.0);
+// Force the star/moon HALOS into the mask (HALO_SWIRLS, defined above) so dabs seed across them and the
+// baked tangential flow spins them (Mark: 'let the halos spin', incl. around the moon). The * moon guard
+// still zeroes the crescent itself, so only the bright RINGS around it churn — the crescent stays crisp.
 const maskF = new Float64Array(W * H);
 for (let y = 0; y < H; y++)
   for (let x = 0; x < W; x++) {
@@ -594,9 +622,15 @@ for (let y = 0; y < H; y++)
     const m = smooth01((maskBlur[i] - 0.4) / 0.35); // modest margin; keeps the whole sky animating
     const u = (x + 0.5) / W;
     const v = (y + 0.5) / H;
+    let halo = 0;
+    for (const [sx, sy, , r] of HALO_SWIRLS) {
+      const rr = Math.max(r, 0.05) * 1.25; // halo reach, a touch beyond the circulation falloff
+      const d = Math.hypot(u - sx, v - sy);
+      halo = Math.max(halo, 1 - smooth01((d - rr * 0.55) / (rr * 0.45))); // 1 inside → smooth edge
+    }
     const md = Math.hypot(u - MOON_UV[0], v - MOON_UV[1]);
     const moon = md <= MOON_R ? 0 : md >= MOON_R * 1.5 ? 1 : (md - MOON_R) / (MOON_R * 0.5);
-    maskF[i] = m * moon;
+    maskF[i] = Math.max(m, halo) * moon; // moon stays static even if a halo laps near it
   }
 const maskImg = new Uint8Array(W * H * 4);
 const maskOverlay = new Uint8Array(W * H * 4);

@@ -935,3 +935,31 @@ the live "churn" everyone saw was 100% the base flow-map advection (the smooth "
   Open/taste for Mark: the star+swirl halos are masked static (dark holes) — reference video has them
   ROTATING; widening the mask to let halos churn is a possible next refinement. Perf at 18k UNVERIFIED on
   real hardware/phone.
+
+## Halos must ORBIT, not just churn — force tangential flow in the bake (2026-06-22)
+
+Mark: "let the halos spin too" (stars sat static), then "nothing's moving around the moon". Two passes:
+
+- **Pass 1 (mask only) made halos CHURN but not SPIN.** Forcing the star halos into sky-mask.png (so dabs
+  seed there) made them move, but a 4-lens adversarial workflow (verify-halo-spin) caught the real gap: the
+  dab motion model is LINEAR DRIFT + snap-back (dabEngine vertex: `center = aHome + aTangent*aLen*t`), so a
+  halo only reads as rotation if the baked flow is COHERENTLY TANGENTIAL there. It wasn't — at the small
+  stars the structure-tensor orientation is noisy/radial and 3 stars were even wrong-signed, so dabs drifted
+  in/out, not around. Only the central whorl (coherent circular flow) actually spun. Lesson: seeding dabs in
+  a region ≠ making it spin; the FLOW FIELD must be tangential. A motion-diff metric can't tell spin from
+  flicker (the `sin(pi*t)` opacity pulse guarantees diff>0), so a heatmap RING around a static core is the
+  real evidence of orbit.
+- **Pass 2 (orbit-forcing) — the fix.** In the signed-flow bake, near each HALO_SWIRLS centre blend the
+  direction toward the PURE tangential circulation (`dir = mix(structureDir, normalize(cx,cy), wOrbit)`,
+  wOrbit→1 at centre, →0 by the halo edge). Open sky keeps the painting's own brush orientation, so fidelity
+  holds. Result: stars + moon halo now ORBIT (heatmap shows churning rings around small static cores).
+- **The moon halo** needed the same treatment + a circulation centre: added `[0.85,0.16,+1,0.11]` to SWIRLS
+  so the ring orbits, and the existing `* moon` guard still zeroes the crescent — so the bright RINGS spin
+  while the gold crescent stays crisp/static. (moonCrescent diff 0, moonRing 5.2, was a dead hole before.)
+- **Shared HALO_SWIRLS** (defined once, used by both signed-flow orbit-forcing AND the mask discs) so the
+  masked halos are exactly the orbited ones. Excludes the dominant central whorl (r>0.12) and any swirl on
+  the cypress column (`u<0.2 && v>0.3`) — that drops the [0.1,0.42] swirl the review flagged as lapping the
+  cypress tip. Verified: cypress 1.9 / village 0 static, reduced-motion 0, fidelity still faithful, build green.
+- **Crisper dabs:** default dab size 1.0 read blurry to Mark → 0.55 (leva default + material uSize init).
+- Adversarial-workflow verdict that drove pass 2: `tasks/wmeujjsxm.output`. Captures:
+  `scratch/{orbit-heatmap.png,orbit-full.jpeg,orbit-moon.jpeg}`. signed-flow.png still 3MB (ship-hygiene TODO).
