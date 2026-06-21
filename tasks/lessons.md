@@ -794,3 +794,44 @@ central whorls read as a two-eyed "face" — worse. The 2nd-whorl experiment was
 - The committed eye-glow-centring (offset 0.09/0.1 → 0.03/0.04) is suspect — it makes the swirl eye a dark hole
   ringed by bright dabs (an "eye"); revisit/revert first next session.
 - Captures live in gitignored `scratch/bd*` as the visual journey; `git log main..HEAD` is the session trail.
+
+## Research-grounded sky fidelity — P1 coverage + P2 de-glow (2026-06-21)
+
+Session started with a deep-research run (history/astronomy/turbulence/film refs → `tasks/` brief; key actionable
+findings recorded below) and a methodical frame-by-frame diff of the front vs `reference/starry-night-source.jpg`
+(matched-region crops in `scratch/cmp/`). The diff named the real gaps; built P1+P2 against them.
+
+- **Research takeaways that steer the build:** (1) faithfulness lives in MOTION/COLOUR/IMPASTO, not astronomy —
+  the painted crescent doesn't match June-1889's real moon and the stars aren't a datable map (Olson never
+  published on it), so never chase a sky map. (2) Venus is the one solid celestial anchor — the single brightest
+  light after the moon (Boime/Whitney + VG's letter); position debated, so anchor brightness not pixel. (3) Motion =
+  MULTI-SCALE: a few big driving swirls → fine dabs with a minimum stroke size (dissipation cutoff). Do NOT tune to
+  a Kolmogorov −5/3 slope — that stronger claim is REFUTED (Finlay 2020 rebuttal); tune by EYE vs reference crops.
+  (4) Authentic motion = per-stroke (Loving Vincent), not a shader wash → keep discrete oriented ribbons. (5) Even
+  Vrellis (~80k particles) + Still Night HAND-AUTHORED their flow fields and found it hard — expect a manual
+  correction pass; our structure-tensor field is only the base.
+
+- **The diff's headline: our glow was INVERTED.** The painting glows its STARS (radiant concentric halos) and
+  leaves its central SWIRL as pure flowing paint. We were doing the opposite — a luminous "eye" on the pure-flow
+  whorl (read as a dark-hole/portal) and FLAT gold-disc stars (no halo). So the glow budget must move OFF the swirl,
+  ONTO the stars (P3).
+
+- **P1 — the dashes→ribbons fix (the big win).** Dabs read as confetti over flat gradient because consecutive dabs
+  along a streamline sit `STEP·R ≈ 0.3` world-units apart but were only ~0.15–0.28 long → they didn't TOUCH.
+  Fix = lengthen along-flow ONLY (`halfLen = iScale·uWidth·2.6` in dabGeometry; width untouched so stars/filaments
+  stay crisp) so neighbours join into continuous ribbons, + raise count 12000→22000 (cross-flow density; leva max
+  →26000; mobile mult 0.28→0.16 to hold ~3.5k). Result: the sky now reads as packed flowing Van Gogh brushstrokes.
+  Lesson: for a dab/streamline sky, dab length must EXCEED the along-streamline spacing or it reads as dashes —
+  lengthen before adding count.
+
+- **P2 — removed the swirl eye-glow entirely** (the `cores.map` glow sprites in SkyDome; kept the moon halo). Mark:
+  "remove it, fill with strokes." First reverted the suspect centring offset (0.03/0.04→0.09/0.1) but the glow STILL
+  read as an eye against the painting, confirming the concept itself fights the art — so deleted it.
+- **Void caveat (honest):** removing the glow re-exposed the dark eye it had masked. At a vortex centre BOTH the
+  circulation (`p×dir`) and inflow (`dir − p(p·dir)`) vanish → flow stalls → streamlines circle without crossing →
+  a dark stagnation hole (worst between the two counter-rotating central rolls). Weighting dab seeding into the
+  whorl centre + the S-bridge (`WHORL_FILL` in skyMapping ANCHOR_UVS) REDUCED it a lot but a small dark notch
+  remains. The faithful full fix is a flow-FORM change (interlock the two rolls into a true double-comma so strokes
+  sweep through) — deferred to avoid the earlier "two-eyed face" regression; flagged to Mark.
+- Build/lint/tsc green throughout; NOT committed. Captures: `scratch/diff-front{,-p1p2,-p1p2b}.jpeg`, pairs in
+  `scratch/cmp/RESULT-*.jpg`. Perf: 22k dabs unverified on real hardware (headless rAF reads 0) — confirm fps.

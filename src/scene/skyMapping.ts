@@ -20,10 +20,20 @@ export const STAR_UVS: [number, number][] = [
   [0.52, 0.2], [0.59, 0.095], [0.66, 0.27], [0.72, 0.175],
 ]
 
+// The central whorl fill — the two interlocking rolls and the S-bridge between them, weighted so dabs
+// LAND in the swirl centre. The centre flow stalls (circulation + inflow both vanish at a vortex eye),
+// so without this seeding the eye reads as a dark hole once the luminous glow is removed (P2). The
+// painting fills its swirl hearts with flowing strokes, not light — these anchors reproduce that.
+const WHORL_FILL: [number, number][] = [
+  [0.43, 0.4], [0.43, 0.4], [0.43, 0.4], // main roll centre — weighted heavily to fill the eye
+  [0.48, 0.38], [0.52, 0.37], // the S-bridge sweeping between the two rolls
+  [0.58, 0.35], [0.58, 0.35], // counter-roll centre
+]
+
 // The painting's high-density points — the swirl eyes, Venus, and the star halos — where Van Gogh's
 // impasto piles thickest. Front dabs densify around these so brush-mark density matches the painting
 // (flow bias steers a dab's direction; this steers where dabs LAND).
-export const ANCHOR_UVS: [number, number][] = [[0.43, 0.4], [0.58, 0.35], VENUS_UV, ...STAR_UVS]
+export const ANCHOR_UVS: [number, number][] = [...WHORL_FILL, VENUS_UV, ...STAR_UVS]
 
 const CAM_POS = new Vector3(2.2, 1.5, 4.6)
 const CAM_TARGET = new Vector3(0, 1.05, 0)

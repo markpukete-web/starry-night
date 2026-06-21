@@ -15,28 +15,6 @@ import { buildDabGeometry, makeDabMaterial } from './dabGeometry'
 // stars' halos and the central whorl), with streamlines flowing through it. Bold round Van Gogh
 // swirls everywhere, organic, with no seam, no symmetry and no gaps. Stars sit at vortex centres.
 
-// A soft warm radial glow — placed at a swirl's eye so the calm centre reads as light, not a hole.
-// Bloom amplifies the bright core; additive blending lets it melt into the surrounding strokes.
-function makeGlowTexture(): CanvasTexture {
-  const s = 128
-  const cnv = document.createElement('canvas')
-  cnv.width = cnv.height = s
-  const ctx = cnv.getContext('2d')!
-  const g = ctx.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2)
-  // A large, gentle radial bloom — bright soft core easing through a long warm falloff, so the swirl
-  // eye reads as a luminous heart (the glowing portal Mark wants at the default angle), not a hard blob.
-  g.addColorStop(0, 'rgba(255,250,226,0.72)') // luminous but soft — a glowing heart, not a hard star
-  g.addColorStop(0.13, 'rgba(252,242,200,0.42)')
-  g.addColorStop(0.36, 'rgba(236,222,162,0.18)')
-  g.addColorStop(0.66, 'rgba(228,214,150,0.05)')
-  g.addColorStop(1, 'rgba(228,214,150,0)')
-  ctx.fillStyle = g
-  ctx.fillRect(0, 0, s, s)
-  const tex = new CanvasTexture(cnv)
-  tex.needsUpdate = true
-  return tex
-}
-
 // The moon's soft concentric halo — warm gold fading to nothing. Additive, so it blossoms under
 // Bloom into the glowing orb Van Gogh wrapped around the crescent (palette moon: #c0b451 / #b0a84f).
 function makeMoonHalo(): CanvasTexture {
@@ -123,7 +101,6 @@ export function SkyDome({
   saturation = 1.3,
   skyTop = PALETTE.skyZenith,
   skyBottom = PALETTE.skyHorizon,
-  glowIntensity = 1,
   moonBright = 1.7,
   starBright = 2.5,
   paused = false,
@@ -151,7 +128,6 @@ export function SkyDome({
   }, [])
   const material = useMemo(() => makeDabMaterial(brushTex), [brushTex])
 
-  const glowTex = useMemo(() => makeGlowTexture(), [])
   const moonHaloTex = useMemo(() => makeMoonHalo(), [])
   const moonCrescentTex = useMemo(() => makeMoonCrescent(), [])
 
@@ -204,17 +180,15 @@ export function SkyDome({
       material.dispose()
       brushTex.dispose()
       gradient.dispose()
-      glowTex.dispose()
       moonHaloTex.dispose()
       moonCrescentTex.dispose()
     },
-    [material, brushTex, gradient, glowTex, moonHaloTex, moonCrescentTex],
+    [material, brushTex, gradient, moonHaloTex, moonCrescentTex],
   )
 
   const moon = vortices.find((v) => v.moon)
   const moonPos = moon ? moon.dir.clone().multiplyScalar(DOME_R) : new Vector3(0, 4, -4)
   const stars = vortices.filter((v) => v.star)
-  const cores = vortices.filter((v) => v.core)
 
   return (
     <group>
@@ -246,23 +220,10 @@ export function SkyDome({
         )
       })}
 
-      {/* luminous core at each big swirl's eye — the calm centre reads as light, not a dark hole.
-          The spiral inflow pushes the visual eye slightly "up-current" of the vortex centre, so
-          nudge the glow toward world-up to land it on the dark crescent rather than haloing it. */}
-      {cores.map((v, i) => {
-        // the spiral's void sits up-current of the centre — up, and to one side set by the swirl's
-        // rotation sign. Offset along up + sign·horizontal to land the glow on the dark comma.
-        const upT = new Vector3(0, 1, 0).addScaledVector(v.dir, -v.dir.y).normalize()
-        const horiz = new Vector3().crossVectors(v.dir, upT).normalize()
-        const eye = v.dir.clone().addScaledVector(upT, 0.03).addScaledVector(horiz, -v.sign * 0.04).normalize()
-        const p = eye.multiplyScalar(DOME_R - 0.15)
-        const gs = 3.2 + v.radius * 5.0 // larger soft glow so the front whorl reads as a luminous heart
-        return (
-          <sprite key={i} position={p} scale={[gs, gs, 1]} renderOrder={1}>
-            <spriteMaterial map={glowTex} blending={AdditiveBlending} transparent opacity={glowIntensity} depthWrite={false} toneMapped={false} />
-          </sprite>
-        )
-      })}
+      {/* P2 (2026-06-21): the central whorl (and every flow swirl) no longer carries a luminous eye.
+          The painting's swirl hearts are filled with flowing strokes, not light — the glow read as a
+          dark-hole "eye". Dense, lengthened ribbons (P1) now fill the centre; the glow budget moves to
+          the stars in P3. Only the moon keeps its halo. */}
     </group>
   )
 }

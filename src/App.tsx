@@ -198,7 +198,7 @@ export default function App() {
   // Control defaults are sourced from sky-tuning.json so the "set as default" button can persist them.
   const sky = useControls('sky', {
     churnSpeed: { value: TUNING.churnSpeed, min: 0, max: 0.2, step: 0.005, label: 'churn speed' },
-    strokes: { value: TUNING.strokes, min: 1500, max: 14000, step: 500, label: 'stroke count' },
+    strokes: { value: TUNING.strokes, min: 1500, max: 26000, step: 500, label: 'stroke count' },
     strokeWidth: { value: TUNING.strokeWidth, min: 0.4, max: 2.2, step: 0.05, label: 'stroke width' },
     swirlTightness: { value: TUNING.swirlTightness, min: 0, max: 0.2, step: 0.005, label: 'drift (arc)' },
     flowBias: { value: TUNING.flowBias, min: 0, max: 1, step: 0.05, label: 'flow bias (front)' },
@@ -250,7 +250,7 @@ export default function App() {
   const compact = useIsCompact()
   const c: SkyControls = {
     churnSpeed: sky.churnSpeed,
-    strokes: compact ? Math.round(sky.strokes * 0.28) : sky.strokes,
+    strokes: compact ? Math.round(sky.strokes * 0.16) : sky.strokes,
     strokeWidth: compact ? sky.strokeWidth * 1.3 : sky.strokeWidth,
     swirlTightness: sky.swirlTightness,
     flowBias: sky.flowBias,

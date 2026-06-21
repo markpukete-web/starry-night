@@ -62,7 +62,11 @@ const dabVert = /* glsl */ `
     vec3 dir = normalize(iDir * cos(a) + iTangent * sin(a));
     vec3 along = normalize(iTangent * cos(a) - iDir * sin(a)); // unit tangent at the advected point
     vec3 across = normalize(cross(dir, along));
-    float halfLen = iScale * uWidth;
+    // Ribbon length: consecutive dabs along a streamline sit STEP*R (~0.3) apart, so a dab must be
+    // long enough to TOUCH its neighbour or the sky reads as detached dashes/confetti. Lengthen
+    // along-flow (×2.6) WITHOUT widening, so strokes join into continuous Van Gogh ribbons while the
+    // cross-stroke width stays crisp (stars and fine filaments are not blurred).
+    float halfLen = iScale * uWidth * 2.6;
     float halfWid = iScale * uWidth * 0.5;
     vec3 world = dir * uDomeR + along * (position.x * halfLen) + across * (position.y * halfWid * 2.0);
     vUv = uv;
