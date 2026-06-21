@@ -24,20 +24,25 @@ const frag = /* glsl */ `
   uniform float uTime, uSpeed, uAmp, uFreeze, uViewA, uTexA;
   varying vec2 vUv;
 
-  // cover-fit the painting into the viewport (fill, crop the overflow) without distorting it
-  vec2 coverUv(vec2 uv, float va, float ta) {
-    vec2 st = va > ta ? vec2(1.0, ta / va) : vec2(va / ta, 1.0);
+  // contain-fit: show the WHOLE painting (village included), letterboxed, without distorting it
+  vec2 containUv(vec2 uv, float va, float ta) {
+    vec2 st = va > ta ? vec2(va / ta, 1.0) : vec2(1.0, ta / va);
     return (uv - 0.5) * st + 0.5;
   }
 
   void main() {
-    vec2 img = coverUv(vUv, uViewA, uTexA);
+    vec2 img = containUv(vUv, uViewA, uTexA);
+    if (img.x < 0.0 || img.x > 1.0 || img.y < 0.0 || img.y > 1.0) {
+      gl_FragColor = vec4(0.04, 0.06, 0.13, 1.0); // deep-night letterbox bars
+      return;
+    }
     vec4 fl = texture2D(uFlow, img);
     vec2 dir = fl.rg * 2.0 - 1.0;          // directed flow (baked signed) — no half-plane hack
     dir.y = -dir.y;                        // bake is image y-down; flipY=true makes +v visually up (Codex)
     float coh = fl.b;
     float mask = texture2D(uMask, img).r;  // 1 = sky (animate), 0 = foreground/moon (still)
-    float amp = uAmp * mask * coh * (1.0 - uFreeze);
+    // coherence only DAMPENS (floor 0.65) — it must not throttle the sky to a standstill
+    float amp = uAmp * mask * mix(0.65, 1.0, coh) * (1.0 - uFreeze);
 
     // dual-phase flow-map advection: two half-cycle-offset samples cross-faded so the wrap reset is
     // hidden; small amplitude keeps the strokes flowing without smearing the impasto.
@@ -79,8 +84,8 @@ export function LivingPainting({ paused = false }: { paused?: boolean }) {
   }, [painting, flow, mask])
 
   const { churnSpeed, flowAmount } = useControls('living painting', {
-    churnSpeed: { value: 0.06, min: 0, max: 0.4, step: 0.01, label: 'churn speed' },
-    flowAmount: { value: 0.012, min: 0, max: 0.05, step: 0.001, label: 'flow amount' },
+    churnSpeed: { value: 0.3, min: 0, max: 0.8, step: 0.01, label: 'churn speed' },
+    flowAmount: { value: 0.05, min: 0, max: 0.18, step: 0.005, label: 'flow amount' },
   })
 
   const material = useMemo(
@@ -91,8 +96,8 @@ export function LivingPainting({ paused = false }: { paused?: boolean }) {
           uFlow: { value: null },
           uMask: { value: null },
           uTime: { value: 0 },
-          uSpeed: { value: 0.06 },
-          uAmp: { value: 0.012 },
+          uSpeed: { value: 0.3 },
+          uAmp: { value: 0.05 },
           uFreeze: { value: 0 },
           uViewA: { value: 1.6 },
           uTexA: { value: TEX_ASPECT },
