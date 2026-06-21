@@ -44,21 +44,16 @@ const frag = /* glsl */ `
     // coherence only DAMPENS (floor 0.65) — it must not throttle the sky to a standstill
     float amp = uAmp * mask * mix(0.65, 1.0, coh) * (1.0 - uFreeze);
 
+    // dual-phase flow-map advection (the 'Improvement' flow Mark approved): two half-cycle-offset
+    // samples cross-faded so the wrap reset is hidden; directional drift along the signed flow.
+    float t = uTime * uSpeed;
+    float p0 = fract(t);
+    float p1 = fract(t + 0.5);
     vec2 f = dir * amp;
-    // CHURN, not water-flow: 3 phase-taps along the flow (smoother than 2-tap, so the motion can be
-    // stronger without ghosting) with a smooth spatial phase offset, so neighbouring regions roll OUT
-    // of sync — the sky churns in turbulent rolling waves instead of sliding uniformly like a sheet.
-    float roll = 0.5 * (sin(img.x * 9.0 + img.y * 3.0) + sin(img.y * 7.0 - img.x * 4.0));
-    float baseP = uTime * uSpeed + roll;
-    vec3 acc = vec3(0.0);
-    float wsum = 0.0;
-    for (int k = 0; k < 3; k++) {
-      float ph = fract(baseP + float(k) * 0.3333);
-      float w = 1.0 - abs(ph - 0.5) * 2.0; // each tap fades out at its own wrap
-      acc += texture2D(uPainting, img - f * ph).rgb * w;
-      wsum += w;
-    }
-    gl_FragColor = vec4(acc / max(wsum, 0.0001), 1.0);
+    vec3 c0 = texture2D(uPainting, img - f * p0).rgb;
+    vec3 c1 = texture2D(uPainting, img - f * p1).rgb;
+    float w = abs(p0 - 0.5) * 2.0;         // 0 mid-cycle, 1 at the wrap → fades out the resetting layer
+    gl_FragColor = vec4(mix(c0, c1, w), 1.0);
   }
 `
 
