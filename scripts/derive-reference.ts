@@ -572,25 +572,26 @@ const smooth01 = (x: number) => {
 const maskRaw = new Float64Array(W * H);
 for (let i = 0; i < W * H; i++) {
   const l = lumB[i];
-  const lm = smooth01((l - 70) / 40); // bright enough to be sky
   const r = px[i * 4];
   const g = px[i * 4 + 1];
   const b = px[i * 4 + 2];
-  // sky is BLUE; the cypress (and village) are green/brown — exclude them by chroma so their lighter
-  // strokes don't churn (the creepy "churning tree"). Keep very-bright pixels (yellow star/swirl
-  // highlights) as sky regardless, since they read as light, not foreground.
+  // The WHOLE sky should churn, evenly — so classify sky by CHROMA, not brightness: blue (bright AND
+  // the dark troughs between strokes) + the bright star/swirl highlights (even yellow). The cypress is
+  // green/brown → neither → static. A position fade removes the foreground hills/village band below.
   const blue = smooth01((b - 0.5 * (r + g)) / 35);
-  const bright = smooth01((l - 150) / 50);
-  maskRaw[i] = lm * Math.max(blue, bright);
+  const bright = smooth01((l - 130) / 55);
+  const v = (((i / W) | 0) + 0.5) / H;
+  const lowerFade = 1 - smooth01((v - 0.62) / 0.12); // 1 in the sky, → 0 over the hills/village
+  maskRaw[i] = Math.max(blue, bright) * lowerFade;
 }
-// Erode HARD so the churn keeps a calm static buffer away from the foreground — otherwise the sky
-// right against the cypress edges still moves and pulls at the silhouette (Mark: the tree area churns).
-const maskBlur = gaussianBlur(maskRaw, W, H, 6.0);
+// Light erosion — just a small calm buffer at the cypress edge (the chroma test already holds the tree
+// static, so we don't need the wide erosion that was freezing most of the sky).
+const maskBlur = gaussianBlur(maskRaw, W, H, 3.0);
 const maskF = new Float64Array(W * H);
 for (let y = 0; y < H; y++)
   for (let x = 0; x < W; x++) {
     const i = y * W + x;
-    const m = smooth01((maskBlur[i] - 0.62) / 0.35); // wide static margin around all foreground edges
+    const m = smooth01((maskBlur[i] - 0.4) / 0.35); // modest margin; keeps the whole sky animating
     const u = (x + 0.5) / W;
     const v = (y + 0.5) / H;
     const md = Math.hypot(u - MOON_UV[0], v - MOON_UV[1]);
