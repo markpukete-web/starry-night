@@ -307,8 +307,9 @@ export default function App() {
 
   return (
     <main className="visitor-shell">
-      {/* dev-only tuning panel — widened so the control names aren't truncated ("bloom threshold" etc.) */}
-      <Leva hidden={!import.meta.env.DEV} theme={{ sizes: { rootWidth: '400px', controlWidth: '150px' } }} />
+      {/* dev-only tuning panel — widened so the control names aren't truncated ("bloom threshold" etc.).
+          Hidden while comparing so it doesn't cover the live-render (right) side of the split. */}
+      <Leva hidden={!import.meta.env.DEV || showOriginal} theme={{ sizes: { rootWidth: '400px', controlWidth: '150px' } }} />
       <Canvas
         frameloop="always"
         camera={{ position: HOME_POSITION, fov: 48 }}
