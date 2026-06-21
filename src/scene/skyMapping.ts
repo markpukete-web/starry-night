@@ -26,8 +26,8 @@ export const STAR_UVS: [number, number][] = [
 // painting fills its swirl hearts with flowing strokes, not light — these anchors reproduce that.
 const WHORL_FILL: [number, number][] = [
   [0.43, 0.4], [0.43, 0.4], [0.43, 0.4], // main roll centre — weighted heavily to fill the eye
-  [0.48, 0.38], [0.52, 0.37], // the S-bridge sweeping between the two rolls
-  [0.58, 0.35], [0.58, 0.35], // counter-roll centre
+  [0.47, 0.385], [0.5, 0.375], // the S-bridge sweeping between the two interlocked rolls
+  [0.52, 0.37], [0.52, 0.37], // counter-roll centre (moved in with the vortex)
 ]
 
 // The painting's high-density points — the swirl eyes, Venus, and the star halos — where Van Gogh's
@@ -81,7 +81,10 @@ export function buildVortices(): Vortex[] {
     V.push({ dir, strength, sign, radius, star, moon, scale, core })
 
   add(uvToFrontDir(0.43, 0.4), 2.05, 1, 0.54, false, false, 0.15, true)
-  add(uvToFrontDir(0.58, 0.35), 1.4, -1, 0.4, false, false, 0.15, true)
+  // Counter-roll pulled closer to the main roll + a touch stronger/wider so the two INTERLOCK as one
+  // double-comma: the counter's circulation now sweeps flow across the main roll's stagnation centre,
+  // filling the dark eye-notch with strokes (the faithful S-form, not a separate second swirl).
+  add(uvToFrontDir(0.52, 0.37), 1.5, -1, 0.44, false, false, 0.15, true)
   add(uvToFrontDir(VENUS_UV[0], VENUS_UV[1]), 1.0, -1, 0.32, true, false, 0.24)
   STAR_UVS.forEach((uv, i) =>
     add(uvToFrontDir(uv[0], uv[1]), 0.6 + 0.2 * rng(), i % 2 === 0 ? 1 : -1, 0.18 + 0.07 * rng(), true, false, 0.13 + 0.04 * rng()),
