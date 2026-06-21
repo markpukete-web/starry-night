@@ -528,7 +528,7 @@ const SWIRLS: [number, number, number, number][] = [
   [0.66, 0.27, -1, 0.05],
   [0.72, 0.18, +1, 0.05],
   [0.1, 0.42, +1, 0.05],
-  [0.85, 0.16, +1, 0.11], // moon halo — its bright rings spin around the static crescent (guard below)
+  [0.85, 0.16, -1, 0.11], // moon halo — its bright rings spin around the static crescent (guard below); -1 = Mark's direction
 ];
 
 const smooth01 = (x: number) => {
