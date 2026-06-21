@@ -148,7 +148,7 @@ export function makeBrushDabMaterial(painting: Texture, mask: Texture): ShaderMa
       uViewA: { value: 1.6 },
       uTexA: { value: TEX_ASPECT },
       uFreeze: { value: 0 },
-      uSize: { value: 1 },
+      uSize: { value: 0.55 }, // crisp default (Mark); the leva 'dab size' control overrides live
       uDrift: { value: 1 },
     },
     vertexShader: dabVert,

@@ -26,7 +26,7 @@ export function BrushDabs({ paused = false, count = 18000 }: { paused?: boolean;
   }, [painting, maskTex])
 
   const { dabSize, drift, churnSpeed } = useControls('brush dabs', {
-    dabSize: { value: 1, min: 0.3, max: 2.5, step: 0.05, label: 'dab size' },
+    dabSize: { value: 0.55, min: 0.3, max: 2.5, step: 0.05, label: 'dab size' }, // 0.55 = crisp (Mark); 1.0 read blurry
     drift: { value: 1, min: 0, max: 2.5, step: 0.05, label: 'drift' },
     churnSpeed: { value: 0.15, min: 0, max: 0.6, step: 0.01, label: 'churn speed' },
   })
