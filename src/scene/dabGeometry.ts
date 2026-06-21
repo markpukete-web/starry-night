@@ -96,7 +96,7 @@ const dabFrag = /* glsl */ `
     // bright highlight filaments and near-star creams, so the swirls stay luminous against a deep sky
     // and the stars/moon pop. A flat darken would kill the motion; the tone curve keeps the contrast.
     float bl = dot(vColor, vec3(0.299, 0.587, 0.114));
-    col *= mix(0.58, 1.0, smoothstep(0.32, 0.8, bl));
+    col *= mix(0.48, 1.0, smoothstep(0.32, 0.82, bl));
     gl_FragColor = vec4(col, alpha);
   }
 `
