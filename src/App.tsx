@@ -83,9 +83,9 @@ export default function App() {
         <p>Vincent van Gogh, 1889 · Mark Ma</p>
       </header>
       {showOriginal && (
-        <div className="original-overlay" aria-label="Original painting">
+        <aside className="visitor-reference" aria-label="Original painting reference">
           <img src="/reference/painting.jpg" alt="The original Starry Night painting" draggable={false} />
-        </div>
+        </aside>
       )}
       <nav className="visitor-dock" aria-label="Artwork controls">
         <VisitorButton
