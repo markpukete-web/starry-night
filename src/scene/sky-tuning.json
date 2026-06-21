@@ -1,7 +1,7 @@
 {
   "churnSpeed": 0.05,
   "strokes": 22000,
-  "strokeWidth": 1.05,
+  "strokeWidth": 0.8,
   "swirlTightness": 0.06,
   "flowBias": 0.6,
   "saturation": 1.3,
