@@ -583,14 +583,14 @@ for (let i = 0; i < W * H; i++) {
   const bright = smooth01((l - 150) / 50);
   maskRaw[i] = lm * Math.max(blue, bright);
 }
-const maskBlur = gaussianBlur(maskRaw, W, H, 2.5);
+// Erode HARD so the churn keeps a calm static buffer away from the foreground — otherwise the sky
+// right against the cypress edges still moves and pulls at the silhouette (Mark: the tree area churns).
+const maskBlur = gaussianBlur(maskRaw, W, H, 6.0);
 const maskF = new Float64Array(W * H);
 for (let y = 0; y < H; y++)
   for (let x = 0; x < W; x++) {
     const i = y * W + x;
-    let m = (maskBlur[i] - 0.5) / 0.4; // erode: keep only the confident interior (smoothstep 0.5..0.9)
-    m = m < 0 ? 0 : m > 1 ? 1 : m;
-    m = m * m * (3 - 2 * m);
+    const m = smooth01((maskBlur[i] - 0.62) / 0.35); // wide static margin around all foreground edges
     const u = (x + 0.5) / W;
     const v = (y + 0.5) / H;
     const md = Math.hypot(u - MOON_UV[0], v - MOON_UV[1]);
