@@ -34,6 +34,27 @@ function makeMoonHalo(): CanvasTexture {
   return tex
 }
 
+// Each star is a radiant haloed orb, not a flat disc — a bright warm core easing through concentric
+// cream falloff so Bloom blossoms it into the spiralling halo Van Gogh painted around every star. The
+// glow budget moved here from the swirl eyes (P3, 2026-06-21). Additive, so it melts into the strokes.
+function makeStarHaloTexture(): CanvasTexture {
+  const s = 128
+  const cnv = document.createElement('canvas')
+  cnv.width = cnv.height = s
+  const ctx = cnv.getContext('2d')!
+  const g = ctx.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2)
+  g.addColorStop(0, 'rgba(255,248,214,0.95)') // bright warm core
+  g.addColorStop(0.18, 'rgba(250,232,150,0.55)')
+  g.addColorStop(0.45, 'rgba(238,214,120,0.20)') // concentric falloff → ringed under Bloom
+  g.addColorStop(0.75, 'rgba(228,210,150,0.05)')
+  g.addColorStop(1, 'rgba(228,210,150,0)')
+  ctx.fillStyle = g
+  ctx.fillRect(0, 0, s, s)
+  const tex = new CanvasTexture(cnv)
+  tex.needsUpdate = true
+  return tex
+}
+
 // The carved crescent — a bright gold disc with an offset disc erased out of it, so the lit belly
 // sits lower-left and the concavity opens to the upper-right, as in the painting (the bite is taken
 // from the upper-right). Earlier this was mirrored (bite lower-left) — Mark spotted the flip 2026-06-20.
@@ -101,6 +122,7 @@ export function SkyDome({
   saturation = 1.3,
   skyTop = PALETTE.skyZenith,
   skyBottom = PALETTE.skyHorizon,
+  glowIntensity = 1,
   moonBright = 1.7,
   starBright = 2.5,
   paused = false,
@@ -130,6 +152,7 @@ export function SkyDome({
 
   const moonHaloTex = useMemo(() => makeMoonHalo(), [])
   const moonCrescentTex = useMemo(() => makeMoonCrescent(), [])
+  const starHaloTex = useMemo(() => makeStarHaloTexture(), [])
 
   const geometry = useMemo(() => {
     const field = makeFlowField({ flow, vortices, swirlTightness: 0.45, flowBias })
@@ -182,8 +205,9 @@ export function SkyDome({
       gradient.dispose()
       moonHaloTex.dispose()
       moonCrescentTex.dispose()
+      starHaloTex.dispose()
     },
-    [material, brushTex, gradient, moonHaloTex, moonCrescentTex],
+    [material, brushTex, gradient, moonHaloTex, moonCrescentTex, starHaloTex],
   )
 
   const moon = vortices.find((v) => v.moon)
@@ -210,13 +234,25 @@ export function SkyDome({
       </group>
       <pointLight position={moonPos} intensity={20} distance={24} color="#f0d98a" />
 
+      {/* P3 (2026-06-21): each star is a radiant haloed orb — a big additive halo (sized by the star's
+          own scale, so Venus reads as the single brightest after the moon) blossoming under Bloom around
+          a small bright core, instead of the old flat gold disc. The 'glow' control now drives these. */}
       {stars.map((v, i) => {
         const p = v.dir.clone().multiplyScalar(DOME_R)
+        const halo = v.scale * 15 // big radiant halo (Venus, scale 0.24, gets the largest → brightest star)
+        const op = Math.min(1, glowIntensity * (0.35 + 0.6 * v.strength))
         return (
-          <mesh key={i} position={p}>
-            <sphereGeometry args={[v.scale, 16, 16]} />
-            <meshStandardMaterial color="#f6e08a" emissive="#f6e08a" emissiveIntensity={starBright} toneMapped={false} />
-          </mesh>
+          <group key={i} position={p}>
+            <sprite scale={[halo, halo, 1]} renderOrder={1}>
+              <spriteMaterial map={starHaloTex} blending={AdditiveBlending} transparent opacity={op} depthWrite={false} toneMapped={false} />
+            </sprite>
+            {/* small bright core inside the big halo — the painting's stars are a tiny intense centre in a
+                wide spiralling glow, not a solid gold ball. Bloom keeps the small core luminous. */}
+            <mesh renderOrder={2}>
+              <sphereGeometry args={[v.scale * 0.42, 16, 16]} />
+              <meshStandardMaterial color="#fff4cf" emissive="#f6e08a" emissiveIntensity={starBright} toneMapped={false} />
+            </mesh>
+          </group>
         )
       })}
 
