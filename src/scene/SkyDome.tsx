@@ -43,10 +43,14 @@ function makeStarHaloTexture(): CanvasTexture {
   cnv.width = cnv.height = s
   const ctx = cnv.getContext('2d')!
   const g = ctx.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2)
-  g.addColorStop(0, 'rgba(255,248,214,0.95)') // bright warm core
-  g.addColorStop(0.18, 'rgba(250,232,150,0.55)')
-  g.addColorStop(0.45, 'rgba(238,214,120,0.20)') // concentric falloff → ringed under Bloom
-  g.addColorStop(0.75, 'rgba(228,210,150,0.05)')
+  // Crisp, contained orb: brightness concentrated in the inner third with a SHORT tail to zero by ~0.6,
+  // so the halo reads as a defined radiant ring (as in the painting) rather than a diffuse milky wash
+  // that accumulates additively across many stars.
+  g.addColorStop(0, 'rgba(255,250,224,1.0)') // intense compact core
+  g.addColorStop(0.1, 'rgba(252,238,170,0.72)')
+  g.addColorStop(0.24, 'rgba(244,222,130,0.34)') // defined bright ring zone
+  g.addColorStop(0.44, 'rgba(232,210,120,0.1)')
+  g.addColorStop(0.62, 'rgba(228,210,150,0.015)') // short tail → crisp edge
   g.addColorStop(1, 'rgba(228,210,150,0)')
   ctx.fillStyle = g
   ctx.fillRect(0, 0, s, s)
