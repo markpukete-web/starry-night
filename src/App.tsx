@@ -3,6 +3,7 @@ import { Stats } from '@react-three/drei'
 import { Leva } from 'leva'
 import { Suspense, useEffect, useState } from 'react'
 import { LivingPainting } from './scene/LivingPainting'
+import { BrushDabs } from './scene/BrushDabs'
 
 /** prefers-reduced-motion: a dignified still painting, no churn (locked acceptance criterion). */
 function usePrefersReducedMotion() {
@@ -75,6 +76,7 @@ export default function App() {
       <Canvas frameloop="always" dpr={[1, 1.5]} gl={{ preserveDrawingBuffer: true }}>
         <Suspense fallback={null}>
           <LivingPainting paused={motionPaused} />
+          <BrushDabs paused={motionPaused} />
         </Suspense>
         {import.meta.env.DEV && <Stats />}
       </Canvas>

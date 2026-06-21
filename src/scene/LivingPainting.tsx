@@ -3,16 +3,15 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { useTexture } from '@react-three/drei'
 import { useControls } from 'leva'
 import { LinearFilter, NoColorSpace, ShaderMaterial } from 'three'
+import { CONTAIN_GLSL, TEX_ASPECT } from './skyFraming'
 
 // The painting, brought to life. A full-screen quad shows the REAL painting and a flow-map advection
-// shader flows its own brushstrokes along the derived SIGNED flow field, masked to the sky — so it looks
-// exactly like the painting (it is the painting) with the sky gently churning. Phase 1: flat. Phase 2
-// splits it into depth layers for 2.5D parallax.
-
-const TEX_ASPECT = 1280 / 1013 // analysis size of the derived assets; painting.jpg shares the aspect
+// shader flows its own brushstrokes along the derived SIGNED flow field, masked to the sky. The brush-dab
+// churn layer (BrushDabs) sits on top; this base holds the fidelity. Image-space convention (flipY=false)
+// shared with BrushDabs via skyFraming so the two register exactly.
 
 // Full-screen triangle/quad: the 2×2 plane's xy IS clip space, so it fills the viewport regardless of
-// the camera (Phase 1 is flat and head-on).
+// the camera (the scene is flat and head-on).
 const vert = /* glsl */ `
   varying vec2 vUv;
   void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }
@@ -24,21 +23,17 @@ const frag = /* glsl */ `
   uniform float uTime, uSpeed, uAmp, uFreeze, uViewA, uTexA;
   varying vec2 vUv;
 
-  // contain-fit: show the WHOLE painting (village included), letterboxed, without distorting it
-  vec2 containUv(vec2 uv, float va, float ta) {
-    vec2 st = va > ta ? vec2(va / ta, 1.0) : vec2(1.0, ta / va);
-    return (uv - 0.5) * st + 0.5;
-  }
+  ${CONTAIN_GLSL}
 
   void main() {
-    vec2 img = containUv(vUv, uViewA, uTexA);
+    // image-space UV (y-down), shared with the dab layer; contain-fit, letterbox outside
+    vec2 img = containUv(vec2(vUv.x, 1.0 - vUv.y), uViewA, uTexA);
     if (img.x < 0.0 || img.x > 1.0 || img.y < 0.0 || img.y > 1.0) {
       gl_FragColor = vec4(0.043, 0.102, 0.227, 1.0); // deep-night letterbox bars (matches #0b1a3a)
       return;
     }
     vec4 fl = texture2D(uFlow, img);
-    vec2 dir = fl.rg * 2.0 - 1.0;          // directed flow (baked signed) — no half-plane hack
-    dir.y = -dir.y;                        // bake is image y-down; flipY=true makes +v visually up (Codex)
+    vec2 dir = fl.rg * 2.0 - 1.0;          // directed flow (baked signed, image y-down — used directly)
     float coh = fl.b;
     float mask = texture2D(uMask, img).r;  // 1 = sky (animate), 0 = foreground/moon (still)
     // coherence only DAMPENS (floor 0.65) — it must not throttle the sky to a standstill
@@ -71,10 +66,14 @@ export function LivingPainting({ paused = false }: { paused?: boolean }) {
   // stay registered with each other and the shader samples both at the same uv.
   useEffect(() => {
     /* eslint-disable react-hooks/immutability -- one-time texture config, not React state */
+    // flipY=false → all three textures are in image space (y-down, origin top-left), matching the bake
+    // and the dab layer (skyFraming). Painting raw (1:1); flow/mask are DATA (no sRGB, linear, no mipmap).
     painting.colorSpace = NoColorSpace
+    painting.flipY = false
     painting.needsUpdate = true
     for (const t of [flow, mask]) {
       t.colorSpace = NoColorSpace
+      t.flipY = false
       t.minFilter = LinearFilter
       t.magFilter = LinearFilter
       t.generateMipmaps = false
