@@ -3,7 +3,6 @@ import { OrbitControls, Stats } from '@react-three/drei'
 import { Bloom, EffectComposer } from '@react-three/postprocessing'
 import { Leva, button, useControls } from 'leva'
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
-import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from 'react'
 import type { PerspectiveCamera } from 'three'
 import { Color } from 'three'
 import { useImageData } from './scene/useImageData'
@@ -267,7 +266,6 @@ export default function App() {
   const [resetTick, setResetTick] = useState(0)
   const [visitorPaused, setVisitorPaused] = useState(false)
   const [showOriginal, setShowOriginal] = useState(false)
-  const [compareSplit, setCompareSplit] = useState(50) // % of width showing the original (left of the divider)
   const [fullscreen, setFullscreen] = useState(false)
   const motionPaused = reduced || visitorPaused
   const fullscreenSupported = typeof document !== 'undefined' && Boolean(document.fullscreenEnabled)
@@ -286,30 +284,10 @@ export default function App() {
     }
   }
 
-  // Drag the comparison divider: set the split to the pointer's x as a % of the window width.
-  const startCompareDrag = (e: ReactPointerEvent) => {
-    e.preventDefault()
-    const update = (clientX: number) =>
-      setCompareSplit(Math.min(95, Math.max(5, (clientX / window.innerWidth) * 100)))
-    update(e.clientX)
-    const move = (ev: globalThis.PointerEvent) => update(ev.clientX)
-    const stop = () => {
-      window.removeEventListener('pointermove', move)
-      window.removeEventListener('pointerup', stop)
-    }
-    window.addEventListener('pointermove', move)
-    window.addEventListener('pointerup', stop)
-  }
-  const onCompareKey = (e: ReactKeyboardEvent) => {
-    if (e.key === 'ArrowLeft') setCompareSplit((s) => Math.max(5, s - 2))
-    else if (e.key === 'ArrowRight') setCompareSplit((s) => Math.min(95, s + 2))
-  }
-
   return (
     <main className="visitor-shell">
-      {/* dev-only tuning panel — widened so the control names aren't truncated ("bloom threshold" etc.).
-          Hidden while comparing so it doesn't cover the live-render (right) side of the split. */}
-      <Leva hidden={!import.meta.env.DEV || showOriginal} theme={{ sizes: { rootWidth: '400px', controlWidth: '150px' } }} />
+      {/* dev-only tuning panel — widened so the control names aren't truncated ("bloom threshold" etc.) */}
+      <Leva hidden={!import.meta.env.DEV} theme={{ sizes: { rootWidth: '400px', controlWidth: '150px' } }} />
       <Canvas
         frameloop="always"
         camera={{ position: HOME_POSITION, fov: 48 }}
@@ -349,29 +327,9 @@ export default function App() {
         <p>Vincent van Gogh, 1889 · Mark Ma</p>
       </header>
       {showOriginal && (
-        <div className="compare" aria-label="Compare to the original painting">
-          {/* the original painting, clipped to the left of the divider; sized to the viewport (not the
-              clip) so it is revealed, not squashed, as the divider moves. */}
-          <div className="compare-original" style={{ width: `${compareSplit}%` }}>
-            <img src="/reference/painting.jpg" alt="The original Starry Night painting" draggable={false} />
-            <span className="compare-tag compare-tag--left">Original</span>
-          </div>
-          <span className="compare-tag compare-tag--right">Live</span>
-          <div
-            className="compare-divider"
-            style={{ left: `${compareSplit}%` }}
-            role="slider"
-            aria-label="Comparison split — drag to reveal the original or the live render"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={Math.round(compareSplit)}
-            tabIndex={0}
-            onPointerDown={startCompareDrag}
-            onKeyDown={onCompareKey}
-          >
-            <span className="compare-grip" aria-hidden="true">⇆</span>
-          </div>
-        </div>
+        <aside className="visitor-reference" aria-label="Original painting reference">
+          <img src="/reference/painting.jpg" alt="The original Starry Night painting" draggable={false} />
+        </aside>
       )}
       <nav className="visitor-dock" aria-label="Artwork controls">
         <VisitorButton icon="↺" label="Reset view" onClick={() => setResetTick((t) => t + 1)} />
@@ -384,8 +342,8 @@ export default function App() {
         />
         <VisitorButton
           active={showOriginal}
-          icon="◫"
-          label={showOriginal ? 'Exit compare' : 'Compare to original'}
+          icon="◨"
+          label={showOriginal ? 'Hide original' : 'Show original'}
           onClick={() => setShowOriginal((shown) => !shown)}
         />
         <VisitorButton
