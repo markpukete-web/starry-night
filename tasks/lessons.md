@@ -963,3 +963,18 @@ Mark: "let the halos spin too" (stars sat static), then "nothing's moving around
 - **Crisper dabs:** default dab size 1.0 read blurry to Mark → 0.55 (leva default + material uSize init).
 - Adversarial-workflow verdict that drove pass 2: `tasks/wmeujjsxm.output`. Captures:
   `scratch/{orbit-heatmap.png,orbit-full.jpeg,orbit-moon.jpeg}`. signed-flow.png still 3MB (ship-hygiene TODO).
+
+## Forcing pure-tangential flow = "water"/blur — keep the painting's own orientation (2026-06-22)
+
+The orbit-forcing from the previous entry (blend the halo flow toward a pure mathematical tangential circle)
+DID make halos orbit — but Mark: "it's now looking like a water and getting blurry." A pure circular field
+makes every dab in the region align into smooth, coherent, laminar streaks = the exact "water flow" the brush-
+dab engine exists to avoid, and coherent overlap reads as blur. REVERTED to sign-align ONLY (keep the
+structure-tensor orientation = the painting's own brush direction, just choose which way each swirl turns).
+Around the moon/stars the painting's OWN strokes already curve along the halo rings, so they still rotate —
+but with brushstroke texture intact (dabby, not glassy). Moon halo still moves (it's in the mask now);
+moonRing 5.22, crescent 0 static, openSky 12.4.
+Lesson: the dabby character depends on the flow field carrying the painting's orientation VARIATION. Any step
+that replaces it with a smooth analytic field (pure curl/tangential) trades the brushwork for water. To bias
+rotation, nudge the SIGN, never overwrite the direction. Priority order Mark has shown: dabby-not-water >
+exact orbit. Capture: scratch/moon-dabby.jpeg.

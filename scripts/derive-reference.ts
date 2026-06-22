@@ -560,27 +560,14 @@ for (let y = 0; y < H; y++)
     const th = 0.5 * Math.atan2(sin2[i], cos2[i]);
     let dx = Math.cos(th);
     let dy = Math.sin(th);
+    // Sign-align ONLY (no magnitude/orientation change): keep the painting's own brush orientation so the
+    // churn stays dabby, not a smooth mathematical vortex. Forcing the direction toward a pure tangential
+    // circle here read as 'water'/blur (Mark) — reverted. The circulation just chooses which WAY each swirl
+    // turns; around the stars/moon the painting's own strokes already curve along the halo, so they still
+    // rotate, but with brushstroke texture intact.
     if (dx * cxr + dy * cyr < 0) {
       dx = -dx;
       dy = -dy;
-    }
-    // Inside a star/moon halo the structure-tensor orientation is noisy or radial, so a sign-flip alone
-    // leaves dabs drifting in/out instead of circling. Blend the direction toward the PURE tangential
-    // circulation there so the halo dabs actually ORBIT (Mark: 'let the halos spin', incl. round the moon).
-    // Open sky (wOrbit→0) keeps the painting's own brush orientation, so fidelity holds away from centres.
-    let wOrbit = 0;
-    for (const [sx, sy, , r] of HALO_SWIRLS) {
-      const rr = Math.max(r, 0.05) * 1.25;
-      const d = Math.hypot(u - sx, v - sy);
-      wOrbit = Math.max(wOrbit, 1 - smooth01((d - rr * 0.3) / (rr * 0.7)));
-    }
-    const cmag = Math.hypot(cxr, cyr);
-    if (wOrbit > 0 && cmag > 1e-9) {
-      dx = dx * (1 - wOrbit) + (cxr / cmag) * wOrbit;
-      dy = dy * (1 - wOrbit) + (cyr / cmag) * wOrbit;
-      const m2 = Math.hypot(dx, dy) || 1;
-      dx /= m2;
-      dy /= m2;
     }
     signed[i * 4] = Math.round((dx * 0.5 + 0.5) * 255);
     signed[i * 4 + 1] = Math.round((dy * 0.5 + 0.5) * 255);
