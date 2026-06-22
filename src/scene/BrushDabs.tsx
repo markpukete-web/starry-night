@@ -8,7 +8,7 @@ import { brushDabGeometry, buildDabField2D, makeBrushDabMaterial } from './dabEn
 
 // The brush-dab churn layer over the living painting: strokes coloured from the painting flowing along
 // the swirls. CPU-seeds from the signed flow + sky mask, renders one instanced, vertex-animated draw.
-export function BrushDabs({ paused = false, count = 18000 }: { paused?: boolean; count?: number }) {
+export function BrushDabs({ paused = false, count = 12000 }: { paused?: boolean; count?: number }) {
   const size = useThree((s) => s.size)
   const flow = useImageData('/reference/signed-flow.png')
   const maskData = useImageData('/reference/sky-mask.png')
@@ -25,10 +25,13 @@ export function BrushDabs({ paused = false, count = 18000 }: { paused?: boolean;
     /* eslint-enable react-hooks/immutability */
   }, [painting, maskTex])
 
-  const { dabSize, drift, churnSpeed } = useControls('brush dabs', {
-    dabSize: { value: 0.55, min: 0.3, max: 2.5, step: 0.05, label: 'dab size' }, // 0.55 = crisp (Mark); 1.0 read blurry
-    drift: { value: 1, min: 0, max: 2.5, step: 0.05, label: 'drift' },
-    churnSpeed: { value: 0.15, min: 0, max: 0.6, step: 0.01, label: 'churn speed' },
+  const { dabSize, drift, churnSpeed, haloSpin, strokeOpacity, patchStrokes } = useControls('brush dabs', {
+    dabSize: { value: 0.5, min: 0.3, max: 2.5, step: 0.05, label: 'dab size' },
+    drift: { value: 0.9, min: 0, max: 2.5, step: 0.05, label: 'drift' },
+    churnSpeed: { value: 0.13, min: 0, max: 0.6, step: 0.01, label: 'churn speed' },
+    haloSpin: { value: 0.5, min: 0, max: 2.5, step: 0.05, label: 'halo spin' }, // orbit sweep of the star/moon rings
+    strokeOpacity: { value: 0.5, min: 0, max: 1, step: 0.05, label: 'stroke opacity' },
+    patchStrokes: { value: true, label: 'patch strokes' },
   })
 
   const geometry = useMemo(
@@ -42,8 +45,11 @@ export function BrushDabs({ paused = false, count = 18000 }: { paused?: boolean;
     material.uniforms.uSize.value = dabSize
     material.uniforms.uDrift.value = drift
     material.uniforms.uSpeed.value = churnSpeed
+    material.uniforms.uOmega.value = haloSpin
+    material.uniforms.uOpacity.value = strokeOpacity
+    material.uniforms.uPatchStrokes.value = patchStrokes ? 1 : 0
     /* eslint-enable react-hooks/immutability */
-  }, [material, dabSize, drift, churnSpeed])
+  }, [material, dabSize, drift, churnSpeed, haloSpin, strokeOpacity, patchStrokes])
   useEffect(() => {
     // eslint-disable-next-line react-hooks/immutability -- intentional R3F uniform write
     material.uniforms.uViewA.value = size.width / size.height

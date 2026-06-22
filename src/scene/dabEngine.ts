@@ -7,15 +7,61 @@ import {
   ShaderMaterial,
   type Texture,
 } from 'three'
-import type { ImageData2D } from './useImageData'
-import { mulberry32 } from './brush'
-import { IMG_TO_CLIP_GLSL, TEX_ASPECT } from './skyFraming'
+import type { ImageData2D } from './useImageData.ts'
+import { mulberry32 } from './brush.ts'
+import { IMG_TO_CLIP_GLSL, TEX_ASPECT } from './skyFraming.ts'
+import { HALO_SWIRLS, MOON_UV, MOON_R } from './skySwirls.ts'
 
-// Brush-dab churn: instanced strokes coloured from the painting's OWN pixels (sampled at each dab's home
-// uv), drifting along the derived SIGNED flow over the real-painting base, so the brushwork lifts and
-// churns. Image-space convention (y-down) shared with LivingPainting via skyFraming → exact registration.
+// Brush-dab churn: instanced strokes cut from the painting itself, drifting along the derived SIGNED flow
+// over the real-painting base, so the brushwork lifts and churns without flattening into a translucent fog.
+// Image-space convention (y-down) shared with LivingPainting via skyFraming → exact registration.
 
-export type Dab2D = { home: [number, number]; tangent: [number, number]; scale: number; phase: number; len: number }
+export type Dab2D = {
+  home: [number, number]
+  tangent: [number, number]
+  scale: number
+  phase: number
+  len: number
+  orbitCentre: [number, number]
+  orbitWeight: number
+  orbitSign: number
+}
+
+const smoothstep = (a: number, b: number, x: number): number => {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)))
+  return t * t * (3 - 2 * t)
+}
+
+/**
+ * Halo orbit anchor for a dab at painting-UV (u,v): the dominant HALO_SWIRL it belongs to, an ANNULAR
+ * 0..1 weight, and that swirl's rotation sign. The weight peaks in the swirl's RING band (≈0 at the
+ * centre — where rel→0 so orbit is invisible anyway — and ≈0 past the halo edge). The annulus is the
+ * point: it concentrates the spin where the bright rotating ring should read, instead of a centre-peaked
+ * blob that barely moves and smears motion broadly (Mark P1/P2). The shader keeps the angular speed
+ * CONSTANT and uses this weight only to blend orbit-vs-drift, so the ring turns rigidly (v = ωR, strongest
+ * at the ring radius). Open sky → 0 (pure drift). The painted moon crescent (within MOON_R) → 0 so only
+ * the ring around it turns. Centres/signs come from skySwirls.ts (the SAME table the mask bake uses).
+ */
+export function haloOrbit(u: number, v: number): { centre: [number, number]; weight: number; sign: number } {
+  let best = 0
+  let cx = u
+  let cy = v
+  let sign = 0
+  for (const [sx, sy, s, r] of HALO_SWIRLS) {
+    const d = Math.hypot(u - sx, v - sy)
+    const w = smoothstep(0, 0.55 * r, d) * (1 - smoothstep(0.9 * r, 1.35 * r, d)) // ring band, peak ≈ 0.7r
+    if (w > best) {
+      best = w
+      cx = sx
+      cy = sy
+      sign = s
+    }
+  }
+  // the painted moon disc stays crisp and still — only its halo ring orbits
+  if (Math.hypot(u - MOON_UV[0], v - MOON_UV[1]) < MOON_R) return { centre: [u, v], weight: 0, sign: 0 }
+  if (best < 0.05) return { centre: [u, v], weight: 0, sign: 0 }
+  return { centre: [cx, cy], weight: best, sign }
+}
 
 function sampleRGB(img: ImageData2D, u: number, v: number): [number, number, number] {
   const x = Math.min(img.width - 1, Math.max(0, Math.round(u * img.width)))
@@ -50,12 +96,16 @@ export function buildDabField2D({
     const m = Math.hypot(dx, dy) || 1
     dx /= m
     dy /= m
+    const orbit = haloOrbit(u, v)
     dabs.push({
       home: [u, v],
       tangent: [dx, dy],
       scale: 0.006 + 0.006 * rng(),
       phase: rng(),
       len: 0.018 + 0.014 * rng(), // drift distance (image-UV) — capped short to bound colour transport
+      orbitCentre: orbit.centre,
+      orbitWeight: orbit.weight,
+      orbitSign: orbit.sign,
     })
   }
   return dabs
@@ -72,6 +122,9 @@ export function brushDabGeometry(dabs: Dab2D[]): InstancedBufferGeometry {
   const sca = new Float32Array(n)
   const pha = new Float32Array(n)
   const len = new Float32Array(n)
+  const orbC = new Float32Array(n * 2)
+  const orbW = new Float32Array(n)
+  const orbS = new Float32Array(n)
   for (let k = 0; k < n; k++) {
     const d = dabs[k]
     home[k * 2] = d.home[0]
@@ -81,12 +134,19 @@ export function brushDabGeometry(dabs: Dab2D[]): InstancedBufferGeometry {
     sca[k] = d.scale
     pha[k] = d.phase
     len[k] = d.len
+    orbC[k * 2] = d.orbitCentre[0]
+    orbC[k * 2 + 1] = d.orbitCentre[1]
+    orbW[k] = d.orbitWeight
+    orbS[k] = d.orbitSign
   }
   g.setAttribute('aHome', new InstancedBufferAttribute(home, 2))
   g.setAttribute('aTangent', new InstancedBufferAttribute(tan, 2))
   g.setAttribute('aScale', new InstancedBufferAttribute(sca, 1))
   g.setAttribute('aPhase', new InstancedBufferAttribute(pha, 1))
   g.setAttribute('aLen', new InstancedBufferAttribute(len, 1))
+  g.setAttribute('aOrbitCentre', new InstancedBufferAttribute(orbC, 2))
+  g.setAttribute('aOrbitWeight', new InstancedBufferAttribute(orbW, 1))
+  g.setAttribute('aOrbitSign', new InstancedBufferAttribute(orbS, 1))
   g.instanceCount = n
   return g
 }
@@ -97,24 +157,42 @@ const dabVert = /* glsl */ `
   attribute float aScale;
   attribute float aPhase;
   attribute float aLen;
-  uniform float uTime, uSpeed, uViewA, uTexA, uFreeze, uSize, uDrift;
+  attribute vec2 aOrbitCentre;
+  attribute float aOrbitWeight;
+  attribute float aOrbitSign;
+  uniform float uTime, uSpeed, uViewA, uTexA, uFreeze, uSize, uDrift, uOmega;
   varying vec2 vUv;
   varying vec2 vImg;
   varying vec2 vHome;
+  varying vec2 vSourceImg;
   varying float vFade;
   ${IMG_TO_CLIP_GLSL}
   void main() {
     float t = fract(aPhase + uTime * uSpeed);
-    vec2 center = aHome + aTangent * (aLen * uDrift) * t;     // drift along the flow → rotates round swirls
+    vec2 straight = aHome + aTangent * (aLen * uDrift) * t;   // open sky: drift along the flow
+    // halo rings: orbit the dab's POSITION around its swirl centre. Angular speed is CONSTANT (decoupled
+    // from the weight) so the ring turns RIGIDLY — v = ωR, strongest at the ring radius where rel is large,
+    // which is exactly where the bright annulus should read (Mark P1). aOrbitWeight (annular) only blends
+    // orbit-vs-drift, concentrating the spin in the ring band. Orientation stays = aTangent (below) so
+    // neighbours still point different ways → dabby brushwork, not a smooth 'water' vortex. aOrbitSign
+    // matches the baked circulation so it turns the right way.
+    float ang = uOmega * aOrbitSign * t;
+    float ca = cos(ang), sa = sin(ang);
+    vec2 rel = aHome - aOrbitCentre;
+    vec2 orbited = aOrbitCentre + vec2(ca * rel.x - sa * rel.y, sa * rel.x + ca * rel.y);
+    vec2 center = mix(straight, orbited, aOrbitWeight);
     vec2 along = aTangent;
     vec2 across = vec2(-along.y, along.x);
     float halfLen = aScale * uSize * 2.2;                     // elongated impasto stroke (length > width)
     float halfWid = aScale * uSize * 0.7;
-    vec2 imgPos = center + position.x * halfLen * along + position.y * (halfWid * 2.0) * across;
+    vec2 footprint = position.x * halfLen * along + position.y * (halfWid * 2.0) * across;
+    vec2 imgPos = center + footprint;
+    vec2 sourceImg = aHome + footprint;
     gl_Position = vec4(imgToClip(imgPos, uViewA, uTexA), 0.0, 1.0);
     vUv = uv;
     vImg = imgPos;                                            // this fragment's painting-UV (footprint mask)
     vHome = aHome;
+    vSourceImg = sourceImg;                                    // same brush footprint, sampled at the home patch
     vFade = sin(3.14159265 * t) * (1.0 - uFreeze);            // born→peak→die; frozen → 0 (base only)
   }
 `
@@ -122,18 +200,24 @@ const dabVert = /* glsl */ `
 const dabFrag = /* glsl */ `
   precision highp float;
   uniform sampler2D uPainting, uMask;
+  uniform float uOpacity, uPatchStrokes;
   varying vec2 vUv;
   varying vec2 vImg;
   varying vec2 vHome;
+  varying vec2 vSourceImg;
   varying float vFade;
   void main() {
     vec2 q = vUv * 2.0 - 1.0;                                 // local stroke coords [-1,1]
     float brush = smoothstep(1.0, 0.15, length(q));           // soft elongated impasto mark
-    float mask = texture2D(uMask, vImg).r;                    // per-fragment footprint mask: dab edge that
+    vec2 dstUv = clamp(vImg, vec2(0.0), vec2(1.0));
+    vec2 patchUv = clamp(vSourceImg, vec2(0.0), vec2(1.0));
+    float dstMask = texture2D(uMask, dstUv).r;                 // per-fragment footprint mask: dab edge that
                                                              // laps onto cypress/village/moon fades to nothing
-    float a = brush * vFade * mask;
+    float srcMask = mix(1.0, texture2D(uMask, patchUv).r, uPatchStrokes);
+    float a = brush * vFade * dstMask * srcMask * uOpacity;
     if (a < 0.02) discard;
-    vec3 col = texture2D(uPainting, vHome).rgb;               // the painting's OWN colour at the dab origin
+    vec2 paintUv = mix(vHome, patchUv, uPatchStrokes);
+    vec3 col = texture2D(uPainting, paintUv).rgb;             // patch mode carries the painting's actual detail
     gl_FragColor = vec4(col, a);
   }
 `
@@ -144,12 +228,15 @@ export function makeBrushDabMaterial(painting: Texture, mask: Texture): ShaderMa
       uPainting: { value: painting },
       uMask: { value: mask },
       uTime: { value: 0 },
-      uSpeed: { value: 0.15 },
+      uSpeed: { value: 0.1 },
       uViewA: { value: 1.6 },
       uTexA: { value: TEX_ASPECT },
       uFreeze: { value: 0 },
-      uSize: { value: 0.55 }, // crisp default (Mark); the leva 'dab size' control overrides live
-      uDrift: { value: 1 },
+      uSize: { value: 0.5 }, // crisp default (Mark); the leva 'dab size' control overrides live
+      uDrift: { value: 0.45 },
+      uOmega: { value: 0.5 }, // halo-orbit sweep (rad over a dab's life); leva 'halo spin' overrides live
+      uOpacity: { value: 0.42 },
+      uPatchStrokes: { value: 1 },
     },
     vertexShader: dabVert,
     fragmentShader: dabFrag,

@@ -4,6 +4,8 @@ import type { ImageData2D } from '../src/scene/useImageData.ts'
 import { ANCHOR_UVS, HORIZON, buildVortices, frontUV } from '../src/scene/skyMapping.ts'
 import { makeFlowField } from '../src/scene/flowField.ts'
 import { buildDabField } from '../src/scene/dabField.ts'
+import { buildDabField2D, haloOrbit } from '../src/scene/dabEngine.ts'
+import { MOON_UV } from '../src/scene/skySwirls.ts'
 
 function img(r: number, g: number, b: number, width = 8, height = 8): ImageData2D {
   const data = new Uint8ClampedArray(width * height * 4)
@@ -50,4 +52,35 @@ test('buildDabField is deterministic for a fixed seed', () => {
   const b = buildDabField({ field: field(), colourSrc: img(70, 100, 170), count: 64, seed: 99 })
   assert.equal(a[0].dir.equals(b[0].dir), true)
   assert.equal(a[63].phase, b[63].phase)
+})
+
+// --- dab-orbit (halo spin) — the active brush-dab engine (dabEngine.buildDabField2D) ---
+
+test('haloOrbit: weight is ANNULAR — quiet centre, strong ring (Mark P1)', () => {
+  assert.equal(haloOrbit(0.27, 0.33).weight < 0.1, true) // Venus centre: quiet (rel→0, no visible orbit)
+  const ring = haloOrbit(0.315, 0.33) // ~0.045 out = Venus's ring band
+  assert.equal(ring.weight > 0.5, true)
+  assert.equal(ring.sign, -1)
+  assert.ok(Math.hypot(ring.centre[0] - 0.27, ring.centre[1] - 0.33) < 1e-9)
+})
+
+test('haloOrbit: open sky (far from every halo) does not orbit', () => {
+  assert.equal(haloOrbit(0.5, 0.75).weight, 0)
+})
+
+test('haloOrbit: the moon crescent disc stays static; its ring orbits', () => {
+  assert.equal(haloOrbit(MOON_UV[0], MOON_UV[1]).weight, 0) // on the painted crescent → static
+  const ring = haloOrbit(MOON_UV[0], MOON_UV[1] + 0.09) // in the ring band, outside the disc
+  assert.equal(ring.weight > 0.3, true)
+  assert.equal(ring.sign, -1)
+})
+
+test('buildDabField2D: every dab carries valid orbit attrs', () => {
+  const dabs = buildDabField2D({ flow: img(128, 200, 180), mask: img(255, 255, 255), count: 400, seed: 3 })
+  assert.equal(dabs.length, 400)
+  for (const d of dabs) {
+    assert.equal(d.orbitCentre.length, 2)
+    assert.equal(d.orbitWeight >= 0 && d.orbitWeight <= 1, true)
+    assert.equal(d.orbitSign === -1 || d.orbitSign === 0 || d.orbitSign === 1, true)
+  }
 })

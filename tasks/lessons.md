@@ -978,3 +978,58 @@ Lesson: the dabby character depends on the flow field carrying the painting's or
 that replaces it with a smooth analytic field (pure curl/tangential) trades the brushwork for water. To bias
 rotation, nudge the SIGN, never overwrite the direction. Priority order Mark has shown: dabby-not-water >
 exact orbit. Capture: scratch/moon-dabby.jpeg.
+
+## Brush-dab smear fix: strokes must carry source paint detail (2026-06-22)
+
+The flat-colour dab layer was the actual smear source. Paused/base-only renders were pixel-sharp against
+`painting.jpg`, but running dabs fogged the whorl because every dab sampled one colour at `vHome` and thousands
+of translucent overlaps averaged into a milky field. Tuning halo spin, count, or width could not solve that
+fundamental lose-lose: translucent flat dabs blur, opaque flat dabs become a low-detail mosaic.
+
+Fix: keep the H1 orbit/path work, but make each dab a brush-shaped cut-out from the painting itself. The vertex
+shader now passes a `vSourceImg` footprint around `aHome`; the fragment shader samples `uPainting` at that
+patch coordinate instead of one flat home colour, while still masking the destination footprint (and source
+footprint in patch mode) against `sky-mask.png`. Added `patch strokes` A/B and `stroke opacity` controls; default
+opacity 0.6 preserved crisp rendered crops while restoring visible motion.
+
+Verification loop: lint, build, and `test:sky` green. Rendered crop-vs-painting captures show the running whorl
+stays close to source detail instead of fogging (`scratch/codex-patch060-whorl-cmp.jpeg`), with full-frame
+sharpness intact (`scratch/codex-patch060-full.jpeg`). Motion survived at a lower, cleaner intensity
+(`scratch/codex-patch060-motion.png`, mean diff 2.35, moving fraction 22.5%). Remaining visual gap: compared
+with the parsed video motion (`scratch/codex-patch060-vs-ref-motion.png`), the render is still darker and less
+ring-forward, especially around the moon, so the next tuning should be halo/ring emphasis after this fidelity
+fix, not a return to flat-colour dabs.
+
+## Crisp churn locked — base static + patch dabs for motion; 3D detour removed (2026-06-22, Mark review loop)
+
+Closing the smear saga. Reviewed Codex's patch-stroke fix in code AND visually (the discipline Mark set: rendered
+crop vs `painting.jpg` every step, never heatmaps alone). Patch/cut-out strokes are the right fix; this pass tuned
+the motion to the crisp source and removed an unrequested 3D detour.
+
+- **Base-flow advection re-blurs — keep it OFF.** Codex briefly set `LivingPainting` flowAmount 0→0.03 for life. It
+  pumps motion (frame-diff mean ~14.9) but the dual-phase cross-fade softens the base wherever flowAmount>0 → the
+  whorl blurs again (the "ass" look), worst when zoomed. A/B at identical dabs: flow 0.03 = mean 14.9 but soft;
+  flow 0 = crisp (`scratch/codex-r2-whorl.jpeg` vs `codex-r2-noflow-whorl.jpeg`). LESSON: base stays STATIC
+  (flowAmount 0); ALL churn comes from the patch dabs. Base advection is the blur lever, the patch dabs are the
+  crisp-motion lever — this is the same dual-phase blur that earned the "water" verdict, now pinned to the cross-fade.
+- **Crisp-churn balance (shipped leva defaults).** base flowAmount 0; dabs strokeOpacity 0.5 / drift 0.9 /
+  churnSpeed 0.13 / dabSize 0.5 / haloSpin 0.5 / patchStrokes on / count 12000. Verified: whorl matches the painting
+  (`scratch/final-whorl.jpeg`), motion mean 5.19 / 13.9% moving, clean full frame (`scratch/final-full.jpeg`).
+  Headroom: push drift/opacity for more churn at a small sharpness cost — crisp tops out ~mean 5–6; past that only
+  base flow adds motion, and it blurs.
+- **Halo orbit is ANNULAR now (supersedes the reverted orbit-forcing).** `haloOrbit` weight peaks in the swirl's
+  RING band (≈0 at the centre where rel→0 so orbit is invisible, ≈0 past the edge); the shader keeps angular speed
+  CONSTANT (decoupled from weight) so each ring turns rigidly (v=ωR, strongest at the ring radius). Stars read as
+  rotating rings; the moon stays subtler (pale-uniform halo = low motion contrast). The old centre-peaked gaussian
+  was the bug — spin concentrated where rel→0 = invisible. Shared swirl table `src/scene/skySwirls.ts` is the single
+  source for BOTH the bake mask discs and the orbit, so they can't drift.
+- **3D `?mode=3d` was scope creep — removed.** Codex also bridged the flat sky back onto the SkyDome arc
+  (`FrontPatchSky` + revived `SkyDome`/`Diorama`). Project direction is the flat living-painting; deleted
+  `FrontPatchSky.tsx`, restored `App.tsx` to flat-only, stripped the front-patch material from `dabEngine.ts`.
+  (`SkyDome`/`Diorama`/`dabField`/`dabGeometry` remain as untouched, unimported legacy.)
+- **Method that worked (Mark's visual gate):** capture a matched whorl crop OURS vs `painting.jpg` in-browser +
+  a 1s frame-diff for motion magnitude; the paused frame (dabs off) == painting proved the base was fine and the
+  dabs were the smear. Heatmaps show motion presence/location only, never look-quality — that miss is what burned
+  the earlier halo passes.
+- Committed on `sky-brushdab`; build/lint/`test:sky` (15/15) green. Perf at 12k dabs still UNVERIFIED on real
+  hardware/phone (headless rAF reads 0).

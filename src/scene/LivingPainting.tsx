@@ -82,10 +82,10 @@ export function LivingPainting({ paused = false }: { paused?: boolean }) {
     /* eslint-enable react-hooks/immutability */
   }, [painting, flow, mask])
 
-  // Base default static (flowAmount 0): the brush-dab layer is now the sole churn, so the base holds the
-  // painting 1:1 behind the moving home-colour dabs (no smooth flow-map "water" read). Control kept for A/B.
+  // Base STATIC (flowAmount 0, Mark): the patch-dab layer is the sole churn so the painting stays pixel-crisp.
+  // Any base flow-map advection softens it via the dual-phase cross-fade (the 'water'/blur). Control kept for A/B.
   const { churnSpeed, flowAmount } = useControls('living painting', {
-    churnSpeed: { value: 0.3, min: 0, max: 0.8, step: 0.01, label: 'churn speed' },
+    churnSpeed: { value: 0.2, min: 0, max: 0.8, step: 0.01, label: 'churn speed' },
     flowAmount: { value: 0, min: 0, max: 0.18, step: 0.005, label: 'flow amount' },
   })
 
@@ -97,7 +97,7 @@ export function LivingPainting({ paused = false }: { paused?: boolean }) {
           uFlow: { value: null },
           uMask: { value: null },
           uTime: { value: 0 },
-          uSpeed: { value: 0.3 },
+          uSpeed: { value: 0.2 },
           uAmp: { value: 0 },
           uFreeze: { value: 0 },
           uViewA: { value: 1.6 },

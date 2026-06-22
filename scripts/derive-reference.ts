@@ -30,6 +30,9 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { inflateSync, deflateSync } from 'node:zlib';
+// Swirl centres are the single source of truth shared with the runtime dab-orbit (src/scene/dabEngine.ts)
+// so the mask discs baked here and the orbit centres there cannot drift apart (Mark req).
+import { SWIRLS, HALO_SWIRLS, MOON_UV, MOON_R } from '../src/scene/skySwirls.ts';
 
 // ---------------------------------------------------------------- config ----
 
@@ -516,31 +519,12 @@ console.log(`wrote LIC captures (${((Date.now() - t0) / 1000).toFixed(1)}s)`);
 // Swirl centres in UV (x right, y down), rotation sign, gaussian falloff radius. Central whorl dominates;
 // the bright stars add local halo swirl. Signs are validated by the living-painting capture (flip if a
 // swirl turns the wrong way).
-const SWIRLS: [number, number, number, number][] = [
-  [0.45, 0.41, +1, 0.2], // central whorl (dominant)
-  [0.52, 0.37, -1, 0.12], // counter-roll of the double comma
-  [0.27, 0.33, -1, 0.07], // Venus / bright left star
-  [0.13, 0.13, +1, 0.05],
-  [0.31, 0.13, -1, 0.05],
-  [0.4, 0.1, +1, 0.05],
-  [0.52, 0.2, -1, 0.05],
-  [0.59, 0.1, +1, 0.05],
-  [0.66, 0.27, -1, 0.05],
-  [0.72, 0.18, +1, 0.05],
-  [0.1, 0.42, +1, 0.05],
-  [0.85, 0.16, -1, 0.11], // moon halo — its bright rings spin around the static crescent (guard below); -1 = Mark's direction
-];
-
+// SWIRLS, HALO_SWIRLS, MOON_UV, MOON_R now come from src/scene/skySwirls.ts (single source shared with
+// the runtime dab-orbit). smooth01 stays local — it is pure bake helper, not shared geometry.
 const smooth01 = (x: number) => {
   const t = x < 0 ? 0 : x > 1 ? 1 : x;
   return t * t * (3 - 2 * t);
 };
-const MOON_UV = [0.85, 0.16];
-const MOON_R = 0.07;
-// Swirls whose HALOS we force to churn AND orbit (stars, the double-comma rolls, the moon halo). Excludes
-// the dominant central whorl (r 0.2, already animating) and any swirl on the cypress column (u<0.2 & v>0.3)
-// so we never paint churn onto the tree. Shared by the signed-flow orbit-forcing and the sky-mask discs.
-const HALO_SWIRLS = SWIRLS.filter(([u, v, , r]) => r <= 0.12 && !(u < 0.2 && v > 0.3));
 
 const signed = new Uint8Array(W * H * 4);
 for (let y = 0; y < H; y++)
@@ -579,8 +563,9 @@ console.log('wrote signed-flow.png');
 
 // Sky mask: bright = sky (the living painting churns here), dark foreground (cypress/village/hills) stays
 // still. Eroded inward so advected sky never samples across a silhouette, and the moon disc is forced
-// static so the painted crescent does not smear (Codex plan-review). MOON_UV/MOON_R + smooth01 + HALO_SWIRLS
-// are defined above, shared with the signed-flow orbit-forcing so the masked halos are exactly the orbited ones.
+// static so the painted crescent does not smear (Codex plan-review). MOON_UV/MOON_R + HALO_SWIRLS are
+// imported from skySwirls.ts — the SAME centres the runtime dab-orbit uses, so the masked halos are exactly
+// the orbited ones (no drift between bake and render).
 const maskRaw = new Float64Array(W * H);
 for (let i = 0; i < W * H; i++) {
   const l = lumB[i];

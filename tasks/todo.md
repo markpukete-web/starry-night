@@ -9,15 +9,46 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## Where we are now (2026-06-20) — read this first
+## Where we are now (2026-06-22) — read this first
 
-> **QUALITY GATE REOPENED (Mark, 2026-06-20).** The foreground-complete gate remains passed, but
-> pre-release sign-off is withdrawn. Do not proceed to publish mechanics until the new fidelity gate passes.
+> **QUALITY GATE OPEN (Mark, 2026-06-20).** Foreground-complete gate stays passed; pre-release sign-off withdrawn
+> for sky visual quality. No publish mechanics until the fidelity gate passes.
 
-Mark's current direction: the project should feel much closer to the original painting in 3D. The lead issue
-is sky flow: the current sky does not visually match the original art closely enough. Cypress and village also
-need refinement, but the next pass starts with sky flow. Spec:
-`docs/superpowers/specs/2026-06-20-sky-flow-fidelity-design.md`.
+**The sky is now the flat "Living Painting" + a crisp brush-dab CHURN — and the smear is fixed.** Direction has
+settled on the REAL painting head-on (`LivingPainting` = the painting 1:1 as a static base, so the foreground IS
+the painting itself, pixel-faithful) with a GPU **brush-dab churn** (`BrushDabs`) animating only the sky.
+
+- **Smear FIXED (2026-06-22, the win).** Flat-colour dabs fogged dense areas (translucent overlaps average to milk).
+  Fix = **patch/cut-out strokes**: each dab samples a brush-shaped PATCH of `painting.jpg` around its home
+  (`vSourceImg`) so it carries real paint detail and stays crisp. Base stays STATIC (flowAmount 0); ALL churn is the
+  dabs — base flow-map advection re-blurs via the dual-phase cross-fade, so it's kept off.
+- **Crisp AND churning** at the shipped leva defaults: flowAmount 0; dabs opacity 0.5 / drift 0.9 / churnSpeed 0.13 /
+  size 0.5 / haloSpin 0.5 / patch on / count 12000. Verified rendered-vs-painting (`scratch/final-whorl.jpeg`,
+  `final-full.jpeg`): whorl matches, motion mean 5.19 / 13.9%. Dial drift/opacity for more churn (small sharpness cost).
+- **Halo orbit (annular):** stars read as rotating rings; moon subtler (pale halo → low contrast). `src/scene/skySwirls.ts`
+  is the single source for the swirl centres so the bake mask + the orbit agree.
+- **Committed on `sky-brushdab`** this round; build/lint/`test:sky` 15/15 green. NOT pushed/merged → gate OPEN.
+- **Workflow rule in force (Mark):** verify every change by LOOKING at the rendered crop vs the painting (Playwright
+  capture), not heatmaps/tests. See `memory/visual-check-every-iteration`.
+
+### ▶ PICK UP HERE
+- **Perf UNVERIFIED** — 12k dabs; confirm 60fps desktop / 30fps mid-tier mobile on real hardware (headless rAF reads 0).
+- **Moon halo motion** lags the reference video's bright rotating ring (pale-uniform halo defeats the translucent
+  dabs) — possible halo/ring emphasis pass; Mark's taste.
+- **Motion level + cobalt depth** are leva taste dials — Mark to settle on the live view.
+- **3D parked:** Codex's `?mode=3d` bridge (flat sky → SkyDome diorama) was stripped "for now" (Mark). Revisit if
+  returning to an orbitable diorama — note the flat approach diverges from the locked 3D-diorama camera criteria, a
+  direction call for Mark.
+
+Publish/DNS/portfolio stays parked until the fidelity gate passes.
+
+---
+
+## Earlier status (2026-06-20 → 06-21, superseded by the flat Living-Painting + patch-stroke work above)
+
+Mark's earlier direction (2026-06-20): closer to the original in 3D; lead issue sky flow. Spec
+`docs/superpowers/specs/2026-06-20-sky-flow-fidelity-design.md`. The pass below ran on the 3D-diorama/SkyDome sky
+before the pivot to the flat Living-Painting.
 
 ### Sky brush-dab redesign — built & reviewed, but NOT passing (branch `sky-brushdab`, 2026-06-20)
 
@@ -53,7 +84,7 @@ run (history/astronomy/turbulence/film refs → `tasks/wgssvj03w.output`) + matc
 
 Captures: `scratch/cmp/SESSION-before-after.jpg`, `GRAND-painting-vs-ours.jpg`, `angle-3way.jpg`, `notch-whorl.jpg`.
 
-### ▶ PICK UP HERE — Mark review + remaining
+### Remaining as of 06-21 (on the 3D-diorama sky, mostly superseded by the flat pivot)
 
 - **Mark to review** the live sky (localhost:5173, leva panel) / the captures — taste + how-deep-cobalt calls.
 - **Perf UNVERIFIED**: ~22k dabs at eye-level — confirm 60fps desktop / 30fps mobile on real hardware.
