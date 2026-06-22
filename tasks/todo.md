@@ -31,7 +31,10 @@ the painting itself, pixel-faithful) with a GPU **brush-dab churn** (`BrushDabs`
 - **Workflow rule in force (Mark):** verify every change by LOOKING at the rendered crop vs the painting (Playwright
   capture), not heatmaps/tests. See `memory/visual-check-every-iteration`.
 
-### ▶ PICK UP HERE
+### ▶ PICK UP HERE (resume — paused 2026-06-22, Mark revisiting this evening)
+- **State:** committed `6e7c4cd` on `sky-brushdab`, clean tree, NOT pushed. Smear fixed; crisp + churning; green.
+  To run: `npm run dev` → localhost:5173 (fps in the top-left Stats panel; "Show original" button A/Bs vs the painting;
+  leva panel for live tuning). Latest captures: `scratch/final-whorl.jpeg`, `scratch/final-full.jpeg`.
 - **Perf UNVERIFIED** — 12k dabs; confirm 60fps desktop / 30fps mid-tier mobile on real hardware (headless rAF reads 0).
 - **Moon halo motion** lags the reference video's bright rotating ring (pale-uniform halo defeats the translucent
   dabs) — possible halo/ring emphasis pass; Mark's taste.
