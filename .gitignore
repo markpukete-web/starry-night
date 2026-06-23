@@ -32,5 +32,8 @@ reference/derived/
 # Local visual-review scratch (Playwright MCP writes snapshots/logs here)
 .playwright-mcp/
 
+# Local Playwright / motion-gate capture output (review artefacts, regenerable)
+output/
+
 # Local brainstorming companion screens/server state
 .superpowers/

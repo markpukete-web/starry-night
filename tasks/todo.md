@@ -42,6 +42,13 @@ the painting itself, pixel-faithful) with a GPU **brush-dab churn** (`BrushDabs`
 - **3D parked:** Codex's `?mode=3d` bridge (flat sky → SkyDome diorama) was stripped "for now" (Mark). Revisit if
   returning to an orbitable diorama — note the flat approach diverges from the locked 3D-diorama camera criteria, a
   direction call for Mark.
+- **Sky swapped → `StreamlineSky` (Gemini, 2026-06-22 night):** `BrushDabs` replaced by streamline ribbons
+  integrated through the signed flow field (the `tasks/codex-motion-note-2026-06-22.md` direction). Reviewed this
+  session — renders clean, reduced-motion/pause/Show-original all intact, reads as brushstrokes flowing along the
+  swirl paths. Uncommitted on `sky-brushdab`; the brush-dab descriptions above are superseded.
+- **▶ Next planned slice — motion gap to the parsed video:** even full-sky coverage · pulsing star/moon halos ·
+  finer grain. Brief for Gemini at **`tasks/gemini-motion-brief-2026-06-23.md`** (pending Codex cross-review).
+  Evidence: `output/playwright/claude-review/motion_side_by_side.jpg`.
 
 Publish/DNS/portfolio stays parked until the fidelity gate passes.
 
