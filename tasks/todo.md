@@ -11,6 +11,10 @@ below — never edited in place.
 
 ## Where we are now (2026-06-23) — read this first
 
+> **NORTH STAR (locked — CLAUDE.md, re-read it).** The endgame is the **3D orbitable diorama**. The flat 2D
+> piece is a FOUNDATION milestone, NEVER the ship target. Phase now: 2D sky motion settled → **next: make it 3D**.
+> (Claude mis-scoped this as "ship flat" on 2026-06-23 — see `tasks/lessons.md`. Don't repeat it.)
+
 > **QUALITY GATE OPEN (Mark, 2026-06-20).** Foreground-complete gate stays passed; pre-release sign-off withdrawn
 > for sky visual quality. No publish mechanics until the fidelity gate passes.
 

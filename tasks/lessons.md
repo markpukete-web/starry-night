@@ -1058,3 +1058,22 @@ reviewed every pass by Playwright capture.
 - v4 leva defaults baked: count 3000 / strokeWidth 0.0032 / opacity 0.55 / speed 1.6 / shimmerMix 0.30. Centres from
   `skySwirls.ts` (single source) so CPU + GPU can't drift. Open: Mark's live sign-off + perf on real hardware
   (count 3000, one draw call); gate still OPEN.
+
+## Read CLAUDE.md often — skipping it inverted the project direction (2026-06-23)
+
+Asked "what's our next move?", Claude recommended "lock the flat 2D version and drive to the pre-release gate"
+— and even drafted edits to RETIRE the locked 3D-diorama vision. Wrong. The flat 2D is a foundation milestone;
+the **3D orbitable diorama is the endgame** (the locked CLAUDE.md vision), and Mark's plan is *tune the proper
+2D, THEN make it 3D.* Mark: *"another day that proved you can't be trusted"* and *"CLAUDE.md is the one you need
+to read often and you skipped that."*
+
+- **Root cause:** anchored on the current flat CODE + the gate map instead of re-reading CLAUDE.md; the
+  session-start copy faded from attention by the time a direction call was made.
+- **Fix (saved to memory `anchor-on-vision-not-current-code` + `starry-night-endgame-is-3d`):** RE-READ
+  CLAUDE.md at the start of work and before any strategy/direction call. When the code has diverged from the
+  locked vision, the vision wins — surface the divergence and ASK, don't recommend the path the code sits on,
+  and never default to "ship it."
+- **The arc that explains the divergence:** the 3D vortex-dome diorama existed (06-20) but the sky didn't FEEL
+  like the painting → dropped to a flat 2D living-painting to nail the sky MOTION against the painting + the
+  parsed video (06-22) → `StreamlineSky` settled the 2D motion (06-23) → next phase carries that motion back
+  into the 3D diorama (curved-canopy route).
