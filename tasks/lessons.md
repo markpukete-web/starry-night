@@ -1033,3 +1033,28 @@ the motion to the crisp source and removed an unrequested 3D detour.
   the earlier halo passes.
 - Committed on `sky-brushdab`; build/lint/`test:sky` (15/15) green. Perf at 12k dabs still UNVERIFIED on real
   hardware/phone (headless rAF reads 0).
+
+## Sky motion settled — streamline ribbons replace brush-dabs (Gemini build, 2026-06-22→23)
+
+`BrushDabs` was replaced by `StreamlineSky`: continuous ribbons integrated through the painting's signed flow field,
+with a brightness phase travelling along each stroke. Built by Gemini (Antigravity) over four capture-verified rounds
+against the parsed reference video; committed `9c021df`. Claude wrote the brief, cross-reviewed Gemini's plan, and
+reviewed every pass by Playwright capture.
+
+- **Medium beats magnitude.** Dabs / worms / water / A-B blends all failed because they read as objects moving OVER
+  the painting; streamline ribbons read as the painting's OWN stroke energy moving. This was the Codex note's
+  diagnosis (`tasks/codex-motion-note-2026-06-22.md`) and it held.
+- **Closing the gap to the video took three axes, in order:** coverage (seed + integrate across the whole sky mask,
+  fade with the mask on the GPU — don't cut integration short, no rooftop spill), halos (activate star cores + the
+  moon halo RING as the same streamline shimmer, keep the moon crescent static — NOT a mechanical spin/fan), grain
+  (more + finer ribbons to fill the inter-swirl gaps).
+- **Visibility comes from the RIGHT knob.** Raising `speed` (phase travel) + flow contrast reads as faster painted
+  flow; raising `shimmerSpeed`/`shimmerMix`/`bristle` tips into crawling-worms/boil. When density went up (count
+  2400→3000, width 0.0038→0.0032), dropping `opacity` 0.6→0.55 kept the base crisp — the fog the dabs once had.
+- **The heatmap mean is NOT proof — proven again.** Across v1→v4 the motion-map MEAN FELL (1.56→1.14→1.33→1.23)
+  while coverage, ringing halos and perceived liveliness ROSE. Gemini's first plan gated on "push the mean to
+  3.5–4.5"; cross-review rejected that because a render can hit the number by boiling. Every round was judged by
+  looking at render-motion vs video-motion side by side, not by the number.
+- v4 leva defaults baked: count 3000 / strokeWidth 0.0032 / opacity 0.55 / speed 1.6 / shimmerMix 0.30. Centres from
+  `skySwirls.ts` (single source) so CPU + GPU can't drift. Open: Mark's live sign-off + perf on real hardware
+  (count 3000, one draw call); gate still OPEN.

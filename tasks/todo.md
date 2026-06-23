@@ -9,46 +9,39 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## Where we are now (2026-06-22) — read this first
+## Where we are now (2026-06-23) — read this first
 
 > **QUALITY GATE OPEN (Mark, 2026-06-20).** Foreground-complete gate stays passed; pre-release sign-off withdrawn
 > for sky visual quality. No publish mechanics until the fidelity gate passes.
 
-**The sky is now the flat "Living Painting" + a crisp brush-dab CHURN — and the smear is fixed.** Direction has
-settled on the REAL painting head-on (`LivingPainting` = the painting 1:1 as a static base, so the foreground IS
-the painting itself, pixel-faithful) with a GPU **brush-dab churn** (`BrushDabs`) animating only the sky.
+**The sky motion is settled: a streamline-ribbon churn (`StreamlineSky`) over the flat `LivingPainting` base.** The
+painting stays 1:1 as a static base (the foreground IS the painting, pixel-faithful); `StreamlineSky` animates only the
+sky — continuous ribbons integrated through the painting's signed flow field, with a brightness phase travelling along
+each stroke (painted stroke energy moving through the marks, not dabs/worms/water). This replaced the earlier brush-dab
+churn (`BrushDabs`, now removed); the dab history lives in `tasks/lessons.md` + git.
 
-- **Smear FIXED (2026-06-22, the win).** Flat-colour dabs fogged dense areas (translucent overlaps average to milk).
-  Fix = **patch/cut-out strokes**: each dab samples a brush-shaped PATCH of `painting.jpg` around its home
-  (`vSourceImg`) so it carries real paint detail and stays crisp. Base stays STATIC (flowAmount 0); ALL churn is the
-  dabs — base flow-map advection re-blurs via the dual-phase cross-fade, so it's kept off.
-- **Crisp AND churning** at the shipped leva defaults: flowAmount 0; dabs opacity 0.5 / drift 0.9 / churnSpeed 0.13 /
-  size 0.5 / haloSpin 0.5 / patch on / count 12000. Verified rendered-vs-painting (`scratch/final-whorl.jpeg`,
-  `final-full.jpeg`): whorl matches, motion mean 5.19 / 13.9%. Dial drift/opacity for more churn (small sharpness cost).
-- **Halo orbit (annular):** stars read as rotating rings; moon subtler (pale halo → low contrast). `src/scene/skySwirls.ts`
-  is the single source for the swirl centres so the bake mask + the orbit agree.
-- **Committed on `sky-brushdab`** this round; build/lint/`test:sky` 15/15 green. NOT pushed/merged → gate OPEN.
+- **Built by Gemini (Antigravity), 2026-06-22→23, over four capture-verified review rounds** against the parsed
+  reference video. Closed the motion brief's three axes: full-sky coverage (to the horizon, GPU-mask faded — no rooftop
+  spill); ringing star + moon halos (halo shimmer as paint, moon crescent static; centres from `skySwirls.ts`); finer
+  dense grain. v4 leva defaults: count 3000 / strokeWidth 0.0032 / opacity 0.55 / speed 1.6 / shimmerMix 0.30.
+- **Committed on `sky-brushdab`** — `9c021df` (feat: the look) + `dc106ae` (docs: brief + notes). build/lint/`test:sky`
+  15/15 green. NOT pushed/merged → gate OPEN.
+- **Result worth remembering:** across the four rounds the motion-map MEAN fell (1.56 → 1.14 → 1.33 → 1.23) while
+  coverage, halos and perceived liveliness ROSE — a clean confirmation that the heatmap mean is not proof; only looking is.
 - **Workflow rule in force (Mark):** verify every change by LOOKING at the rendered crop vs the painting (Playwright
   capture), not heatmaps/tests. See `memory/visual-check-every-iteration`.
 
-### ▶ PICK UP HERE (resume — paused 2026-06-22, Mark revisiting this evening)
-- **State:** committed `6e7c4cd` on `sky-brushdab`, clean tree, NOT pushed. Smear fixed; crisp + churning; green.
-  To run: `npm run dev` → localhost:5173 (fps in the top-left Stats panel; "Show original" button A/Bs vs the painting;
-  leva panel for live tuning). Latest captures: `scratch/final-whorl.jpeg`, `scratch/final-full.jpeg`.
-- **Perf UNVERIFIED** — 12k dabs; confirm 60fps desktop / 30fps mid-tier mobile on real hardware (headless rAF reads 0).
-- **Moon halo motion** lags the reference video's bright rotating ring (pale-uniform halo defeats the translucent
-  dabs) — possible halo/ring emphasis pass; Mark's taste.
-- **Motion level + cobalt depth** are leva taste dials — Mark to settle on the live view.
+### ▶ PICK UP HERE (resume — sky motion settled 2026-06-23, awaiting Mark's live sign-off)
+- **State:** committed `9c021df` + `dc106ae` on `sky-brushdab`, clean tree, NOT pushed. Motion look settled
+  (`StreamlineSky`). To run: `npm run dev` → localhost (Stats panel top-left; "Show original" A/Bs vs the painting; leva
+  panel for live tuning). Review captures (regenerable, gitignored): `output/playwright/claude-review-v4/`.
+- **Mark's live sign-off** on the settled motion is the open call — taste, and whether to push/merge (deploy is Mark's).
+- **Perf UNVERIFIED** — count 3000 ribbons (one draw call); confirm 60fps desktop / 30fps mid-tier mobile on real
+  hardware (headless rAF reads 0).
+- **Remaining vs the video (taste, diminishing returns):** deepest low-sky corners a touch calmer + grain marginally
+  less fine than the video's stipple — pushing further trades against the boil/fog margin.
 - **3D parked:** Codex's `?mode=3d` bridge (flat sky → SkyDome diorama) was stripped "for now" (Mark). Revisit if
-  returning to an orbitable diorama — note the flat approach diverges from the locked 3D-diorama camera criteria, a
-  direction call for Mark.
-- **Sky swapped → `StreamlineSky` (Gemini, 2026-06-22 night):** `BrushDabs` replaced by streamline ribbons
-  integrated through the signed flow field (the `tasks/codex-motion-note-2026-06-22.md` direction). Reviewed this
-  session — renders clean, reduced-motion/pause/Show-original all intact, reads as brushstrokes flowing along the
-  swirl paths. Uncommitted on `sky-brushdab`; the brush-dab descriptions above are superseded.
-- **▶ Next planned slice — motion gap to the parsed video:** even full-sky coverage · pulsing star/moon halos ·
-  finer grain. Brief for Gemini at **`tasks/gemini-motion-brief-2026-06-23.md`** (pending Codex cross-review).
-  Evidence: `output/playwright/claude-review/motion_side_by_side.jpg`.
+  returning to an orbitable diorama — the flat approach diverges from the locked 3D-diorama camera criteria, Mark's call.
 
 Publish/DNS/portfolio stays parked until the fidelity gate passes.
 
