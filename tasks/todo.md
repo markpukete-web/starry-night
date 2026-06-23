@@ -31,17 +31,19 @@ churn (`BrushDabs`, now removed); the dab history lives in `tasks/lessons.md` + 
 - **Workflow rule in force (Mark):** verify every change by LOOKING at the rendered crop vs the painting (Playwright
   capture), not heatmaps/tests. See `memory/visual-check-every-iteration`.
 
-### ▶ PICK UP HERE (resume — sky motion settled 2026-06-23, awaiting Mark's live sign-off)
-- **State:** committed `9c021df` + `dc106ae` on `sky-brushdab`, clean tree, NOT pushed. Motion look settled
-  (`StreamlineSky`). To run: `npm run dev` → localhost (Stats panel top-left; "Show original" A/Bs vs the painting; leva
-  panel for live tuning). Review captures (regenerable, gitignored): `output/playwright/claude-review-v4/`.
-- **Mark's live sign-off** on the settled motion is the open call — taste, and whether to push/merge (deploy is Mark's).
+### ▶ PICK UP HERE (resume — 2D motion settled 2026-06-23; next phase = make it 3D)
+- **State:** committed `9c021df` + `dc106ae` on `sky-brushdab`, clean tree, NOT pushed. 2D flat motion settled
+  (`StreamlineSky`) — the FOUNDATION for the 3D build, NOT a ship candidate. To run: `npm run dev` → localhost
+  (Stats panel top-left; "Show original" A/Bs vs the painting; leva for live tuning). Captures:
+  `output/playwright/claude-review-v4/`.
+- **Next phase — make it 3D (the locked orbitable-diorama vision).** Carry the settled streamline motion into 3D;
+  the Codex note's curved-canopy path (integrate motion in the painting's UV space — which `StreamlineSky` already
+  does — then map onto the dome, constrained orbit) is the natural route. `SkyDome`/`Diorama` scaffolding is
+  parked-but-present (unimported legacy) — likely the starting point, re-fitted with the streamline motion.
+- **Open 2D taste calls first (Mark):** is v4 the "proper 2D" to build 3D from, or tune further (grain vs the video,
+  cobalt depth, foreground forms)? A live drive + a quick fps glance settles it.
 - **Perf UNVERIFIED** — count 3000 ribbons (one draw call); confirm 60fps desktop / 30fps mid-tier mobile on real
   hardware (headless rAF reads 0).
-- **Remaining vs the video (taste, diminishing returns):** deepest low-sky corners a touch calmer + grain marginally
-  less fine than the video's stipple — pushing further trades against the boil/fog margin.
-- **3D parked:** Codex's `?mode=3d` bridge (flat sky → SkyDome diorama) was stripped "for now" (Mark). Revisit if
-  returning to an orbitable diorama — the flat approach diverges from the locked 3D-diorama camera criteria, Mark's call.
 
 Publish/DNS/portfolio stays parked until the fidelity gate passes.
 
@@ -275,29 +277,19 @@ hero → polish; capture + review each slice.
 
 - (none yet)
 
-## Proposed to Mark — reconcile the locked spec to the flat direction (2026-06-23)
+## Course-correction — 2D flat is the FOUNDATION, not the final form (Mark, 2026-06-23)
 
-Mark chose to lock the flat Living-Painting + `StreamlineSky` as the final form (2026-06-23). The locked
-sections still describe the orbitable 3D diorama; these edits bring them in line. Mark applies (locked
-sections are his) — veto/reword freely.
+Earlier this session Claude mis-scoped the flat direction as "lock flat → drive to the pre-release gate."
+Mark's actual goal: **tune the proper 2D version first (the flat `StreamlineSky`), THEN make it 3D.** The
+flat piece is a milestone, not the ship target.
 
-- **Acceptance criterion — camera.** Current: "Camera stays within the orbit limits in Tunables (polar +
-  distance; no free-fly or panning); the diorama always reads as Starry Night — head-on it is the painting's
-  composition." → Propose: "The view is the painting's composition head-on — a fixed, non-navigable framing
-  (no orbit, pan, or zoom). Visitor controls are pause/play, compare-to-original, and fullscreen only; the
-  piece always reads as Starry Night."
-- **The bar (only Mark edits).** The additive 360°/invented-back parenthetical no longer applies (a flat
-  painting has no back). → Propose replacing it with: "(The sky's motion and colour are derived from the
-  painting itself — the head-on composition follows the painting's real geometry and derived flow field.)"
-- **Out of scope.** "Free-fly / unconstrained camera" still holds trivially (the flat piece has no camera nav
-  at all). → Propose adding: "Camera navigation of any kind (orbit / pan / zoom). The flat direction
-  (2026-06-22) presents the painting head-on, fixed; the earlier 3D-diorama orbit is retired — revisit only
-  as a deliberate new phase."
-- **Tunables — camera orbit limits** (Claude may edit, but this pairs with the locked criterion, so it's
-  grouped here). → Propose: "N/A for the flat direction — no camera navigation."
-- **Not locked, Claude can apply on your nod:** the Stack note "current App.tsx scene is a scaffold
-  smoke-test placeholder" is stale (App.tsx is the shipping flat piece), and the `README` still describes the
-  orbitable diorama — both want a flat-direction refresh before release.
+- **The locked 3D-diorama spec STAYS** (orbit limits, the diorama/head-on criterion, the bar's 360/back
+  clause). No reconciliation-to-flat — 3D is the destination, which IS the original locked vision.
+- **Pre-release is NOT the next move.** Next phase = the 3D build, with the settled 2D motion (`StreamlineSky`)
+  as its foundation. The Codex note's curved-canopy path (integrate motion in the painting's UV space — which
+  `StreamlineSky` already does — then map onto the dome) is the natural route.
+- Prior 3D scaffolding is parked-but-present in the repo (`SkyDome` / `Diorama` / `dabField` legacy,
+  unimported) — likely the starting point, re-fitted with the new streamline motion.
 
 ## Applied to locked sections (2026-06-14 — Mark delegated: "update section edits")
 
