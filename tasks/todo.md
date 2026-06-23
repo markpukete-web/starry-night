@@ -269,11 +269,35 @@ hero → polish; capture + review each slice.
       the MOON still can't fit a portrait frame (≈42° off-centre on the arc) → needs a portrait-specific
       camera bearing (Mark's composition call). Plus stroke budget + DPR caps; perf on real mid-tier mobile
 - [ ] Ship hygiene: slim `flow-field.png` (3.2 MB); strip `leva` from the production build
-- [ ] Gates remaining: **foreground complete** · **pre-release**
+- [ ] Gates remaining: **pre-release** — the last gate (foreground-complete passed 2026-06-15)
 
 ## Parked ideas (scope-growth — do NOT build without Mark)
 
 - (none yet)
+
+## Proposed to Mark — reconcile the locked spec to the flat direction (2026-06-23)
+
+Mark chose to lock the flat Living-Painting + `StreamlineSky` as the final form (2026-06-23). The locked
+sections still describe the orbitable 3D diorama; these edits bring them in line. Mark applies (locked
+sections are his) — veto/reword freely.
+
+- **Acceptance criterion — camera.** Current: "Camera stays within the orbit limits in Tunables (polar +
+  distance; no free-fly or panning); the diorama always reads as Starry Night — head-on it is the painting's
+  composition." → Propose: "The view is the painting's composition head-on — a fixed, non-navigable framing
+  (no orbit, pan, or zoom). Visitor controls are pause/play, compare-to-original, and fullscreen only; the
+  piece always reads as Starry Night."
+- **The bar (only Mark edits).** The additive 360°/invented-back parenthetical no longer applies (a flat
+  painting has no back). → Propose replacing it with: "(The sky's motion and colour are derived from the
+  painting itself — the head-on composition follows the painting's real geometry and derived flow field.)"
+- **Out of scope.** "Free-fly / unconstrained camera" still holds trivially (the flat piece has no camera nav
+  at all). → Propose adding: "Camera navigation of any kind (orbit / pan / zoom). The flat direction
+  (2026-06-22) presents the painting head-on, fixed; the earlier 3D-diorama orbit is retired — revisit only
+  as a deliberate new phase."
+- **Tunables — camera orbit limits** (Claude may edit, but this pairs with the locked criterion, so it's
+  grouped here). → Propose: "N/A for the flat direction — no camera navigation."
+- **Not locked, Claude can apply on your nod:** the Stack note "current App.tsx scene is a scaffold
+  smoke-test placeholder" is stale (App.tsx is the shipping flat piece), and the `README` still describes the
+  orbitable diorama — both want a flat-direction refresh before release.
 
 ## Applied to locked sections (2026-06-14 — Mark delegated: "update section edits")
 
