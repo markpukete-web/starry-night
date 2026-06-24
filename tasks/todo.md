@@ -9,7 +9,7 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## Where we are now (2026-06-23) — read this first
+## Where we are now (2026-06-24) — read this first
 
 > **NORTH STAR (locked — CLAUDE.md, re-read it).** The endgame is the **3D orbitable diorama**. The flat 2D
 > piece is a FOUNDATION milestone, NEVER the ship target. Phase now: 2D sky motion settled → **next: make it 3D**.
@@ -35,19 +35,25 @@ churn (`BrushDabs`, now removed); the dab history lives in `tasks/lessons.md` + 
 - **Workflow rule in force (Mark):** verify every change by LOOKING at the rendered crop vs the painting (Playwright
   capture), not heatmaps/tests. See `memory/visual-check-every-iteration`.
 
-### ▶ PICK UP HERE (resume — 2D motion settled 2026-06-23; next phase = make it 3D)
-- **State:** committed `9c021df` + `dc106ae` on `sky-brushdab`, clean tree, NOT pushed. 2D flat motion settled
-  (`StreamlineSky`) — the FOUNDATION for the 3D build, NOT a ship candidate. To run: `npm run dev` → localhost
-  (Stats panel top-left; "Show original" A/Bs vs the painting; leva for live tuning). Captures:
-  `output/playwright/claude-review-v4/`.
+### ▶ PICK UP HERE (resume — 2D motion settled + live-tuned 2026-06-24; next phase = make it 3D)
+- **State (2026-06-24):** on `sky-brushdab`, clean tree, NOT pushed. 2D flat motion settled (`StreamlineSky`) —
+  the FOUNDATION for the 3D build, NOT a ship candidate. Mark live-tuned v4 further and those values are now the
+  baked defaults (count 2000 · opacity 0.45 · pulse 7.5 · shimmerMix 0.80 · shimmerSpeed 3.0 · shimmerScale 2.8;
+  commit `27db731`). To run: `npm run dev` → localhost (Stats top-left; "Show original" A/Bs the painting; leva
+  tunes). Captures: `output/playwright/claude-review-v4/`.
+- **Tuning now persists (dev tooling, `27db731`):** sky defaults live in `src/scene/sky-tuning.json` (read via
+  `tuned()` in `src/scene/tuning.ts`); the dev-only **"set as default"** button in the leva `streamline sky`
+  folder writes the current values there (both folders) — survives reload AND bakes into the production build.
+  Factory v4 numbers remain as code fallbacks, so clearing the JSON resets. Hardened writer = `/__set-tuning` in
+  `vite.config.ts` (serve-only). Detail in `tasks/lessons.md` (2026-06-24 entry).
 - **Next phase — make it 3D (the locked orbitable-diorama vision).** Carry the settled streamline motion into 3D;
   the Codex note's curved-canopy path (integrate motion in the painting's UV space — which `StreamlineSky` already
   does — then map onto the dome, constrained orbit) is the natural route. `SkyDome`/`Diorama` scaffolding is
   parked-but-present (unimported legacy) — likely the starting point, re-fitted with the streamline motion.
 - **Open 2D taste calls first (Mark):** is v4 the "proper 2D" to build 3D from, or tune further (grain vs the video,
   cobalt depth, foreground forms)? A live drive + a quick fps glance settles it.
-- **Perf UNVERIFIED** — count 3000 ribbons (one draw call); confirm 60fps desktop / 30fps mid-tier mobile on real
-  hardware (headless rAF reads 0).
+- **Perf UNVERIFIED** — count 2000 ribbons (one draw call, lowered from 3000 in Mark's tuning); confirm 60fps
+  desktop / 30fps mid-tier mobile on real hardware (headless rAF reads 0).
 
 Publish/DNS/portfolio stays parked until the fidelity gate passes.
 

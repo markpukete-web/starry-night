@@ -1077,3 +1077,40 @@ to read often and you skipped that."*
   like the painting → dropped to a flat 2D living-painting to nail the sky MOTION against the painting + the
   parsed video (06-22) → `StreamlineSky` settled the 2D motion (06-23) → next phase carries that motion back
   into the 3D diorama (curved-canopy route).
+
+## "Set as default" button re-wired to the streamline-sky controls (2026-06-24)
+
+Mark tuned the v4 sky live (count 3000→2000, opacity 0.55→0.45, pulse 8→7.5, shimmerMix 0.30→0.80, shimmerSpeed
+2.5→3.0, shimmerScale 2.5→2.8) and asked for the "set as default" button so live tweaks persist. The persistence
+plumbing already EXISTED from the old brush-dab engine but was half-wired to dead fields — re-targeting beat
+rebuilding.
+
+- **The endpoint was already there, just stale.** `vite.config.ts` has a dev-only (`apply:'serve'`) hardened
+  `/__set-tuning` middleware that writes `src/scene/sky-tuning.json`. Its `TUNING_FIELDS` allowlist + the JSON
+  still held the OLD ribbon-engine keys (strokes/swirlTightness/skyTop/…); neither current component read the
+  JSON or sent a save. Fix = retarget the allowlist to the 14 current keys (living-painting churnSpeed/flowAmount
+  + the 12 streamline-sky controls), rewrite the JSON to those keys, wire both components to read it. Lesson:
+  before building dev tooling, grep for a prior version — this repo's "set as default" infra survived two sky
+  rewrites and only needed re-pointing.
+- **leva `button((get) => …)` reads the GLOBAL store cross-folder.** One button in the `streamline sky` folder
+  collects BOTH folders via `get('living painting.churnSpeed')` etc. — leva paths are `folderName.schemaKey`
+  (the KEY, not the label; spaces in the folder name are fine). Verified: clicking it wrote all 14 keys incl. the
+  other folder's two. So the save button doesn't need to live with the controls it captures.
+- **The writer OVERWRITES, never merges** — it writes exactly the cleaned payload. So the button MUST send all
+  14 fields every time (it does), and any curl/test must too, or fields silently vanish. A wrong `get` path →
+  `undefined` → `JSON.stringify` drops the key → field silently missing (no error); so verify by asserting the
+  written file has the full key count, not just HTTP 200.
+- **Defaults via `tuned(key, factory)`** (`src/scene/tuning.ts`): reads `sky-tuning.json`, falls back to the
+  hardcoded factory value per key. The JSON is the OVERRIDE layer; the code keeps the factory values as the
+  second arg (so "reset to factory" = clear the JSON). In production leva is aliased to the stub, whose
+  `useControls` returns `schema[key].value` = `tuned(...)` = the saved JSON value → the shipped default IS the
+  saved look. So the same file drives the dev panel default AND the baked production default.
+- **leva-stub `button()` stays no-arg.** tsc typechecks call sites against the REAL leva (the stub is a
+  vite-BUILD alias, post-typecheck — see the 2026-06-15 leva-strip lesson), so `button((get)=>…)` is checked
+  against real leva's signature; the stub's `button` only needs internal consistency. A `_onClick` param tripped
+  `no-unused-vars` — dropped it.
+- **Editing these files HMR-resets the live panel**, so I baked Mark's current tuned values into sky-tuning.json
+  as part of the change — his panel comes back tuned, nothing lost. The factory v4 numbers live on as the
+  `tuned()` fallbacks. Verified end-to-end: read-back (panel opens at 2000/0.45/7.5/0.80/3.0/2.8), button writes
+  all 14, endpoint allowlist/bad-type/origin/content-type guards (200/400/403/403), build+lint+test:sky green.
+  NOT committed (awaiting Mark).
