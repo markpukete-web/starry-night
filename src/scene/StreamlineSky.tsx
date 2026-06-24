@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useTexture } from '@react-three/drei'
-import { useControls } from 'leva'
+import { button, useControls } from 'leva'
 import {
   BufferAttribute,
   BufferGeometry,
@@ -16,6 +16,7 @@ import { useImageData, type ImageData2D } from './useImageData'
 import { mulberry32, sampleColour } from './brush'
 import { IMG_TO_CLIP_GLSL, TEX_ASPECT } from './skyFraming'
 import { SWIRLS, HALO_SWIRLS, MOON_UV, MOON_R } from './skySwirls'
+import { tuned, saveDefaults } from './tuning'
 
 // Helper to decode directed unit vectors from signed-flow.png directly
 function sampleSignedFlow(flow: ImageData2D, u: number, v: number): [number, number] {
@@ -186,18 +187,39 @@ export function StreamlineSky({ paused = false }: { paused?: boolean }) {
     bristleFreq,
     bristleAmp,
   } = useControls('streamline sky', {
-    count: { value: 3000, min: 200, max: 4000, step: 50, label: 'count' },
-    speed: { value: 1.6, min: 0, max: 2.5, step: 0.05, label: 'speed' },
-    opacity: { value: 0.55, min: 0, max: 1.0, step: 0.05, label: 'opacity' },
-    strokeWidth: { value: 0.0032, min: 0.002, max: 0.02, step: 0.0005, label: 'stroke width' },
-    points: { value: 16, min: 6, max: 32, step: 1, label: 'points' },
-    stepSize: { value: 0.012, min: 0.005, max: 0.03, step: 0.001, label: 'step size' },
-    pulseScale: { value: 8.0, min: 2.0, max: 20.0, step: 0.5, label: 'pulse scale' },
-    shimmerMix: { value: 0.30, min: 0, max: 1.0, step: 0.05, label: 'shimmer mix' },
-    shimmerSpeed: { value: 2.5, min: 0.5, max: 5.0, step: 0.1, label: 'shimmer speed' },
-    shimmerScale: { value: 2.5, min: 0.5, max: 5.0, step: 0.1, label: 'shimmer scale' },
-    bristleFreq: { value: 75.0, min: 10.0, max: 200.0, step: 5.0, label: 'bristle freq' },
-    bristleAmp: { value: 0.22, min: 0.0, max: 0.5, step: 0.02, label: 'bristle amp' },
+    // Defaults come from sky-tuning.json (the "set as default" button writes it); the second arg is the
+    // factory fallback if the JSON lacks a key. See src/scene/tuning.ts.
+    count: { value: tuned('count', 3000), min: 200, max: 4000, step: 50, label: 'count' },
+    speed: { value: tuned('speed', 1.6), min: 0, max: 2.5, step: 0.05, label: 'speed' },
+    opacity: { value: tuned('opacity', 0.55), min: 0, max: 1.0, step: 0.05, label: 'opacity' },
+    strokeWidth: { value: tuned('strokeWidth', 0.0032), min: 0.002, max: 0.02, step: 0.0005, label: 'stroke width' },
+    points: { value: tuned('points', 16), min: 6, max: 32, step: 1, label: 'points' },
+    stepSize: { value: tuned('stepSize', 0.012), min: 0.005, max: 0.03, step: 0.001, label: 'step size' },
+    pulseScale: { value: tuned('pulseScale', 8.0), min: 2.0, max: 20.0, step: 0.5, label: 'pulse scale' },
+    shimmerMix: { value: tuned('shimmerMix', 0.30), min: 0, max: 1.0, step: 0.05, label: 'shimmer mix' },
+    shimmerSpeed: { value: tuned('shimmerSpeed', 2.5), min: 0.5, max: 5.0, step: 0.1, label: 'shimmer speed' },
+    shimmerScale: { value: tuned('shimmerScale', 2.5), min: 0.5, max: 5.0, step: 0.1, label: 'shimmer scale' },
+    bristleFreq: { value: tuned('bristleFreq', 75.0), min: 10.0, max: 200.0, step: 5.0, label: 'bristle freq' },
+    bristleAmp: { value: tuned('bristleAmp', 0.22), min: 0.0, max: 0.5, step: 0.02, label: 'bristle amp' },
+    // Persist the current panel values (both folders) as the baked defaults. `get` reads the live store.
+    'set as default': button((get) =>
+      saveDefaults({
+        churnSpeed: get('living painting.churnSpeed'),
+        flowAmount: get('living painting.flowAmount'),
+        count: get('streamline sky.count'),
+        speed: get('streamline sky.speed'),
+        opacity: get('streamline sky.opacity'),
+        strokeWidth: get('streamline sky.strokeWidth'),
+        points: get('streamline sky.points'),
+        stepSize: get('streamline sky.stepSize'),
+        pulseScale: get('streamline sky.pulseScale'),
+        shimmerMix: get('streamline sky.shimmerMix'),
+        shimmerSpeed: get('streamline sky.shimmerSpeed'),
+        shimmerScale: get('streamline sky.shimmerScale'),
+        bristleFreq: get('streamline sky.bristleFreq'),
+        bristleAmp: get('streamline sky.bristleAmp'),
+      }),
+    ),
   })
 
   // Build the streamlines geometry once on the CPU when image data is fully resolved

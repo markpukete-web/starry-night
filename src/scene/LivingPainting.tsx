@@ -4,6 +4,7 @@ import { useTexture } from '@react-three/drei'
 import { useControls } from 'leva'
 import { LinearFilter, NoColorSpace, ShaderMaterial } from 'three'
 import { CONTAIN_GLSL, TEX_ASPECT } from './skyFraming'
+import { tuned } from './tuning'
 
 // The painting, brought to life. A full-screen quad shows the REAL painting and a flow-map advection
 // shader flows its own brushstrokes along the derived SIGNED flow field, masked to the sky. The brush-dab
@@ -85,8 +86,8 @@ export function LivingPainting({ paused = false }: { paused?: boolean }) {
   // Base STATIC (flowAmount 0, Mark): the patch-dab layer is the sole churn so the painting stays pixel-crisp.
   // Any base flow-map advection softens it via the dual-phase cross-fade (the 'water'/blur). Control kept for A/B.
   const { churnSpeed, flowAmount } = useControls('living painting', {
-    churnSpeed: { value: 0.2, min: 0, max: 0.8, step: 0.01, label: 'churn speed' },
-    flowAmount: { value: 0, min: 0, max: 0.18, step: 0.005, label: 'flow amount' },
+    churnSpeed: { value: tuned('churnSpeed', 0.2), min: 0, max: 0.8, step: 0.01, label: 'churn speed' },
+    flowAmount: { value: tuned('flowAmount', 0), min: 0, max: 0.18, step: 0.005, label: 'flow amount' },
   })
 
   const material = useMemo(

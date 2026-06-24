@@ -4,9 +4,12 @@ import * as fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 // The only fields the tuning endpoint will persist (allowlist — anything else is dropped).
+// These are the current scene's leva controls: the 'living painting' base (churnSpeed, flowAmount)
+// and the 'streamline sky' churn. They map 1:1 to src/scene/sky-tuning.json (see src/scene/tuning.ts).
 const TUNING_FIELDS = new Set([
-  'churnSpeed', 'strokes', 'strokeWidth', 'swirlTightness', 'flowBias', 'saturation',
-  'skyTop', 'skyBottom', 'bloom', 'bloomThreshold', 'bloomRadius', 'glow', 'moon', 'stars',
+  'churnSpeed', 'flowAmount',
+  'count', 'speed', 'opacity', 'strokeWidth', 'points', 'stepSize',
+  'pulseScale', 'shimmerMix', 'shimmerSpeed', 'shimmerScale', 'bristleFreq', 'bristleAmp',
 ])
 
 // Dev-only middleware: the tuning panel's "set as default" button POSTs the current control values

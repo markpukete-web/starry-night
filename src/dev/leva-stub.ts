@@ -17,7 +17,8 @@ export function Leva(): null {
 }
 
 // `button` exists only so the dev-only "set as default" control compiles in the production bundle; it
-// is never rendered or clicked there (the panel is absent), so this is an inert placeholder.
+// is never rendered or clicked there (the panel is absent). Call sites typecheck against the real leva
+// (the stub is a build-time alias swap, post-typecheck), so any onClick arg is simply ignored at runtime.
 export function button(): { type: 'BUTTON' } {
   return { type: 'BUTTON' }
 }
