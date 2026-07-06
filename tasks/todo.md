@@ -217,7 +217,19 @@ Next step:
   enough right to keep the moon crescent in frame while retaining village, whorl, and a left cypress anchor.
 - Evidence: `output/playwright/pickup-2026-07-06-mobile-camera/`.
 
-Next step remains:
+### 2026-07-06 follow-up — switch the diorama contract from 360 to a front arc
+
+- Mark review: the route still fails if the visitor gets behind the cypress because the back exposes the void.
+- Decision: stop treating full 360 as required for this slice. The diorama should be **front-arc orbitable** now:
+  enough orbit to feel physical, but no side/rear inspection until the cypress/source edge can be authored as a true
+  object.
+- Implementation target: clamp `?mode=diorama` OrbitControls to a practical asymmetric azimuth envelope and record that
+  rear-cypress exposure is a reject condition, not a missing polish item. Exact ±90° and broader symmetric arcs still
+  showed too much blank side void in self-review; final envelope is -15° toward the bad rear-cypress side and +45°
+  toward the side that still reads as an inspectable diorama.
+- Evidence: `output/playwright/diorama-front-arc-2026-07-06/`.
+
+Next step remains after the front-arc clamp:
 
 1. Re-approach cypress/source registration from a proper visual contract instead of ad-hoc geometry tweaks.
 2. Dissolve the remaining projected-sky edge into a derived world-space continuation.

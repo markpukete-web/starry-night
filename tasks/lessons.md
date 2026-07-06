@@ -80,6 +80,13 @@ Newest at the bottom of each section.
   mis-sampled source texture) and were reverted; do not count them as progress. The kept change is portrait camera
   framing only: wider/farther mobile camera, aimed enough right that the moon crescent is no longer cropped while the
   village, whorl, and left cypress anchor remain visible. Evidence: `output/playwright/pickup-2026-07-06-mobile-camera/`.
+- 2026-07-06 — Mark caught the remaining back-of-cypress void in the painting-first route. Treat that as proof that
+  the current cypress/source projection is not a credible 360-degree object. Product decision for this slice: make the
+  diorama front-arc orbitable so visitors can inspect depth without getting behind the authored painting composition.
+  Exact side-profile ±90° and even a symmetric broad side arc expose too much blank source edge, so the practical clamp
+  is asymmetric: -15° toward the bad rear-cypress side, +45° toward the side that still reads as an inspectable diorama.
+  Evidence: `output/playwright/diorama-front-arc-2026-07-06/`. Do not burn another pass trying to prettify an invented
+  rear until the front view passes.
 
 ## Environment facts (this machine)
 

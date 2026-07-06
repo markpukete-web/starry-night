@@ -30,6 +30,8 @@ export const DIORAMA_CAMERA = DIORAMA_CAMERAS.design
 export const DIORAMA_ORBIT = {
   minDistance: 3.25,
   maxDistance: 5.6,
+  minAzimuthAngle: -Math.PI / 12,
+  maxAzimuthAngle: Math.PI / 4,
   minPolarAngle: 0.58,
   maxPolarAngle: 1.62,
   enablePan: false,
@@ -45,13 +47,14 @@ export const DIORAMA_CAPTURE = {
 }
 
 export const DIORAMA_VISUAL_CONTRACT = {
-  subject: 'Starry Night as a physical orbitable floating diorama',
+  subject: 'Starry Night as a physical front-arc orbitable floating diorama',
   rejects: [
     'flat or curved painting surface reads as the whole product',
     'placeholder geometry dominates the stage',
     'sky flow does not trace the source painting',
     'Bloom supplies the only readable form',
     'clean capture contains dev UI or title overlays',
+    'camera exposes the unpainted rear of the cypress/source projection',
     'orbit controls allow panning or losing the authored composition',
   ],
 } as const

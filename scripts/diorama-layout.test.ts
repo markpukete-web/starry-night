@@ -31,6 +31,8 @@ test('diorama orbit cannot pan or zoom out of the authored envelope', () => {
   assert.equal(DIORAMA_ORBIT.enablePan, false)
   assert.ok(DIORAMA_ORBIT.minDistance >= 3)
   assert.ok(DIORAMA_ORBIT.maxDistance <= 5.6)
+  assert.ok(DIORAMA_ORBIT.minAzimuthAngle >= -Math.PI / 12)
+  assert.ok(DIORAMA_ORBIT.maxAzimuthAngle <= Math.PI / 4)
   assert.ok(DIORAMA_ORBIT.maxPolarAngle <= 1.62)
 })
 

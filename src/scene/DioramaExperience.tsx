@@ -52,6 +52,8 @@ function Scene({ reduced }: { reduced: boolean }) {
         target={[...camera.target]}
         minDistance={DIORAMA_ORBIT.minDistance}
         maxDistance={DIORAMA_ORBIT.maxDistance}
+        minAzimuthAngle={DIORAMA_ORBIT.minAzimuthAngle}
+        maxAzimuthAngle={DIORAMA_ORBIT.maxAzimuthAngle}
         minPolarAngle={DIORAMA_ORBIT.minPolarAngle}
         maxPolarAngle={DIORAMA_ORBIT.maxPolarAngle}
         enablePan={DIORAMA_ORBIT.enablePan}
