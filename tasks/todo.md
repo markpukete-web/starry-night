@@ -208,6 +208,21 @@ Next step:
    flow style, while preserving the front source composition.
 3. Improve mobile composition so the moon is fully visible without losing the cypress/village anchor.
 
+### 2026-07-06 pickup — checkpoint committed; mobile moon framing improved
+
+- Recovery checkpoint committed locally as `145dc5d feat(3d): add painting-first diorama recovery`; still not pushed.
+- Tried three cypress/source-registration mini-passes and reverted them because they were visually worse: a black blade,
+  a pale cutout, then a mis-sampled source-texture strip. Do not treat those as progress.
+- Kept a narrow camera fix: the portrait `?mode=diorama&clean=1` view now uses a wider/farther mobile camera aimed
+  enough right to keep the moon crescent in frame while retaining village, whorl, and a left cypress anchor.
+- Evidence: `output/playwright/pickup-2026-07-06-mobile-camera/`.
+
+Next step remains:
+
+1. Re-approach cypress/source registration from a proper visual contract instead of ad-hoc geometry tweaks.
+2. Dissolve the remaining projected-sky edge into a derived world-space continuation.
+3. Keep the improved portrait camera unless Mark prefers a tighter crop.
+
 Pickup command:
 
 ```bash

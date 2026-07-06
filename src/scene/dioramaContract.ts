@@ -10,9 +10,9 @@ export const DIORAMA_CAMERAS = {
     far: 48,
   },
   mobile: {
-    position: [0.92, 1.15, 7.85] as const,
-    target: [0.78, 1.0, 0.02] as const,
-    fov: 70,
+    position: [0.72, 1.18, 9.2] as const,
+    target: [0.9, 1.0, 0.02] as const,
+    fov: 86,
     near: 0.08,
     far: 48,
   },

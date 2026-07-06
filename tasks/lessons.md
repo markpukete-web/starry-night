@@ -75,6 +75,11 @@ Newest at the bottom of each section.
   diorama. First fixes next time: cypress/source registration, thinner painted flame modelling, dissolving the
   remaining projected sky edge into world-space continuation, and a portrait composition where the moon is not
   cropped.
+- 2026-07-06 — Pickup checkpoint: committed the painting-first recovery as `145dc5d`, then tested the first next
+  slice. The attempted procedural/source-textured cypress rewrites were visually weaker (black blade, pale cutout, then
+  mis-sampled source texture) and were reverted; do not count them as progress. The kept change is portrait camera
+  framing only: wider/farther mobile camera, aimed enough right that the moon crescent is no longer cropped while the
+  village, whorl, and left cypress anchor remain visible. Evidence: `output/playwright/pickup-2026-07-06-mobile-camera/`.
 
 ## Environment facts (this machine)
 
