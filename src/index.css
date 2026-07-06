@@ -36,6 +36,10 @@ button {
   background: #06112a;
 }
 
+.relief-shell {
+  background: #07132e;
+}
+
 .visitor-shell.is-clean-capture .visitor-title,
 .visitor-shell.is-clean-capture .visitor-dock,
 .visitor-shell.is-clean-capture .visitor-reference {

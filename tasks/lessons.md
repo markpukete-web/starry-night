@@ -87,6 +87,20 @@ Newest at the bottom of each section.
   is asymmetric: -15° toward the bad rear-cypress side, +45° toward the side that still reads as an inspectable diorama.
   Evidence: `output/playwright/diorama-front-arc-2026-07-06/`. Do not burn another pass trying to prettify an invented
   rear until the front view passes.
+- 2026-07-06 — Mark rejected the front-arc diorama screenshot as still visually unacceptable. Treat `396a51d` as a
+  failed containment patch, not a taste pass: the huge dark cypress still reads as a prop, the sky still reads as a
+  projected card with visible void/edge behaviour, the toy island competes with the painting, and mouse orbit still
+  makes the background construction show. Current Option 1 direction: isolate a `?mode=relief` route that keeps the
+  original painting composition fixed, reuses `LivingPainting` + `StreamlineSky` for the soul of the sky, and applies
+  only shallow source-masked foreground parallax. Option 2 remains the later true 3D rebuild after the relief route
+  proves the painting feel.
+- 2026-07-06 — Option 1 implemented as `?mode=relief&clean=1`. This deliberately steps back from the failed 3D
+  object route: the original painting remains the source-locked base, `StreamlineSky` remains the only sky-motion
+  mechanism, and pointer input moves only real source-masked cypress/lower-foreground relief layers. Desktop visual
+  read is materially closer to the painting than the failed diorama: no floating island, no finite sky card, no black
+  cone cypress. Mobile is improved via a route-specific portrait crop but remains a compromise because the painting is
+  wide. Evidence: `output/playwright/living-relief-2026-07-06/`; reduced-motion pointer stability check measured
+  0 mean pixel difference in an upper-right sky crop across centre/left/right pointer positions.
 
 ## Environment facts (this machine)
 

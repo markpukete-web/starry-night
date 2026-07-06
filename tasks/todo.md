@@ -243,6 +243,40 @@ npm run dev -- --host 127.0.0.1
 # flow-only honesty check: http://127.0.0.1:5173/?mode=diorama&debug=flow&clean=1
 ```
 
+### 2026-07-06 reset — Option 1 living relief route
+
+- Mark review after the front-arc patch: **not okay; still terrible.** The void/card-edge problem remains visible, the
+  cypress reads as a dead prop, and the mouse interaction exposes the projection instead of making the painting feel
+  alive.
+- Active implementation target: **Option 1, living relief painting.** Build and verify `?mode=relief&clean=1` as an
+  isolated route before touching the rejected `?mode=diorama` again.
+- Contract: keep the original painting and sky fixed in the frame; reuse `LivingPainting` + `StreamlineSky`; apply only
+  tiny pointer motion to source-masked cypress/lower-foreground relief layers; no finite sky card, no toy island, no
+  black-cone cypress.
+- Option 2 remains the later v2 target: a true authored 3D diorama rebuild only after Option 1 recovers the painting's
+  soul.
+
+Pickup command:
+
+```bash
+npm run dev -- --host 127.0.0.1
+# open http://127.0.0.1:5173/?mode=relief&clean=1
+# sky-only check: http://127.0.0.1:5173/?mode=relief&debug=sky&clean=1
+# layer-mask check: http://127.0.0.1:5173/?mode=relief&debug=layers&clean=1
+```
+
+Implementation checkpoint:
+
+- Built `?mode=relief` as the active Option 1 route. It keeps the painting and sky fixed, reuses source-space
+  `LivingPainting` + `StreamlineSky`, and adds only source-masked cypress/lower-foreground relief.
+- Verification: `npm run test:sky` (31/31), `npm run lint`, and `npm run build` pass; build keeps the existing Vite
+  large-chunk warning.
+- Captures: `output/playwright/living-relief-2026-07-06/desktop-final.png`,
+  `desktop-sky.png`, `desktop-layers.png`, `desktop-pointer-left.png`, `desktop-pointer-right.png`,
+  `desktop-reduced.png`, `mobile-final.png`.
+- Extra mouse check: reduced-motion centre/left/right pointer captures have 0 mean pixel difference in an upper-right
+  sky crop, so the sky/background is no longer sliding under pointer input.
+
 ---
 
 ## Earlier status (2026-06-20 → 06-21, superseded by the flat Living-Painting + patch-stroke work above)

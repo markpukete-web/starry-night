@@ -6,6 +6,7 @@ import { LivingPainting } from './scene/LivingPainting'
 import { StreamlineSky } from './scene/StreamlineSky'
 import { CanopyExperience } from './scene/CanopyExperience'
 import { DioramaExperience } from './scene/DioramaExperience'
+import { ReliefExperience } from './scene/ReliefExperience'
 
 /** prefers-reduced-motion: a dignified still painting, no churn (locked acceptance criterion). */
 function usePrefersReducedMotion() {
@@ -76,6 +77,10 @@ export default function App() {
 
   if (mode === 'canopy') {
     return <CanopyExperience clean={clean} reduced={motionPaused} />
+  }
+
+  if (mode === 'relief') {
+    return <ReliefExperience clean={clean} reduced={motionPaused} />
   }
 
   if (mode === 'diorama') {

@@ -2,7 +2,7 @@ import { useEffect, useMemo } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useTexture } from '@react-three/drei'
 import { useControls } from 'leva'
-import { LinearFilter, NoColorSpace, ShaderMaterial } from 'three'
+import { LinearFilter, NoColorSpace, ShaderMaterial, Vector2 } from 'three'
 import { CONTAIN_GLSL, TEX_ASPECT } from './skyFraming'
 import { tuned } from './tuning'
 
@@ -21,7 +21,8 @@ const vert = /* glsl */ `
 const frag = /* glsl */ `
   precision highp float;
   uniform sampler2D uPainting, uFlow, uMask;
-  uniform float uTime, uSpeed, uAmp, uFreeze, uViewA, uTexA;
+  uniform float uTime, uSpeed, uAmp, uFreeze, uViewA, uTexA, uFrameZoom;
+  uniform vec2 uFrameCenter;
   varying vec2 vUv;
 
   ${CONTAIN_GLSL}
@@ -29,6 +30,7 @@ const frag = /* glsl */ `
   void main() {
     // image-space UV (y-down), shared with the dab layer; contain-fit, letterbox outside
     vec2 img = containUv(vec2(vUv.x, 1.0 - vUv.y), uViewA, uTexA);
+    img = (img - vec2(0.5)) / uFrameZoom + uFrameCenter;
     if (img.x < 0.0 || img.x > 1.0 || img.y < 0.0 || img.y > 1.0) {
       gl_FragColor = vec4(0.043, 0.102, 0.227, 1.0); // deep-night letterbox bars (matches #0b1a3a)
       return;
@@ -53,7 +55,12 @@ const frag = /* glsl */ `
   }
 `
 
-export function LivingPainting({ paused = false }: { paused?: boolean }) {
+type PaintingFraming = {
+  zoom?: number
+  center?: readonly [number, number]
+}
+
+export function LivingPainting({ paused = false, framing }: { paused?: boolean; framing?: PaintingFraming }) {
   const size = useThree((s) => s.size)
   const [painting, flow, mask] = useTexture([
     '/reference/painting.jpg',
@@ -103,6 +110,8 @@ export function LivingPainting({ paused = false }: { paused?: boolean }) {
           uFreeze: { value: 0 },
           uViewA: { value: 1.6 },
           uTexA: { value: TEX_ASPECT },
+          uFrameZoom: { value: 1 },
+          uFrameCenter: { value: new Vector2(0.5, 0.5) },
         },
         vertexShader: vert,
         fragmentShader: frag,
@@ -132,6 +141,12 @@ export function LivingPainting({ paused = false }: { paused?: boolean }) {
     // eslint-disable-next-line react-hooks/immutability -- intentional R3F uniform write
     material.uniforms.uFreeze.value = paused ? 1 : 0
   }, [material, paused])
+  useEffect(() => {
+    /* eslint-disable react-hooks/immutability -- intentional R3F uniform writes */
+    material.uniforms.uFrameZoom.value = framing?.zoom ?? 1
+    material.uniforms.uFrameCenter.value.set(framing?.center?.[0] ?? 0.5, framing?.center?.[1] ?? 0.5)
+    /* eslint-enable react-hooks/immutability */
+  }, [framing, material])
   useEffect(() => () => material.dispose(), [material])
 
   // advance the churn clock; frozen when paused so prefers-reduced-motion yields a still painting

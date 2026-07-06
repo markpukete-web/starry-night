@@ -24,7 +24,8 @@ const vert = /* glsl */ `
   attribute float aPhase;
   attribute float aRate;
   attribute vec3 aColor;
-  uniform float uViewA, uTexA, uFreeze;
+  uniform float uViewA, uTexA, uFreeze, uFrameZoom;
+  uniform vec2 uFrameCenter;
   varying float vLen;
   varying float vAcross;
   varying float vPhase;
@@ -41,7 +42,8 @@ const vert = /* glsl */ `
     vColor = aColor;
     vFreeze = uFreeze;
     vImgUv = position.xy;
-    gl_Position = vec4(imgToClip(position.xy, uViewA, uTexA), 0.0, 1.0);
+    vec2 framed = (position.xy - uFrameCenter) * uFrameZoom + vec2(0.5);
+    gl_Position = vec4(imgToClip(framed, uViewA, uTexA), 0.0, 1.0);
   }
 `
 
@@ -146,7 +148,12 @@ const frag = /* glsl */ `
   }
 `
 
-export function StreamlineSky({ paused = false }: { paused?: boolean }) {
+type StreamlineFraming = {
+  zoom?: number
+  center?: readonly [number, number]
+}
+
+export function StreamlineSky({ paused = false, framing }: { paused?: boolean; framing?: StreamlineFraming }) {
   const size = useThree((s) => s.size)
   const flowData = useImageData('/reference/signed-flow.png')
   const maskData = useImageData('/reference/sky-mask.png')
@@ -263,6 +270,8 @@ export function StreamlineSky({ paused = false }: { paused?: boolean }) {
           uViewA: { value: 1.6 },
           uTexA: { value: TEX_ASPECT },
           uFreeze: { value: 0 },
+          uFrameZoom: { value: 1 },
+          uFrameCenter: { value: new Vector2(0.5, 0.5) },
           uShimmerMix: { value: shimmerMix },
           uShimmerSpeed: { value: shimmerSpeed },
           uShimmerScale: { value: shimmerScale },
@@ -318,6 +327,12 @@ export function StreamlineSky({ paused = false }: { paused?: boolean }) {
     // eslint-disable-next-line react-hooks/immutability
     material.uniforms.uFreeze.value = paused ? 1.0 : 0.0
   }, [material, paused])
+  useEffect(() => {
+    /* eslint-disable react-hooks/immutability -- intentional R3F uniform writes */
+    material.uniforms.uFrameZoom.value = framing?.zoom ?? 1
+    material.uniforms.uFrameCenter.value.set(framing?.center?.[0] ?? 0.5, framing?.center?.[1] ?? 0.5)
+    /* eslint-enable react-hooks/immutability */
+  }, [framing, material])
 
   useEffect(() => () => material.dispose(), [material])
   useEffect(() => () => geometry?.dispose(), [geometry])
