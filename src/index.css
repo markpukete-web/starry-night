@@ -28,6 +28,20 @@ button {
   display: block;
 }
 
+.canopy-shell {
+  background: #07132e;
+}
+
+.diorama-shell {
+  background: #06112a;
+}
+
+.visitor-shell.is-clean-capture .visitor-title,
+.visitor-shell.is-clean-capture .visitor-dock,
+.visitor-shell.is-clean-capture .visitor-reference {
+  display: none !important;
+}
+
 .visitor-title {
   position: fixed;
   top: 18px;

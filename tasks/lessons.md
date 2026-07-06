@@ -21,6 +21,60 @@ Newest at the bottom of each section.
 - 2026-06-20 — Pre-release sign-off withdrawn by Mark for visual quality. The project re-enters a
   fidelity gate: lead with sky flow, judged visually against the original art; then refine cypress
   and village. Do not treat publish mechanics as the next task until this gate passes.
+- 2026-07-05 — The two video references resolve into a hierarchy, not a fork. The `pvrellis`
+  Starry Night animation is the primary motion model because it treats the painting as a connected
+  flow field. The Moonlight Sonata Van Gogh animation is secondary polish: glow, pacing, and
+  cinematic drama after the flow spine works. Next implementation slice is therefore a **3D
+  front-canopy MVP**: integrate streamlines in painting UV space, project them onto a curved front
+  canopy above the diorama, and defer full 360 coverage until the front view passes taste.
+- 2026-07-05 — Failed 3D front-canopy pass reverted. The attempted `FlowCanopySky` projected the
+  2D ribbons onto a card-like curved surface behind the old faceted diorama, which did not pass
+  even a screenshot-level visual read. The failure was not TypeScript/R3F mechanics; it was product
+  judgment and composition: placeholder forms dominated, the canopy edge read as a flat backdrop,
+  and visible dev/UI collisions made the presentation obviously unfit for a gate. Future R3F work
+  must block the camera, foreground scale, and sky volume as a composition first, then run visual
+  review before replacing the live localhost. Do not resurrect `FlowCanopySky` as-is.
+- 2026-07-05 — Autonomous recovery loop produced the first presentable 3D front-canopy MVP. Mark
+  asked Codex to own design calls with no approval gates and to self-review through spec, plan,
+  implementation, and Playwright captures before presentation. The recovery path that worked:
+  protect the default 2D route, isolate 3D behind `?mode=canopy`, extract source-space streamline
+  geometry, project it onto the proven front-arc mapping, and use a curved UV-registered foreground
+  matte instead of the old faceted `Diorama`. The first flat-matte capture failed with registration
+  holes and bad scale; the second fix moved the foreground onto the same curved UV field and aligned
+  the authored camera to `skyMapping`'s front basis. Evidence: `output/playwright/front-canopy-mvp-2026-07-05/`.
+- 2026-07-05 — Mark corrected the direction: the front-canopy MVP is NOT the original 3D he wanted.
+  Re-read `~/Downloads/Videos/techartist_/2065114227304702445/summary.md` and frames. The inspiration
+  is a real orbitable diorama/world: a floating low-poly landmass with dense grass, river/paths, cabin,
+  windmill, clouds, physical objects, orbit controls, and preset-driven atmosphere. For Starry Night,
+  the target is therefore a physical 3D diorama of the painting, not a curved painting surface. Use the
+  canopy work only as a possible sky-motion layer; do not let it replace authored cypress/village/hills
+  standing in space.
+- 2026-07-05 — TechArtist-style physical diorama route failed Mark's visual gate. Treat the route
+  `?mode=diorama&clean=1` as a rejected execution attempt, not a candidate pass. What failed: it copied the
+  TechArtist mechanism at the wrong level, producing a generic floating stage with a legacy `SkyDome` backdrop
+  instead of lifting Van Gogh's original composition, star flow, colour weight, and brushstroke soul into 3D.
+  The star field read like streaks/fireworks, the moon/star hierarchy did not match the painting, the cypress
+  was a black prop rather than a painted flame, and the village/island details pulled attention away from the
+  source art. Recovery rule: before any more 3D implementation, review `public/reference/painting.jpg`,
+  `signed-flow.png`, `flow-field.png`, and `sky-mask.png`; write the visual contract from the painting's
+  horizontal S-flow, embedded vortex stars, moon dominance, left cypress anchor, low village, and rolling hill
+  band. Reuse the TechArtist reference only for orbitable physical-world interaction, never for the Starry Night
+  visual language.
+- 2026-07-05 — Painting-first diorama recovery implemented after the failed TechArtist-style pass. The fix was
+  not adding more props; it was replacing the diorama route's legacy `SkyDome` with `PaintingFlowSky3D`, which
+  reuses the settled source-space `buildSourceStreamlineRibbons()` path from `StreamlineSky`, maps those ribbons
+  into the 3D front volume, and places moon/star halos from `skySwirls.ts` source UVs. Added `debug=flow` as the
+  honesty view. Removed the generic moonlit cloud puffs because they competed with the central whorl. Visual verdict:
+  materially closer to the original painting's sky flow and composition, but not final gate quality. Remaining gaps:
+  the source projection can still read like a curved painting layer at the edges, the 3D cypress still needs more
+  painted flame modelling, and mobile portrait now includes the moon but only cropped at the right edge. Evidence:
+  `output/playwright/painting-first-diorama-2026-07-05/`.
+- 2026-07-05 — Mark reviewed the painting-first recovery and called it an improvement in the right direction.
+  Keep the gate open: this is a validated direction, not a passed milestone. The next pickup should continue from
+  `?mode=diorama&clean=1` and the `PaintingFlowSky3D` source-flow route, not the rejected legacy `SkyDome`
+  diorama. First fixes next time: cypress/source registration, thinner painted flame modelling, dissolving the
+  remaining projected sky edge into world-space continuation, and a portrait composition where the moon is not
+  cropped.
 
 ## Environment facts (this machine)
 

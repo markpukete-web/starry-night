@@ -4,10 +4,12 @@ import {
   BufferGeometry,
   CatmullRomCurve3,
   Color,
+  DoubleSide,
   IcosahedronGeometry,
   Vector3,
 } from 'three'
 import { PALETTE } from './palette'
+import { makeRidgeStones, makeTerrainBlades } from './dioramaLayout'
 
 /**
  * Phase 1 (3D) — the Starry Night diorama as real forms: a lathe cypress, gable-roofed village
@@ -455,18 +457,106 @@ function Bush({ position, r = 0.16, seed = 0 }: { position: Vec3; r?: number; se
   )
 }
 
-export function Diorama() {
+function TerrainStrokeField({ count }: { count: number }) {
+  const geo = useMemo(() => {
+    const blades = makeTerrainBlades(count)
+    const positions: number[] = []
+    const colours: number[] = []
+    const indices: number[] = []
+    const terrainColours = [
+      new Color(PALETTE.cypressGreen).multiplyScalar(0.75),
+      new Color(PALETTE.cypressShade).multiplyScalar(0.95),
+      new Color(PALETTE.hillsCrest).multiplyScalar(1.02),
+      new Color(PALETTE.hills).multiplyScalar(1.8),
+    ]
+    const tipLift = new Color('#f4ead3')
+
+    for (const blade of blades) {
+      const base = positions.length / 3
+      const [x, y, z] = blade.position
+      const half = blade.width * 0.5
+      const rightX = Math.cos(blade.rotationY) * half
+      const rightZ = Math.sin(blade.rotationY) * half
+      const leanX = Math.sin(blade.rotationY + blade.lean) * blade.height * 0.2
+      const leanZ = Math.cos(blade.rotationY + blade.lean) * blade.height * 0.2
+      positions.push(
+        x - rightX, y, z - rightZ,
+        x + rightX, y, z + rightZ,
+        x + leanX, y + blade.height, z + leanZ,
+      )
+
+      const baseColour = terrainColours[blade.colourIndex % terrainColours.length]
+      const tipColour = baseColour.clone().lerp(tipLift, 0.16)
+      colours.push(
+        baseColour.r, baseColour.g, baseColour.b,
+        baseColour.r, baseColour.g, baseColour.b,
+        tipColour.r, tipColour.g, tipColour.b,
+      )
+      indices.push(base, base + 1, base + 2)
+    }
+
+    const g = new BufferGeometry()
+    g.setAttribute('position', new BufferAttribute(new Float32Array(positions), 3))
+    g.setAttribute('color', new BufferAttribute(new Float32Array(colours), 3))
+    g.setIndex(indices)
+    g.computeVertexNormals()
+    g.computeBoundingSphere()
+    return g
+  }, [count])
+
+  return (
+    <mesh geometry={geo} renderOrder={2}>
+      <meshStandardMaterial vertexColors roughness={0.98} side={DoubleSide} flatShading />
+    </mesh>
+  )
+}
+
+function RidgeStones() {
+  const stones = useMemo(() => makeRidgeStones(), [])
+  const geo = useMemo(() => new IcosahedronGeometry(1, 1), [])
+  const colours = useMemo(
+    () => [
+      new Color(PALETTE.hills).multiplyScalar(1.45),
+      new Color(PALETTE.hillsCrest).multiplyScalar(1.25),
+      new Color(PALETTE.ground).multiplyScalar(2.2),
+    ],
+    [],
+  )
+
+  return (
+    <group>
+      {stones.map((stone, index) => (
+        <mesh
+          key={index}
+          geometry={geo}
+          position={stone.position}
+          rotation={stone.rotation}
+          scale={stone.scale}
+        >
+          <meshStandardMaterial color={colours[stone.colourIndex % colours.length]} roughness={1} flatShading />
+        </mesh>
+      ))}
+    </group>
+  )
+}
+
+type DioramaDebug = 'final' | 'stage'
+
+export function Diorama({ debug = 'final' }: { debug?: DioramaDebug }) {
+  const detailCount = debug === 'stage' ? 520 : 460
   return (
     <group>
       {/* moonlight: a cool key from the upper-right (the moon's corner) + deep-blue fill so the
           forms model in the dark instead of reading as flat black. The moon's own warm pointLight
           lives in SkyDome. */}
-      <hemisphereLight args={['#54688f', '#080c14', 0.85]} />
-      <ambientLight intensity={0.3} color="#28324c" />
-      <directionalLight position={[4, 6, 3]} intensity={1.6} color="#cdd8f5" />
+      <hemisphereLight args={['#54688f', '#080c14', debug === 'stage' ? 1.05 : 0.85]} />
+      <ambientLight intensity={debug === 'stage' ? 0.42 : 0.3} color="#28324c" />
+      <directionalLight position={[4, 6, 3]} intensity={debug === 'stage' ? 1.9 : 1.6} color="#cdd8f5" />
 
       {/* the floating island the village stands on */}
       <FloatingIsland />
+      <TerrainStrokeField count={detailCount} />
+      <RidgeStones />
 
       {/* rolling hills behind the village */}
       <RollingHills />

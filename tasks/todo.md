@@ -9,7 +9,7 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## Where we are now (2026-06-24) — read this first
+## Where we are now (2026-07-05) — read this first
 
 > **NORTH STAR (locked — CLAUDE.md, re-read it).** The endgame is the **3D orbitable diorama**. The flat 2D
 > piece is a FOUNDATION milestone, NEVER the ship target. Phase now: 2D sky motion settled → **next: make it 3D**.
@@ -55,7 +55,166 @@ churn (`BrushDabs`, now removed); the dab history lives in `tasks/lessons.md` + 
 - **Perf UNVERIFIED** — count 2000 ribbons (one draw call, lowered from 3000 in Mark's tuning); confirm 60fps
   desktop / 30fps mid-tier mobile on real hardware (headless rAF reads 0).
 
+### 2026-07-05 route check — execute the 3D front-canopy MVP next
+
+Mark reviewed the current localhost and called it too plain for the next gate. The two YouTube references now
+resolve the direction:
+
+- **Primary motion model:** Petros Vrellis / `pvrellis` Starry Night animation — the painting behaves as a connected
+  flow field; strokes carry the motion as one sky system.
+- **Secondary polish model:** Temponaut / Moonlight Sonata Van Gogh animation — use for cinematic glow, pacing, and
+  musical drama only after the flow spine works.
+
+Implementation order:
+
+1. **3D front-canopy MVP first.** Re-fit the settled `StreamlineSky` logic into a 3D canopy: integrate in the
+   painting's UV space, then map the ribbons onto a curved front sky over the existing diorama forms. Keep the
+   head-on composition faithful to the painting.
+2. **Constrained orbit only.** Allow enough orbit to prove depth, but do not chase full 360 coverage yet; full 360 is
+   where earlier passes got pulled into mirror symmetry, invented backs, and generic vortex language.
+3. **Use the parked `Diorama`/`SkyDome` scaffolding selectively.** Reuse foreground forms, moon/star placement, bloom,
+   and orbit lessons; do not revive brush-dabs or the native 360 vortex sky as the main carrier.
+4. **Gate by looking.** Capture desktop + mobile and compare against the painting plus the `pvrellis` reference. Tests
+   and heatmaps do not prove the feel.
+
+Hard negatives remain closed: no independent tiny dabs, no worm-like micro-strokes, no water-blur base advection, no
+mechanical halo fan-spin, and no A/B parsed-frame ping-pong.
+
+### 2026-07-05 failed implementation — 3D front-canopy pass REVERTED
+
+The first local 3D front-canopy attempt was presented and Mark rejected it immediately. Treat it as a failed pass, not
+progress.
+
+What failed:
+
+- The canopy read as a flat rectangular card behind the scene, not a convincing R3F/Three composition.
+- The old faceted `Diorama` foreground looked like placeholder geometry and dominated the frame.
+- The screenshot itself showed obvious presentation failures: dev controls/tooling and title/FPS collisions were visible
+  during review.
+- Passing `lint`/`build`/pixel checks did not matter because the visual gate was plainly not met.
+
+Action taken: runtime code was reverted to the settled 2D `LivingPainting` + `StreamlineSky` baseline. Do not resurrect
+the failed `FlowCanopySky` implementation as-is. The next 3D attempt must start with a real composition plan and visual
+blocking pass before replacing the localhost presentation.
+
+### 2026-07-05 autonomous implementation loop — 3D front-canopy MVP, then TechArtist correction
+
+Mark requested a Codex-owned design loop with no approval gates: draft spec → self-review/edit → draft plan →
+self-review/edit → implement → review → Playwright capture → only present if the screenshot is strong enough.
+
+Artifacts created:
+
+- Spec: `docs/superpowers/specs/2026-07-05-autonomous-3d-front-canopy-spec.md`
+- Plan: `docs/superpowers/plans/2026-07-05-3d-front-canopy-mvp.md`
+- Captures: `output/playwright/front-canopy-mvp-2026-07-05/`
+
+Implementation result:
+
+- Default route stays the restored 2D foundation.
+- New review route: `?mode=canopy&clean=1`
+- Shared source-space streamline builder powers both 2D and 3D paths.
+- 3D canopy projects painting-UV streamlines onto the curved front volume.
+- Gate capture uses a UV-registered curved foreground matte instead of the old faceted `Diorama`.
+- Playwright capture set includes desktop final/no-post, edge-debug, sky-only, and mobile final/no-post.
+
+Current correction from Mark: this is **not** the original 3D target. It is a technical front-canopy proof, but the
+inspiration in `~/Downloads/Videos/techartist_` is a genuine orbitable diorama/world: floating landmass, physical forms,
+authored terrain, object identity, orbit camera, and atmosphere/preset controls. Do not continue treating the canopy
+surface as the main 3D direction.
+
+Revised direction:
+
+1. Restore the TechArtist-inspired target as the 3D model: Starry Night as a physical floating diorama/world.
+2. Keep `StreamlineSky` as the sky-motion source, but mount it inside/behind a real authored 3D stage rather than making
+   the painting itself the whole 3D object.
+3. Replace the matte foreground with real forms: flame cypress, rolling hills, village/church, moon/stars, and a floating
+   terrain base that reads like an inspectable object.
+4. Use orbit and depth as first-class product behaviours, not just proof that a curved canvas is not flat.
+5. Treat preset dials/time-of-day as later inspiration only; core Starry Night world comes first.
+
 Publish/DNS/portfolio stays parked until the fidelity gate passes.
+
+### 2026-07-05 TechArtist-style diorama route — failed, not passed
+
+Codex ran the requested loop again: spec → self-review/edit → plan → self-review/edit → implementation → review →
+Playwright capture → visual self-review.
+
+Artifacts:
+
+- Spec: `docs/superpowers/specs/2026-07-05-techartist-diorama-spec.md`
+- Plan: `docs/superpowers/plans/2026-07-05-techartist-diorama-mvp.md`
+- Captures/self-review: `output/playwright/techartist-diorama-2026-07-05/`
+
+Implementation:
+
+- New review route: `?mode=diorama&clean=1`
+- Debug/capture routes: `?mode=diorama&debug=nopost&clean=1`, `?mode=diorama&debug=stage&clean=1`,
+  `?mode=diorama&view=orbit&clean=1`
+- Reuses the parked `Diorama`/`SkyDome` as a physical stage plus living-sky scaffold, not as a curved painting surface.
+- Adds deterministic terrain blade/stroke detail, ridge stones, muted cloud puffs, constrained orbit, and camera presets.
+- Adds layout/camera tests in `scripts/diorama-layout.test.ts`.
+
+Current visual verdict from Mark:
+
+- **Epic failed, not pass.** The implementation is a physical stage, but it is not the original painting in 3D.
+- The star flow and sky soul do not match Van Gogh's painting. The scene reads as generic diorama + legacy streak sky,
+  not a 3D translation of the original art.
+- The mistake was reviewing the TechArtist mechanism before re-reviewing the source painting. Future 3D work must start
+  from `public/reference/painting.jpg`, `public/reference/signed-flow.png`, `public/reference/flow-field.png`, and
+  `public/reference/sky-mask.png`, then implement the physical world around those constraints.
+
+Next step:
+
+1. Write a painting-first 3D visual contract: horizontal S-flow, central double whorl, embedded vortex stars, dominant
+   moon/crescent, left flame-cypress silhouette, low village/church, rolling hill band, and source-sampled colour.
+2. Rebuild the diorama route so the settled source-space `StreamlineSky` ribbon model is the primary sky mechanism in
+   3D; the physical stage supports the painting composition instead of competing with it.
+3. Keep TechArtist only as interaction inspiration: orbitable compact world, physical depth, constrained camera.
+4. Keep time-dial/presets parked until the core Starry Night world passes visual review.
+
+### 2026-07-05 painting-first diorama recovery — implemented, not final gate
+
+Artifacts:
+
+- Spec: `docs/superpowers/specs/2026-07-05-painting-first-diorama-recovery-spec.md`
+- Plan: `docs/superpowers/plans/2026-07-05-painting-first-diorama-recovery.md`
+- Captures/self-review: `output/playwright/painting-first-diorama-2026-07-05/`
+
+Implementation:
+
+- New source-derived sky component: `src/scene/PaintingFlowSky3D.tsx`
+- `?mode=diorama` no longer uses the legacy `SkyDome`; it uses the settled source-space streamline ribbon builder
+  mapped into the 3D front volume.
+- Added `?mode=diorama&debug=flow&clean=1` to inspect the painting-derived sky without the stage.
+- Moon and star halos now come from `skySwirls.ts` UV positions rather than invented world positions.
+- Removed the generic cloud puffs from the stage because they competed with the original painting's central whorl.
+- Added a portrait camera so mobile keeps cypress, village, whorl, and a cropped moon in the same frame.
+
+Current visual verdict:
+
+- Mark review: **Improvement; right direction; keep the gate open.** This is the active 3D route to pick up next
+  time, but it has not passed the visual gate.
+- Better: the sky now clearly carries the original painting's horizontal S-flow, central double whorl, embedded star
+  nodes, and source-sampled colour. This is much closer to the painting than the rejected TechArtist-style pass.
+- Better: no-post still reads, and the stage is supporting the painting rather than being the whole product.
+- Still not final: the source projection can still read like a curved painting layer at the edges; the 3D cypress is
+  still too black/prop-like compared with Van Gogh's painted flame; portrait shows the moon but still crops it.
+
+Next step:
+
+1. Fix the foreground/source registration: rebuild the cypress as a thinner left-edge flame that covers the source
+   cypress void and carries visible green/brown brush modelling.
+2. Break the remaining rectangular projection read by extending/inventing only the back/edge sky in the same derived
+   flow style, while preserving the front source composition.
+3. Improve mobile composition so the moon is fully visible without losing the cypress/village anchor.
+
+Pickup command:
+
+```bash
+npm run dev -- --host 127.0.0.1
+# open http://127.0.0.1:5173/?mode=diorama&clean=1
+# flow-only honesty check: http://127.0.0.1:5173/?mode=diorama&debug=flow&clean=1
+```
 
 ---
 

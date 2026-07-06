@@ -4,6 +4,8 @@ import { Leva } from 'leva'
 import { Suspense, useEffect, useState } from 'react'
 import { LivingPainting } from './scene/LivingPainting'
 import { StreamlineSky } from './scene/StreamlineSky'
+import { CanopyExperience } from './scene/CanopyExperience'
+import { DioramaExperience } from './scene/DioramaExperience'
 
 /** prefers-reduced-motion: a dignified still painting, no churn (locked acceptance criterion). */
 function usePrefersReducedMotion() {
@@ -52,6 +54,9 @@ export default function App() {
   const [visitorPaused, setVisitorPaused] = useState(false)
   const [showOriginal, setShowOriginal] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
+  const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
+  const mode = params.get('mode')
+  const clean = params.get('clean') === '1'
   const motionPaused = reduced || visitorPaused
   const fullscreenSupported = typeof document !== 'undefined' && Boolean(document.fullscreenEnabled)
 
@@ -67,6 +72,14 @@ export default function App() {
     } else if (document.documentElement.requestFullscreen) {
       void document.documentElement.requestFullscreen().catch(() => undefined)
     }
+  }
+
+  if (mode === 'canopy') {
+    return <CanopyExperience clean={clean} reduced={motionPaused} />
+  }
+
+  if (mode === 'diorama') {
+    return <DioramaExperience clean={clean} reduced={motionPaused} />
   }
 
   return (
