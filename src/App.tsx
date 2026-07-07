@@ -56,7 +56,7 @@ export default function App() {
   const [showOriginal, setShowOriginal] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
   const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
-  const mode = params.get('mode')
+  const mode = params.get('mode') ?? 'diorama'
   const clean = params.get('clean') === '1'
   const motionPaused = reduced || visitorPaused
   const fullscreenSupported = typeof document !== 'undefined' && Boolean(document.fullscreenEnabled)
