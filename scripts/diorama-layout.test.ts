@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { DIORAMA_CAMERAS, DIORAMA_ORBIT, type DioramaDebugMode } from '../src/scene/dioramaContract.ts'
+import {
+  DIORAMA_CAMERAS,
+  DIORAMA_ORBIT,
+  DIORAMA_RECOVERY_CONTRACT,
+  type DioramaDebugMode,
+} from '../src/scene/dioramaContract.ts'
 import { makeRidgeStones, makeTerrainBlades } from '../src/scene/dioramaLayout.ts'
 
 test('terrain detail layout is deterministic', () => {
@@ -46,4 +51,11 @@ test('painting-first design camera stays close to the front composition basis', 
   assert.ok(DIORAMA_CAMERAS.design.position[1] < 1.35)
   assert.ok(DIORAMA_CAMERAS.design.fov >= 49)
   assert.ok(DIORAMA_CAMERAS.mobile.fov > DIORAMA_CAMERAS.design.fov)
+})
+
+test('diorama recovery preserves source ribbons and rejects native dome replacement', () => {
+  assert.equal(DIORAMA_RECOVERY_CONTRACT.preserveSourceSpaceRibbons, true)
+  assert.equal(DIORAMA_RECOVERY_CONTRACT.rejectNativeDomeReplacement, true)
+  assert.equal(DIORAMA_RECOVERY_CONTRACT.frontArcOnlyForThisSlice, true)
+  assert.equal(DIORAMA_RECOVERY_CONTRACT.isolateCypressAndEdgeFixes, true)
 })

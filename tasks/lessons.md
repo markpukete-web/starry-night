@@ -101,6 +101,13 @@ Newest at the bottom of each section.
   cone cypress. Mobile is improved via a route-specific portrait crop but remains a compromise because the painting is
   wide. Evidence: `output/playwright/living-relief-2026-07-06/`; reduced-motion pointer stability check measured
   0 mean pixel difference in an upper-right sky crop across centre/left/right pointer positions.
+- 2026-07-06 — Codex failed after Mark rejected the relief fallback: the native full-dome brush-dab repair reduced the
+  visible projected-card/void symptom, but it regressed the actual art direction by discarding the settled source-space
+  streamline-ribbon medium. Green checks (`test:sky`, lint, build) did not matter; the screenshot was cleaner
+  geometrically but less like Van Gogh. Treat the uncommitted `PaintingFlowSky3D` native-dome/cypress changes as a
+  failed experiment unless Mark explicitly salvages a narrow part. Correct pickup is the committed painting-first
+  front-arc line (`145dc5d` → `6924228` → `396a51d`), preserving source-space ribbons and fixing only the
+  cypress/source-edge/card-boundary failure. Evidence: `output/playwright/diorama-angle-fix-2026-07-06/`.
 
 ## Environment facts (this machine)
 

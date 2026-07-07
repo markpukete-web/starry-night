@@ -277,6 +277,34 @@ Implementation checkpoint:
 - Extra mouse check: reduced-motion centre/left/right pointer captures have 0 mean pixel difference in an upper-right
   sky crop, so the sky/background is no longer sliding under pointer input.
 
+### 2026-07-06 Codex failed patch — native-dome angle repair is NOT the pickup path
+
+- Mark rejected the relief fallback as effectively the old v1. Codex then attempted to repair `?mode=diorama&clean=1`
+  directly by replacing the source-projected sky with a native full-dome brush-dab field and lifted real cypress
+  geometry. This is **not a passed direction**.
+- What improved technically: the latest uncommitted patch reduces the most obvious projected-card side smear / rear
+  void in orbit captures.
+- Why it failed: it threw away the project’s settled medium. The notes and captures say the best motion carrier is the
+  source-space `StreamlineSky` / `buildSourceStreamlineRibbons()` ribbon model, not a native procedural dab field. The
+  new sky reads like generic dash/confetti motion, and the cypress/island remain simplified prop forms. It is cleaner
+  geometry but worse Starry Night.
+- Treat the current modified files as a **failed uncommitted Codex experiment** unless Mark explicitly chooses to keep
+  pieces. Do not continue from the native-dome brush-dab implementation as the next pickup.
+- Mechanical checks on the failed patch did pass (`npm run test:sky` 32/32, `npm run lint`, `npm run build` with the
+  existing Vite large-chunk warning), proving again that green checks are not the visual gate.
+- Failed-capture evidence: `output/playwright/diorama-angle-fix-2026-07-06/desktop-centre.png`,
+  `desktop-angle-left.png`, `desktop-angle-right.png`, `desktop-orbit-preset.png`, `desktop-flow.png`,
+  `desktop-nopost.png`, `mobile-centre.png`, plus `capture-summary.json`.
+
+Correct pickup:
+
+1. Revert or discard the uncommitted native-dome/cypress changes unless Mark asks to salvage a narrow part.
+2. Resume from the committed painting-first/front-arc line: `145dc5d` → `6924228` → `396a51d`.
+3. Preserve `PaintingFlowSky3D` as a source-space streamline-ribbon sky. The source-ribbon flow is the primary asset.
+4. Fix only the cypress/source-edge/card-boundary problem inside the constrained front-arc contract.
+5. Keep comparing against `public/reference/painting.jpg`, `signed-flow.png`, `flow-field.png`, `sky-mask.png`, and the
+   historical captures that carried the “soul” of the painting.
+
 ---
 
 ## Earlier status (2026-06-20 → 06-21, superseded by the flat Living-Painting + patch-stroke work above)

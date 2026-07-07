@@ -58,3 +58,10 @@ export const DIORAMA_VISUAL_CONTRACT = {
     'orbit controls allow panning or losing the authored composition',
   ],
 } as const
+
+export const DIORAMA_RECOVERY_CONTRACT = {
+  preserveSourceSpaceRibbons: true,
+  rejectNativeDomeReplacement: true,
+  frontArcOnlyForThisSlice: true,
+  isolateCypressAndEdgeFixes: true,
+} as const
