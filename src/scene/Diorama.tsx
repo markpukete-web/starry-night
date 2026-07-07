@@ -10,6 +10,7 @@ import {
 } from 'three'
 import { PALETTE } from './palette'
 import { makeRidgeStones, makeTerrainBlades } from './dioramaLayout'
+import { CypressFlameVolume } from './CypressFlameVolume'
 
 /**
  * Phase 1 (3D) — the Starry Night diorama as real forms: a lathe cypress, gable-roofed village
@@ -572,9 +573,19 @@ export function Diorama({ debug = 'final' }: { debug?: DioramaDebug }) {
         <Church position={[0.02, 0, 0.5]} />
       </group>
 
-      {/* cypress, front-left (two flames) — tall and dominant, the dark counterweight to the sky */}
-      <Cypress position={[-1.3, 0, 0.8]} height={3.0} rot={0.4} girth={1.1} />
-      <Cypress position={[-1.12, 0, 1.02]} height={2.2} rot={-0.5} scale={0.9} seed={13} girth={1.2} />
+      {/* cypress, front-left — the dark flame counterweight to the sky */}
+      {debug === 'stage' ? (
+        <>
+          <Cypress position={[-1.3, 0, 0.8]} height={3.0} rot={0.4} girth={1.1} />
+          <Cypress position={[-1.12, 0, 1.02]} height={2.2} rot={-0.5} scale={0.9} seed={13} girth={1.2} />
+        </>
+      ) : (
+        <>
+          <CypressFlameVolume />
+          <Cypress position={[-1.3, 0, 0.8]} height={3.0} rot={0.4} girth={1.1} />
+          <Cypress position={[-1.12, 0, 1.02]} height={2.2} rot={-0.5} scale={0.9} seed={13} girth={1.2} />
+        </>
+      )}
 
       {/* dark foreground shrubs, dotted along the ground as in the painting */}
       <Bush position={[0.9, 0.05, 0.98]} r={0.17} seed={1} />
