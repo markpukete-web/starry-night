@@ -108,6 +108,13 @@ Newest at the bottom of each section.
   failed experiment unless Mark explicitly salvages a narrow part. Correct pickup is the committed painting-first
   front-arc line (`145dc5d` → `6924228` → `396a51d`), preserving source-space ribbons and fixing only the
   cypress/source-edge/card-boundary failure. Evidence: `output/playwright/diorama-angle-fix-2026-07-06/`.
+- 2026-07-07 — The front-arc sky recovery passed only after separating two problems: keep source-space streamline
+  ribbons as the primary sky, but prevent the projected source sky from behaving like a finite object during orbit.
+  Full camera-position locking cropped the painting and failed the soul gate; clamped/mirrored source-edge backfills
+  created stretched side smears and failed too. The accepted mechanism is rotation-locking the source-ribbon sky to the
+  camera's orbit delta while keeping world scale, plus a very subtle non-texture edge wash. Evidence:
+  `output/playwright/diorama-recovery-2026-07-07/`. Still open: object polish for village/hills/cypress; do not treat
+  this as 360 coverage.
 
 ## Environment facts (this machine)
 

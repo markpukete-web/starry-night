@@ -305,6 +305,25 @@ Correct pickup:
 5. Keep comparing against `public/reference/painting.jpg`, `signed-flow.png`, `flow-field.png`, `sky-mask.png`, and the
    historical captures that carried the “soul” of the painting.
 
+### 2026-07-07 painting-first front-arc sky recovery checkpoint
+
+- The native-dome failure has been discarded from code and preserved only as evidence:
+  `output/failed-patches/2026-07-07-native-dome-codex-failure.patch`.
+- The live `?mode=diorama&clean=1` route is still a 3D/front-arc diorama, not a 2D fallback and not a 360 route.
+- The sky carrier remains `PaintingFlowSky3D` / `buildSourceStreamlineRibbons()` from source-space painting data.
+  `DIORAMA_RECOVERY_CONTRACT` now explicitly rejects native-dome replacement.
+- The decisive sky fix is rotation-locking the source-ribbon sky to the camera's orbit delta for this front-arc slice.
+  The diorama can rotate, but the painting sky no longer slides into a messy side/rear projection when dragged.
+- A subtle `SkyEdgeBackfill` sits behind the source ribbons. Earlier clamped/mirrored texture-edge variants failed
+  visual review because they created stretched side smears; the committed version is a soft palette/flow wash only.
+- The cypress remains the existing 3D faceted flame, with a darker painterly backing volume to reduce the
+  cypress/source-hole reveal. This is acceptable for the sky slice, but tree/village polish is still a separate phase.
+- Captures: `output/playwright/diorama-recovery-2026-07-07/`.
+- Verification: `npm run test:sky` (34/34), `npm run lint`, `npm run build` (existing Vite chunk warning only),
+  `npm run capture:diorama -- output/playwright/diorama-recovery-2026-07-07`.
+- Next focus after Mark review: village, hills, cypress/tree modelling, and foreground hierarchy. Do not reopen 360
+  until the front-arc sky and object staging pass taste.
+
 ---
 
 ## Earlier status (2026-06-20 → 06-21, superseded by the flat Living-Painting + patch-stroke work above)
