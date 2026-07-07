@@ -52,7 +52,7 @@ export function CypressFlameVolume() {
   )
 
   return (
-    <group position={[-1.31, 0.01, 0.78]} rotation={[0, 0.04, 0]}>
+    <group position={[-1.31, 0, 0.72]} rotation={[0, 0.04, 0]}>
       {fins.map((fin, index) => (
         <mesh
           key={index}

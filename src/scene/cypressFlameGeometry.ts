@@ -1,11 +1,11 @@
 export type FlamePoint = { x: number; y: number }
 
 export const CYPRESS_FLAME_FINS = [
-  { yaw: -0.38, height: 2.58, width: 0.44, z: -0.08 },
-  { yaw: -0.2, height: 2.88, width: 0.52, z: -0.1 },
-  { yaw: 0, height: 3.08, width: 0.55, z: -0.12 },
-  { yaw: 0.18, height: 2.76, width: 0.48, z: -0.09 },
-  { yaw: 0.36, height: 2.28, width: 0.4, z: -0.06 },
+  { yaw: -0.42, height: 2.82, width: 0.58, z: -0.14 },
+  { yaw: -0.22, height: 3.06, width: 0.66, z: -0.16 },
+  { yaw: 0, height: 3.18, width: 0.72, z: -0.18 },
+  { yaw: 0.2, height: 2.94, width: 0.62, z: -0.15 },
+  { yaw: 0.4, height: 2.46, width: 0.5, z: -0.1 },
 ] as const
 
 export function makeCypressFinOutline(seed: number): FlamePoint[] {

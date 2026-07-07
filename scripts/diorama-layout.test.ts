@@ -58,4 +58,5 @@ test('diorama recovery preserves source ribbons and rejects native dome replacem
   assert.equal(DIORAMA_RECOVERY_CONTRACT.rejectNativeDomeReplacement, true)
   assert.equal(DIORAMA_RECOVERY_CONTRACT.frontArcOnlyForThisSlice, true)
   assert.equal(DIORAMA_RECOVERY_CONTRACT.isolateCypressAndEdgeFixes, true)
+  assert.equal(DIORAMA_RECOVERY_CONTRACT.cameraLockedSourceSkyForFrontArc, true)
 })

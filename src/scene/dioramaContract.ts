@@ -64,4 +64,5 @@ export const DIORAMA_RECOVERY_CONTRACT = {
   rejectNativeDomeReplacement: true,
   frontArcOnlyForThisSlice: true,
   isolateCypressAndEdgeFixes: true,
+  cameraLockedSourceSkyForFrontArc: true,
 } as const

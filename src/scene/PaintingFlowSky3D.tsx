@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { useTexture } from '@react-three/drei'
 import {
@@ -11,7 +11,9 @@ import {
   DoubleSide,
   NoColorSpace,
   NormalBlending,
+  Quaternion,
   ShaderMaterial,
+  type Group,
   Vector3,
 } from 'three'
 import { useImageData } from './useImageData'
@@ -21,6 +23,7 @@ import { DOME_R, FWD, RIGHT, SPAN_H, SPAN_V, TRUEUP } from './skyMapping'
 import { MOON_R, MOON_UV, SWIRLS } from './skySwirls'
 import { PALETTE } from './palette'
 import { DIORAMA_CAPTURE } from './dioramaContract'
+import { SkyEdgeBackfill } from './SkyEdgeBackfill'
 
 type PaintingFlowSkyDebug = 'final' | 'flow'
 
@@ -346,6 +349,8 @@ function SourceOrbs({ debug }: { debug: PaintingFlowSkyDebug }) {
 }
 
 export function PaintingFlowSky3D({ paused = false, debug = 'final' }: Props) {
+  const skyRoot = useRef<Group>(null)
+  const initialCameraInverse = useRef<Quaternion | null>(null)
   const flowData = useImageData('/reference/signed-flow.png')
   const maskData = useImageData('/reference/sky-mask.png')
   const paintingData = useImageData('/reference/painting.jpg')
@@ -478,11 +483,16 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final' }: Props) {
     /* eslint-enable react-hooks/immutability */
   }, [isFlowDebug, mask, painting, paused, ribbonMaterial, washMaterial])
 
-  useFrame((_, dt) => {
+  /* eslint-disable react-hooks/immutability -- R3F render-loop writes: camera-locked sky rotation + time uniform */
+  useFrame(({ camera }, dt) => {
+    initialCameraInverse.current ??= camera.quaternion.clone().invert()
+    if (skyRoot.current) {
+      skyRoot.current.quaternion.copy(camera.quaternion).multiply(initialCameraInverse.current)
+    }
     if (paused) return
-    // eslint-disable-next-line react-hooks/immutability -- render-loop uniform update
     ribbonMaterial.uniforms.uTime.value += dt
   })
+  /* eslint-enable react-hooks/immutability */
 
   useEffect(() => () => geometry?.dispose(), [geometry])
   useEffect(() => () => washGeometry.dispose(), [washGeometry])
@@ -496,11 +506,12 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final' }: Props) {
   )
 
   return (
-    <group>
+    <group ref={skyRoot}>
       <mesh renderOrder={-4}>
         <sphereGeometry args={[DOME_R + 4, 32, 24]} />
         <primitive object={gradientMaterial} attach="material" />
       </mesh>
+      {!isFlowDebug && <SkyEdgeBackfill />}
       <mesh geometry={washGeometry} material={washMaterial} frustumCulled={false} renderOrder={-1} />
       {geometry && <mesh geometry={geometry} material={ribbonMaterial} frustumCulled={false} renderOrder={2} />}
       <SourceOrbs debug={debug} />
