@@ -324,6 +324,30 @@ Correct pickup:
 - Next focus after Mark review: village, hills, cypress/tree modelling, and foreground hierarchy. Do not reopen 360
   until the front-arc sky and object staging pass taste.
 
+### 2026-07-07 open-gate checkpoint — source-locked foreground matte
+
+- Mark rejected the prior screenshot again: **not pass**. The correct reading of Claude Code's better attempts is now
+  recorded: Claude did not solve the back-cypress void by covering it with a larger independent 3D tree. The better
+  historical mechanism was source-locked foreground/cypress ownership, while the native 360 dome route remains rejected
+  because it loses the source-ribbon soul.
+- New checkpoint: `?mode=diorama&clean=1` now renders a source-locked `DioramaForegroundMatte` in the same UV projection
+  as `PaintingFlowSky3D`. This gives the original painting's cypress/foreground pixels ownership of the void before any
+  3D cypress volume is layered on top.
+- The rejected giant cypress fin backing volume is removed from final mode. The 3D cypress is reduced/lifted into a
+  smaller inner volume/accent. This improves the specific back-void failure but does **not** pass the whole diorama gate.
+- Dedicated pickup note: `tasks/2026-07-07-source-matte-open-gate.md`.
+- Evidence: `output/playwright/diorama-source-matte-v3-2026-07-07/` (`desktop-centre`, both drag boundaries, orbit
+  preset, mobile, no-post, flow/stage diagnostics).
+- Verification before commit: `npm run lint`, `npm run test:sky` (34/34), `npm run build`, and
+  `npm run capture:diorama -- output/playwright/diorama-source-matte-v3-2026-07-07`.
+
+Open gate / next step:
+
+1. Review the source-matte checkpoint live with Mark; do not call it passed.
+2. Tune or rebuild the relationship between the flat source cypress matte and the 3D cypress so it reads as one flame.
+3. Continue with village/hills/foreground hierarchy only after the cypress/source ownership feels credible.
+4. Keep full 360 out of scope until the front-arc/180-style route passes taste.
+
 ---
 
 ## Earlier status (2026-06-20 → 06-21, superseded by the flat Living-Painting + patch-stroke work above)

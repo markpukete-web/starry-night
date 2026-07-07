@@ -115,6 +115,13 @@ Newest at the bottom of each section.
   camera's orbit delta while keeping world scale, plus a very subtle non-texture edge wash. Evidence:
   `output/playwright/diorama-recovery-2026-07-07/`. Still open: object polish for village/hills/cypress; do not treat
   this as 360 coverage.
+- 2026-07-07 — Source-matte cypress checkpoint: the important correction is architectural, not cosmetic. The bad model
+  is "projected source sky with a cypress hole + independent black 3D tree." Claude's better historical solves kept the
+  cypress/foreground source-locked or used a fully native dome; since native dome is a rejected hard negative, the
+  current pickup is `DioramaForegroundMatte` sharing the `PaintingFlowSky3D` UV projection. This removes the obvious
+  rear void in front-arc captures, but it is **open gate, not pass**: the source cypress can still read as a flat strip
+  beside a 3D object. Evidence: `output/playwright/diorama-source-matte-v3-2026-07-07/`; pickup note:
+  `tasks/2026-07-07-source-matte-open-gate.md`.
 
 ## Environment facts (this machine)
 

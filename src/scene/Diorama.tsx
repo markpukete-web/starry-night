@@ -10,7 +10,6 @@ import {
 } from 'three'
 import { PALETTE } from './palette'
 import { makeRidgeStones, makeTerrainBlades } from './dioramaLayout'
-import { CypressFlameVolume } from './CypressFlameVolume'
 
 /**
  * Phase 1 (3D) — the Starry Night diorama as real forms: a lathe cypress, gable-roofed village
@@ -295,9 +294,9 @@ function Cypress({ position, height = 2.8, rot = 0, scale = 1, seed = 0, girth =
 
     // green-black modelling, all sampled from palette.json: the cypress dark swatch deepened to the
     // core, the cypress green swatch for the tongues, the coolest village swatch lifted for the rim.
-    const cDark = new Color(PALETTE.cypress).multiplyScalar(0.573) // deep green-black core ≈ #10150f
-    const cGreen = new Color(PALETTE.cypressGreen).multiplyScalar(0.725) // green tongues ≈ #26301f
-    const cLit = new Color(PALETTE.villageCool).multiplyScalar(1.122) // moonlit edge ≈ #3a4640
+    const cDark = new Color(PALETTE.cypress).multiplyScalar(0.76)
+    const cGreen = new Color(PALETTE.cypressGreen).multiplyScalar(0.92)
+    const cLit = new Color(PALETTE.villageCool).multiplyScalar(1.28)
 
     const cc = new Color()
     let p = 0
@@ -356,7 +355,7 @@ function Cypress({ position, height = 2.8, rot = 0, scale = 1, seed = 0, girth =
 
   return (
     <mesh geometry={geo} position={position} rotation={[0, rot, 0]} scale={scale}>
-      <meshStandardMaterial vertexColors roughness={1} flatShading />
+      <meshStandardMaterial vertexColors roughness={1} flatShading emissive="#071116" emissiveIntensity={0.18} />
     </mesh>
   )
 }
@@ -581,9 +580,7 @@ export function Diorama({ debug = 'final' }: { debug?: DioramaDebug }) {
         </>
       ) : (
         <>
-          <CypressFlameVolume />
-          <Cypress position={[-1.3, 0, 0.8]} height={3.0} rot={0.4} girth={1.1} />
-          <Cypress position={[-1.12, 0, 1.02]} height={2.2} rot={-0.5} scale={0.9} seed={13} girth={1.2} />
+          <Cypress position={[-1.46, 0.02, 0.9]} height={2.34} rot={0.3} scale={0.92} girth={0.62} />
         </>
       )}
 

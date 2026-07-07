@@ -19,11 +19,13 @@ import {
 import { useImageData } from './useImageData'
 import { tuned } from './tuning'
 import { buildSourceStreamlineRibbons } from './streamlineGeometry'
-import { DOME_R, FWD, RIGHT, SPAN_H, SPAN_V, TRUEUP } from './skyMapping'
+import { DOME_R } from './skyMapping'
+import { dioramaSourceEdgeFade, uvToDioramaSkyPosition } from './dioramaSkyProjection'
 import { MOON_R, MOON_UV, SWIRLS } from './skySwirls'
 import { PALETTE } from './palette'
 import { DIORAMA_CAPTURE } from './dioramaContract'
 import { SkyEdgeBackfill } from './SkyEdgeBackfill'
+import { DioramaForegroundMatte } from './DioramaForegroundMatte'
 
 type PaintingFlowSkyDebug = 'final' | 'flow'
 
@@ -154,30 +156,6 @@ const gradientFrag = /* glsl */ `
   }
 `
 
-function smooth(e0: number, e1: number, x: number): number {
-  const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0)))
-  return t * t * (3 - 2 * t)
-}
-
-function sourceEdgeFade(u: number, v: number): number {
-  const x = smooth(0.0, 0.22, u) * smooth(1.0, 0.78, u)
-  const y = smooth(0.0, 0.13, v) * smooth(1.0, 0.76, v)
-  return x * y
-}
-
-function uvToSkyPosition(u: number, v: number, out = new Vector3(), radius = DOME_R): Vector3 {
-  const h = (u - 0.5) * SPAN_H * 1.16
-  const w = (0.5 - v) * SPAN_V * 1.06
-  const cw = Math.cos(w)
-  return out
-    .copy(FWD)
-    .multiplyScalar(cw * Math.cos(h))
-    .addScaledVector(RIGHT, cw * Math.sin(h))
-    .addScaledVector(TRUEUP, Math.sin(w))
-    .normalize()
-    .multiplyScalar(radius)
-}
-
 function makeSkyWashGeometry() {
   const cols = 112
   const rows = 78
@@ -191,10 +169,10 @@ function makeSkyWashGeometry() {
     const v = y / rows
     for (let x = 0; x <= cols; x++) {
       const u = x / cols
-      uvToSkyPosition(u, v, p, DOME_R - 0.05)
+      uvToDioramaSkyPosition(u, v, p, DOME_R - 0.05)
       positions.push(p.x, p.y, p.z)
       uvs.push(u, v)
-      edge.push(sourceEdgeFade(u, v))
+      edge.push(dioramaSourceEdgeFade(u, v))
     }
   }
 
@@ -283,7 +261,7 @@ function SourceOrbs({ debug }: { debug: PaintingFlowSkyDebug }) {
   const moonHalo = useMemo(() => makeMoonHaloTexture(), [])
   const moonCrescent = useMemo(() => makeMoonCrescentTexture(), [])
   const starHalo = useMemo(() => makeStarHaloTexture(), [])
-  const moonPosition = useMemo(() => uvToSkyPosition(MOON_UV[0], MOON_UV[1], new Vector3(), DOME_R - 0.02), [])
+  const moonPosition = useMemo(() => uvToDioramaSkyPosition(MOON_UV[0], MOON_UV[1], new Vector3(), DOME_R - 0.02), [])
   const stars = useMemo(
     () =>
       SWIRLS.filter(([u, v, , r]) => {
@@ -292,7 +270,7 @@ function SourceOrbs({ debug }: { debug: PaintingFlowSkyDebug }) {
         const onCypress = u < 0.18 && v > 0.34
         return !isMoon && !isWhorl && !onCypress
       }).map(([u, v, sign, r], index) => ({
-        position: uvToSkyPosition(u, v, new Vector3(), DOME_R - 0.01),
+        position: uvToDioramaSkyPosition(u, v, new Vector3(), DOME_R - 0.01),
         scale: index === 0 ? 0.94 : 0.62 + r * 2.2,
         sign,
       })),
@@ -423,14 +401,14 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final' }: Props) {
     const p = new Vector3()
 
     for (const vertex of ribbons.vertices) {
-      uvToSkyPosition(vertex.u, vertex.v, p)
+      uvToDioramaSkyPosition(vertex.u, vertex.v, p)
       positions.push(p.x, p.y, p.z)
       colors.push(...vertex.color)
       aLen.push(vertex.len)
       aAcross.push(vertex.across)
       aPhase.push(vertex.phase)
       aRate.push(vertex.rate)
-      aEdgeFade.push(sourceEdgeFade(vertex.u, vertex.v))
+      aEdgeFade.push(dioramaSourceEdgeFade(vertex.u, vertex.v))
     }
 
     const geo = new BufferGeometry()
@@ -513,6 +491,7 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final' }: Props) {
       </mesh>
       {!isFlowDebug && <SkyEdgeBackfill />}
       <mesh geometry={washGeometry} material={washMaterial} frustumCulled={false} renderOrder={-1} />
+      {!isFlowDebug && <DioramaForegroundMatte />}
       {geometry && <mesh geometry={geometry} material={ribbonMaterial} frustumCulled={false} renderOrder={2} />}
       <SourceOrbs debug={debug} />
     </group>
