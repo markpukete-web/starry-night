@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "derive-reference": "node scripts/derive-reference.ts",
     "capture:diorama": "node scripts/capture-diorama.mjs",
-    "test:sky": "node --test scripts/sky-mapping.test.ts scripts/flow-field.test.ts scripts/dab-field.test.ts scripts/streamline-geometry.test.ts scripts/front-canopy-mapping.test.ts scripts/diorama-layout.test.ts scripts/cypress-flame.test.ts scripts/relief-contract.test.ts"
+    "test:sky": "node --test scripts/sky-mapping.test.ts scripts/flow-field.test.ts scripts/dab-field.test.ts scripts/streamline-geometry.test.ts scripts/front-canopy-mapping.test.ts scripts/diorama-layout.test.ts scripts/cypress-flame.test.ts scripts/relief-contract.test.ts scripts/source-projection.test.ts"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",
