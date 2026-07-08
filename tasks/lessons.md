@@ -1241,3 +1241,18 @@ rebuilding.
   strip still separates from the world volume (reads as a hanging painted ribbon) — re-examine after
   the slice-3 composition change; candidate fixes are a camera-delta fade on the matte band or a
   world-locked backing patch.
+- 2026-07-08 — Slice 3 (SourceReliefTerrain): the prop world (FloatingIsland, RollingHills, box
+  village/church, bushes, blades, stones, dioramaLayout) is DELETED; the foreground is now a relief
+  grid over the painting's ground band — home-view projective registration, depth staged hills-far →
+  ground-near with rolling swells + luminance impasto, and a dark palette-earth root closing the
+  volume. Four passes, each fixing something found only by looking: (1) the matte's underpaint band
+  needs a LOWER-BAND v-gate or non-sky blobs inside the sky (moon disc, whorl cores) get underpainted
+  → mottled sky and a broken "eye" moon; skyline arrays need moving-average smoothing or per-column
+  jumps stretch white sky texels into skyline spikes; (2) edge columns must MELT to the underpaint
+  shell distance (dist += (SHELL_MELT−dist)·curl), not add a constant offset — a constant curl builds
+  a visible mid-air wall at the frame corners; (3) the paint→root transition needs an aPaint fade over
+  the last painted rows or the bottom clamp smears white before snapping to black; (4) the root must
+  CLOSE into a keel (collapse the final rings) — an open bottom shows the far wall's interior as a
+  pale arch from the mobile camera, which sits ~4 units behind the home eye and looks under the band.
+  Matte design decision: keep the below-skyline band as a DARKENED underpaint (not removed) so world/
+  backdrop parallax reveals read as shadowed ground, never as a second bright village.

@@ -25,7 +25,7 @@ const matteFrag = /* glsl */ `
   varying vec2 vUv;
   varying float vEdgeFade;
 
-  float sourceForegroundMask(vec2 uv, vec3 col) {
+  float cypressMask(vec2 uv, vec3 col) {
     float foreground = 1.0 - texture2D(uMask, uv).r;
     float lum = dot(col, vec3(0.299, 0.587, 0.114));
 
@@ -33,27 +33,37 @@ const matteFrag = /* glsl */ `
     float dark = 1.0 - smoothstep(0.22, 0.36, lum);
     float vertical = smoothstep(0.02, 0.11, uv.y) * (1.0 - smoothstep(0.985, 1.0, uv.y));
     float bottomFade = 1.0 - smoothstep(0.78, 0.94, uv.y);
-    float cypress = foreground * left * dark * vertical * bottomFade;
+    return smoothstep(0.03, 0.22, foreground * left * dark * vertical * bottomFade * 1.22);
+  }
 
-    float lowerBand = foreground * smoothstep(0.52, 0.68, uv.y) * smoothstep(0.05, 0.22, uv.x);
-    lowerBand *= 1.0 - smoothstep(0.86, 0.98, uv.y);
-    lowerBand *= 1.0 - cypress * 0.72;
-
-    return smoothstep(0.03, 0.22, max(cypress * 1.22, lowerBand * 0.46));
+  // the whole below-skyline band as a DARKENED underpaint: when the world relief terrain slides
+  // against this camera-locked shell during orbit, any reveal reads as shadowed ground behind the
+  // crisp relief — never as a second bright copy of the village
+  float underpaintMask(vec2 uv) {
+    float foreground = 1.0 - texture2D(uMask, uv).r;
+    // gate to the lower ground band: non-sky blobs INSIDE the sky (moon disc, whorl cores)
+    // must not get underpainted or they mottle the sky with dark patches
+    float lowerBand = smoothstep(0.5, 0.64, uv.y);
+    return smoothstep(0.1, 0.5, foreground) * lowerBand * (1.0 - smoothstep(0.985, 1.0, uv.y));
   }
 
   void main() {
     vec3 paint = texture2D(uPainting, vUv).rgb;
-    float mask = sourceForegroundMask(vUv, paint) * vEdgeFade;
+    float cypress = cypressMask(vUv, paint) * vEdgeFade;
+    float under = underpaintMask(vUv) * vEdgeFade;
+    float mask = max(cypress, under);
     if (mask < 0.012) discard;
 
     vec3 col = paint;
     if (uDebugMode == 1) {
-      col = vec3(0.12, 0.46, 0.36);
+      col = mix(vec3(0.3, 0.2, 0.1), vec3(0.12, 0.46, 0.36), cypress);
     } else {
       float lum = dot(col, vec3(0.299, 0.587, 0.114));
       vec3 lifted = mix(col * vec3(0.96, 1.02, 1.08), col + vec3(0.018, 0.02, 0.028), 0.32);
-      col = clamp(mix(vec3(lum), lifted, 1.12), 0.0, 1.08);
+      lifted = clamp(mix(vec3(lum), lifted, 1.12), 0.0, 1.08);
+      // underpaint: darkened, pulled toward the deep night blue
+      vec3 shadowed = mix(col * 0.42, vec3(lum * 0.32) * vec3(0.7, 0.8, 1.1), 0.35);
+      col = mix(shadowed, lifted, cypress);
     }
 
     float alpha = mask * uOpacity;

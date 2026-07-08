@@ -106,7 +106,8 @@ function startChrome(port) {
     userDataDir,
     cleanup() {
       child.kill()
-      rmSync(userDataDir, { recursive: true, force: true })
+      // Chrome may still be flushing its profile as it dies — retry the removal
+      rmSync(userDataDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 300 })
     },
     stderr: () => stderr,
   }

@@ -121,9 +121,22 @@ export function extractSkylineV(mask: ImageData2D, cols = 96): number[] {
   const refCols = rawline.filter((_, i) => i / (cols - 1) >= 0.3 && i / (cols - 1) <= 0.5)
   const sorted = [...refCols].sort((a, b) => a - b)
   const median = sorted[Math.floor(sorted.length / 2)] ?? 0.6
-  return rawline.map((s, i) => {
+  const clamped = rawline.map((s, i) => {
     const u = i / (cols - 1)
     if (u < 0.3 && s < median - 0.1) return median
     return s
+  })
+  // moving-average smooth (window 5): per-column jumps otherwise stretch tall thin triangles
+  // along the terrain's top edge that sample bright sky texels — white skyline spikes
+  return clamped.map((_, i) => {
+    let sum = 0
+    let n = 0
+    for (let k = -2; k <= 2; k++) {
+      const q = clamped[i + k]
+      if (q === undefined) continue
+      sum += q
+      n++
+    }
+    return sum / n
   })
 }
