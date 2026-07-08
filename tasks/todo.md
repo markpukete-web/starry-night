@@ -348,6 +348,48 @@ Open gate / next step:
 3. Continue with village/hills/foreground hierarchy only after the cypress/source ownership feels credible.
 4. Keep full 360 out of scope until the front-arc/180-style route passes taste.
 
+### 2026-07-08 painting-owned foreground checkpoint — ▶ PICK UP HERE (gate open for Mark)
+
+Claude executed the painting-owned rebuild (plan: `docs/superpowers/plans/2026-07-08-painting-owned-foreground.md`,
+cross-review response to Codex's roadmap). The architecture decision: **the painting's pixels own every visible
+surface; world geometry only gives them depth**, via home-view projective texturing (`sourceProjection.ts` —
+world geometry samples the painting through the same projection as the camera-locked sky/matte, so head-on is
+pixel-registered by construction).
+
+What changed (5 commits, on `sky-brushdab`, NOT pushed):
+
+- Slice 1: sky colour recovery — cobalt gradient/wash/ribbon values, gold star halos/cores, radiant yellow moon,
+  tighter bloom (0.5/0.58/0.5). Capture pipeline hardened (dedicated port 5179 + app-marker check — it had been
+  silently capturing the markma.dev dev server on :5173).
+- Slices 2–3 infrastructure: `sourceProjection.ts` (projective mapping, round-trip tested) and
+  `paintingRegions.ts` (cypress silhouette + skyline extraction from the reference pixels, chroma-gated and
+  connectivity-filtered, synthetic-image tests).
+- Slice 2: `SourceCypress` — ONE flame: silhouette extracted from the painting, surface sampling the painting,
+  replacing the prop cone. Dead `CypressFlameVolume`/`cypressFlameGeometry` deleted.
+- Slice 3: `SourceReliefTerrain` — the painting's whole ground band (village, hills, trees) as relief with
+  luminance impasto and a closed dark root keel; **the entire prop world is deleted** (FloatingIsland,
+  RollingHills, box village/church, bushes, blades, stones, dioramaLayout). The matte keeps the cypress band
+  full-colour plus a darkened below-skyline underpaint so parallax reveals read as shadow, never a second village.
+
+Evidence: `output/playwright/painting-owned-2026-07-08/final/` (plus per-pass sets s1…s3-relief-p4 showing the
+retune trail). Verification: lint, `test:sky` 35/35, build, capture 8/8 clean.
+
+Honest open items (named for the gate review, NOT resolved):
+
+1. At the extreme +45° orbit-preset stress view the camera-locked matte cypress strip separates from the world
+   flame (reads as a hanging painted ribbon). Candidate fixes: camera-delta fade on the matte band, or a
+   world-locked backing patch. Within the drag clamp it holds.
+2. The skyline seal band reads slightly stretched/pale in places (esp. the clamped cypress-base zone, drag-left).
+3. `desktop-nopost` arguably reads closer to the painting than the bloomed final — bloom intensity is a taste
+   call for Mark's live review.
+4. The dark navy ribbon-gap blob top-left of the sky (pre-existing, painting's darkest region) is more visible
+   now the rest is clean.
+5. Perf UNVERIFIED on real hardware (headless is software-rendered); the terrain+cypress add ~30k tris, trivial,
+   but confirm 60fps desktop / 30fps mobile live.
+
+Pickup: `npm run dev` → `http://127.0.0.1:5173/?mode=diorama&clean=1` (or any port — capture script now pins
+5179). Debug: `&debug=flow`, `&debug=stage`, `&debug=nopost`.
+
 ---
 
 ## Earlier status (2026-06-20 → 06-21, superseded by the flat Living-Painting + patch-stroke work above)
