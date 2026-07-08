@@ -1215,3 +1215,17 @@ rebuilding.
   `tuned()` fallbacks. Verified end-to-end: read-back (panel opens at 2000/0.45/7.5/0.80/3.0/2.8), button writes
   all 14, endpoint allowlist/bad-type/origin/content-type guards (200/400/403/403), build+lint+test:sky green.
   NOT committed (awaiting Mark).
+- 2026-07-08 — Capture-pipeline trap: `capture:diorama` trusted any 200-OK on :5173 and captured the
+  markma.dev portfolio's canvas (a cream fog) instead of this app — all 8 "captures" were of the wrong
+  application. Fix in `scripts/capture-diorama.mjs`: dedicated default port 5179 + `--strictPort`, an
+  app-marker check (`The Starry Night` in the served HTML), and a poll-for-canvas wait replacing the
+  fixed 1.8s sleep that raced Vite's cold-start optimise/reload. Rule reaffirmed: a capture that looks
+  nothing like the scene is a pipeline failure first, a render failure second.
+- 2026-07-08 — Slice 1 sky-colour tunables (painting-owned foreground plan, task 1): Bloom
+  0.42/0.38/0.42 → 0.5/0.58/0.5 (tighter, only true brights bloom — the proven crisper recipe);
+  gradient 0.72/0.86 → 0.58/0.68 (deeper cobalt night); wash lift 0.68,0.82,1.04 → 0.6,0.72,0.95 at
+  alpha 0.5; ribbon pulse 0.58+0.46 → 0.46+0.38 with saturation mix 1.2 → 1.45 clamped at 1.05 (two
+  passes — the first was not saturated enough); star halos/cores and moon crescent shifted from white/
+  orange to the painting's golds; moon halo sprite 3.35 → 3.85. Verdict after pass 2: cobalt field,
+  gold star orbs, radiant moon — good enough to proceed; final colour polish deferred until the
+  foreground rebuild changes the whole frame's context.

@@ -65,7 +65,7 @@ function Scene({ reduced }: { reduced: boolean }) {
       </Suspense>
       {usePost && (
         <EffectComposer>
-          <Bloom intensity={0.42} luminanceThreshold={0.38} mipmapBlur radius={0.42} />
+          <Bloom intensity={0.5} luminanceThreshold={0.58} mipmapBlur radius={0.5} />
         </EffectComposer>
       )}
     </>

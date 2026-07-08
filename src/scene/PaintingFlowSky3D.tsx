@@ -92,9 +92,9 @@ const ribbonFrag = /* glsl */ `
       col = mix(vec3(0.08, 0.22, 0.58), vec3(0.95, 0.78, 0.28), vLen);
     } else {
       float ridge = 0.82 + 0.36 * edge;
-      col *= (0.58 + 0.46 * combinedFlow) * ridge * bristle;
+      col *= (0.46 + 0.38 * combinedFlow) * ridge * bristle;
       float lum = dot(col, vec3(0.299, 0.587, 0.114));
-      col = clamp(mix(vec3(lum), col, 1.2), 0.0, 1.2);
+      col = clamp(mix(vec3(lum), col, 1.45), 0.0, 1.05);
     }
 
     float a = edge * taper * uOpacity * vEdgeFade;
@@ -132,8 +132,8 @@ const washFrag = /* glsl */ `
       gl_FragColor = vec4(col, a * 0.5);
       return;
     }
-    col *= vec3(0.68, 0.82, 1.04);
-    gl_FragColor = vec4(col, a * 0.42);
+    col *= vec3(0.6, 0.72, 0.95);
+    gl_FragColor = vec4(col, a * 0.5);
   }
 `
 
@@ -223,9 +223,9 @@ function makeMoonCrescentTexture(): CanvasTexture {
   const cy = s / 2
   const r = s * 0.33
   const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r)
-  g.addColorStop(0, 'rgba(255,240,183,1)')
-  g.addColorStop(0.62, 'rgba(237,190,82,1)')
-  g.addColorStop(1, 'rgba(210,151,51,1)')
+  g.addColorStop(0, 'rgba(253,243,189,1)')
+  g.addColorStop(0.62, 'rgba(236,211,95,1)')
+  g.addColorStop(1, 'rgba(202,164,62,1)')
   ctx.fillStyle = g
   ctx.beginPath()
   ctx.arc(cx, cy, r, 0, Math.PI * 2)
@@ -245,11 +245,11 @@ function makeStarHaloTexture(): CanvasTexture {
   cnv.width = cnv.height = s
   const ctx = cnv.getContext('2d')!
   const g = ctx.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2)
-  g.addColorStop(0, 'rgba(255,250,222,1)')
-  g.addColorStop(0.16, 'rgba(249,234,160,0.72)')
-  g.addColorStop(0.34, 'rgba(232,216,132,0.28)')
-  g.addColorStop(0.62, 'rgba(216,202,130,0.05)')
-  g.addColorStop(1, 'rgba(216,202,130,0)')
+  g.addColorStop(0, 'rgba(252,240,170,1)')
+  g.addColorStop(0.16, 'rgba(244,221,120,0.7)')
+  g.addColorStop(0.34, 'rgba(226,200,110,0.26)')
+  g.addColorStop(0.62, 'rgba(205,185,120,0.05)')
+  g.addColorStop(1, 'rgba(205,185,120,0)')
   ctx.fillStyle = g
   ctx.fillRect(0, 0, s, s)
   const tex = new CanvasTexture(cnv)
@@ -289,7 +289,7 @@ function SourceOrbs({ debug }: { debug: PaintingFlowSkyDebug }) {
   return (
     <group>
       <group position={moonPosition}>
-        <sprite scale={[3.35, 3.35, 1]} renderOrder={3}>
+        <sprite scale={[3.85, 3.85, 1]} renderOrder={3}>
           <spriteMaterial
             map={moonHalo}
             blending={AdditiveBlending}
@@ -311,14 +311,14 @@ function SourceOrbs({ debug }: { debug: PaintingFlowSkyDebug }) {
               map={starHalo}
               blending={AdditiveBlending}
               transparent
-              opacity={debug === 'flow' ? 0.72 : 0.48}
+              opacity={debug === 'flow' ? 0.72 : 0.62}
               depthWrite={false}
               toneMapped={false}
             />
           </sprite>
           <mesh renderOrder={4}>
             <sphereGeometry args={[star.scale * 0.075, 12, 12]} />
-            <meshBasicMaterial color="#fff2c7" toneMapped={false} />
+            <meshBasicMaterial color="#f3df7d" toneMapped={false} />
           </mesh>
         </group>
       ))}
@@ -347,8 +347,8 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final' }: Props) {
     () =>
       new ShaderMaterial({
         uniforms: {
-          uTop: { value: new Color(PALETTE.skyZenith).multiplyScalar(0.72) },
-          uBottom: { value: new Color(PALETTE.skyHorizon).multiplyScalar(0.86) },
+          uTop: { value: new Color(PALETTE.skyZenith).multiplyScalar(0.58) },
+          uBottom: { value: new Color(PALETTE.skyHorizon).multiplyScalar(0.68) },
         },
         vertexShader: gradientVert,
         fragmentShader: gradientFrag,

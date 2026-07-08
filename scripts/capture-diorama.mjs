@@ -4,9 +4,12 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } f
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-const DEFAULT_URL = 'http://127.0.0.1:5173/'
+// A dedicated capture port: 5173 is routinely occupied by ANOTHER Vite app on this machine (the
+// markma.dev portfolio), and a bare 200-OK check happily captures the wrong app's canvas.
+const DEFAULT_URL = 'http://127.0.0.1:5179/'
 const outDir = process.argv[2] || 'output/playwright/diorama-recovery-2026-07-07'
 const appUrl = process.env.DIORAMA_CAPTURE_URL || DEFAULT_URL
+const appPort = new URL(appUrl).port || '80'
 const chromePath =
   process.env.CHROME_PATH ||
   [
@@ -26,7 +29,10 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 async function urlOk(url) {
   try {
     const response = await fetch(url)
-    return response.ok
+    if (!response.ok) return false
+    // make sure it is THIS app, not whatever other dev server squats on the port
+    const html = await response.text()
+    return html.includes('The Starry Night')
   } catch {
     return false
   }
@@ -43,7 +49,7 @@ async function waitForUrl(url, timeoutMs = 15000) {
 
 async function startViteIfNeeded() {
   if (await urlOk(appUrl)) return null
-  const child = spawn('npm', ['run', 'dev', '--', '--host', '127.0.0.1', '--port', '5173'], {
+  const child = spawn('npm', ['run', 'dev', '--', '--host', '127.0.0.1', '--port', appPort, '--strictPort'], {
     stdio: ['ignore', 'pipe', 'pipe'],
   })
   let log = ''
@@ -167,6 +173,18 @@ async function newPage(port, url, viewport, errors) {
     mobile: Boolean(viewport.mobile),
   })
   await page.send('Page.navigate', { url })
+  // wait for the WebGL canvas to actually exist — a fixed sleep races Vite's cold-start
+  // dependency optimise/reload and returns undefined from toDataURL
+  const start = Date.now()
+  for (;;) {
+    await sleep(600)
+    const probe = await page.send('Runtime.evaluate', {
+      expression: `Boolean(document.querySelector('canvas'))`,
+      returnByValue: true,
+    })
+    if (probe.result.value === true) break
+    if (Date.now() - start > 20000) throw new Error(`no canvas at ${url} after 20s`)
+  }
   await sleep(1800)
   return { page, targetId: target.id }
 }
