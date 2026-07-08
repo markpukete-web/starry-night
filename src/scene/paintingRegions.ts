@@ -3,9 +3,13 @@ import type { ImageData2D } from './useImageData.ts'
 /** One horizontal slice of the cypress silhouette, in painting UV. */
 export type CypressSlice = { v: number; uCentre: number; halfWidth: number }
 
-function lumAt(img: ImageData2D, x: number, y: number): number {
+/** Cypress paint is dark green/brown; the night sky is dark BLUE. Gate on both value and chroma. */
+function isCypressDark(img: ImageData2D, x: number, y: number, lumMax: number): boolean {
   const i = (y * img.width + x) * 4
-  return 0.299 * img.data[i] + 0.587 * img.data[i + 1] + 0.114 * img.data[i + 2]
+  const g = img.data[i + 1]
+  const b = img.data[i + 2]
+  const lum = 0.299 * img.data[i] + 0.587 * g + 0.114 * b
+  return lum < lumMax && b < g + 12
 }
 
 /**
@@ -18,33 +22,65 @@ export function extractCypressSlices(
   painting: ImageData2D,
   { uMax = 0.26, vMin = 0.01, vMax = 1, rows = 64, lumMax = 62 } = {},
 ): CypressSlice[] {
-  const raw: CypressSlice[] = []
+  const xMin = Math.max(1, Math.floor(0.015 * painting.width)) // skip the scan's canvas border
   const xMax = Math.min(painting.width - 1, Math.floor(uMax * painting.width))
+  type Run = { start: number; end: number }
+  const runsPerRow: Run[][] = []
+  const vAt: number[] = []
   for (let r = 0; r < rows; r++) {
     const v = vMin + ((vMax - vMin) * r) / (rows - 1)
     const y = Math.min(painting.height - 1, Math.floor(v * painting.height))
-    let bestStart = -1
-    let bestLen = 0
+    const runs: Run[] = []
     let start = -1
-    for (let x = 0; x <= xMax + 1; x++) {
-      const dark = x <= xMax && lumAt(painting, x, y) < lumMax
+    for (let x = xMin; x <= xMax + 1; x++) {
+      const dark = x <= xMax && isCypressDark(painting, x, y, lumMax)
       if (dark && start < 0) start = x
       if (!dark && start >= 0) {
-        const len = x - start
-        if (len > bestLen) {
-          bestLen = len
-          bestStart = start
-        }
+        if (x - start >= painting.width * 0.006) runs.push({ start, end: x })
         start = -1
       }
     }
-    if (bestLen < painting.width * 0.006) continue // no cypress on this row
-    raw.push({
-      v,
-      uCentre: (bestStart + bestLen / 2) / painting.width,
-      halfWidth: bestLen / 2 / painting.width,
-    })
+    runsPerRow.push(runs)
+    vAt.push(v)
   }
+
+  // connectivity: seed at the row with the widest run (the flame's bulk), then walk up and down
+  // keeping only runs that overlap the previous kept run — the cypress is one connected column,
+  // so detached dark blobs (shadowed hills, bushes) never join the silhouette
+  let seedRow = -1
+  let seedRun: Run | null = null
+  runsPerRow.forEach((runs, r) => {
+    for (const run of runs) {
+      if (!seedRun || run.end - run.start > seedRun.end - seedRun.start) {
+        seedRun = run
+        seedRow = r
+      }
+    }
+  })
+  if (seedRow < 0 || !seedRun) return []
+
+  const kept: (Run | null)[] = new Array(rows).fill(null)
+  kept[seedRow] = seedRun
+  for (const dir of [-1, 1]) {
+    let prev: Run = seedRun
+    for (let r = seedRow + dir; r >= 0 && r < rows; r += dir) {
+      const overlapping = runsPerRow[r].filter((run) => run.start < prev.end && run.end > prev.start)
+      if (overlapping.length === 0) break
+      const widest = overlapping.reduce((a, b) => (b.end - b.start > a.end - a.start ? b : a))
+      kept[r] = widest
+      prev = widest
+    }
+  }
+
+  const raw: CypressSlice[] = []
+  kept.forEach((run, r) => {
+    if (!run) return
+    raw.push({
+      v: vAt[r],
+      uCentre: (run.start + (run.end - run.start) / 2) / painting.width,
+      halfWidth: (run.end - run.start) / 2 / painting.width,
+    })
+  })
   // moving-average smooth, window 5, so the volume built on these doesn't jitter row to row
   return raw.map((s, i) => {
     let uc = 0

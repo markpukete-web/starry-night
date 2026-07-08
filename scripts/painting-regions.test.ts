@@ -17,22 +17,39 @@ function image(width: number, height: number, fill: (x: number, y: number) => [n
   return { data, width, height }
 }
 
-test('extractCypressSlices finds a dark vertical bar in the left band', () => {
-  // 200×200: dark bar centred at u=0.1, halfWidth 0.03, from v=0.1 down; bright elsewhere
+test('extractCypressSlices finds a dark green bar and ignores dark blue sky', () => {
+  // 200×200: dark GREEN bar centred at u=0.1 from v=0.1 down; a dark BLUE night band across the
+  // top rows (v < 0.08) that must NOT read as cypress; bright elsewhere
   const img = image(200, 200, (x, y) => {
     const u = x / 200
     const v = y / 200
     const inBar = v > 0.1 && Math.abs(u - 0.1) < 0.03
-    return inBar ? [20, 25, 20] : [140, 150, 180]
+    if (inBar) return [20, 25, 20]
+    if (v < 0.08) return [22, 28, 58] // dark cobalt sky — low luminance but blue-dominant
+    return [140, 150, 180]
   })
   const slices = extractCypressSlices(img)
   assert.ok(slices.length > 20, `slices ${slices.length}`)
   for (const s of slices) {
     assert.ok(Math.abs(s.uCentre - 0.1) < 0.02, `centre ${s.uCentre}`)
     assert.ok(s.halfWidth > 0.015 && s.halfWidth < 0.05, `halfWidth ${s.halfWidth}`)
-    assert.ok(s.v > 0.05)
+    assert.ok(s.v > 0.09, `dark blue sky leaked into the silhouette at v=${s.v}`)
   }
   for (let i = 1; i < slices.length; i++) assert.ok(slices[i].v > slices[i - 1].v, 'ordered top → bottom')
+})
+
+test('extractCypressSlices drops dark blobs detached from the flame column', () => {
+  const img = image(200, 200, (x, y) => {
+    const u = x / 200
+    const v = y / 200
+    const inBar = v > 0.1 && Math.abs(u - 0.1) < 0.03
+    const detachedBlob = v > 0.7 && Math.abs(u - 0.22) < 0.02 // a dark bush far right of the bar
+    return inBar || detachedBlob ? [20, 25, 20] : [140, 150, 180]
+  })
+  const slices = extractCypressSlices(img)
+  for (const s of slices) {
+    assert.ok(s.uCentre < 0.16, `detached blob joined the silhouette: centre ${s.uCentre}`)
+  }
 })
 
 test('extractSkylineV reads the sky mask boundary and clamps the cypress column', () => {

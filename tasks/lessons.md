@@ -1229,3 +1229,15 @@ rebuilding.
   orange to the painting's golds; moon halo sprite 3.35 → 3.85. Verdict after pass 2: cobalt field,
   gold star orbs, radiant moon — good enough to proceed; final colour polish deferred until the
   foreground rebuild changes the whole frame's context.
+- 2026-07-08 — Slice 2 (SourceCypress): home-view projective texturing works as the "one flame"
+  mechanism — the volume's silhouette comes from `extractCypressSlices` (painting's own dark left
+  band) and its surface samples painting.jpg through the same projection as the camera-locked matte,
+  so head-on they are pixel-identical and drag reveals only depth. Two extraction traps found by
+  looking, fixed in pass 2: (1) dark COBALT sky passes a pure luminance gate — cypress needs a chroma
+  gate too (blue not dominant: b < g + 12), or the tip grows blocky sky-blue facets; (2) runs must be
+  CONNECTED to the flame column (walk up/down from the widest run requiring interval overlap) or
+  detached dark blobs join the silhouette. UV_COMPRESS 0.82 → 0.7 kept edge samples on painted bark.
+  Open item after this slice: at the extreme +45° orbit-preset stress view the camera-locked matte
+  strip still separates from the world volume (reads as a hanging painted ribbon) — re-examine after
+  the slice-3 composition change; candidate fixes are a camera-delta fade on the matte band or a
+  world-locked backing patch.

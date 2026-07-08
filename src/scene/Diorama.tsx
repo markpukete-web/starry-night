@@ -2,7 +2,6 @@ import { useMemo } from 'react'
 import {
   BufferAttribute,
   BufferGeometry,
-  CatmullRomCurve3,
   Color,
   DoubleSide,
   IcosahedronGeometry,
@@ -10,6 +9,7 @@ import {
 } from 'three'
 import { PALETTE } from './palette'
 import { makeRidgeStones, makeTerrainBlades } from './dioramaLayout'
+import { SourceCypress } from './SourceCypress'
 
 /**
  * Phase 1 (3D) — the Starry Night diorama as real forms: a lathe cypress, gable-roofed village
@@ -269,97 +269,6 @@ function RollingHills() {
   )
 }
 
-/**
- * The cypress — Van Gogh's dark flame. Not a smooth surface of revolution: a tapered flame profile
- * displaced by coherent angular noise into licking tongues, twisted as it rises and swaying
- * off-vertical. Vertex colours give it deep green-black modelling (palette cypress greens) with
- * moonlit edges, so it reads as the painting's living flame rather than a black blob. `seed` varies
- * the tongues between the clustered flames.
- */
-function Cypress({ position, height = 2.8, rot = 0, scale = 1, seed = 0, girth = 1 }: { position: Vec3; height?: number; rot?: number; scale?: number; seed?: number; girth?: number }) {
-  const geo = useMemo(() => {
-    const base: [number, number][] = [
-      [0.12, 0.0], [0.26, 0.03], [0.36, 0.09], [0.42, 0.17], [0.38, 0.26], [0.32, 0.35],
-      [0.35, 0.44], [0.33, 0.54], [0.27, 0.63], [0.25, 0.72], [0.19, 0.81], [0.12, 0.89],
-      [0.06, 0.95], [0.0, 1.0],
-    ]
-    const curve = new CatmullRomCurve3(base.map(([r, y]) => new Vector3(r, y, 0)), false, 'centripetal')
-    const RINGS = 100
-    const SEG = 26
-    const pts = curve.getPoints(RINGS)
-    const cols = SEG + 1
-    const rows = RINGS + 1
-    const pos = new Float32Array(rows * cols * 3)
-    const col = new Float32Array(rows * cols * 3)
-
-    // green-black modelling, all sampled from palette.json: the cypress dark swatch deepened to the
-    // core, the cypress green swatch for the tongues, the coolest village swatch lifted for the rim.
-    const cDark = new Color(PALETTE.cypress).multiplyScalar(0.76)
-    const cGreen = new Color(PALETTE.cypressGreen).multiplyScalar(0.92)
-    const cLit = new Color(PALETTE.villageCool).multiplyScalar(1.28)
-
-    const cc = new Color()
-    let p = 0
-    for (let i = 0; i < rows; i++) {
-      const pt = pts[Math.min(i, pts.length - 1)]
-      const t = Math.min(1, Math.max(0, pt.y)) // 0 base → 1 tip
-      const baseR = Math.max(0.001, pt.x)
-      const sway = Math.sin(t * Math.PI * 0.9) * 0.16 + t * 0.05 // lean/curl
-      const swayZ = Math.sin(t * Math.PI * 1.3 + 1) * 0.05
-      const twist = t * 1.5 // spiral up the height
-      for (let j = 0; j < cols; j++) {
-        const a0 = (j / SEG) * Math.PI * 2
-        const nx = Math.cos(a0)
-        const nz = Math.sin(a0)
-        // coherent angular ridges drifting upward with height → licking tongues; sampled on the
-        // circle so there is no seam at a0 = 0/2π
-        const ridge = vnoise(nx * 2.5 + 10 + seed, nz * 2.5 + t * 2.2 + 4 + seed)
-        const fine = vnoise(nx * 5 + 2 + seed, nz * 5 + t * 3.6 + 7 + seed)
-        let bump = (ridge - 0.5) * 0.95 + (fine - 0.5) * 0.4
-        bump = bump > 0 ? bump * 1.5 : bump * 0.6 // sharpen the outward tongues
-        const taper = 0.4 + 0.6 * (1 - t) // tongues stronger low, calmer toward the tip
-        const R = baseR * girth * (1 + bump * 0.55 * taper)
-        const a = a0 + twist
-        pos[p] = Math.cos(a) * R + sway
-        pos[p + 1] = t * height
-        pos[p + 2] = Math.sin(a) * R + swayZ
-        const ex = smooth(-0.05, 0.45, bump) // tongue exposure
-        cc.copy(cDark)
-          .lerp(cGreen, smooth(0, 0.55, ex + 0.18))
-          .lerp(cLit, ex * (0.3 + 0.4 * t))
-        col[p] = cc.r
-        col[p + 1] = cc.g
-        col[p + 2] = cc.b
-        p += 3
-      }
-    }
-
-    const idx: number[] = []
-    for (let i = 0; i < RINGS; i++) {
-      for (let j = 0; j < SEG; j++) {
-        const a = i * cols + j
-        const b = a + 1
-        const c = a + cols
-        const d = c + 1
-        idx.push(a, c, b, b, c, d) // outward normals on the tube
-      }
-    }
-
-    const g = new BufferGeometry()
-    g.setAttribute('position', new BufferAttribute(pos, 3))
-    g.setAttribute('color', new BufferAttribute(col, 3))
-    g.setIndex(idx)
-    g.computeVertexNormals()
-    return g
-  }, [height, seed, girth])
-
-  return (
-    <mesh geometry={geo} position={position} rotation={[0, rot, 0]} scale={scale}>
-      <meshStandardMaterial vertexColors roughness={1} flatShading emissive="#071116" emissiveIntensity={0.18} />
-    </mesh>
-  )
-}
-
 /** A triangular-prism gable roof: width w (x), ridge height h (y), depth d (z); ridge runs along z. */
 function gableRoofGeo(w: number, h: number, d: number) {
   const hw = w / 2
@@ -572,17 +481,8 @@ export function Diorama({ debug = 'final' }: { debug?: DioramaDebug }) {
         <Church position={[0.02, 0, 0.5]} />
       </group>
 
-      {/* cypress, front-left — the dark flame counterweight to the sky */}
-      {debug === 'stage' ? (
-        <>
-          <Cypress position={[-1.3, 0, 0.8]} height={3.0} rot={0.4} girth={1.1} />
-          <Cypress position={[-1.12, 0, 1.02]} height={2.2} rot={-0.5} scale={0.9} seed={13} girth={1.2} />
-        </>
-      ) : (
-        <>
-          <Cypress position={[-1.46, 0.02, 0.9]} height={2.34} rot={0.3} scale={0.92} girth={0.62} />
-        </>
-      )}
+      {/* cypress, front-left — the painting's own flame, source-projected into a world volume */}
+      <SourceCypress />
 
       {/* dark foreground shrubs, dotted along the ground as in the painting */}
       <Bush position={[0.9, 0.05, 0.98]} r={0.17} seed={1} />
