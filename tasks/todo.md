@@ -29,13 +29,15 @@ Committed on `sky-brushdab` (`fe26e77` forms → `dfeb79b` sky-hole fix → `f34
 Evidence: `output/playwright/authored-forms-2026-07-09/s2-village/` (desktop/look-down/mobile);
 `s1-p1…p6` is the cypress+island retune trail.
 
-**Remaining polish (Mark to prioritise; none are blockers):**
-1. Houses are crisp low-poly boxes — the least "painted" thing in frame; clad them lightly to match
-   the brushy cypress/hills.
-2. Cypress is a touch dark/blobby; soften/sharpen the flame silhouette.
-3. Faint smooth patch on the left sky where the old cypress hole was filled (no longer a ghost tree,
-   but not perfectly swirled) — could seed sky ribbons across the fill.
-4. Hills still slightly coarse/mottled; the light flecks are a bit confetti-ish.
+**Remaining polish — items 1–4 CONFIRMED by Mark's eye (2026-07-09, "so true"); gate stays OPEN:**
+1. **[Mark-confirmed]** Houses are crisp low-poly boxes — the least "painted" thing in frame; clad
+   them lightly (brush cladding, as cypress/hills) so they match the surrounding impasto.
+2. **[Mark-confirmed]** Cypress is a touch dark/blobby; soften and make the flame silhouette more
+   elegant (less lumpy, more of a licking flame).
+3. **[Mark-confirmed]** Faint smooth patch on the left sky where the old cypress hole was filled
+   (no longer a ghost tree, but not swirled) — seed sky ribbons across the fill so it reads as sky.
+4. **[Mark-confirmed]** Hills still slightly coarse/mottled; the light flecks are a bit confetti-ish
+   — tune stroke value spread / fleck frequency.
 5. Foreground dressing (bushes/ground), lighting/bloom balance, reduced-motion still-state check,
    mobile framing polish, perf on real hardware (headless reads 0 fps).
 6. The island underside is a smooth grey cone — could clad or darken it further.
