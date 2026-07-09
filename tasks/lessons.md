@@ -1292,3 +1292,17 @@ confetti-ish; the smooth grey underside cone could itself be clad; pre-existing 
 top-left is more visible now. But it reads as Starry Night's cypress + a painted floating island
 under the churning sky, and it SURVIVES ORBIT. Evidence:
 `output/playwright/authored-forms-2026-07-09/s1-p5/` (p1→p5 shows the retune trail).
+- 2026-07-09 — The ghost "tree in the background" was NOT a rendered tree: the sky-mask cuts the 2D
+  cypress (and star-swirl blobs) out of the camera-locked backdrop sky as black holes, and the dark
+  gradient sphere behind showed through the cypress-shaped hole (my slice-1 gradient-darkening made
+  it worse). Now that the cypress is a real 3D form, that cutout is obsolete — fixed by filling the
+  sky-band mask holes with a night-sky blue in the wash shader (`PaintingFlowSky3D` washFrag). Lesson:
+  a "phantom object" in a masked composite is often a HOLE revealing the layer behind, not a drawn
+  thing — check the mask before hunting for a stray mesh.
+- 2026-07-09 — Mark's read on the authored forms: the brushstroke LOOK is on track; what broke the
+  "Starry Night" read was MISSING CONTENT (a lonely cypress + bare hill). Adding `BrushVillage` (the
+  huddle of gable houses + the pale slender-spired church as the focal vertical, warm emissive
+  windows, seated on the island via `islandHeightAt`) made it read as the painting — best the piece
+  has looked. Composition is the content, not just the texture: the church spire answering the
+  cypress across the frame is what says "Starry Night". Evidence:
+  `output/playwright/authored-forms-2026-07-09/s2-village/`.

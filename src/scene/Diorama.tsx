@@ -1,5 +1,6 @@
 import { BrushCypress } from './BrushCypress'
 import { BrushIsland } from './BrushIsland'
+import { BrushVillage } from './BrushVillage'
 
 /**
  * The Starry Night diorama, authored in Van Gogh brushstrokes. Every foreground surface is a real
@@ -13,6 +14,8 @@ export function Diorama({ debug = 'final' }: { debug?: 'final' | 'stage' }) {
   return (
     <group>
       <BrushIsland />
+      {/* the village huddle + pale-spired church, nestled at the hills' foot */}
+      <BrushVillage />
       {/* cypress, front-left — the dark flame, the vertical counterweight to the sky */}
       <BrushCypress />
     </group>

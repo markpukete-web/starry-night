@@ -3,47 +3,21 @@ import { BufferAttribute, BufferGeometry, Color, DoubleSide, MeshBasicMaterial, 
 import { mulberry32 } from './brush.ts'
 import { PALETTE } from './palette'
 import { makeBrushArrays, moonShade, pushBrush, smooth, vnoise } from './brushForms'
+import { coastR, RIDGE, topY } from './islandShape'
 
 /**
  * The floating landmass the village and cypress stand on — a real closed, rooted solid (so it is
  * NEVER a hole from any orbit angle, unlike the projected relief's funnel) whose rolling top is
  * clad in horizontal contour brushstrokes: the painting's blue-grey hills rising to a moonlit ridge
  * at the back-right, dissolving to dark earth down the root. The dark solid underneath means gaps
- * between strokes read as shadowed ground.
+ * between strokes read as shadowed ground. Footprint + height maths live in ./islandShape.
  */
 
-const RX = 2.05 // footprint half-extent, x
-const RZ = 1.35 // footprint half-extent, z
-const RIDGE = 1.15 // max top height (back-right ridge) — steep enough to face the front camera
 const ROOT_DEPTH = 2.2 // how far the root plunges below the rim
 const SEG = 120 // segments around
 const RT = 16 // rings centre → coast
 const RS = 12 // rings coast → root tip
 const STROKES = 7200
-
-function coastR(ang: number): number {
-  const c = Math.cos(ang)
-  const s = Math.sin(ang)
-  const ell = (RX * RZ) / Math.sqrt((RZ * c) ** 2 + (RX * s) ** 2)
-  const wobble = 1 + 0.09 * Math.sin(3 * ang + 0.4) + 0.06 * Math.sin(6 * ang - 1.1) + 0.035 * Math.sin(11 * ang + 2)
-  return ell * wobble
-}
-
-/**
- * Rolling top height: a low dark front apron (where the village sits) rising behind into steep
- * rounded hill humps — steep so their near faces present to the front camera and the cladding
- * reads (a gentle mound just foreshortens to smooth clay). Taller on the right, as in the painting.
- */
-function topY(x: number, z: number): number {
-  const back = smooth(0.55, -1.2, z) // 0 at the front apron → 1 at the back ridge
-  const rightBias = 0.5 + 0.5 * smooth(-1.7, 1.5, x)
-  const humps =
-    0.95 * Math.exp(-((x - 0.85) ** 2) / 0.42) + // right hump (tallest)
-    0.7 * Math.exp(-((x + 0.7) ** 2) / 0.5) + // centre-left hump
-    0.5 * Math.exp(-((x + 1.55) ** 2) / 0.4) // far-left hump
-  const n = (vnoise(x * 1.8 + 5, z * 1.8 + 9) - 0.5) * 0.35
-  return Math.max(0, RIDGE * back * rightBias * (0.3 + 0.85 * humps + n))
-}
 
 export function BrushIsland() {
   const geometries = useMemo(() => {
