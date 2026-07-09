@@ -19,25 +19,31 @@ the unchanged camera-locked source-ribbon sky. Plan:
 mattered — solid forms survive orbit, cladding needs camera-facing surfaces, per-stroke value
 variance is the read, tapered quads not tiles) in `tasks/lessons.md` (2026-07-09 section).
 
-**State:** validated proof-of-technique, NOT finished. `BrushCypress` + `BrushIsland` + `brushForms.ts`
-replace the deleted projected-relief foreground. It reads as Starry Night's cypress + a floating
-painted island under the churning sky, and — the whole point — it SURVIVES ORBIT and look-down (no
-funnel, no torn paper). lint/36 tests/build green. Evidence:
-`output/playwright/authored-forms-2026-07-09/s1-p5/` (p1→p5 is the retune trail). Committed on
-`sky-brushdab`, NOT pushed.
+**State (GATE OPEN — Mark, 2026-07-09):** the composition now reads as Starry Night and survives orbit
++ look-down (no funnel, no torn paper). `brushForms.ts` (tapered value-varied cladding kit) +
+`BrushIsland` + `islandShape.ts` + `BrushCypress` + `BrushVillage` replace the deleted projected
+relief. Mark's read: the brushstroke LOOK is on track; the missing piece was CONTENT — adding the
+village huddle + pale-spired church (the focal vertical answering the cypress) made it read. Mark
+said "commit and keep the gate open" — this is a checkpoint, NOT passed. lint/36 tests/build green.
+Committed on `sky-brushdab` (`fe26e77` forms → `dfeb79b` sky-hole fix → `f34640c` village), NOT pushed.
+Evidence: `output/playwright/authored-forms-2026-07-09/s2-village/` (desktop/look-down/mobile);
+`s1-p1…p6` is the cypress+island retune trail.
 
-**Next passes (awaiting Mark's read of p5):**
-1. Refine the cypress — the tip is a touch blobby; soften/sharpen the flame silhouette.
-2. Tame the island's confetti-ish light flecks; give the hills more structure (2–3 reading ridges).
-3. Village + church as massed brushstroke forms with warm emissive windows (the pale spire is the
-   focal vertical echoing the cypress). Not built yet.
-4. Foreground dressing (bushes, ground), then lighting/bloom balance, reduced-motion still-state,
-   mobile framing, perf on real hardware.
-5. Cladding could extend to the island underside (currently a smooth grey cone); pre-existing navy
-   sky-gap blob top-left is more visible now the forms are clean.
+**Remaining polish (Mark to prioritise; none are blockers):**
+1. Houses are crisp low-poly boxes — the least "painted" thing in frame; clad them lightly to match
+   the brushy cypress/hills.
+2. Cypress is a touch dark/blobby; soften/sharpen the flame silhouette.
+3. Faint smooth patch on the left sky where the old cypress hole was filled (no longer a ghost tree,
+   but not perfectly swirled) — could seed sky ribbons across the fill.
+4. Hills still slightly coarse/mottled; the light flecks are a bit confetti-ish.
+5. Foreground dressing (bushes/ground), lighting/bloom balance, reduced-motion still-state check,
+   mobile framing polish, perf on real hardware (headless reads 0 fps).
+6. The island underside is a smooth grey cone — could clad or darken it further.
 
 Run: `npm run dev` → `http://127.0.0.1:5173/?mode=diorama&clean=1`. Capture (pins port 5179):
-`npm run capture:diorama -- output/playwright/<name>` (now includes a `desktop-lookdown` stress view).
+`npm run capture:diorama -- output/playwright/<name>` (includes a `desktop-lookdown` stress view).
+Architecture notes: forms are real closed solids clad in tapered, per-stroke-value-varied brush
+marks (the two Van Gogh-read insights); seat new forms on the island via `islandHeightAt`.
 
 ---
 
