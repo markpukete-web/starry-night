@@ -123,16 +123,22 @@ const washFrag = /* glsl */ `
   varying float vEdgeFade;
   void main() {
     float mask = texture2D(uMask, vUv).r;
-    float a = mask * vEdgeFade;
-    if (a < 0.025) discard;
-    vec3 col = texture2D(uPainting, vUv).rgb;
+    // This backdrop is now behind REAL 3D forms, so its old job — cutting the 2D cypress/foreground
+    // out of the sky — is obsolete and actively harmful: the cutouts read as dark holes (a "ghost
+    // tree"). Within the sky band we fill those holes with a night-sky blue so the sky is unbroken;
+    // below the skyline the 3D island covers it, so we can discard there.
+    float skyBand = 1.0 - smoothstep(0.58, 0.7, vUv.y);
+    float a = max(mask, skyBand) * vEdgeFade;
+    if (a < 0.02) discard;
+    vec3 skyFill = vec3(0.14, 0.22, 0.42); // night-sky blue for the cut-out holes
+    vec3 col = mix(skyFill, texture2D(uPainting, vUv).rgb, mask);
     if (uDebugMode == 1) {
       col = mix(vec3(0.03, 0.08, 0.18), vec3(0.12, 0.38, 0.96), mask);
       gl_FragColor = vec4(col, a * 0.5);
       return;
     }
     col *= vec3(0.6, 0.72, 0.95);
-    gl_FragColor = vec4(col, a * 0.5);
+    gl_FragColor = vec4(col, a * 0.62);
   }
 `
 
