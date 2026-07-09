@@ -9,7 +9,39 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## Where we are now (2026-07-05) — read this first
+## ▶ PICK UP HERE (2026-07-09) — authored brushstroke forms, the 3D pivot
+
+Mark rejected the projected-painting relief (it funnels/torn-papers off the head-on view — a flat
+painting holds one viewpoint) and chose **authored 3D forms**. New architecture: the whole diorama
+is built from Van Gogh brushstrokes — real closed 3D volumes clad in oriented impasto strokes, over
+the unchanged camera-locked source-ribbon sky. Plan:
+`docs/superpowers/plans/2026-07-09-authored-brushstroke-forms.md`. Full lessons (the 4 insights that
+mattered — solid forms survive orbit, cladding needs camera-facing surfaces, per-stroke value
+variance is the read, tapered quads not tiles) in `tasks/lessons.md` (2026-07-09 section).
+
+**State:** validated proof-of-technique, NOT finished. `BrushCypress` + `BrushIsland` + `brushForms.ts`
+replace the deleted projected-relief foreground. It reads as Starry Night's cypress + a floating
+painted island under the churning sky, and — the whole point — it SURVIVES ORBIT and look-down (no
+funnel, no torn paper). lint/36 tests/build green. Evidence:
+`output/playwright/authored-forms-2026-07-09/s1-p5/` (p1→p5 is the retune trail). Committed on
+`sky-brushdab`, NOT pushed.
+
+**Next passes (awaiting Mark's read of p5):**
+1. Refine the cypress — the tip is a touch blobby; soften/sharpen the flame silhouette.
+2. Tame the island's confetti-ish light flecks; give the hills more structure (2–3 reading ridges).
+3. Village + church as massed brushstroke forms with warm emissive windows (the pale spire is the
+   focal vertical echoing the cypress). Not built yet.
+4. Foreground dressing (bushes, ground), then lighting/bloom balance, reduced-motion still-state,
+   mobile framing, perf on real hardware.
+5. Cladding could extend to the island underside (currently a smooth grey cone); pre-existing navy
+   sky-gap blob top-left is more visible now the forms are clean.
+
+Run: `npm run dev` → `http://127.0.0.1:5173/?mode=diorama&clean=1`. Capture (pins port 5179):
+`npm run capture:diorama -- output/playwright/<name>` (now includes a `desktop-lookdown` stress view).
+
+---
+
+## Where we are now (2026-07-05) — superseded by the 2026-07-09 pivot above
 
 > **NORTH STAR (locked — CLAUDE.md, re-read it).** The endgame is the **3D orbitable diorama**. The flat 2D
 > piece is a FOUNDATION milestone, NEVER the ship target. Phase now: 2D sky motion settled → **next: make it 3D**.

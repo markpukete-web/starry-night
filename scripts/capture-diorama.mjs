@@ -221,7 +221,7 @@ async function capture(page, name) {
   return { name, file, bytes }
 }
 
-async function dragCanvas(page, delta) {
+async function dragCanvas(page, dx, dy = 0) {
   const result = await page.send('Runtime.evaluate', {
     expression: `(() => {
       const r = document.querySelector('canvas').getBoundingClientRect()
@@ -235,13 +235,13 @@ async function dragCanvas(page, delta) {
   for (let i = 1; i <= 24; i++) {
     await page.send('Input.dispatchMouseEvent', {
       type: 'mouseMoved',
-      x: x + (delta * i) / 24,
-      y,
+      x: x + (dx * i) / 24,
+      y: y + (dy * i) / 24,
       button: 'left',
       buttons: 1,
     })
   }
-  await page.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: x + delta, y, button: 'left', clickCount: 1 })
+  await page.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: x + dx, y: y + dy, button: 'left', clickCount: 1 })
   await sleep(900)
 }
 
@@ -271,12 +271,13 @@ async function main() {
       await page.close()
     }
 
-    for (const [name, delta] of [
-      ['desktop-drag-left-boundary', -620],
-      ['desktop-drag-right-boundary', 620],
+    for (const [name, dx, dy] of [
+      ['desktop-drag-left-boundary', -620, 0],
+      ['desktop-drag-right-boundary', 620, 0],
+      ['desktop-lookdown', 260, -320], // the angle that exposed the projected-relief funnel
     ]) {
       const { page } = await newPage(port, base, desktop, errors)
-      await dragCanvas(page, delta)
+      await dragCanvas(page, dx, dy)
       captures.push(await capture(page, name))
       await page.close()
     }

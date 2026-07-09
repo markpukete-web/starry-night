@@ -25,7 +25,6 @@ import { MOON_R, MOON_UV, SWIRLS } from './skySwirls'
 import { PALETTE } from './palette'
 import { DIORAMA_CAPTURE } from './dioramaContract'
 import { SkyEdgeBackfill } from './SkyEdgeBackfill'
-import { DioramaForegroundMatte } from './DioramaForegroundMatte'
 
 type PaintingFlowSkyDebug = 'final' | 'flow'
 
@@ -491,7 +490,6 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final' }: Props) {
       </mesh>
       {!isFlowDebug && <SkyEdgeBackfill />}
       <mesh geometry={washGeometry} material={washMaterial} frustumCulled={false} renderOrder={-1} />
-      {!isFlowDebug && <DioramaForegroundMatte />}
       {geometry && <mesh geometry={geometry} material={ribbonMaterial} frustumCulled={false} renderOrder={2} />}
       <SourceOrbs debug={debug} />
     </group>

@@ -1256,3 +1256,39 @@ rebuilding.
   pale arch from the mobile camera, which sits ~4 units behind the home eye and looks under the band.
   Matte design decision: keep the below-skyline band as a DARKENED underpaint (not removed) so world/
   backdrop parallax reveals read as shadowed ground, never as a second bright village.
+
+## Authored brushstroke forms — the 3D pivot (2026-07-09)
+
+Mark chose "authored 3D forms" over the projected-painting relief (which funnelled/torn-papered the
+moment the camera left head-on — a flat painting holds one viewpoint). New thesis: **the whole
+diorama is built from Van Gogh brushstrokes** — real closed 3D volumes CLAD in oriented impasto
+strokes. Plan: `docs/superpowers/plans/2026-07-09-authored-brushstroke-forms.md`. Built the shared
+cladding kit (`brushForms.ts`), the cypress (`BrushCypress`), and the solid island (`BrushIsland`);
+deleted the projected-relief foreground (SourceCypress/SourceReliefTerrain/DioramaForegroundMatte/
+sourceProjection). Five capture-verified passes; the three insights that actually mattered, in order:
+
+- **Solid closed forms survive orbit; projection never will.** A rooted island closed to a keel
+  point shows solid painted rock from every angle — the black funnel and torn-paper edges are gone
+  for good. This is the whole point of the pivot and it works: look-down and full front-arc orbit
+  hold. Verify EVERY slice with the look-down capture (added to `capture-diorama.mjs`).
+- **Cladding only reads on surfaces that FACE the camera.** Flat strokes laid on a near-horizontal
+  hilltop, viewed at a grazing angle, foreshorten to nothing — three passes of a "smooth clay"
+  mound proved it. The cypress read immediately because it's vertical. Fix: model hills as STEEP
+  rounded humps whose near faces present to the front camera (rewrote `topY` to gaussian humps).
+- **Per-stroke VALUE VARIANCE is the Van Gogh read.** Strokes that vary smoothly (by height/light)
+  average into a gradient = smooth clay. A strong per-stroke random value kick (×[0.5..1.5]) makes
+  adjacent marks contrast hard → they read as distinct brushstrokes. This was THE breakthrough — it
+  turned the mound into brushwork in one change. Van Gogh's surfaces are high-frequency value
+  contrast between neighbours; reproduce that literally.
+- **Taper the brush quad → brushstroke, not tile.** Rectangular quads read as a Minecraft/voxel
+  mosaic. Making `pushBrush` a tapered lens (pointed ends, full-width middle, 6 verts) softened
+  every form at once from "blocky" to "brushy".
+- Baked moon-lit modelling into vertex colour (`meshBasicMaterial vertexColors, toneMapped false`)
+  over a dark solid base so stroke gaps read as shadow, not void — same recipe as the sky.
+
+**Status: validated proof-of-technique, NOT finished.** Open for the next passes: cypress tip is a
+touch blobby; the island is ONE hump with no village/church yet; the light flecks read a little
+confetti-ish; the smooth grey underside cone could itself be clad; pre-existing navy sky-gap blob
+top-left is more visible now. But it reads as Starry Night's cypress + a painted floating island
+under the churning sky, and it SURVIVES ORBIT. Evidence:
+`output/playwright/authored-forms-2026-07-09/s1-p5/` (p1→p5 shows the retune trail).
