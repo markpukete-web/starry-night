@@ -1306,3 +1306,39 @@ under the churning sky, and it SURVIVES ORBIT. Evidence:
   has looked. Composition is the content, not just the texture: the church spire answering the
   cypress across the frame is what says "Starry Night". Evidence:
   `output/playwright/authored-forms-2026-07-09/s2-village/`.
+
+## Four rough edges — village cladding, cypress flame, sky-fill churn, hill calm (2026-07-12)
+
+The 2026-07-09 Mark-confirmed polish list, one capture-verified slice each. What was learnt:
+
+- **Village cladding (2 passes):** scattering tapered marks on the box faces was easy; making them
+  READ was the same lesson as the hills — walls needed a HARD value kick (0.58–1.38) plus
+  occasional pale moonlit flecks before they stopped being flat CAD blue. A subtle kick (0.72–1.24)
+  on a dark base is invisible at composition distance. The church wants the opposite: a narrow
+  bright spread (0.86–1.16) so it stays the clean pale focal; its thin spire stays UNCLAD — the one
+  crisp edge in the village is what makes it read as the spire.
+- **Cypress (3 passes):** the lumpiness was FREQUENCY, not amplitude — ridge noise cycling ~5× up
+  the column stacks horizontal lumps; halving both angular and vertical frequency (few TALL
+  tongues) is what made it a licking flame. Two traps the low-frequency change then exposed:
+  (1) low-frequency exposure noise POOLS pale strokes into big grey bands (badger stripe) — fix
+  with per-stroke exposure jitter so pale marks scatter through the dark mass; (2) long slim
+  strokes with radial tilt + stick-out read as FUR at the silhouette — thicker marks (halfWid up),
+  less stick-out and less radial tilt read as flame flicks. Elegance = low-frequency silhouette +
+  high-frequency value scatter, the exact opposite pairing of what it had.
+- **Sky-fill churn (3 passes; the mechanism lesson of the session):** seeding ribbons in the
+  mask hole was necessary but nowhere near sufficient. Three failures in order: (a) hole trail
+  points sample the CUT-OUT TREE's pixels → brown ghost strokes — donor-colour from the nearest
+  true-sky pixel; (b) the donor test must use the RAW mask — `effectiveMask`'s star-halo boost
+  deliberately claims hole pixels near star swirls (for seed density), and judged on it the donor
+  logic re-served tree browns near the tip; (c) nearest-donor FLOW is discontinuous (the donor side
+  flips as a trail crosses the hole) → jagged circuit-board zigzags. The fix that landed: inpaint
+  the flow across the hole ONCE per build (coarse 112×80 grid, true-sky cells fixed, hole cells
+  Jacobi-relaxed 60 iters) and integrate against that — smooth by construction. Rule of thumb: a
+  nearest-donor lookup is fine for COLOUR (local, per-point) but never for a field you INTEGRATE;
+  integration amplifies donor discontinuities into geometry.
+- **Hills (1 pass):** the 2026-07-09 breakthrough (±50% per-stroke value kick) was a proof of
+  MECHANISM, not a tuned value — at composition distance ±50% is salt-and-pepper; ±35% keeps the
+  brushwork read while the contours knit. Flecks 10% → 4.5%. Longer marks (halfLen 0.135–0.225)
+  turn grain into contour lines.
+- **sips gotcha:** `--cropOffset` must PRECEDE `-c` on the command line or it is silently ignored
+  and the crop centres itself — two wasted review reads before catching it.

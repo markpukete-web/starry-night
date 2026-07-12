@@ -9,7 +9,29 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## ▶ PICK UP HERE (2026-07-09) — authored brushstroke forms, the 3D pivot
+## ▶ PICK UP HERE (2026-07-12) — four rough edges done; gate open for Mark
+
+The four Mark-confirmed rough edges (2026-07-09 list) are DONE, one capture-verified slice each,
+committed on `sky-brushdab` (NOT pushed): village brush cladding (`a2a8b5c`), cypress licking-flame
+rework, sky churn across the old cypress cut-out fill, calmer hill brushwork. All 36 tests, lint,
+build green throughout. Evidence: `output/playwright/rough-edges-2026-07-12/` — final state is the
+`s4-hills-p1` set (desktop/look-down/drag-boundaries/mobile); each slice's retune trail is its own
+`s1…s4` folder. Details + lessons in `tasks/lessons.md` (2026-07-12 section).
+
+**Next (from the 2026-07-09 list, still open):**
+1. Foreground dressing (bushes/ground), lighting/bloom balance.
+2. Reduced-motion still-state check on the diorama route.
+3. Mobile framing polish.
+4. Perf on real hardware (headless reads 0 fps) — Mark's machine + a mid-tier phone.
+5. The island underside is a smooth grey cone — could clad or darken it further.
+6. Mark's gate review of the rough-edges pass (his eye decides; keep the gate open until then).
+
+Run: `npm run dev` → `http://127.0.0.1:5173/?mode=diorama&clean=1`. Capture (pins port 5179):
+`npm run capture:diorama -- output/playwright/<name>`.
+
+---
+
+## Superseded (2026-07-09) — authored brushstroke forms, the 3D pivot
 
 Mark rejected the projected-painting relief (it funnels/torn-papers off the head-on view — a flat
 painting holds one viewpoint) and chose **authored 3D forms**. New architecture: the whole diorama
