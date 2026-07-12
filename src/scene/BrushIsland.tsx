@@ -128,14 +128,15 @@ export function BrushIsland() {
         .lerp(hillLit, smooth(0.45, 0.95, t) * (0.4 + 0.6 * lit))
         .lerp(groundGreen, front * 0.6)
       // Van Gogh's surfaces read because ADJACENT strokes contrast hard in value — without this
-      // strong per-stroke kick the field averages into smooth clay. Plus occasional bright crest
-      // flecks and dark troughs, as he dabbed them.
-      const val = 0.5 + 1.0 * rng()
+      // strong per-stroke kick the field averages into smooth clay. But the full ±50% spread
+      // reads as salt-and-pepper mottle at composition distance; ±35% keeps the brushwork read
+      // while letting the contours knit. Sparse, gentler crest flecks — 10% was confetti.
+      const val = 0.65 + 0.7 * rng()
       strokeCol.multiplyScalar(val)
-      if (rng() < 0.1) strokeCol.lerp(hillLit, 0.6) // moonlit impasto fleck
+      if (rng() < 0.045) strokeCol.lerp(hillLit, 0.5) // moonlit impasto fleck
 
       p.set(x, y, z).addScaledVector(nrm, 0.025)
-      const halfLen = 0.11 + 0.08 * rng()
+      const halfLen = 0.135 + 0.09 * rng() // longer marks knit into contour lines, not grain
       const halfWid = 0.02 + 0.014 * rng()
       pushBrush(arr, p, tangent, nrm, halfLen, halfWid, strokeCol)
     }
