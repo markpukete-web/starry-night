@@ -1,14 +1,17 @@
 import { useEffect, useMemo } from 'react'
-import { BufferAttribute, BufferGeometry, Color, MeshBasicMaterial, Vector3 } from 'three'
+import { BufferAttribute, BufferGeometry, Color, DoubleSide, MeshBasicMaterial, Vector3 } from 'three'
 import { PALETTE } from './palette'
 import { islandHeightAt } from './islandShape'
-import { moonShade } from './brushForms'
+import { mulberry32 } from './brush.ts'
+import { type BrushArrays, makeBrushArrays, moonShade, pushBrush } from './brushForms'
 
 /**
  * The village huddle and its pale slender-spired church — the painting's focal foreground, nestled
  * at the foot of the hills. Small massed forms with baked moon-lit modelling (consistent with the
- * other brush forms' unlit vertex-colour look) and warm emissive windows the bloom catches. The
- * church spire is the pale vertical that answers the cypress across the composition.
+ * other brush forms' unlit vertex-colour look), each face lightly clad in brush marks so the
+ * village sits inside the impasto world rather than reading as crisp CAD boxes, and warm emissive
+ * windows the bloom catches. The church spire is the pale vertical that answers the cypress across
+ * the composition — its thin spire stays unclad so the focal accent keeps a clean edge.
  */
 
 type Arr = { positions: number[]; colors: number[]; indices: number[] }
@@ -48,8 +51,69 @@ function rot(x: number, z: number, cx: number, cz: number, yaw: number): [number
   return [cx + dx * Math.cos(yaw) - dz * Math.sin(yaw), cz + dx * Math.sin(yaw) + dz * Math.cos(yaw)]
 }
 
+const STROKES_PER_AREA = 230 // light cladding — the base face must stay visible between marks
+const WALL_FLECK = new Color(PALETTE.hillsCrest).multiplyScalar(1.6) // pale moonlit stroke accents
+const _pa = new Vector3()
+const _pb = new Vector3()
+const _pos = new Vector3()
+const _tanAB = new Vector3()
+
+/**
+ * Scatter a light layer of brush marks over the (planar) quad a-b-c-d. Strokes run along the a→b
+ * edge — the bottom edge for walls (horizontal dabs) and the up-slope edge for roof pitches — and
+ * take the face's moon-lit colour with a per-stroke value kick (`kickLo..kickLo+kickSpan`) so the
+ * marks read as brushwork, not a tint. Sampling stays inside the face margin and the marks are
+ * small, so the gable silhouette survives.
+ */
+function cladQuad(
+  brush: BrushArrays,
+  rng: () => number,
+  a: Vector3,
+  b: Vector3,
+  c: Vector3,
+  d: Vector3,
+  base: Color,
+  kickLo = 0.72,
+  kickSpan = 0.52,
+  strokeAlong: 'ab' | 'ad' = 'ab',
+  fleckP = 0,
+): void {
+  _u.subVectors(b, a)
+  _v.subVectors(d, a)
+  _n.crossVectors(_u, _v)
+  const area = _n.length()
+  if (area < 1e-6) return
+  _n.normalize()
+  _tanAB.copy(strokeAlong === 'ab' ? _u : _v).normalize()
+  const lit = litColor(base, _n)
+  const n = Math.max(3, Math.round(area * STROKES_PER_AREA * (0.85 + 0.3 * rng())))
+  const col = new Color()
+  for (let i = 0; i < n; i++) {
+    const s = 0.12 + 0.76 * rng()
+    const t = 0.12 + 0.76 * rng()
+    _pa.copy(a).lerp(b, s)
+    _pb.copy(d).lerp(c, s)
+    _pos.copy(_pa).lerp(_pb, t).addScaledVector(_n, 0.006 + 0.005 * rng())
+    col.copy(lit).multiplyScalar(kickLo + kickSpan * rng())
+    if (fleckP > 0 && rng() < fleckP) col.lerp(WALL_FLECK, 0.45 + 0.25 * rng())
+    const halfLen = 0.042 + 0.032 * rng()
+    const halfWid = 0.011 + 0.008 * rng()
+    pushBrush(brush, _pos, _tanAB, _n, halfLen, halfWid, col)
+  }
+}
+
 /** A gable-roofed house: four walls + a pitched roof, seated on the island, yawed by `yaw`. */
-function pushHouse(arr: Arr, cx: number, cz: number, w: number, d: number, h: number, yaw: number): void {
+function pushHouse(
+  arr: Arr,
+  brush: BrushArrays,
+  rng: () => number,
+  cx: number,
+  cz: number,
+  w: number,
+  d: number,
+  h: number,
+  yaw: number,
+): void {
   const y0 = islandHeightAt(cx, cz) - 0.02
   const y1 = y0 + h
   const ridge = y1 + Math.min(w, d) * 0.55
@@ -71,6 +135,11 @@ function pushHouse(arr: Arr, cx: number, cz: number, w: number, d: number, h: nu
   pushQuad(arr, bbr, bbl, btl, btr, HOUSE) // back
   pushQuad(arr, bbl, fbl, ftl, btl, HOUSE) // left
   pushQuad(arr, fbr, bbr, btr, ftr, HOUSE) // right
+  // walls want harder value contrast + occasional pale flecks or they stay flat CAD blue
+  cladQuad(brush, rng, fbl, fbr, ftr, ftl, HOUSE, 0.58, 0.8, 'ab', 0.12)
+  cladQuad(brush, rng, bbr, bbl, btl, btr, HOUSE, 0.58, 0.8, 'ab', 0.12)
+  cladQuad(brush, rng, bbl, fbl, ftl, btl, HOUSE, 0.58, 0.8, 'ab', 0.12)
+  cladQuad(brush, rng, fbr, bbr, btr, ftr, HOUSE, 0.58, 0.8, 'ab', 0.12)
   // gable roof: ridge along the depth axis
   const rf = corner(0, 1, ridge)
   const rb = corner(0, -1, ridge)
@@ -78,10 +147,14 @@ function pushHouse(arr: Arr, cx: number, cz: number, w: number, d: number, h: nu
   pushQuad(arr, btr, btl, rb, rb, ROOF) // back gable
   pushQuad(arr, ftl, rf, rb, btl, ROOF) // left roof pitch
   pushQuad(arr, ftr, btr, rb, rf, ROOF) // right roof pitch
+  cladQuad(brush, rng, ftl, ftr, rf, rf, ROOF)
+  cladQuad(brush, rng, btr, btl, rb, rb, ROOF)
+  cladQuad(brush, rng, ftl, rf, rb, btl, ROOF) // strokes run up the pitch
+  cladQuad(brush, rng, ftr, btr, rb, rf, ROOF, 0.72, 0.52, 'ad') // up the pitch (the a→d edge here)
 }
 
 /** The church: a taller pale nave + a slender tall spire — the focal vertical. */
-function pushChurch(arr: Arr, cx: number, cz: number): { spireTip: Vector3 } {
+function pushChurch(arr: Arr, brush: BrushArrays, rng: () => number, cx: number, cz: number): { spireTip: Vector3 } {
   const y0 = islandHeightAt(cx, cz) - 0.02
   const w = 0.34
   const d = 0.5
@@ -102,12 +175,19 @@ function pushChurch(arr: Arr, cx: number, cz: number): { spireTip: Vector3 } {
   pushQuad(arr, bbr, bbl, btl, btr, CHURCH)
   pushQuad(arr, bbl, fbl, ftl, btl, CHURCH)
   pushQuad(arr, fbr, bbr, btr, ftr, CHURCH)
+  // pale focal form: clad with a narrower, brighter value spread so it stays the clean accent
+  cladQuad(brush, rng, fbl, fbr, ftr, ftl, CHURCH, 0.86, 0.3)
+  cladQuad(brush, rng, bbr, bbl, btl, btr, CHURCH, 0.86, 0.3)
+  cladQuad(brush, rng, bbl, fbl, ftl, btl, CHURCH, 0.86, 0.3)
+  cladQuad(brush, rng, fbr, bbr, btr, ftr, CHURCH, 0.86, 0.3)
   const rf = c(0, 1, y1 + 0.13)
   const rb = c(0, -1, y1 + 0.13)
   pushQuad(arr, ftl, ftr, rf, rf, ROOF)
   pushQuad(arr, btr, btl, rb, rb, ROOF)
   pushQuad(arr, ftl, rf, rb, btl, ROOF)
   pushQuad(arr, ftr, btr, rb, rf, ROOF)
+  cladQuad(brush, rng, ftl, rf, rb, btl, ROOF)
+  cladQuad(brush, rng, ftr, btr, rb, rf, ROOF, 0.72, 0.52, 'ad')
 
   // slender bell tower at the front, then a tall thin spire
   const tw = 0.12
@@ -121,6 +201,9 @@ function pushChurch(arr: Arr, cx: number, cz: number): { spireTip: Vector3 } {
   pushQuad(arr, t1[1], t1[0], t1[3], t1[2], CHURCH)
   pushQuad(arr, t1[0], t0[0], t0[3], t1[3], CHURCH)
   pushQuad(arr, t0[1], t1[1], t1[2], t0[2], CHURCH)
+  // tower: a few sparse pale marks; the thin spire itself stays unclad for a clean focal edge
+  cladQuad(brush, rng, t0[0], t0[1], t0[2], t0[3], CHURCH, 0.88, 0.26)
+  cladQuad(brush, rng, t1[0], t0[0], t0[3], t1[3], CHURCH, 0.88, 0.26)
   // spire: a thin pyramid
   const spireTip = new Vector3(tx, th + 0.5, tz)
   const sp = (sx: number, sz: number) => new Vector3(tx + sx * tw * 0.5, th, tz + sz * tw * 0.5)
@@ -135,10 +218,11 @@ function pushChurch(arr: Arr, cx: number, cz: number): { spireTip: Vector3 } {
 
 function pushWindow(arr: Arr, cx: number, cz: number, y: number, size: number): void {
   const s = size / 2
-  const a = new Vector3(cx - s, y - s, cz)
-  const b = new Vector3(cx + s, y - s, cz)
-  const c = new Vector3(cx + s, y + s, cz)
-  const d = new Vector3(cx - s, y + s, cz)
+  const zw = cz + 0.016 // proud of the wall face so the brush cladding never covers the glow
+  const a = new Vector3(cx - s, y - s, zw)
+  const b = new Vector3(cx + s, y - s, zw)
+  const c = new Vector3(cx + s, y + s, zw)
+  const d = new Vector3(cx - s, y + s, zw)
   const i = arr.positions.length / 3
   for (const p of [a, b, c, d]) {
     arr.positions.push(p.x, p.y, p.z)
@@ -169,11 +253,13 @@ const WINDOWS: [number, number, number, number][] = [
 ]
 
 export function BrushVillage() {
-  const { solid, windows } = useMemo(() => {
+  const { solid, strokes, windows } = useMemo(() => {
     const s = newArr()
+    const brush = makeBrushArrays()
     const w = newArr()
-    for (const [cx, cz, hw, hd, hh, yaw] of HOUSES) pushHouse(s, cx, cz, hw, hd, hh, yaw)
-    pushChurch(s, CHURCH_POS[0], CHURCH_POS[1])
+    const rng = mulberry32(0x0b11a6e)
+    for (const [cx, cz, hw, hd, hh, yaw] of HOUSES) pushHouse(s, brush, rng, cx, cz, hw, hd, hh, yaw)
+    pushChurch(s, brush, rng, CHURCH_POS[0], CHURCH_POS[1])
     for (const [cx, cz, yh, size] of WINDOWS) {
       pushWindow(w, cx, cz, islandHeightAt(cx, cz) + yh, size)
     }
@@ -189,21 +275,28 @@ export function BrushVillage() {
       g.computeBoundingSphere()
       return g
     }
-    return { solid: build(s), windows: build(w) }
+    return { solid: build(s), strokes: build(brush), windows: build(w) }
   }, [])
 
   const solidMat = useMemo(() => new MeshBasicMaterial({ vertexColors: true, toneMapped: false }), [])
+  const strokeMat = useMemo(
+    () => new MeshBasicMaterial({ vertexColors: true, toneMapped: false, side: DoubleSide }),
+    [],
+  )
   const windowMat = useMemo(() => new MeshBasicMaterial({ vertexColors: true, toneMapped: false }), [])
 
   useEffect(() => () => solid.dispose(), [solid])
+  useEffect(() => () => strokes.dispose(), [strokes])
   useEffect(() => () => windows.dispose(), [windows])
   useEffect(() => () => solidMat.dispose(), [solidMat])
+  useEffect(() => () => strokeMat.dispose(), [strokeMat])
   useEffect(() => () => windowMat.dispose(), [windowMat])
 
   return (
     <group>
       <mesh geometry={solid} material={solidMat} renderOrder={2} />
-      <mesh geometry={windows} material={windowMat} renderOrder={3} />
+      <mesh geometry={strokes} material={strokeMat} renderOrder={3} />
+      <mesh geometry={windows} material={windowMat} renderOrder={4} />
     </group>
   )
 }
