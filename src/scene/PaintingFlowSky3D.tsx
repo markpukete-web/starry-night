@@ -130,7 +130,7 @@ const washFrag = /* glsl */ `
     float skyBand = 1.0 - smoothstep(0.58, 0.7, vUv.y);
     float a = max(mask, skyBand) * vEdgeFade;
     if (a < 0.02) discard;
-    vec3 skyFill = vec3(0.14, 0.22, 0.42); // night-sky blue for the cut-out holes
+    vec3 skyFill = vec3(0.11, 0.17, 0.36); // night-sky blue for the cut-out holes
     vec3 col = mix(skyFill, texture2D(uPainting, vUv).rgb, mask);
     if (uDebugMode == 1) {
       col = mix(vec3(0.03, 0.08, 0.18), vec3(0.12, 0.38, 0.96), mask);
@@ -394,6 +394,9 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final' }: Props) {
       points: tuned('points', 16),
       stepSize: tuned('stepSize', 0.012),
       seed: DIORAMA_CAPTURE.seed,
+      // the wash fills the obsolete 2D-cypress cut-out within its sky band (0.58–0.7); ribbons
+      // must churn across that fill too or it reads as a smooth dead patch beside the 3D tree
+      openSkyBandV: 0.62,
     })
 
     const positions: number[] = []
