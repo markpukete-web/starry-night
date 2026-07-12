@@ -29,17 +29,21 @@ const BASE = new Vector3(-1.5, 0.02, 0.72) // stands front-left, on the island
 
 // palette cypress family: the painting's cypress is near-black green — dark dominates, with only
 // sparse olive/emerald tongues and a faint moonlit rim (never khaki-pale overall)
-const CORE = new Color(PALETTE.cypress).multiplyScalar(0.62)
-const GREEN = new Color(PALETTE.cypressGreen).multiplyScalar(0.85)
+const CORE = new Color(PALETTE.cypress).multiplyScalar(0.68)
+const GREEN = new Color(PALETTE.cypressGreen).multiplyScalar(0.95)
 const OLIVE = new Color('#57632f')
 const LIT = new Color(PALETTE.hillsCrest).multiplyScalar(1.25)
 
-/** Licking-tongue displacement of the flame radius: coherent angular noise drifting up the height. */
+/**
+ * Licking-tongue displacement of the flame radius: coherent angular noise drifting up the height.
+ * Low frequencies on purpose — a few TALL tongues leaning upward read as Van Gogh's licking flame;
+ * higher frequencies stack into horizontal lumps and the tree turns shaggy-shrub.
+ */
 function tongue(a: number, hf: number): number {
-  const ridge = vnoise(Math.cos(a) * 2.3 + 10, Math.sin(a) * 2.3 + hf * 5.5 + 4)
-  const fine = vnoise(Math.cos(a) * 5 + 2, Math.sin(a) * 5 + hf * 9 + 7)
-  let bump = (ridge - 0.5) * 1.0 + (fine - 0.5) * 0.4
-  bump = bump > 0 ? bump * 1.5 : bump * 0.55 // sharpen outward licks, shallow troughs
+  const ridge = vnoise(Math.cos(a) * 1.7 + 10, Math.sin(a) * 1.7 + hf * 3.4 + 4)
+  const fine = vnoise(Math.cos(a) * 4 + 2, Math.sin(a) * 4 + hf * 6 + 7)
+  let bump = (ridge - 0.5) * 1.0 + (fine - 0.5) * 0.18
+  bump = bump > 0 ? bump * 1.7 : bump * 0.45 // sharpen outward licks, shallow troughs
   return bump
 }
 
@@ -126,34 +130,37 @@ export function BrushCypress() {
       const bump = tongue(a, hf)
       const tipTaper = 0.35 + 0.65 * (1 - smooth(0.6, 1, hf))
       const r = Math.max(0.015, sampleR(hf) * (1 + bump * 0.5 * tipTaper))
-      const stickOut = 0.02 + Math.max(0, bump) * 0.09 * tipTaper // licks reach past the surface
+      const stickOut = 0.012 + Math.max(0, bump) * 0.038 * tipTaper // licks reach past the surface
       radial.set(Math.cos(a), 0, Math.sin(a))
       const px = swayX(hf) + Math.cos(a) * r
       const pz = swayZ(hf) + Math.sin(a) * r
       const py = hf * HEIGHT
       nrm.set(Math.cos(a), 0.12, Math.sin(a)).normalize()
 
-      // licking flow: up, plus a tangential swirl (twist) and outward reach
+      // licking flow: up, plus a tangential swirl (twist) and outward reach — kept close to
+      // vertical so the marks read as tall licks, not radial bristles
       swirl.set(-Math.sin(a), 0, Math.cos(a))
       const twist = (vnoise(Math.cos(a) * 2.4, Math.sin(a) * 2.4 + hf * 5) - 0.5) * 1.1
       flow
         .set(0, 1, 0)
-        .addScaledVector(swirl, twist * 0.45)
-        .addScaledVector(radial, 0.25 + Math.max(0, bump) * 0.5)
+        .addScaledVector(swirl, twist * 0.4)
+        .addScaledVector(radial, 0.08 + Math.max(0, bump) * 0.22)
 
-      const exposure = smooth(-0.1, 0.45, bump)
+      // per-stroke jitter on the tongue exposure — without it the low-frequency tongues pool
+      // pale strokes into large grey bands instead of scattering them through the dark mass
+      const exposure = smooth(-0.1, 0.45, bump) * (0.4 + 0.6 * rng())
       const lit = moonShade(nrm)
-      const shadeNoise = 0.6 + 0.7 * rng() // strong per-stroke value contrast — the Van Gogh read
+      const shadeNoise = 0.66 + 0.5 * rng() // strong per-stroke value contrast — the Van Gogh read
       strokeCol
         .copy(CORE)
-        .lerp(GREEN, smooth(0.2, 0.85, exposure) * 0.7)
-        .lerp(OLIVE, smooth(0.55, 1, exposure) * 0.35)
-        .lerp(LIT, lit * smooth(0.4, 1, exposure) * (0.2 + 0.4 * hf))
+        .lerp(GREEN, smooth(0.3, 0.95, exposure) * 0.55)
+        .lerp(OLIVE, smooth(0.65, 1, exposure) * 0.2)
+        .lerp(LIT, lit * smooth(0.55, 1, exposure) * (0.1 + 0.2 * hf))
         .multiplyScalar(shadeNoise)
 
       p.set(px, py, pz).addScaledVector(nrm, stickOut)
-      const halfLen = 0.075 + 0.05 * rng() + 0.025 * (1 - hf)
-      const halfWid = 0.015 + 0.011 * rng()
+      const halfLen = 0.085 + 0.05 * rng() + 0.015 * (1 - hf) // long slim licks, not stubby dabs
+      const halfWid = 0.015 + 0.01 * rng() // enough body that edge-on marks read as paint, not quills
       pushBrush(arr, p, flow, nrm, halfLen, halfWid, strokeCol)
     }
 
