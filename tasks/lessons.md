@@ -1365,3 +1365,18 @@ The 2026-07-09 Mark-confirmed polish list, one capture-verified slice each. What
   (smooth(0.12,0.75,k) toward abyss) — dark base + lit strokes is what reads as paint at night.
   Extracted `rootPoint(ang,k)` so solid rings and cladding share the exact surface maths — strokes
   hug the shell by construction. Evidence: `output/playwright/underside-2026-07-13-p2/`.
+- **Foreground bushes (`BrushShrubs`, 4 passes):** the colour lesson of the session. Bushes built
+  from the olive cypress-green family read as KHAKI BOULDERS / dirt mounds against the cool night —
+  even at dark values, an all-warm mass is read by hue, not value. Grounding in the reference band
+  (`painting.jpg` rows 850–1150) showed Van Gogh's village vegetation is a near-black COOL mass
+  with olive AND blue-green strokes scattered through it — i.e. the cypress recipe at bush scale:
+  `dark = PALETTE.cypress`, per-STROKE tongue lerp toward `cypressGreen` (60%) or `villageCool`
+  (40%), never an overall tint. Per-stroke tongue choice matters: a per-position lerp tints the
+  whole form; a per-stroke random scatters glints through the dark, which is the Van Gogh read.
+  Rule of thumb: on a cool night stage, warm accents must be SPARSE marks; the moment they become
+  the mass, the form leaves the painting. Also: crop + 2× zoom the capture (`sips`) before
+  retuning colour — the full frame hides hue drift that the zoom makes obvious. Evidence trail:
+  `output/playwright/shrubs-2026-07-13-p1…p4/`.
+- **`npm run check:reduced` added** (`scripts/check-reduced-motion.mjs`): the reduced-motion
+  locked criterion is now machine-checked (emulated reduce → byte-identical frames; control must
+  churn; PASS/FAIL exit code). Run it whenever the diorama route's animation wiring changes.

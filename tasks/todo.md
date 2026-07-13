@@ -9,20 +9,30 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## ▶ PICK UP HERE (2026-07-13) — underside clad + reduced-motion verified; gate open for Mark
+## ▶ PICK UP HERE (2026-07-13) — autonomous queue exhausted; everything left needs Mark
 
-The four Mark-confirmed rough edges (2026-07-09 list) are DONE (see the 2026-07-12 section below).
-This session (2026-07-13) closed two more of the open list, committed on `sky-brushdab` (NOT
-pushed): the island underside is now clad in painted-rock strokes (`dc12ea1`, 2 passes — evidence
-`output/playwright/underside-2026-07-13-p2/`), and the reduced-motion still-state on the diorama
-route is VERIFIED (byte-identical frames under emulated reduce + churning control + looked at —
-evidence `output/playwright/reduced-motion-2026-07-13/`). 36 tests, lint, build green.
+Session 2026-07-13 closed three more items, committed on `sky-brushdab` (NOT pushed):
 
-**Next (still open):**
-1. Foreground dressing (bushes/ground), lighting/bloom balance.
-2. Mobile framing polish.
-3. Perf on real hardware (headless reads 0 fps) — Mark's machine + a mid-tier phone.
-4. Mark's gate review of the rough-edges pass (his eye decides; keep the gate open until then).
+- **Island underside clad** (`dc12ea1`, 2 passes) — the smooth grey cone is now painted rock
+  melting into night. Evidence: `output/playwright/underside-2026-07-13-p2/`.
+- **Reduced-motion still-state VERIFIED** (locked criterion) — byte-identical frames under
+  emulated reduce, churning control, and the still LOOKED at. The check is now permanent:
+  `npm run check:reduced` (`scripts/check-reduced-motion.mjs`). Evidence:
+  `output/playwright/reduced-motion-2026-07-13/`.
+- **Foreground bushes** (4 passes) — eight dark brush-clad shrubs dress the village edges, the
+  apron and the cypress foot; colour grounded against the reference band (cypress-family
+  near-black + olive/cool-green tongue scatter). Evidence (CURRENT-STATE capture set for the
+  gate): `output/playwright/shrubs-2026-07-13-p4/`.
+
+36 tests, lint, build green throughout. Details in `tasks/lessons.md` (2026-07-13 section).
+
+**Everything still open needs Mark (do NOT churn these blind):**
+1. Gate review of the whole authored-forms state — freshest set `shrubs-2026-07-13-p4`
+   (desktop-centre / look-down / drag boundaries / mobile / nopost).
+2. Lighting/bloom balance — `desktop-nopost` vs final is a live taste call (2026-07-08 note).
+3. Mobile framing — moon + cypress anchor both held today; whether the portrait dead bands
+   above/below the composition need a different trade is a live-drive taste call.
+4. Perf on real hardware — headless reads 0 fps; needs Mark's machine + a mid-tier phone.
 
 ### 2026-07-12 record — four rough edges done
 
