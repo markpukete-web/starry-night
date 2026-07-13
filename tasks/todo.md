@@ -9,35 +9,52 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## ▶ PICK UP HERE (2026-07-13) — autonomous queue exhausted; everything left needs Mark
+## ▶ PICK UP HERE (2026-07-13) — for Mark's review next session; gate OPEN
 
-Session 2026-07-13 closed three more items, committed on `sky-brushdab` (NOT pushed):
+### Where the piece is
 
-- **Island underside clad** (`dc12ea1`, 2 passes) — the smooth grey cone is now painted rock
-  melting into night. Evidence: `output/playwright/underside-2026-07-13-p2/`.
+An orbitable 3D floating-island diorama of Starry Night, authored entirely in Van Gogh
+brushstrokes: a rooted, fully-clad island (top + underside), a licking-flame cypress front-left,
+the village huddle + pale-spired church, dark brush bushes dressing the ground, all under the
+camera-locked source-ribbon churning sky (`PaintingFlowSky3D`). It reads as the painting, survives
+a full front-arc orbit + look-down (no funnel, no torn paper, no unpainted surfaces), and freezes
+to a dignified still under reduced-motion. **This is a checkpoint, NOT a passed gate** — the
+brushstroke look and composition are on track per Mark's 2026-07-09 read; his eye still decides.
+
+Route: `npm run dev` → `http://127.0.0.1:5173/?mode=diorama&clean=1`
+(`&debug=nopost` = no bloom · `&debug=flow` = sky only · drop `&clean=1` for the leva panel).
+
+### What this session (2026-07-13) achieved — 3 items closed
+
+- **Island underside clad** (`dc12ea1`, 2 passes) — the last smooth grey surface is now painted
+  rock melting into night. Evidence: `output/playwright/underside-2026-07-13-p2/`.
 - **Reduced-motion still-state VERIFIED** (locked criterion) — byte-identical frames under
-  emulated reduce, churning control, and the still LOOKED at. The check is now permanent:
-  `npm run check:reduced` (`scripts/check-reduced-motion.mjs`). Evidence:
-  `output/playwright/reduced-motion-2026-07-13/`.
-- **Foreground bushes** (4 passes) — eight dark brush-clad shrubs dress the village edges, the
-  apron and the cypress foot; colour grounded against the reference band (cypress-family
-  near-black + olive/cool-green tongue scatter). Evidence (CURRENT-STATE capture set for the
-  gate): `output/playwright/shrubs-2026-07-13-p4/`.
+  emulated reduce, churning control, and the still LOOKED at. Now a permanent machine check:
+  `npm run check:reduced`. Evidence: `output/playwright/reduced-motion-2026-07-13/`.
+- **Foreground bushes** (`1a54dfd`, 4 passes) — eight dark brush-clad shrubs dress the village
+  edges, the apron and the cypress foot; colour grounded against the reference band (cypress-family
+  near-black + olive/cool-green tongue scatter). **Freshest full capture set for the gate:**
+  `output/playwright/shrubs-2026-07-13-p4/`.
 
 36 tests, lint, build green throughout. Details in `tasks/lessons.md` (2026-07-13 section).
 
-**Record branch (Mark, 2026-07-13):** `record/2d-streamline-flow` → `8ccf903` (2026-06-24) — the
-settled 2D flat flow (`LivingPainting` + `StreamlineSky`, Mark's live-tuned v4 values baked as
-defaults) preserved as a permanent record before the 3D pivot. Local only, like `sky-brushdab`;
-push is Mark's call. To revisit it: `git switch record/2d-streamline-flow && npm run dev`.
+### Git state — everything is now pushed to origin (2026-07-13)
 
-**Everything still open needs Mark (do NOT churn these blind):**
-1. Gate review of the whole authored-forms state — freshest set `shrubs-2026-07-13-p4`
-   (desktop-centre / look-down / drag boundaries / mobile / nopost).
-2. Lighting/bloom balance — `desktop-nopost` vs final is a live taste call (2026-07-08 note).
-3. Mobile framing — moon + cypress anchor both held today; whether the portrait dead bands
+All three branches are backed up on GitHub and track origin (push ≠ merge — the gate stays open):
+- `sky-brushdab` → `42a558b` — the active 3D work (this is where to pick up).
+- `main` → `247e816` — synced (docs/UI only; the 3D work is not merged here).
+- `record/2d-streamline-flow` → `8ccf903` (2026-06-24) — the settled 2D flat flow
+  (`LivingPainting` + `StreamlineSky`, Mark's live-tuned v4 baked as defaults) kept as a permanent
+  record of the piece before the 3D pivot. Revisit: `git switch record/2d-streamline-flow && npm run dev`.
+
+### For Mark to decide next session (do NOT churn these blind)
+
+1. **Gate review** of the whole authored-forms state — freshest set `shrubs-2026-07-13-p4`
+   (desktop-centre / look-down / both drag boundaries / mobile / nopost).
+2. **Lighting/bloom balance** — `desktop-nopost` vs final is a live taste call (2026-07-08 note).
+3. **Mobile framing** — moon + cypress anchor both held today; whether the portrait dead bands
    above/below the composition need a different trade is a live-drive taste call.
-4. Perf on real hardware — headless reads 0 fps; needs Mark's machine + a mid-tier phone.
+4. **Perf on real hardware** — headless reads 0 fps; needs Mark's machine + a mid-tier phone.
 
 ### 2026-07-12 record — four rough edges done
 

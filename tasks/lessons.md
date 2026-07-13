@@ -1380,3 +1380,10 @@ The 2026-07-09 Mark-confirmed polish list, one capture-verified slice each. What
 - **`npm run check:reduced` added** (`scripts/check-reduced-motion.mjs`): the reduced-motion
   locked criterion is now machine-checked (emulated reduce → byte-identical frames; control must
   churn; PASS/FAIL exit code). Run it whenever the diorama route's animation wiring changes.
+- **All branches pushed to origin (Mark's call, 2026-07-13).** After ~a month of deliberate
+  local-only "gate open" discipline, Mark asked to back everything up to GitHub. Pushed:
+  `record/2d-streamline-flow` (the 2D record at `8ccf903`), `sky-brushdab` (active 3D work,
+  `42a558b`), and fast-forwarded `main` (`247e816`, docs/UI only). All three now track origin.
+  Key point for future sessions: **pushing did NOT change the gate or merge anything** — the 3D
+  work lives on `sky-brushdab` as an unmerged branch; the gate is still OPEN awaiting Mark's eye.
+  `main` still carries only the 2D-era docs/UI, not the 3D pivot.
