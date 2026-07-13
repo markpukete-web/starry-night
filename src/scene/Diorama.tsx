@@ -1,5 +1,6 @@
 import { BrushCypress } from './BrushCypress'
 import { BrushIsland } from './BrushIsland'
+import { BrushShrubs } from './BrushShrubs'
 import { BrushVillage } from './BrushVillage'
 
 /**
@@ -16,6 +17,8 @@ export function Diorama({ debug = 'final' }: { debug?: 'final' | 'stage' }) {
       <BrushIsland />
       {/* the village huddle + pale-spired church, nestled at the hills' foot */}
       <BrushVillage />
+      {/* dark bushes dotting the village edges and the ground band — foreground dressing */}
+      <BrushShrubs />
       {/* cypress, front-left — the dark flame, the vertical counterweight to the sky */}
       <BrushCypress />
     </group>
