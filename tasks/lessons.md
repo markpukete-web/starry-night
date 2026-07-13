@@ -1342,3 +1342,26 @@ The 2026-07-09 Mark-confirmed polish list, one capture-verified slice each. What
   turn grain into contour lines.
 - **sips gotcha:** `--cropOffset` must PRECEDE `-c` on the command line or it is silently ignored
   and the crop centres itself — two wasted review reads before catching it.
+
+## Reduced-motion verified + island underside clad (2026-07-13)
+
+- **Reduced-motion still-state on `?mode=diorama` PASSES (locked criterion).** CDP
+  `Emulation.setEmulatedMedia` with `prefers-reduced-motion: reduce` → two frames 1.5s apart are
+  byte-identical; a control page without the emulation churns (frames differ). The still was also
+  LOOKED at: full painted sky, lit village, dignified. The freeze path is complete because the
+  only clock in the diorama route is `PaintingFlowSky3D`'s ribbon `uTime` (frozen by `uFreeze` +
+  the useFrame early-return); the Brush* stage forms are static geometry with no clocks. Evidence:
+  `output/playwright/reduced-motion-2026-07-13/` (frames + summary.json); script kept at the
+  session scratchpad's `reduced-motion-check.mjs` — worth promoting into `scripts/` if this check
+  should join the loop.
+- **Island underside (2 passes, `dc12ea1`):** the root was the last smooth unpainted surface.
+  Pass 1 re-proved the cypress fur trap on a NEW form: slim downward marks (halfWid ~0.02) with
+  0.9 wobble read as a thorny burr at the silhouette, and a rim-start of k=0.03 poked a shaggy
+  fringe above the coastline. Pass 2 landed it: SHORT BROAD marks (halfLen 0.09–0.16,
+  halfWid 0.03–0.055), wobble halved, offset 0.012, k from 0.07 — reads as painted rock. Two
+  transferable rules: (1) the fur trap is about stroke aspect + silhouette stick-out, not about
+  which form — apply the broad-mark fix by default on any steep silhouetted surface; (2) let the
+  SOLID darken (×0.62) and keep the STROKES carrying the light with a slower melt
+  (smooth(0.12,0.75,k) toward abyss) — dark base + lit strokes is what reads as paint at night.
+  Extracted `rootPoint(ang,k)` so solid rings and cladding share the exact surface maths — strokes
+  hug the shell by construction. Evidence: `output/playwright/underside-2026-07-13-p2/`.

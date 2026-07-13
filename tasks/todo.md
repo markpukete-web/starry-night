@@ -9,22 +9,29 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## ▶ PICK UP HERE (2026-07-12) — four rough edges done; gate open for Mark
+## ▶ PICK UP HERE (2026-07-13) — underside clad + reduced-motion verified; gate open for Mark
 
-The four Mark-confirmed rough edges (2026-07-09 list) are DONE, one capture-verified slice each,
-committed on `sky-brushdab` (NOT pushed): village brush cladding (`a2a8b5c`), cypress licking-flame
-rework, sky churn across the old cypress cut-out fill, calmer hill brushwork. All 36 tests, lint,
-build green throughout. Evidence: `output/playwright/rough-edges-2026-07-12/` — final state is the
-`s4-hills-p1` set (desktop/look-down/drag-boundaries/mobile); each slice's retune trail is its own
-`s1…s4` folder. Details + lessons in `tasks/lessons.md` (2026-07-12 section).
+The four Mark-confirmed rough edges (2026-07-09 list) are DONE (see the 2026-07-12 section below).
+This session (2026-07-13) closed two more of the open list, committed on `sky-brushdab` (NOT
+pushed): the island underside is now clad in painted-rock strokes (`dc12ea1`, 2 passes — evidence
+`output/playwright/underside-2026-07-13-p2/`), and the reduced-motion still-state on the diorama
+route is VERIFIED (byte-identical frames under emulated reduce + churning control + looked at —
+evidence `output/playwright/reduced-motion-2026-07-13/`). 36 tests, lint, build green.
 
-**Next (from the 2026-07-09 list, still open):**
+**Next (still open):**
 1. Foreground dressing (bushes/ground), lighting/bloom balance.
-2. Reduced-motion still-state check on the diorama route.
-3. Mobile framing polish.
-4. Perf on real hardware (headless reads 0 fps) — Mark's machine + a mid-tier phone.
-5. The island underside is a smooth grey cone — could clad or darken it further.
-6. Mark's gate review of the rough-edges pass (his eye decides; keep the gate open until then).
+2. Mobile framing polish.
+3. Perf on real hardware (headless reads 0 fps) — Mark's machine + a mid-tier phone.
+4. Mark's gate review of the rough-edges pass (his eye decides; keep the gate open until then).
+
+### 2026-07-12 record — four rough edges done
+
+The four Mark-confirmed rough edges (2026-07-09 list) were done as one capture-verified slice
+each: village brush cladding (`a2a8b5c`), cypress licking-flame rework, sky churn across the old
+cypress cut-out fill, calmer hill brushwork. Evidence: `output/playwright/rough-edges-2026-07-12/`
+— final state is the `s4-hills-p1` set (desktop/look-down/drag-boundaries/mobile); each slice's
+retune trail is its own `s1…s4` folder. Details + lessons in `tasks/lessons.md` (2026-07-12
+section).
 
 Run: `npm run dev` → `http://127.0.0.1:5173/?mode=diorama&clean=1`. Capture (pins port 5179):
 `npm run capture:diorama -- output/playwright/<name>`.
