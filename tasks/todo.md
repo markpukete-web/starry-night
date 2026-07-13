@@ -26,6 +26,11 @@ Session 2026-07-13 closed three more items, committed on `sky-brushdab` (NOT pus
 
 36 tests, lint, build green throughout. Details in `tasks/lessons.md` (2026-07-13 section).
 
+**Record branch (Mark, 2026-07-13):** `record/2d-streamline-flow` → `8ccf903` (2026-06-24) — the
+settled 2D flat flow (`LivingPainting` + `StreamlineSky`, Mark's live-tuned v4 values baked as
+defaults) preserved as a permanent record before the 3D pivot. Local only, like `sky-brushdab`;
+push is Mark's call. To revisit it: `git switch record/2d-streamline-flow && npm run dev`.
+
 **Everything still open needs Mark (do NOT churn these blind):**
 1. Gate review of the whole authored-forms state — freshest set `shrubs-2026-07-13-p4`
    (desktop-centre / look-down / drag boundaries / mobile / nopost).
