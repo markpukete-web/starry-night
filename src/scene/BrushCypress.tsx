@@ -23,7 +23,7 @@ import { makeBrushArrays, moonShade, pushBrush, smooth, vnoise } from './brushFo
 
 const HEIGHT = 2.7
 const WIDTH_SCALE = 4.6 // painting halfWidth (UV) → world radius
-const SEG = 34
+const SEG = 72 // fine enough that the tongue curve stays a curve — 34 facets read as saw-teeth
 const STROKES = 3600
 const BASE = new Vector3(-1.5, 0.02, 0.72) // stands front-left, on the island
 
@@ -42,8 +42,11 @@ const LIT = new Color(PALETTE.hillsCrest).multiplyScalar(1.25)
 function tongue(a: number, hf: number): number {
   const ridge = vnoise(Math.cos(a) * 1.7 + 10, Math.sin(a) * 1.7 + hf * 3.4 + 4)
   const fine = vnoise(Math.cos(a) * 4 + 2, Math.sin(a) * 4 + hf * 6 + 7)
-  let bump = (ridge - 0.5) * 1.0 + (fine - 0.5) * 0.18
-  bump = bump > 0 ? bump * 1.7 : bump * 0.45 // sharpen outward licks, shallow troughs
+  let bump = (ridge - 0.5) * 1.0 + (fine - 0.5) * 0.1
+  // sharpen outward licks a little, shallow troughs — 1.7 made the silhouette spike into
+  // saw-teeth (Mark's 2026-07-14 gate feedback: the spiky edge); the tongues stay tall from
+  // the low-frequency ridge, they just crest rounder now
+  bump = bump > 0 ? bump * 1.35 : bump * 0.45
   return bump
 }
 
@@ -130,7 +133,7 @@ export function BrushCypress() {
       const bump = tongue(a, hf)
       const tipTaper = 0.35 + 0.65 * (1 - smooth(0.6, 1, hf))
       const r = Math.max(0.015, sampleR(hf) * (1 + bump * 0.5 * tipTaper))
-      const stickOut = 0.012 + Math.max(0, bump) * 0.038 * tipTaper // licks reach past the surface
+      const stickOut = 0.012 + Math.max(0, bump) * 0.026 * tipTaper // licks reach past the surface
       radial.set(Math.cos(a), 0, Math.sin(a))
       const px = swayX(hf) + Math.cos(a) * r
       const pz = swayZ(hf) + Math.sin(a) * r
@@ -160,7 +163,9 @@ export function BrushCypress() {
 
       p.set(px, py, pz).addScaledVector(nrm, stickOut)
       const halfLen = 0.085 + 0.05 * rng() + 0.015 * (1 - hf) // long slim licks, not stubby dabs
-      const halfWid = 0.015 + 0.01 * rng() // enough body that edge-on marks read as paint, not quills
+      // broader on tongue crests: the marks that DEFINE the silhouette need body (the underside
+      // lesson — pointed slim tips at a silhouette read as thorns, broad marks read as paint)
+      const halfWid = 0.015 + 0.01 * rng() + 0.012 * Math.max(0, bump)
       pushBrush(arr, p, flow, nrm, halfLen, halfWid, strokeCol)
     }
 
