@@ -123,7 +123,7 @@ function treeishColour(r: number, g: number, b: number): boolean {
  * colour must also pass the chroma test — mask-missed wisp pixels are no better than the hole.
  */
 function skyDonorUV(maskData: ImageData2D, paintingData: ImageData2D, u: number, v: number): [number, number] {
-  for (let r = 0.015; r <= 0.24; r += 0.015) {
+  for (let r = 0.015; r <= 0.42; r += 0.015) {
     for (const [dx, dy] of DONOR_DIRS) {
       const su = u + dx * r
       const sv = v + dy * r
@@ -223,6 +223,12 @@ export type HoleFillGrid = { gw: number; gh: number; rgba: Uint8ClampedArray }
  * chroma-tree (the cypress fringes the luminance mask never caught) get a high alpha so the wash
  * colour-mixes toward the fill there too. Wisp-dominated cells also relax rather than anchoring
  * their tree-tinted average into the Jacobi boundary.
+ *
+ * The texture is emitted at 4× the relax grid with real stroke GRAIN mirrored in from the
+ * nearest clean sky on the same row: the relaxed colour alone is smooth, and a smooth patch in
+ * a stroke-grained sky reads as a tree-shaped blur ghost (Mark's 2026-07-14 live catch). Grain
+ * (painting minus its local mean, i.e. the stroke texture) is zero-mean, so the relaxed colour
+ * still sets the value — mirroring copies brushwork, never smears colour.
  */
 export function buildHoleFillGrid(paintingData: ImageData2D, maskData: ImageData2D): HoleFillGrid {
   const gw = 112
@@ -348,14 +354,80 @@ export function buildHoleFillGrid(paintingData: ImageData2D, maskData: ImageData
       }
     }
   }
-  const rgba = new Uint8ClampedArray(gw * gh * 4)
-  for (let i = 0; i < gw * gh; i++) {
-    rgba[i * 4] = r[i] * 255
-    rgba[i * 4 + 1] = g[i] * 255
-    rgba[i * 4 + 2] = b[i] * 255
-    rgba[i * 4 + 3] = alpha[i] * 255
+  // --- emit at 4× with mirrored stroke grain ---
+  const ow = gw * 4
+  const oh = gh * 4
+  const bilinear = (arr: Float32Array, u: number, v: number): number => {
+    const fx = Math.min(gw - 1.001, Math.max(0, u * gw - 0.5))
+    const fy = Math.min(gh - 1.001, Math.max(0, v * gh - 0.5))
+    const x0 = Math.floor(fx)
+    const y0 = Math.floor(fy)
+    const tx = fx - x0
+    const ty = fy - y0
+    const i00 = y0 * gw + x0
+    return (
+      arr[i00] * (1 - tx) * (1 - ty) +
+      arr[i00 + 1] * tx * (1 - ty) +
+      arr[i00 + gw] * (1 - tx) * ty +
+      arr[i00 + gw + 1] * tx * ty
+    )
   }
-  return { gw, gh, rgba }
+
+  const rgba = new Uint8ClampedArray(ow * oh * 4)
+  const clean = new Uint8Array(ow) // per-row: this column is solid sky with non-tree chroma
+  const nearL = new Int32Array(ow)
+  const nearR = new Int32Array(ow)
+  for (let y = 0; y < oh; y++) {
+    const v = (y + 0.5) / oh
+    for (let x = 0; x < ow; x++) {
+      const u = (x + 0.5) / ow
+      if (rawMaskAt(maskData, u, v) > 140) {
+        const [cr, cg, cb] = sampleColour(paintingData, u, v)
+        clean[x] = treeishColour(cr, cg, cb) ? 0 : 1
+      } else {
+        clean[x] = 0
+      }
+    }
+    for (let x = 0, last = -1; x < ow; x++) {
+      if (clean[x]) last = x
+      nearL[x] = last
+    }
+    for (let x = ow - 1, last = -1; x >= 0; x--) {
+      if (clean[x]) last = x
+      nearR[x] = last
+    }
+    for (let x = 0; x < ow; x++) {
+      const u = (x + 0.5) / ow
+      const o = (y * ow + x) * 4
+      let cr = bilinear(r, u, v)
+      let cg = bilinear(g, u, v)
+      let cb = bilinear(b, u, v)
+      const ca = bilinear(alpha, u, v)
+      // grain only where the fill can actually show: holes, the feathered edge, wisp overrides
+      if ((rawMaskAt(maskData, u, v) <= 200 || ca > 0.1) && !clean[x]) {
+        // reflect across the nearer clean boundary on this row — copies real neighbouring
+        // brushwork; degrade to the boundary texel itself when the reflection lands dirty
+        const dl = nearL[x] >= 0 ? x - nearL[x] : Number.MAX_SAFE_INTEGER
+        const dr = nearR[x] >= 0 ? nearR[x] - x : Number.MAX_SAFE_INTEGER
+        if (dl !== Number.MAX_SAFE_INTEGER || dr !== Number.MAX_SAFE_INTEGER) {
+          const bx = dl <= dr ? nearL[x] : nearR[x]
+          let dx = bx + (bx - x)
+          if (dx < 0 || dx >= ow || !clean[dx]) dx = bx
+          const du = (dx + 0.5) / ow
+          const [pr, pg, pb] = sampleColour(paintingData, du, v)
+          const clampG = (d: number) => Math.max(-0.18, Math.min(0.18, d)) // star-halo golds stay tame
+          cr += clampG(pr - bilinear(r, du, v)) * 0.9
+          cg += clampG(pg - bilinear(g, du, v)) * 0.9
+          cb += clampG(pb - bilinear(b, du, v)) * 0.9
+        }
+      }
+      rgba[o] = cr * 255
+      rgba[o + 1] = cg * 255
+      rgba[o + 2] = cb * 255
+      rgba[o + 3] = ca * 255
+    }
+  }
+  return { gw: ow, gh: oh, rgba }
 }
 
 function sampleHoleFlow(grid: HoleFlowGrid, u: number, v: number): [number, number] {
@@ -389,21 +461,7 @@ export function buildSourceStreamlineRibbons({
   }
   const holeFlow = openSkyBandV !== undefined ? buildHoleFlowGrid(flowData, maskData, openSkyBandV) : null
 
-  for (let i = 0; i < count; i++) {
-    let u = rng()
-    let v = rng()
-    let validSeed = false
-
-    for (let attempt = 0; attempt < 80; attempt++) {
-      u = 0.005 + rng() * 0.99
-      v = 0.005 + rng() * 0.99
-      if (seedOk(u, v)) {
-        validSeed = true
-        break
-      }
-    }
-    if (!validSeed) continue
-
+  const addRibbon = (u: number, v: number): void => {
     const phase = rng() * Math.PI * 2
     const rate = 0.65 + rng() * 0.7
     const halfW = strokeWidth * (0.6 + 0.8 * rng())
@@ -447,7 +505,7 @@ export function buildSourceStreamlineRibbons({
       if (curU < 0 || curU > 1 || curV < 0 || curV > 1) break
     }
 
-    if (trail.length < 3) continue
+    if (trail.length < 3) return
 
     const m = trail.length
     for (let k = 0; k < m; k++) {
@@ -491,6 +549,46 @@ export function buildSourceStreamlineRibbons({
       }
     }
     vbase += m * 2
+  }
+
+  for (let i = 0; i < count; i++) {
+    let u = rng()
+    let v = rng()
+    let validSeed = false
+
+    for (let attempt = 0; attempt < 80; attempt++) {
+      u = 0.005 + rng() * 0.99
+      v = 0.005 + rng() * 0.99
+      if (seedOk(u, v)) {
+        validSeed = true
+        break
+      }
+    }
+    if (!validSeed) continue
+    addRibbon(u, v)
+  }
+
+  // Targeted churn across the cut-out: everywhere else the ribbons ride the painting's own
+  // stroke texture, but over the hole they are the ONLY brushwork on a smooth fill — at the
+  // uniform seeding density the fill's blur shows through as a ghost. Triple-ish the density
+  // inside the holes (appended after the main loop so the base geometry stays byte-identical
+  // for a given seed).
+  if (openSkyBandV !== undefined) {
+    const extra = Math.round(count * 0.18)
+    for (let i = 0; i < extra; i++) {
+      let u = 0
+      let v = 0
+      let found = false
+      for (let attempt = 0; attempt < 120; attempt++) {
+        u = rng()
+        v = rng() * openSkyBandV
+        if (rawMaskAt(maskData, u, v) <= 140 && Math.hypot(u - MOON_UV[0], v - MOON_UV[1]) >= MOON_R) {
+          found = true
+          break
+        }
+      }
+      if (found) addRibbon(u, v)
+    }
   }
 
   return { vertices, indices }
