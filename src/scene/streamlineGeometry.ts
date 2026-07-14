@@ -470,9 +470,12 @@ export function buildSourceStreamlineRibbons({
     const phase = rng() * Math.PI * 2
     const rate = 0.65 + rng() * 0.7
     const halfW = strokeWidth * (0.6 + 0.8 * rng()) * (1 + bold * 0.7)
-    const bend = bold > 0 ? (rng() - 0.5) * bold * 0.17 : 0 // rad per step, cumulative curve
-    const kick = bold > 0 ? 0.82 + rng() * 0.42 : 1
+    // gentle waviness only (0.06): stronger cumulative bend curled the bold ribbons into pale
+    // feathery mats that read as their own artefact (Mark, 2026-07-14 late review)
+    const bend = bold > 0 ? (rng() - 0.5) * bold * 0.06 : 0
+    const kick = bold > 0 ? 0.78 + rng() * 0.34 : 1
     const steps = bold > 0 ? Math.round(points * 1.35) : points
+    let outside = 0
     const trail: [number, number][] = []
     let hx = 0
     let hy = 0
@@ -518,6 +521,16 @@ export function buildSourceStreamlineRibbons({
       curU += cx * stepSize
       curV += cy * stepSize
       if (curU < 0 || curU > 1 || curV < 0 || curV > 1) break
+      // bold ribbons exist to texture the HOLE — let them cross its boundary a few steps to
+      // blend, then stop, or their pale kicked colours carpet the clean sky around it
+      if (bold > 0) {
+        if (rawMaskAt(maskData, curU, curV) > 140) {
+          outside++
+          if (outside > 3) break
+        } else {
+          outside = 0
+        }
+      }
     }
 
     if (trail.length < 3) return
@@ -589,7 +602,7 @@ export function buildSourceStreamlineRibbons({
   // inside the holes with BOLD ribbons (appended after the main loop so the base geometry
   // stays byte-identical for a given seed).
   if (openSkyBandV !== undefined) {
-    const extra = Math.round(count * 0.15)
+    const extra = Math.round(count * 0.12)
     for (let i = 0; i < extra; i++) {
       let u = 0
       let v = 0
