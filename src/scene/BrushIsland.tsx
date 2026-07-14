@@ -144,10 +144,13 @@ export function BrushIsland() {
       // Van Gogh's surfaces read because ADJACENT strokes contrast hard in value — without this
       // strong per-stroke kick the field averages into smooth clay. But the full ±50% spread
       // reads as salt-and-pepper mottle at composition distance; ±35% keeps the brushwork read
-      // while letting the contours knit. Sparse, gentler crest flecks — 10% was confetti.
-      const val = 0.65 + 0.7 * rng()
+      // while letting the contours knit (top trimmed to 1.27: the brightest kicks caught bloom
+      // and sparkled in the look-down — Mark's 2026-07-14 gate feedback). Sparse, gentler crest
+      // flecks — 10% was confetti; and flecks belong to MOONLIT faces, not shadowed ground,
+      // where they read as white scratches.
+      const val = 0.65 + 0.62 * rng()
       strokeCol.multiplyScalar(val)
-      if (rng() < 0.045) strokeCol.lerp(hillLit, 0.5) // moonlit impasto fleck
+      if (rng() < 0.045 * (0.25 + 0.75 * lit)) strokeCol.lerp(hillLit, 0.32) // moonlit impasto fleck
 
       p.set(x, y, z).addScaledVector(nrm, 0.025)
       const halfLen = 0.135 + 0.09 * rng() // longer marks knit into contour lines, not grain
