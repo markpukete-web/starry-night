@@ -31,6 +31,35 @@ feedback items were fixed as capture-verified slices on `sky-brushdab` (all test
 Still open for Mark (unchanged from 07-13): lighting/bloom balance (nopost vs final), mobile
 portrait dead bands, perf on real hardware. Dev server recipe below still applies.
 
+### Tree-shadow follow-up (2026-07-14, same day, Mark live) — three more rounds
+
+Mark kept catching the cut-out ghost as it changed form: dark column → smooth blur ghost →
+fine-parallel "character ghost". Each round fixed the layer beneath: grain (4× fill texture,
+stroke grain mirrored from clean sky) + ~3× hole ribbon density (`sky-knit2 p1`), then BOLD hole
+ribbons (wider/longer/curvature wobble/value kick — matching the neighbours' stroke statistics,
+`sky-knit2 p2`). State: seam hard to point at, at home AND drag boundaries. Mark's eye judges.
+If it STILL ghosts for him, the remaining lever is structural — widen the 3D cypress to own its
+painted footprint at home view — a composition change, Mark's call, not a quiet retune.
+
+### Next slice (planned 2026-07-14, Mark asked for the plan): side-void sky continuation
+
+The empty flat-blue L/R margins are the biggest "painting on a card in a void" tell, and the
+locked bar sanctions the fix ("the invented back … continues that same derived style"). Contract:
+
+1. **Continue the churn past the canvas edges.** Ribbons seeded in the side zones, integrating a
+   flow field continued outward from the painting's own edge columns (relax/extrapolate, same
+   spirit as the hole inpaint), colours donated from the adjacent edge palette.
+2. **Invent NO anchors.** No new stars, no moon, no hero swirls — texture and motion only; every
+   composition landmark stays the painting's. (Hard negative, same class as the rejected native
+   dome.)
+3. **Fade with azimuth.** Density/brightness melt into the night gradient as the continuation
+   leaves the canvas; the faithful front must not gain invented content — edge fade currently at
+   `dioramaSourceEdgeFade` is the seam to blend across.
+4. **Verify at home + both drag boundaries + look-down**, against the painting for the front.
+   `SkyEdgeBackfill` (the whisper wash) is superseded by this and likely deleted.
+5. Below-island void is NOT this slice (the island underside owns that read; revisit separately
+   if Mark flags it).
+
 ---
 
 ## Superseded (2026-07-13) — for Mark's review next session; gate OPEN
