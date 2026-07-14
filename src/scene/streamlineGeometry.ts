@@ -461,17 +461,25 @@ export function buildSourceStreamlineRibbons({
   }
   const holeFlow = openSkyBandV !== undefined ? buildHoleFlowGrid(flowData, maskData, openSkyBandV) : null
 
-  const addRibbon = (u: number, v: number): void => {
+  // bold=1 marks the extra hole-fill ribbons: the inpainted flow they ride is laminar (smoothed
+  // by construction) and their donor colours collapse the painting's texel variety, so at the
+  // base character they knit in value but read as a column of fine parallel strokes — a
+  // statistical seam beside Van Gogh's chunky, curved, varied neighbours. Bold ribbons are
+  // wider, longer, carry a per-ribbon curvature wobble, and get a per-ribbon value kick.
+  const addRibbon = (u: number, v: number, bold = 0): void => {
     const phase = rng() * Math.PI * 2
     const rate = 0.65 + rng() * 0.7
-    const halfW = strokeWidth * (0.6 + 0.8 * rng())
+    const halfW = strokeWidth * (0.6 + 0.8 * rng()) * (1 + bold * 0.7)
+    const bend = bold > 0 ? (rng() - 0.5) * bold * 0.17 : 0 // rad per step, cumulative curve
+    const kick = bold > 0 ? 0.82 + rng() * 0.42 : 1
+    const steps = bold > 0 ? Math.round(points * 1.35) : points
     const trail: [number, number][] = []
     let hx = 0
     let hy = 0
     let curU = u
     let curV = v
 
-    for (let k = 0; k < points; k++) {
+    for (let k = 0; k < steps; k++) {
       trail.push([curU, curV])
       // inside a mask hole the flow field is the cut-out tree's own vertical stroke orientation —
       // integrate the inpainted continuation there so the sky's churn crosses the fill smoothly
@@ -479,6 +487,13 @@ export function buildSourceStreamlineRibbons({
       const [dx, dy] = inHole ? sampleHoleFlow(holeFlow, curU, curV) : sampleSignedFlow(flowData, curU, curV)
       let cx = dx
       let cy = dy
+      if (bend !== 0) {
+        const cosB = Math.cos(bend * k)
+        const sinB = Math.sin(bend * k)
+        const rx = cx * cosB - cy * sinB
+        cy = cx * sinB + cy * cosB
+        cx = rx
+      }
 
       let nearSwirl = false
       for (const [su, sv, , sr] of SWIRLS) {
@@ -536,7 +551,7 @@ export function buildSourceStreamlineRibbons({
         ;[cu, cv] = skyDonorUV(maskData, paintingData, cu, cv)
         ;[r, g, b] = sampleColour(paintingData, cu, cv)
       }
-      const color: [number, number, number] = [r, g, b]
+      const color: [number, number, number] = [Math.min(1, r * kick), Math.min(1, g * kick), Math.min(1, b * kick)]
 
       vertices.push(
         { u: trail[k][0] + nx * w, v: trail[k][1] + ny * w, len: lenN, across: 0, phase, rate, color },
@@ -570,11 +585,11 @@ export function buildSourceStreamlineRibbons({
 
   // Targeted churn across the cut-out: everywhere else the ribbons ride the painting's own
   // stroke texture, but over the hole they are the ONLY brushwork on a smooth fill — at the
-  // uniform seeding density the fill's blur shows through as a ghost. Triple-ish the density
-  // inside the holes (appended after the main loop so the base geometry stays byte-identical
-  // for a given seed).
+  // uniform seeding density the fill's blur shows through as a ghost. Boost the density
+  // inside the holes with BOLD ribbons (appended after the main loop so the base geometry
+  // stays byte-identical for a given seed).
   if (openSkyBandV !== undefined) {
-    const extra = Math.round(count * 0.18)
+    const extra = Math.round(count * 0.15)
     for (let i = 0; i < extra; i++) {
       let u = 0
       let v = 0
@@ -587,7 +602,7 @@ export function buildSourceStreamlineRibbons({
           break
         }
       }
-      if (found) addRibbon(u, v)
+      if (found) addRibbon(u, v, 1)
     }
   }
 
