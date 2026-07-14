@@ -41,6 +41,21 @@ ribbons (wider/longer/curvature wobble/value kick — matching the neighbours' s
 If it STILL ghosts for him, the remaining lever is structural — widen the 3D cypress to own its
 painted footprint at home view — a composition change, Mark's call, not a quiet retune.
 
+### PROPOSED to Mark (2026-07-14 late) — offline inpainting pipeline, absorbing the hole AND the voids
+
+Six runtime rounds on the cut-out ghost (value → chroma → grain → density → bold → containment)
+each improved it, but the ceiling of runtime heuristics is "close, still findable". The proper
+fix is Phase-0-style: an offline script (`scripts/extend-reference.ts`, dependency-free like
+`derive-reference.ts`) that bakes a NEW derived asset set:
+- `painting-filled.jpg` — the cypress hole filled by patch-based inpainting (real painting sky
+  patches, flow-aligned), reviewable as a flat image against the painting BEFORE entering 3D;
+- optionally extended left/right margins in the same derived style (the side-void answer), plus
+  a matching extended flow field.
+Runtime then simply samples the filled painting inside the hole — the donor/fill-grid/bold
+heuristics all get deleted. Tighter review loop (flat crops, not 3D drives), higher quality
+ceiling, cleaner architecture. Supersedes the side-void slice below if Mark approves (same
+mechanism solves both).
+
 ### Next slice (planned 2026-07-14, Mark asked for the plan): side-void sky continuation
 
 The empty flat-blue L/R margins are the biggest "painting on a card in a void" tell, and the
