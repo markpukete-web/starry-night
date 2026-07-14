@@ -1425,3 +1425,16 @@ The 2026-07-09 Mark-confirmed polish list, one capture-verified slice each. What
 - Capture-crop recipe reminder that keeps paying: crop + 2× zoom (`sips --cropOffset Y X -c H W`,
   offset BEFORE -c; `-z H W` height-first) before judging any region; full frames hide both hue
   drift and edge character.
+- **Fixing the VALUE of a fill is not enough — a smooth patch in a stroke-grained sky reads as a
+  texture ghost.** Mark caught it live from an orbit angle the standard captures under-sample:
+  the knitted fill was the right colour but blurry, so the tree shape survived as a soft
+  silhouette. Fix: emit the fill texture at 4× the relax grid and add real stroke GRAIN mirrored
+  in from the nearest clean sky on the same row (grain = painting − its local mean, zero-mean by
+  construction, so the relaxed colour still sets the value and mirroring copies brushwork rather
+  than smearing colour); plus seed ribbons ~3× denser inside the holes — over the hole they are
+  the only brushwork, everywhere else they ride the painting's own texture. Appending the extra
+  seeds AFTER the main loop keeps the base geometry byte-identical per seed.
+- **Before blaming new code for an at-angle artefact, crop the same view from the untouched
+  baseline.** The wispy vertical smearing at the drag boundary exists in the pre-session captures
+  too — it is the source projection stretching at its edge, not the fill. The comparison saved a
+  retune pass aimed at the wrong target.
