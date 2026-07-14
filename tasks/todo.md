@@ -9,7 +9,18 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## ▶ PICK UP HERE (2026-07-14) — Mark's live gate feedback actioned; gate OPEN
+## ▶ PICK UP HERE (2026-07-14 end-of-day) — offline inpaint pipeline APPROVED; start S1+S2
+
+**Mark approved the offline inpaint + extend pipeline ("I think your plan will work").** Next
+session starts there: plan at `docs/superpowers/plans/2026-07-14-offline-inpaint-extend-pipeline.md`.
+S1 = fill-region overlay (mask holes ∪ chroma wisps + dilation, visualised for agreement);
+S2 = Criminisi-style exemplar inpainting → bake `painting-filled.png` + `signed-flow-filled.png`;
+**Mark's gate = the flat image crop**, before any runtime change. S3 swaps the runtime onto the
+baked assets and DELETES the donor/fill-grid/bold heuristics; S4 extends the canvas into the
+side voids (absorbs the side-void slice below). Rationale: six runtime rounds on the cut-out
+ghost all landed "close, still findable" — real painting patches are the ceiling-raiser.
+
+### Earlier that day — Mark's live gate feedback actioned; gate OPEN
 
 Mark live-drove the diorama (first review since the push) and called it a step up. His three
 feedback items were fixed as capture-verified slices on `sky-brushdab` (all tests/lint/build +
@@ -41,7 +52,7 @@ ribbons (wider/longer/curvature wobble/value kick — matching the neighbours' s
 If it STILL ghosts for him, the remaining lever is structural — widen the 3D cypress to own its
 painted footprint at home view — a composition change, Mark's call, not a quiet retune.
 
-### PROPOSED to Mark (2026-07-14 late) — offline inpainting pipeline, absorbing the hole AND the voids
+### APPROVED by Mark (2026-07-14 late) — offline inpainting pipeline, absorbing the hole AND the voids
 
 Six runtime rounds on the cut-out ghost (value → chroma → grain → density → bold → containment)
 each improved it, but the ceiling of runtime heuristics is "close, still findable". The proper
@@ -56,7 +67,7 @@ heuristics all get deleted. Tighter review loop (flat crops, not 3D drives), hig
 ceiling, cleaner architecture. Supersedes the side-void slice below if Mark approves (same
 mechanism solves both).
 
-### Next slice (planned 2026-07-14, Mark asked for the plan): side-void sky continuation
+### Superseded by the approved pipeline (S4 absorbs it): side-void sky continuation
 
 The empty flat-blue L/R margins are the biggest "painting on a card in a void" tell, and the
 locked bar sanctions the fix ("the invented back … continues that same derived style"). Contract:

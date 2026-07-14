@@ -1438,3 +1438,18 @@ The 2026-07-09 Mark-confirmed polish list, one capture-verified slice each. What
   baseline.** The wispy vertical smearing at the drag boundary exists in the pre-session captures
   too — it is the source projection stretching at its edge, not the fill. The comparison saved a
   retune pass aimed at the wrong target.
+- **The bold pass overshot — containment is part of any targeted-stroke design.** Bold hole
+  ribbons seeded IN the hole but their longer curved trails escaped it, carpeting clean sky with
+  pale kicked strokes: the awkward zone grew WIDER than the hole. Any stroke population that
+  exists to texture a region must be clipped to that region (trails stop a few steps past the
+  boundary), and value kicks must stay below "reads pale at composition distance" (top 1.12).
+- **Runtime synthesis has a ceiling; the painting itself is the asset (DECISION, Mark-approved
+  2026-07-14).** Six rounds (value → chroma → grain → density → bold → containment) each
+  narrowed the cut-out ghost; none survived Mark's inspection, because generated texture never
+  carries Van Gogh's stroke statistics. The approved path is Phase-0-style OFFLINE exemplar
+  inpainting (`docs/superpowers/plans/2026-07-14-offline-inpaint-extend-pipeline.md`): bake
+  `painting-filled.png` + `signed-flow-filled.png` from real flow-aligned painting patches,
+  review as FLAT CROPS before anything enters 3D, then delete the runtime heuristics. The same
+  machinery extends the canvas into the side voids (S4). General rule: when a reconstruction
+  keeps failing a taste gate, move the problem to where the review loop is cheapest and the
+  source material is real.

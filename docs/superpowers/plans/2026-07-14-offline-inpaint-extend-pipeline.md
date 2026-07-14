@@ -1,6 +1,6 @@
 # Offline inpaint + extend pipeline — filling the cypress hole and the side voids at asset-bake time
 
-Status: PROPOSED (Mark reviewing). Written 2026-07-14 after six runtime rounds on the cut-out
+Status: APPROVED (Mark, 2026-07-14 — "I think your plan will work"). Written 2026-07-14 after six runtime rounds on the cut-out
 ghost (value → chroma gates → grain → density → bold → containment) each improved but none
 passed Mark's eye.
 
