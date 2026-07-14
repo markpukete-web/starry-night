@@ -9,7 +9,31 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## ▶ PICK UP HERE (2026-07-13) — for Mark's review next session; gate OPEN
+## ▶ PICK UP HERE (2026-07-14) — Mark's live gate feedback actioned; gate OPEN
+
+Mark live-drove the diorama (first review since the push) and called it a step up. His three
+feedback items were fixed as capture-verified slices on `sky-brushdab` (all tests/lint/build +
+`check:reduced` green throughout):
+
+1. **Sky ghost column knitted** (`90f9bcb`, 4 passes — at cap, landed). The dark brown-smudged
+   column beside the 3D cypress (the old 2D cut-out) is gone from every view: inpainted wash
+   fill (donor-init + Jacobi colour grid), donors demand solid mask + non-tree chroma, and
+   mask-missed wisps are chroma-gated (two measured colour families). Evidence:
+   `output/playwright/sky-knit-2026-07-14-p4/` (p1→p4 is the retune trail; p3→p4 = probe first).
+2. **Ground sparkle calmed** (1 pass). Flecks now follow moonShade (rare in shadow), gentler
+   pull, kick tail trimmed below bloom. Evidence: `output/playwright/spark-calm-2026-07-14-p1/`.
+   Whether the in-motion bloom shimmer is gone needs Mark's LIVE drive — stills can't show it.
+3. **Cypress spiky edge rounded** (1 pass). The saw-teeth were facets (SEG 34→72) + crest
+   sharpening + thorn-slim edge marks; tongues kept, crests rounder. Mark said the spiky edge
+   bothered him most; further elegance is his taste call. Evidence:
+   `output/playwright/cypress-edge-2026-07-14-p1/`.
+
+Still open for Mark (unchanged from 07-13): lighting/bloom balance (nopost vs final), mobile
+portrait dead bands, perf on real hardware. Dev server recipe below still applies.
+
+---
+
+## Superseded (2026-07-13) — for Mark's review next session; gate OPEN
 
 ### Where the piece is
 

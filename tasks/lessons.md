@@ -1387,3 +1387,41 @@ The 2026-07-09 Mark-confirmed polish list, one capture-verified slice each. What
   Key point for future sessions: **pushing did NOT change the gate or merge anything** — the 3D
   work lives on `sky-brushdab` as an unmerged branch; the gate is still OPEN awaiting Mark's eye.
   `main` still carries only the 2D-era docs/UI, not the 3D pivot.
+
+## Mark's live gate feedback — sky knit, sparkle calm, cypress edge (2026-07-14)
+
+- **A flat constant fill reads as a ghost column; inpaint colour instead — but colours need
+  donor-init.** The wash's flat night-blue in the old cypress cut-out sat darker than the
+  surrounding painted sky, so the hole read as a dark ghost beside the 3D tree. Fix: a coarse
+  Jacobi-relaxed colour grid (true-sky cells hold the painting, holes relax), same pattern as the
+  hole FLOW grid — with one crucial difference: plain Jacobi from a black start needs O(width²)
+  iterations to carry COLOUR across a wide hole. The flow grid only tolerates few iterations
+  because its vectors are re-normalised to unit length every sample; colours have no such rescue.
+  Nearest-donor initialise the hole cells, then relax to smooth. (Donor-init is fine here because
+  the fill is only LOOKED at — never integrate against nearest-donor fields.)
+- **Chroma-gate what the mask misses — and MEASURE the chroma, don't guess it.** The
+  luminance-derived sky-mask claims the cypress's wispy fringes as solid sky, so both wash and
+  ribbons faithfully painted tree colour floating in the open sky. One pass was burnt on a guessed
+  warm-olive test (caught 0% of the visible blobs); a pixel probe of the actual region showed TWO
+  families: warm dark olive (min(r,g) clearly above b) and near-neutral dark grey-green
+  (rgb ~17–97, blue failing to dominate). The sky's own darks are always blue-DOMINANT navy, so
+  "b fails to clear the warm channels AND dark" is safe there. Rule of thumb: when a colour gate
+  misses, dump the actual pixel values before adjusting thresholds.
+- **Donors must be solid-sky AND clean-chroma.** Feathered cut-out edge pixels (mask 16–140)
+  blend tree browns into the painting texels — donors and direct samples taken there smudge mud.
+  The donor gate, the colour-sample gate, and the wash's colour mix all need the same discipline
+  (the wash keeps raw mask for coverage/alpha, solid mask only for colour).
+- **Sparkle = flecks in shadow + kick peaks over bloom threshold.** The ground's moonlit flecks
+  were scattered uniformly, so they read as white scratches on SHADOWED ground; gating the fleck
+  probability by moonShade keeps them where light justifies them. The value kick's top (×1.35)
+  crossed the bloom threshold and glinted during orbit; ×1.27 keeps the brushwork contrast
+  without feeding bloom.
+- **A spiky silhouette is usually the MESH, not the strokes: check facet density first.** The
+  cypress's saw-tooth edge was 34 angular segments sampling a perfectly smooth tongue curve —
+  the curve was never spiky; the sampling was. SEG 72 rounds it for free (tongue() is continuous).
+  Compounding: the outward-lick sharpening (×1.7) peaked the crests, and slim pointed marks with
+  stick-out fringed the edge with thorns (the underside lesson again — broad marks at silhouettes;
+  now also: scale halfWid UP on tongue crests, where marks define the edge).
+- Capture-crop recipe reminder that keeps paying: crop + 2× zoom (`sips --cropOffset Y X -c H W`,
+  offset BEFORE -c; `-z H W` height-first) before judging any region; full frames hide both hue
+  drift and edge character.
