@@ -9,32 +9,47 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## ▶ PICK UP HERE (2026-07-16) — S1+S2+S3 DONE; Mark to live-drive, then S4 (side voids)
+## ▶ PICK UP HERE (2026-07-16 end-of-day) — cypress hole ✅ GATE PASSED; next is S4 (side voids)
 
-**The offline inpaint pipeline is live in the runtime.** Trail: S1+S2 baked the filled assets
-(gate passed — Mark: "I can't tell the difference"; one feedback round fixed his circled zone
-via per-placement tone adaptation). S3 swapped `PaintingFlowSky3D`'s wash + ribbons onto
-`painting-filled.png` / `signed-flow-filled.png` and DELETED the six rounds of runtime
-heuristics (treeishColour, skyDonorUV, hole flow grid, hole fill grid + DataTexture + uFill +
-alpha override, bold hole ribbons). streamlineGeometry.ts shrank ~350 lines; 2D routes keep
-the unfilled originals. Tests migrated (42 green), lint/build green, `check:reduced` PASS.
+**The cypress cut-out ghost is DONE — Mark passed it live ("gate pass", 2026-07-16).** This
+closes the ghost problem that ate six runtime rounds + the whole 07-14 tree-shadow thread. The
+offline inpaint pipeline (S1–S3) is live: `PaintingFlowSky3D` samples the offline-filled
+`painting-filled.png` / `signed-flow-filled.png`, and all the runtime donor/fill heuristics are
+deleted. State on `sky-brushdab`, committed + (push next session — see git state below), gate
+PASSED not just open.
 
-**Capture-verified by looking** (`output/playwright/inpaint-swap-2026-07-16/`): home, both
-drag boundaries, look-down, nopost, flow-debug, mobile — the ghost column beside the 3D
-cypress is gone in every view; A/B against `sky-knit2-2026-07-14-p3` shows the smudge/
-character-ghost zones now carry the sky's own churn. Flow-debug streamlines cross the old
-cut-out smoothly (the σ=2 low-pass on donor flow did its job).
+**How it landed (the full trail, newest last):**
+- S1 `0181e8c` — fill-region mask (5.7%, exactly the tree; moon + 5 star bodies guarded).
+- S2 `e0b9c49` — exemplar inpainting → baked filled assets; **flat-image gate passed**
+  ("can't tell the difference").
+- `5085dbe` — Mark circled a mushy zone → per-placement tone adaptation dissolved the patch
+  tiling.
+- S3 `33ef84a` — runtime swap; deleted ~350 lines of heuristics; capture + `check:reduced` green.
+- `9596734` — Mark live-caught "a little out of flow" → **re-aligned donated flow to the local
+  SWIRLS circulation** (14% of copied texels were sign-flipped against the churn; Phase-0
+  mechanism). **This is the change that passed the gate.**
 
-**For Mark next session:**
-1. **Live-drive the diorama** — stills can't show motion shimmer; the ghost verdict in motion
-   is his. `npm run dev` → `http://localhost:5173/?mode=diorama&clean=1`.
-2. Then **S4 — side-void canvas extension** (the last slice of the approved plan): extend the
-   painting past its L/R edges with the same patch machinery, mount via a widened
-   `dioramaSkyProjection` source rect, delete `SkyEdgeBackfill`. Gate: drag-boundary look.
-3. Ship hygiene (filled PNGs 6+3 MB) is a pre-release call, noted in 0003.
+Evidence: `output/playwright/flow-realign-2026-07-16/` (latest), `inpaint-swap-2026-07-16/`
+(pre-flow-fix A/B). Method + residuals: `docs/decisions/0003-inpaint-extend.md`.
 
-Plan: `docs/superpowers/plans/2026-07-14-offline-inpaint-extend-pipeline.md`; method/residuals:
-`docs/decisions/0003-inpaint-extend.md`.
+**NEXT SESSION — S4, side-void canvas extension** (the last slice of the approved plan, and the
+piece's biggest remaining "painting on a card" tell — the flat-blue L/R margins Mark's circle
+also brushed at the bottom). Contract:
+1. Extend the painting past its L/R edges with the SAME patch machinery (`scripts/lib/inpaint.ts`),
+   seeded from the edge columns, search domain = the whole sky, energy/brightness fading outward
+   into the night gradient. Bake `sky-extend-{left,right}.png` (+ flow strips), sign-aligned like
+   the hole fill (carry the 07-16 flow lesson — re-align at the destination).
+2. **Invent NO anchors** — no stars, moon, or hero swirls in the extension (hard negative).
+3. Mount: widen the source rect in `dioramaSkyProjection`, move `dioramaSourceEdgeFade` outward,
+   ribbons integrate across the extended flow, **delete `SkyEdgeBackfill`** (the whisper wash).
+4. Gate = the drag-boundary look (+ home unchanged, look-down). Below-island void is NOT this slice.
+
+Then only ship hygiene (filled PNGs 6+3 MB) + pre-release remain. Plan:
+`docs/superpowers/plans/2026-07-14-offline-inpaint-extend-pipeline.md` (S4 section).
+
+**Dev/capture recipe:** `npm run dev` → `http://localhost:5173/?mode=diorama&clean=1`
+(`&debug=flow` = sky only · `&debug=nopost` = no bloom). Rebake assets: `npm run extend-reference`
+(deterministic). Capture: `npm run capture:diorama -- output/playwright/<name>`.
 
 ### Original approval note (2026-07-14)
 

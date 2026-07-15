@@ -185,6 +185,13 @@ Newest at the bottom of each section.
   through. Fix = re-align every copied vector to the SWIRLS circulation at the TARGET texel (the exact
   Phase-0 `derive-reference` mechanism) before the blur. Rule worth keeping: whenever flow values move
   to a new position (donors, mirrors, extensions), re-run sign alignment at the destination.
+- 2026-07-16 — ✅ **GATE PASSED (Mark, live): the cypress cut-out ghost is DONE.** The flow re-alignment
+  above was the change that closed it. This ends the ghost thread that spanned six runtime rounds
+  (value → chroma → grain → density → bold → containment, all 07-12→07-14) plus the whole approved
+  offline pipeline (S1–S3). The lasting takeaway across the entire arc: the runtime heuristics could
+  only ever get "close, still findable"; moving the fix OFFLINE (real painting patches, reviewed as a
+  flat image) raised the ceiling AND deleted ~350 lines. Next slice is S4 (side-void extension) — same
+  machinery, and it MUST carry the destination-sign-alignment rule from the entry above.
 
 - Node v25.8.1 → runs `.ts` directly via native type-stripping
   (`node scripts/derive-reference.ts`).
