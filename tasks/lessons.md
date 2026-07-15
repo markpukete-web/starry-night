@@ -166,6 +166,16 @@ Newest at the bottom of each section.
   p6 kept 15×15 and added clamped per-placement tone adaptation (donor shifted toward the target's
   known-pixel mean, ±14/channel) — rectangles dissolved, the circled zone reads as sweeping strokes.
   Probe-then-revert again the cheapest diagnostic: two bakes, ~6 s each, decisive.
+- 2026-07-16 — S3 runtime swap landed: the six-round heuristic stack (treeishColour, skyDonorUV, hole
+  flow grid, hole fill grid + uFill + wisp alpha override, bold hole ribbons) DELETED in one slice —
+  ~350 lines out of streamlineGeometry.ts, the wash back to a plain sample + skyBand discard. The
+  architecture lesson the whole pipeline confirms: **when a runtime keeps growing compensations for a
+  bad input, fix the INPUT offline and delete the compensations** — the result was simultaneously
+  simpler and better than the best-tuned heuristic state. Verified by A/B capture against
+  `sky-knit2-2026-07-14-p3`: the ghost/smudge zones now carry the sky's own churn in every view
+  (`output/playwright/inpaint-swap-2026-07-16/`). Scoping detail that mattered: only the 3D route
+  swaps to the filled assets — the 2D routes (LivingPainting/StreamlineSky/relief) keep the unfilled
+  originals because the painting's own cypress sits on top there.
 
 - Node v25.8.1 → runs `.ts` directly via native type-stripping
   (`node scripts/derive-reference.ts`).

@@ -9,26 +9,32 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## ▶ PICK UP HERE (2026-07-16) — S1+S2 DONE and BAKED; ⛩ MARK'S FLAT-IMAGE GATE before S3
+## ▶ PICK UP HERE (2026-07-16) — S1+S2+S3 DONE; Mark to live-drive, then S4 (side voids)
 
-**S1+S2 landed.** The cypress cut-out is inpainted with the painting's own flow-aligned sky
-patches, baked deterministically as `public/reference/painting-filled.png` +
-`signed-flow-filled.png` (`npm run extend-reference` rebuilds byte-identically). Method +
-tuning trail + honest residuals: `docs/decisions/0003-inpaint-extend.md`. Retune cap honoured
-(4 passes; p3 probe regressed and was reverted — p2+p4 is the keeper). lint / build / 43 tests
-green (new `scripts/inpaint.test.ts`).
+**The offline inpaint pipeline is live in the runtime.** Trail: S1+S2 baked the filled assets
+(gate passed — Mark: "I can't tell the difference"; one feedback round fixed his circled zone
+via per-placement tone adaptation). S3 swapped `PaintingFlowSky3D`'s wash + ribbons onto
+`painting-filled.png` / `signed-flow-filled.png` and DELETED the six rounds of runtime
+heuristics (treeishColour, skyDonorUV, hole flow grid, hole fill grid + DataTexture + uFill +
+alpha override, bold hole ribbons). streamlineGeometry.ts shrank ~350 lines; 2D routes keep
+the unfilled originals. Tests migrated (42 green), lint/build green, `check:reduced` PASS.
 
-**⛩ GATE (Mark, before ANY runtime change): review the flat crops**
-- `reference/derived/inpaint-before-after.png` — original vs filled at 1×
-- `reference/derived/inpaint-filled-2x.png` — filled at 2×
-Named residuals to judge (detail in 0003): faint weave stipple in the mid pale band (2×-findable);
-the tip star slightly softer on its cut side; the below-band strip is runtime-invisible by design.
+**Capture-verified by looking** (`output/playwright/inpaint-swap-2026-07-16/`): home, both
+drag boundaries, look-down, nopost, flow-debug, mobile — the ghost column beside the 3D
+cypress is gone in every view; A/B against `sky-knit2-2026-07-14-p3` shows the smudge/
+character-ghost zones now carry the sky's own churn. Flow-debug streamlines cross the old
+cut-out smoothly (the σ=2 low-pass on donor flow did its job).
 
-**After the gate: S3** — swap wash+ribbons onto the filled assets and DELETE the runtime
-donor/fill-grid/bold heuristics (skyDonorUV, treeishColour gates, hole flow grid, bold path,
-uFill/alpha override). Note for S3: ship-format hygiene (filled PNGs are 6+3 MB; PNG keeps
-outside-fill pixels byte-identical — re-encoding trade is a hygiene call). Then S4 = side-void
-canvas extension. Plan: `docs/superpowers/plans/2026-07-14-offline-inpaint-extend-pipeline.md`.
+**For Mark next session:**
+1. **Live-drive the diorama** — stills can't show motion shimmer; the ghost verdict in motion
+   is his. `npm run dev` → `http://localhost:5173/?mode=diorama&clean=1`.
+2. Then **S4 — side-void canvas extension** (the last slice of the approved plan): extend the
+   painting past its L/R edges with the same patch machinery, mount via a widened
+   `dioramaSkyProjection` source rect, delete `SkyEdgeBackfill`. Gate: drag-boundary look.
+3. Ship hygiene (filled PNGs 6+3 MB) is a pre-release call, noted in 0003.
+
+Plan: `docs/superpowers/plans/2026-07-14-offline-inpaint-extend-pipeline.md`; method/residuals:
+`docs/decisions/0003-inpaint-extend.md`.
 
 ### Original approval note (2026-07-14)
 

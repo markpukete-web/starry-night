@@ -8,9 +8,7 @@ import {
   BufferGeometry,
   CanvasTexture,
   Color,
-  DataTexture,
   DoubleSide,
-  LinearFilter,
   NoColorSpace,
   NormalBlending,
   Quaternion,
@@ -20,7 +18,7 @@ import {
 } from 'three'
 import { useImageData } from './useImageData'
 import { tuned } from './tuning'
-import { buildHoleFillGrid, buildSourceStreamlineRibbons } from './streamlineGeometry'
+import { buildSourceStreamlineRibbons } from './streamlineGeometry'
 import { DOME_R } from './skyMapping'
 import { dioramaSourceEdgeFade, uvToDioramaSkyPosition } from './dioramaSkyProjection'
 import { MOON_R, MOON_UV, SWIRLS } from './skySwirls'
@@ -120,27 +118,20 @@ const washFrag = /* glsl */ `
   precision highp float;
   uniform sampler2D uPainting;
   uniform sampler2D uMask;
-  uniform sampler2D uFill;
   uniform int uDebugMode;
   varying vec2 vUv;
   varying float vEdgeFade;
   void main() {
     float mask = texture2D(uMask, vUv).r;
-    // This backdrop is now behind REAL 3D forms, so its old job — cutting the 2D cypress/foreground
-    // out of the sky — is obsolete and actively harmful: the cutouts read as dark holes (a "ghost
-    // tree"). Within the sky band we fill those holes with the surrounding painted sky relaxed
-    // across the hole (uFill, a coarse inpainted grid) — a flat constant here read as a dark
-    // ghost column beside the 3D cypress. Below the skyline the 3D island covers it: discard.
+    // This backdrop sits behind REAL 3D forms, so the mask's old 2D cypress cut-out is obsolete
+    // here. uPainting is the OFFLINE-FILLED painting (painting-filled.png — the cut-out and its
+    // wisps replaced with the painting's own sky patches at bake time, see
+    // docs/decisions/0003-inpaint-extend.md), so within the sky band a plain sample IS the fill.
+    // Below the skyline the 3D island covers everything: discard.
     float skyBand = 1.0 - smoothstep(0.58, 0.7, vUv.y);
     float a = max(mask, skyBand) * vEdgeFade;
     if (a < 0.02) discard;
-    // colour mixes on SOLID mask only: the feathered cut-out edge blends the tree's browns into
-    // the painting texels, and mixing by raw mask smudged those browns over the fill. Alpha keeps
-    // the raw mask so coverage is unchanged. The fill's alpha marks the mask-missed tree wisps
-    // (chroma-detected on the CPU) — the colour mix overrides those toward the fill as well.
-    vec4 fill = texture2D(uFill, vUv);
-    float solidMask = smoothstep(0.5, 0.88, mask) * (1.0 - fill.a);
-    vec3 col = mix(fill.rgb, texture2D(uPainting, vUv).rgb, solidMask);
+    vec3 col = texture2D(uPainting, vUv).rgb;
     if (uDebugMode == 1) {
       col = mix(vec3(0.03, 0.08, 0.18), vec3(0.12, 0.38, 0.96), mask);
       gl_FragColor = vec4(col, a * 0.5);
@@ -343,10 +334,12 @@ function SourceOrbs({ debug }: { debug: PaintingFlowSkyDebug }) {
 export function PaintingFlowSky3D({ paused = false, debug = 'final' }: Props) {
   const skyRoot = useRef<Group>(null)
   const initialCameraInverse = useRef<Quaternion | null>(null)
-  const flowData = useImageData('/reference/signed-flow.png')
+  // The FILLED assets: the cypress cut-out replaced offline with the painting's own sky patches
+  // (docs/decisions/0003-inpaint-extend.md). The 2D routes keep the unfilled originals.
+  const flowData = useImageData('/reference/signed-flow-filled.png')
   const maskData = useImageData('/reference/sky-mask.png')
-  const paintingData = useImageData('/reference/painting.jpg')
-  const [painting, mask] = useTexture(['/reference/painting.jpg', '/reference/sky-mask.png'])
+  const paintingData = useImageData('/reference/painting-filled.png')
+  const [painting, mask] = useTexture(['/reference/painting-filled.png', '/reference/sky-mask.png'])
   const isFlowDebug = debug === 'flow'
 
   useEffect(() => {
@@ -374,31 +367,12 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final' }: Props) {
   )
 
   const washGeometry = useMemo(() => makeSkyWashGeometry(), [])
-  // Inpainted sky colour across the mask holes for the wash fill; until the CPU image data
-  // arrives, a 1×1 night-blue stands in (the old flat fill, now only ever a first-frames state).
-  const fillTexture = useMemo(() => {
-    let tex: DataTexture
-    if (paintingData && maskData) {
-      const grid = buildHoleFillGrid(paintingData, maskData)
-      tex = new DataTexture(new Uint8Array(grid.rgba.buffer, grid.rgba.byteOffset, grid.rgba.length), grid.gw, grid.gh)
-      tex.magFilter = LinearFilter
-      tex.minFilter = LinearFilter
-    } else {
-      // alpha 0: the wisp override must stay off while the stand-in is bound, or the whole
-      // wash would colour-mix to this flat blue for the first frames
-      tex = new DataTexture(new Uint8Array([28, 43, 92, 0]), 1, 1)
-    }
-    tex.colorSpace = NoColorSpace
-    tex.needsUpdate = true
-    return tex
-  }, [maskData, paintingData])
   const washMaterial = useMemo(
     () =>
       new ShaderMaterial({
         uniforms: {
           uPainting: { value: painting },
           uMask: { value: mask },
-          uFill: { value: fillTexture },
           uDebugMode: { value: isFlowDebug ? 1 : 0 },
         },
         vertexShader: washVert,
@@ -408,7 +382,7 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final' }: Props) {
         depthTest: true,
         side: DoubleSide,
       }),
-    [fillTexture, isFlowDebug, mask, painting],
+    [isFlowDebug, mask, painting],
   )
 
   const geometry = useMemo(() => {
@@ -422,8 +396,8 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final' }: Props) {
       points: tuned('points', 16),
       stepSize: tuned('stepSize', 0.012),
       seed: DIORAMA_CAPTURE.seed,
-      // the wash fills the obsolete 2D-cypress cut-out within its sky band (0.58–0.7); ribbons
-      // must churn across that fill too or it reads as a smooth dead patch beside the 3D tree
+      // the offline-filled painting owns the obsolete 2D-cypress cut-out within the wash's sky
+      // band (0.58–0.7); ribbons must churn across that fill too or it reads as a static patch
       openSkyBandV: 0.62,
     })
 
@@ -493,10 +467,9 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final' }: Props) {
     ribbonMaterial.uniforms.uDebugMode.value = isFlowDebug ? 1 : 0
     washMaterial.uniforms.uPainting.value = painting
     washMaterial.uniforms.uMask.value = mask
-    washMaterial.uniforms.uFill.value = fillTexture
     washMaterial.uniforms.uDebugMode.value = isFlowDebug ? 1 : 0
     /* eslint-enable react-hooks/immutability */
-  }, [fillTexture, isFlowDebug, mask, painting, paused, ribbonMaterial, washMaterial])
+  }, [isFlowDebug, mask, painting, paused, ribbonMaterial, washMaterial])
 
   /* eslint-disable react-hooks/immutability -- R3F render-loop writes: camera-locked sky rotation + time uniform */
   useFrame(({ camera }, dt) => {
@@ -511,7 +484,6 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final' }: Props) {
 
   useEffect(() => () => geometry?.dispose(), [geometry])
   useEffect(() => () => washGeometry.dispose(), [washGeometry])
-  useEffect(() => () => fillTexture.dispose(), [fillTexture])
   useEffect(
     () => () => {
       ribbonMaterial.dispose()
