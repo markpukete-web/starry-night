@@ -176,6 +176,15 @@ Newest at the bottom of each section.
   (`output/playwright/inpaint-swap-2026-07-16/`). Scoping detail that mattered: only the 3D route
   swaps to the filled assets — the 2D routes (LivingPainting/StreamlineSky/relief) keep the unfilled
   originals because the painting's own cypress sits on top there.
+- 2026-07-16 — Mark's live catch on the swap: the filled zone read "a little bit out of flow". Root
+  cause found by hypothesis-then-measure: **signed flow is DIRECTED, and direction is positional.**
+  The donor search scores orientation agreement undirected (|cos| — right for stroke texture), and a
+  donor's vector was sign-aligned to the circulation at the DONOR's position — copied to the target it
+  can point against the LOCAL churn. Measured: 14% of copied flow texels flipped, in patch-sized
+  clusters; the σ=2 blur then cancelled opposing vectors into aimless mush that ribbons wandered
+  through. Fix = re-align every copied vector to the SWIRLS circulation at the TARGET texel (the exact
+  Phase-0 `derive-reference` mechanism) before the blur. Rule worth keeping: whenever flow values move
+  to a new position (donors, mirrors, extensions), re-run sign alignment at the destination.
 
 - Node v25.8.1 → runs `.ts` directly via native type-stripping
   (`node scripts/derive-reference.ts`).

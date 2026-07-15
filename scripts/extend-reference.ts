@@ -23,7 +23,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { MOON_R, MOON_UV } from '../src/scene/skySwirls.ts';
+import { MOON_R, MOON_UV, SWIRLS } from '../src/scene/skySwirls.ts';
 import { computeFillRegion, FILL_DILATED, FILL_FEATHER, FILL_HOLE, FILL_WISP, treeishColour } from './lib/fill-region.ts';
 import { inpaint } from './lib/inpaint.ts';
 import { decodePNG, encodePNG } from './lib/png.ts';
@@ -264,15 +264,35 @@ for (let i = 0; i < N; i++) {
 
 writeFileSync(OUT_FILLED, encodePNG(w, h, result.rgba));
 
-// Flow fill: each filled flow texel copies from wherever its paint came from, then the filled
-// texels are low-passed back to the field's native smoothness. The original field is smooth by
-// construction (Gaussian structure-tensor integration in derive-reference.ts); raw donor
-// patchwork is blocky, and ribbons integrating through blocky flow wobble exactly where the
-// ghost used to be. The blur only ever WRITES filled texels — original flow stays untouched.
+// Flow fill: each filled flow texel copies from wherever its paint came from — then two
+// corrections restore the field's contract:
+//  1. SIGN RE-ALIGNMENT. signed-flow is DIRECTED: derive-reference sign-aligns each vector to
+//     the SWIRLS circulation field at its own position. A donor's vector was aligned at the
+//     DONOR's position; at the target the circulation can point the other way, so verbatim
+//     copies flip against the local churn — and blurring opposing vectors cancels them into
+//     aimless mush the ribbons wander through ("out of flow", Mark's live catch 2026-07-16).
+//     Re-align every copied vector to the circulation at the TARGET texel, exactly as the
+//     Phase-0 bake does.
+//  2. LOW-PASS back to the field's native smoothness (Gaussian tensor integration upstream);
+//     raw donor patchwork is blocky. Blur only ever WRITES filled texels.
 const flowFilled = new Uint8Array(signedFlow.rgba);
 const fw = signedFlow.width;
 const fh = signedFlow.height;
 const flowTexelFilled = new Uint8Array(fw * fh);
+const circAt = (u: number, v: number): [number, number] => {
+  let cx = 0;
+  let cy = 0;
+  for (const [sx, sy, s, r] of SWIRLS) {
+    const du = u - sx;
+    const dv = v - sy;
+    const wgt = Math.exp(-(du * du + dv * dv) / (r * r));
+    cx += s * -dv * wgt; // tangential = sign · perp(p − centre), as in derive-reference.ts
+    cy += s * du * wgt;
+  }
+  return [cx, cy];
+};
+let flipped = 0;
+let copied = 0;
 for (let y = 0; y < fh; y++) {
   const py = Math.min(h - 1, Math.floor(((y + 0.5) / fh) * h));
   for (let x = 0; x < fw; x++) {
@@ -284,13 +304,23 @@ for (let y = 0; y < fh; y++) {
     const sy = Math.min(fh - 1, Math.floor(((((s / w) | 0) + 0.5) / h) * fh));
     const sp = (sy * fw + sx) * 4;
     const dp = (y * fw + x) * 4;
-    flowFilled[dp] = signedFlow.rgba[sp];
-    flowFilled[dp + 1] = signedFlow.rgba[sp + 1];
+    let dx = (signedFlow.rgba[sp] / 255) * 2 - 1;
+    let dy = (signedFlow.rgba[sp + 1] / 255) * 2 - 1;
+    const [cx, cy] = circAt((x + 0.5) / fw, (y + 0.5) / fh);
+    copied++;
+    if (dx * cx + dy * cy < 0) {
+      dx = -dx;
+      dy = -dy;
+      flipped++;
+    }
+    flowFilled[dp] = Math.round((dx * 0.5 + 0.5) * 255);
+    flowFilled[dp + 1] = Math.round((dy * 0.5 + 0.5) * 255);
     flowFilled[dp + 2] = signedFlow.rgba[sp + 2];
     flowFilled[dp + 3] = signedFlow.rgba[sp + 3];
     flowTexelFilled[y * fw + x] = 1;
   }
 }
+console.log(`flow fill: ${copied} texels copied, ${flipped} sign-flipped to the local circulation (${((100 * flipped) / Math.max(1, copied)).toFixed(0)}%)`);
 {
   const FLOW_BLUR_SIGMA = 2;
   const kr = Math.ceil(FLOW_BLUR_SIGMA * 3);
