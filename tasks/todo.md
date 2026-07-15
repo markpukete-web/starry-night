@@ -9,23 +9,26 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## ▶ PICK UP HERE (2026-07-16) — S1 DONE; next is S2 (the inpainting core)
+## ▶ PICK UP HERE (2026-07-16) — S1+S2 DONE and BAKED; ⛩ MARK'S FLAT-IMAGE GATE before S3
 
-**S1 landed** (`scripts/extend-reference.ts` + `scripts/lib/{png,fill-region}.ts`): the fill
-region is computed and eyeball-verified — exactly the cypress cut-out (column, detached tufts,
-the second spike, a below-band trail-safety strip), 5.7% of the image, with the moon and five
-hand-measured star bodies guarded as real paint. Deterministic (byte-identical reruns), lint /
-build / 39 tests green. Evidence: `reference/derived/fill-region-{overlay,crop}.png`
-(regenerate: `node scripts/extend-reference.ts`). Key S2-shaping findings in `tasks/lessons.md`
-(2026-07-16): the sky-mask is a churn mask not a segmentation; chroma alone can't discriminate
-tree from star/moon umber (guards required); guards must not block the primary mask component.
+**S1+S2 landed.** The cypress cut-out is inpainted with the painting's own flow-aligned sky
+patches, baked deterministically as `public/reference/painting-filled.png` +
+`signed-flow-filled.png` (`npm run extend-reference` rebuilds byte-identically). Method +
+tuning trail + honest residuals: `docs/decisions/0003-inpaint-extend.md`. Retune cap honoured
+(4 passes; p3 probe regressed and was reverted — p2+p4 is the keeper). lint / build / 43 tests
+green (new `scripts/inpaint.test.ts`).
 
-**Next: S2 — Criminisi-style exemplar inpainting** → bake `painting-filled.png` +
-`signed-flow-filled.png`; iterate offline until the flat crops pass, then **Mark's gate = the
-flat image crop**, before any runtime change. Then S3 swaps the runtime onto the baked assets
-and DELETES the donor/fill-grid/bold heuristics; S4 extends the canvas into the side voids
-(absorbs the side-void slice below). Plan:
-`docs/superpowers/plans/2026-07-14-offline-inpaint-extend-pipeline.md`.
+**⛩ GATE (Mark, before ANY runtime change): review the flat crops**
+- `reference/derived/inpaint-before-after.png` — original vs filled at 1×
+- `reference/derived/inpaint-filled-2x.png` — filled at 2×
+Named residuals to judge (detail in 0003): faint weave stipple in the mid pale band (2×-findable);
+the tip star slightly softer on its cut side; the below-band strip is runtime-invisible by design.
+
+**After the gate: S3** — swap wash+ribbons onto the filled assets and DELETE the runtime
+donor/fill-grid/bold heuristics (skyDonorUV, treeishColour gates, hole flow grid, bold path,
+uFill/alpha override). Note for S3: ship-format hygiene (filled PNGs are 6+3 MB; PNG keeps
+outside-fill pixels byte-identical — re-encoding trade is a hygiene call). Then S4 = side-void
+canvas extension. Plan: `docs/superpowers/plans/2026-07-14-offline-inpaint-extend-pipeline.md`.
 
 ### Original approval note (2026-07-14)
 

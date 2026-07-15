@@ -140,6 +140,25 @@ Newest at the bottom of each section.
   Plus: the trunk fill extends below the band (v 0.62→0.66) by straight-down column growth only — runtime
   ribbon trails dip under the band, but sideways growth would merge into the foreground mass. Evidence:
   `reference/derived/fill-region-{overlay,crop}.png` (deterministic — reruns are byte-identical; verified).
+- 2026-07-16 — Inpaint pipeline S2 (exemplar inpainting) baked; four lessons from the tuning trail:
+  1. **Heavy feathering is the blur ghost reborn.** featherAlpha 0.45 averaged away impasto crispness —
+     the same "smooth blur ghost" failure the runtime rounds hit. 0.22, edge-faded, only ever over
+     previously-filled pixels. Original paint is never written (asserted in the bake).
+  2. **Donor hygiene beats scoring cleverness.** The three visible artefact classes each traced to donor
+     CONTENT, not search quality: a pale halo fringe (fixed by bright-warm gate 0.62 + 1.6× guard-scaled
+     donor exclusion), canvas-border weave (fixed by a 24 px edge margin), and orientation breaks (fixed
+     by flowWeight 2600 + patch 15). Conversely the p3 probe that only improved SEARCH (radius 380,
+     topK 16) regressed — more donor variety creased the pale band. Probe-then-revert paid off again.
+  3. **Donor-copied flow is blocky; low-pass it to the field's native bandwidth.** The original signed
+     flow is Gaussian tensor-integrated (smooth by construction); patch-copied flow texels checkerboard,
+     and ribbons integrating through that would wobble exactly where the ghost was. σ=2 blur over ONLY
+     the filled texels restores the field's own smoothness while keeping donor-derived directions.
+  4. **Exemplar inpainting at this scale is CHEAP** — 116,865 px in ~1,840 placements ≈ 3 s (SAT-based
+     O(1) patch validity + SSD early-out). The offline loop really is seconds per iteration; never again
+     assume a bake needs background scheduling before measuring.
+  State: assets baked + committed; **Mark's flat-image gate is open** — S3 (runtime swap) must not start
+  until he judges `reference/derived/inpaint-before-after.png` / `inpaint-filled-2x.png`. Decision doc:
+  `docs/decisions/0003-inpaint-extend.md`.
 
 - Node v25.8.1 → runs `.ts` directly via native type-stripping
   (`node scripts/derive-reference.ts`).
