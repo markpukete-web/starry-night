@@ -65,11 +65,16 @@ Criminisi-style, kept simple:
   (the original is Gaussian tensor-integrated; raw donor patchwork is blocky and would wobble
   the ribbons).
 
-Tuning trail (retune cap 4, honoured): p1 defaults → p2 fixed a donated halo smear, a vertical
-orientation break, over-soft feathering and wisps surviving inside a star guard (bright gate
-0.72→0.62, guard-scaled donor exclusion, flowWeight 1500→2600, patch 13→15, feather 0.45→0.22,
-two guard geometry tweaks) → p3 probe (search 380/topK 16) REGRESSED (creased the pale band),
-reverted → p4 added the canvas-edge donor margin.
+Tuning trail (retune cap 4, honoured; p5–p6 re-opened by Mark's gate feedback): p1 defaults →
+p2 fixed a donated halo smear, a vertical orientation break, over-soft feathering and wisps
+surviving inside a star guard (bright gate 0.72→0.62, guard-scaled donor exclusion, flowWeight
+1500→2600, patch 13→15, feather 0.45→0.22, two guard geometry tweaks) → p3 probe (search
+380/topK 16) REGRESSED (creased the pale band), reverted → p4 added the canvas-edge donor
+margin → **Mark's gate feedback circled the mid pale-band fill as mushy/choppy** → p5 probe
+(patch 21×21) REGRESSED (whole strokes but block-tone rectangle tiling), reverted → p6 kept
+15×15 and fixed the actual culprit with per-placement tone adaptation (`toneShiftMax` 14: the
+donor shifts toward the target's known-pixel mean, clamped) — the rectangles dissolved and the
+circled zone reads as sweeping strokes.
 
 ## Outputs
 

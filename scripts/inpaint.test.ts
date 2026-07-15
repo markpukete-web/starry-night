@@ -24,6 +24,7 @@ const OPTS: InpaintOptions = {
   donorTreeishMaxFraction: 0.15,
   dataTermFloor: 0.15,
   featherAlpha: 0.45,
+  toneShiftMax: 14,
 };
 
 /** Horizontal stripes (8 px bands, two blues), flow along +x — a hole must knit the bands. */

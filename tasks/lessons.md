@@ -159,6 +159,13 @@ Newest at the bottom of each section.
   State: assets baked + committed; **Mark's flat-image gate is open** — S3 (runtime swap) must not start
   until he judges `reference/derived/inpaint-before-after.png` / `inpaint-filled-2x.png`. Decision doc:
   `docs/decisions/0003-inpaint-extend.md`.
+- 2026-07-16 — Mark's gate feedback round (circled the mid pale-band fill: "not 100% but close"). The
+  round confirmed a pattern worth keeping: **when a texture fill reads wrong, diagnose WHICH property
+  disagrees before reaching for the obvious dial.** The mush wasn't patch size — p5 (21×21) carried whole
+  strokes yet REGRESSED into block-tone rectangle tiling; the actual disagreement was per-patch base TONE.
+  p6 kept 15×15 and added clamped per-placement tone adaptation (donor shifted toward the target's
+  known-pixel mean, ±14/channel) — rectangles dissolved, the circled zone reads as sweeping strokes.
+  Probe-then-revert again the cheapest diagnostic: two bakes, ~6 s each, decisive.
 
 - Node v25.8.1 → runs `.ts` directly via native type-stripping
   (`node scripts/derive-reference.ts`).

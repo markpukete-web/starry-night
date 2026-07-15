@@ -82,7 +82,10 @@ const CROP_SCALE = 2; // nearest-neighbour zoom for the review crop
 // colour. Bright-warm = star/moon light (warm AND bright — the pale BLUE swirl band must stay
 // donatable, so plain luminance is not enough).
 const INPAINT_OPTS = {
-  patchRadius: 7, // 15×15 (p2: 13→15 — longer stroke continuity, fewer orientation breaks)
+  // p5 probe (patchRadius 10) REGRESSED: bigger patches carried whole strokes but tiled the
+  // fill with block-tone rectangles — the real culprit was patch-to-patch tonal mismatch,
+  // now fixed by toneShiftMax instead. Back to 15×15.
+  patchRadius: 7,
   // p3 probe (searchRadius 380 / topK 16) REGRESSED — wider search pulled in more varied
   // donors and creased the pale band; reverted to the p2 values.
   searchRadiusPx: 300,
@@ -93,6 +96,8 @@ const INPAINT_OPTS = {
   donorTreeishMaxFraction: 0.15,
   dataTermFloor: 0.15,
   featherAlpha: 0.22, // p2: 0.45→0.22 — heavy feather averaged away the impasto crispness
+  toneShiftMax: 14, // p6 (Mark's circled zone): donors shift toward the target's known mean so
+  // adjacent placements agree in base tone — no more rectangle tiling in the pale band
 };
 const BRIGHT_WARM_LUM = 0.62; // p2: 0.72→0.62 — pale green-yellow halo fringe donated a smear
 const DONOR_GUARD_SCALE = 1.6; // p2: donors excluded within guard r × this (halo fringes must not donate)

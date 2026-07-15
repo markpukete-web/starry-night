@@ -49,6 +49,10 @@ export type InpaintOptions = {
   dataTermFloor: number;
   /** feather strength when blending a donor over previously-filled pixels (0 = hard copy) */
   featherAlpha: number;
+  /** per-placement tone adaptation: the donor is shifted toward the target's known-pixel mean,
+   *  clamped to ±this per channel (0 = off). Kills patch-to-patch block-tone seams while
+   *  keeping the donor's stroke texture. */
+  toneShiftMax: number;
 };
 
 export type InpaintFlags = {
@@ -346,17 +350,43 @@ export function inpaint(image: DecodedPNG, flags: InpaintFlags, opts: InpaintOpt
 
     // Copy the donor: unknown pixels take it outright (and its flow, and the source offset);
     // previously-FILLED pixels get a feathered blend; original paint is never written.
+    // Tone adaptation: shift the donor toward the target's known-pixel mean (clamped) so
+    // adjacent placements agree in base tone instead of tiling as rectangles.
     let cPatch = 0;
+    let tSumR = 0;
+    let tSumG = 0;
+    let tSumB = 0;
+    let dSumR = 0;
+    let dSumG = 0;
+    let dSumB = 0;
+    let nMean = 0;
     for (let dy = -r; dy <= r; dy++) {
       const yy = ty + dy;
       if (yy < 0 || yy >= h) continue;
+      const cyy = bestCy + dy;
       for (let dx = -r; dx <= r; dx++) {
         const xx = tx + dx;
         if (xx < 0 || xx >= w) continue;
-        if (known[yy * w + xx]) cPatch += confidence[yy * w + xx];
+        const t = yy * w + xx;
+        if (!known[t]) continue;
+        cPatch += confidence[t];
+        const tp = t * 4;
+        const sp = (cyy * w + (bestCx + dx)) * 4;
+        tSumR += rgba[tp];
+        tSumG += rgba[tp + 1];
+        tSumB += rgba[tp + 2];
+        dSumR += rgba[sp];
+        dSumG += rgba[sp + 1];
+        dSumB += rgba[sp + 2];
+        nMean++;
       }
     }
     cPatch /= patchArea;
+    const clampShift = (s: number) => Math.max(-opts.toneShiftMax, Math.min(opts.toneShiftMax, s));
+    const shR = nMean > 0 ? clampShift((tSumR - dSumR) / nMean) : 0;
+    const shG = nMean > 0 ? clampShift((tSumG - dSumG) / nMean) : 0;
+    const shB = nMean > 0 ? clampShift((tSumB - dSumB) / nMean) : 0;
+    const u8 = (x: number) => Math.max(0, Math.min(255, Math.round(x)));
 
     for (let dy = -r; dy <= r; dy++) {
       const yy = ty + dy;
@@ -369,9 +399,9 @@ export function inpaint(image: DecodedPNG, flags: InpaintFlags, opts: InpaintOpt
         if (!flags.fill[t]) continue; // original paint: hands off
         const s = cyy * w + (bestCx + dx);
         if (!known[t]) {
-          rgba[t * 4] = rgba[s * 4];
-          rgba[t * 4 + 1] = rgba[s * 4 + 1];
-          rgba[t * 4 + 2] = rgba[s * 4 + 2];
+          rgba[t * 4] = u8(rgba[s * 4] + shR);
+          rgba[t * 4 + 1] = u8(rgba[s * 4 + 1] + shG);
+          rgba[t * 4 + 2] = u8(rgba[s * 4 + 2] + shB);
           rgba[t * 4 + 3] = 255;
           flow[t * 2] = flow[s * 2];
           flow[t * 2 + 1] = flow[s * 2 + 1];
@@ -382,9 +412,9 @@ export function inpaint(image: DecodedPNG, flags: InpaintFlags, opts: InpaintOpt
         } else if (opts.featherAlpha > 0) {
           const wgt = opts.featherAlpha * (1 - Math.max(Math.abs(dx), Math.abs(dy)) / (r + 1));
           if (wgt > 0) {
-            rgba[t * 4] = Math.round(rgba[t * 4] * (1 - wgt) + rgba[s * 4] * wgt);
-            rgba[t * 4 + 1] = Math.round(rgba[t * 4 + 1] * (1 - wgt) + rgba[s * 4 + 1] * wgt);
-            rgba[t * 4 + 2] = Math.round(rgba[t * 4 + 2] * (1 - wgt) + rgba[s * 4 + 2] * wgt);
+            rgba[t * 4] = Math.round(rgba[t * 4] * (1 - wgt) + u8(rgba[s * 4] + shR) * wgt);
+            rgba[t * 4 + 1] = Math.round(rgba[t * 4 + 1] * (1 - wgt) + u8(rgba[s * 4 + 1] + shG) * wgt);
+            rgba[t * 4 + 2] = Math.round(rgba[t * 4 + 2] * (1 - wgt) + u8(rgba[s * 4 + 2] + shB) * wgt);
           }
         }
       }
