@@ -122,8 +122,24 @@ Newest at the bottom of each section.
   rear void in front-arc captures, but it is **open gate, not pass**: the source cypress can still read as a flat strip
   beside a 3D object. Evidence: `output/playwright/diorama-source-matte-v3-2026-07-07/`; pickup note:
   `tasks/2026-07-07-source-matte-open-gate.md`.
-
-## Environment facts (this machine)
+- 2026-07-16 — Inpaint pipeline S1 (fill-region mask) landed, three findings that shape S2:
+  1. **`sky-mask.png` is a CHURN mask, not a segmentation.** Dark means "don't churn", which covers the
+     cypress cut-out but ALSO real paint: star cores, the deliberately-zeroed moon disc, dark navy
+     stroke-gaps, horizon smudges, the whole foreground. A threshold-only fill region caught 33% of the
+     image. Tree evidence has to be conjunctive: mask hole + treeish chroma fraction per connected
+     component + connectivity to the primary (largest) component — that lands at 5.7% and exactly the tree.
+  2. **The moon's painted umber outline passes the treeish chroma test** — without a generous guard
+     (1.6 × MOON_R, past the zeroed mask disc) the pipeline would have erased the moon's outline. Same
+     class of trap: a star's dark umber swirl strokes are chroma-treeish; five hand-measured star-body
+     guards protect them. The `SWIRLS` table CANNOT supply those positions — it anchors vortices and sits
+     visibly offset from the painted stars (proven by drawing its rings on the overlay).
+  3. **Guards must not block the primary mask component.** The mask column is ground truth of what the 2D
+     route cut — it genuinely overlaps two star bodies (primary is 15% star-guarded), and those pixels have
+     been donor-synthesised at runtime all along, so filling them with real sky patches is strictly better.
+     Guards only block the error-prone chroma/proximity passes (satellites, feather, wisps, dilation).
+  Plus: the trunk fill extends below the band (v 0.62→0.66) by straight-down column growth only — runtime
+  ribbon trails dip under the band, but sideways growth would merge into the foreground mass. Evidence:
+  `reference/derived/fill-region-{overlay,crop}.png` (deterministic — reruns are byte-identical; verified).
 
 - Node v25.8.1 → runs `.ts` directly via native type-stripping
   (`node scripts/derive-reference.ts`).
