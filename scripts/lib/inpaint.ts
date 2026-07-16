@@ -67,6 +67,12 @@ export type InpaintFlags = {
   /** normalised flow direction per pixel, pairs [dx, dy]; the fill region's entries are
    *  garbage (the cut-out's flow) and are ignored until overwritten by donor flow */
   flow: Float32Array;
+  /** optional per-pixel [dx, dy] guide (zero = none): where set on a target, donor scoring
+   *  agrees with THIS direction instead of the filled context's mean flow. Used by the S4
+   *  side strips, whose deep-fill context is entirely previously-filled pixels — context-mean
+   *  flow degenerates into patch-scale hatch chaos there (feedback), while a smooth
+   *  extrapolated field keeps the strokes sweeping the way the ribbons will ride them. */
+  guideFlow?: Float32Array;
 };
 
 export type InpaintResult = {
@@ -284,19 +290,25 @@ export function inpaint(image: DecodedPNG, flags: InpaintFlags, opts: InpaintOpt
     const tx = target % w;
     const ty = (target / w) | 0;
 
-    // Mean known flow of the target patch (undirected agreement uses |cos|, sign is fine).
+    // Mean known flow of the target patch (undirected agreement uses |cos|, sign is fine) —
+    // unless a guide field speaks for this target (see InpaintFlags.guideFlow).
     let tFlowX = 0;
     let tFlowY = 0;
-    for (let dy = -r; dy <= r; dy++) {
-      const yy = ty + dy;
-      if (yy < 0 || yy >= h) continue;
-      for (let dx = -r; dx <= r; dx++) {
-        const xx = tx + dx;
-        if (xx < 0 || xx >= w) continue;
-        const j = yy * w + xx;
-        if (!known[j]) continue;
-        tFlowX += flow[j * 2];
-        tFlowY += flow[j * 2 + 1];
+    if (flags.guideFlow && (flags.guideFlow[target * 2] !== 0 || flags.guideFlow[target * 2 + 1] !== 0)) {
+      tFlowX = flags.guideFlow[target * 2];
+      tFlowY = flags.guideFlow[target * 2 + 1];
+    } else {
+      for (let dy = -r; dy <= r; dy++) {
+        const yy = ty + dy;
+        if (yy < 0 || yy >= h) continue;
+        for (let dx = -r; dx <= r; dx++) {
+          const xx = tx + dx;
+          if (xx < 0 || xx >= w) continue;
+          const j = yy * w + xx;
+          if (!known[j]) continue;
+          tFlowX += flow[j * 2];
+          tFlowY += flow[j * 2 + 1];
+        }
       }
     }
     const tFlowLen = Math.hypot(tFlowX, tFlowY);
