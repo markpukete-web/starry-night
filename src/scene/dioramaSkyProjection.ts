@@ -6,8 +6,25 @@ function smooth(e0: number, e1: number, x: number): number {
   return t * t * (3 - 2 * t)
 }
 
+/**
+ * S4 side extension (docs/decisions/0003-inpaint-extend.md): the painting continues past its
+ * L/R edges by SIDE_EXTEND_U of canvas width per side (baked strips sky-extend-{left,right}),
+ * full paint through SIDE_FADE_START_U, then melting into the night gradient by the strip's
+ * outer edge. Margins measured from the orbit envelope (every reachable pose exposes ≤0.14
+ * past an edge; scratch/measure-exposure.ts) — the fade, not the strip, owns everything the
+ * look-down horizon sweep can reach beyond that.
+ */
+export const SIDE_EXTEND_U = 0.3
+export const SIDE_FADE_START_U = 0.15
+/** The scan's raw canvas-weave border (unpainted physical edge, ~20 px at 1600w) is owned by
+ *  the strips: each strip texture covers paintU ∈ [−SIDE_EXTEND_U, SIDE_BORDER_U] (mirrored on
+ *  the right), regrown from real paint at bake time so no pale weave line splits the sky. */
+export const SIDE_BORDER_U = 20 / 1600
+
 export function dioramaSourceEdgeFade(u: number, v: number): number {
-  const x = smooth(0.0, 0.22, u) * smooth(1.0, 0.78, u)
+  // sides: full paint across the canvas and the inner strip zone, fading out over the outer
+  // strip; the old in-canvas side fade is gone — the strips own the melt now
+  const x = smooth(-SIDE_EXTEND_U, -SIDE_FADE_START_U, u) * smooth(1 + SIDE_EXTEND_U, 1 + SIDE_FADE_START_U, u)
   const y = smooth(0.0, 0.13, v) * smooth(1.0, 0.76, v)
   return x * y
 }

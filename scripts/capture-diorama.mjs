@@ -251,7 +251,8 @@ async function main() {
   const chrome = startChrome(port)
   const errors = []
   const captures = []
-  const base = `${appUrl}?mode=diorama&clean=1`
+  // DIORAMA_CAPTURE_EXTRA appends debug params (e.g. '&hide=wash') for layer-bisection probes
+  const base = `${appUrl}?mode=diorama&clean=1${process.env.DIORAMA_CAPTURE_EXTRA || ''}`
   const desktop = { width: 1600, height: 900 }
   const mobile = { width: 390, height: 844, mobile: true }
 

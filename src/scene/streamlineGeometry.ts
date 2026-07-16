@@ -30,6 +30,23 @@ export type SourceRibbonBuildOptions = {
    * unset for the 2D routes, where the painting's own cypress still sits on top.
    */
   openSkyBandV?: number
+  /**
+   * S4 side extension: paintingData/flowData are COMPOSITES padded by this fraction of canvas
+   * width per side (left strip + canvas + right strip stitched). Ribbons seed and integrate
+   * across the whole composite; emitted vertex u is PAINTING-space (may run past [0,1] by up
+   * to uPad — the diorama projection is linear in u, so consumers place it directly). In the
+   * strips only the open sky band (v < openSkyBandV) seeds — the extension has no mask, no
+   * moon and no invented anchors. Unset (or 0) is byte-identical to the pre-S4 behaviour.
+   */
+  uPad?: number
+  /**
+   * 3D-diorama mode: trails stop integrating below this v. Below the wash's skyBand discard
+   * nothing covers a trail except the island (which occludes the centre anyway) — near the
+   * canvas edges and in the strips, sub-horizon trails read as stray dotted arcs over the bare
+   * night gradient (the old in-canvas side fade used to hide the edge ones). Match it to where
+   * the wash stops drawing.
+   */
+  trailMaxV?: number
 }
 
 export type SourceRibbonGeometry = {
@@ -105,16 +122,28 @@ export function buildSourceStreamlineRibbons({
   stepSize,
   seed,
   openSkyBandV,
+  uPad = 0,
+  trailMaxV = 1,
 }: SourceRibbonBuildOptions): SourceRibbonGeometry {
   const rng = mulberry32(seed)
   const vertices: SourceRibbonVertex[] = []
   const indices: number[] = []
   let vbase = 0
 
+  // Composite (data) u ↔ painting u. With uPad 0 both are the identity, and everything below
+  // is byte-identical to the pre-S4 behaviour. Mask, moon and swirl tests always speak
+  // painting-space; flow/colour sampling always speaks composite-space.
+  const toPaintU = (u: number): number => u * (1 + 2 * uPad) - uPad
+
   const seedOk = (u: number, v: number): boolean => {
-    if (maskAt(maskData, u, v) > 16) return true
+    const pu = toPaintU(u)
+    if (pu < 0 || pu > 1) {
+      // the side strips: open sky band only — no mask there, no moon, no invented anchors
+      return openSkyBandV !== undefined && v < openSkyBandV
+    }
+    if (maskAt(maskData, pu, v) > 16) return true
     if (openSkyBandV === undefined || v >= openSkyBandV) return false
-    return Math.hypot(u - MOON_UV[0], v - MOON_UV[1]) >= MOON_R // hole is open sky; moon stays clear
+    return Math.hypot(pu - MOON_UV[0], v - MOON_UV[1]) >= MOON_R // hole is open sky; moon stays clear
   }
   const addRibbon = (u: number, v: number): void => {
     const phase = rng() * Math.PI * 2
@@ -127,6 +156,8 @@ export function buildSourceStreamlineRibbons({
     let curV = v
 
     for (let k = 0; k < points; k++) {
+      const pu = toPaintU(curU)
+      if (curV > trailMaxV) break
       trail.push([curU, curV])
       // in 3D mode the flow data is the offline-filled field, so integrating straight through a
       // mask hole rides the baked continuation — no runtime special-casing
@@ -134,7 +165,7 @@ export function buildSourceStreamlineRibbons({
 
       let nearSwirl = false
       for (const [su, sv, , sr] of SWIRLS) {
-        if (Math.hypot(curU - su, curV - sv) < sr * 1.5) {
+        if (Math.hypot(pu - su, curV - sv) < sr * 1.5) {
           nearSwirl = true
           break
         }
@@ -159,6 +190,10 @@ export function buildSourceStreamlineRibbons({
 
     if (trail.length < 3) return
 
+    // Geometry is emitted in PAINTING space (colour still samples the composite): tangents,
+    // normals and widths are computed after the conversion, so with uPad 0 the output is
+    // byte-identical to the pre-S4 builder.
+    const pTrail = uPad === 0 ? trail : trail.map(([tu, tv]) => [toPaintU(tu), tv] as [number, number])
     const m = trail.length
     for (let k = 0; k < m; k++) {
       const lenN = k / (m - 1)
@@ -166,14 +201,14 @@ export function buildSourceStreamlineRibbons({
       let tx: number
       let ty: number
       if (k === 0) {
-        tx = trail[1][0] - trail[0][0]
-        ty = trail[1][1] - trail[0][1]
+        tx = pTrail[1][0] - pTrail[0][0]
+        ty = pTrail[1][1] - pTrail[0][1]
       } else if (k === m - 1) {
-        tx = trail[m - 1][0] - trail[m - 2][0]
-        ty = trail[m - 1][1] - trail[m - 2][1]
+        tx = pTrail[m - 1][0] - pTrail[m - 2][0]
+        ty = pTrail[m - 1][1] - pTrail[m - 2][1]
       } else {
-        tx = trail[k + 1][0] - trail[k - 1][0]
-        ty = trail[k + 1][1] - trail[k - 1][1]
+        tx = pTrail[k + 1][0] - pTrail[k - 1][0]
+        ty = pTrail[k + 1][1] - pTrail[k - 1][1]
       }
       const tmag = Math.hypot(tx, ty) || 1e-9
       const nx = -ty / tmag
@@ -183,8 +218,8 @@ export function buildSourceStreamlineRibbons({
       const color = sampleColour(paintingData, trail[k][0], trail[k][1])
 
       vertices.push(
-        { u: trail[k][0] + nx * w, v: trail[k][1] + ny * w, len: lenN, across: 0, phase, rate, color },
-        { u: trail[k][0] - nx * w, v: trail[k][1] - ny * w, len: lenN, across: 1, phase, rate, color },
+        { u: pTrail[k][0] + nx * w, v: pTrail[k][1] + ny * w, len: lenN, across: 0, phase, rate, color },
+        { u: pTrail[k][0] - nx * w, v: pTrail[k][1] - ny * w, len: lenN, across: 1, phase, rate, color },
       )
 
       if (k < m - 1) {
