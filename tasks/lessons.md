@@ -192,6 +192,48 @@ Newest at the bottom of each section.
   only ever get "close, still findable"; moving the fix OFFLINE (real painting patches, reviewed as a
   flat image) raised the ceiling AND deleted ~350 lines. Next slice is S4 (side-void extension) — same
   machinery, and it MUST carry the destination-sign-alignment rule from the entry above.
+- 2026-07-17 — S4 side-extension bake, four lessons from the offline trail (crops in
+  `reference/derived/side-extend-*`):
+  1. **Measure the need before choosing the margin.** Ray-casting the real camera contract
+     (`scratch/measure-exposure.ts`) showed every reachable pose exposes ≤ 0.14 of canvas width
+     past an edge — the plan's 25–35% guess was right for the strip, but the FULL-PAINT zone
+     only needs 0.15 with the fade owning the rest. Ten minutes of measurement scoped the whole
+     slice.
+  2. **The scan's canvas-weave border is not paint.** Mounted at full alpha it reads as a pale
+     vertical tear, and as fill context it seeds weave-stippled donors. The strips own those
+     ~20 px columns (regrown from real paint); `painting-filled.png` — a gate-passed asset —
+     stays byte-identical. Never rebake a passed asset to fix an adjacent problem.
+  3. **Open-ended exemplar fill needs a GUIDE FIELD.** In a hole, real paint surrounds the fill
+     and context-mean flow self-corrects; in a strip the deep context is all previously-filled
+     pixels and context-mean flow feeds back into patch-scale hatch chaos. Scoring donors
+     against the relaxed edge field (the SAME field the ribbons ride) restored the sweep. And
+     the p4 probe — blending that guide toward one global ambient direction — collapsed the
+     strips into a monotone curtain (REVERTED): per-row anchor directions carry the variety.
+  4. **Sign-continuity needs a relaxed global reference, not a texel chain.** Aligning each
+     copied flow vector to its inward neighbour stalls wherever donor orientation runs
+     near-perpendicular to the chain; row-anchored Jacobi relaxation of the edge vectors gives
+     every texel a stable reference. (SWIRLS circulation is near-silent outside the canvas by
+     design — no invented anchors — so the relaxed field is the workhorse there.)
+- 2026-07-17 — The dotted-arc hunt (S4 mount): a thin dotted line swept below the horizon at
+  both canvas edges, and FIVE plausible theories each fixed something real without killing it
+  (strip trails walking below the band → `trailMaxV` cap; ribbon bells outshining the wash melt
+  → sub-band skirt; mask border sliver → inset). What actually worked: **stop theorising and
+  bisect** — baseline A/B proved it new; a temporary `?hide=<layer>` param proved it the wash;
+  a flat-colour wash probe proved it alpha-side; the culprit was the sky-mask's own feathered
+  SKYLINE EDGE at the corner dips, which hangs over the void where the island never covers it.
+  Two rules worth keeping:
+  1. **A fade is a systems component — list its dependants before deleting it.** The old
+     in-canvas side fade (0→0.22) looked decorative but was silently doing three jobs: killing
+     sub-horizon edge trails, hiding the wash's below-band mask feather, and softening the
+     texture hand-off. Deleting it surfaced all three as separate artefacts.
+  2. **When two mechanism-level fixes in a row "should have worked" and don't, switch from
+     reasoning to instrumentation.** Ray-casting measured dot pixels to UV, layer bisection and
+     an in-shader flat-colour probe cost ~20 minutes total and ended a hunt that theory kept
+     missing. `DIORAMA_CAPTURE_EXTRA` (append URL params to the capture pipeline) is the new
+     affordance that made headless probes cheap — the artefact never reproduced in the
+     interactive browser (dpr 1.5 vs the capture pipeline's dpr 1).
+  Also: bilinear cannot blend ACROSS textures — any multi-texture hand-off needs a shader
+  feather (the painting↔strip switch left a dashed hairline until feathered over ~0.006 u).
 
 - Node v25.8.1 → runs `.ts` directly via native type-stripping
   (`node scripts/derive-reference.ts`).

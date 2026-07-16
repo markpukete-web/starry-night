@@ -1,7 +1,9 @@
-# 0003 — Offline inpainting of the cypress cut-out (and later, the canvas extension)
+# 0003 — Offline inpainting of the cypress cut-out (and the canvas extension)
 
-Status: S1+S2 baked, 2026-07-16. Awaiting Mark's flat-image gate before the runtime swap (S3).
-Plan: `docs/superpowers/plans/2026-07-14-offline-inpaint-extend-pipeline.md` (approved 2026-07-14).
+Status: S1+S2 baked 2026-07-16; hole GATE PASSED (Mark, live, 2026-07-16) after S3 + the flow
+re-alignment. S4 (side extension) baked + mounted 2026-07-17 — awaiting Mark's drag-boundary
+gate. Plan: `docs/superpowers/plans/2026-07-14-offline-inpaint-extend-pipeline.md` (approved
+2026-07-14).
 
 ## What and why
 
@@ -76,13 +78,57 @@ margin → **Mark's gate feedback circled the mid pale-band fill as mushy/choppy
 donor shifts toward the target's known-pixel mean, clamped) — the rectangles dissolved and the
 circled zone reads as sweeping strokes.
 
+### S4 — side extension (2026-07-17)
+
+The L/R flat-blue margins were the piece's biggest "painting on a card" tell. The same patch
+machinery continues the painting past its edges, baked as separate strip assets so the canvas
+mapping (and the gate-passed S2 assets) stays untouched.
+
+- **Margin measured, not guessed** (`scratch/measure-exposure.ts`, ray-casting the real camera
+  contract): every reachable drag/zoom pose exposes ≤ 0.14 of canvas width past an edge; the
+  look-down horizon sweep reaches far wider but melts into the gradient. Chosen: **0.30 per
+  side**, full paint through 0.15 (`SIDE_EXTEND_U` / `SIDE_FADE_START_U` in
+  `dioramaSkyProjection.ts`), the runtime side fade owning the outward melt.
+- **The strips own the scan's canvas-weave border** (~20 px per side, measured): the unpainted
+  physical edge is not paint — mounted at full alpha it read as a pale tear, and as fill
+  context it poisoned colour and flow. The S4 fill regrows those columns; the runtime renders
+  strip texture over them (`SIDE_BORDER_U`), feathered at the hand-off (bilinear cannot blend
+  across textures — a hard branch left a dashed hairline).
+- **A guide field replaces context-mean flow for donor scoring** (`InpaintFlags.guideFlow`).
+  Deep in the strip the fill's context is entirely previously-filled pixels; context-mean flow
+  feeds back into patch-scale hatch chaos (p2). The guide is the canvas edge vectors relaxed
+  across the strip (row-anchored Jacobi, σ=16 anchor smoothing) — the SAME field the ribbons
+  ride, so strokes sweep the way they will be animated. A p4 probe blending the guide toward
+  one global ambient direction REGRESSED into a monotone curtain (reverted): per-row anchor
+  directions carry the stroke variety.
+- **Flow strips are destination-sign-aligned** (the 07-16 rule): SWIRLS circulation where it
+  still speaks (it is near-silent outside the canvas — no invented anchors), else the relaxed
+  reference; then the σ=2 low-pass. A per-texel inward-neighbour chain was tried first and
+  stalled trails into dashes wherever donor orientation ran near-perpendicular to it (p1).
+- **Whole-sky donor domain** (searchRadius 2200 / stride 10), donors original-paint only with
+  every S2 gate intact — no bright cores donate, so no phantom stars/moon in the extension.
+- **Runtime mount**: the wash spans paintU ∈ [−0.3, 1.3] sampling strip textures beyond the
+  border; ribbons integrate a CPU composite (`uPad` in `streamlineGeometry.ts`) and emit
+  painting-space u; `SkyEdgeBackfill` (the whisper wash) is DELETED.
+- **Three artefact classes fell out of deleting the old in-canvas side fade**, which had been
+  silently doing three jobs: killing sub-horizon edge trails (fixed: `trailMaxV` cap + ribbon
+  sub-band skirt), hiding the wash's below-band mask feather at the skyline's corner dips
+  (fixed: mask term side-gated over pu 0–0.1), and generally masking everything at pu < 0.22.
+  The last one was found by layer bisection + a flat-colour wash probe after five plausible
+  theories each fixed something real but not the dotted arc.
+
 ## Outputs
 
 | Asset | Size | Notes |
 |---|---|---|
-| `public/reference/painting-filled.png` | ~6 MB | PNG so pixels outside the fill are byte-identical to `painting.jpg`'s decode. Ship format (PNG vs re-encoded JPEG) is an S3/pre-release hygiene call — flagged, not decided. |
+| `public/reference/painting-filled.png` | ~6 MB | PNG so pixels outside the fill are byte-identical to `painting.jpg`'s decode. Ship format (PNG vs re-encoded JPEG) is a pre-release hygiene call — flagged, not decided. |
 | `public/reference/signed-flow-filled.png` | ~3 MB | same story |
+| `public/reference/sky-extend-{left,right}.png` | ~1.8 MB each | 500×1267 (extension + owned border), full paint strength — the runtime owns the melt |
+| `public/reference/sky-extend-flow-{left,right}.png` | ~1 MB each | 400×1013 flow strips, destination-sign-aligned + low-passed |
 | `reference/derived/inpaint-before-after.png`, `inpaint-filled-2x.png` | — | the flat-image gate crops (regenerable) |
+| `reference/derived/side-extend-{left,right}-{1x,2x,flow}.png`, `side-extend-overview.png` | — | S4 seam/flow/panorama gate crops (regenerable) |
+
+Asset weight (~15 MB of reference PNGs total) is a flagged pre-release ship-hygiene item.
 
 ## Honest residuals (named for the gate)
 
@@ -94,3 +140,14 @@ circled zone reads as sweeping strokes.
    sample sky, not tree.
 4. Test coverage runs on synthetic images (determinism, no-bright-donation, stripe continuity,
    untouched-outside); the real-data invariants are asserted in the bake itself.
+
+S4-specific (2026-07-17, for the drag-boundary gate):
+
+5. The right strip's pale-band continuation shows brick-mosaic tone tiling at 2× offline (same
+   class as Mark's circled S2 zone); at runtime the wash is dimmed/tinted and ribbons + bloom
+   sit over it — not findable in the capture set to my eye, but Mark's live drive decides.
+6. The moon corner at the drag-right boundary is busy: crescent sprite + the painting's own
+   moon + the strip's warm halo-continuation curls. No second core or ring is invented (the
+   bright gate held), but whether the warm continuation is welcome is a taste call.
+7. Strip stroke energy is a touch softer than the canvas impasto beside it; the outward fade
+   absorbs most of it. Judge in motion, not stills.
