@@ -1,7 +1,7 @@
 # 0003 — Offline inpainting of the cypress cut-out (and the canvas extension)
 
-Status: S1+S2 baked 2026-07-16; hole GATE PASSED (Mark, live, 2026-07-16) after S3 + the flow
-re-alignment. S4 (side extension) baked + mounted 2026-07-17 — awaiting Mark's drag-boundary
+Status: COMPLETE. Hole GATE PASSED (Mark, live, 2026-07-16) after S3 + the flow re-alignment;
+S4 side extension GATE PASSED (Mark, live, 2026-07-17) — residuals 5–7 below accepted at the
 gate. Plan: `docs/superpowers/plans/2026-07-14-offline-inpaint-extend-pipeline.md` (approved
 2026-07-14).
 

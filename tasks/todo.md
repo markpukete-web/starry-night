@@ -9,23 +9,25 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## ▶ PICK UP HERE (2026-07-17) — S4 side extension DONE + capture-verified; gate OPEN for Mark
+## ▶ PICK UP HERE (2026-07-17, closed) — S4 ✅ GATE PASSED (Mark, live); next slice = ship hygiene
 
-**S4 (side-void canvas extension) is built, mounted and capture-verified — the last slice of
-the approved offline pipeline.** The flat-blue L/R margins (the "painting on a card" tell Mark
-circled) are gone in every view: the painting's own churn now continues past both canvas edges
-and melts into the night gradient. `SkyEdgeBackfill` is deleted. On `sky-brushdab`.
+**S4 (side-void canvas extension) is DONE — Mark passed the drag-boundary gate live
+("LOVE YOUR WORK", 2026-07-17).** That completes the whole approved offline inpaint + extend
+pipeline (S1→S4): both problem regions — the cypress hole and the side voids — now carry the
+painting's own pixels, and the "painting on a card" read is gone from every view. The three
+residuals named in 0003 (busy moon corner, pale-band tiling at 2× offline, softer strip stroke
+energy) passed with the gate — revisit only if Mark flags them. On `sky-brushdab`, all pushed.
 
-**GATE for Mark (drag-boundary look):** drive `npm run dev` →
-`http://localhost:5173/?mode=diorama&clean=1`, drag to both boundaries + look down. Freshest
-captures: `output/playwright/side-extend-2026-07-17-final2/` beside the pre-S4 baseline
-`flow-realign-2026-07-16/`. Named for his eye (details in 0003 "Honest residuals"):
-1. The moon corner at drag-right: sprite + painted moon + the strip's warm halo-continuation is
-   busy (no invented core/ring — the bright gate held; the sprite/painted doubling is
-   pre-existing). Taste call.
-2. The right strip's pale-band continuation shows tone tiling at 2× offline; not findable in
-   the runtime captures to my eye (wash dimmed + ribbons + bloom over it).
-3. Strip stroke energy slightly softer than canvas impasto — judge in motion, stills can't.
+**NEXT SESSION — ship hygiene**, then the pre-release gate:
+1. Slim the reference PNGs (~15 MB total: painting-filled 6 MB, signed-flow-filled 3 MB,
+   sky-extend strips ~5.6 MB). Candidates: re-encode colour assets (JPEG/WebP where alpha and
+   byte-exactness aren't load-bearing at runtime), downsample flow strips (the σ=2 low-pass
+   means full res is redundant), crop strip below-band filler rows. Verify no visual change by
+   capture A/B — same discipline as the 2026-06-15 flow-field slimming.
+2. Then the standing pre-release items (Mark's): lighting/bloom balance (nopost vs final),
+   mobile portrait dead bands, perf on real hardware (60 fps desktop / 30 fps mid-tier mobile —
+   headless can't measure), and the deploy mechanics (Vercel prod + Deployment Protection +
+   `starrynight.markma.dev` DNS — all Mark's calls, stop-and-ask).
 
 **How it landed (one session, 2026-07-17):**
 - Measured the orbit's real exposure first (ray-cast the camera contract): ≤ 0.14 canvas widths
@@ -44,9 +46,8 @@ captures: `output/playwright/side-extend-2026-07-17-final2/` beside the pre-S4 b
   ribbon skirt, and the mask side-gate — found by layer bisection after five theories; full
   arc in `tasks/lessons.md` (2026-07-17).
 
-**AFTER the gate:** only ship hygiene (~15 MB of reference PNGs: filled 6+3 MB + strips ~5.6 MB
-— slim/re-encode before deploy) + pre-release remain. Still open for Mark (unchanged):
-lighting/bloom balance (nopost vs final), mobile portrait dead bands, perf on real hardware.
+(Gate evidence: `output/playwright/side-extend-2026-07-17-final2/` beside the pre-S4 baseline
+`flow-realign-2026-07-16/`.)
 
 **Dev/capture recipe:** `npm run dev` → `http://localhost:5173/?mode=diorama&clean=1`
 (`&debug=flow` = sky only · `&debug=nopost` = no bloom). Rebake assets: `npm run extend-reference`

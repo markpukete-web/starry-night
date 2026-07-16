@@ -234,6 +234,15 @@ Newest at the bottom of each section.
      interactive browser (dpr 1.5 vs the capture pipeline's dpr 1).
   Also: bilinear cannot blend ACROSS textures — any multi-texture hand-off needs a shader
   feather (the painting↔strip switch left a dashed hairline until feathered over ~0.006 u).
+- 2026-07-17 — ✅ **S4 GATE PASSED (Mark, live): the side extension is done — and with it the
+  whole offline inpaint + extend pipeline (S1→S4).** Mark passed the drag-boundary look with the
+  three named residuals standing (busy moon corner, pale-band tiling at 2× offline, softer strip
+  stroke energy) — accepted at the gate; revisit only if he flags them later. The pipeline arc's
+  final score: two Mark-passed gates (hole 07-16, sides 07-17), ~350 lines of runtime heuristics
+  deleted, one whisper-wash component deleted, and every problem region now carries the
+  painting's own pixels. Remaining before the pre-release gate: ship hygiene (~15 MB of
+  reference PNGs to slim/re-encode) and Mark's standing taste items (lighting/bloom balance,
+  mobile portrait dead bands, perf on real hardware).
 
 - Node v25.8.1 → runs `.ts` directly via native type-stripping
   (`node scripts/derive-reference.ts`).
