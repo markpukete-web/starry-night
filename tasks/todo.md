@@ -74,10 +74,10 @@ future capture diff:** a diff against a live-churning render means nothing witho
 control run; and capture RMSE cannot measure ANY change that alters load timing (a format swap
 shifts decode time, which shifts animation phase) — compare decoded pixels in the browser instead.
 
-**Still open, and worth a decision:** the README's old Status claimed the cypress and village were
-due "a second painterly refinement pass" after the sky-flow work. That is not in the pre-release
-checklist and no one has confirmed it is still wanted; the rewritten README no longer asserts it.
-If it IS still wanted, it needs to become a checklist item — Mark's call, not Claude's to drop.
+**DECIDED 2026-07-22 (Mark):** the README's old Status claimed the cypress and village were due
+"a second painterly refinement pass" after the sky-flow work. Mark confirmed it is still wanted —
+*"put it in the check list"* — so both passes are now checklist items 7 and 8 below. The pass is
+no longer an inherited README claim that could be dropped by silence; it gates release.
 
 ### Ship hygiene detail — pass 1
 
@@ -125,6 +125,14 @@ stop and ask about (CLAUDE.md "Stop and ask Mark when"). `Claude` items are mech
 | 4 | **Deploy mechanics** — Vercel prod, Deployment Protection, `starrynight.markma.dev` DNS (Cloudflare CNAME, grey-cloud). CLAUDE.md: anything touching deploy/DNS/analytics is stop-and-ask | Mark | open |
 | 5 | ~~WebP for the three colour assets~~ | Mark | ✅ **DONE 2026-07-21** — lossless taken, lossy rejected; payload 12.21 → 10.04 MB |
 | 6 | **Portfolio link-out** — markma.dev links to the finished piece (CLAUDE.md: it links out, full stop — never embedded) | Mark | open, post-deploy |
+| 7 | **Cypress second painterly pass** — near-black, fur-not-flame, bulbous silhouette. Designed and planned (spec + plan v3, 11 tasks); no code written yet | Claude builds, Mark gates | **open, in flight** |
+| 8 | **Village second painterly pass** — the other half of the refinement the README promised after the sky-flow work. Not yet designed; no gaps named against the painting yet | Claude builds, Mark gates | open, not started |
+
+**Item 8's first step is not code and not a design — it is a look.** The cypress pass only became
+tractable once Mark named three concrete gaps against the painting (near-black, fur-not-flame,
+bulbous) and the design was shaped by a measurement rather than a hunch. The village gets the same
+order: capture it, read it against the reference crop, name what is wrong in those terms, and only
+then design. Sequenced after item 7 so the cladding technique is proven once before it is reused.
 
 Already satisfied, listed so the gate can be checked end-to-end rather than re-litigated:
 
