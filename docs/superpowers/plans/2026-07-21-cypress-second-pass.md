@@ -10,7 +10,20 @@
 
 **Spec:** `docs/superpowers/specs/2026-07-21-cypress-second-pass-design.md`
 
-**Revision history:** v2 (2026-07-21) after Mark's cross-review. Every empirical claim in that review was independently re-measured and confirmed before this rewrite; see "What the review changed" at the foot of this document.
+**Revision history:** v4 (2026-07-22), executable-contract repair before implementation. v3 was committed as `0ce57e1`; v4 closes the remaining mask-chain, seed-distribution, Node-import, shared-profile, tendril-coordinate and shipping-pipeline measurement gaps. See "What the review changed" at the foot of this document.
+
+### v4 execution contract
+
+The task snippets below are illustrative; these contracts are normative where an older snippet differs:
+
+- Row-run connectivity rejects **either** an abrupt widening or narrowing by comparing the symmetric local width ratio. Every candidate seed is evaluated; a run reached by a losing chain is not globally marked as tried. This is what prevents a wide terrain seed walking upward into a narrow trunk and winning on row count.
+- Stroke seeds use `Math.pow(rng(), 1.4)`: height fraction is zero at the base, so this distribution favours the lower half. `1 - Math.pow(...)` favours the tip and fails the stated test.
+- Source modules exercised directly by `node --test` use explicit `.ts` relative imports. `cypressStrokes.ts` imports `normalisedFromCrop`, and tendril imports are added only when the tendril implementation exists.
+- `CYPRESS_PROFILE_CONFIG`, `CYPRESS_LUM_MAX` and the profile constructor live in `cypressProfile.ts`. Runtime, tests and diagnostic all consume that same configuration. Task 8 changes this shared configuration, never a private copy in `BrushCypress.tsx`.
+- Baked satellite runs are crop-local before being written to `cypress-rows.json`. Tendril tests include a non-zero painting crop, and runtime samples colour through the exported skin sampler.
+- Stroke settings are one exported `CYPRESS_STROKE_CONFIG`, shared by the flat gate and runtime. With 2,200 front strokes, 45% back density and nine samples, the nominal budget is **57,420 vertices / 51,040 triangles**, before clipping and tendrils.
+- `?perf=1` enables the timing probe independently of `debug`; shipping-pipeline performance is measured with `debug=final`. A no-post run is recorded only as an isolation comparison and cannot stand in for the release figure.
+- The profile test is registered in `test:sky`. Expected test totals are derived from the actual runner after implementation rather than hand-maintained arithmetic in this document.
 
 ## Global Constraints
 
@@ -18,7 +31,7 @@
 - **Conventional commits.** The log reads as a build-in-public timeline.
 - **No new dependencies.** Offline scripts stay dependency-free; `cwebp`/`dwebp` are already approved as bake-only tools. Anything else: stop and ask Mark.
 - **Asset formats are not a free choice** (rule set 2026-07-21): signed/flow data ships **PNG**; colour data ships **lossless WebP** via `WEBP_ASSETS` in `scripts/slim-reference.ts`. The bake writes PNG; `npm run slim-reference` prepares the shipped set.
-- **Colour management is not optional.** `ImageData` bytes are **sRGB**. `THREE.Color.setRGB` defaults to the **linear** working space (`node_modules/three/src/math/Color.js`), so passing bytes/255 straight in makes the tree *darker* — the exact defect this pass exists to fix. Always pass `SRGBColorSpace`.
+- **Colour management is not optional.** `ImageData` bytes are **sRGB**. `THREE.Color.setRGB` defaults to the **linear** working space (`node_modules/three/src/math/Color.js`), so passing bytes/255 without `SRGBColorSpace` treats sRGB values as linear and makes midtones display **brighter** after output encoding. The near-black defect came from global palette attenuation. Always pass `SRGBColorSpace`.
 - **Locked acceptance criteria:** colours derived from the painting (ΔE < 10 per region, measured on **displayed** colour, not on asset bytes); head-on the diorama reads as *Starry Night*; 60 fps desktop / 30 fps mid-tier mobile; `prefers-reduced-motion` still state unaffected.
 - **Retune cap: 4 passes per slice.** If a gate still fails after four, stop and bring it to Mark.
 - **Do not touch:** village, hills, island, sky assets, camera contract.
@@ -38,7 +51,7 @@ Re-measured on the current repo, not assumed. Any change to these invalidates th
 | Component touches both search limits | **true** | The mask bleeds into foreground terrain; connectivity needs a width guard |
 | Design camera vs cypress base | camera x=0.62, cypress x=−1.5 | Head-on bearing is **≈64.6°**, not 90° |
 | Rendered radius by height | 0.1:**0.21** · 0.3:**0.13** · 0.5:**0.19** | Two lobes with a waist — present *before* `tongue()`; the bulge is in the extracted profile |
-| Stroke geometry, current vs naive proposal | 21,600 v / 14,400 t → 39,600 v / 35,200 t | **+83% v, +144% t** — the budget must be derived, not guessed |
+| Stroke geometry, current vs proposed two-pass ribbons | 21,600 v / 14,400 t → 57,420 v / 51,040 t, before clipping/tendrils | **+166% v, +254% t** nominal — the budget must be measured in the shipping pipeline, not guessed |
 
 ## Architectural decisions
 
@@ -279,7 +292,7 @@ fix."
 
 **Key corrections from review.** A raw flood fill measured 227,047 px reaching both search limits, because the tree is connected to the dark foreground terrain and leaks into it. But the obvious repair — seed the widest run, guard against its width — is also wrong, and worse, because the widest run in the painting *is* the terrain: measured 80 px terrain against a 27 px trunk in the test fixture, and the same relationship in the scan. Seeding from it makes terrain the reference width, so no guard can ever reject terrain.
 
-So `cypressMask` seeds by **vertical coherence** — the run that chains through the most rows, which is unambiguously the trunk — and guards on **row-to-row** growth (`MAX_ROW_GROWTH`), because terrain announces itself as a sudden widening from one row to the next.
+So `cypressMask` evaluates seeds by **vertical coherence** — the run that chains through the most rows — and guards on the symmetric **row-to-row width ratio** (`MAX_ROW_RATIO`). The symmetry is essential because the search walks in both directions: terrain is a sudden widening from the trunk and the trunk is a sudden narrowing from terrain.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -472,7 +485,7 @@ export type Run = { y: number; x0: number; x1: number };
 const VERTICAL_COS2 = -1; // double-angle encoding of 90°
 const VERTICAL_SIN2 = 0;
 const MIN_RUN_FRACTION = 0.004; // of painting width — ignore speckle
-const MAX_ROW_GROWTH = 1.8; // row-to-row width jump that means terrain, not trunk
+const MAX_ROW_RATIO = 1.8; // abrupt widening OR narrowing means two forms, not one column
 
 function rowRuns(painting: DecodedPNG, y: number, box: Box, minRun: number): Run[] {
   const runs: Run[] = [];
@@ -491,9 +504,9 @@ function rowRuns(painting: DecodedPNG, y: number, box: Box, minRun: number): Run
 }
 
 /**
- * The cypress column: seed at the widest run, then walk up and down keeping only runs that overlap
- * the previous kept run and do not balloon in width. Same discipline as extractCypressSlices, at
- * full resolution, plus the width guard that stops the tree bleeding into the terrain it stands on.
+ * The cypress column: evaluate every run as a seed, then walk up and down keeping only overlapping
+ * runs whose local widths remain mutually plausible. The symmetric ratio guard matters: a narrow
+ * trunk must not widen into terrain, and a wide terrain seed must not narrow into the trunk.
  */
 export function cypressMask(painting: DecodedPNG, box: Box): { mask: Uint8Array; spans: RowSpan[] } {
   const { width: w, height: h } = painting;
@@ -517,9 +530,9 @@ export function cypressMask(painting: DecodedPNG, box: Box): { mask: Uint8Array;
           if (overlap > bestOverlap) { bestOverlap = overlap; best = r; }
         }
         if (!best || bestOverlap <= 0) break;
-        // LOCAL growth guard: terrain announces itself as a sudden widening from one row to the
-        // next, which a guard against the seed's own width cannot see.
-        if (best.x1 - best.x0 + 1 > (prev.x1 - prev.x0 + 1) * MAX_ROW_GROWTH) break;
+        const bestWidth = best.x1 - best.x0 + 1;
+        const prevWidth = prev.x1 - prev.x0 + 1;
+        if (Math.max(bestWidth / prevWidth, prevWidth / bestWidth) > MAX_ROW_RATIO) break;
         if (dir < 0) chain.unshift(best); else chain.push(best);
         prev = best;
       }
@@ -528,13 +541,9 @@ export function cypressMask(painting: DecodedPNG, box: Box): { mask: Uint8Array;
   };
 
   let bestChain: Run[] = [];
-  const tried = new Set<string>();
   for (const runs of runsByRow) {
     for (const r of runs) {
-      const key = `${r.y}:${r.x0}`;
-      if (tried.has(key)) continue;
       const chain = chainFrom(r);
-      for (const c of chain) tried.add(`${c.y}:${c.x0}`);
       if (chain.length > bestChain.length) bestChain = chain;
     }
   }
@@ -722,7 +731,7 @@ export function signedUpDirection(cos2: number, sin2: number): { dx: number; dy:
 
 - [ ] **Step 4: Run the tests to verify they pass**
 
-Run: `node --test scripts/cypress-field.test.ts` — Expected: PASS, 7 tests.
+Run: `node --test scripts/cypress-field.test.ts` — Expected: PASS, 8 tests.
 
 - [ ] **Step 5: Commit**
 
@@ -750,7 +759,7 @@ primary profile contract untouched."
 **Outputs (committed):**
 - `public/reference/cypress-skin.png` → shipped `.webp`. Painting-space crop; **alpha = validity** (255 on cypress, 0 off it).
 - `public/reference/cypress-flow.png`. Painting-space crop; R,G = signed up-direction, B = coherence.
-- `public/reference/cypress-rows.json` — `{ x0: number, y0: number, width: number, height: number, spans: [vNorm, uLeft, uRight][] }`, the per-row cypress interval in crop-normalised coordinates. **This is what makes `u` mean "across the tree at this height" instead of "across a rectangle".**
+- `public/reference/cypress-rows.json` — `{ x0: number, y0: number, width: number, height: number, spans: [vNorm, uLeft, uRight][], satellites: Run[] }`, the per-row cypress interval plus **crop-local** detached runs. **This is what makes `u` mean "across the tree at this height" instead of "across a rectangle".**
 
 **Outputs (gitignored review crops):** `reference/derived/cypress-field-overlay.png`, `cypress-mask-overlay.png`.
 
@@ -777,7 +786,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  blendToVertical, cypressMask, lowPassOrientation, orientationField, signedUpDirection, type Box,
+  blendToVertical, cypressMask, lowPassOrientation, orientationField, satelliteRuns, signedUpDirection, type Box,
 } from './lib/cypress-field.ts';
 import { decodePNG, encodePNG } from './lib/png.ts';
 
@@ -925,7 +934,7 @@ console.log(
     "derive-cypress": "node scripts/derive-cypress.ts",
     "flat-cypress-gate": "node scripts/flat-cypress-gate.ts",
 ```
-Append to `test:sky`'s file list: ` scripts/cypress-field.test.ts scripts/cypress-mapping.test.ts scripts/cypress-strokes.test.ts`
+Append to `test:sky`'s file list: ` scripts/cypress-field.test.ts scripts/cypress-mapping.test.ts scripts/cypress-strokes.test.ts scripts/cypress-profile.test.ts`
 
 `scripts/slim-reference.ts`:
 ```ts
@@ -941,11 +950,11 @@ Run: `npm run derive-cypress && npm run slim-reference`
 - The crop's width is **well under 480 px** — the flood-fill version spanned the whole search box.
 - Mean coherence lands near **0.13–0.20**.
 
-If occupancy is below 55%, tune `MAX_ROW_GROWTH` in `cypress-field.ts` and re-run. This is retune pass 1 of 4.
+If occupancy is below 55%, tune `MAX_ROW_RATIO` in `cypress-field.ts` and re-run. This is retune pass 1 of 4.
 
 - [ ] **Step 4: Look at the mask overlay**
 
-Open `reference/derived/cypress-mask-overlay.png`. The red tint must cover the tree and **stop at the ground** — no terrain band, no hills. If it bleeds, lower `MAX_ROW_GROWTH`.
+Open `reference/derived/cypress-mask-overlay.png`. The red tint must cover the tree and **stop at the ground** — no terrain band, no hills. If it bleeds, lower `MAX_ROW_RATIO`.
 
 - [ ] **Step 5: Commit**
 
@@ -1325,9 +1334,9 @@ test('a sideways field bends the strokes', () => {
 - [ ] **Step 3: Implement `src/scene/cypressStrokes.ts`**
 
 ```ts
-import { mulberry32 } from './brush'
-import { paintingUV, type RowTable } from './cypressMapping'
-import type { ImageData2D } from './useImageData'
+import { mulberry32 } from './brush.ts'
+import { normalisedFromCrop, paintingUV, type RowTable } from './cypressMapping.ts'
+import type { ImageData2D } from './useImageData.ts'
 
 /**
  * Generates the cypress's brushstrokes as polylines in the painting's own crop space.
@@ -1389,10 +1398,9 @@ export function generateCypressStrokes(opts: CypressStrokeOptions): CypressStrok
   const stepPx = (lengthFraction * skin.height) / (steps - 1)
 
   for (let s = 0; s < count; s++) {
-    // Exponent > 1 biases toward the BASE. pow(rng, 0.78) biases toward the TOP — measured, only
-    // 41.2% of seeds below mid-height — which starves the fuller base and increases tip clipping.
-    // (The same mistaken comment sits on the pre-existing code this replaces.)
-    const seedHf = 1 - Math.pow(rng(), 1.4)
+    // heightFraction is zero at the base. Exponent > 1 therefore favours the BASE; subtracting
+    // from one would invert the distribution and favour the tip.
+    const seedHf = Math.pow(rng(), 1.4)
     const seedU = rng()
     const relief = 1 - reliefSpread + 2 * reliefSpread * rng()
     const samples: StrokeSample[] = []
@@ -1621,7 +1629,7 @@ Corrected design: **extract one pure profile function** used by *both* `BrushCyp
 
 - [ ] **Step 0: Extract the shared profile function**
 
-Create `src/scene/cypressProfile.ts`, and have `BrushCypress.tsx` import `composedRadius` in place of its inline `radiusAt`. Both the runtime and the diagnostic must call the same code, or the diagnostic measures a copy that can drift.
+Create `src/scene/cypressProfile.ts`, and have `BrushCypress.tsx` import `composedRadius` in place of its inline `radiusAt`. Export `CYPRESS_LUM_MAX`, `CYPRESS_PROFILE_CONFIG` and `makeCypressProfile(slices)` here; both runtime and diagnostic construct their baseline through it. Both consumers must call the same code **and use the same configuration**, or the diagnostic still measures a copy that can drift.
 
 ```ts
 import { smooth, vnoise } from './brushForms'
@@ -1633,6 +1641,17 @@ export type ProfileFactors = {
   useUpperTaper: boolean
   useTongue: boolean
   smoothingWindow: number // 0 = none
+}
+
+export const CYPRESS_LUM_MAX = 90
+export const CYPRESS_PROFILE_CONFIG = {
+  useUpperTaper: true,
+  useTongue: true,
+  smoothingWindow: 0,
+} as const
+
+export function makeCypressProfile(slices: number[]): ProfileFactors {
+  return { slices, ...CYPRESS_PROFILE_CONFIG }
 }
 
 export function tongue(a: number, hf: number, sharpen = 1.35): number {
@@ -1701,7 +1720,12 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { cypressViewBearing } from '../src/scene/cypressMapping.ts';
-import { projectedHalfWidth, type ProfileFactors } from '../src/scene/cypressProfile.ts';
+import {
+  CYPRESS_LUM_MAX,
+  makeCypressProfile,
+  projectedHalfWidth,
+  type ProfileFactors,
+} from '../src/scene/cypressProfile.ts';
 import { DIORAMA_CAMERAS } from '../src/scene/dioramaContract.ts';
 import { extractCypressSlices } from '../src/scene/paintingRegions.ts';
 import { cypressMask, type Box } from './lib/cypress-field.ts';
@@ -1753,8 +1777,8 @@ function score(label: string, f: ProfileFactors) {
 const slicesFor = (lumMax: number) =>
   [...extractCypressSlices(painting, { lumMax })].reverse().map((s) => s.halfWidth);
 
-// ONE composed baseline — exactly what the runtime renders today.
-const BASE: ProfileFactors = { slices: slicesFor(90), useUpperTaper: true, useTongue: true, smoothingWindow: 0 };
+// ONE composed baseline — constructed by the same public contract as the runtime.
+const BASE = makeCypressProfile(slicesFor(CYPRESS_LUM_MAX));
 console.log('--- composed baseline (what ships today) ---');
 const baseErr = score('BASELINE', BASE);
 
@@ -1787,7 +1811,7 @@ The output ranks each factor by `meanAbsErrVsPainting`. **The fix is whichever f
 - [ ] **Step 3: Commit the diagnostic**
 
 ```bash
-git add scripts/diagnose-cypress-profile.ts
+git add src/scene/cypressProfile.ts scripts/cypress-profile.test.ts scripts/diagnose-cypress-profile.ts src/scene/BrushCypress.tsx package.json
 git commit -m "test(3d): ablate the cypress silhouette against the painting
 
 The previous binary diagnosis was unreachable: widest point sits at 0.137-0.169
@@ -1805,11 +1829,11 @@ tongue() separately, each scored against the painting's own row-wise silhouette.
 
 Driven by Task 7's ranking. **Must land before tendrils** — Mark's constraint: tendrils on a bulbous mesh are decoration around a defect.
 
-**Files:** Modify `src/scene/BrushCypress.tsx` (lines 58–75)
+**Files:** Modify the shared constants in `src/scene/cypressProfile.ts`; `BrushCypress.tsx` consumes them without a private override.
 
 - [ ] **Step 1: Apply the highest-ranked fix only**
 
-Change whichever single factor Task 7 ranked worst. Do not change two at once — that is how credit gets misattributed.
+Change whichever single factor Task 7 ranked worst in `CYPRESS_PROFILE_CONFIG` (or `CYPRESS_LUM_MAX`). Do not change two at once — that is how credit gets misattributed.
 
 - [ ] **Step 2: Re-run the ablation to confirm the improvement**
 
@@ -1869,15 +1893,16 @@ Then update the two solid references: line 96 `cc.copy(CORE).lerp(GREEN, ...)` �
 Change the `brushForms` import line to:
 
 ```ts
-import { makeBrushArrays, moonShade, pushBrushRibbon, smooth, vnoise } from './brushForms'
+import { makeBrushArrays, moonShade, pushBrushRibbon } from './brushForms'
 ```
 
 (`pushBrush` goes — the cladding no longer uses it. `PALETTE` stays, used by the underpaint colours.) Add:
 
 ```ts
 import { SRGBColorSpace } from 'three'
-import { buildTendrilTracks, generateCypressStrokes } from './cypressStrokes'
+import { generateCypressStrokes } from './cypressStrokes'
 import { cypressViewBearing, paintingUToAngle, paintingUV, type RowTable } from './cypressMapping'
+import { composedRadius, makeCypressProfile, tongue } from './cypressProfile'
 import { DIORAMA_CAMERAS } from './dioramaContract'
 import rowTableJson from '../../public/reference/cypress-rows.json'
 
@@ -1937,9 +1962,8 @@ Replace lines 122–170 with:
       for (const sample of stroke.samples) {
         const hf = sample.heightFraction
         const a = paintingUToAngle(sample.u, bearing, front)
+        const r = composedRadius(hf, a, profile)
         const bump = tongue(a, hf)
-        const tipTaper = 0.35 + 0.65 * (1 - smooth(0.6, 1, hf))
-        const r = Math.max(0.015, sampleR(hf) * (1 + bump * 0.5 * tipTaper))
         nrm.set(Math.cos(a), 0.12, Math.sin(a)).normalize()
         const stickOut = 0.01 + Math.max(0, bump) * 0.02 * tipTaper
 
@@ -1985,8 +2009,8 @@ git commit -m "feat(3d): the cypress wears the painting's own paint
 
 Long ribbons from the shared integrator, coloured from cypress-skin through
 SRGBColorSpace — ImageData bytes are sRGB while Color's working space is linear,
-so the naive conversion would have darkened the tree, the exact defect this pass
-fixes. The cladding's palette attenuation is gone and moonShade is a lift, not
+so the naive conversion would have made midtones display brighter. The near-black
+defect was palette attenuation; that attenuation is gone and moonShade is a lift, not
 the main value term; the SOLID keeps its own underpaint colours so gaps still
 read as deep shadow rather than sky-void."
 ```
@@ -2131,7 +2155,7 @@ export function buildTendrilTracks(
 
 - [ ] **Step 3: Wire into `BrushCypress.tsx`**
 
-Bake the satellite runs into `cypress-rows.json` (add a `satellites` field in `derive-cypress.ts` using `satelliteRuns`), then in the cladding memo:
+Bake the satellite runs into `cypress-rows.json` as **crop-local coordinates** (`y - by0`, `x0 - bx0`, `x1 - bx0`) using `satelliteRuns`. Add a non-zero-origin fixture proving the conversion. Only then add `buildTendrilTracks` and `rowSpanAt` imports to `cypressStrokes.ts`, and add `buildTendrilTracks` to the test import. In the cladding memo:
 
 ```ts
     const tracks = buildTendrilTracks(rowTable.satellites, {
@@ -2190,7 +2214,7 @@ survive. Top third only, long tapered ribbons reaching past the solid."
 
 **Correction from review:** the earlier gate was internally inconsistent — it set a 50% vertex-growth limit while defaulting to a configuration that grows vertices 83% and triangles 144%. And geometry counts do not demonstrate frame rate.
 
-Nominal, before clipping: current 3,600 × 6 = **21,600 v / 14,400 t**; proposed 2,200 × 9 × 2 = **39,600 v / 35,200 t**.
+Nominal, before clipping: current 3,600 × 6 = **21,600 v / 14,400 t**. Proposed ribbons emit two vertices per sample and two triangles per segment: `(2,200 + round(2,200 × 0.45)) × 9 × 2` = **57,420 vertices**, and the same stroke count × 8 × 2 = **51,040 triangles**, before clipping and tendrils.
 
 - [ ] **Step 1: Add a timing hook — `renderer` is not currently reachable from the console**
 
@@ -2210,11 +2234,11 @@ function PerfProbe() {
 }
 ```
 
-Mount it only when `debug` is set, so it never ships in the clean view.
+Mount it only when `?perf=1` is set. The probe is independent of debug mode, so it can measure the real final pipeline without changing presentation.
 
 - [ ] **Step 2: Record real numbers, mean AND p95**
 
-After a 10-second warm-up on `?mode=diorama&clean=1&debug=nopost`:
+After a 10-second warm-up on `?mode=diorama&clean=1&debug=final&perf=1` (and record `debug=nopost&perf=1` separately as an isolation comparison):
 
 ```js
 const t = window.__perf.t, d = t.slice(1).map((v, i) => v - t[i]).sort((a, b) => a - b)
@@ -2242,20 +2266,20 @@ An arbitrary rendered crop against an arbitrary painting crop is not a ΔE test 
 
 If exact registration proves impractical, fall back to comparing **regional colour distributions** (mean Lab and its spread over the masked tree region) and say plainly that is what was measured. **Do not report a per-pixel ΔE that was not computed per corresponding pixel.**
 
-- [ ] **Step 4: Full check**
+- [ ] **Step 5: Full check**
 
 ```bash
 npm run test:sky && npm run lint && npm run build && npm run check:reduced
 ```
-Expected: all pass. Test count: 53 + 5 (ribbon) + 8 (field) + 6 (mapping) + 12 (strokes/tendrils) = 84.
+Expected: all pass. Record the test count printed by the actual runner; do not copy hand-maintained arithmetic.
 
-- [ ] **Step 5: Record**
+- [ ] **Step 6: Record**
 
 Append to `tasks/lessons.md`: whether fur→flame worked and what it cost; the Task 7 ablation ranking; how many retune passes the flat gate needed; the sRGB conversion trap; and what the row-domain fix taught about mapping a 3D form to a 2D source.
 
 Update `tasks/todo.md`: move the cypress work into the record with evidence paths, add its gate row, and state plainly whether this pass is finished or wants another.
 
-- [ ] **Step 6: Commit — and stop**
+- [ ] **Step 7: Commit — and stop**
 
 ```bash
 git add tasks/lessons.md tasks/todo.md
@@ -2302,11 +2326,22 @@ cypress shaped like the foreground terrain.
 | Tensor not genuinely mask-aware — boundary gradients read sky, low-pass averages off-mask orientations back in | — | Mask-safe gradients (off-mask neighbour → centre) and **normalised convolution** (`maskedBlur`) for every blur, including the low-pass |
 | Flat gate drew fixed square dots | — | Renders **tapered quads through the display-colour path**; the gate's claims are narrowed in writing to what it actually covers |
 | Relief 0.78–1.20 too aggressive to start (38% below 0.94) | — | Default 0.94–1.06 via `reliefSpread`, plus a `relief = 1` ablation test |
-| `pow(rng, 0.78)` biases seeds to the **top**, not the base (41.2% below mid-height) | — | `1 − pow(rng, 1.4)`, with a test asserting >55% seed low. The same wrong comment sits on the pre-existing code |
+| `pow(rng, 0.78)` was described with the wrong coordinate assumption | — | Height zero is the base, so `pow(rng, 1.4)` correctly biases low; the test asserts >55% seed below mid-height |
 | Front/back assignment was an arbitrary u/relief heuristic | — | **Complete front pass** + explicit mirrored, sparser back pass (`BACK_DENSITY`), both in the geometry budget |
 | Task 11 had no timing hook and `renderer` is not exposed | — | Dev-only `PerfProbe`; **mean and p95 both gated** |
 | ΔE compared arbitrary crops | — | Registered, tree-masked correspondence through the same mapping; explicit fallback to distribution comparison, honestly labelled |
 | `cypress-rows.json` would infer as `number[][]` | — | Asserted once to `RowTable` at the import |
+
+### Round 3 (2026-07-22, pre-implementation executable audit)
+
+| Finding | Severity | Resolution |
+|---|---|---|
+| A terrain seed can narrow into the trunk and beat the trunk chain; global `tried` then suppresses the correct candidate | P0 | Symmetric local width ratio; evaluate every seed |
+| The revised seed formula is still inverted for a base-at-zero height fraction | P0 | `Math.pow(rng(), 1.4)`, pinned by distribution test |
+| Direct Node tests cannot resolve extensionless source imports; `normalisedFromCrop` is called but absent | P0 | Explicit `.ts` imports and complete import lists |
+| Shared profile maths still has duplicated baseline configuration and no registered public test | P1 | Shared constants/constructor, runtime and diagnostic consume them, profile test registered |
+| Satellites are painting-global while rows are crop-local; zero-origin tests hide it | P0 | Crop-local bake and non-zero-origin test |
+| Nominal ribbon budget omitted the 45% back pass and doubled geometry incorrectly | P1 | Correct 57,420 v / 51,040 t nominal budget; measure final pipeline via independent `perf=1` probe |
 
 **Partial dissent, recorded honestly.** On the ribbon darkening I do not accept that per-stroke relief contradicts the design's "drop the darkening" — the design rejected *global palette attenuation* (×0.68 on every stroke, which made the tree black), while relief between neighbouring strokes is existing house technique (`pushBrush` line ~89) and without it cladding reads as one flat sheet. The review's underlying point stands and is implemented: a *fade along a long stroke* is a vignette that biases stroke ends dark, so relief moved to a per-stroke constant and the residual is verified by the displayed-colour ΔE check rather than asserted.
 
