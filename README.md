@@ -25,7 +25,13 @@ brew install webp
 
 ## Status
 
-Pre-release sign-off is currently withdrawn for a quality-refinement gate. The piece is an orbitable 3D
-diorama with visitor controls, reduced motion, and a full foreground, but the next roadmap item is to bring
-the sky flow materially closer to the original painting before release. After the sky-flow fidelity pass, the
-cypress and village get a second painterly refinement pass.
+An orbitable 3D diorama: constrained orbit (never free-fly), visitor controls, reduced-motion still state,
+and a full foreground. Head-on it reads as the painting's composition.
+
+The sky-flow fidelity work is done. Motion and colour are derived from a high-resolution scan rather than
+from generic noise, and an offline pipeline fills the cypress cut-out and extends the canvas sideways using
+the painting's own pixels, so the sky continues past its edges instead of ending on a card.
+
+Four of the five review gates have passed (reference pipeline, the movable decision, first full animated
+sky, foreground complete). **Pre-release is the one that remains** — lighting/bloom balance, mobile portrait
+framing, performance on real hardware, and deploy. Not released yet.

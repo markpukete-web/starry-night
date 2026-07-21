@@ -9,9 +9,34 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## ▶ PICK UP HERE (2026-07-21) — asset slimming DONE; next = the pre-release gate items
+## ▶ PICK UP HERE (2026-07-21) — ship hygiene CLOSED; next = the pre-release gate items
 
-**Ship hygiene (step 1 of the queued slice) is done.** `public/reference` 18.17 → 11.20 MB of
+**Session summary (2026-07-21).** Ship hygiene is finished and checklist item 5 is decided.
+Shipped assets went **19.2 → 10.04 MB (−48%) with no pixel change at any step**, in two passes:
+
+1. **Lossless PNG repack** (`5e1188e`) — 18.17 → 11.20 MB. The hand-rolled encoder was writing
+   filter 0 on every row and hard-coding RGBA, so every asset carried a dead alpha plane and the
+   mask carried three copies of one grey. Codec collapsed from three hand-synced copies onto
+   `scripts/lib/png.ts` (−283 lines), pinned by `scripts/png.test.ts`.
+2. **Lossless WebP for the colour assets** (`17dde58`) — 12.21 → 10.04 MB. `painting-filled.webp`
+   + the two side strips; flow fields and mask stay PNG, where WebP is bigger. Lossy was measured
+   and rejected (item 5 evidence below). `cwebp` approved as a bake-only prerequisite.
+
+Also `c79265f`: the pre-release checklist consolidated into one owned list (this file, above).
+
+**Two instrument lessons this session, both in `tasks/lessons.md` — read them before trusting any
+future capture diff:** a diff against a live-churning render means nothing without a same-assets
+control run; and capture RMSE cannot measure ANY change that alters load timing (a format swap
+shifts decode time, which shifts animation phase) — compare decoded pixels in the browser instead.
+
+**Still open, and worth a decision:** the README's old Status claimed the cypress and village were
+due "a second painterly refinement pass" after the sky-flow work. That is not in the pre-release
+checklist and no one has confirmed it is still wanted; the rewritten README no longer asserts it.
+If it IS still wanted, it needs to become a checklist item — Mark's call, not Claude's to drop.
+
+### Ship hygiene detail — pass 1
+
+`public/reference` 18.17 → 11.20 MB of
 PNG; shipped payload 19.2 → 12.2 MB (−36%). **Zero pixel change** — the assets were re-encoded,
 not resampled or converted: `scripts/slim-reference.ts` refuses to write a file unless the
 decoded RGBA round-trips byte-identical. Capture A/B ran anyway and confirmed it, against a
