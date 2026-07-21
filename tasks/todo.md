@@ -53,7 +53,7 @@ stop and ask about (CLAUDE.md "Stop and ask Mark when"). `Claude` items are mech
 | 2 | **Mobile portrait framing** — responsive fov keeps cypress edge + central whorl + steeple, but the MOON can't fit a portrait frame (≈42° off-centre on the arc); needs a portrait-specific camera bearing | Mark (composition) | open |
 | 3 | **Perf on real hardware** — locked criterion: 60 fps desktop, 30 fps mid-tier mobile. Headless cannot measure this; needs a real device pass. Includes confirming stroke budget + DPR caps (Tunables) hold up | Mark to run, Claude to retune | open |
 | 4 | **Deploy mechanics** — Vercel prod, Deployment Protection, `starrynight.markma.dev` DNS (Cloudflare CNAME, grey-cloud). CLAUDE.md: anything touching deploy/DNS/analytics is stop-and-ask | Mark | open |
-| 5 | **Lossy colour assets (optional)** — WebP q90 takes `painting-filled.png` 3.94 → 0.83 MB, payload ~12.2 → ~7 MB. Attacks the stroke grain the piece is faithful to; runtime samples those pixels directly for ribbon colour. Wants a crop A/B before anyone commits | Mark | open, needs Claude to prepare the A/B |
+| 5 | **WebP for the three colour assets** — evidence gathered 2026-07-21, see below. Two variants: lossless (free, −2.18 MB) and lossy q90 (−5.07 MB, measurable render change) | Mark | **evidence ready, awaiting decision** |
 | 6 | **Portfolio link-out** — markma.dev links to the finished piece (CLAUDE.md: it links out, full stop — never embedded) | Mark | open, post-deploy |
 
 Already satisfied, listed so the gate can be checked end-to-end rather than re-litigated:
@@ -68,6 +68,45 @@ Already satisfied, listed so the gate can be checked end-to-end rather than re-l
 **Explicitly NOT in this gate** (CLAUDE.md Out of scope / Phase 2): preset dials (time-of-day,
 weather) — not before the core piece passes pre-release; the Techartist time-dial interaction
 shape — Phase 2 at the earliest; audio, VR/AR, other paintings, gallery framing — never.
+
+### Item 5 evidence — WebP for painting-filled + the two side strips (2026-07-21)
+
+Only these three assets are candidates. **Lossless WebP is WORSE than our PNG for the flow
+assets** (signed-flow-filled 1.61 MB PNG vs 2.10 MB WebP), so flow and mask stay PNG either way —
+a mixed-format reference set is the correct answer, not a compromise.
+
+| Option | The three colour assets | Total payload | Pixel change |
+|---|---|---|---|
+| Today (PNG, slimmed) | 6.33 MB | 12.21 MB | — |
+| **Lossless WebP** | 4.15 MB | **10.03 MB** | **none, byte-identical** |
+| Lossy WebP q90 + `-sharp_yuv` | 1.26 MB | **7.15 MB** | measurable, see below |
+
+**What the lossy option actually costs.** Measured against the originals, q90 `-sharp_yuv` on
+painting-filled: mean ΔE 2.85, max ΔE 52, **59% of pixels past ΔE 2** (the just-noticeable
+threshold) and **0.9% past ΔE 10** — which is the palette tolerance locked in Tunables. Plain
+q90 without `-sharp_yuv` is worse (mean ΔE 3.00); chroma subsampling hurts here because the sky
+is fine blue-yellow interleaving, the worst case for it.
+
+**The render moves too, and unlike the slimming pass it moves outside the noise floor.** Wiring
+the lossy pixels in and re-capturing gave RMSE ≈ 0.0037 on every view, against a same-assets
+noise floor of 0.0002–0.0013 — a consistent, repeatable change, not capture jitter. (Method: the
+lossy pixels were written to temporary `_lossytest-*.png` files with the source paths pointed at
+them for one capture; committed assets were never overwritten, and both were reverted after.)
+
+**But at 3× zoom on the rendered sky I cannot reliably tell them apart** — the ribbon strokes
+average the source grain, so the render is less sensitive than the raw asset. The loss on the
+asset is confined to the finest canvas-weave speckle; Van Gogh's stroke shapes survive intact.
+
+Crops for Mark's eye: `output/playwright/lossy-q90-2026-07-21/crops/` — `asset-*-4x.png` (whorl,
+star, moon, cypress; left = original, right = q90) and `render-*-3x.png`. Captures:
+`lossy-q90-2026-07-21/` vs `slim-after-2026-07-21/`, noise floor `slim-control-2026-07-21/`.
+
+**Claude's recommendation: take lossless WebP, hold the lossy option.** It is 2.18 MB for
+literally nothing — same integration work as lossy (bake-script output + runtime paths), no
+grain risk, no argument. The remaining 2.9 MB from lossy is only worth spending if first-load
+weight turns out to be a real problem on mid-tier mobile (checklist item 3), and by then there
+will be a measurement to justify it rather than a guess. Grain is the axis this project has
+already been burned on once (the cypress texture-ghost, six rounds).
 
 ## Superseded (2026-07-17, closed) — S4 ✅ GATE PASSED (Mark, live); next slice = ship hygiene
 
