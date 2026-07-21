@@ -1572,3 +1572,40 @@ The 2026-07-09 Mark-confirmed polish list, one capture-verified slice each. What
   machinery extends the canvas into the side voids (S4). General rule: when a reconstruction
   keeps failing a taste gate, move the problem to where the review loop is cheapest and the
   source material is real.
+
+## Ship hygiene — the reference set was 38% larger than the data required (2026-07-21)
+
+Slimmed `public/reference` from 18.17 MB to 11.20 MB of PNG (shipped payload 19.2 → 12.2 MB)
+with **zero pixel change** — no resampling, no quantisation, no format change. All of it came
+from two storage bugs in the hand-rolled encoder, not from the data.
+
+- **The encoder was writing filter 0 on every row.** PNG's per-row filters are the entire reason
+  it compresses continuous-tone images; without them deflate is left to squeeze raw brushwork.
+  Adaptive selection (min-sum-of-absolute-differences, straight from the spec) is most of the win.
+- **Every asset carried a constant alpha plane, and the mask carried three copies of one grey.**
+  `ihdr[9] = 6 // colour type RGBA` was hard-coded. Detecting the channels actually used drops
+  25% of the raw bytes on the colour assets and 75% on the mask. Detected from data, so a future
+  bake that genuinely uses alpha keeps it.
+- **The header comment that said this was impossible was measuring the wrong thing.**
+  slim-flow-field.ts asserted "lossless re-encoding can't help (the data is high-entropy and
+  already deflate level-9)" — true of deflate in isolation, false of PNG, because it ignored
+  filters and the dead alpha plane. That claim went unchallenged for five weeks and cost ~7 MB.
+  **A confident comment explaining why an optimisation is impossible deserves one measurement
+  before it is believed** — it is a hypothesis someone wrote down, not a result.
+- **Three hand-synced copies of the codec are why the bug survived.** The lib header instructed
+  future readers to "keep the two copies byte-for-byte in sync"; a fix would have had to be
+  applied three times to count, so it was never applied once. Collapsed onto `scripts/lib/png.ts`
+  (−283 lines). Duplication doesn't just risk drift — it raises the price of every improvement
+  until improvements stop happening.
+- **Prove losslessness in the tool, then verify visually anyway.** `slim-reference.ts` decodes,
+  re-encodes, and re-decodes, and refuses to write unless the RGBA round-trips byte-identical —
+  so "no visual change" is true by construction, not by inspection. The capture A/B still ran.
+- **Establish the noise floor before reading a capture diff.** The A/B showed 300k+ differing
+  pixels per view and I nearly chased it. A control — same assets, two capture runs — differed
+  MORE (RMSE 1.3e-3 vs 1.9e-4 on `desktop-lookdown`), because the churn is live and the captures
+  aren't phase-locked. **A diff against a moving target means nothing without a same-input control
+  run.** Cheap to produce, and it converts "looks close enough" into an actual measurement.
+- Still on the table, NOT taken: lossy WebP for the three colour assets (painting-filled
+  3.94 → 0.83 MB at q90) would roughly halve the payload again, but it attacks precisely the
+  high-frequency stroke grain the piece is faithful to. That is Mark's taste call, with a crop
+  A/B in front of him — not a silent optimisation.

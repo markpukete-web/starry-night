@@ -9,7 +9,35 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## ▶ PICK UP HERE (2026-07-17, closed) — S4 ✅ GATE PASSED (Mark, live); next slice = ship hygiene
+## ▶ PICK UP HERE (2026-07-21) — asset slimming DONE; next = the pre-release gate items
+
+**Ship hygiene (step 1 of the queued slice) is done.** `public/reference` 18.17 → 11.20 MB of
+PNG; shipped payload 19.2 → 12.2 MB (−36%). **Zero pixel change** — the assets were re-encoded,
+not resampled or converted: `scripts/slim-reference.ts` refuses to write a file unless the
+decoded RGBA round-trips byte-identical. Capture A/B ran anyway and confirmed it, against a
+same-assets control run that differed more than the A/B did (the churn is live; captures aren't
+phase-locked — see lessons).
+
+The win was two storage bugs in the hand-rolled encoder, not the data: every row was written
+with filter 0, and every asset carried a constant alpha plane (the mask, three copies of one
+grey). Codec collapsed from three hand-synced copies onto `scripts/lib/png.ts` (−283 lines),
+pinned by `scripts/png.test.ts` (7 tests; suite now 53). `npm run slim-reference` is idempotent.
+
+**Open decision for Mark — lossy colour assets.** Lossy WebP would take `painting-filled.png`
+3.94 → 0.83 MB at q90 and roughly halve the payload again (~12.2 → ~7 MB). Not taken: it attacks
+exactly the high-frequency stroke grain the piece is faithful to, and the runtime samples those
+pixels directly for ribbon colour. Wants a crop A/B in front of Mark before anyone commits to it.
+
+**NEXT — the standing pre-release items (Mark's calls):** lighting/bloom balance (nopost vs
+final), mobile portrait framing (the moon still can't fit a portrait frame — needs a
+portrait-specific camera bearing, a composition call), perf on real hardware (60 fps desktop /
+30 fps mid-tier mobile — headless can't measure), and deploy mechanics (Vercel prod + Deployment
+Protection + `starrynight.markma.dev` DNS — stop-and-ask).
+
+(Evidence: `output/playwright/slim-baseline-2026-07-21/` vs `slim-after-2026-07-21/`, with
+`slim-control-2026-07-21/` as the noise floor.)
+
+## Superseded (2026-07-17, closed) — S4 ✅ GATE PASSED (Mark, live); next slice = ship hygiene
 
 **S4 (side-void canvas extension) is DONE — Mark passed the drag-boundary gate live
 ("LOVE YOUR WORK", 2026-07-17).** That completes the whole approved offline inpaint + extend
@@ -854,7 +882,8 @@ hero → polish; capture + review each slice.
 - [ ] Mobile portrait framing — responsive fov now keeps the cypress edge + central whorl + steeple;
       the MOON still can't fit a portrait frame (≈42° off-centre on the arc) → needs a portrait-specific
       camera bearing (Mark's composition call). Plus stroke budget + DPR caps; perf on real mid-tier mobile
-- [ ] Ship hygiene: slim `flow-field.png` (3.2 MB); strip `leva` from the production build
+- [x] Ship hygiene: reference PNGs re-encoded losslessly, 18.17 → 11.20 MB (2026-07-21);
+      `leva` already aliased out of the production build (vite.config.ts)
 - [ ] Gates remaining: **pre-release** — the last gate (foreground-complete passed 2026-06-15)
 
 ## Parked ideas (scope-growth — do NOT build without Mark)
