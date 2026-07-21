@@ -1618,3 +1618,23 @@ from two storage bugs in the hand-rolled encoder, not from the data.
   the one you are reading.** When Mark asks "is this the roadmap?", check the sources before
   answering — the honest answer was that my list was one gate's checklist, assembled from two
   half-lists.
+- **Capture RMSE cannot measure any change that alters load timing — including a file-format
+  swap.** Converting the colour assets to LOSSLESS WebP (pixels provably byte-identical) produced
+  a bigger capture diff than the lossy test it was meant to beat: RMSE 0.0096 on `desktop-centre`
+  against a 0.0002–0.0013 same-assets noise floor. Nothing had changed in the pixels; the WebP
+  decodes at a different speed, the churn is live, and the screenshot lands on a different
+  animation phase. I had already used that instrument to conclude lossy "moves the render outside
+  the noise floor" — that conclusion was confounded and is corrected in `tasks/todo.md`.
+  **The right instrument for a format change is the decoded pixels, in the browser that will
+  decode them**: load both, draw to canvas, compare `ImageData` (Chrome: 0 differing pixels out
+  of 2,027,200). Note this refines, not contradicts, the noise-floor lesson above — a control run
+  bounds jitter for a SAME-timing change; it cannot bound a timing change.
+- **Ask before adding a tool, even a "standard" one.** Lossless WebP needs `cwebp` (Homebrew
+  libwebp) — `sips`, which the pipeline already shells out to, cannot write WebP at all. That is a
+  dependency beyond the approved list, so it went to Mark rather than being slipped in: approved
+  as BAKE-ONLY, never required for dev/build/test/deploy. Recommending an option obliges you to
+  surface what adopting it actually costs, not just what it saves.
+- **A mixed-format asset set is a result, not a compromise.** Lossless WebP beats our PNG by ~40%
+  on continuous-tone paint and LOSES to it on the flow fields (1.61 MB PNG vs 2.10 MB WebP), so
+  the colour assets ship WebP and the flow/mask stay PNG. `WEBP_ASSETS` is a measured, named list
+  for exactly this reason — "convert everything" would have been slower AND bigger.

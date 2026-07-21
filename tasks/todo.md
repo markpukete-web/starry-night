@@ -53,7 +53,7 @@ stop and ask about (CLAUDE.md "Stop and ask Mark when"). `Claude` items are mech
 | 2 | **Mobile portrait framing** — responsive fov keeps cypress edge + central whorl + steeple, but the MOON can't fit a portrait frame (≈42° off-centre on the arc); needs a portrait-specific camera bearing | Mark (composition) | open |
 | 3 | **Perf on real hardware** — locked criterion: 60 fps desktop, 30 fps mid-tier mobile. Headless cannot measure this; needs a real device pass. Includes confirming stroke budget + DPR caps (Tunables) hold up | Mark to run, Claude to retune | open |
 | 4 | **Deploy mechanics** — Vercel prod, Deployment Protection, `starrynight.markma.dev` DNS (Cloudflare CNAME, grey-cloud). CLAUDE.md: anything touching deploy/DNS/analytics is stop-and-ask | Mark | open |
-| 5 | **WebP for the three colour assets** — evidence gathered 2026-07-21, see below. Two variants: lossless (free, −2.18 MB) and lossy q90 (−5.07 MB, measurable render change) | Mark | **evidence ready, awaiting decision** |
+| 5 | ~~WebP for the three colour assets~~ | Mark | ✅ **DONE 2026-07-21** — lossless taken, lossy rejected; payload 12.21 → 10.04 MB |
 | 6 | **Portfolio link-out** — markma.dev links to the finished piece (CLAUDE.md: it links out, full stop — never embedded) | Mark | open, post-deploy |
 
 Already satisfied, listed so the gate can be checked end-to-end rather than re-litigated:
@@ -107,6 +107,21 @@ grain risk, no argument. The remaining 2.9 MB from lossy is only worth spending 
 weight turns out to be a real problem on mid-tier mobile (checklist item 3), and by then there
 will be a measurement to justify it rather than a guess. Grain is the axis this project has
 already been burned on once (the cypress texture-ghost, six rounds).
+
+**OUTCOME (Mark, 2026-07-21): lossless taken.** `painting-filled.webp` 2.35 MB,
+`sky-extend-{left,right}.webp` ~0.90 MB each; flow fields and mask stay PNG. Shipped payload
+**12.21 → 10.04 MB**. `cwebp`/`dwebp` approved as a BAKE-ONLY prerequisite (never needed for dev,
+build, tests or deploy); `scripts/slim-reference.ts` owns the conversion and verifies it,
+`extend-reference.ts` says to run it after a re-bake, README documents `brew install webp`.
+
+⚠️ **Correction to the render evidence above.** The claim that lossy "moves outside the noise
+floor" (RMSE ≈ 0.0037 vs 0.0002–0.0013) does not hold up. The lossless swap — provably
+byte-identical pixels — measured RMSE 0.0096 on `desktop-centre`, *higher* than the lossy test.
+A format change alters decode timing, which shifts the churn's animation phase at screenshot
+time, and RMSE cannot tell phase apart from colour. **Capture RMSE is not a valid instrument for
+any change that alters load timing.** The right check is to compare DECODED PIXELS in the browser:
+Chrome decodes the WebP to 0 differing pixels out of 2,027,200 against the PNG. The asset-level
+ΔE figures above are unaffected and remain the real reason to be wary of lossy.
 
 ## Superseded (2026-07-17, closed) — S4 ✅ GATE PASSED (Mark, live); next slice = ship hygiene
 

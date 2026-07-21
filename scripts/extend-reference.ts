@@ -16,6 +16,11 @@
  * Run: node scripts/extend-reference.ts  (--s1-only / --s2-only stop after that slice)
  * Committed outputs land in public/reference/; gitignored gate captures (fill-region overlay
  * + crop, inpaint before/after, side-extend seam/flow crops) land in reference/derived/
+ *
+ * THEN RUN `npm run slim-reference`. This script writes PNG throughout (the pipeline stays
+ * PNG-internal so no stage needs a WebP decoder), but the three colour assets SHIP as lossless
+ * WebP — painting-filled and the two side strips. slim-reference.ts owns that conversion, and
+ * the runtime loads the .webp paths. Skipping it leaves stale PNGs the app no longer reads.
  */
 
 import { execFileSync } from 'node:child_process';

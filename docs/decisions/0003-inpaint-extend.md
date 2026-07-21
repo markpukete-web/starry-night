@@ -121,9 +121,9 @@ mapping (and the gate-passed S2 assets) stays untouched.
 
 | Asset | Size | Notes |
 |---|---|---|
-| `public/reference/painting-filled.png` | ~6 MB | PNG so pixels outside the fill are byte-identical to `painting.jpg`'s decode. Ship format (PNG vs re-encoded JPEG) is a pre-release hygiene call — flagged, not decided. |
-| `public/reference/signed-flow-filled.png` | ~3 MB | same story |
-| `public/reference/sky-extend-{left,right}.png` | ~1.8 MB each | 500×1267 (extension + owned border), full paint strength — the runtime owns the melt |
+| `public/reference/painting-filled.webp` | 2.35 MB | Lossless throughout, so pixels outside the fill stay byte-identical to `painting.jpg`'s decode. **Ship format decided 2026-07-21** (Mark): lossless WebP, 40% under PNG, verified byte-identical in Chrome. Lossy was measured and rejected — see the item 5 evidence in `tasks/todo.md`. |
+| `public/reference/signed-flow-filled.png` | 1.61 MB | Stays PNG: lossless WebP is BIGGER for flow data (2.10 MB). Signed vectors, so lossy is never an option here. |
+| `public/reference/sky-extend-{left,right}.webp` | ~0.90 MB each | 500×1267 (extension + owned border), full paint strength — the runtime owns the melt. Lossless WebP, as above. |
 | `public/reference/sky-extend-flow-{left,right}.png` | ~1 MB each | 400×1013 flow strips, destination-sign-aligned + low-passed |
 | `reference/derived/inpaint-before-after.png`, `inpaint-filled-2x.png` | — | the flat-image gate crops (regenerable) |
 | `reference/derived/side-extend-{left,right}-{1x,2x,flow}.png`, `side-extend-overview.png` | — | S4 seam/flow/panorama gate crops (regenerable) |

@@ -12,6 +12,17 @@ npm install
 npm run dev
 ```
 
+### Asset pipeline (only when re-baking reference assets)
+
+The derived reference assets are committed, so nothing below is needed to run, build, test or
+deploy the app. Re-baking them (`npm run derive-reference` / `npm run extend-reference`) writes
+PNG, then `npm run slim-reference` prepares the shipped set — re-encoding losslessly and
+converting the three colour assets to lossless WebP. That last step needs `cwebp`/`dwebp`:
+
+```bash
+brew install webp
+```
+
 ## Status
 
 Pre-release sign-off is currently withdrawn for a quality-refinement gate. The piece is an orbitable 3D

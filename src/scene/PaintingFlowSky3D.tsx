@@ -393,16 +393,19 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final' }: Props) {
   // (docs/decisions/0003-inpaint-extend.md). The 2D routes keep the unfilled originals.
   const flowData = useImageData('/reference/signed-flow-filled.png')
   const maskData = useImageData('/reference/sky-mask.png')
-  const paintingData = useImageData('/reference/painting-filled.png')
-  const extendLeftData = useImageData('/reference/sky-extend-left.png')
-  const extendRightData = useImageData('/reference/sky-extend-right.png')
+  // The colour assets ship as lossless WebP (~40% under PNG on continuous-tone paint, pixels
+  // byte-identical); the flow fields and mask stay PNG, where WebP is bigger. scripts/slim-
+  // reference.ts owns that split — keep its WEBP_ASSETS list and these paths in step.
+  const paintingData = useImageData('/reference/painting-filled.webp')
+  const extendLeftData = useImageData('/reference/sky-extend-left.webp')
+  const extendRightData = useImageData('/reference/sky-extend-right.webp')
   const extendFlowLeftData = useImageData('/reference/sky-extend-flow-left.png')
   const extendFlowRightData = useImageData('/reference/sky-extend-flow-right.png')
   const [painting, mask, extendLeft, extendRight] = useTexture([
-    '/reference/painting-filled.png',
+    '/reference/painting-filled.webp',
     '/reference/sky-mask.png',
-    '/reference/sky-extend-left.png',
-    '/reference/sky-extend-right.png',
+    '/reference/sky-extend-left.webp',
+    '/reference/sky-extend-right.webp',
   ])
   const isFlowDebug = debug === 'flow'
 
