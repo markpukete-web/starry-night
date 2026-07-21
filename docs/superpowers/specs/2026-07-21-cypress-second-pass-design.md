@@ -95,9 +95,14 @@ makes gaps between strokes read as deep shadow rather than sky-void.
 
 ### Mapping front to back
 
-Painting-space `u` wraps across the front 180° of the form, so the painting's cypress edges land
-exactly on the form's silhouette edges. The invented back 180° continues by mirrored offset — the
-same style-continuation principle as the S4 side strips.
+Painting-space `u` is normalised **within the cypress's real span on each row**, then wraps across
+the front 180° of the form. Thus `u=0/1` mean the tree's actual painted edges at that height—not
+the edges of a rectangular crop that is mostly sky near the tip. The angular anchor is derived from
+the design camera and cypress base: about 64.6°, not an assumed +Z/90° view. This lands the source
+edges on the silhouette in the exact view Mark judges.
+
+The invented back 180° mirrors the front mapping exactly. Mirroring shares the same value at both
+silhouette rims, so it is continuous where front and back meet rather than adding an offset seam.
 
 This follows Mark's acceptance call (2026-07-21): **head-on is judged against the painting; the
 back only has to not break it.** The back sits behind the form at every allowed orbit angle.
