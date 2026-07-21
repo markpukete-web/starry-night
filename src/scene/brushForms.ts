@@ -92,3 +92,71 @@ export function pushBrush(
   // triangle fan from the near tip
   arr.indices.push(base, base + 1, base + 2, base, base + 2, base + 3, base, base + 3, base + 4, base, base + 4, base + 5)
 }
+
+/**
+ * Append a tapered quad strip swept along a surface polyline.
+ *
+ * Unlike `pushBrush`, a ribbon can follow a long, curved painted stroke. Its width frame is carried
+ * forward and sign-aligned so a stroke wrapping around a tube cannot flip its bitangent and cross
+ * a quad. Colours are emitted exactly as supplied: relief is a per-stroke caller decision, never a
+ * fade along one mark.
+ */
+export function pushBrushRibbon(
+  arr: BrushArrays,
+  points: Vector3[],
+  normals: Vector3[],
+  colors: Color[],
+  halfWid: number,
+  taper = 1,
+): void {
+  if (points.length < 2 || normals.length !== points.length || colors.length !== points.length) return
+  if (halfWid <= 0 || taper < 0) return
+
+  let hasLength = false
+  for (let i = 1; i < points.length; i++) {
+    if (points[i].distanceToSquared(points[i - 1]) > 1e-12) {
+      hasLength = true
+      break
+    }
+  }
+  if (!hasLength) return
+
+  const bitangents: Vector3[] = []
+  const previous = new Vector3()
+  for (let i = 0; i < points.length; i++) {
+    const before = points[Math.max(0, i - 1)]
+    const after = points[Math.min(points.length - 1, i + 1)]
+    const tangent = after.clone().sub(before)
+    const normal = normals[i].clone().normalize()
+    if (tangent.lengthSq() < 1e-12 || normal.lengthSq() < 1e-12) return
+    tangent.addScaledVector(normal, -normal.dot(tangent))
+    if (tangent.lengthSq() < 1e-12) return
+    tangent.normalize()
+
+    const bitangent = new Vector3().crossVectors(normal, tangent).normalize()
+    if (i > 0 && bitangent.dot(previous) < 0) bitangent.negate()
+    bitangents.push(bitangent)
+    previous.copy(bitangent)
+  }
+
+  const base = arr.positions.length / 3
+  const endScale = Math.max(0, taper)
+  for (let i = 0; i < points.length; i++) {
+    const t = i / (points.length - 1)
+    const width = halfWid * (1 + (endScale - 1) * t)
+    const side = bitangents[i]
+    const left = points[i].clone().addScaledVector(side, width)
+    const right = points[i].clone().addScaledVector(side, -width)
+    arr.positions.push(left.x, left.y, left.z, right.x, right.y, right.z)
+    const colour = colors[i]
+    arr.colors.push(colour.r, colour.g, colour.b, colour.r, colour.g, colour.b)
+  }
+
+  for (let i = 0; i < points.length - 1; i++) {
+    const a = base + i * 2
+    const b = a + 1
+    const c = a + 2
+    const d = a + 3
+    arr.indices.push(a, b, c, b, d, c)
+  }
+}
