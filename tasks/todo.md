@@ -9,7 +9,52 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## ▶ PICK UP HERE (2026-07-21) — ship hygiene CLOSED; next = the pre-release gate items
+## ▶ PICK UP HERE (next session) — cypress second pass, plan approved-pending, ready for Task 1
+
+**Where we stopped:** the cypress second pass is fully designed and planned; **no implementation
+code has been written yet.** Next action is Task 1 of the plan.
+
+**Read these two, in order:**
+1. `docs/superpowers/specs/2026-07-21-cypress-second-pass-design.md` — the design (approved by Mark)
+2. `docs/superpowers/plans/2026-07-21-cypress-second-pass.md` — **v3**, 11 tasks, ~2,300 lines
+
+**Why the cypress:** Mark read the piece and said it had room for improvement. Three gaps named
+against the painting: it reads near-black; it reads as fur rather than flame; the silhouette is
+bulbous. Approach: apply the sky's own lesson — stop synthesising Van Gogh, clad the form with
+the painting's real pixels and its own derived flow field.
+
+**Plan status: survived two cross-review rounds** (Mark via Codex). Round 1 found 1 P0 + 6 P1;
+round 2 found 3 P0 + 2 P1. All were independently re-measured before being accepted — **every
+claim checked out**, and two would have shipped a cypress shaped like the foreground terrain.
+Mark's words after round 2: *"Fix the five blockers above and I would be comfortable greenlighting
+implementation."* All five are fixed in v3. **A third review pass was offered and not yet run** —
+that is the open question at the top of next session: review again, or start Task 1.
+
+**Measurements the plan rests on** (re-verify if the assets or scan ever change):
+- Cypress-pixel orientation coherence **0.134** (sky 0.327), but **47% of texels within 75–105°**
+  → direction is not the defect, stroke LENGTH is; the field must be low-passed before integration
+- `treeishColour` + flood fill claims **227,047 px**, a 480×1191 crop at **39.7% occupancy**, and
+  touches both search limits → the mask must not flood-fill, and u must be row-normalised
+- Mask row occupancy top→bottom: **0% · 5% · 28% · 45% · 72% · 47%**
+- Widest run in the painting is the **terrain (80 px) not the trunk (27 px)** → never seed by width
+- Design camera x=0.62 vs cypress x=−1.5 → head-on bearing **≈64.6°**, not 90°
+- Rendered radius 0.1:**0.21** · 0.3:**0.13** · 0.5:**0.19** → two lobes with a waist, present in the
+  extracted profile *before* `tongue()` touches it
+- Naive stroke budget is **+83% vertices / +144% triangles** → budget must be derived from timing
+
+**Traps already paid for — do not rediscover these:**
+- `ImageData` is sRGB; `Color`'s working space is linear. Omitting `SRGBColorSpace` makes midtones
+  display **brighter** (0.502 → 0.737), not darker. The near-black defect came from attenuation.
+- `Math.pow(rng(), 0.78)` biases toward the **top**, not the base — the comment on the existing
+  code is wrong and has been wrong for a while.
+- Capture RMSE cannot measure anything that alters load timing. Compare decoded pixels.
+- A capture diff means nothing without a same-assets control run.
+
+**Git:** all committed on `sky-brushdab`, tree clean. **4 commits are local-only and unpushed**
+(`b3e60dc`, `9f7f6b5`, `8429997`, `0ce57e1`) — Mark ended the session before deciding; push when
+he says so. The plan also forbids pushing implementation without his explicit say-so.
+
+## Earlier the same day (2026-07-21) — ship hygiene CLOSED; item 5 decided
 
 **Session summary (2026-07-21).** Ship hygiene is finished and checklist item 5 is decided.
 Shipped assets went **19.2 → 10.04 MB (−48%) with no pixel change at any step**, in two passes:

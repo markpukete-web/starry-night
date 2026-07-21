@@ -1638,3 +1638,41 @@ from two storage bugs in the hand-rolled encoder, not from the data.
   on continuous-tone paint and LOSES to it on the flow fields (1.61 MB PNG vs 2.10 MB WebP), so
   the colour assets ship WebP and the flow/mask stay PNG. `WEBP_ASSETS` is a measured, named list
   for exactly this reason — "convert everything" would have been slower AND bigger.
+
+## Plan cross-review, two rounds — what surviving it actually took (2026-07-21)
+
+The cypress plan went through two rounds of Mark's cross-review before he was willing to greenlight
+implementation. Round 1: 1 P0 + 6 P1. Round 2: 3 P0 + 2 P1. **Every empirical claim in both rounds
+was independently re-measured before being accepted, and every one checked out.** Worth recording
+what kept going wrong, because the pattern is more useful than the individual bugs.
+
+- **Verify the review, then act on it — performative agreement is as bad as reflexive defence.**
+  Re-running each claim cost a few minutes and was worth it every time: it turned "the mask is
+  wrong" into "the widest run is 80 px of terrain against a 27 px trunk", which is what actually
+  showed the *fix* was also wrong. It also let me hold one position (per-stroke relief is not the
+  global attenuation the design rejected) with evidence rather than caving on everything.
+- **My repairs were wrong in the same way as the originals, twice.** Round 1: flood-fill mask
+  leaks into terrain → I replaced it with "seed the widest run and guard on its width", which is
+  worse, because the widest run IS the terrain, so the guard could never fire. The lesson is not
+  "check the fix" but **check the fix against the same measurement that condemned the original.**
+  I had the row-occupancy data in hand and did not re-run it on the replacement.
+- **Plans fail on coordinate contracts, not on ideas.** Nearly every P0 across both rounds was a
+  units or frame-of-reference error: raw pixels stored as normalised, normalised advanced by a
+  pixel-space vector, a camera assumed on +Z when it sits 25° off, tests asserting the opposite of
+  the formula beneath them. The architecture was right from the first draft. **Write the coordinate
+  contract down explicitly and test the round-trip, or the plan will read fine and not work.**
+- **A gate that does not exercise the real path is decoration.** My first flat gate drew direction
+  ticks; the second drew square dots. Neither tested taper, density or the colour path — the things
+  that decide fur-versus-flame. The fix was structural: one integrator shared by the gate and the
+  runtime, plus writing down in the file what the gate does NOT cover so a pass can't be
+  over-claimed later.
+- **Internal inconsistency is a smell you can catch yourself.** The plan set a "reduce if vertices
+  rise more than 50%" rule and defaulted to a configuration that raised them 83%. Nobody needed the
+  repo to find that — it was two numbers in the same document.
+- **Diagnostics must import the code they diagnose.** The profile ablation duplicated the runtime's
+  formulas, so it could not have verified the fix it was meant to justify; and it compared
+  cumulative recipes, which cannot attribute blame. Leave-one-factor-out against one composed
+  baseline, through a function both sides import.
+- I also got a *diagnosis* backwards while the *code* was right: treating sRGB as linear makes
+  midtones display brighter, not darker. Correct fix, wrong reason written into the comments — and
+  a wrong reason in a comment is a trap set for the next reader.
