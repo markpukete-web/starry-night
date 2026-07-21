@@ -1609,3 +1609,12 @@ from two storage bugs in the hand-rolled encoder, not from the data.
   3.94 → 0.83 MB at q90) would roughly halve the payload again, but it attacks precisely the
   high-frequency stroke grain the piece is faithful to. That is Mark's taste call, with a crop
   A/B in front of him — not a silent optimisation.
+- **A checklist restated in every pickup note is not a checklist.** The pre-release items were
+  copied forward in each session's "NEXT" paragraph while a separate `Backlog` section held a
+  different subset; neither was complete, and I answered Mark from my own summary rather than
+  either file. Consolidated into one owned table (`PRE-RELEASE GATE`) with an explicit "add items
+  HERE and nowhere else" rule, and the old copies replaced by pointers. Same failure as the three
+  hand-synced PNG codecs, in prose: **duplicated state drifts, and the duplicate that drifts is
+  the one you are reading.** When Mark asks "is this the roadmap?", check the sources before
+  answering — the honest answer was that my list was one gate's checklist, assembled from two
+  half-lists.

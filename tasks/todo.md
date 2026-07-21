@@ -28,14 +28,46 @@ pinned by `scripts/png.test.ts` (7 tests; suite now 53). `npm run slim-reference
 exactly the high-frequency stroke grain the piece is faithful to, and the runtime samples those
 pixels directly for ribbon colour. Wants a crop A/B in front of Mark before anyone commits to it.
 
-**NEXT — the standing pre-release items (Mark's calls):** lighting/bloom balance (nopost vs
-final), mobile portrait framing (the moon still can't fit a portrait frame — needs a
-portrait-specific camera bearing, a composition call), perf on real hardware (60 fps desktop /
-30 fps mid-tier mobile — headless can't measure), and deploy mechanics (Vercel prod + Deployment
-Protection + `starrynight.markma.dev` DNS — stop-and-ask).
-
 (Evidence: `output/playwright/slim-baseline-2026-07-21/` vs `slim-after-2026-07-21/`, with
 `slim-control-2026-07-21/` as the noise floor.)
+
+**NEXT — work the pre-release checklist below.** It is now the single definition of the last gate.
+
+## ▣ PRE-RELEASE GATE — the checklist (single source of truth, 2026-07-21)
+
+Four of the five locked gates in CLAUDE.md are passed (Phase 0, Phase 1/movable, first full
+animated sky, foreground complete 2026-06-15). **Pre-release is the only one left**, so this is
+the list that stands between the piece and release.
+
+Consolidated on 2026-07-21 because the items had drifted across two places — the `Backlog`
+section and the "standing pre-release items" paragraph repeated in each session's pickup note —
+so no one list was complete. **Add pre-release items HERE and nowhere else**; pickup notes should
+link to this section rather than restate it.
+
+Owner column is the point: `Mark` items are taste, composition, or deploy calls that Claude must
+stop and ask about (CLAUDE.md "Stop and ask Mark when"). `Claude` items are mechanical.
+
+| # | Item | Owner | State |
+|---|------|-------|-------|
+| 1 | **Lighting/bloom balance** — `&debug=nopost` vs final; the piece currently ships whatever bloom the S4 work left | Mark | open |
+| 2 | **Mobile portrait framing** — responsive fov keeps cypress edge + central whorl + steeple, but the MOON can't fit a portrait frame (≈42° off-centre on the arc); needs a portrait-specific camera bearing | Mark (composition) | open |
+| 3 | **Perf on real hardware** — locked criterion: 60 fps desktop, 30 fps mid-tier mobile. Headless cannot measure this; needs a real device pass. Includes confirming stroke budget + DPR caps (Tunables) hold up | Mark to run, Claude to retune | open |
+| 4 | **Deploy mechanics** — Vercel prod, Deployment Protection, `starrynight.markma.dev` DNS (Cloudflare CNAME, grey-cloud). CLAUDE.md: anything touching deploy/DNS/analytics is stop-and-ask | Mark | open |
+| 5 | **Lossy colour assets (optional)** — WebP q90 takes `painting-filled.png` 3.94 → 0.83 MB, payload ~12.2 → ~7 MB. Attacks the stroke grain the piece is faithful to; runtime samples those pixels directly for ribbon colour. Wants a crop A/B before anyone commits | Mark | open, needs Claude to prepare the A/B |
+| 6 | **Portfolio link-out** — markma.dev links to the finished piece (CLAUDE.md: it links out, full stop — never embedded) | Mark | open, post-deploy |
+
+Already satisfied, listed so the gate can be checked end-to-end rather than re-litigated:
+
+- [x] `prefers-reduced-motion` dignified still state (locked criterion) — `npm run check:reduced`
+- [x] Camera stays within the locked orbit limits (polar 0.2–1.62, distance 3–5.5, no pan/free-fly)
+- [x] Ship hygiene — reference PNGs 18.17 → 11.20 MB lossless (2026-07-21); `leva` aliased out of
+      the production build (vite.config.ts)
+- [x] `npm run lint` clean; `npm run test:sky` green (53 tests); `npm run build` green
+- [x] README reflects the orbitable-diorama reality, not the scaffold
+
+**Explicitly NOT in this gate** (CLAUDE.md Out of scope / Phase 2): preset dials (time-of-day,
+weather) — not before the core piece passes pre-release; the Techartist time-dial interaction
+shape — Phase 2 at the earliest; audio, VR/AR, other paintings, gallery framing — never.
 
 ## Superseded (2026-07-17, closed) — S4 ✅ GATE PASSED (Mark, live); next slice = ship hygiene
 
@@ -52,10 +84,8 @@ energy) passed with the gate — revisit only if Mark flags them. On `sky-brushd
    byte-exactness aren't load-bearing at runtime), downsample flow strips (the σ=2 low-pass
    means full res is redundant), crop strip below-band filler rows. Verify no visual change by
    capture A/B — same discipline as the 2026-06-15 flow-field slimming.
-2. Then the standing pre-release items (Mark's): lighting/bloom balance (nopost vs final),
-   mobile portrait dead bands, perf on real hardware (60 fps desktop / 30 fps mid-tier mobile —
-   headless can't measure), and the deploy mechanics (Vercel prod + Deployment Protection +
-   `starrynight.markma.dev` DNS — all Mark's calls, stop-and-ask).
+2. Then the pre-release items — since 2026-07-21 these live in the **PRE-RELEASE GATE checklist**
+   near the top of this file, which supersedes the copy that used to be restated here.
 
 **How it landed (one session, 2026-07-17):**
 - Measured the orbit's real exposure first (ray-cast the camera contract): ≤ 0.14 canvas widths
@@ -875,16 +905,17 @@ hero → polish; capture + review each slice.
 
 ## Backlog / later gates (post movable-decision)
 
+**Everything that gated release moved to the PRE-RELEASE GATE checklist near the top of this
+file on 2026-07-21** — it is the single source of truth for the last gate. This section keeps
+only the historical record of what was closed along the way.
+
 - [x] `prefers-reduced-motion` dignified still state (locked criterion) — `paused` freezes the churn;
       verified static via `page.emulateMedia({reducedMotion})` (identical frames under reduce)
 - [x] `npm run lint` clean — scoped R3F immutability disables + script-hygiene fixes
 - [x] README refreshed from "scaffold" to the orbitable-diorama reality
-- [ ] Mobile portrait framing — responsive fov now keeps the cypress edge + central whorl + steeple;
-      the MOON still can't fit a portrait frame (≈42° off-centre on the arc) → needs a portrait-specific
-      camera bearing (Mark's composition call). Plus stroke budget + DPR caps; perf on real mid-tier mobile
 - [x] Ship hygiene: reference PNGs re-encoded losslessly, 18.17 → 11.20 MB (2026-07-21);
       `leva` already aliased out of the production build (vite.config.ts)
-- [ ] Gates remaining: **pre-release** — the last gate (foreground-complete passed 2026-06-15)
+- Mobile portrait framing → now checklist item 2. Gates remaining → the checklist itself.
 
 ## Parked ideas (scope-growth — do NOT build without Mark)
 
