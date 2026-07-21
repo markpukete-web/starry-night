@@ -60,7 +60,8 @@ Re-measured on the current repo, not assumed. Any change to these invalidates th
 | `src/scene/cypressStrokes.ts` | The integrator: painting-space stroke polylines. Pure, deterministic, shared by the flat gate and the runtime. | Create |
 | `scripts/cypress-strokes.test.ts` | Integrator tests. | Create |
 | `scripts/flat-cypress-gate.ts` | Renders the integrator's output flat, beside the painting. **The gate.** | Create |
-| `src/scene/cypressMapping.ts` | Surface ↔ painting space, parameterised by the design-view bearing. | Create |
+| `src/scene/cypressMapping.ts` | Surface ↔ painting space, parameterised by the design-view bearing; row-span lookup and its inverse. | Create |
+| `src/scene/cypressProfile.ts` | The form's radius law, with each factor switchable. Shared by `BrushCypress` and the diagnostic so they cannot drift. | Create |
 | `scripts/cypress-mapping.test.ts` | Mapping tests across design, mobile and both orbit bearings. | Create |
 | `scripts/diagnose-cypress-profile.ts` | Silhouette ablation study. Kept (not deleted) — it is the evidence for the profile fix. | Create |
 | `src/scene/BrushCypress.tsx` | Consumes the above. | Modify |
@@ -271,11 +272,14 @@ fix."
 - `cypressMask(painting: DecodedPNG, box: Box): { mask: Uint8Array; spans: RowSpan[] }`
 - `satelliteRuns(painting: DecodedPNG, box: Box, spans: RowSpan[]): { y: number; x0: number; x1: number }[]` — detached treeish runs beside the primary column, for Task 10's tendrils
 - `orientationField(lum: Grid, mask: Uint8Array, sigma: number): { cos2: Float64Array; sin2: Float64Array; coherence: Float64Array }`
-- `lowPassOrientation(cos2, sin2, w, h, sigma): { cos2: Float64Array; sin2: Float64Array }`
+- `maskedBlur(src: Float64Array, mask: Uint8Array, w: number, h: number, sigma: number): Float64Array`
+- `lowPassOrientation(cos2, sin2, mask, w, h, sigma): { cos2: Float64Array; sin2: Float64Array }`
 - `blendToVertical(cos2, sin2, coherence): { cos2: Float64Array; sin2: Float64Array }`
 - `signedUpDirection(cos2: number, sin2: number): { dx: number; dy: number }`
 
-**Key correction from review:** `cypressMask` uses **row-run connectivity with a width guard**, not a raw flood fill. The raw flood fill measured 227,047 px reaching both search limits, because the tree is connected to the dark foreground terrain and leaks into it. The guard stops the downward walk when a row's run exceeds `MAX_GROWTH ×` the seed run — the same connectivity discipline `extractCypressSlices` already uses, at full resolution.
+**Key corrections from review.** A raw flood fill measured 227,047 px reaching both search limits, because the tree is connected to the dark foreground terrain and leaks into it. But the obvious repair — seed the widest run, guard against its width — is also wrong, and worse, because the widest run in the painting *is* the terrain: measured 80 px terrain against a 27 px trunk in the test fixture, and the same relationship in the scan. Seeding from it makes terrain the reference width, so no guard can ever reject terrain.
+
+So `cypressMask` seeds by **vertical coherence** — the run that chains through the most rows, which is unambiguously the trunk — and guards on **row-to-row** growth (`MAX_ROW_GROWTH`), because terrain announces itself as a sudden widening from one row to the next.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -393,13 +397,28 @@ test('orientationField reads vertical stripes as vertical, and ignores off-mask 
 test('lowPassOrientation averages orientations across the wrap point', () => {
   const cos2 = new Float64Array(W * H);
   const sin2 = new Float64Array(W * H);
+  const mask = new Uint8Array(W * H).fill(1);
   for (let i = 0; i < W * H; i++) {
     const t = (2 * (i % 2 === 0 ? 179 : 1) * Math.PI) / 180;
     cos2[i] = Math.cos(t); sin2[i] = Math.sin(t);
   }
-  const out = lowPassOrientation(cos2, sin2, W, H, 2);
+  const out = lowPassOrientation(cos2, sin2, mask, W, H, 2);
   const a = angleOf(out.cos2[60 * W + 40], out.sin2[60 * W + 40]);
   assert.ok(Math.min(a, 180 - a) < 10, `expected ~0/180, got ${a}`);
+});
+
+test('the field is mask-aware at the boundary — sky never leaks in', () => {
+  // Left half is tree with a strongly HORIZONTAL texture; right half is sky with a strongly
+  // VERTICAL one. A boundary texel on the tree side must keep the tree's orientation.
+  const lum = grid((x, y) => (x < W / 2 ? (y % 8 < 4 ? 20 : 200) : x % 8 < 4 ? 20 : 200));
+  const mask = new Uint8Array(W * H);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W / 2; x++) mask[y * W + x] = 1;
+
+  const raw = orientationField(lum, mask, 3);
+  const out = lowPassOrientation(raw.cos2, raw.sin2, mask, W, H, 3);
+  const boundary = 60 * W + (W / 2 - 1); // the very last tree texel
+  const a = angleOf(out.cos2[boundary], out.sin2[boundary]);
+  assert.ok(Math.min(Math.abs(a - 0), Math.abs(a - 180)) < 20, `boundary texel drifted to ${a}° — sky leaked in`);
 });
 
 test('blendToVertical leaves confident texels alone and rescues weak ones', () => {
@@ -453,7 +472,7 @@ export type Run = { y: number; x0: number; x1: number };
 const VERTICAL_COS2 = -1; // double-angle encoding of 90°
 const VERTICAL_SIN2 = 0;
 const MIN_RUN_FRACTION = 0.004; // of painting width — ignore speckle
-const MAX_GROWTH = 2.6; // a row wider than this multiple of the seed is terrain, not trunk
+const MAX_ROW_GROWTH = 1.8; // row-to-row width jump that means terrain, not trunk
 
 function rowRuns(painting: DecodedPNG, y: number, box: Box, minRun: number): Run[] {
   const runs: Run[] = [];
@@ -482,29 +501,45 @@ export function cypressMask(painting: DecodedPNG, box: Box): { mask: Uint8Array;
   const runsByRow: Run[][] = [];
   for (let y = 0; y < h; y++) runsByRow.push(y >= box.y0 && y < box.y1 ? rowRuns(painting, y, box, minRun) : []);
 
-  let seed: Run | null = null;
-  for (const runs of runsByRow)
-    for (const r of runs) if (!seed || r.x1 - r.x0 > seed.x1 - seed.x0) seed = r;
-  if (!seed) return { mask: new Uint8Array(w * h), spans: [] };
-
-  const seedWidth = seed.x1 - seed.x0 + 1;
-  const kept = new Map<number, Run>();
-  kept.set(seed.y, seed);
-  for (const dir of [-1, 1]) {
-    let prev = seed;
-    for (let y = seed.y + dir; y >= box.y0 && y < box.y1; y += dir) {
-      let best: Run | null = null;
-      let bestOverlap = 0;
-      for (const r of runsByRow[y]) {
-        const overlap = Math.min(r.x1, prev.x1) - Math.max(r.x0, prev.x0);
-        if (overlap > bestOverlap) { bestOverlap = overlap; best = r; }
+  // Seed by VERTICAL COHERENCE, never by width. The widest run in the painting is the full-width
+  // foreground terrain, so a widest-run seed makes terrain the seed and no width guard can then
+  // reject it — measured: 80 px terrain against a 27 px trunk in the test fixture, and the same
+  // relationship in the scan. The cypress is the run that chains through the MOST ROWS.
+  const chainFrom = (start: Run): Run[] => {
+    const chain = [start];
+    for (const dir of [-1, 1]) {
+      let prev = start;
+      for (let y = start.y + dir; y >= box.y0 && y < box.y1; y += dir) {
+        let best: Run | null = null;
+        let bestOverlap = 0;
+        for (const r of runsByRow[y]) {
+          const overlap = Math.min(r.x1, prev.x1) - Math.max(r.x0, prev.x0);
+          if (overlap > bestOverlap) { bestOverlap = overlap; best = r; }
+        }
+        if (!best || bestOverlap <= 0) break;
+        // LOCAL growth guard: terrain announces itself as a sudden widening from one row to the
+        // next, which a guard against the seed's own width cannot see.
+        if (best.x1 - best.x0 + 1 > (prev.x1 - prev.x0 + 1) * MAX_ROW_GROWTH) break;
+        if (dir < 0) chain.unshift(best); else chain.push(best);
+        prev = best;
       }
-      if (!best || bestOverlap <= 0) break;
-      if (best.x1 - best.x0 + 1 > seedWidth * MAX_GROWTH) break; // terrain, not trunk
-      kept.set(y, best);
-      prev = best;
+    }
+    return chain;
+  };
+
+  let bestChain: Run[] = [];
+  const tried = new Set<string>();
+  for (const runs of runsByRow) {
+    for (const r of runs) {
+      const key = `${r.y}:${r.x0}`;
+      if (tried.has(key)) continue;
+      const chain = chainFrom(r);
+      for (const c of chain) tried.add(`${c.y}:${c.x0}`);
+      if (chain.length > bestChain.length) bestChain = chain;
     }
   }
+  if (!bestChain.length) return { mask: new Uint8Array(w * h), spans: [] };
+  const kept = new Map<number, Run>(bestChain.map((r) => [r.y, r]));
 
   const mask = new Uint8Array(w * h);
   const spans: RowSpan[] = [];
@@ -558,9 +593,33 @@ export function gaussianBlur(src: Float64Array, w: number, h: number, sigma: num
 }
 
 /**
+ * Blur `src` using only masked samples — normalised convolution. Blurring the masked signal and
+ * the mask itself, then dividing, is what stops sky bleeding into the tree's field: an ordinary
+ * blur averages off-mask zeros back in and drags boundary texels toward nothing.
+ */
+export function maskedBlur(src: Float64Array, mask: Uint8Array, w: number, h: number, sigma: number): Float64Array {
+  const weighted = new Float64Array(w * h);
+  const weights = new Float64Array(w * h);
+  for (let i = 0; i < w * h; i++) {
+    weighted[i] = mask[i] ? src[i] : 0;
+    weights[i] = mask[i] ? 1 : 0;
+  }
+  const num = gaussianBlur(weighted, w, h, sigma);
+  const den = gaussianBlur(weights, w, h, sigma);
+  const out = new Float64Array(w * h);
+  for (let i = 0; i < w * h; i++) out[i] = den[i] > 1e-6 ? num[i] / den[i] : 0;
+  return out;
+}
+
+/**
  * Structure-tensor orientation of the direction paint RUNS IN, with coherence gated by gradient
- * energy. Off-mask texels are forced to zero coherence: the sky beside the tree must never
- * contribute orientation to the tree's field.
+ * energy.
+ *
+ * Mask-aware throughout, which takes more than skipping off-mask centres. Gradients use MASK-SAFE
+ * neighbours (a neighbour outside the tree is replaced by the centre, so the tree's edge does not
+ * register a huge false gradient against the sky), and every blur is a normalised convolution over
+ * masked samples only. Without both, the sky beside the trunk writes its orientation into the
+ * trunk's boundary — precisely the texels that define the silhouette.
  */
 export function orientationField(
   lum: Grid,
@@ -570,21 +629,26 @@ export function orientationField(
   const { width: w, height: h, data } = lum;
   const gx = new Float64Array(w * h);
   const gy = new Float64Array(w * h);
+  const at = (x: number, y: number, cx: number, cy: number) => {
+    const xi = Math.min(w - 1, Math.max(0, x));
+    const yi = Math.min(h - 1, Math.max(0, y));
+    return mask[yi * w + xi] ? data[yi * w + xi] : data[cy * w + cx]; // mask-safe: fall back to centre
+  };
   for (let y = 0; y < h; y++)
     for (let x = 0; x < w; x++) {
       const i = y * w + x;
       if (!mask[i]) continue;
-      gx[i] = (data[y * w + Math.min(w - 1, x + 1)] - data[y * w + Math.max(0, x - 1)]) * 0.5;
-      gy[i] = (data[Math.min(h - 1, y + 1) * w + x] - data[Math.max(0, y - 1) * w + x]) * 0.5;
+      gx[i] = (at(x + 1, y, x, y) - at(x - 1, y, x, y)) * 0.5;
+      gy[i] = (at(x, y + 1, x, y) - at(x, y - 1, x, y)) * 0.5;
     }
 
   const Jxx = new Float64Array(w * h);
   const Jxy = new Float64Array(w * h);
   const Jyy = new Float64Array(w * h);
   for (let i = 0; i < w * h; i++) { Jxx[i] = gx[i] * gx[i]; Jxy[i] = gx[i] * gy[i]; Jyy[i] = gy[i] * gy[i]; }
-  const Sxx = gaussianBlur(Jxx, w, h, sigma);
-  const Sxy = gaussianBlur(Jxy, w, h, sigma);
-  const Syy = gaussianBlur(Jyy, w, h, sigma);
+  const Sxx = maskedBlur(Jxx, mask, w, h, sigma);
+  const Sxy = maskedBlur(Jxy, mask, w, h, sigma);
+  const Syy = maskedBlur(Jyy, mask, w, h, sigma);
 
   const cos2 = new Float64Array(w * h);
   const sin2 = new Float64Array(w * h);
@@ -612,10 +676,12 @@ export function orientationField(
  * orientations. That is the whole reason for the encoding.
  */
 export function lowPassOrientation(
-  cos2: Float64Array, sin2: Float64Array, w: number, h: number, sigma: number,
+  cos2: Float64Array, sin2: Float64Array, mask: Uint8Array, w: number, h: number, sigma: number,
 ): { cos2: Float64Array; sin2: Float64Array } {
-  const c = gaussianBlur(cos2, w, h, sigma);
-  const s = gaussianBlur(sin2, w, h, sigma);
+  // Masked, for the same reason the tensor is: an ordinary blur here would average the sky's
+  // orientation back into the tree's boundary after the tensor took care to exclude it.
+  const c = maskedBlur(cos2, mask, w, h, sigma);
+  const s = maskedBlur(sin2, mask, w, h, sigma);
   for (let i = 0; i < c.length; i++) {
     const m = Math.hypot(c[i], s[i]);
     if (m > 1e-12) { c[i] /= m; s[i] /= m; } else { c[i] = VERTICAL_COS2; s[i] = VERTICAL_SIN2; }
@@ -760,7 +826,7 @@ for (let y = 0; y < ch; y++)
   }
 
 const raw = orientationField(lum, cropMask, TENSOR_SIGMA);
-const smoothed = lowPassOrientation(raw.cos2, raw.sin2, cw, ch, LOWPASS_SIGMA);
+const smoothed = lowPassOrientation(raw.cos2, raw.sin2, cropMask, cw, ch, LOWPASS_SIGMA);
 const field = blendToVertical(smoothed.cos2, smoothed.sin2, raw.coherence);
 
 // --- flow asset ---
@@ -875,11 +941,11 @@ Run: `npm run derive-cypress && npm run slim-reference`
 - The crop's width is **well under 480 px** — the flood-fill version spanned the whole search box.
 - Mean coherence lands near **0.13–0.20**.
 
-If occupancy is below 55%, tune `MAX_GROWTH` in `cypress-field.ts` and re-run. This is retune pass 1 of 4.
+If occupancy is below 55%, tune `MAX_ROW_GROWTH` in `cypress-field.ts` and re-run. This is retune pass 1 of 4.
 
 - [ ] **Step 4: Look at the mask overlay**
 
-Open `reference/derived/cypress-mask-overlay.png`. The red tint must cover the tree and **stop at the ground** — no terrain band, no hills. If it bleeds, lower `MAX_GROWTH`.
+Open `reference/derived/cypress-mask-overlay.png`. The red tint must cover the tree and **stop at the ground** — no terrain band, no hills. If it bleeds, lower `MAX_ROW_GROWTH`.
 
 - [ ] **Step 5: Commit**
 
@@ -912,6 +978,8 @@ returns cypress paint rather than sky or whatever lay to its left."
 - `paintingUToAngle(u: number, bearing: number, frontFacing: boolean): number`
 - `isFrontFacing(angle: number, bearing: number): boolean`
 - `paintingUV(u: number, heightFraction: number, rows: RowTable): { px: number; py: number }` — normalised `u` within the row's span → crop-normalised painting coordinates
+- `normalisedFromCrop(px: number, py: number, rows: RowTable): { u: number; heightFraction: number }` — the inverse, used per integration step
+- `rowSpanAt(py: number, rows: RowTable): { left: number; right: number }`
 - `type RowTable = { width: number; height: number; spans: [number, number, number][] }`
 
 - [ ] **Step 1: Write the failing tests**
@@ -944,8 +1012,10 @@ test('the view bearing follows the design camera, not the +Z axis', () => {
 test('the painting spans the visible half, edges on the silhouette, centre facing the camera', () => {
   const b = cypressViewBearing(DIORAMA_CAMERAS.design.position, BASE)
   assert.ok(Math.abs(surfaceToPaintingU(b, b) - 0.5) < 1e-9, 'facing the camera is the painting centre')
-  assert.ok(Math.abs(surfaceToPaintingU(b - Math.PI / 2, b) - 0) < 1e-9, 'one silhouette edge is u=0')
-  assert.ok(Math.abs(surfaceToPaintingU(b + Math.PI / 2, b) - 1) < 1e-9, 'the other is u=1')
+  // Orientation anchor, verified by eye at the flat gate and the first capture — NOT guessed.
+  // The formula is screen-correct as written: bearing-PI/2 is the u=1 rim.
+  assert.ok(Math.abs(surfaceToPaintingU(b - Math.PI / 2, b) - 1) < 1e-9, 'bearing-PI/2 is the u=1 rim')
+  assert.ok(Math.abs(surfaceToPaintingU(b + Math.PI / 2, b) - 0) < 1e-9, 'bearing+PI/2 is the u=0 rim')
 })
 
 test('the back mirrors the front and is continuous at the silhouette', () => {
@@ -1036,15 +1106,10 @@ export function paintingUToAngle(u: number, bearing: number, frontFacing: boolea
   return bearing + Math.PI / 2 + (frontFacing ? -rel : rel)
 }
 
-/**
- * Crop-normalised painting coordinates for a normalised position on the tree. `u` runs 0..1 across
- * the tree AT THIS HEIGHT, interpolated from the baked row spans.
- */
-export function paintingUV(u: number, heightFraction: number, rows: RowTable): { px: number; py: number } {
-  const py = 1 - Math.min(1, Math.max(0, heightFraction))
+/** The cypress's left/right edge at a given crop-normalised height, from the baked row spans. */
+export function rowSpanAt(py: number, rows: RowTable): { left: number; right: number } {
   const spans = rows.spans
-  if (!spans.length) return { px: u, py }
-
+  if (!spans.length) return { left: 0, right: 1 }
   let lo = 0
   let hi = spans.length - 1
   while (hi - lo > 1) {
@@ -1055,9 +1120,33 @@ export function paintingUV(u: number, heightFraction: number, rows: RowTable): {
   const a = spans[lo]
   const b = spans[hi]
   const t = b[0] === a[0] ? 0 : (py - a[0]) / (b[0] - a[0])
-  const left = a[1] + (b[1] - a[1]) * t
-  const right = a[2] + (b[2] - a[2]) * t
+  return { left: a[1] + (b[1] - a[1]) * t, right: a[2] + (b[2] - a[2]) * t }
+}
+
+/**
+ * Crop-normalised painting coordinates for a normalised position on the tree. `u` runs 0..1 across
+ * the tree AT THIS HEIGHT, interpolated from the baked row spans.
+ */
+export function paintingUV(u: number, heightFraction: number, rows: RowTable): { px: number; py: number } {
+  const py = 1 - Math.min(1, Math.max(0, heightFraction))
+  const { left, right } = rowSpanAt(py, rows)
   return { px: left + (right - left) * Math.min(1, Math.max(0, u)), py }
+}
+
+/**
+ * Inverse of `paintingUV`: crop-normalised pixel position → normalised position on the tree.
+ *
+ * The integrator advances in crop pixels and derives u/heightFraction per sample through this, so
+ * the changing row width is applied exactly once, where it belongs. Integrating normalised u with
+ * a pixel-space flow vector would mix units and smear the warp through every step.
+ */
+export function normalisedFromCrop(px: number, py: number, rows: RowTable): { u: number; heightFraction: number } {
+  const { left, right } = rowSpanAt(py, rows)
+  const width = right - left
+  return {
+    u: width > 1e-6 ? (px - left) / width : 0.5,
+    heightFraction: 1 - py,
+  }
 }
 ```
 
@@ -1170,11 +1259,56 @@ test('strokes stop at the tree edge and never sample sky', () => {
   }
 })
 
-test('each stroke carries a relief constant, and they differ between strokes', () => {
+test('relief varies per stroke but starts conservative', () => {
+  // The source pixels already carry real value variation, so relief only has to separate
+  // neighbours. Starting at 0.78-1.20 put ~38% of strokes below 0.94 and would re-introduce the
+  // darkening this pass removes. Default is 0.94-1.06; the displayed-colour gate has to justify
+  // any widening, not the other way round.
   const strokes = generateCypressStrokes(OPTS())
   const reliefs = new Set(strokes.map((s) => s.relief.toFixed(4)))
   assert.ok(reliefs.size > strokes.length * 0.5, 'relief must vary per stroke, else the cladding is a flat sheet')
-  for (const s of strokes) assert.ok(s.relief > 0.6 && s.relief < 1.25, `relief ${s.relief} is out of range`)
+  for (const s of strokes) assert.ok(s.relief >= 0.94 && s.relief <= 1.06, `relief ${s.relief} is out of range`)
+})
+
+test('relief can be ablated to exactly 1', () => {
+  // The ablation Mark asked for: prove the strokes read without relief at all, so any relief that
+  // ships is a judged choice rather than an unexamined default.
+  for (const s of generateCypressStrokes(OPTS({ reliefSpread: 0 }))) assert.equal(s.relief, 1)
+})
+
+test('seeds favour the fuller base, not the tip', () => {
+  const strokes = generateCypressStrokes(OPTS())
+  const below = strokes.filter((s) => s.samples[0].heightFraction < 0.5).length
+  assert.ok(below / strokes.length > 0.55, `only ${((100 * below) / strokes.length).toFixed(0)}% seeded low — biased to the tip`)
+})
+
+test('a tapering row span does not distort stroke geometry', () => {
+  // Integration happens in crop pixels; u is derived per sample. If the two were mixed, a
+  // narrowing row would bend a straight stroke sideways in u.
+  const { skin, flow } = fixtures()
+  const rows = { width: CW, height: CH, spans: [[0, 0.4, 0.6] as [number, number, number], [1, 0.1, 0.9] as [number, number, number]] }
+  for (const s of generateCypressStrokes(OPTS({ skin, flow, rows }))) {
+    for (const sample of s.samples) {
+      assert.ok(sample.u >= -0.01 && sample.u <= 1.01, `u=${sample.u} escaped the row span`)
+    }
+  }
+})
+
+test('a non-square crop keeps steps isotropic', () => {
+  // stepPx is in pixels, so a tall thin crop must not make horizontal travel faster than vertical
+  const wide = { data: new Uint8ClampedArray(200 * 50 * 4), width: 200, height: 50 }
+  for (let i = 0; i < 200 * 50; i++) {
+    wide.data[i * 4] = 40; wide.data[i * 4 + 1] = 60; wide.data[i * 4 + 2] = 30; wide.data[i * 4 + 3] = 255
+  }
+  const flowWide = { data: new Uint8ClampedArray(200 * 50 * 4), width: 200, height: 50 }
+  for (let i = 0; i < 200 * 50; i++) {
+    flowWide.data[i * 4] = Math.round(((0.7071 + 1) / 2) * 255) // 45 degrees
+    flowWide.data[i * 4 + 1] = Math.round(((-0.7071 + 1) / 2) * 255)
+    flowWide.data[i * 4 + 2] = 200; flowWide.data[i * 4 + 3] = 255
+  }
+  const rows = { width: 200, height: 50, spans: [[0, 0, 1] as [number, number, number], [1, 0, 1] as [number, number, number]] }
+  const strokes = generateCypressStrokes(OPTS({ skin: wide, flow: flowWide, rows, count: 50 }))
+  assert.ok(strokes.length > 0, 'strokes must survive a wide crop')
 })
 
 test('a sideways field bends the strokes', () => {
@@ -1233,6 +1367,8 @@ export type CypressStrokeOptions = {
   /** stroke length as a fraction of tree height */
   lengthFraction: number
   seed: number
+  /** half-width of the per-stroke relief range around 1.0. Default 0.06 → 0.94–1.06. */
+  reliefSpread?: number
 }
 
 function sampleAt(img: ImageData2D, px: number, py: number) {
@@ -1243,31 +1379,44 @@ function sampleAt(img: ImageData2D, px: number, py: number) {
 }
 
 export function generateCypressStrokes(opts: CypressStrokeOptions): CypressStroke[] {
-  const { skin, flow, rows, count, steps, lengthFraction, seed } = opts
+  const { skin, flow, rows, count, steps, lengthFraction, seed, reliefSpread = 0.06 } = opts
   const rng = mulberry32(seed)
   const out: CypressStroke[] = []
-  const stepLen = lengthFraction / (steps - 1)
+  // Integration state is CROP PIXELS. An earlier draft advanced normalised u and heightFraction
+  // using a pixel-space flow vector, which mixes units and silently reintroduces the changing-
+  // row-width warp this design exists to avoid. Normalised u/hf are DERIVED per emitted sample
+  // from the local row span; they are never integrated.
+  const stepPx = (lengthFraction * skin.height) / (steps - 1)
 
   for (let s = 0; s < count; s++) {
-    let u = rng()
-    let hf = Math.pow(rng(), 0.78) // slight bias toward the fuller base
-    const relief = 0.78 + 0.42 * rng() // per-stroke value contrast — the Van Gogh read
+    // Exponent > 1 biases toward the BASE. pow(rng, 0.78) biases toward the TOP — measured, only
+    // 41.2% of seeds below mid-height — which starves the fuller base and increases tip clipping.
+    // (The same mistaken comment sits on the pre-existing code this replaces.)
+    const seedHf = 1 - Math.pow(rng(), 1.4)
+    const seedU = rng()
+    const relief = 1 - reliefSpread + 2 * reliefSpread * rng()
     const samples: StrokeSample[] = []
 
-    for (let k = 0; k < steps; k++) {
-      if (u < 0 || u > 1 || hf < 0 || hf > 1) break
-      const { px, py } = paintingUV(u, hf, rows)
-      const skinTexel = sampleAt(skin, px, py)
-      if (skinTexel.a === 0) break // off the tree: containment, and never sample sky
-      samples.push({ u, heightFraction: hf, r: skinTexel.r / 255, g: skinTexel.g / 255, b: skinTexel.b / 255 })
+    const start = paintingUV(seedU, seedHf, rows)
+    let px = start.px * (skin.width - 1)
+    let py = start.py * (skin.height - 1)
 
-      const f = sampleAt(flow, px, py)
+    for (let k = 0; k < steps; k++) {
+      const pxN = px / (skin.width - 1)
+      const pyN = py / (skin.height - 1)
+      if (pxN < 0 || pxN > 1 || pyN < 0 || pyN > 1) break
+      const skinTexel = sampleAt(skin, pxN, pyN)
+      if (skinTexel.a === 0) break // off the tree: containment, and never sample sky
+
+      const { u, heightFraction } = normalisedFromCrop(pxN, pyN, rows)
+      samples.push({ u, heightFraction, r: skinTexel.r / 255, g: skinTexel.g / 255, b: skinTexel.b / 255 })
+
+      const f = sampleAt(flow, pxN, pyN)
       const dx = (f.r / 255) * 2 - 1
       const dy = (f.g / 255) * 2 - 1
       const m = Math.hypot(dx, dy) || 1
-      // painting +y is DOWN, height runs UP, so an upward field (dy<0) increases heightFraction
-      u += (dx / m) * stepLen
-      hf += (-dy / m) * stepLen
+      px += (dx / m) * stepPx
+      py += (dy / m) * stepPx // painting +y is DOWN; the field is sign-aligned upward, so dy < 0
     }
 
     if (samples.length >= 3) out.push({ samples, relief })
@@ -1313,12 +1462,20 @@ test. Colour is emitted as sRGB for the consumer to convert."
  * because everything was judged in 3D, where the loop is slow and comparison is hard. If the
  * strokes do not read as flame here, they never will in 3D.
  *
+ * WHAT THIS GATE COVERS: stroke path, length, density, containment, taper, and the display-colour
+ * path (setRGB through SRGBColorSpace, then output encoding).
+ * WHAT IT DOES NOT: moon lift, which needs a 3D surface normal; projected ribbon width under
+ * perspective; occlusion by the solid; and anything about the silhouette. Those are the 3D
+ * capture's job (Task 9 Step 6) — do not let a pass here be quoted as covering them.
+ *
  * Run: npm run flat-cypress-gate
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { generateCypressStrokes } from '../src/scene/cypressStrokes.ts';
+import { Color, SRGBColorSpace } from 'three';
+
+import { generateCypressStrokes, type StrokeSample } from '../src/scene/cypressStrokes.ts';
 import { paintingUV } from '../src/scene/cypressMapping.ts';
 import { decodePNG, encodePNG } from './lib/png.ts';
 
@@ -1331,6 +1488,7 @@ const STEPS = 9;
 const LENGTH_FRACTION = 0.11;
 const SEED = 0x0cabba9e;
 const HALF_WID_PX = 2.2;
+const TAPER = 0.45; // must match the taper passed to pushBrushRibbon in BrushCypress.tsx
 
 const skinPng = decodePNG(readFileSync(resolve(ROOT, 'reference/derived/cypress-skin-source.png')));
 const flowPng = decodePNG(readFileSync(resolve(ROOT, 'public/reference/cypress-flow.png')));
@@ -1350,32 +1508,52 @@ const H = skinPng.height;
 const canvas = new Uint8Array(W * H * 4);
 for (let i = 0; i < W * H; i++) { canvas[i * 4] = 12; canvas[i * 4 + 1] = 14; canvas[i * 4 + 2] = 22; canvas[i * 4 + 3] = 255; }
 
-function dot(px: number, py: number, r: number, g: number, b: number) {
-  for (let dy = -HALF_WID_PX; dy <= HALF_WID_PX; dy++)
-    for (let dx = -HALF_WID_PX; dx <= HALF_WID_PX; dx++) {
-      const x = Math.round(px + dx);
-      const y = Math.round(py + dy);
+/**
+ * Rasterise one tapered ribbon segment as a quad, through the SAME display-colour path the runtime
+ * uses: Color.setRGB(..., SRGBColorSpace) converts to linear, and convertLinearToSRGB puts it back
+ * for display, exactly as the renderer's output encoding does. A square dot of raw bytes would
+ * exercise neither the taper nor the conversion, so the gate could not claim either.
+ */
+const col = new Color();
+function quad(ax: number, ay: number, bx: number, by: number, wa: number, wb: number, s: StrokeSample, relief: number) {
+  col.setRGB(s.r, s.g, s.b, SRGBColorSpace).multiplyScalar(relief).convertLinearToSRGB();
+  const r = Math.round(Math.min(1, col.r) * 255);
+  const g = Math.round(Math.min(1, col.g) * 255);
+  const b = Math.round(Math.min(1, col.b) * 255);
+  const dx = bx - ax;
+  const dy = by - ay;
+  const len = Math.hypot(dx, dy) || 1;
+  const nx = -dy / len;
+  const ny = dx / len;
+  const steps = Math.max(2, Math.ceil(len));
+  for (let t = 0; t <= steps; t++) {
+    const f = t / steps;
+    const cx = ax + dx * f;
+    const cy = ay + dy * f;
+    const halfW = wa + (wb - wa) * f;
+    for (let o = -halfW; o <= halfW; o += 0.5) {
+      const x = Math.round(cx + nx * o);
+      const y = Math.round(cy + ny * o);
       if (x < 0 || y < 0 || x >= W || y >= H) continue;
       const i = (y * W + x) * 4;
       canvas[i] = r; canvas[i + 1] = g; canvas[i + 2] = b;
     }
+  }
 }
 
 let totalSamples = 0;
 for (const stroke of strokes) {
   totalSamples += stroke.samples.length;
-  for (let k = 0; k < stroke.samples.length - 1; k++) {
+  const n = stroke.samples.length;
+  for (let k = 0; k < n - 1; k++) {
     const a = stroke.samples[k];
     const b = stroke.samples[k + 1];
     const pa = paintingUV(a.u, a.heightFraction, rows);
     const pb = paintingUV(b.u, b.heightFraction, rows);
-    const steps = Math.max(2, Math.ceil(Math.hypot((pb.px - pa.px) * W, (pb.py - pa.py) * H)));
-    for (let t = 0; t <= steps; t++) {
-      const f = t / steps;
-      const px = (pa.px + (pb.px - pa.px) * f) * (W - 1);
-      const py = (pa.py + (pb.py - pa.py) * f) * (H - 1);
-      dot(px, py, Math.round(a.r * 255 * stroke.relief), Math.round(a.g * 255 * stroke.relief), Math.round(a.b * 255 * stroke.relief));
-    }
+    // same taper law as the 3D ribbon (Task 9 passes taper 0.45)
+    const wa = HALF_WID_PX * (1 + (TAPER - 1) * (k / (n - 1)));
+    const wb = HALF_WID_PX * (1 + (TAPER - 1) * ((k + 1) / (n - 1)));
+    quad(pa.px * (W - 1), pa.py * (H - 1), pb.px * (W - 1), pb.py * (H - 1), wa, wb, a, stroke.relief);
   }
 }
 
@@ -1435,7 +1613,73 @@ the runtime's own seeds and parameters."
 
 **Correction from review:** the earlier binary ("widest above 0.3" vs "monotonically widest at base") is **unreachable**. Measured widest-point heights are 0.137 / 0.137 / 0.153 / 0.169 for `lumMax` 62/75/90/105 — neither branch. Worse, the rendered radius is 0.21 at height 0.1, **0.13 at 0.3**, 0.19 at 0.5: two lobes with a waist, present in the extracted profile *before* `tongue()`. The diagnosis must therefore ablate four factors separately and compare each against the painting's own row-wise silhouette.
 
-**Files:** Create `scripts/diagnose-cypress-profile.ts` (kept, not deleted — it is the evidence)
+**Second correction (review round 2):** the first ablation compared *cumulative recipes* (A, then A+B, then A+B+C), which cannot attribute blame; averaged `tongue()` around the whole circumference rather than measuring the **visible rim**, which is what a viewer sees; and duplicated the profile formulas instead of importing the ones the runtime uses, so it could not verify Task 8's fix at all.
+
+Corrected design: **extract one pure profile function** used by *both* `BrushCypress` and the diagnostic, then compare a single **composed baseline** against **leave-one-factor-out** variants, scoring the **design-camera projected outline** against the painting's row-wise silhouette.
+
+**Files:** Create `src/scene/cypressProfile.ts` (the shared profile), `scripts/diagnose-cypress-profile.ts` (kept — it is the evidence), `scripts/cypress-profile.test.ts`
+
+- [ ] **Step 0: Extract the shared profile function**
+
+Create `src/scene/cypressProfile.ts`, and have `BrushCypress.tsx` import `composedRadius` in place of its inline `radiusAt`. Both the runtime and the diagnostic must call the same code, or the diagnostic measures a copy that can drift.
+
+```ts
+import { smooth, vnoise } from './brushForms'
+
+export type ProfileFactors = {
+  /** the extracted painting silhouette half-width per slice */
+  slices: number[]
+  /** disable individually for leave-one-out ablation */
+  useUpperTaper: boolean
+  useTongue: boolean
+  smoothingWindow: number // 0 = none
+}
+
+export function tongue(a: number, hf: number, sharpen = 1.35): number {
+  const ridge = vnoise(Math.cos(a) * 1.7 + 10, Math.sin(a) * 1.7 + hf * 3.4 + 4)
+  const fine = vnoise(Math.cos(a) * 4 + 2, Math.sin(a) * 4 + hf * 6 + 7)
+  const bump = (ridge - 0.5) * 1.0 + (fine - 0.5) * 0.1
+  return bump > 0 ? bump * sharpen : bump * 0.45
+}
+
+/** The form's radius at a height and angle, with each factor switchable for ablation. */
+export function composedRadius(hf: number, angle: number, f: ProfileFactors, widthScale = 4.6): number {
+  const n = f.slices.length
+  const idx = Math.min(n - 1, Math.max(0, Math.round(hf * (n - 1))))
+  let half = f.slices[idx]
+  if (f.smoothingWindow > 0) {
+    let acc = 0
+    let c = 0
+    for (let k = -f.smoothingWindow; k <= f.smoothingWindow; k++) {
+      const j = idx + k
+      if (j >= 0 && j < n) { acc += f.slices[j]; c++ }
+    }
+    half = acc / c
+  }
+  let r = half * widthScale
+  if (f.useUpperTaper) r *= 1 - smooth(0.84, 1, hf) * 0.82
+  if (f.useTongue) {
+    const tipTaper = 0.35 + 0.65 * (1 - smooth(0.6, 1, hf))
+    r *= 1 + tongue(angle, hf) * 0.5 * tipTaper
+  }
+  return Math.max(0.015, r)
+}
+
+/**
+ * The half-width a viewer actually sees: the maximum extent perpendicular to the view bearing,
+ * which is what forms the silhouette. Averaging around the circumference measures something no
+ * one looks at.
+ */
+export function projectedHalfWidth(hf: number, bearing: number, f: ProfileFactors, samples = 64): number {
+  let maxPerp = 0
+  for (let i = 0; i < samples; i++) {
+    const a = (i / samples) * Math.PI * 2
+    const r = composedRadius(hf, a, f)
+    maxPerp = Math.max(maxPerp, Math.abs(r * Math.sin(a - bearing)))
+  }
+  return maxPerp
+}
+```
 
 - [ ] **Step 1: Write the ablation**
 
@@ -1456,6 +1700,9 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+import { cypressViewBearing } from '../src/scene/cypressMapping.ts';
+import { projectedHalfWidth, type ProfileFactors } from '../src/scene/cypressProfile.ts';
+import { DIORAMA_CAMERAS } from '../src/scene/dioramaContract.ts';
 import { extractCypressSlices } from '../src/scene/paintingRegions.ts';
 import { cypressMask, type Box } from './lib/cypress-field.ts';
 import { decodePNG } from './lib/png.ts';
@@ -1485,66 +1732,50 @@ const truth = (hf: number) => {
   return (s.x1 - s.x0 + 1) / 2 / png.width;
 };
 
-function report(label: string, halfWidthAt: (hf: number) => number) {
-  const hs = [...Array(11).keys()].map((k) => k / 10);
-  const vals = hs.map(halfWidthAt);
-  const norm = vals.map((v) => v / Math.max(...vals));
-  const peak = hs[norm.indexOf(1)];
-  const truthNorm = hs.map((h) => truth(h) / Math.max(...hs.map(truth)));
+const bearing = cypressViewBearing(DIORAMA_CAMERAS.design.position, [-1.5, 0.02, 0.72]);
+const hs = [...Array(21).keys()].map((k) => k / 20);
+const truthNorm = (() => {
+  const vals = hs.map(truth);
+  const max = Math.max(...vals);
+  return vals.map((v) => v / max);
+})();
+
+/** Score a factor set by the PROJECTED outline the design camera sees, against the painting. */
+function score(label: string, f: ProfileFactors) {
+  const vals = hs.map((hf) => projectedHalfWidth(hf, bearing, f));
+  const max = Math.max(...vals);
+  const norm = vals.map((v) => v / max);
   const err = norm.reduce((a, v, i) => a + Math.abs(v - truthNorm[i]), 0) / norm.length;
-  console.log(
-    `${label.padEnd(34)} peak@${peak.toFixed(1)}  meanAbsErrVsPainting=${err.toFixed(3)}  ` +
-      `profile=${norm.map((v) => v.toFixed(2)).join(' ')}`,
-  );
+  console.log(`${label.padEnd(40)} peak@${hs[norm.indexOf(1)].toFixed(2)}  meanAbsErr=${err.toFixed(4)}`);
+  return err;
 }
 
-console.log('height:                             0.0  0.1  0.2  0.3  0.4  0.5  0.6  0.7  0.8  0.9  1.0');
-report('PAINTING (ground truth)', truth);
+const slicesFor = (lumMax: number) =>
+  [...extractCypressSlices(painting, { lumMax })].reverse().map((s) => s.halfWidth);
 
-for (const lumMax of [62, 75, 90, 105]) {
-  const prof = [...extractCypressSlices(painting, { lumMax })].reverse();
-  const n = prof.length;
-  report(`A. extraction lumMax=${lumMax}`, (hf) => prof[Math.round(hf * (n - 1))].halfWidth);
-}
+// ONE composed baseline — exactly what the runtime renders today.
+const BASE: ProfileFactors = { slices: slicesFor(90), useUpperTaper: true, useTongue: true, smoothingWindow: 0 };
+console.log('--- composed baseline (what ships today) ---');
+const baseErr = score('BASELINE', BASE);
 
-const prof90 = [...extractCypressSlices(painting, { lumMax: 90 })].reverse();
-const n90 = prof90.length;
-const rawAt = (hf: number) => prof90[Math.round(hf * (n90 - 1))].halfWidth;
+// LEAVE-ONE-FACTOR-OUT: the drop in error attributes blame to that factor and nothing else.
+console.log('\n--- leave one factor out (bigger improvement = more blame) ---');
+const variants: [string, ProfileFactors][] = [
+  ['without upper taper', { ...BASE, useUpperTaper: false }],
+  ['without tongue()', { ...BASE, useTongue: false }],
+  ['with smoothing win=3', { ...BASE, smoothingWindow: 3 }],
+  ['with smoothing win=7', { ...BASE, smoothingWindow: 7 }],
+  ['extraction lumMax=62', { ...BASE, slices: slicesFor(62) }],
+  ['extraction lumMax=75', { ...BASE, slices: slicesFor(75) }],
+  ['extraction lumMax=105', { ...BASE, slices: slicesFor(105) }],
+];
+const ranked = variants
+  .map(([label, f]) => ({ label, improvement: baseErr - score(label, f) }))
+  .sort((a, b) => b.improvement - a.improvement);
 
-// B. smoothing the extracted profile
-for (const win of [3, 7]) {
-  report(`B. lumMax=90 + smoothing win=${win}`, (hf) => {
-    const i = Math.round(hf * (n90 - 1));
-    let acc = 0, c = 0;
-    for (let k = -win; k <= win; k++) {
-      const j = i + k;
-      if (j >= 0 && j < n90) { acc += prof90[j].halfWidth; c++; }
-    }
-    return acc / c;
-  });
-}
-
-// C. the explicit upper taper in BrushCypress.radiusAt (lines 63-67)
-report('C. + upper taper (0.84-1.0, x0.82)', (hf) => rawAt(hf) * (1 - smooth(0.84, 1, hf) * 0.82));
-
-// D. tongue() displacement, averaged over the circumference
-const vnoise = (x: number, y: number) => {
-  const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
-  return s - Math.floor(s);
-};
-report('D. + tongue() mean displacement', (hf) => {
-  let acc = 0;
-  for (let j = 0; j < 32; j++) {
-    const a = (j / 32) * Math.PI * 2;
-    const ridge = vnoise(Math.cos(a) * 1.7 + 10, Math.sin(a) * 1.7 + hf * 3.4 + 4);
-    const fine = vnoise(Math.cos(a) * 4 + 2, Math.sin(a) * 4 + hf * 6 + 7);
-    let bump = (ridge - 0.5) * 1.0 + (fine - 0.5) * 0.1;
-    bump = bump > 0 ? bump * 1.35 : bump * 0.45;
-    const tipTaper = 0.35 + 0.65 * (1 - smooth(0.6, 1, hf));
-    acc += rawAt(hf) * (1 - smooth(0.84, 1, hf) * 0.82) * (1 + bump * 0.5 * tipTaper);
-  }
-  return acc / 32;
-});
+console.log('\n--- ranking ---');
+for (const r of ranked) console.log(`${r.label.padEnd(40)} improvement=${r.improvement.toFixed(4)}`);
+console.log(`\nFIX THE TOP-RANKED FACTOR ONLY, then re-run. Baseline error to beat: ${baseErr.toFixed(4)}`);
 ```
 
 - [ ] **Step 2: Run it and read the ranking**
@@ -1615,7 +1846,8 @@ So: **change** the existing stroke constant, **keep** separately-named dark unde
 Change line 27 `const STROKES = 3600` to:
 
 ```ts
-const STROKES = 2200 // long ribbons now, not stubs — see Task 11 for the measured budget
+const STROKES = 2200 // FRONT pass; long ribbons now, not stubs — Task 11 sets the measured budget
+const BACK_DENSITY = 0.45 // the invented back is sparser: it is never the view being judged
 const STROKE_STEPS = 9
 const STROKE_LEN = 0.11 // fraction of HEIGHT per stroke
 const MOON_LIFT = 0.14 // a lift on the lit side, never the main value term
@@ -1644,10 +1876,16 @@ import { makeBrushArrays, moonShade, pushBrushRibbon, smooth, vnoise } from './b
 
 ```ts
 import { SRGBColorSpace } from 'three'
-import { cypressViewBearing, paintingUToAngle } from './cypressMapping'
-import { generateCypressStrokes } from './cypressStrokes'
+import { buildTendrilTracks, generateCypressStrokes } from './cypressStrokes'
+import { cypressViewBearing, paintingUToAngle, paintingUV, type RowTable } from './cypressMapping'
 import { DIORAMA_CAMERAS } from './dioramaContract'
-import rowTable from '../../public/reference/cypress-rows.json'
+import rowTableJson from '../../public/reference/cypress-rows.json'
+
+// TypeScript infers a JSON import's spans as number[][], not the tuple the RowTable contract needs,
+// so the shape is asserted once here rather than being spread through every call site.
+const rowTable = rowTableJson as unknown as RowTable & {
+  satellites: { y: number; x0: number; x1: number }[]
+}
 ```
 
 - [ ] **Step 3: Load the assets**
@@ -1674,13 +1912,24 @@ Replace lines 122–170 with:
     const strokeCol = new Color()
     const bearing = cypressViewBearing(DIORAMA_CAMERAS.design.position, [BASE.x, BASE.y, BASE.z])
 
-    const strokes = generateCypressStrokes({
+    // TWO EXPLICIT PASSES, both in the geometry budget. An earlier draft picked a hemisphere per
+    // stroke from an arbitrary u/relief heuristic, which left the judged FRONT holding only part
+    // of the source stroke set — the one view that must match the painting. The front pass is
+    // complete; the back is a mirrored, sparser continuation, since it is invented and never the
+    // thing being judged.
+    const frontStrokes = generateCypressStrokes({
       skin: skinData, flow: flowData, rows: rowTable,
       count: STROKES, steps: STROKE_STEPS, lengthFraction: STROKE_LEN, seed: 0x0cabba9e,
     })
+    const backStrokes = generateCypressStrokes({
+      skin: skinData, flow: flowData, rows: rowTable,
+      count: Math.round(STROKES * BACK_DENSITY), steps: STROKE_STEPS, lengthFraction: STROKE_LEN,
+      seed: 0x5eed1e55,
+    })
 
-    for (const stroke of strokes) {
-      const front = stroke.samples[0].u < 0.5 ? true : stroke.relief > 1 // deterministic hemisphere pick
+    for (const [pass, strokes] of [[true, frontStrokes], [false, backStrokes]] as const) {
+      for (const stroke of strokes) {
+      const front = pass
       const points: Vector3[] = []
       const normals: Vector3[] = []
       const colors: Color[] = []
@@ -1703,15 +1952,18 @@ Replace lines 122–170 with:
         )
         normals.push(nrm.clone())
 
-        // The skin's bytes are sRGB; Color's working space is LINEAR. Passing them straight in
-        // would darken the tree — the exact defect this pass exists to fix.
+        // The skin's bytes are sRGB; Color's working space is LINEAR. Omitting the colour space
+        // does not darken the tree — treating sRGB as linear makes midtones DISPLAY BRIGHTER after
+        // output encoding (mid grey 0.502 comes back as 0.737). The near-black defect came from
+        // the palette attenuation, not from this. Both are wrong; they are wrong differently.
         strokeCol.setRGB(sample.r, sample.g, sample.b, SRGBColorSpace)
         strokeCol.multiplyScalar(stroke.relief * (1 + MOON_LIFT * moonShade(nrm)))
         colors.push(strokeCol.clone())
       }
 
-      if (points.length < 3) continue
-      pushBrushRibbon(arr, points, normals, colors, 0.012, 0.45)
+        if (points.length < 3) continue
+        pushBrushRibbon(arr, points, normals, colors, 0.012, 0.45)
+      }
     }
 ```
 
@@ -1759,30 +2011,58 @@ Mark's specification, 2026-07-21, implemented exactly. **Only after Task 8.**
 - [ ] **Step 1: Write the failing test**
 
 ```ts
+const TRACK_OPTS = {
+  minRows: 8,
+  maxTracks: 6,
+  crop: { width: 100, height: 100 },
+  rows: { width: 100, height: 100, spans: [[0, 0.4, 0.6], [1, 0.3, 0.7]] as [number, number, number][] },
+}
+
 test('buildTendrilTracks connects satellites into a few coherent vertical tracks', () => {
-  // two separate fronds, each spanning many rows
   const runs = []
-  for (let y = 10; y < 40; y++) runs.push({ y, x0: 60, x1: 66 })
-  for (let y = 15; y < 45; y++) runs.push({ y, x0: 20, x1: 25 })
-  runs.push({ y: 80, x0: 40, x1: 43 }) // an isolated speck, must be dropped
-  const tracks = buildTendrilTracks(runs, { minRows: 8, maxTracks: 6 })
+  for (let y = 10; y < 40; y++) runs.push({ y, x0: 75, x1: 80 }) // right of the span
+  for (let y = 15; y < 45; y++) runs.push({ y, x0: 18, x1: 23 }) // left of the span
+  runs.push({ y: 80, x0: 40, x1: 43 }) // isolated speck — must be dropped
+  const tracks = buildTendrilTracks(runs, TRACK_OPTS)
   assert.equal(tracks.length, 2, `expected 2 coherent tracks, got ${tracks.length}`)
   for (const t of tracks) assert.ok(t.points.length >= 8, 'a track must span many rows, not one')
-  assert.ok(!tracks.some((t) => t.points.length === 1), 'isolated specks must be dropped — that is fur')
+})
+
+test('track points are NORMALISED, and both rims get used', () => {
+  // An earlier draft stored raw crop pixels as u/heightFraction, so every value exceeded 1 and
+  // every track picked the same side — the top-third filter could then never match anything.
+  const runs = []
+  for (let y = 10; y < 40; y++) runs.push({ y, x0: 75, x1: 80 })
+  for (let y = 15; y < 45; y++) runs.push({ y, x0: 18, x1: 23 })
+  const tracks = buildTendrilTracks(runs, TRACK_OPTS)
+  for (const t of tracks)
+    for (const p of t.points) {
+      assert.ok(p.heightFraction >= 0 && p.heightFraction <= 1, `heightFraction ${p.heightFraction} not normalised`)
+      assert.ok(p.rimDistance >= 0, 'rimDistance must be an outward distance')
+      assert.ok(p.rimDistance < 5, `rimDistance ${p.rimDistance} looks like raw pixels`)
+    }
+  assert.equal(new Set(tracks.map((t) => t.side)).size, 2, 'tracks either side must be assigned to different rims')
 })
 
 test('buildTendrilTracks stays sparse', () => {
   const runs = []
   for (let x = 0; x < 40; x++) for (let y = 10; y < 30; y++) runs.push({ y, x0: x * 3, x1: x * 3 + 2 })
-  const tracks = buildTendrilTracks(runs, { minRows: 8, maxTracks: 6 })
-  assert.ok(tracks.length <= 6, `sparse means capped: got ${tracks.length}`)
+  assert.ok(buildTendrilTracks(runs, TRACK_OPTS).length <= 6, 'sparse means capped')
 })
 ```
 
 - [ ] **Step 2: Implement `buildTendrilTracks` in `cypressStrokes.ts`**
 
 ```ts
-export type TendrilTrack = { points: { u: number; heightFraction: number }[]; side: 'left' | 'right' }
+export type TendrilPoint = {
+  /** crop-normalised height, 0 at the base — the same space as StrokeSample.heightFraction */
+  heightFraction: number
+  /** which rim of the primary column this point sits beyond */
+  side: 'left' | 'right'
+  /** how far outside the primary rim, as a fraction of that row's half-width. Always >= 0. */
+  rimDistance: number
+}
+export type TendrilTrack = { points: TendrilPoint[]; side: 'left' | 'right' }
 
 /**
  * Connect satellite runs into a few coherent vertical tracks — the painting's detached fronds.
@@ -1794,7 +2074,7 @@ export type TendrilTrack = { points: { u: number; heightFraction: number }[]; si
  */
 export function buildTendrilTracks(
   runs: { y: number; x0: number; x1: number }[],
-  opts: { minRows: number; maxTracks: number },
+  opts: { minRows: number; maxTracks: number; crop: { width: number; height: number }; rows: RowTable },
 ): TendrilTrack[] {
   const byRow = new Map<number, { x0: number; x1: number }[]>()
   for (const r of runs) {
@@ -1825,19 +2105,67 @@ export function buildTendrilTracks(
     }
   }
 
+  // Normalise into the SAME space the strokes use. An earlier draft stored raw crop pixels as if
+  // they were u/heightFraction, so every u exceeded 1, every track chose the same side, and the
+  // top-third filter could never match anything.
   return tracks
     .sort((a, b) => b.length - a.length)
     .slice(0, opts.maxTracks)
-    .map((chain) => ({
-      points: chain.map((c) => ({ u: (c.x0 + c.x1) / 2, heightFraction: c.y })),
-      side: 'left' as const, // assigned by the caller from the view bearing
-    }))
+    .map((chain) => {
+      const points: TendrilPoint[] = chain.map((c) => {
+        const py = c.y / (opts.crop.height - 1)
+        const cx = (c.x0 + c.x1) / 2 / (opts.crop.width - 1)
+        const { left, right } = rowSpanAt(py, opts.rows)
+        const halfWidth = Math.max(1e-6, (right - left) / 2)
+        const side: 'left' | 'right' = cx < (left + right) / 2 ? 'left' : 'right'
+        const rimDistance = Math.max(0, (side === 'left' ? left - cx : cx - right) / halfWidth)
+        return { heightFraction: 1 - py, side, rimDistance }
+      })
+      // A track belongs to whichever rim most of its points sit beyond.
+      const leftCount = points.filter((p) => p.side === 'left').length
+      const side: 'left' | 'right' = leftCount * 2 >= points.length ? 'left' : 'right'
+      return { points, side }
+    })
 }
 ```
 
 - [ ] **Step 3: Wire into `BrushCypress.tsx`**
 
-Bake the satellite runs into `cypress-rows.json` (add a `satellites` field in `derive-cypress.ts` using `satelliteRuns`), then in the cladding memo build tracks, assign each to the rim nearer its painting-space `u` (`u < 0.5` → the rim at `bearing − π/2`, else `bearing + π/2`), keep only tracks whose mean height is in the **top third**, and emit each as one long ribbon with `taper = 0.15`, its outer points pushed **past** the solid radius by 0.04–0.09.
+Bake the satellite runs into `cypress-rows.json` (add a `satellites` field in `derive-cypress.ts` using `satelliteRuns`), then in the cladding memo:
+
+```ts
+    const tracks = buildTendrilTracks(rowTable.satellites, {
+      minRows: 24, maxTracks: 6, crop: { width: skinData.width, height: skinData.height }, rows: rowTable,
+    }).filter((t) => t.points.reduce((a, p) => a + p.heightFraction, 0) / t.points.length > 0.66)
+
+    for (const track of tracks) {
+      // Rim angles follow the mapping's anchor: bearing-PI/2 is the u=1 rim, bearing+PI/2 is u=0.
+      const rimAngle = track.side === 'right' ? bearing - Math.PI / 2 : bearing + Math.PI / 2
+      const points: Vector3[] = []
+      const normals: Vector3[] = []
+      const colors: Color[] = []
+      for (const p of track.points) {
+        const hf = p.heightFraction
+        const solidR = sampleR(hf)
+        // ROOTED: a track starts ON the mesh and only then reaches outward, so it grows from the
+        // tree rather than floating beside it. rimDistance is already relative to the row's half
+        // width, so the overshoot scales with the tree instead of being a fixed world offset.
+        const overshoot = Math.min(0.09, 0.04 + p.rimDistance * 0.05)
+        const grow = Math.min(1, (hf - 0.66) / 0.12) // ease out of the mesh over the first rows
+        const r = solidR + Math.max(0, grow) * overshoot
+        nrm.set(Math.cos(rimAngle), 0.12, Math.sin(rimAngle)).normalize()
+        points.push(new Vector3(swayX(hf) + Math.cos(rimAngle) * r, hf * HEIGHT, swayZ(hf) + Math.sin(rimAngle) * r))
+        normals.push(nrm.clone())
+        const uv = paintingUV(track.side === 'left' ? 0.04 : 0.96, hf, rowTable)
+        const texel = sampleSkinAt(skinData, uv.px, uv.py)
+        strokeCol.setRGB(texel.r / 255, texel.g / 255, texel.b / 255, SRGBColorSpace)
+        colors.push(strokeCol.clone())
+      }
+      if (points.length >= 4) pushBrushRibbon(arr, points, normals, colors, 0.010, 0.15)
+    }
+```
+
+**Every tendril must start on the mesh.** The `grow` ramp is what roots it; without it a track reads as a detached ribbon, which Mark's acceptance sentence explicitly rules out.
 
 - [ ] **Step 4: Capture and judge against Mark's acceptance sentence**
 
@@ -1864,24 +2192,62 @@ survive. Top third only, long tapered ribbons reaching past the solid."
 
 Nominal, before clipping: current 3,600 × 6 = **21,600 v / 14,400 t**; proposed 2,200 × 9 × 2 = **39,600 v / 35,200 t**.
 
-- [ ] **Step 1: Record real numbers**
+- [ ] **Step 1: Add a timing hook — `renderer` is not currently reachable from the console**
 
-In the browser console on `?mode=diorama&clean=1`, capture after a 10-second warm-up: mean and 95th-percentile frame time, `renderer.info.render.calls`, `.triangles`, and the cypress geometry's vertex count. Record for **desktop** and for a **representative mid-tier mobile device** (the locked criterion is 30 fps there and headless cannot measure it — this needs real hardware, so it may need Mark).
+There is no way to measure this today, so add a dev-only probe. In `DioramaExperience.tsx`, inside the R3F tree:
 
-- [ ] **Step 2: Derive the stroke budget from the measurement**
+```tsx
+function PerfProbe() {
+  const { gl } = useThree()
+  useFrame(() => {
+    const w = window as unknown as { __perf?: { t: number[]; info: unknown } }
+    if (!w.__perf) w.__perf = { t: [], info: null }
+    w.__perf.t.push(performance.now())
+    if (w.__perf.t.length > 600) w.__perf.t.shift()
+    w.__perf.info = { calls: gl.info.render.calls, triangles: gl.info.render.triangles }
+  })
+  return null
+}
+```
 
-If desktop mean frame time exceeds 16.6 ms or mobile exceeds 33 ms, reduce `STROKES` and re-measure. **State the final numbers**; do not assert the criterion is met.
+Mount it only when `debug` is set, so it never ships in the clean view.
 
-- [ ] **Step 3: Verify displayed colour, not asset bytes**
+- [ ] **Step 2: Record real numbers, mean AND p95**
 
-Sample the rendered cypress region from the final capture and from `painting.jpg`, convert both to Lab, and report mean and 95th-percentile ΔE. The locked tolerance is ΔE < 10 per region. **Losslessly decoding an asset proves nothing about the rendered vertex colour** — this is the check that does.
+After a 10-second warm-up on `?mode=diorama&clean=1&debug=nopost`:
+
+```js
+const t = window.__perf.t, d = t.slice(1).map((v, i) => v - t[i]).sort((a, b) => a - b)
+JSON.stringify({
+  mean: (d.reduce((a, b) => a + b, 0) / d.length).toFixed(2),
+  p95: d[Math.floor(d.length * 0.95)].toFixed(2),
+  ...window.__perf.info,
+})
+```
+
+Record for **desktop** and a **representative mid-tier mobile device**. The locked criterion is 30 fps on mobile and headless cannot measure it, so this needs real hardware — likely Mark's.
+
+- [ ] **Step 3: Derive the stroke budget from the measurement**
+
+**Gate both mean and p95** — a good mean with a bad p95 is visible stutter, which is what a viewer actually notices. Desktop: mean ≤ 16.6 ms and p95 ≤ 20 ms. Mobile: mean ≤ 33 ms and p95 ≤ 40 ms. If either fails, reduce `STROKES` (and `BACK_DENSITY` first — the back is invented) and re-measure. **State the final numbers**; never assert the criterion is met.
+
+- [ ] **Step 4: Verify displayed colour with registered, masked correspondence**
+
+An arbitrary rendered crop against an arbitrary painting crop is not a ΔE test — the pixels do not correspond. Build the comparison properly:
+
+1. Render a capture at the **design view**, where the mapping's front contract holds.
+2. For each rendered pixel inside the cypress, recover its source texel through the same mapping the renderer used (`surfaceToPaintingU` → `paintingUV`), giving a **registered** pairing.
+3. Mask to tree pixels in **both** images — background sky in either one must be excluded, or the statistic measures the sky.
+4. Convert both to Lab and report **mean and p95 ΔE**. Locked tolerance: ΔE < 10 per region.
+
+If exact registration proves impractical, fall back to comparing **regional colour distributions** (mean Lab and its spread over the masked tree region) and say plainly that is what was measured. **Do not report a per-pixel ΔE that was not computed per corresponding pixel.**
 
 - [ ] **Step 4: Full check**
 
 ```bash
 npm run test:sky && npm run lint && npm run build && npm run check:reduced
 ```
-Expected: all pass. Test count: 53 + 5 (ribbon) + 7 (field) + 6 (mapping) + 8 (strokes) = 79.
+Expected: all pass. Test count: 53 + 5 (ribbon) + 8 (field) + 6 (mapping) + 12 (strokes/tendrils) = 84.
 
 - [ ] **Step 5: Record**
 
@@ -1912,6 +2278,7 @@ Mark's cross-review (2026-07-21). Every empirical claim was re-measured on the c
 | Tensor computed across sky | P1 | `orientationField` takes a mask; off-mask coherence forced to 0 |
 | Skin fill was a left-carry, not nearest | P1 | Genuine nearest-valid-on-row, both directions; validity kept in alpha |
 | `setRGB` treats sRGB bytes as linear | P1 | `SRGBColorSpace` everywhere; ΔE checked on **displayed** colour |
+| *(round 2)* my explanation of that was backwards | — | Treating sRGB as linear makes midtones display **brighter** (0.502 → 0.737), not darker. The near-black defect came from attenuation. Comments and commit messages corrected. |
 | Ribbon faded to 74% along its length | P1 | Ribbon emits colour unchanged; relief is a per-stroke constant from the caller |
 | Bulb diagnosis reached neither branch (0.137–0.169) | P1 | Four-factor ablation scored against the painting's row-wise silhouette |
 | Mapping assumed +Z; real bearing ≈64.6° | P1 | `cypressViewBearing` from `dioramaContract`; tested at design, mobile, both orbit bearings |
@@ -1919,6 +2286,27 @@ Mark's cross-review (2026-07-21). Every empirical claim was re-measured on the c
 | Perf gate self-contradictory and not a perf measurement | P1 | Real frame timing, draw calls, triangles; budget derived from measurement |
 | Unconditional push | P2 | Removed; plan stops at local commits and Mark's gate |
 | Fronds had no mechanism | — | Task 10, to Mark's constraints and acceptance sentence |
+
+### Round 2 (2026-07-21, same day)
+
+Three P0s and two P1s, all re-measured and all confirmed. Two of them would have shipped a
+cypress shaped like the foreground terrain.
+
+| Finding | Severity | Resolution |
+|---|---|---|
+| Mask seeds from the globally widest run — which is the full-width terrain, so the width guard can never fire (measured: 80 px terrain vs 27 px trunk) | P0 | Seed by **vertical coherence** — the run chaining through the most rows — with a **local row-to-row** growth guard that catches the trunk→terrain jump |
+| Mapping tests contradict the formula: it returns u=1 at `bearing−π/2`, the test expected 0 | P0 | Implementation is screen-correct; test expectations reversed and anchored, Task 10's rim assignment follows the same anchor, and the left/right is confirmed by eye at the flat gate |
+| Tendril tracks store raw pixel x/y as normalised u/heightFraction — every u > 1, every track picks the same side, top-third filter matches nothing | P0 | Tracks bake normalised height, side, and signed `rimDistance`; each track is **rooted on the mesh** by a `grow` ramp before it overshoots |
+| Integrator advances normalised u/hf with a pixel-space flow vector — mixes units, reintroduces the row-width warp it claims to avoid | P1 | State kept in **crop pixels**; `normalisedFromCrop` derives u/hf per emitted sample. Tapered-row and non-square-crop tests added |
+| Profile diagnostic compares cumulative recipes, averages `tongue()` around the circumference, duplicates the runtime formulas | P1 | One shared `cypressProfile.ts` used by runtime and diagnostic; **leave-one-factor-out** against a composed baseline, scored on the **design-camera projected outline** |
+| Tensor not genuinely mask-aware — boundary gradients read sky, low-pass averages off-mask orientations back in | — | Mask-safe gradients (off-mask neighbour → centre) and **normalised convolution** (`maskedBlur`) for every blur, including the low-pass |
+| Flat gate drew fixed square dots | — | Renders **tapered quads through the display-colour path**; the gate's claims are narrowed in writing to what it actually covers |
+| Relief 0.78–1.20 too aggressive to start (38% below 0.94) | — | Default 0.94–1.06 via `reliefSpread`, plus a `relief = 1` ablation test |
+| `pow(rng, 0.78)` biases seeds to the **top**, not the base (41.2% below mid-height) | — | `1 − pow(rng, 1.4)`, with a test asserting >55% seed low. The same wrong comment sits on the pre-existing code |
+| Front/back assignment was an arbitrary u/relief heuristic | — | **Complete front pass** + explicit mirrored, sparser back pass (`BACK_DENSITY`), both in the geometry budget |
+| Task 11 had no timing hook and `renderer` is not exposed | — | Dev-only `PerfProbe`; **mean and p95 both gated** |
+| ΔE compared arbitrary crops | — | Registered, tree-masked correspondence through the same mapping; explicit fallback to distribution comparison, honestly labelled |
+| `cypress-rows.json` would infer as `number[][]` | — | Asserted once to `RowTable` at the import |
 
 **Partial dissent, recorded honestly.** On the ribbon darkening I do not accept that per-stroke relief contradicts the design's "drop the darkening" — the design rejected *global palette attenuation* (×0.68 on every stroke, which made the tree black), while relief between neighbouring strokes is existing house technique (`pushBrush` line ~89) and without it cladding reads as one flat sheet. The review's underlying point stands and is implemented: a *fade along a long stroke* is a vignette that biases stroke ends dark, so relief moved to a per-stroke constant and the residual is verified by the displayed-colour ΔE check rather than asserted.
 
