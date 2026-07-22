@@ -48,6 +48,10 @@ type PerfWindow = Window & {
   }
 }
 
+function setRendererInfoAutoReset(info: { autoReset: boolean }, autoReset: boolean) {
+  info.autoReset = autoReset
+}
+
 /** Opt-in timing probe. `perf=1` leaves the selected presentation/debug pipeline untouched. */
 function PerfProbe() {
   const { gl } = useThree()
@@ -55,9 +59,9 @@ function PerfProbe() {
     const previous = gl.info.autoReset
     // EffectComposer performs several renderer passes. Its normal auto-reset leaves only the last
     // fullscreen triangle visible to the probe, so accumulate all passes and reset once per frame.
-    gl.info.autoReset = false
+    setRendererInfoAutoReset(gl.info, false)
     return () => {
-      gl.info.autoReset = previous
+      setRendererInfoAutoReset(gl.info, previous)
       gl.info.reset()
     }
   }, [gl])
