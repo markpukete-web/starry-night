@@ -51,8 +51,17 @@ removal, Mark asked for the stars and swirl band lifted — `e075bd4`: source-ke
 gain in the ribbon+wash shaders (pale strokes only, cobalt floor untouched) + broader/brighter
 star halos. Sky mean 73→85, luminous mass 4.6→8.5% (painting: 102/11.6%), deep night kept.
 Stopped at the look, not the number — the crop includes dimmer side-extension zones the
-painting lacks. Item 1's no-bloom decision stands; this tunes within it. Evidence:
-`output/playwright/night-lift-2026-07-22-p1/` vs `village-pass-2026-07-22-s5p3/`.
+painting lacks. Item 1's no-bloom decision stands; this tunes within it. Landed at `3b94eca`
+(p3: wash cool-down softened — it was sinking the band before the lift keyed on it): luminous
+mass 11.4% vs painting 11.6%, mean 94.8 vs 101.7. Evidence: `night-lift-2026-07-22-p{1,2,3}/`.
+
+**Moon fix (same session, Mark flagged "mismatched"):** `908b8ce` — the authored crescent
+sprite sat at skySwirls' MOON_UV (the moon's VORTEX anchor, 78px from the painted body; the
+star-guard trap from lessons 07-16) and doubled the painting's own moon. Sprite deleted; halo +
+moonlight re-centred on the measured painted centroid uv(0.8987,0.1697); halo core softened so
+the crescent's gold reads inside the glow. This closes the 0003 "busy moon corner" residual.
+Checklist item 2 (moon can't fit portrait framing) is unchanged and stays open — composition,
+Mark's call. Evidence: `moon-fix-2026-07-22-p2/`.
 
 ---
 
