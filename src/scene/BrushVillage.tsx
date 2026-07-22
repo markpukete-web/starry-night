@@ -29,7 +29,10 @@ const ROOF_B = new Color(PALETTE.ground).multiplyScalar(1.32)
 // brightest mass in the composition, a glow the painting never painted. 2026-07-22 look pass.
 const CHURCH = new Color(PALETTE.steeple).multiplyScalar(1.15) // pale focal, held in the band
 const SPIRE = new Color(PALETTE.steeple).multiplyScalar(1.05)
-const WINDOW = new Color('#f6c651')
+// Windows are PAINT, not stickers: the painting's lit windows are irregular ochre daubs
+// (measured blob mean rgb(127,124,35) ≈ ×1.2 the derived windowOchre swatch, 8x10+774+1078).
+// Bloom is gone from the diorama, so nothing needs emissive-bright.
+const WINDOW_PAINT = new Color(PALETTE.windowOchre)
 const INK = new Color(PALETTE.villageInk) // warm-dark drawing ink — the cloisonnist contour
 // The painting's distributed warmth: ~9.8% of the village band is umber/ochre pigment woven
 // through walls and roofs (villageWarm region, S0). Hue statements at nocturne value — the
@@ -363,19 +366,26 @@ function pushChurch(arr: Arr, brush: BrushArrays, rng: () => number, cx: number,
   return { spireTip }
 }
 
-function pushWindow(arr: Arr, cx: number, cz: number, y: number, size: number): void {
-  const s = size / 2
+const _winN = new Vector3(0, 0, 1)
+const _winT = new Vector3(1, 0, 0)
+
+/** A lit window as a cluster of overlapping ochre daubs with one brighter core — never a rect. */
+function pushWindow(arr: Arr, rng: () => number, cx: number, cz: number, y: number, size: number): void {
   const zw = cz + 0.016 // proud of the wall face so the brush cladding never covers the glow
-  const a = new Vector3(cx - s, y - s, zw)
-  const b = new Vector3(cx + s, y - s, zw)
-  const c = new Vector3(cx + s, y + s, zw)
-  const d = new Vector3(cx - s, y + s, zw)
-  const i = arr.positions.length / 3
-  for (const p of [a, b, c, d]) {
-    arr.positions.push(p.x, p.y, p.z)
-    arr.colors.push(WINDOW.r, WINDOW.g, WINDOW.b)
+  const col = new Color()
+  // one or two offset daubs give the blob its irregular edge — kept BRIGHT (≥ ×0.95): dim
+  // olive daubs at swatch value vanished against the stroked walls (s5 retune pass 2)
+  const daubs = 1 + Math.floor(rng() * 2)
+  for (let i = 0; i < daubs; i++) {
+    _pos.set(cx + (rng() - 0.5) * size * 0.5, y + (rng() - 0.5) * size * 0.55, zw + 0.002 * rng())
+    col.copy(WINDOW_PAINT).multiplyScalar(0.95 + 0.3 * rng())
+    pushBrush(arr, _pos, _winT, _winN, size * (0.3 + 0.16 * rng()), size * (0.18 + 0.12 * rng()), col)
   }
-  arr.indices.push(i, i + 1, i + 2, i, i + 2, i + 3)
+  // the lit core — ×1.45, bounded by the blob rect's measured p90 (150,144,48 ≈ ×1.49/1.35 of
+  // the swatch); the painting's windows glow by saturation and value together
+  _pos.set(cx + (rng() - 0.5) * size * 0.2, y + (rng() - 0.5) * size * 0.2, zw + 0.004)
+  col.copy(WINDOW_PAINT).multiplyScalar(1.45)
+  pushBrush(arr, _pos, _winT, _winN, size * 0.5, size * 0.34, col)
 }
 
 // deterministic village layout at the hills' foot (front-centre of the island)
@@ -408,10 +418,10 @@ export function BrushVillage() {
     HOUSES.forEach(([cx, cz, hw, hd, hh, yaw], i) => pushHouse(s, brush, rng, cx, cz, hw, hd, hh, yaw, i === 1))
     pushChurch(s, brush, rng, CHURCH_POS[0], CHURCH_POS[1])
     for (const [cx, cz, yh, size] of WINDOWS) {
-      pushWindow(w, cx, cz, islandHeightAt(cx, cz) + yh, size)
+      pushWindow(w, rng, cx, cz, islandHeightAt(cx, cz) + yh, size)
     }
     // belfry window on the church tower
-    pushWindow(w, CHURCH_POS[0], CHURCH_POS[1] + 0.17, islandHeightAt(...CHURCH_POS) + 0.4, 0.04)
+    pushWindow(w, rng, CHURCH_POS[0], CHURCH_POS[1] + 0.17, islandHeightAt(...CHURCH_POS) + 0.4, 0.04)
 
     const build = (a: Arr) => {
       const g = new BufferGeometry()
@@ -430,7 +440,12 @@ export function BrushVillage() {
     () => new MeshBasicMaterial({ vertexColors: true, toneMapped: false, side: DoubleSide }),
     [],
   )
-  const windowMat = useMemo(() => new MeshBasicMaterial({ vertexColors: true, toneMapped: false }), [])
+  // DoubleSide: pushBrush fans wind clockwise re the +normal (fine everywhere else — the stroke
+  // material is DoubleSide); FrontSide culled the window daubs to nothing (s5 retune pass 2)
+  const windowMat = useMemo(
+    () => new MeshBasicMaterial({ vertexColors: true, toneMapped: false, side: DoubleSide }),
+    [],
+  )
 
   useEffect(() => () => solid.dispose(), [solid])
   useEffect(() => () => strokes.dispose(), [strokes])
