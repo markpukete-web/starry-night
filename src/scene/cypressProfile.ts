@@ -4,6 +4,10 @@ export type ProfileFactors = {
   /** Painting-derived half-widths ordered base to tip. */
   slices: number[]
   widthScale: number
+  useContinuousTaper: boolean
+  continuousPower: number
+  continuousSourceBlend: number
+  continuousTipRadius: number
   useUpperTaper: boolean
   upperTaperStart: number
   upperTaperStrength: number
@@ -17,6 +21,13 @@ export type ProfileFactors = {
 export const CYPRESS_LUM_MAX = 90
 export const CYPRESS_PROFILE_CONFIG = {
   widthScale: 4.6,
+  // The raw row extractor contains two lobes and a narrow waist. Preserve its scale and a small
+  // amount of local character, but project it onto the continuously tapering silhouette Mark
+  // approved at the first live gate.
+  useContinuousTaper: true,
+  continuousPower: 0.62,
+  continuousSourceBlend: 0.12,
+  continuousTipRadius: 0.015,
   // The extracted source already tapers. A second taper caused the visible neck below the tip;
   // the shared ablation improved mean outline error from 0.20726 to 0.20074 when it was removed.
   useUpperTaper: false,
@@ -80,6 +91,16 @@ export function composedRadius(
 ): number {
   const height = Math.min(1, Math.max(0, heightFraction))
   let radius = sliceAt(height, factors) * factors.widthScale
+  if (factors.useContinuousTaper && factors.slices.length > 0) {
+    const baseRadius = Math.max(...factors.slices) * factors.widthScale
+    const continuous =
+      factors.continuousTipRadius +
+      (baseRadius - factors.continuousTipRadius) *
+        Math.pow(1 - height, factors.continuousPower)
+    radius =
+      continuous * (1 - factors.continuousSourceBlend) +
+      radius * factors.continuousSourceBlend
+  }
   if (factors.useUpperTaper) {
     radius *=
       1 - smooth(factors.upperTaperStart, 1, height) * factors.upperTaperStrength

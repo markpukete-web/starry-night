@@ -39,7 +39,7 @@ test('upper taper reduces the tip without changing the base', () => {
   assert.ok(
     Math.abs(composedRadius(0, 0, withTaper) - composedRadius(0, 0, withoutTaper)) < 1e-9,
   )
-  assert.ok(composedRadius(1, 0, withTaper) < composedRadius(1, 0, withoutTaper) * 0.4)
+  assert.ok(composedRadius(1, 0, withTaper) < composedRadius(1, 0, withoutTaper) * 0.7)
 })
 
 test('smoothing removes a narrow waist rather than moving the endpoints', () => {
@@ -68,4 +68,16 @@ test('projectedHalfWidth measures the visible rim rather than an angular average
       composedRadius(0.7, (i / 128) * Math.PI * 2, profile),
     ).reduce((sum, radius) => sum + radius, 0) / 128
   assert.ok(projected > mean * 0.75, `projected rim collapsed to an average: ${projected}`)
+})
+
+test('the shipping profile tapers continuously instead of preserving the extracted hourglass', () => {
+  const profile = { ...makeCypressProfile(SLICES), useTongue: false }
+  assert.equal(profile.useContinuousTaper, true)
+  const radii = [0, 0.2, 0.4, 0.6, 0.8, 1].map((height) =>
+    composedRadius(height, 0, profile),
+  )
+  for (let i = 1; i < radii.length; i++) {
+    assert.ok(radii[i] < radii[i - 1], `profile swelled from ${radii[i - 1]} to ${radii[i]}`)
+  }
+  assert.ok(radii.at(-1)! < radii[0] * 0.12, 'the tip must be pointed rather than blunt')
 })

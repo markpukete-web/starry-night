@@ -85,6 +85,7 @@ console.log('--- shared runtime baseline ---')
 const baselineResult = score('baseline', baseline)
 console.log('\n--- single-factor alternatives ---')
 const alternatives: [string, ProfileFactors][] = [
+  ['without continuous taper', { ...baseline, useContinuousTaper: false }],
   ['without upper taper', { ...baseline, useUpperTaper: false }],
   ['without tongue', { ...baseline, useTongue: false }],
   ['smoothing window 1', { ...baseline, smoothingWindow: 1 }],

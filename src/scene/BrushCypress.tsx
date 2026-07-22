@@ -208,14 +208,22 @@ export function BrushCypress() {
       const points: Vector3[] = []
       const normals: Vector3[] = []
       const colours: Color[] = []
+      const rootHeight = track.points[0].heightFraction
+      const sourceSpan =
+        track.points[track.points.length - 1].heightFraction - rootHeight
+      const heightScale = sourceSpan > 1e-6 ? Math.max(1, 0.08 / sourceSpan) : 1
       for (let index = 0; index < track.points.length; index++) {
         const point = track.points[index]
-        const heightFraction = point.heightFraction
+        const heightFraction = Math.min(
+          0.985,
+          rootHeight + (point.heightFraction - rootHeight) * heightScale,
+        )
         const solidRadius = composedRadius(heightFraction, rimAngle, profile)
         const along = index / Math.max(1, track.points.length - 1)
-        const rootToTip = Math.min(1, along / 0.35)
-        const eased = rootToTip * rootToTip * (3 - 2 * rootToTip)
-        const overshoot = Math.min(0.09, 0.04 + point.rimDistance * 0.05)
+        const eased = along * along * (3 - 2 * along)
+        // Compress extreme source distances logarithmically: detached runs near the narrow tip can
+        // be tens of row half-widths away, but must still become a proportionate wisp, not a fork.
+        const overshoot = Math.min(0.15, 0.05 + Math.log1p(point.rimDistance) * 0.03)
         const radius = solidRadius + eased * overshoot
         normal.set(Math.cos(rimAngle), 0.12, Math.sin(rimAngle)).normalize()
         points.push(
@@ -226,14 +234,18 @@ export function BrushCypress() {
           ),
         )
         normals.push(normal.clone())
-        const source = paintingUV(track.side === 'left' ? 0.04 : 0.96, heightFraction, rowTable)
+        const source = paintingUV(
+          track.side === 'left' ? 0.2 : 0.8,
+          point.heightFraction,
+          rowTable,
+        )
         const texel = sampleCypressImage(skinData, source.px, source.py)
         strokeColour.setRGB(texel.r / 255, texel.g / 255, texel.b / 255, SRGBColorSpace)
-        strokeColour.multiplyScalar(1 + MOON_LIFT * moonShade(normal))
+        strokeColour.multiplyScalar(1.25 + MOON_LIFT * moonShade(normal))
         colours.push(strokeColour.clone())
       }
       if (points.length >= 4) {
-        pushBrushRibbon(arrays, points, normals, colours, 0.009, 0.12)
+        pushBrushRibbon(arrays, points, normals, colours, 0.009, 0.05)
       }
     }
 
