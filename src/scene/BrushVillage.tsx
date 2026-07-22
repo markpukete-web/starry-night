@@ -31,6 +31,13 @@ const CHURCH = new Color(PALETTE.steeple).multiplyScalar(1.15) // pale focal, he
 const SPIRE = new Color(PALETTE.steeple).multiplyScalar(1.05)
 const WINDOW = new Color('#f6c651')
 const INK = new Color(PALETTE.villageInk) // warm-dark drawing ink — the cloisonnist contour
+// The painting's distributed warmth: ~9.8% of the village band is umber/ochre pigment woven
+// through walls and roofs (villageWarm region, S0). Hue statements at nocturne value — the
+// measured umber is rgb(55,46,35); the lift matches the walls' documented ×1.28..1.32 range.
+const WARM = new Color(PALETTE.villageUmber).multiplyScalar(1.3)
+// The red-brown roof landmark left of the church. Base = the derived sienna swatch at the roof
+// lift; stroke kicks bounded ×1.42 by the roof rect's measured p90/mean (92/65, 28x24+700+1042).
+const SIENNA = new Color(PALETTE.roofSienna).multiplyScalar(1.32)
 
 const _n = new Vector3()
 const _u = new Vector3()
@@ -137,6 +144,7 @@ function cladQuad(
   kickSpan = 0.52,
   strokeAlong: 'ab' | 'ad' = 'ab',
   fleckP = 0,
+  warmP = 0,
 ): void {
   _u.subVectors(b, a)
   _v.subVectors(d, a)
@@ -146,6 +154,7 @@ function cladQuad(
   _n.normalize()
   _tanAB.copy(strokeAlong === 'ab' ? _u : _v).normalize()
   const lit = litColor(base, _n)
+  const litWarm = warmP > 0 ? litColor(WARM, _n) : lit
   const n = Math.max(3, Math.round(area * STROKES_PER_AREA * (0.85 + 0.3 * rng())))
   const col = new Color()
   // marks lie in quantised COURSES across the stroke axis — Van Gogh lays wall and roof strokes
@@ -159,7 +168,7 @@ function cladQuad(
     _pa.copy(a).lerp(b, s)
     _pb.copy(d).lerp(c, s)
     _pos.copy(_pa).lerp(_pb, t).addScaledVector(_n, 0.002 + 0.003 * rng())
-    col.copy(lit).multiplyScalar(kickLo + kickSpan * rng())
+    col.copy(warmP > 0 && rng() < warmP ? litWarm : lit).multiplyScalar(kickLo + kickSpan * rng())
     if (fleckP > 0 && rng() < fleckP) col.lerp(WALL_FLECK, 0.45 + 0.25 * rng())
     const halfLen = 0.048 + 0.034 * rng()
     const halfWid = 0.009 + 0.006 * rng()
@@ -178,6 +187,7 @@ function pushHouse(
   d: number,
   h: number,
   yaw: number,
+  siennaRoof = false,
 ): void {
   const y0 = islandHeightAt(cx, cz) - 0.02
   const y1 = y0 + h
@@ -203,16 +213,17 @@ function pushHouse(
     rng() < 0.3
       ? new Color(PALETTE.steeple).multiplyScalar(1.12).lerp(HOUSE, 0.25 + 0.2 * rng())
       : HOUSE.clone().lerp(HOUSE_B, 0.55 * rng())
-  const roof = ROOF.clone().lerp(ROOF_B, 0.6 * rng())
+  // the landmark keeps the derived sienna base; kicks stay inside the measured p90 bound
+  const roof = siennaRoof ? SIENNA.clone() : ROOF.clone().lerp(ROOF_B, 0.6 * rng())
   pushQuad(arr, fbl, fbr, ftr, ftl, wall) // front
   pushQuad(arr, bbr, bbl, btl, btr, wall) // back
   pushQuad(arr, bbl, fbl, ftl, btl, wall) // left
   pushQuad(arr, fbr, bbr, btr, ftr, wall) // right
   // walls want harder value contrast + occasional pale flecks or they stay flat CAD blue
-  cladQuad(brush, rng, fbl, fbr, ftr, ftl, wall, 0.56, 1.05, 'ab', 0.12)
-  cladQuad(brush, rng, bbr, bbl, btl, btr, wall, 0.56, 1.05, 'ab', 0.12)
-  cladQuad(brush, rng, bbl, fbl, ftl, btl, wall, 0.56, 1.05, 'ab', 0.12)
-  cladQuad(brush, rng, fbr, bbr, btr, ftr, wall, 0.56, 1.05, 'ab', 0.12)
+  cladQuad(brush, rng, fbl, fbr, ftr, ftl, wall, 0.56, 1.05, 'ab', 0.12, 0.12)
+  cladQuad(brush, rng, bbr, bbl, btl, btr, wall, 0.56, 1.05, 'ab', 0.12, 0.12)
+  cladQuad(brush, rng, bbl, fbl, ftl, btl, wall, 0.56, 1.05, 'ab', 0.12, 0.12)
+  cladQuad(brush, rng, fbr, bbr, btr, ftr, wall, 0.56, 1.05, 'ab', 0.12, 0.12)
   // gable roof: ridge along the depth axis
   const rf = corner(0, 1, ridge)
   const rb = corner(0, -1, ridge)
@@ -220,10 +231,10 @@ function pushHouse(
   pushQuad(arr, btr, btl, rb, rb, roof) // back gable
   pushQuad(arr, ftl, rf, rb, btl, roof) // left roof pitch
   pushQuad(arr, ftr, btr, rb, rf, roof) // right roof pitch
-  cladQuad(brush, rng, ftl, ftr, rf, rf, roof, 0.66, 0.68)
-  cladQuad(brush, rng, btr, btl, rb, rb, roof, 0.66, 0.68)
-  cladQuad(brush, rng, ftl, rf, rb, btl, roof, 0.66, 0.68) // strokes run up the pitch
-  cladQuad(brush, rng, ftr, btr, rb, rf, roof, 0.7, 0.68, 'ad') // up the pitch (the a→d edge here)
+  cladQuad(brush, rng, ftl, ftr, rf, rf, roof, 0.66, 0.68, 'ab', 0, 0.08)
+  cladQuad(brush, rng, btr, btl, rb, rb, roof, 0.66, 0.68, 'ab', 0, 0.08)
+  cladQuad(brush, rng, ftl, rf, rb, btl, roof, 0.66, 0.68, 'ab', 0, 0.08) // strokes run up the pitch
+  cladQuad(brush, rng, ftr, btr, rb, rf, roof, 0.7, 0.68, 'ad', 0, 0.08) // up the pitch (the a→d edge here)
 
   // the drawn contour — each edge owned here, exactly once, using the corners above
   const nFront = faceNormal(fbl, fbr, ftl)
@@ -394,7 +405,7 @@ export function BrushVillage() {
     const brush = makeBrushArrays()
     const w = newArr()
     const rng = mulberry32(0x0b11a6e)
-    for (const [cx, cz, hw, hd, hh, yaw] of HOUSES) pushHouse(s, brush, rng, cx, cz, hw, hd, hh, yaw)
+    HOUSES.forEach(([cx, cz, hw, hd, hh, yaw], i) => pushHouse(s, brush, rng, cx, cz, hw, hd, hh, yaw, i === 1))
     pushChurch(s, brush, rng, CHURCH_POS[0], CHURCH_POS[1])
     for (const [cx, cz, yh, size] of WINDOWS) {
       pushWindow(w, cx, cz, islandHeightAt(cx, cz) + yh, size)
