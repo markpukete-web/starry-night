@@ -1904,3 +1904,16 @@ defect remaining." Mark's answer was *"those findings are minor"* — gate passe
      was authored brightness keyed on the source's own paleness — stars, swirl band, painted
      window glow-bleed — not the return of a post pass. Approach the painting from the dark side:
      light can be added where the painting has it, but a wash cannot be un-mixed.
+
+- 2026-07-22 — **An inherited note is not evidence: verify branch/deploy state before repeating it.**
+  Both `tasks/todo.md` and the vault carried "`main` still carries only the 2D era", and I repeated
+  it several times tonight without checking. Mark caught it. Verified truth: `main` (`247e816`,
+  06-20) holds the JUNE VORTEX-DOME era — `SkyDome` + the blocky/lathe `Diorama` — and predates
+  `LivingPainting`/`StreamlineSky` entirely; the 2D era is on `record/2d-streamline-flow`
+  (`8ccf903`, 06-24); the piece is on `sky-brushdab`, 167 commits ahead of main. Wrong twice over.
+  Two things worth carrying: (1) **claims about repo/deploy topology are cheap to verify and
+  expensive to get wrong** — `git ls-tree`, `git merge-base --is-ancestor` and a grep for a marker
+  symbol settle it in one command; (2) the error had a live consequence hiding in it — `main` also
+  carries the June `vercel preview deployed` commit, so any deployment still pointed at `main`
+  would publish the vortex dome rather than the gated piece. **A stale fact in the record can
+  become a shipping mistake**; this one is now flagged against checklist item 4.

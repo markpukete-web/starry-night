@@ -102,8 +102,26 @@ items and **every one of them is Mark's call** (composition, his hardware, deplo
   time-of-day, audio, other paintings: out of scope, permanently or until post-release.
 
 **Push state:** everything above is **committed and pushed** to `origin/sky-brushdab`
-(`2b208d8..c37430a`, 2026-07-22 evening, Mark asked). `main` still carries only the 2D era and
-nothing is merged — push is backup, not release; the pre-release gate is still open.
+(`2b208d8..c37430a`, 2026-07-22 evening, Mark asked). Push is backup, not release; the
+pre-release gate is still open.
+
+**Branch reality, verified 2026-07-22 (an inherited note had this wrong — Mark caught it):**
+
+| Branch | Tip | What is actually on it |
+|---|---|---|
+| `sky-brushdab` | `18fe449` (tonight) | **The piece.** The orbitable diorama, 167 commits ahead of `main`. |
+| `record/2d-streamline-flow` | `8ccf903` (06-24) | **The 2D era** — `LivingPainting` + `StreamlineSky`, Mark's live-tuned v4 baked in. |
+| `main` | `247e816` (06-20) | **The JUNE VORTEX-DOME era** — `SkyDome` (procedural vortex field) + the blocky/lathe `Diorama`. *Not* 2D: it predates `LivingPainting`/`StreamlineSky` entirely. |
+
+`main` is an ancestor of both other branches; nothing has been merged back into it since June.
+Repeated claims that "`main` carries only the 2D era" were wrong twice over — main is not 2D, and
+the 2D is not on main.
+
+**This matters for checklist item 4 (deploy).** `main` also carries the June commit
+`d3501c0 docs(tasks): vercel preview deployed`, so any Vercel deployment still wired to `main`
+would publish the **vortex dome**, not the piece that just passed its gates. Before deploy, Mark
+decides what ships from where — merge `sky-brushdab` into `main`, or point the project at the
+branch. Do not assume; it is a stop-and-ask item either way.
 
 **Session start ritual, unchanged:** read `tasks/lessons.md` (it is the project's memory, and the
 2026-07-22 entries are dense), then this file, then CLAUDE.md if the bar is in question.
