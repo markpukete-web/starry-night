@@ -1871,3 +1871,36 @@ defect remaining." Mark's answer was *"those findings are minor"* — gate passe
      blobs rgb(127,124,35), spire at its background's exact value. Everything that worked added
      hue and drawing (ink contours, umber weave, sienna landmark, ochre daubs); the one thing
      that came DOWN was brightness (church ×2.05+white → ×1.05). Warm ≠ bright in a nocturne.
+
+- 2026-07-22 (evening, after the village gate) — the night lift + the moon, five lessons:
+  1. **A grade upstream of a gain can neutralise it — check the pipeline order before turning the
+     dial.** Notching the sky's highlight gain 37% (0.38→0.52) moved the sky mean by **+1.6**. The
+     wash's night grade `×(0.67,0.79,1.0)` was sinking the band ~22% BEFORE the lift's smoothstep
+     keyed on it, so the ramp barely engaged. Softening the grade to `(0.74,0.84,1.0)` and keying
+     the lift on the TRUE source paleness moved it +8.2 in one pass. When a dial barely responds,
+     stop turning it and look at what runs before it.
+  2. **The vortex anchor is not the painted body — the 07-16 star-guard trap, second occurrence.**
+     `MOON_UV` (0.85,0.16) in `skySwirls.ts` anchors the moon's CIRCULATION; the painted moon's
+     bright-warm centroid measures uv(0.8987,0.1697) — 78 px away. The authored crescent sprite
+     sat on the anchor and read as a second moon beside the painting's own (Mark: "mismatched").
+     Rule, now twice paid for: **any authored overlay registered to a painted feature takes its
+     position from measured pixels, never from the SWIRLS table.**
+  3. **When the source starts supplying what an authored layer was faking, delete the layer.** The
+     flat crescent sprite existed because bloom left the source moon flat; once the highlight lift
+     brightened the painted disc, the sprite became a duplicate. Same family as the S3 inpaint
+     lesson (fix the input, delete the compensations) — **a compensation outlives its cause
+     silently**, and only looking catches it. Deleting it left the painting's own crescent-in-disc
+     as the moon, with authored layers supplying only the glow paint cannot emit.
+  4. **Isolate the variable when comparing two states.** For the bloom before/after I first used
+     `slim-after-2026-07-21` as "before" — it predated the cypress rebuild, so it differed in TWO
+     ways. Mark supplied his own screenshot (current cypress + bloom), the honest control. The
+     verdict did not change (sky mean 130.2 vs my 130.7) but the comparison's standing did. A
+     baseline must differ only in the thing under test.
+  5. **Bloom removal and brightness are different questions; answer them separately.** Removing
+     bloom was right — it had destroyed the cobalt floor (2.7% deep-night vs the painting's 17.1%).
+     But the resulting tune then undershot the painting's luminous mass by about as much as bloom
+     had overshot it (4.6% vs 11.6% vs 15.1%). **Starry Night is not a dark painting; it is a
+     high-contrast one**, carrying more darkness AND more light than either of our states. The fix
+     was authored brightness keyed on the source's own paleness — stars, swirl band, painted
+     window glow-bleed — not the return of a post pass. Approach the painting from the dark side:
+     light can be added where the painting has it, but a wash cannot be un-mixed.
