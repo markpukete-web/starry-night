@@ -1,5 +1,13 @@
 # Cypress Second Pass — Source-Locked Cladding Implementation Plan
 
+> **Implementation correction (2026-07-22):** v4 was implemented and mechanically green, but
+> failed Mark's original/live visual gate. Its Tasks 8–10 (one synthetic profile plus decorative
+> tendrils and 2,200 visible ribbons) are superseded by the compound repair in
+> `src/scene/cypressLobes.ts`, `cypressLobeGeometry.ts`, `cypressLobeStrokes.ts` and
+> `BrushCypress.tsx`. Persistent source runs now own three closed lobes; source paint is projected
+> onto their skin at the crop's real pixel aspect; only 48 front and nine back relief accents
+> remain. The historical plan below is retained as the decision trail, not current runtime truth.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Rebuild the cypress's surface so it reads as Van Gogh's flame — long strokes following the painting's own orientation field, coloured from the painting's own pixels — instead of near-black procedural fur.

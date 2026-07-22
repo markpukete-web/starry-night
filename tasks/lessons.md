@@ -1722,6 +1722,37 @@ what kept going wrong, because the pattern is more useful than the individual bu
   this pass, so the check compares masked regional Lab distributions, not corresponding pixels.
   Mean ΔE76 was 0.89 base, 0.66 middle and 2.13 top, all below the locked tolerance of 10. That is
   useful evidence that global attenuation is gone, but it is not a per-pixel colour-fidelity claim.
-- **Final mechanical state:** 97 tests pass; lint and production build pass; reduced-motion frames
-  are byte-identical while the normal-motion control churns. Mechanical closure hands the work to
-  Mark's eye; it does not close the painterly gate on his behalf.
+- **Mechanical state of this now-rejected implementation:** 97 tests passed; lint, production
+  build and reduced-motion passed. Mark's source comparison then rejected the result. Mechanical
+  closure only hands work to the visual gate; it cannot close the painterly gate on its behalf.
+
+## Cypress compound correction — the original/live gate overruled a mechanically green pass (2026-07-22)
+
+- **Do not present authored visual work without looking at it beside the source.** The first
+  implementation passed its flat metric, tests, colour distribution and timing gate, yet Mark's
+  immediate source comparison correctly rejected it as a black furry spear. Mechanical closure
+  only earns entry to the visual gate; it is not visual evidence.
+- **A source mask can contain the missing topology even when the runtime throws it away.** The
+  baked satellite runs retained two persistent, rim-adjacent paint tracks. The upper-third-only
+  tendril filter demoted them to decoration around one synthetic solid. Tracking them across rows,
+  rejecting runs beyond three primary-rim half-widths and compiling the survivors as their own
+  closed lobes recovered one main flame plus two real side flames. The flat lobe gate also caught
+  distant dark sky strokes before they became absurd branches.
+- **Preserve pixel aspect explicitly.** `sourceToWorld` was still inherited from a viewport-scale
+  constant: the 176×662 crop rendered at width:height 0.187 instead of 0.266, squeezing every
+  source lobe about 30% into a gothic needle. The correct mapping is simply
+  `HEIGHT * cropWidth / cropHeight`; a source-derived silhouette with the wrong aspect is not a
+  source-faithful silhouette.
+- **When the painting is already the asset, project it instead of rebuilding its statistics.**
+  Thousands of procedural ribbons repeatedly produced fur, tiles, bark and finally evenly spaced
+  waves. Giving the closed lobe skin source UVs restored the actual green/umber/sienna field and
+  its irregular vertical strokes in one step. Geometry and paint domains stay separate so a broad
+  flame envelope can stretch detected pigment without sampling adjacent blue sky.
+- **Relief should support the painting, not redraw it.** Even 240 long accents visibly regularised
+  the source texture. Forty-eight front and nine mirrored back accents retain shallow impasto and
+  orbit depth without becoming the dominant mark system. The resulting cypress totals 2,210 solid
+  vertices / 3,936 triangles plus 4,902 relief vertices / 4,788 triangles.
+- **Current evidence, still Mark-gated:** displayed regional mean ΔE76 is 0.91 / 1.98 / 2.05
+  (base/middle/top); the desktop final pipeline is 8.33 ms mean, 9.0 ms p95 over 599 intervals;
+  nine runtime captures report zero errors; 96 tests, lint, build and reduced-motion pass. The
+  matched source/live crop is `output/playwright/cypress-compound-final-2026-07-22/original-vs-live.png`.

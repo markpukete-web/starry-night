@@ -4,6 +4,12 @@ Status: DESIGN APPROVED (Mark, 2026-07-21, live). Written after Mark read the pi
 cypress had room for improvement. This is the "second painterly refinement pass" the old README
 promised and never scheduled.
 
+Implementation note (2026-07-22): the first runtime interpretation of this design failed the
+original/live gate despite passing its mechanical checks. The thesis survives; the mechanism was
+corrected from one synthetic solid with decorative tendrils to three source-derived closed lobes
+with source-projected paint. `tasks/lessons.md` records the failure and correction. Mark's final
+visual gate remains open.
+
 ## The thesis
 
 The cypress is an identity object — after the sky it is what says *Starry Night* — and it is
