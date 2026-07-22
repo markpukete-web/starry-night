@@ -1826,3 +1826,21 @@ defect remaining." Mark's answer was *"those findings are minor"* — gate passe
 - **Keep the residue findable, not open.** They live in
   `tasks/2026-07-22-cypress-review-findings.md` with the eliminated hypothesis recorded, so if the
   contrast ever does start to matter nobody re-runs the mip-filtering test. Recorded ≠ outstanding.
+
+## Authored middle-ground night balance — lift midtones without lifting black floor (2026-07-22)
+
+- **Middle-ground target sits perceptually between bloomed wash and dark no-bloom.** The old bloomed render (`cypress-compound-final-2026-07-22`) was washed out with an elevated black floor (luminance 65.47), while the initial no-bloom render (`night-balance-authored-2026-07-22`) was judged too dark. Mark's decision set the target roughly one-third of the perceptual distance from current back toward the old bloomed version.
+- **Diagnosis of authored controls that lift midtones while preserving shadows:**
+  - Sky wash multiplier `vec3(0.67, 0.79, 1.0)` and alpha `0.68` (in `washFrag`) + ribbon brightness `(0.52 + 0.40 * combinedFlow)` and `uOpacity` multiplier `1.46` (in `ribbonFrag`) + sky gradient scalar `0.64`/`0.74` lift sky midtones by ~8.5-11.2%.
+  - Foreground material base values (village `HOUSE` 1.28, `ROOF` 1.32, `CHURCH` 1.65, `litColor lo = 0.44`, wall/roof cladding kicks) + island top (`topBase` 1.88, `hillDark` `#284260`, `hillMid` `#477594`, `hillLit` 2.72, top strokes `0.71 + 0.62 * rng()`) improve midtone separation by ~8-9%.
+  - Island underside root base (`0.70`), `rockLit` (`1.38`), and root strokes (`0.72 + 0.7 * rng()`) prevent the underside from feeling crushed (Lum 55.06 vs 50.85) while keeping a near-black base (keel abyss 0.07).
+  - Authored additive moon/star halos strengthened (moon scale 4.25 / opacity 0.68, star scale 1.48 / opacity 0.74) so halos radiate into the cobalt sky.
+  - Deep cobalt background floor is completely preserved (Lum 14.52 vs 14.49, vs old bloom 65.47). Cypress green/umber/sienna color and topology preserved (regional Lab ΔE means: base 0.92, middle 0.77, top 3.17, all < 10).
+- **Candidate evaluation:**
+  - Candidate 1 (Conservative): +5-8% lift (Sky Lum 67.38, Village 82.42, Island Top 70.65, Underside 52.86). Proved too subtle to reach the perceptual 1/3 target.
+  - Candidate 2 (Moderate/Recommended — CHOSEN): +8-11% lift (Sky Lum 73.53, Village 87.51, Island Top 74.96, Underside 55.06). Reached Mark's visual gate.
+- **Evidence & Performance:**
+  - Main captures: `output/playwright/night-balance-middle-2026-07-22/`
+  - Perf report (`output/playwright/night-balance-middle-perf-2026-07-22/perf-summary.json`): desktop final p95 9.1 ms (mean 8.33 ms over 599 frames), desktop no-post p95 8.8 ms, mobile viewport p95 9.1 ms; 0 errors.
+  - Verification: 96 tests pass (`npm run test:sky`), `npm run lint` clean, `npm run build` green, `npm run check:reduced` PASS (bytes identical), `check-cypress-colour` passed (base 0.92, middle 0.77, top 3.17).
+

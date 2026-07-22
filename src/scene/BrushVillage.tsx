@@ -17,17 +17,17 @@ import { type BrushArrays, makeBrushArrays, moonShade, pushBrush } from './brush
 type Arr = { positions: number[]; colors: number[]; indices: number[] }
 const newArr = (): Arr => ({ positions: [], colors: [], indices: [] })
 
-const HOUSE = new Color(PALETTE.house).multiplyScalar(1.15) // dark blue-violet walls
-const ROOF = new Color(PALETTE.roof).multiplyScalar(1.2)
-const CHURCH = new Color(PALETTE.steeple).multiplyScalar(1.5).lerp(new Color('#ffffff'), 0.16) // pale focal
-const SPIRE = new Color(PALETTE.steeple).multiplyScalar(1.9).lerp(new Color('#ffffff'), 0.28)
+const HOUSE = new Color(PALETTE.house).multiplyScalar(1.28) // dark blue-violet walls
+const ROOF = new Color(PALETTE.roof).multiplyScalar(1.32)
+const CHURCH = new Color(PALETTE.steeple).multiplyScalar(1.65).lerp(new Color('#ffffff'), 0.18) // pale focal
+const SPIRE = new Color(PALETTE.steeple).multiplyScalar(2.05).lerp(new Color('#ffffff'), 0.30)
 const WINDOW = new Color('#f6c651')
 
 const _n = new Vector3()
 const _u = new Vector3()
 const _v = new Vector3()
 
-function litColor(base: Color, normal: Vector3, lo = 0.4): Color {
+function litColor(base: Color, normal: Vector3, lo = 0.44): Color {
   return base.clone().multiplyScalar(lo + (1 - lo) * moonShade(normal))
 }
 
@@ -136,10 +136,10 @@ function pushHouse(
   pushQuad(arr, bbl, fbl, ftl, btl, HOUSE) // left
   pushQuad(arr, fbr, bbr, btr, ftr, HOUSE) // right
   // walls want harder value contrast + occasional pale flecks or they stay flat CAD blue
-  cladQuad(brush, rng, fbl, fbr, ftr, ftl, HOUSE, 0.58, 0.8, 'ab', 0.12)
-  cladQuad(brush, rng, bbr, bbl, btl, btr, HOUSE, 0.58, 0.8, 'ab', 0.12)
-  cladQuad(brush, rng, bbl, fbl, ftl, btl, HOUSE, 0.58, 0.8, 'ab', 0.12)
-  cladQuad(brush, rng, fbr, bbr, btr, ftr, HOUSE, 0.58, 0.8, 'ab', 0.12)
+  cladQuad(brush, rng, fbl, fbr, ftr, ftl, HOUSE, 0.65, 0.8, 'ab', 0.12)
+  cladQuad(brush, rng, bbr, bbl, btl, btr, HOUSE, 0.65, 0.8, 'ab', 0.12)
+  cladQuad(brush, rng, bbl, fbl, ftl, btl, HOUSE, 0.65, 0.8, 'ab', 0.12)
+  cladQuad(brush, rng, fbr, bbr, btr, ftr, HOUSE, 0.65, 0.8, 'ab', 0.12)
   // gable roof: ridge along the depth axis
   const rf = corner(0, 1, ridge)
   const rb = corner(0, -1, ridge)
@@ -150,7 +150,7 @@ function pushHouse(
   cladQuad(brush, rng, ftl, ftr, rf, rf, ROOF)
   cladQuad(brush, rng, btr, btl, rb, rb, ROOF)
   cladQuad(brush, rng, ftl, rf, rb, btl, ROOF) // strokes run up the pitch
-  cladQuad(brush, rng, ftr, btr, rb, rf, ROOF, 0.72, 0.52, 'ad') // up the pitch (the a→d edge here)
+  cladQuad(brush, rng, ftr, btr, rb, rf, ROOF, 0.76, 0.54, 'ad') // up the pitch (the a→d edge here)
 }
 
 /** The church: a taller pale nave + a slender tall spire — the focal vertical. */

@@ -38,12 +38,12 @@ export function BrushIsland() {
   const geometries = useMemo(() => {
     const earth = new Color(PALETTE.hills)
     const abyss = earth.clone().multiplyScalar(0.07) // root dissolving into night
-    const rootBase = earth.clone().multiplyScalar(0.62) // darker under-shell so stroke gaps read as shadow
-    const topBase = new Color(PALETTE.hills).multiplyScalar(1.7) // mid base under the strokes — not black
+    const rootBase = earth.clone().multiplyScalar(0.70) // darker under-shell so stroke gaps read as shadow
+    const topBase = new Color(PALETTE.hills).multiplyScalar(1.88) // mid base under the strokes — not black
     // Van Gogh hill palette pushed to contrast: deep trough blue, lit blue-grey crest, teal mid
-    const hillDark = new Color('#233a55')
-    const hillMid = new Color('#3f6a86')
-    const hillLit = new Color(PALETTE.hillsCrest).multiplyScalar(2.5)
+    const hillDark = new Color('#284260')
+    const hillMid = new Color('#477594')
+    const hillLit = new Color(PALETTE.hillsCrest).multiplyScalar(2.72)
 
     // --- closed rooted solid (dark base) ---
     const rows = RT + RS + 1
@@ -148,7 +148,7 @@ export function BrushIsland() {
       // and sparkled in the look-down — Mark's 2026-07-14 gate feedback). Sparse, gentler crest
       // flecks — 10% was confetti; and flecks belong to MOONLIT faces, not shadowed ground,
       // where they read as white scratches.
-      const val = 0.65 + 0.62 * rng()
+      const val = 0.71 + 0.62 * rng()
       strokeCol.multiplyScalar(val)
       if (rng() < 0.045 * (0.25 + 0.75 * lit)) strokeCol.lerp(hillLit, 0.32) // moonlit impasto fleck
 
@@ -166,7 +166,7 @@ export function BrushIsland() {
     // Root marks are therefore SHORT and BROAD, hugging the surface, starting below the rim.
     const alongRing = new Vector3()
     const downRoot = new Vector3()
-    const rockLit = earth.clone().multiplyScalar(1.25)
+    const rockLit = earth.clone().multiplyScalar(1.38)
     for (let s = 0; s < ROOT_STROKES; s++) {
       const ang = rng() * Math.PI * 2
       const k = 0.07 + Math.pow(rng(), 1.35) * 0.75 // below the rim; never the keel pinch
@@ -181,7 +181,7 @@ export function BrushIsland() {
 
       // painted rock near the rim melting to night by mid-root — the strokes carry the light
       strokeCol.copy(rockLit).lerp(abyss, smooth(0.12, 0.75, k))
-      strokeCol.multiplyScalar(0.65 + 0.7 * rng()) // the per-stroke value kick — the brushwork read
+      strokeCol.multiplyScalar(0.72 + 0.7 * rng()) // the per-stroke value kick — the brushwork read
       if (k < 0.3 && rng() < 0.05) strokeCol.lerp(hillLit, 0.3 * (0.3 + 0.7 * moonShade(nrm))) // rim-only moon flecks
 
       p.addScaledVector(nrm, 0.012)

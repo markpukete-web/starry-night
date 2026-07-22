@@ -95,7 +95,7 @@ const ribbonFrag = /* glsl */ `
       col = mix(vec3(0.08, 0.22, 0.58), vec3(0.95, 0.78, 0.28), vLen);
     } else {
       float ridge = 0.82 + 0.36 * edge;
-      col *= (0.46 + 0.38 * combinedFlow) * ridge * bristle;
+      col *= (0.52 + 0.40 * combinedFlow) * ridge * bristle;
       float lum = dot(col, vec3(0.299, 0.587, 0.114));
       col = clamp(mix(vec3(lum), col, 1.45), 0.0, 1.05);
     }
@@ -168,8 +168,8 @@ const washFrag = /* glsl */ `
       gl_FragColor = vec4(col, a * 0.5);
       return;
     }
-    col *= vec3(0.6, 0.72, 0.95);
-    gl_FragColor = vec4(col, a * 0.62);
+    col *= vec3(0.67, 0.79, 1.0);
+    gl_FragColor = vec4(col, a * 0.68);
   }
 `
 
@@ -348,12 +348,12 @@ function SourceOrbs({ debug }: { debug: PaintingFlowSkyDebug }) {
   return (
     <group>
       <group position={moonPosition}>
-        <sprite scale={[3.85, 3.85, 1]} renderOrder={3}>
+        <sprite scale={[4.25, 4.25, 1]} renderOrder={3}>
           <spriteMaterial
             map={moonHalo}
             blending={AdditiveBlending}
             transparent
-            opacity={debug === 'flow' ? 0.72 : 0.55}
+            opacity={debug === 'flow' ? 0.72 : 0.68}
             depthWrite={false}
             toneMapped={false}
           />
@@ -365,12 +365,12 @@ function SourceOrbs({ debug }: { debug: PaintingFlowSkyDebug }) {
       <pointLight position={moonPosition} intensity={debug === 'flow' ? 12 : 18} distance={24} color="#f0d98a" />
       {stars.map((star, index) => (
         <group key={index} position={star.position}>
-          <sprite scale={[star.scale * 1.35, star.scale * 1.35, 1]} renderOrder={3}>
+          <sprite scale={[star.scale * 1.48, star.scale * 1.48, 1]} renderOrder={3}>
             <spriteMaterial
               map={starHalo}
               blending={AdditiveBlending}
               transparent
-              opacity={debug === 'flow' ? 0.72 : 0.62}
+              opacity={debug === 'flow' ? 0.72 : 0.74}
               depthWrite={false}
               toneMapped={false}
             />

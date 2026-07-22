@@ -221,7 +221,7 @@ stop and ask about (CLAUDE.md "Stop and ask Mark when"). `Claude` items are mech
 
 | # | Item | Owner | State |
 |---|------|-------|-------|
-| 1 | ~~Lighting/bloom balance~~ | Mark | ✅ **PASSED 2026-07-22** — full-frame Bloom removed from the diorama; authored moon/star halos carry the glow. `debug=final` and `debug=nopost` intentionally converge |
+| 1 | **Lighting/bloom balance** — middle-ground authored lighting pass implemented (sky & foreground midtones lifted 8–11%, halos radiate, deep cobalt floor preserved) | Mark | AT MARK VISUAL GATE — local only, not pushed. Captures at `output/playwright/night-balance-middle-2026-07-22/` |
 | 2 | **Mobile portrait framing** — responsive fov keeps cypress edge + central whorl + steeple, but the MOON can't fit a portrait frame (≈42° off-centre on the arc); needs a portrait-specific camera bearing | Mark (composition) | open |
 | 3 | **Perf on real hardware** — locked criterion: 60 fps desktop, 30 fps mid-tier mobile. Headless cannot measure this; needs a real device pass. Includes confirming stroke budget + DPR caps (Tunables) hold up | Mark to run, Claude to retune | open |
 | 4 | **Deploy mechanics** — Vercel prod, Deployment Protection, `starrynight.markma.dev` DNS (Cloudflare CNAME, grey-cloud). CLAUDE.md: anything touching deploy/DNS/analytics is stop-and-ask | Mark | open |

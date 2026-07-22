@@ -102,7 +102,7 @@ export function BrushShrubs() {
           .copy(dark)
           .lerp(rng() < 0.4 ? coolGreen : green, tongue * (0.3 + 0.7 * exposure))
           .multiplyScalar(0.85 + 0.9 * exposure * (0.45 + 0.55 * moonShade(nrm)))
-        strokeCol.multiplyScalar(0.6 + 0.7 * rng()) // the per-stroke value kick — the brushwork read
+        strokeCol.multiplyScalar(0.66 + 0.7 * rng()) // the per-stroke value kick — the brushwork read
         if (exposure > 0.55 && rng() < 0.05) strokeCol.lerp(litRim, 0.3) // sparse cool crown flecks
 
         const halfLen = (0.3 + 0.22 * rng()) * r
