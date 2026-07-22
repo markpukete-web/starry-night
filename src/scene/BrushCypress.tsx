@@ -5,196 +5,277 @@ import {
   Color,
   DoubleSide,
   MeshBasicMaterial,
+  SRGBColorSpace,
   Vector3,
 } from 'three'
-import { useImageData } from './useImageData'
-import { extractCypressSlices } from './paintingRegions'
-import { mulberry32 } from './brush.ts'
+
+import rowTableJson from '../../public/reference/cypress-rows.json'
+import { makeBrushArrays, moonShade, pushBrushRibbon } from './brushForms'
+import {
+  cypressViewBearing,
+  paintingUToAngle,
+  paintingUV,
+  type RowTable,
+} from './cypressMapping'
+import { composedRadius, CYPRESS_LUM_MAX, makeCypressProfile, tongue } from './cypressProfile'
+import {
+  buildTendrilTracks,
+  CYPRESS_STROKE_CONFIG,
+  generateCypressStrokes,
+  sampleCypressImage,
+} from './cypressStrokes'
+import { DIORAMA_CAMERAS } from './dioramaContract'
 import { PALETTE } from './palette'
-import { makeBrushArrays, moonShade, pushBrush, smooth, vnoise } from './brushForms'
+import { extractCypressSlices } from './paintingRegions'
+import { useImageData } from './useImageData'
 
 /**
- * The cypress — Van Gogh's dark flame, as an authored 3D volume. Its silhouette is the painting's
- * own (extractCypressSlices), displaced into licking tongues; it is a real closed solid so it
- * survives any orbit; and its surface is CLAD in vertical licking brushstrokes coloured from the
- * palette cypress greens, lit on the moon side. The dark solid underneath means gaps between
- * strokes read as deep-shadow cypress, never sky-void. Van Gogh brushwork given three dimensions.
+ * The cypress remains a closed orbit-safe solid, but its visible identity now comes from long
+ * source-locked ribbons. The solid is dark underpaint only; colour, stroke path and rim wisps come
+ * from the painting-derived skin, field and detached runs.
  */
 
 const HEIGHT = 2.7
-const WIDTH_SCALE = 4.6 // painting halfWidth (UV) → world radius
-const SEG = 72 // fine enough that the tongue curve stays a curve — 34 facets read as saw-teeth
-const STROKES = 3600
-const BASE = new Vector3(-1.5, 0.02, 0.72) // stands front-left, on the island
+const SEGMENTS = 72
+const BASE = new Vector3(-1.5, 0.02, 0.72)
+const MOON_LIFT = 0.14
+const RIBBON_HALF_WIDTH = 0.012
+const RIBBON_TAPER = 0.45
 
-// palette cypress family: the painting's cypress is near-black green — dark dominates, with only
-// sparse olive/emerald tongues and a faint moonlit rim (never khaki-pale overall)
-const CORE = new Color(PALETTE.cypress).multiplyScalar(0.68)
-const GREEN = new Color(PALETTE.cypressGreen).multiplyScalar(0.95)
-const OLIVE = new Color('#57632f')
-const LIT = new Color(PALETTE.hillsCrest).multiplyScalar(1.25)
+const UNDER_CORE = new Color(PALETTE.cypress).multiplyScalar(0.68)
+const UNDER_GREEN = new Color(PALETTE.cypressGreen).multiplyScalar(0.95)
 
-/**
- * Licking-tongue displacement of the flame radius: coherent angular noise drifting up the height.
- * Low frequencies on purpose — a few TALL tongues leaning upward read as Van Gogh's licking flame;
- * higher frequencies stack into horizontal lumps and the tree turns shaggy-shrub.
- */
-function tongue(a: number, hf: number): number {
-  const ridge = vnoise(Math.cos(a) * 1.7 + 10, Math.sin(a) * 1.7 + hf * 3.4 + 4)
-  const fine = vnoise(Math.cos(a) * 4 + 2, Math.sin(a) * 4 + hf * 6 + 7)
-  let bump = (ridge - 0.5) * 1.0 + (fine - 0.5) * 0.1
-  // sharpen outward licks a little, shallow troughs — 1.7 made the silhouette spike into
-  // saw-teeth (Mark's 2026-07-14 gate feedback: the spiky edge); the tongues stay tall from
-  // the low-frequency ridge, they just crest rounder now
-  bump = bump > 0 ? bump * 1.35 : bump * 0.45
-  return bump
+const rowTable = rowTableJson as unknown as RowTable & {
+  satellites: { y: number; x0: number; x1: number }[]
 }
 
 export function BrushCypress() {
   const paintingData = useImageData('/reference/painting.jpg')
+  const skinData = useImageData('/reference/cypress-skin.webp')
+  const flowData = useImageData('/reference/cypress-flow.png')
 
   const geometries = useMemo(() => {
-    if (!paintingData) return null
-    const slicesTopDown = extractCypressSlices(paintingData, { lumMax: 90 })
-    if (slicesTopDown.length < 6) return null
-    const prof = [...slicesTopDown].reverse() // base (widest, bottom) → tip
-    const n = prof.length
+    if (!paintingData || !skinData || !flowData) return null
+    const slices = extractCypressSlices(paintingData, { lumMax: CYPRESS_LUM_MAX })
+    if (slices.length < 6) return null
+    const profile = makeCypressProfile(
+      [...slices]
+        .reverse()
+        .map((slice) => slice.halfWidth),
+    )
+    const rings = profile.slices.length
+    const swayX = (heightFraction: number) =>
+      Math.sin(heightFraction * Math.PI * 0.85) * 0.16 + heightFraction * 0.07
+    const swayZ = (heightFraction: number) =>
+      Math.sin(heightFraction * Math.PI * 1.25 + 1) * 0.06
 
-    const radiusAt = (i: number) => {
-      const hf = i / (n - 1)
-      const taper = 1 - smooth(0.84, 1, hf) * 0.82
-      return Math.max(0.02, prof[i].halfWidth * WIDTH_SCALE * taper)
-    }
-    const swayX = (hf: number) => Math.sin(hf * Math.PI * 0.85) * 0.16 + hf * 0.07
-    const swayZ = (hf: number) => Math.sin(hf * Math.PI * 1.25 + 1) * 0.06
-    const sampleR = (hf: number) => {
-      const f = Math.min(n - 1, Math.max(0, hf * (n - 1)))
-      const i0 = Math.floor(f)
-      const t = f - i0
-      return radiusAt(i0) * (1 - t) + radiusAt(Math.min(n - 1, i0 + 1)) * t
-    }
-
-    // --- solid flame with a licking silhouette (dark underpaint) ---
-    const sPos: number[] = []
-    const sCol: number[] = []
-    const sIdx: number[] = []
-    const cols = SEG + 1
-    const cc = new Color()
-    const nrm = new Vector3()
-    for (let i = 0; i < n; i++) {
-      const hf = i / (n - 1)
-      const base = radiusAt(i)
-      const cx = swayX(hf)
-      const cz = swayZ(hf)
-      const y = hf * HEIGHT
-      const tipTaper = 0.35 + 0.65 * (1 - smooth(0.6, 1, hf))
-      for (let j = 0; j <= SEG; j++) {
-        const a = (j / SEG) * Math.PI * 2
-        const r = Math.max(0.015, base * (1 + tongue(a, hf) * 0.5 * tipTaper))
-        sPos.push(cx + Math.cos(a) * r, y, cz + Math.sin(a) * r)
-        nrm.set(Math.cos(a), 0.15, Math.sin(a)).normalize()
-        cc.copy(CORE).lerp(GREEN, 0.2 + 0.3 * moonShade(nrm))
-        sCol.push(cc.r, cc.g, cc.b)
+    // Closed solid underpaint. Its radius law is the same shared function the ablation measures.
+    const solidPositions: number[] = []
+    const solidColours: number[] = []
+    const solidIndices: number[] = []
+    const columns = SEGMENTS + 1
+    const colour = new Color()
+    const normal = new Vector3()
+    for (let ring = 0; ring < rings; ring++) {
+      const heightFraction = ring / (rings - 1)
+      const centreX = swayX(heightFraction)
+      const centreZ = swayZ(heightFraction)
+      for (let segment = 0; segment <= SEGMENTS; segment++) {
+        const angle = (segment / SEGMENTS) * Math.PI * 2
+        const radius = composedRadius(heightFraction, angle, profile)
+        solidPositions.push(
+          centreX + Math.cos(angle) * radius,
+          heightFraction * HEIGHT,
+          centreZ + Math.sin(angle) * radius,
+        )
+        normal.set(Math.cos(angle), 0.15, Math.sin(angle)).normalize()
+        colour.copy(UNDER_CORE).lerp(UNDER_GREEN, 0.2 + 0.3 * moonShade(normal))
+        solidColours.push(colour.r, colour.g, colour.b)
       }
     }
-    for (let i = 0; i < n - 1; i++) {
-      for (let j = 0; j < SEG; j++) {
-        const a = i * cols + j
+    for (let ring = 0; ring < rings - 1; ring++) {
+      for (let segment = 0; segment < SEGMENTS; segment++) {
+        const a = ring * columns + segment
         const b = a + 1
-        const c = a + cols
+        const c = a + columns
         const d = c + 1
-        sIdx.push(a, c, b, b, c, d)
+        solidIndices.push(a, c, b, b, c, d)
       }
     }
-    const baseCentre = sPos.length / 3
-    sPos.push(swayX(0), 0, swayZ(0))
-    cc.copy(CORE).multiplyScalar(0.7)
-    sCol.push(cc.r, cc.g, cc.b)
-    for (let j = 0; j < SEG; j++) sIdx.push(baseCentre, j + 1, j)
+    const baseCentre = solidPositions.length / 3
+    solidPositions.push(swayX(0), 0, swayZ(0))
+    colour.copy(UNDER_CORE).multiplyScalar(0.7)
+    solidColours.push(colour.r, colour.g, colour.b)
+    for (let segment = 0; segment < SEGMENTS; segment++) {
+      solidIndices.push(baseCentre, segment + 1, segment)
+    }
 
     const solid = new BufferGeometry()
-    solid.setAttribute('position', new BufferAttribute(new Float32Array(sPos), 3))
-    solid.setAttribute('color', new BufferAttribute(new Float32Array(sCol), 3))
-    solid.setIndex(sIdx)
+    solid.setAttribute(
+      'position',
+      new BufferAttribute(new Float32Array(solidPositions), 3),
+    )
+    solid.setAttribute('color', new BufferAttribute(new Float32Array(solidColours), 3))
+    solid.setIndex(solidIndices)
     solid.computeVertexNormals()
     solid.computeBoundingSphere()
 
-    // --- brushstroke cladding: vertical licking strokes, sticking out along the tongues ---
-    const rng = mulberry32(0x0cabba9e)
-    const arr = makeBrushArrays()
-    const p = new Vector3()
-    const flow = new Vector3()
-    const radial = new Vector3()
-    const swirl = new Vector3()
-    const strokeCol = new Color()
-    for (let s = 0; s < STROKES; s++) {
-      const hf = Math.pow(rng(), 0.78) // slight bias toward the fuller base
-      const a = rng() * Math.PI * 2
-      const bump = tongue(a, hf)
-      const tipTaper = 0.35 + 0.65 * (1 - smooth(0.6, 1, hf))
-      const r = Math.max(0.015, sampleR(hf) * (1 + bump * 0.5 * tipTaper))
-      const stickOut = 0.012 + Math.max(0, bump) * 0.026 * tipTaper // licks reach past the surface
-      radial.set(Math.cos(a), 0, Math.sin(a))
-      const px = swayX(hf) + Math.cos(a) * r
-      const pz = swayZ(hf) + Math.sin(a) * r
-      const py = hf * HEIGHT
-      nrm.set(Math.cos(a), 0.12, Math.sin(a)).normalize()
+    // Complete source-mapped front pass plus an explicit sparser mirrored back continuation.
+    const arrays = makeBrushArrays()
+    const bearing = cypressViewBearing(DIORAMA_CAMERAS.design.position, [BASE.x, BASE.y, BASE.z])
+    const front = generateCypressStrokes({
+      skin: skinData,
+      flow: flowData,
+      rows: rowTable,
+      count: CYPRESS_STROKE_CONFIG.frontCount,
+      steps: CYPRESS_STROKE_CONFIG.steps,
+      lengthFraction: CYPRESS_STROKE_CONFIG.lengthFraction,
+      reliefSpread: CYPRESS_STROKE_CONFIG.reliefSpread,
+      seed: 0x0cabba9e,
+    })
+    const back = generateCypressStrokes({
+      skin: skinData,
+      flow: flowData,
+      rows: rowTable,
+      count: Math.round(
+        CYPRESS_STROKE_CONFIG.frontCount * CYPRESS_STROKE_CONFIG.backDensity,
+      ),
+      steps: CYPRESS_STROKE_CONFIG.steps,
+      lengthFraction: CYPRESS_STROKE_CONFIG.lengthFraction,
+      reliefSpread: CYPRESS_STROKE_CONFIG.reliefSpread,
+      seed: 0x5eed1e55,
+    })
+    const strokeColour = new Color()
+    for (const [frontFacing, strokes] of [
+      [true, front],
+      [false, back],
+    ] as const) {
+      for (const stroke of strokes) {
+        const points: Vector3[] = []
+        const normals: Vector3[] = []
+        const colours: Color[] = []
+        for (const sample of stroke.samples) {
+          const heightFraction = sample.heightFraction
+          const angle = paintingUToAngle(sample.u, bearing, frontFacing)
+          const radius = composedRadius(heightFraction, angle, profile)
+          const displacement = tongue(angle, heightFraction)
+          normal.set(Math.cos(angle), 0.12, Math.sin(angle)).normalize()
+          const lift = 0.01 + Math.max(0, displacement) * 0.015
+          points.push(
+            new Vector3(
+              swayX(heightFraction) + Math.cos(angle) * radius + normal.x * lift,
+              heightFraction * HEIGHT,
+              swayZ(heightFraction) + Math.sin(angle) * radius + normal.z * lift,
+            ),
+          )
+          normals.push(normal.clone())
 
-      // licking flow: up, plus a tangential swirl (twist) and outward reach — kept close to
-      // vertical so the marks read as tall licks, not radial bristles
-      swirl.set(-Math.sin(a), 0, Math.cos(a))
-      const twist = (vnoise(Math.cos(a) * 2.4, Math.sin(a) * 2.4 + hf * 5) - 0.5) * 1.1
-      flow
-        .set(0, 1, 0)
-        .addScaledVector(swirl, twist * 0.4)
-        .addScaledVector(radial, 0.08 + Math.max(0, bump) * 0.22)
+          // ImageData is sRGB; Three's working colour is linear. Relief is constant along a
+          // stroke, and moon response only lifts—it no longer supplies the tree's value structure.
+          strokeColour.setRGB(sample.r, sample.g, sample.b, SRGBColorSpace)
+          strokeColour.multiplyScalar(stroke.relief * (1 + MOON_LIFT * moonShade(normal)))
+          colours.push(strokeColour.clone())
+        }
+        if (points.length >= 3) {
+          pushBrushRibbon(
+            arrays,
+            points,
+            normals,
+            colours,
+            RIBBON_HALF_WIDTH,
+            RIBBON_TAPER,
+          )
+        }
+      }
+    }
 
-      // per-stroke jitter on the tongue exposure — without it the low-frequency tongues pool
-      // pale strokes into large grey bands instead of scattering them through the dark mass
-      const exposure = smooth(-0.1, 0.45, bump) * (0.4 + 0.6 * rng())
-      const lit = moonShade(nrm)
-      const shadeNoise = 0.66 + 0.5 * rng() // strong per-stroke value contrast — the Van Gogh read
-      strokeCol
-        .copy(CORE)
-        .lerp(GREEN, smooth(0.3, 0.95, exposure) * 0.55)
-        .lerp(OLIVE, smooth(0.65, 1, exposure) * 0.2)
-        .lerp(LIT, lit * smooth(0.55, 1, exposure) * (0.1 + 0.2 * hf))
-        .multiplyScalar(shadeNoise)
-
-      p.set(px, py, pz).addScaledVector(nrm, stickOut)
-      const halfLen = 0.085 + 0.05 * rng() + 0.015 * (1 - hf) // long slim licks, not stubby dabs
-      // broader on tongue crests: the marks that DEFINE the silhouette need body (the underside
-      // lesson — pointed slim tips at a silhouette read as thorns, broad marks read as paint)
-      const halfWid = 0.015 + 0.01 * rng() + 0.012 * Math.max(0, bump)
-      pushBrush(arr, p, flow, nrm, halfLen, halfWid, strokeCol)
+    // Detached source runs become only a few coherent top-third tracks. Each starts on the mesh,
+    // eases outward, and narrows at its far tip: a broken painted rim, never a uniform fur fringe.
+    const tendrils = buildTendrilTracks(rowTable.satellites, {
+      minRows: 12,
+      maxTracks: 6,
+      crop: { width: skinData.width, height: skinData.height },
+      rows: rowTable,
+    }).filter(
+      (track) =>
+        track.points.reduce((sum, point) => sum + point.heightFraction, 0) /
+          track.points.length >
+        0.66,
+    )
+    for (const track of tendrils) {
+      const rimAngle =
+        track.side === 'right' ? bearing - Math.PI / 2 : bearing + Math.PI / 2
+      const points: Vector3[] = []
+      const normals: Vector3[] = []
+      const colours: Color[] = []
+      for (let index = 0; index < track.points.length; index++) {
+        const point = track.points[index]
+        const heightFraction = point.heightFraction
+        const solidRadius = composedRadius(heightFraction, rimAngle, profile)
+        const along = index / Math.max(1, track.points.length - 1)
+        const rootToTip = Math.min(1, along / 0.35)
+        const eased = rootToTip * rootToTip * (3 - 2 * rootToTip)
+        const overshoot = Math.min(0.09, 0.04 + point.rimDistance * 0.05)
+        const radius = solidRadius + eased * overshoot
+        normal.set(Math.cos(rimAngle), 0.12, Math.sin(rimAngle)).normalize()
+        points.push(
+          new Vector3(
+            swayX(heightFraction) + Math.cos(rimAngle) * radius,
+            heightFraction * HEIGHT,
+            swayZ(heightFraction) + Math.sin(rimAngle) * radius,
+          ),
+        )
+        normals.push(normal.clone())
+        const source = paintingUV(track.side === 'left' ? 0.04 : 0.96, heightFraction, rowTable)
+        const texel = sampleCypressImage(skinData, source.px, source.py)
+        strokeColour.setRGB(texel.r / 255, texel.g / 255, texel.b / 255, SRGBColorSpace)
+        strokeColour.multiplyScalar(1 + MOON_LIFT * moonShade(normal))
+        colours.push(strokeColour.clone())
+      }
+      if (points.length >= 4) {
+        pushBrushRibbon(arrays, points, normals, colours, 0.009, 0.12)
+      }
     }
 
     const strokes = new BufferGeometry()
-    strokes.setAttribute('position', new BufferAttribute(new Float32Array(arr.positions), 3))
-    strokes.setAttribute('color', new BufferAttribute(new Float32Array(arr.colors), 3))
-    strokes.setIndex(arr.indices)
+    strokes.setAttribute(
+      'position',
+      new BufferAttribute(new Float32Array(arrays.positions), 3),
+    )
+    strokes.setAttribute('color', new BufferAttribute(new Float32Array(arrays.colors), 3))
+    strokes.setIndex(arrays.indices)
     strokes.computeVertexNormals()
     strokes.computeBoundingSphere()
+    strokes.userData = {
+      frontStrokes: front.length,
+      backStrokes: back.length,
+      tendrils: tendrils.length,
+      vertices: arrays.positions.length / 3,
+      triangles: arrays.indices.length / 3,
+    }
 
     return { solid, strokes }
-  }, [paintingData])
+  }, [paintingData, skinData, flowData])
 
-  const solidMat = useMemo(() => new MeshBasicMaterial({ vertexColors: true, toneMapped: false }), [])
-  const strokeMat = useMemo(
+  const solidMaterial = useMemo(
+    () => new MeshBasicMaterial({ vertexColors: true, toneMapped: false }),
+    [],
+  )
+  const strokeMaterial = useMemo(
     () => new MeshBasicMaterial({ vertexColors: true, toneMapped: false, side: DoubleSide }),
     [],
   )
 
   useEffect(() => () => geometries?.solid.dispose(), [geometries])
   useEffect(() => () => geometries?.strokes.dispose(), [geometries])
-  useEffect(() => () => solidMat.dispose(), [solidMat])
-  useEffect(() => () => strokeMat.dispose(), [strokeMat])
+  useEffect(() => () => solidMaterial.dispose(), [solidMaterial])
+  useEffect(() => () => strokeMaterial.dispose(), [strokeMaterial])
 
   if (!geometries) return null
   return (
     <group position={BASE}>
-      <mesh geometry={geometries.solid} material={solidMat} renderOrder={2} />
-      <mesh geometry={geometries.strokes} material={strokeMat} renderOrder={3} />
+      <mesh geometry={geometries.solid} material={solidMaterial} renderOrder={2} />
+      <mesh geometry={geometries.strokes} material={strokeMaterial} renderOrder={3} />
     </group>
   )
 }
