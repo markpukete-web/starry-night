@@ -9,6 +9,47 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
+## ▶ WHERE WE ARE (2026-07-22, later) — village pass BUILT (S0–S5); ⏳ at Mark's visual gate
+
+**Checklist item 8 is implemented and verified; Mark gates on the captures.** The three gaps
+named in `tasks/2026-07-22-village-look.md` (Mark confirmed the list live) were closed in six
+slices after a two-round plan cross-review with Codex
+(`docs/superpowers/plans/2026-07-22-village-painterly-pass.md`, all round-1 findings
+dispositioned in the plan):
+
+- **S0** `deddf0a` — `villageWarm` palette region derived (0001's stars-style special case;
+  sienna stratified because median cut folds a low-population red family into umber at any
+  count). `--palette-only` flag guards the gate-passed image assets. `check:village` ΔE census.
+- **S1** — cloisonnist ink contours on every house/church edge (belfry band, spire edges);
+  p2 scaled segments by edge length (short edges dot-chained) and thinned the lines.
+- **S2** `1070259` — church held inside the nocturne band (spire ×2.05+white → ×1.05; delta
+  vs background now −4.3 against the painting's −0.37; the contours carry the separation).
+- **S3** — cladding 230→700/area IN QUANTISED COURSES (p1's uniform scatter dissolved the
+  silhouette into cypress-class fur); per-house palette-family interpolation incl. a
+  pale-walled minority (p3), echoing the painting's church-flanking white houses.
+- **S4** `4165417` — umber weave (12%/8% dials → band warm fraction 10.9% vs painting 9.78%)
+  + the sienna roof landmark left of the church, kicks bounded by the roof rect's p90.
+- **S5** — windows as ochre daub clusters with a p90-bounded core; p2 found them ABSENT not
+  dim (pushBrush winds CW; windows material was FrontSide → fully culled; now DoubleSide).
+
+**Verification at HEAD:** 96/96 tests, lint, build, `check:reduced` PASS. ΔE census 6.39 →
+**2.20** (band Lab L matches the painting exactly). Perf `--perf`: mean 8.33 ms / p95 9.0–9.2 —
+identical to the cypress-pass baseline; DPR caps untouched; real-device fps remains item 3.
+Indicators (painting/live): stddev 11.32/2.30 · spire delta −0.37/−4.28 · warm 9.78/10.89.
+
+**Review in this order** (all in `output/playwright/`):
+1. `village-pass-2026-07-22-s5p3/village-original-vs-live.png` — final matched crop
+2. `village-look-2026-07-22/village-original-vs-live.png` — the morning baseline, for the delta
+3. `village-pass-2026-07-22-s5p3/desktop-centre.png` + `mobile-centre.png` + drag boundaries
+4. Live: `npm run dev` → `http://localhost:5173/?mode=diorama&clean=1`
+
+**If the gate passes:** items 2 (mobile portrait framing), 3 (real-device perf), 4 (deploy) are
+what remains — all Mark-owned. Nothing pushed this session yet.
+
+---
+
+## Superseded same day — the morning record (cypress gate)
+
 ## ▶ WHERE WE ARE (2026-07-22) — cypress ✅ GATE PASSED; next session = the village
 
 **Gate call, 2026-07-22 (Mark, live):** checklist **item 7 PASSES**. Reviewed against the painting
@@ -228,7 +269,7 @@ stop and ask about (CLAUDE.md "Stop and ask Mark when"). `Claude` items are mech
 | 5 | ~~WebP for the three colour assets~~ | Mark | ✅ **DONE 2026-07-21** — lossless taken, lossy rejected; payload 12.21 → 10.04 MB |
 | 6 | **Portfolio link-out** — markma.dev links to the finished piece (CLAUDE.md: it links out, full stop — never embedded) | Mark | open, post-deploy |
 | 7 | ~~Cypress second painterly pass~~ | Claude built, Mark gated | ✅ **PASSED 2026-07-22** — colour and stroke length solved, silhouette topology matches. Residual findings in `tasks/2026-07-22-cypress-review-findings.md` judged minor and not actioned |
-| 8 | **Village second painterly pass** — the other half of the refinement the README promised after the sky-flow work. Not yet designed; no gaps named against the painting yet | Claude builds, Mark gates | open, not started |
+| 8 | **Village second painterly pass** | Claude built, Mark gates | ⏳ **BUILT 2026-07-22** (S0–S5, see WHERE WE ARE) — at Mark's visual gate |
 
 **Item 8's first step is not code and not a design — it is a look.** The cypress pass only became
 tractable once Mark named three concrete gaps against the painting (near-black, fur-not-flame,
