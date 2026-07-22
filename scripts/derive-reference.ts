@@ -171,6 +171,11 @@ function medianCut(samples: number[][], count: number): { rgb: number[]; weight:
 mkdirSync(dirname(WORK), { recursive: true });
 mkdirSync(dirname(OUT_FLOW), { recursive: true });
 
+// --palette-only: recompute and rewrite palette.json alone, leaving every image asset untouched.
+// The image outputs have passed gates (and flow-field.png was slimmed by a later pass), so a
+// palette-schema change must not rebake them ("never rebake a passed asset", tasks/lessons.md).
+const paletteOnly = process.argv.includes('--palette-only');
+
 const srcInfo = execFileSync('sips', ['-g', 'pixelWidth', '-g', 'pixelHeight', SOURCE], { encoding: 'utf8' });
 const srcW = Number(/pixelWidth:\s*(\d+)/.exec(srcInfo)?.[1] ?? 0);
 const srcH = Number(/pixelHeight:\s*(\d+)/.exec(srcInfo)?.[1] ?? 0);
@@ -178,8 +183,10 @@ const srcH = Number(/pixelHeight:\s*(\d+)/.exec(srcInfo)?.[1] ?? 0);
 console.log(`source ${srcW}×${srcH} -> analysis width ${ANALYSIS_WIDTH}`);
 execFileSync('sips', ['-s', 'format', 'png', '-Z', String(ANALYSIS_WIDTH), SOURCE, '--out', WORK], { stdio: 'ignore' });
 // Web-sized painting texture the renderer loads (the 5.3 MB source is too heavy to ship).
-execFileSync('sips', ['-s', 'format', 'jpeg', '-s', 'formatOptions', '82', '-Z', '1600', SOURCE, '--out', OUT_PAINTING], { stdio: 'ignore' });
-console.log('wrote painting.jpg (web texture)');
+if (!paletteOnly) {
+  execFileSync('sips', ['-s', 'format', 'jpeg', '-s', 'formatOptions', '82', '-Z', '1600', SOURCE, '--out', OUT_PAINTING], { stdio: 'ignore' });
+  console.log('wrote painting.jpg (web texture)');
+}
 
 const t0 = Date.now();
 const work = decodePNG(readFileSync(WORK));
@@ -274,8 +281,10 @@ for (let i = 0; i < W * H; i++) {
   flow[i * 4 + 2] = Math.round(coh[i] * 255);
   flow[i * 4 + 3] = 255;
 }
-writeFileSync(OUT_FLOW, encodePNG(W, H, flow));
-console.log(`wrote flow-field.png (${((Date.now() - t0) / 1000).toFixed(1)}s)`);
+if (!paletteOnly) {
+  writeFileSync(OUT_FLOW, encodePNG(W, H, flow));
+  console.log(`wrote flow-field.png (${((Date.now() - t0) / 1000).toFixed(1)}s)`);
+}
 
 // ------------------------------------------------------- LIC capture -------
 
@@ -365,10 +374,12 @@ for (let i = 0; i < W * H; i++) {
   cohImg[i * 4] = cohImg[i * 4 + 1] = cohImg[i * 4 + 2] = cv;
   cohImg[i * 4 + 3] = 255;
 }
-writeFileSync(OUT_LIC, encodePNG(W, H, greyImg));
-writeFileSync(OUT_LIC_OVERLAY, encodePNG(W, H, overlay));
-writeFileSync(OUT_COHERENCE, encodePNG(W, H, cohImg));
-console.log(`wrote LIC captures (${((Date.now() - t0) / 1000).toFixed(1)}s)`);
+if (!paletteOnly) {
+  writeFileSync(OUT_LIC, encodePNG(W, H, greyImg));
+  writeFileSync(OUT_LIC_OVERLAY, encodePNG(W, H, overlay));
+  writeFileSync(OUT_COHERENCE, encodePNG(W, H, cohImg));
+  console.log(`wrote LIC captures (${((Date.now() - t0) / 1000).toFixed(1)}s)`);
+}
 
 // ------------------------------------------ signed flow + sky mask (Phase 0) ----
 // A DIRECTED flow for GPU advection: take the undirected orientation and sign-align it to a SMOOTH
@@ -418,8 +429,10 @@ for (let y = 0; y < H; y++)
     signed[i * 4 + 2] = Math.round(coh[i] * 255);
     signed[i * 4 + 3] = 255;
   }
-writeFileSync(OUT_SIGNED_FLOW, encodePNG(W, H, signed));
-console.log('wrote signed-flow.png');
+if (!paletteOnly) {
+  writeFileSync(OUT_SIGNED_FLOW, encodePNG(W, H, signed));
+  console.log('wrote signed-flow.png');
+}
 
 // Sky mask: bright = sky (the living painting churns here), dark foreground (cypress/village/hills) stays
 // still. Eroded inward so advected sky never samples across a silhouette, and the moon disc is forced
@@ -473,9 +486,11 @@ for (let i = 0; i < W * H; i++) {
   for (let c = 0; c < 3; c++) maskOverlay[i * 4 + c] = Math.round(px[i * 4 + c] * (0.25 + 0.75 * maskF[i]));
   maskOverlay[i * 4 + 3] = 255;
 }
-writeFileSync(OUT_SKY_MASK, encodePNG(W, H, maskImg));
-writeFileSync(OUT_MASK_OVERLAY, encodePNG(W, H, maskOverlay));
-console.log(`wrote sky-mask.png + overlay (${((Date.now() - t0) / 1000).toFixed(1)}s)`);
+if (!paletteOnly) {
+  writeFileSync(OUT_SKY_MASK, encodePNG(W, H, maskImg));
+  writeFileSync(OUT_MASK_OVERLAY, encodePNG(W, H, maskOverlay));
+  console.log(`wrote sky-mask.png + overlay (${((Date.now() - t0) / 1000).toFixed(1)}s)`);
+}
 
 // --------------------------------------------------------- palette ---------
 
@@ -522,6 +537,25 @@ function collectStars(): number[][] {
   return cand.slice(0, keep).map((c) => [c[1], c[2], c[3]]);
 }
 
+// The village's warm pigment (umber walls, the sienna roof, ochre window glows) is too small a
+// fraction of the region to survive its 5-swatch median cut — decision 0001 says to special-case
+// it like `stars` if the foreground needs it, and the 2026-07-22 village painterly pass does.
+// Mask: red exceeding blue by 15% and not near-black — catches the warm family, scores navy,
+// charcoal and the pale cool greys at 0 (same mask as the look-pass measurements).
+function collectVillageWarm(): number[][] {
+  const [u0, v0, u1, v1] = [0.28, 0.66, 0.78, 0.86]; // the village REGIONS rect
+  const out: number[][] = [];
+  for (let y = Math.floor(v0 * H); y < Math.floor(v1 * H); y++)
+    for (let x = Math.floor(u0 * W); x < Math.floor(u1 * W); x++) {
+      const i = (y * W + x) * 4;
+      const r = px[i];
+      const g = px[i + 1];
+      const b = px[i + 2];
+      if (r > b * 1.15 && r > 30) out.push([r, g, b]);
+    }
+  return out;
+}
+
 function toHex(rgb: number[]): string {
   return '#' + rgb.map((v) => v.toString(16).padStart(2, '0')).join('');
 }
@@ -556,6 +590,25 @@ regions['stars'] = {
   note: 'brightest warm points in the upper sky, moon excluded',
   colours: medianCut(collectStars(), 3).map(entry),
 };
+// Stratified cut: the sienna roof is ~4% of the warm pixels and red-dominant (r−g ≈ 18 where
+// the umber family sits ≈ 11), so a plain median cut folds it into umber at any count — the
+// splits keep landing on the olive-gold axis. One bucket for red-dominant pixels, five for the
+// rest, weights rescaled over the union.
+{
+  const warm = collectVillageWarm();
+  const isRed = ([r, g, b]: number[]) => r - g > 12 && r > b * 1.2;
+  const red = warm.filter(isRed);
+  const rest = warm.filter((p) => !isRed(p));
+  const scale = (cut: { rgb: number[]; weight: number }[], n: number) =>
+    cut.map((c) => ({ rgb: c.rgb, weight: +((c.weight * n) / warm.length).toFixed(3) }));
+  regions['villageWarm'] = {
+    rect: [0.28, 0.66, 0.78, 0.86],
+    note: 'warm-masked village pigment (umber/sienna/ochre) — 0001 special case, like stars; sienna stratified',
+    colours: [...scale(medianCut(red, 1), red.length), ...scale(medianCut(rest, 5), rest.length)]
+      .sort((a, b) => b.weight - a.weight)
+      .map(entry),
+  };
+}
 
 const palette = {
   meta: {
@@ -568,4 +621,4 @@ const palette = {
   regions,
 };
 writeFileSync(OUT_PALETTE, JSON.stringify(palette, null, 2) + '\n');
-console.log(`wrote palette.json — ${REGIONS.length + 1} regions (${((Date.now() - t0) / 1000).toFixed(1)}s)`);
+console.log(`wrote palette.json — ${REGIONS.length + 2} regions (${((Date.now() - t0) / 1000).toFixed(1)}s)`);

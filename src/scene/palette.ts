@@ -30,4 +30,10 @@ export const PALETTE = {
   hillsCrest: hex('hills', 4), //  #5c6872 — lightest hills swatch (moonlit crest)
   cypressGreen: hex('cypress', 4), // #333426 — cypress green (the flame's tongues)
   cypressShade: hex('cypress', 3), // #232622 — cypress shade (foreground bushes)
+  // villageWarm: the 0001 special-case region (warm-masked village pigment, sienna stratified)
+  // added for the 2026-07-22 village painterly pass — see docs/superpowers/plans/ same date.
+  villageInk: hex('villageWarm', 0), //   #262119 — warm-dark drawing ink (contour outlines)
+  villageUmber: hex('villageWarm', 1), // #343327 — distributed warm wall/roof strokes
+  roofSienna: hex('villageWarm', 3), //   #4b3222 — the red-brown roof landmark
+  windowOchre: hex('villageWarm', 4), //  #656b27 — window glow paint (olive-gold)
 }
