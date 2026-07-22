@@ -9,7 +9,7 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## ▶ PICK UP HERE (next session) — cypress ✅ GATE PASSED; next = checklist item 8 (village)
+## ▶ WHERE WE ARE (2026-07-22) — cypress ✅ GATE PASSED; next session = the village
 
 **Gate call, 2026-07-22 (Mark, live):** checklist **item 7 PASSES**. Reviewed against the painting
 with fresh captures at `40c0a70`; Mark's verdict on the three review findings was **"those findings
@@ -26,11 +26,72 @@ defect"; Mark rated the whole set minor and shipped. The reviewer's bar was set 
 owner's ship bar. Flag what is seen, rate it honestly, and let the gate decide — but do not present
 a refinement as though it blocked release.
 
-**Next action:** checklist **item 8 — the village second painterly pass**. Its first step is a look,
-not a design: capture the village, read it against the reference crop, name the gaps against the
-painting in concrete terms as was done for the cypress, and only then design. The village and island
-currently read as flat-shaded low-poly beside the painted sky — that is the impression to confirm or
-correct with the reference in hand, not the diagnosis.
+---
+
+## ▶ NEXT SESSION — checklist item 8, the village painterly pass (agreed with Mark 2026-07-22)
+
+**Start here. Do not start by writing code, a design, or a plan.** The cypress pass only became
+tractable once three concrete defects were named against the painting and one measurement shaped the
+design. The village gets the same order.
+
+### Step 1 — the look (this is the whole first move)
+
+1. `npm run capture:diorama -- output/playwright/village-look-<date>` — fresh frames at HEAD.
+2. Crop the village from the live capture and from the painting, scale both to the same height, and
+   put them side by side. Recipe that worked for the cypress, reusable as-is:
+
+   ```sh
+   # source: village region rect from palette.json is normalised [0.28, 0.66, 0.78, 0.86]
+   # on the 1600x1267 painting that is x 448..1248, y 836..1090
+   magick public/reference/painting.jpg -crop 800x254+448+836 +repage -resize x600 /tmp/vil-src.png
+   magick output/playwright/village-look-<date>/desktop-centre.png \
+     -crop <w>x<h>+<x>+<y> +repage -resize x600 /tmp/vil-live.png
+   magick /tmp/vil-src.png /tmp/vil-live.png -append /tmp/vil-compare.png
+   ```
+
+3. **Look at it, at true scale, and name the gaps in concrete terms** — the way the cypress got
+   "reads near-black", "reads as fur not flame", "silhouette is bulbous". Three or so, specific
+   enough that a fix can be aimed at them.
+4. Only then: measure whatever the named gaps imply, and let the measurement shape the design.
+
+### Traps paid for on the cypress — do not re-learn these
+
+- **Never judge shape from a shaded render.** Threshold both images to bare masks first. I called
+  flat sawn-off tops that did not exist in the geometry; it was shading on the near face.
+- **Never judge texture from a blow-up.** Compare at 1:1. A 3× magnification of a 200 px crop made
+  correct paint look like smeared driftwood.
+- **Say which frame a verdict is in** — against the painting, or against the previous state. Both
+  are valid; giving only the absolute one makes a real advance sound like a failure.
+- **A useful sharpness metric**, if softness comes up again — 3×3 local standard deviation over a
+  matched crop, source versus live:
+  `magick X.png -crop WxH+X+Y +repage -colorspace Gray -statistic StandardDeviation 3x3 -format "%[fx:mean*255]\n" info:`
+  (Cypress reference numbers: painting 6.45, render 2.01. Mark judged that gap minor — calibrate
+  expectations accordingly, and do not treat a number as a defect on its own.)
+
+### Where the village lives
+
+| File | Lines | What it is |
+|---|---|---|
+| `src/scene/BrushVillage.tsx` | 302 | the houses and steeple |
+| `src/scene/BrushIsland.tsx` | 220 | the island mass the village sits on |
+| `src/scene/BrushShrubs.tsx` | 148 | the planting around it |
+| `src/scene/islandShape.ts` | — | island silhouette source |
+| `src/scene/Diorama.tsx` | 26 | assembles the three |
+
+The cypress technique that earned the gate pass, available to reuse: **project the painting's own
+pixels onto source-derived geometry** rather than synthesising Van Gogh procedurally
+(`BrushCypress.tsx` + `cypressLobes.ts` + `cypressLobeGeometry.ts` are the worked example).
+Whether the village wants the same treatment is a design question for after the look — the village
+is small, distant and geometric in the painting, where the cypress was large and organic, so the
+answer may legitimately differ.
+
+### Working agreement for this pass
+
+- Mark gates on captures, not code. Nothing is "done" until the captures have been looked at
+  beside the reference.
+- Implementation may go to Codex again; cross-review the plan before greenlighting, as with the
+  cypress (two rounds caught 4 P0s, all coordinate-contract errors rather than architectural ones).
+- Stop and ask Mark at the gate, on scope growth, or on any new dependency.
 
 ---
 

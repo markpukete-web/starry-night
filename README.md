@@ -32,6 +32,11 @@ The sky-flow fidelity work is done. Motion and colour are derived from a high-re
 from generic noise, and an offline pipeline fills the cypress cut-out and extends the canvas sideways using
 the painting's own pixels, so the sky continues past its edges instead of ending on a card.
 
+The cypress has since had its own second pass on the same principle: its silhouette is compiled from the
+painting's persistent row runs, and the painting's pixels are projected onto that form rather than its
+brushwork being synthesised. Full-frame bloom came out of the diorama in the same pass — the contrast was
+already authored, and the wash was flattening the sky's strokes.
+
 Four of the five review gates have passed (reference pipeline, the movable decision, first full animated
-sky, foreground complete). **Pre-release is the one that remains** — lighting/bloom balance, mobile portrait
-framing, performance on real hardware, and deploy. Not released yet.
+sky, foreground complete). **Pre-release is the one that remains** — mobile portrait framing, performance
+on real hardware, a painterly pass over the village, and deploy. Not released yet.
