@@ -1802,3 +1802,27 @@ timber. Mark disagreed — it is closer than that — and he was right.
 - **A defect list is a claim, and gets the same standard of evidence as a fix.** Being the reviewer
   is not an exemption from verification. I ran tests, build and captures before commenting, then
   spent that credibility on an unverified read of a shaded image.
+
+## The reviewer's bar is not the owner's ship bar (2026-07-22)
+
+The cypress second pass went to Mark's gate with three findings from me: a measured local-contrast
+gap on the skin (2.01 against the painting's 6.45), straighter silhouette edges than the painting's
+curved tongues, and a scoping question about Bloom. I framed the first as "the one substantive
+defect remaining." Mark's answer was *"those findings are minor"* — gate passed, pushed, move on.
+
+- **Rate findings honestly, then let the gate decide — but do not dress a refinement as a blocker.**
+  Nothing I reported was false by then (the false ones had already been withdrawn). The error was
+  weighting: a 3× local-contrast difference is real and is also invisible to anyone who is not
+  measuring it, on a form whose colour, stroke length and topology now match the painting. Taste
+  calls are Mark's, and "measurable" is not the same as "matters".
+- **Withdrawn claims cost more than missed ones here.** Two of my defects were artefacts of how I
+  looked — a shaded render, a 3× blow-up — and one was the diorama contract working as designed.
+  Each one spent credibility that the genuine finding then had to borrow back. Verify at true scale
+  before naming a defect, not after being challenged.
+- **Diminishing returns arrive earlier than the metric suggests.** Three named gaps went in; two
+  were closed outright and the third moved from "bulbous" to "topology matches, edges a bit
+  straight". That is a pass. Continuing to hunt would have been the reviewer optimising a number
+  rather than the piece.
+- **Keep the residue findable, not open.** They live in
+  `tasks/2026-07-22-cypress-review-findings.md` with the eliminated hypothesis recorded, so if the
+  contrast ever does start to matter nobody re-runs the mip-filtering test. Recorded ≠ outstanding.

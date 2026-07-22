@@ -9,7 +9,32 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## ▶ PICK UP HERE (next session) — compound cypress + authored night balance at Mark visual gate
+## ▶ PICK UP HERE (next session) — cypress ✅ GATE PASSED; next = checklist item 8 (village)
+
+**Gate call, 2026-07-22 (Mark, live):** checklist **item 7 PASSES**. Reviewed against the painting
+with fresh captures at `40c0a70`; Mark's verdict on the three review findings was **"those findings
+are minor"**. Item 1 (bloom/night balance) is settled in the same call — the diorama ships without
+full-frame Bloom. Everything on `sky-brushdab` is **pushed** as of this session.
+
+**What passing means here:** colour solved, stroke length solved, silhouette topology matching the
+painting. The open findings are recorded in `tasks/2026-07-22-cypress-review-findings.md` and were
+judged not worth another pass — they are **not** a to-do list. Do not reopen them without Mark
+asking; specifically, do not re-run the eliminated mip-filtering hypothesis.
+
+**Calibration worth carrying:** my review rated the local-contrast gap as "the one substantive
+defect"; Mark rated the whole set minor and shipped. The reviewer's bar was set higher than the
+owner's ship bar. Flag what is seen, rate it honestly, and let the gate decide — but do not present
+a refinement as though it blocked release.
+
+**Next action:** checklist **item 8 — the village second painterly pass**. Its first step is a look,
+not a design: capture the village, read it against the reference crop, name the gaps against the
+painting in concrete terms as was done for the cypress, and only then design. The village and island
+currently read as flat-shaded low-poly beside the painted sky — that is the impression to confirm or
+correct with the reference in hand, not the diagnosis.
+
+---
+
+### Superseded by the gate pass above — the pre-gate record (2026-07-22)
 
 **Where we stopped (2026-07-22):** Mark rejected the first implemented second pass after an
 original/live comparison exposed the same black-fur read. That implementation has now been
@@ -135,13 +160,13 @@ stop and ask about (CLAUDE.md "Stop and ask Mark when"). `Claude` items are mech
 
 | # | Item | Owner | State |
 |---|------|-------|-------|
-| 1 | **Lighting/bloom balance** — Mark approved the darker screenshot direction; isolation showed it matched no-post, so the redundant full-frame Bloom wash was removed instead of adding a compensating grade. Evidence: `output/playwright/night-balance-authored-2026-07-22/` | Mark | **AT MARK VISUAL GATE — local only, not pushed** |
+| 1 | ~~Lighting/bloom balance~~ | Mark | ✅ **PASSED 2026-07-22** — full-frame Bloom removed from the diorama; authored moon/star halos carry the glow. `debug=final` and `debug=nopost` intentionally converge |
 | 2 | **Mobile portrait framing** — responsive fov keeps cypress edge + central whorl + steeple, but the MOON can't fit a portrait frame (≈42° off-centre on the arc); needs a portrait-specific camera bearing | Mark (composition) | open |
 | 3 | **Perf on real hardware** — locked criterion: 60 fps desktop, 30 fps mid-tier mobile. Headless cannot measure this; needs a real device pass. Includes confirming stroke budget + DPR caps (Tunables) hold up | Mark to run, Claude to retune | open |
 | 4 | **Deploy mechanics** — Vercel prod, Deployment Protection, `starrynight.markma.dev` DNS (Cloudflare CNAME, grey-cloud). CLAUDE.md: anything touching deploy/DNS/analytics is stop-and-ask | Mark | open |
 | 5 | ~~WebP for the three colour assets~~ | Mark | ✅ **DONE 2026-07-21** — lossless taken, lossy rejected; payload 12.21 → 10.04 MB |
 | 6 | **Portfolio link-out** — markma.dev links to the finished piece (CLAUDE.md: it links out, full stop — never embedded) | Mark | open, post-deploy |
-| 7 | **Cypress second painterly pass** — rejected profile/tendril implementation replaced by source-derived compound lobes with source-projected paint; evidence at `output/playwright/cypress-compound-final-2026-07-22/` | Claude builds, Mark gates | **AT MARK VISUAL GATE — local only, not pushed** |
+| 7 | ~~Cypress second painterly pass~~ | Claude built, Mark gated | ✅ **PASSED 2026-07-22** — colour and stroke length solved, silhouette topology matches. Residual findings in `tasks/2026-07-22-cypress-review-findings.md` judged minor and not actioned |
 | 8 | **Village second painterly pass** — the other half of the refinement the README promised after the sky-flow work. Not yet designed; no gaps named against the painting yet | Claude builds, Mark gates | open, not started |
 
 **Item 8's first step is not code and not a design — it is a look.** The cypress pass only became
