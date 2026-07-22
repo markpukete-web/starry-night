@@ -19,8 +19,12 @@ const newArr = (): Arr => ({ positions: [], colors: [], indices: [] })
 
 const HOUSE = new Color(PALETTE.house).multiplyScalar(1.28) // dark blue-violet walls
 const ROOF = new Color(PALETTE.roof).multiplyScalar(1.32)
-const CHURCH = new Color(PALETTE.steeple).multiplyScalar(1.65).lerp(new Color('#ffffff'), 0.18) // pale focal
-const SPIRE = new Color(PALETTE.steeple).multiplyScalar(2.05).lerp(new Color('#ffffff'), 0.30)
+// The painting's church is pale INSIDE the nocturne band — its spire measures the same value as
+// the sky behind it (84.5 vs 84.9) and separates by drawn outline, not brightness (the S1
+// contours carry that job now). The old ×2.05 + 30% white lerp measured 202 on screen — the
+// brightest mass in the composition, a glow the painting never painted. 2026-07-22 look pass.
+const CHURCH = new Color(PALETTE.steeple).multiplyScalar(1.15) // pale focal, held in the band
+const SPIRE = new Color(PALETTE.steeple).multiplyScalar(1.05)
 const WINDOW = new Color('#f6c651')
 const INK = new Color(PALETTE.villageInk) // warm-dark drawing ink — the cloisonnist contour
 
