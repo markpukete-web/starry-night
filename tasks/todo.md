@@ -119,9 +119,30 @@ the 2D is not on main.
 
 **This matters for checklist item 4 (deploy).** `main` also carries the June commit
 `d3501c0 docs(tasks): vercel preview deployed`, so any Vercel deployment still wired to `main`
-would publish the **vortex dome**, not the piece that just passed its gates. Before deploy, Mark
-decides what ships from where — merge `sky-brushdab` into `main`, or point the project at the
-branch. Do not assume; it is a stop-and-ask item either way.
+would publish the **vortex dome**, not the piece that just passed its gates. `main` is also the
+GitHub default (`origin/HEAD → origin/main`).
+
+### ▣ MARK'S DECISION (2026-07-22) — branch endgame
+
+**Mark: the current `main` is a failure. `sky-brushdab` becomes `main` — but only when the quality
+is reached and the piece is ready. The 2D branch is kept.**
+
+Recorded here as intent, **not executed**. It is release mechanics: it happens at checklist item 4,
+in the same conversation as deploy, and it is stop-and-ask like everything else there.
+
+- **`main` ← `sky-brushdab` is a FAST-FORWARD.** Verified: `main` is a direct ancestor of
+  `sky-brushdab` (`git merge-base --is-ancestor main sky-brushdab` → true). So promotion is
+  `git switch main && git merge --ff-only sky-brushdab && git push origin main` — **no merge
+  commit, no conflicts, no history rewrite, nothing to force.** The vortex-dome era simply becomes
+  ancestry; `main`'s *content* becomes the piece. Do not reach for a force-push or a fresh
+  orphan branch — neither is needed, and both would throw away the honest build-in-public trail
+  the Timeline narrates.
+- **`record/2d-streamline-flow` is already safe and stays.** Local and `origin` both at `8ccf903`,
+  fully backed up. It is a permanent record of the 2D era, never to be deleted or merged.
+- **Sequencing at release:** pass the pre-release gate first → promote `main` → *then* deploy, so
+  production never publishes the June dome by accident. Confirm with Mark whether Vercel should
+  build from `main` (the default) once promoted.
+- **Until then `sky-brushdab` stays the working branch**, and pushing it is backup only.
 
 **Session start ritual, unchanged:** read `tasks/lessons.md` (it is the project's memory, and the
 2026-07-22 entries are dense), then this file, then CLAUDE.md if the bar is in question.
@@ -345,7 +366,7 @@ stop and ask about (CLAUDE.md "Stop and ask Mark when"). `Claude` items are mech
 | 1 | ~~Lighting/bloom balance~~ | Mark | ✅ **PASSED 2026-07-22** — middle-ground authored lighting pass accepted & pushed (`b3420f8`). Sky & foreground midtones lifted 8–11%, halos radiate, deep cobalt floor preserved |
 | 2 | **Mobile portrait framing** — responsive fov keeps cypress edge + central whorl + steeple, but the MOON can't fit a portrait frame (≈42° off-centre on the arc); needs a portrait-specific camera bearing | Mark (composition) | open |
 | 3 | **Perf on real hardware** — locked criterion: 60 fps desktop, 30 fps mid-tier mobile. Headless cannot measure this; needs a real device pass. Includes confirming stroke budget + DPR caps (Tunables) hold up | Mark to run, Claude to retune | open |
-| 4 | **Deploy mechanics** — Vercel prod, Deployment Protection, `starrynight.markma.dev` DNS (Cloudflare CNAME, grey-cloud). CLAUDE.md: anything touching deploy/DNS/analytics is stop-and-ask | Mark | open |
+| 4 | **Deploy mechanics** — Vercel prod, Deployment Protection, `starrynight.markma.dev` DNS (Cloudflare CNAME, grey-cloud). **Includes the branch endgame: promote `sky-brushdab` → `main` (fast-forward) BEFORE deploying, so production can't publish the June vortex dome — see "Mark's decision, branch endgame" above.** CLAUDE.md: anything touching deploy/DNS/analytics is stop-and-ask | Mark | open |
 | 5 | ~~WebP for the three colour assets~~ | Mark | ✅ **DONE 2026-07-21** — lossless taken, lossy rejected; payload 12.21 → 10.04 MB |
 | 6 | **Portfolio link-out** — markma.dev links to the finished piece (CLAUDE.md: it links out, full stop — never embedded) | Mark | open, post-deploy |
 | 7 | ~~Cypress second painterly pass~~ | Claude built, Mark gated | ✅ **PASSED 2026-07-22** — colour and stroke length solved, silhouette topology matches. Residual findings in `tasks/2026-07-22-cypress-review-findings.md` judged minor and not actioned |
