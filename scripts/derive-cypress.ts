@@ -25,6 +25,7 @@ const WORK = resolve(REVIEW_DIR, 'cypress-work.png')
 const OUT_SKIN = resolve(ROOT, 'public/reference/cypress-skin.png')
 const OUT_FLOW = resolve(ROOT, 'public/reference/cypress-flow.png')
 const OUT_ROWS = resolve(ROOT, 'public/reference/cypress-rows.json')
+const OUT_SKIN_SOURCE = resolve(REVIEW_DIR, 'cypress-skin-source.png')
 const OUT_FIELD_OVERLAY = resolve(REVIEW_DIR, 'cypress-field-overlay.png')
 const OUT_MASK_OVERLAY = resolve(REVIEW_DIR, 'cypress-mask-overlay.png')
 
@@ -119,6 +120,7 @@ for (let y = 0; y < cropHeight; y++) {
     skinRgba[destination + 3] = cropMask[y * cropWidth + x] ? 255 : 0
   }
 }
+writeFileSync(OUT_SKIN_SOURCE, encodePNG(cropWidth, cropHeight, skinRgba.slice()))
 
 // Nearest-valid colour fill on each row. Alpha remains zero outside the tree, so this protects
 // colour interpolation at the rim without changing the integrator's containment contract.
