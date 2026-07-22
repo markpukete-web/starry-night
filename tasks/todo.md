@@ -9,50 +9,60 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## ▶ PICK UP HERE (next session) — cypress second pass, plan approved-pending, ready for Task 1
+## ▶ PICK UP HERE (next session) — cypress second pass implemented; Mark visual gate OPEN
 
-**Where we stopped:** the cypress second pass is fully designed and planned; **no implementation
-code has been written yet.** Next action is Task 1 of the plan.
+**Where we stopped (2026-07-22):** the 11-task cypress second pass is implemented locally on
+`sky-brushdab`. The flat gate, deterministic live captures, colour-distribution check, timing
+probe, 97-test suite, lint, production build and reduced-motion check all pass. **This is not a
+closed taste gate:** checklist item 7 is waiting for Mark's eye, and nothing from this pass has
+been pushed.
 
-**Read these two, in order:**
-1. `docs/superpowers/specs/2026-07-21-cypress-second-pass-design.md` — the design (approved by Mark)
-2. `docs/superpowers/plans/2026-07-21-cypress-second-pass.md` — **v3**, 11 tasks, ~2,300 lines
+**Read / inspect in this order:**
 
-**Why the cypress:** Mark read the piece and said it had room for improvement. Three gaps named
-against the painting: it reads near-black; it reads as fur rather than flame; the silhouette is
-bulbous. Approach: apply the sky's own lesson — stop synthesising Van Gogh, clad the form with
-the painting's real pixels and its own derived flow field.
+1. `docs/superpowers/specs/2026-07-21-cypress-second-pass-design.md` — approved design
+2. `docs/superpowers/plans/2026-07-21-cypress-second-pass.md` — implemented v4 plan plus measured
+   deviations from two bad numeric assumptions
+3. `reference/derived/cypress-flat-gate.png` — source crop beside the exact shared stroke path
+4. `output/playwright/cypress-pass2-retune3-2026-07-22/desktop-centre.png` — final design capture
+5. `output/playwright/webp-2026-07-21/desktop-centre.png` — before capture
 
-**Plan status: survived two cross-review rounds** (Mark via Codex). Round 1 found 1 P0 + 6 P1;
-round 2 found 3 P0 + 2 P1. All were independently re-measured before being accepted — **every
-claim checked out**, and two would have shipped a cypress shaped like the foreground terrain.
-Mark's words after round 2: *"Fix the five blockers above and I would be comfortable greenlighting
-implementation."* All five are fixed in v3. **A third review pass was offered and not yet run** —
-that is the open question at the top of next session: review again, or start Task 1.
+**What landed:** a real per-row source domain; a mask-aware, low-passed painting flow field; one
+stroke integrator shared by the flat gate and runtime; source-pixel sRGB colour with constant
+per-stroke relief; long curved ribbons on front and sparse mirrored back; a continuous pointed
+profile; and two connected, source-derived upper tendrils. The solid is now only dark underpaint
+between strokes rather than the visible tree.
 
-**Measurements the plan rests on** (re-verify if the assets or scan ever change):
-- Cypress-pixel orientation coherence **0.134** (sky 0.327), but **47% of texels within 75–105°**
-  → direction is not the defect, stroke LENGTH is; the field must be low-passed before integration
-- `treeishColour` + flood fill claims **227,047 px**, a 480×1191 crop at **39.7% occupancy**, and
-  touches both search limits → the mask must not flood-fill, and u must be row-normalised
-- Mask row occupancy top→bottom: **0% · 5% · 28% · 45% · 72% · 47%**
-- Widest run in the painting is the **terrain (80 px) not the trunk (27 px)** → never seed by width
-- Design camera x=0.62 vs cypress x=−1.5 → head-on bearing **≈64.6°**, not 90°
-- Rendered radius 0.1:**0.21** · 0.3:**0.13** · 0.5:**0.19** → two lobes with a waist, present in the
-  extracted profile *before* `tongue()` touches it
-- Naive stroke budget is **+83% vertices / +144% triangles** → budget must be derived from timing
+**Measured evidence:**
 
-**Traps already paid for — do not rediscover these:**
-- `ImageData` is sRGB; `Color`'s working space is linear. Omitting `SRGBColorSpace` makes midtones
-  display **brighter** (0.502 → 0.737), not darker. The near-black defect came from attenuation.
-- `Math.pow(rng(), 0.78)` biases toward the **top**, not the base — the comment on the existing
-  code is wrong and has been wrong for a while.
-- Capture RMSE cannot measure anything that alters load timing. Compare decoded pixels.
-- A capture diff means nothing without a same-assets control run.
+- Tight guarded mask: **49,941 px**, 176×662 crop, **42.9% occupancy**, no terrain/hill leak in
+  `reference/derived/cypress-mask-overlay.png`; 690 satellite runs retained separately
+- Flat gate: **1,902 / 2,200 strokes survive (86.5%)**, average **7.9 / 9** samples
+- Actual runtime cypress cladding: **43,700 vertices / 38,158 triangles**; +102.3% / +165.0%
+  against the old cladding, so timing rather than the obsolete percentage budget is the gate
+- Local 1600×900 final pipeline, 599 measured frames after warm-up: mean **8.33 ms**, p95
+  **9.0 ms**, max **9.4 ms**; `debug=nopost`: mean 8.33, p95 8.8. This is deterministic local
+  desktop evidence, **not representative mid-tier mobile hardware**; checklist item 3 remains open
+- Honest fallback colour instrument: masked regional Lab distributions, **not registered per-pixel
+  correspondence**. Mean ΔE76 base **0.89**, middle **0.66**, top **2.13** — all below the locked
+  tolerance of 10
+- Final mechanical gate: **97 tests pass**, lint clean, production build green, reduced-motion
+  frames byte-identical while the control churns
 
-**Git:** all committed on `sky-brushdab`, tree clean. **4 commits are local-only and unpushed**
-(`b3e60dc`, `9f7f6b5`, `8429997`, `0ce57e1`) — Mark ended the session before deciding; push when
-he says so. The plan also forbids pushing implementation without his explicit say-so.
+**Deliberate deviations from the plan:** the proposed ≥55% crop occupancy gate was empirically
+wrong for a tall tapered tree and would have encouraged terrain leakage. The row-wise profile
+metric was also contaminated: removing the explicit taper improved its score 0.20726 → 0.20074,
+but the live tree still had an hourglass and blunt tip. The shared continuous taper fixes the
+render while scoring 0.23760 against that defective target. The captures, not the self-reproducing
+metric, are the deciding evidence. Three visual retunes were used, within the cap of four.
+
+**NEXT:** Mark compares the flat gate, before and final design capture, then checks the final
+orbit views in `output/playwright/cypress-pass2-retune3-2026-07-22/`. The most useful taste
+question is whether the two top tendrils are assertive enough; they are deliberately sparse after
+the previous retune read as thorns. If accepted, mark checklist item 7 done. Item 8 (village) is
+next. **Do not push unless Mark asks.**
+
+**Git:** implementation and this record are committed locally on `sky-brushdab`; no push was
+performed. Preserve that distinction when reporting state.
 
 ## Earlier the same day (2026-07-21) — ship hygiene CLOSED; item 5 decided
 
@@ -125,7 +135,7 @@ stop and ask about (CLAUDE.md "Stop and ask Mark when"). `Claude` items are mech
 | 4 | **Deploy mechanics** — Vercel prod, Deployment Protection, `starrynight.markma.dev` DNS (Cloudflare CNAME, grey-cloud). CLAUDE.md: anything touching deploy/DNS/analytics is stop-and-ask | Mark | open |
 | 5 | ~~WebP for the three colour assets~~ | Mark | ✅ **DONE 2026-07-21** — lossless taken, lossy rejected; payload 12.21 → 10.04 MB |
 | 6 | **Portfolio link-out** — markma.dev links to the finished piece (CLAUDE.md: it links out, full stop — never embedded) | Mark | open, post-deploy |
-| 7 | **Cypress second painterly pass** — near-black, fur-not-flame, bulbous silhouette. Designed and planned (spec + plan v3, 11 tasks); no code written yet | Claude builds, Mark gates | **open, in flight** |
+| 7 | **Cypress second painterly pass** — source colour/flow cladding, continuous profile and sparse source tendrils implemented; deterministic evidence at `output/playwright/cypress-pass2-retune3-2026-07-22/` | Claude builds, Mark gates | **AT MARK VISUAL GATE — local only, not pushed** |
 | 8 | **Village second painterly pass** — the other half of the refinement the README promised after the sky-flow work. Not yet designed; no gaps named against the painting yet | Claude builds, Mark gates | open, not started |
 
 **Item 8's first step is not code and not a design — it is a look.** The cypress pass only became
@@ -140,7 +150,7 @@ Already satisfied, listed so the gate can be checked end-to-end rather than re-l
 - [x] Camera stays within the locked orbit limits (polar 0.2–1.62, distance 3–5.5, no pan/free-fly)
 - [x] Ship hygiene — reference PNGs 18.17 → 11.20 MB lossless (2026-07-21); `leva` aliased out of
       the production build (vite.config.ts)
-- [x] `npm run lint` clean; `npm run test:sky` green (53 tests); `npm run build` green
+- [x] `npm run lint` clean; `npm run test:sky` green (**97 tests**); `npm run build` green
 - [x] README reflects the orbitable-diorama reality, not the scaffold
 
 **Explicitly NOT in this gate** (CLAUDE.md Out of scope / Phase 2): preset dials (time-of-day,

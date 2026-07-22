@@ -1676,3 +1676,52 @@ what kept going wrong, because the pattern is more useful than the individual bu
 - I also got a *diagnosis* backwards while the *code* was right: treating sRGB as linear makes
   midtones display brighter, not darker. Correct fix, wrong reason written into the comments — and
   a wrong reason in a comment is a trap set for the next reader.
+
+## Cypress second pass — source-locked flame, profile-truth failure, measurable gate (2026-07-22)
+
+- **A row domain is part of the texture map, not mask metadata.** The tree occupies 42.9% of its
+  176×662 guarded crop and approaches zero width at the tip, so rectangular `u` sampled sky over
+  much of the form. Baking the actual interval for every row made `u=0/1` mean the tree's real
+  edges at that height. The flat gate and 3D runtime then shared one integrator, which made the
+  gate exercise density, flow, clipping, taper and colour rather than draw a reassuring diagram.
+- **Reject a numeric gate when optimising it makes the image less true.** The plan's ≥55% crop
+  occupancy target was inherited from a bad comparison with the flood-filled mask. The accepted
+  width-guarded mask is 49,941 px at 42.9% occupancy and visibly stops at the ground; raising the
+  number meant recruiting terrain. The mask overlay and row containment were the meaningful
+  evidence. Its 0.406 coherence is from the shipping mask-aware tensor and low-pass path, not the
+  old raw 0.134 statistic, so treating those numbers as interchangeable would be false precision.
+- **One integrator, two consumers made fur-versus-flame testable.** The flat gate passed on its
+  first render: 1,902 of 2,200 long ribbons survived (86.5%), averaging 7.9 of 9 samples. Those
+  exact strokes clad the runtime's front; the invented back uses 45% density. Short outward marks
+  are still the cypress fur trap. Long coherent paths, not merely an upward normal, make the form
+  lick upward.
+- **Transparent RGB is data when a later stage samples it.** `cwebp` must use `-exact` for the
+  cypress skin or transparent source colours are rewritten even though alpha makes the file look
+  lossless. Runtime samples are explicitly tagged sRGB before Three converts them to its working
+  space. Relief is constant per stroke and jittered between neighbours; a fade along a ribbon
+  would recreate dark stroke ends and read as a vignette rather than impasto.
+- **A diagnostic can be shared with production and still have a false target.** The initial
+  design-camera ablation was structurally sound and removing the explicit upper taper improved
+  mean outline error 0.20726 → 0.20074. The live capture nevertheless retained an hourglass and
+  blunt tip because the extracted row profile itself encoded the defect. The shipping continuous
+  taper scores worse (0.23760) against that contaminated target and looks materially more faithful.
+  Sharing code prevents drift; it cannot make the measurement's definition true. When a metric
+  rewards the named visual defect, record the contradiction and let the visual gate overrule it.
+- **Source-derived tendrils still need art direction.** Satellite runs were converted to crop-local
+  coordinates, connected across adjacent rows with a one-row gap tolerance, rim-assigned from the
+  real 64.6° design bearing, and capped at two upper-third tracks. The second retune exposed them
+  but read as thorns; the third eased them over their full height, lengthened the short track and
+  used warmer source interior colour. The result breaks the top rim without becoming a fringe or
+  a second tree. Three retunes were used, within the cap of four.
+- **Budget the complete presentation pipeline.** Actual cypress cladding is 43,700 vertices and
+  38,158 triangles (+102.3% / +165.0% over the old cladding), so the plan's static growth threshold
+  was not a useful gate. The final 1600×900 local pipeline measured 8.33 ms mean, 9.0 ms p95 and
+  9.4 ms max over 599 frames; no-post measured 8.33 / 8.8 / 9.4. These are deterministic desktop
+  figures, not representative mobile hardware: the locked real-device 30 fps gate remains open.
+- **Name a colour fallback honestly.** Exact rendered/source registration was not practical in
+  this pass, so the check compares masked regional Lab distributions, not corresponding pixels.
+  Mean ΔE76 was 0.89 base, 0.66 middle and 2.13 top, all below the locked tolerance of 10. That is
+  useful evidence that global attenuation is gone, but it is not a per-pixel colour-fidelity claim.
+- **Final mechanical state:** 97 tests pass; lint and production build pass; reduced-motion frames
+  are byte-identical while the normal-motion control churns. Mechanical closure hands the work to
+  Mark's eye; it does not close the painterly gate on his behalf.

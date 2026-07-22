@@ -952,6 +952,14 @@ Run: `npm run derive-cypress && npm run slim-reference`
 
 If occupancy is below 55%, tune `MAX_ROW_RATIO` in `cypress-field.ts` and re-run. This is retune pass 1 of 4.
 
+> **Implementation correction (2026-07-22):** the ≥55% occupancy and 0.13–0.20 coherence
+> expectations were rejected after inspecting the real guarded mask. A tall tapered tree can
+> legitimately occupy far less than 55% of its tight bounding box; pushing this number upward
+> reintroduced the terrain the guard exists to exclude. The accepted mask is 49,941 px in a
+> 176×662 crop (**42.9%**), stops at the ground, and does not claim the hills. Its mean coherence
+> is **0.406** after the normalised mask-aware tensor, masked blur and low-pass stages. The overlay
+> and row-domain containment are the gate; neither obsolete scalar is used as a release proxy.
+
 - [ ] **Step 4: Look at the mask overlay**
 
 Open `reference/derived/cypress-mask-overlay.png`. The red tint must cover the tree and **stop at the ground** — no terrain band, no hills. If it bleeds, lower `MAX_ROW_RATIO`.
@@ -1839,6 +1847,13 @@ Change whichever single factor Task 7 ranked worst in `CYPRESS_PROFILE_CONFIG` (
 
 Run: `node scripts/diagnose-cypress-profile.ts`
 Expected: `meanAbsErrVsPainting` for the final composed profile is measurably lower than before. **State the before and after numbers.**
+
+> **Implementation correction (2026-07-22):** the shared diagnostic ranked removal of the
+> explicit upper taper first (**0.20726 → 0.20074**), but the resulting live render still had the
+> extracted profile's hourglass and blunt tip. The supposed painting target was contaminated by
+> the same threshold/profile defect. The shipping continuous taper deliberately scores **0.23760**
+> against that target while fixing the visible silhouette in the design and orbit captures. This
+> is a recorded instrument failure, not an asserted metric win; Mark's visual gate decides it.
 
 - [ ] **Step 3: If one fix is not enough, apply the next-ranked and re-measure.** Retune cap: 4. Report the pass number.
 
