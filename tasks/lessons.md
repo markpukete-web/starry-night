@@ -1844,3 +1844,30 @@ defect remaining." Mark's answer was *"those findings are minor"* — gate passe
   - Perf report (`output/playwright/night-balance-middle-perf-2026-07-22/perf-summary.json`): desktop final p95 9.1 ms (mean 8.33 ms over 599 frames), desktop no-post p95 8.8 ms, mobile viewport p95 9.1 ms; 0 errors.
   - Verification: 96 tests pass (`npm run test:sky`), `npm run lint` clean, `npm run build` green, `npm run check:reduced` PASS (bytes identical), `check-cypress-colour` passed (base 0.92, middle 0.77, top 3.17).
 
+
+- 2026-07-22 — Village painterly pass (checklist item 8), five lessons from S0–S5:
+  1. **Uniform scatter at painting density is fur — again.** Raising cladding 230→700/area with
+     random placement dissolved the gable silhouettes exactly like the cypress's short-mark fur.
+     What fixed it was STRUCTURE, not less density: marks quantised into courses (rows across the
+     stroke axis, the way Van Gogh lays wall/roof strokes) plus face-hugging proud offsets
+     (0.002–0.005, down from 0.006–0.011). Rule: when density turns to fur, organise the marks
+     before cutting their number.
+  2. **"Absent" and "dim" are different defects — zoom before retuning.** The painted windows
+     vanished and pass 2 wasted a retune brightening them; a 4× crop showed them ABSENT, not dim.
+     Mechanism: `pushBrush` fans wind clockwise re the +normal, every other consumer's material is
+     DoubleSide, and the windows mesh was FrontSide — fully culled. Any new consumer of the brush
+     kit needs DoubleSide or reversed winding. Diagnose presence before value.
+  3. **Median cut cannot isolate a low-population family on a different axis, at any count.** The
+     sienna roof (~4% of warm pixels, red-dominant) folded into umber at 4, 6 and 8 swatches —
+     the splits keep landing on the widest (olive-gold) axis. Stratify by the property that
+     matters (r−g > 12), cut each stratum, rescale weights over the union.
+  4. **Frame a metric against what the render actually shows.** The plan's "spire mean ≤ 120"
+     target assumed the painting's background (sky at ~85); our spire stands against the moonlit
+     hill (~174), so absolute equality would have carved a dark silhouette the painting doesn't
+     have. The RELATIVE criterion (spire-vs-sky delta ±8, painting −0.37, landed −4.3) was the
+     faithful one. Check what sits behind a region before adopting its absolute value as a target.
+  5. **The master insight that shaped every slice: the painting's warmth and pale church are HUE
+     statements inside one nocturne value band.** Measured: orange roof rgb(65,47,46), window
+     blobs rgb(127,124,35), spire at its background's exact value. Everything that worked added
+     hue and drawing (ink contours, umber weave, sienna landmark, ochre daubs); the one thing
+     that came DOWN was brightness (church ×2.05+white → ×1.05). Warm ≠ bright in a nocturne.
