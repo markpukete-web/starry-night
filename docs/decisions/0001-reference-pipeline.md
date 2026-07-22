@@ -104,3 +104,26 @@ moon excluded). `lab` is there for the ΔE colour-drift acceptance check later.
   like `stars` if the foreground needs them.
 - Orientation is noisy where coherence is low; the renderer should down-weight strokes by the B
   channel there.
+
+## Addendum 2026-07-22 — the `villageWarm` special-case region (the note above, taken up)
+
+The village painterly pass needed the painting's warm village pigment, and the limitation flagged
+above proved exact: the `village` region's 5-swatch median cut is entirely cool
+(`#151b24 #2a3f6f #556c81 #26282b #36403f`) because the warm family's weight is too low to survive
+it. This note's own remedy was taken — **special-cased like `stars`**, so the locked acceptance
+criterion ("colours sampled from `palette.json`") is honoured literally rather than by exception.
+
+- `collectVillageWarm()` gathers warm-masked pixels over the same village rect
+  (`r > b × 1.15 && r > 30` — the mask the look-pass measurements used).
+- **Stratified, not plain median cut.** The sienna roof landmark is ~4% of the warm pixels and
+  red-dominant; a plain cut folded it into umber at 4, 6 and 8 swatches alike, because the splits
+  keep landing on the wider olive-gold axis. One bucket for red-dominant pixels (`r − g > 12`),
+  five for the rest, weights rescaled over the union. **Median cut cannot isolate a small
+  population lying on a different axis, at any count.**
+- Yield: ink `#262119` · umber `#343327` · pale `#62624c` · **sienna `#4b3222`** · ochre `#656b27`
+  · olive `#46482c`. Consumed via `palette.ts` as `villageInk`, `villageUmber`, `roofSienna`,
+  `windowOchre`.
+- **`--palette-only` flag added.** Image outputs from this pipeline have passed gates (and
+  `flow-field.png` was slimmed by a later pass), so a palette-schema change must not rebake them:
+  `node scripts/derive-reference.ts --palette-only` rewrites `palette.json` alone. The re-run was
+  verified to add the region and move no existing swatch (95 insertions, 0 deletions).
