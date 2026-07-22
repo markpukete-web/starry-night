@@ -46,6 +46,14 @@ Indicators (painting/live): stddev 11.32/2.30 · spire delta −0.37/−4.28 · 
 **If the gate passes:** items 2 (mobile portrait framing), 3 (real-device perf), 4 (deploy) are
 what remains — all Mark-owned. Nothing pushed this session yet.
 
+**Addendum (same session, Mark's call):** after an honest before/after read of the bloom
+removal, Mark asked for the stars and swirl band lifted — `e075bd4`: source-keyed highlight
+gain in the ribbon+wash shaders (pale strokes only, cobalt floor untouched) + broader/brighter
+star halos. Sky mean 73→85, luminous mass 4.6→8.5% (painting: 102/11.6%), deep night kept.
+Stopped at the look, not the number — the crop includes dimmer side-extension zones the
+painting lacks. Item 1's no-bloom decision stands; this tunes within it. Evidence:
+`output/playwright/night-lift-2026-07-22-p1/` vs `village-pass-2026-07-22-s5p3/`.
+
 ---
 
 ## Superseded same day — the morning record (cypress gate)
