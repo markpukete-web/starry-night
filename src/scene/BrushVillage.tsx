@@ -22,6 +22,7 @@ const ROOF = new Color(PALETTE.roof).multiplyScalar(1.32)
 const CHURCH = new Color(PALETTE.steeple).multiplyScalar(1.65).lerp(new Color('#ffffff'), 0.18) // pale focal
 const SPIRE = new Color(PALETTE.steeple).multiplyScalar(2.05).lerp(new Color('#ffffff'), 0.30)
 const WINDOW = new Color('#f6c651')
+const INK = new Color(PALETTE.villageInk) // warm-dark drawing ink — the cloisonnist contour
 
 const _n = new Vector3()
 const _u = new Vector3()
@@ -43,6 +44,55 @@ function pushQuad(arr: Arr, a: Vector3, b: Vector3, c: Vector3, d: Vector3, base
     arr.colors.push(col.r, col.g, col.b)
   }
   arr.indices.push(i, i + 1, i + 2, i, i + 2, i + 3)
+}
+
+/** Outward unit normal of the quad a-b-·-d, the exact `pushQuad` cross-product convention. */
+function faceNormal(a: Vector3, b: Vector3, d: Vector3): Vector3 {
+  return new Vector3().subVectors(b, a).cross(new Vector3().subVectors(d, a)).normalize()
+}
+
+const _edgeDir = new Vector3()
+const _edgeSide = new Vector3()
+const _edgeOff = new Vector3()
+const _edgePos = new Vector3()
+
+/**
+ * Van Gogh's drawn contour: 2–4 slightly-jittered dark ink marks along the edge a→b, lifted
+ * proud along the mean of the two adjacent face normals. CONTRACT (plan 2026-07-22): `a`/`b`
+ * are the SAME corner vectors the adjacent quads were built from — never recomputed; `nLeft`/
+ * `nRight` are those faces' unit normals via `faceNormal`; every edge is emitted by exactly ONE
+ * call site (ownership by construction, no de-duplication pass).
+ */
+function contourEdge(
+  brush: BrushArrays,
+  rng: () => number,
+  a: Vector3,
+  b: Vector3,
+  nLeft: Vector3,
+  nRight: Vector3,
+  halfWid = 0.0055,
+): void {
+  _edgeDir.subVectors(b, a)
+  const len = _edgeDir.length()
+  if (len < 1e-5) return
+  _edgeDir.divideScalar(len)
+  _edgeOff.addVectors(nLeft, nRight).normalize()
+  _edgeSide.crossVectors(_edgeDir, _edgeOff).normalize()
+  // segments scale with edge length — a short edge gets ONE mark, or its taper reads as a
+  // dot-chain (the belfry band read as buttons at 2–4 fixed segments, s1 retune pass 2)
+  const segs = Math.max(1, Math.min(4, Math.round(len / 0.11 + rng() * 0.6)))
+  const col = new Color()
+  for (let s = 0; s < segs; s++) {
+    const t = (s + 0.5) / segs + (rng() - 0.5) * 0.06
+    const halfLen = (len / segs) * (0.55 + 0.15 * rng()) // marks overlap ~10–40%, no dashed gaps
+    _edgePos
+      .copy(a)
+      .addScaledVector(_edgeDir, t * len)
+      .addScaledVector(_edgeOff, 0.006 + 0.003 * rng())
+      .addScaledVector(_edgeSide, (rng() - 0.5) * 0.005)
+    col.copy(INK).multiplyScalar(0.85 + 0.3 * rng())
+    pushBrush(brush, _edgePos, _edgeDir, _edgeOff, halfLen, halfWid * (0.8 + 0.4 * rng()), col)
+  }
 }
 
 function rot(x: number, z: number, cx: number, cz: number, yaw: number): [number, number] {
@@ -151,6 +201,27 @@ function pushHouse(
   cladQuad(brush, rng, btr, btl, rb, rb, ROOF)
   cladQuad(brush, rng, ftl, rf, rb, btl, ROOF) // strokes run up the pitch
   cladQuad(brush, rng, ftr, btr, rb, rf, ROOF, 0.76, 0.54, 'ad') // up the pitch (the a→d edge here)
+
+  // the drawn contour — each edge owned here, exactly once, using the corners above
+  const nFront = faceNormal(fbl, fbr, ftl)
+  const nBack = faceNormal(bbr, bbl, btr)
+  const nLeft = faceNormal(bbl, fbl, btl)
+  const nRight = faceNormal(fbr, bbr, ftr)
+  const nGableF = faceNormal(ftl, ftr, rf)
+  const nGableB = faceNormal(btr, btl, rb)
+  const nPitchL = faceNormal(ftl, rf, btl)
+  const nPitchR = faceNormal(ftr, btr, rf)
+  contourEdge(brush, rng, fbl, ftl, nFront, nLeft) // wall corners
+  contourEdge(brush, rng, fbr, ftr, nFront, nRight)
+  contourEdge(brush, rng, bbr, btr, nBack, nRight)
+  contourEdge(brush, rng, bbl, btl, nBack, nLeft)
+  contourEdge(brush, rng, ftl, btl, nLeft, nPitchL) // eaves
+  contourEdge(brush, rng, ftr, btr, nRight, nPitchR)
+  contourEdge(brush, rng, ftl, rf, nGableF, nPitchL) // gable rakes
+  contourEdge(brush, rng, ftr, rf, nGableF, nPitchR)
+  contourEdge(brush, rng, btl, rb, nGableB, nPitchL)
+  contourEdge(brush, rng, btr, rb, nGableB, nPitchR)
+  contourEdge(brush, rng, rf, rb, nPitchL, nPitchR, 0.007) // ridge, a touch bolder
 }
 
 /** The church: a taller pale nave + a slender tall spire — the focal vertical. */
@@ -212,6 +283,48 @@ function pushChurch(arr: Arr, brush: BrushArrays, rng: () => number, cx: number,
     const a = sc[k]
     const b = sc[(k + 1) % 4]
     pushQuad(arr, a, b, spireTip, spireTip, SPIRE)
+  }
+
+  // the drawn contour — nave edges as the houses, then tower corners, belfry band, spire edges.
+  // The spire faces stay clean; its EDGES carry the drawing (the painting separates the pale
+  // spire from the pale sky by outline, not value — tasks/2026-07-22-village-look.md).
+  const nNaveF = faceNormal(fbl, fbr, ftl)
+  const nNaveB = faceNormal(bbr, bbl, btr)
+  const nNaveL = faceNormal(bbl, fbl, btl)
+  const nNaveR = faceNormal(fbr, bbr, ftr)
+  const nNaveGF = faceNormal(ftl, ftr, rf)
+  const nNaveGB = faceNormal(btr, btl, rb)
+  const nNavePL = faceNormal(ftl, rf, btl)
+  const nNavePR = faceNormal(ftr, btr, rf)
+  contourEdge(brush, rng, fbl, ftl, nNaveF, nNaveL)
+  contourEdge(brush, rng, fbr, ftr, nNaveF, nNaveR)
+  contourEdge(brush, rng, bbr, btr, nNaveB, nNaveR)
+  contourEdge(brush, rng, bbl, btl, nNaveB, nNaveL)
+  contourEdge(brush, rng, ftl, btl, nNaveL, nNavePL)
+  contourEdge(brush, rng, ftr, btr, nNaveR, nNavePR)
+  contourEdge(brush, rng, ftl, rf, nNaveGF, nNavePL)
+  contourEdge(brush, rng, ftr, rf, nNaveGF, nNavePR)
+  contourEdge(brush, rng, btl, rb, nNaveGB, nNavePL)
+  contourEdge(brush, rng, btr, rb, nNaveGB, nNavePR)
+  contourEdge(brush, rng, rf, rb, nNavePL, nNavePR, 0.007)
+
+  const nTowerF = faceNormal(t0[0], t0[1], t0[3])
+  const nTowerB = faceNormal(t1[1], t1[0], t1[2])
+  const nTowerL = faceNormal(t1[0], t0[0], t1[3])
+  const nTowerR = faceNormal(t0[1], t1[1], t0[2])
+  contourEdge(brush, rng, t0[0], t0[3], nTowerF, nTowerL, 0.005) // tower corners
+  contourEdge(brush, rng, t0[1], t0[2], nTowerF, nTowerR, 0.005)
+  contourEdge(brush, rng, t1[1], t1[2], nTowerB, nTowerR, 0.005)
+  contourEdge(brush, rng, t1[0], t1[3], nTowerB, nTowerL, 0.005)
+
+  const nSpire = [0, 1, 2, 3].map((k) => faceNormal(sc[k], sc[(k + 1) % 4], spireTip))
+  // belfry band: the dark ring the painting paints under the spire — tower top edges, bolder
+  contourEdge(brush, rng, t0[3], t0[2], nTowerF, nSpire[0], 0.009)
+  contourEdge(brush, rng, t0[2], t1[2], nTowerR, nSpire[1], 0.009)
+  contourEdge(brush, rng, t1[2], t1[3], nTowerB, nSpire[2], 0.009)
+  contourEdge(brush, rng, t1[3], t0[3], nTowerL, nSpire[3], 0.009)
+  for (let k = 0; k < 4; k++) {
+    contourEdge(brush, rng, sc[k], spireTip, nSpire[(k + 3) % 4], nSpire[k], 0.0045)
   }
   return { spireTip }
 }
