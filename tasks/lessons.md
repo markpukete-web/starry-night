@@ -1778,3 +1778,27 @@ what kept going wrong, because the pattern is more useful than the individual bu
   96 tests, lint, production build and reduced-motion pass. Evidence lives at
   `output/playwright/night-balance-authored-2026-07-22/` and
   `output/playwright/night-balance-authored-perf-2026-07-22/`.
+
+## Judge a silhouette on a silhouette, not on a shaded render (2026-07-22)
+
+Reviewing Codex's compound cypress against the painting, I called the silhouette "not fixed" and
+named flat sawn-off tops on the side lobes as the defect that made the tree read as splintered
+timber. Mark disagreed — it is closer than that — and he was right.
+
+- **The defect I named was not in the geometry.** Thresholding both crops to bare silhouettes
+  (`output/review-2026-07-22/sil-compare.png`) shows the left lobe tapering to a clean point. What
+  looked truncated was shading on its near face. **I attributed a texture artefact to geometry,
+  which is the same class of error as reading a colour problem off a bloomed capture.** Isolate the
+  variable before naming the cause: for shape questions, threshold to a mask; the shaded render
+  answers a different question.
+- **Absolute and relative readings are both valid and must be labelled.** I judged against the
+  painting (not there yet); Mark judged against the previous implementation (much closer). Both
+  were true, and stating only the absolute one made a real advance sound like a failure. Say which
+  frame the verdict is in.
+- **What survived the correction, narrower than the original claim:** the outline runs in straighter
+  segments than the painting's curved tongues, and the source paint is visibly stretched into
+  unbroken vertical bands over the lobe skin. The topology — main flame, left secondary at the right
+  height, right tongues, base widening — genuinely matches the painting now.
+- **A defect list is a claim, and gets the same standard of evidence as a fix.** Being the reviewer
+  is not an exemption from verification. I ran tests, build and captures before commenting, then
+  spent that credibility on an unverified read of a shaded image.
