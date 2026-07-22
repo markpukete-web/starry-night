@@ -111,6 +111,18 @@ export function satelliteRuns(painting: DecodedPNG, box: Box, spans: RowSpan[]):
   return out
 }
 
+/** Translate painting-global detached runs into the baked cypress crop's coordinate system. */
+export function toCropLocalRuns(
+  runs: Run[],
+  cropOrigin: Pick<Box, 'x0' | 'y0'>,
+): Run[] {
+  return runs.map((run) => ({
+    y: run.y - cropOrigin.y0,
+    x0: run.x0 - cropOrigin.x0,
+    x1: run.x1 - cropOrigin.x0,
+  }))
+}
+
 export function gaussianBlur(
   source: Float64Array,
   width: number,

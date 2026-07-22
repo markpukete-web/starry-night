@@ -14,6 +14,7 @@ import {
   orientationField,
   satelliteRuns,
   signedUpDirection,
+  toCropLocalRuns,
   type Grid,
 } from './lib/cypress-field.ts'
 import type { DecodedPNG } from './lib/png.ts'
@@ -94,6 +95,22 @@ test('satelliteRuns finds detached treeish runs beside the trunk', () => {
     assert.ok(run.y >= 12 && run.y <= 30, `satellite at y=${run.y} is outside the frond`)
     assert.ok(run.x0 > W / 2 + 5, 'satellite must sit beside the trunk')
   }
+})
+
+test('satellite coordinates are translated from a non-zero painting crop exactly once', () => {
+  assert.deepEqual(
+    toCropLocalRuns(
+      [
+        { y: 105, x0: 230, x1: 245 },
+        { y: 130, x0: 180, x1: 190 },
+      ],
+      { x0: 170, y0: 90 },
+    ),
+    [
+      { y: 15, x0: 60, x1: 75 },
+      { y: 40, x0: 10, x1: 20 },
+    ],
+  )
 })
 
 test('orientationField reads vertical stripes as vertical and zeros off-mask confidence', () => {

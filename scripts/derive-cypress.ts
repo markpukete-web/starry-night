@@ -15,6 +15,7 @@ import {
   orientationField,
   satelliteRuns,
   signedUpDirection,
+  toCropLocalRuns,
   type Box,
 } from './lib/cypress-field.ts'
 import { decodePNG, encodePNG } from './lib/png.ts'
@@ -167,11 +168,7 @@ const rowTable = {
       ] as [number, number, number],
   ),
   // The extractor returns painting-global pixels; all runtime consumers operate in this crop.
-  satellites: satellitesGlobal.map((run) => ({
-    y: run.y - cropY0,
-    x0: run.x0 - cropX0,
-    x1: run.x1 - cropX0,
-  })),
+  satellites: toCropLocalRuns(satellitesGlobal, { x0: cropX0, y0: cropY0 }),
 }
 writeFileSync(OUT_ROWS, `${JSON.stringify(rowTable)}\n`)
 

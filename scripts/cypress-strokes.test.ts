@@ -4,6 +4,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import {
+  buildTendrilTracks,
   CYPRESS_STROKE_CONFIG,
   generateCypressStrokes,
   type CypressStrokeOptions,
@@ -167,4 +168,60 @@ test('a sideways field bends strokes', () => {
       0,
     ) / strokes.length
   assert.ok(drift(bent) > drift(straight) * 3)
+})
+
+const TRACK_OPTIONS = {
+  minRows: 8,
+  maxTracks: 6,
+  crop: { width: 100, height: 100 },
+  rows: {
+    width: 100,
+    height: 100,
+    spans: [
+      [0, 0.4, 0.6],
+      [1, 0.3, 0.7],
+    ] as [number, number, number][],
+  },
+}
+
+test('buildTendrilTracks connects detached runs into coherent vertical tracks', () => {
+  const runs = []
+  for (let y = 10; y < 40; y++) runs.push({ y, x0: 75, x1: 80 })
+  for (let y = 15; y < 45; y++) runs.push({ y, x0: 18, x1: 23 })
+  runs.push({ y: 80, x0: 40, x1: 43 })
+  const tracks = buildTendrilTracks(runs, TRACK_OPTIONS)
+  assert.equal(tracks.length, 2)
+  for (const track of tracks) assert.ok(track.points.length >= 8)
+})
+
+test('tendril points are normalised and retain both source rims', () => {
+  const runs = []
+  for (let y = 10; y < 40; y++) runs.push({ y, x0: 75, x1: 80 })
+  for (let y = 15; y < 45; y++) runs.push({ y, x0: 18, x1: 23 })
+  const tracks = buildTendrilTracks(runs, TRACK_OPTIONS)
+  for (const track of tracks) {
+    for (const point of track.points) {
+      assert.ok(point.heightFraction >= 0 && point.heightFraction <= 1)
+      assert.ok(point.rimDistance >= 0 && point.rimDistance < 5)
+    }
+  }
+  assert.equal(new Set(tracks.map((track) => track.side)).size, 2)
+})
+
+test('tendril tracking tolerates a one-row paint gap without making a fringe', () => {
+  const runs = []
+  for (let y = 10; y < 35; y++) {
+    if (y !== 22) runs.push({ y, x0: 76 + (y % 3), x1: 81 + (y % 3) })
+  }
+  const tracks = buildTendrilTracks(runs, TRACK_OPTIONS)
+  assert.equal(tracks.length, 1)
+  assert.ok(tracks[0].points.length > 20)
+})
+
+test('buildTendrilTracks stays sparse even when many satellite runs exist', () => {
+  const runs = []
+  for (let x = 0; x < 40; x++) {
+    for (let y = 10; y < 30; y++) runs.push({ y, x0: x * 3, x1: x * 3 + 2 })
+  }
+  assert.ok(buildTendrilTracks(runs, TRACK_OPTIONS).length <= 6)
 })

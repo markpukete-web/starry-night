@@ -1,5 +1,10 @@
 import { mulberry32 } from './brush.ts'
-import { normalisedFromCrop, paintingUV, type RowTable } from './cypressMapping.ts'
+import {
+  normalisedFromCrop,
+  paintingUV,
+  rowSpanAt,
+  type RowTable,
+} from './cypressMapping.ts'
 import type { ImageData2D } from './useImageData.ts'
 
 /** One owner for the flat gate and runtime stroke budget. */
@@ -118,4 +123,117 @@ export function generateCypressStrokes(options: CypressStrokeOptions): CypressSt
     if (samples.length >= 3) output.push({ samples, relief })
   }
   return output
+}
+
+export type TendrilPoint = {
+  heightFraction: number
+  side: 'left' | 'right'
+  /** Distance beyond that row's primary rim, in units of its half-width. */
+  rimDistance: number
+}
+
+export type TendrilTrack = {
+  /** Ordered root/base to tip so the ribbon taper narrows outward. */
+  points: TendrilPoint[]
+  side: 'left' | 'right'
+}
+
+type SatelliteRun = { y: number; x0: number; x1: number }
+type TrackOptions = {
+  minRows: number
+  maxTracks: number
+  crop: { width: number; height: number }
+  rows: RowTable
+  maxRowGap?: number
+  horizontalTolerancePx?: number
+}
+
+/**
+ * Connect detached source runs into a few coherent top-to-bottom fronds. A row-by-row fringe would
+ * recreate the fur trap, so tracks must persist over many rows and only the longest few survive.
+ */
+export function buildTendrilTracks(
+  runs: SatelliteRun[],
+  options: TrackOptions,
+): TendrilTrack[] {
+  const maxRowGap = options.maxRowGap ?? 2
+  const horizontalTolerance = options.horizontalTolerancePx ?? 4
+  const tagged = runs.map((run, id) => ({ ...run, id }))
+  const byRow = new Map<number, typeof tagged>()
+  for (const run of tagged) {
+    const row = byRow.get(run.y)
+    if (row) row.push(run)
+    else byRow.set(run.y, [run])
+  }
+  const used = new Set<number>()
+  const chains: (SatelliteRun & { id: number })[][] = []
+  const rowNumbers = [...byRow.keys()].sort((a, b) => a - b)
+
+  const sideOf = (run: SatelliteRun): 'left' | 'right' => {
+    const py = run.y / Math.max(1, options.crop.height - 1)
+    const centre = (run.x0 + run.x1) / 2 / Math.max(1, options.crop.width - 1)
+    const span = rowSpanAt(py, options.rows)
+    return centre < (span.left + span.right) / 2 ? 'left' : 'right'
+  }
+  const separation = (a: SatelliteRun, b: SatelliteRun) => {
+    if (b.x0 > a.x1) return b.x0 - a.x1
+    if (a.x0 > b.x1) return a.x0 - b.x1
+    return 0
+  }
+
+  for (const y of rowNumbers) {
+    for (const seed of byRow.get(y) ?? []) {
+      if (used.has(seed.id)) continue
+      const chain = [seed]
+      used.add(seed.id)
+      let current = seed
+      const side = sideOf(seed)
+
+      while (true) {
+        let best: (SatelliteRun & { id: number }) | undefined
+        let bestScore = Number.POSITIVE_INFINITY
+        for (let gap = 1; gap <= maxRowGap; gap++) {
+          for (const candidate of byRow.get(current.y + gap) ?? []) {
+            if (used.has(candidate.id) || sideOf(candidate) !== side) continue
+            const apart = separation(current, candidate)
+            if (apart > horizontalTolerance * gap) continue
+            const centreA = (current.x0 + current.x1) / 2
+            const centreB = (candidate.x0 + candidate.x1) / 2
+            const score = apart * 4 + Math.abs(centreA - centreB) + (gap - 1) * 2
+            if (score < bestScore) {
+              best = candidate
+              bestScore = score
+            }
+          }
+          if (best) break
+        }
+        if (!best) break
+        used.add(best.id)
+        chain.push(best)
+        current = best
+      }
+      if (chain.length >= options.minRows) chains.push(chain)
+    }
+  }
+
+  return chains
+    .sort((a, b) => b.length - a.length)
+    .slice(0, options.maxTracks)
+    .map((chain) => {
+      const mapped = chain.map((run) => {
+        const py = run.y / Math.max(1, options.crop.height - 1)
+        const centre = (run.x0 + run.x1) / 2 / Math.max(1, options.crop.width - 1)
+        const { left, right } = rowSpanAt(py, options.rows)
+        const halfWidth = Math.max(1e-6, (right - left) / 2)
+        const side: 'left' | 'right' = centre < (left + right) / 2 ? 'left' : 'right'
+        const rimDistance = Math.max(
+          0,
+          (side === 'left' ? left - centre : centre - right) / halfWidth,
+        )
+        return { heightFraction: 1 - py, side, rimDistance }
+      })
+      const leftCount = mapped.filter((point) => point.side === 'left').length
+      const side = leftCount * 2 >= mapped.length ? 'left' : 'right'
+      return { points: mapped.reverse(), side }
+    })
 }
