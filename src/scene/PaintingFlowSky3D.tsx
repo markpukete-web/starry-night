@@ -98,6 +98,12 @@ const ribbonFrag = /* glsl */ `
       col *= (0.52 + 0.40 * combinedFlow) * ridge * bristle;
       float lum = dot(col, vec3(0.299, 0.587, 0.114));
       col = clamp(mix(vec3(lum), col, 1.45), 0.0, 1.05);
+      // Highlight lift keyed on the SOURCE pixel's paleness: the painting's luminous swirl-band
+      // strokes brighten, the cobalt floor is untouched. Post-bloom-removal the sky measured
+      // mean 73 / luminous(>150) 4.6% vs the painting's 102 / 11.6% (2026-07-22, Mark's call:
+      // lift the stars and swirl band, keep the deep night).
+      float srcLum = dot(vColor, vec3(0.299, 0.587, 0.114));
+      col *= 1.0 + 0.38 * smoothstep(0.38, 0.72, srcLum);
     }
 
     float a = edge * taper * uOpacity * vEdgeFade;
@@ -169,6 +175,10 @@ const washFrag = /* glsl */ `
       return;
     }
     col *= vec3(0.67, 0.79, 1.0);
+    // Same source-keyed highlight lift as the ribbons (see strokeFrag) — the wash carries the
+    // pale band between strokes, so lifting only the ribbons left the band flat.
+    float srcLum = dot(col, vec3(0.299, 0.587, 0.114));
+    col *= 1.0 + 0.38 * smoothstep(0.3, 0.62, srcLum);
     gl_FragColor = vec4(col, a * 0.68);
   }
 `
@@ -304,10 +314,12 @@ function makeStarHaloTexture(): CanvasTexture {
   cnv.width = cnv.height = s
   const ctx = cnv.getContext('2d')!
   const g = ctx.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2)
+  // Broadened falloff (2026-07-22): the painting gives every star a wide luminous orb — some
+  // near moon-sized — and the old tight decay read as dim points once full-frame Bloom left.
   g.addColorStop(0, 'rgba(252,240,170,1)')
-  g.addColorStop(0.16, 'rgba(244,221,120,0.7)')
-  g.addColorStop(0.34, 'rgba(226,200,110,0.26)')
-  g.addColorStop(0.62, 'rgba(205,185,120,0.05)')
+  g.addColorStop(0.2, 'rgba(244,221,120,0.75)')
+  g.addColorStop(0.45, 'rgba(226,200,110,0.35)')
+  g.addColorStop(0.7, 'rgba(205,185,120,0.12)')
   g.addColorStop(1, 'rgba(205,185,120,0)')
   ctx.fillStyle = g
   ctx.fillRect(0, 0, s, s)
@@ -365,12 +377,12 @@ function SourceOrbs({ debug }: { debug: PaintingFlowSkyDebug }) {
       <pointLight position={moonPosition} intensity={debug === 'flow' ? 12 : 18} distance={24} color="#f0d98a" />
       {stars.map((star, index) => (
         <group key={index} position={star.position}>
-          <sprite scale={[star.scale * 1.48, star.scale * 1.48, 1]} renderOrder={3}>
+          <sprite scale={[star.scale * 1.85, star.scale * 1.85, 1]} renderOrder={3}>
             <spriteMaterial
               map={starHalo}
               blending={AdditiveBlending}
               transparent
-              opacity={debug === 'flow' ? 0.72 : 0.74}
+              opacity={debug === 'flow' ? 0.72 : 0.9}
               depthWrite={false}
               toneMapped={false}
             />
