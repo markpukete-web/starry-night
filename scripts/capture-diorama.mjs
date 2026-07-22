@@ -8,6 +8,7 @@ import { join } from 'node:path'
 // markma.dev portfolio), and a bare 200-OK check happily captures the wrong app's canvas.
 const DEFAULT_URL = 'http://127.0.0.1:5179/'
 const outDir = process.argv[2] || 'output/playwright/diorama-recovery-2026-07-07'
+const perfOnly = process.argv.includes('--perf')
 const appUrl = process.env.DIORAMA_CAPTURE_URL || DEFAULT_URL
 const appPort = new URL(appUrl).port || '80'
 const chromePath =
@@ -221,6 +222,25 @@ async function capture(page, name) {
   return { name, file, bytes }
 }
 
+async function readPerf(page) {
+  const result = await page.send('Runtime.evaluate', {
+    expression: `(() => {
+      const perf = window.__perf
+      if (!perf || perf.t.length < 30) return null
+      const intervals = perf.t.slice(1).map((value, index) => value - perf.t[index]).sort((a, b) => a - b)
+      return {
+        samples: intervals.length,
+        meanMs: intervals.reduce((sum, value) => sum + value, 0) / intervals.length,
+        p95Ms: intervals[Math.min(intervals.length - 1, Math.floor(intervals.length * 0.95))],
+        maxMs: intervals[intervals.length - 1],
+        info: perf.info,
+      }
+    })()`,
+    returnByValue: true,
+  })
+  return result.result.value
+}
+
 async function dragCanvas(page, dx, dy = 0) {
   const result = await page.send('Runtime.evaluate', {
     expression: `(() => {
@@ -258,6 +278,29 @@ async function main() {
 
   try {
     await waitForChrome(port)
+    if (perfOnly) {
+      const metrics = []
+      for (const [name, url, viewport] of [
+        ['desktop-final', `${base}&debug=final&perf=1`, desktop],
+        ['desktop-nopost', `${base}&debug=nopost&perf=1`, desktop],
+        ['mobile-viewport-final', `${base}&debug=final&perf=1`, mobile],
+      ]) {
+        const { page } = await newPage(port, url, viewport, errors)
+        await sleep(10000)
+        metrics.push({ name, url, viewport, metrics: await readPerf(page) })
+        await page.close()
+      }
+      const summary = {
+        browser: chromePath,
+        note: 'mobile-viewport-final is viewport emulation on desktop hardware, not the locked real-device gate',
+        metrics,
+        errors,
+      }
+      writeFileSync(join(outDir, 'perf-summary.json'), JSON.stringify(summary, null, 2))
+      console.log(JSON.stringify(summary, null, 2))
+      if (errors.length) process.exitCode = 1
+      return
+    }
     const cases = [
       ['desktop-centre', base, desktop],
       ['desktop-flow', `${base}&debug=flow`, desktop],

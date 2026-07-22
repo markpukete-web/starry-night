@@ -1,7 +1,7 @@
-import { Canvas } from '@react-three/fiber'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei'
 import { EffectComposer, Bloom } from '@react-three/postprocessing'
-import { Suspense, useMemo } from 'react'
+import { Suspense, useEffect, useMemo } from 'react'
 import { Diorama } from './Diorama'
 import { PaintingFlowSky3D } from './PaintingFlowSky3D'
 import {
@@ -30,6 +30,55 @@ function readViewMode(): DioramaViewMode {
   return queryValue('view') === 'orbit' ? 'orbit' : 'design'
 }
 
+function readPerfMode(): boolean {
+  return queryValue('perf') === '1'
+}
+
+type PerfWindow = Window & {
+  __perf?: {
+    t: number[]
+    info: {
+      calls: number
+      triangles: number
+      points: number
+      lines: number
+      geometries: number
+      textures: number
+    } | null
+  }
+}
+
+/** Opt-in timing probe. `perf=1` leaves the selected presentation/debug pipeline untouched. */
+function PerfProbe() {
+  const { gl } = useThree()
+  useEffect(() => {
+    const previous = gl.info.autoReset
+    // EffectComposer performs several renderer passes. Its normal auto-reset leaves only the last
+    // fullscreen triangle visible to the probe, so accumulate all passes and reset once per frame.
+    gl.info.autoReset = false
+    return () => {
+      gl.info.autoReset = previous
+      gl.info.reset()
+    }
+  }, [gl])
+  useFrame(() => {
+    const browser = window as PerfWindow
+    if (!browser.__perf) browser.__perf = { t: [], info: null }
+    browser.__perf.t.push(performance.now())
+    if (browser.__perf.t.length > 600) browser.__perf.t.shift()
+    browser.__perf.info = {
+      calls: gl.info.render.calls,
+      triangles: gl.info.render.triangles,
+      points: gl.info.render.points,
+      lines: gl.info.render.lines,
+      geometries: gl.info.memory.geometries,
+      textures: gl.info.memory.textures,
+    }
+    gl.info.reset()
+  }, -1000)
+  return null
+}
+
 function Scene({ reduced }: { reduced: boolean }) {
   const debug = readDebugMode()
   const view = readViewMode()
@@ -37,6 +86,7 @@ function Scene({ reduced }: { reduced: boolean }) {
   const camera = isPortrait && view === 'design' ? DIORAMA_CAMERAS.mobile : DIORAMA_CAMERAS[view]
   const background = useMemo(() => (debug === 'stage' ? '#071020' : '#06112a'), [debug])
   const usePost = debug === 'final'
+  const measurePerformance = readPerfMode()
 
   return (
     <>
@@ -59,6 +109,7 @@ function Scene({ reduced }: { reduced: boolean }) {
         enablePan={DIORAMA_ORBIT.enablePan}
         enableDamping={DIORAMA_ORBIT.enableDamping}
       />
+      {measurePerformance && <PerfProbe />}
       <Suspense fallback={null}>
         {debug !== 'flow' && <Diorama debug={debug === 'stage' ? 'stage' : 'final'} />}
         {debug !== 'stage' && <PaintingFlowSky3D paused={reduced} debug={debug === 'flow' ? 'flow' : 'final'} />}
