@@ -9,6 +9,9 @@ export type CypressLobeSection = {
   /** Horizontal source coordinate in the baked crop; it may sit beyond 0..1 for detached paint. */
   sourceCenter: number
   sourceHalfWidth: number
+  /** Source-paint domain. This stays on detected pigment when the geometric envelope broadens. */
+  paintCenter: number
+  paintHalfWidth: number
 }
 
 export type CypressLobe = {
@@ -38,6 +41,36 @@ export type CypressLobePlanOptions = {
 
 type TaggedRun = { y: number; x0: number; x1: number; id: number }
 
+function smoothSourceSections(
+  sections: CypressLobeSection[],
+  radius: number,
+): CypressLobeSection[] {
+  if (radius <= 0) return sections
+  return sections.map((section, index) => {
+    let centre = 0
+    let halfWidth = 0
+    let paintCentre = 0
+    let paintHalfWidth = 0
+    let count = 0
+    for (let offset = -radius; offset <= radius; offset++) {
+      const sample = sections[index + offset]
+      if (!sample) continue
+      centre += sample.sourceCenter
+      halfWidth += sample.sourceHalfWidth
+      paintCentre += sample.paintCenter
+      paintHalfWidth += sample.paintHalfWidth
+      count++
+    }
+    return {
+      ...section,
+      sourceCenter: centre / count,
+      sourceHalfWidth: halfWidth / count,
+      paintCenter: paintCentre / count,
+      paintHalfWidth: paintHalfWidth / count,
+    }
+  })
+}
+
 function sampleSections(
   sections: CypressLobeSection[],
   heightFraction: number,
@@ -65,6 +98,9 @@ function sampleSections(
     sourceCenter: before.sourceCenter + (after.sourceCenter - before.sourceCenter) * t,
     sourceHalfWidth:
       before.sourceHalfWidth + (after.sourceHalfWidth - before.sourceHalfWidth) * t,
+    paintCenter: before.paintCenter + (after.paintCenter - before.paintCenter) * t,
+    paintHalfWidth:
+      before.paintHalfWidth + (after.paintHalfWidth - before.paintHalfWidth) * t,
   }
 }
 
@@ -155,13 +191,27 @@ function trackSatelliteRuns(
 }
 
 function mainLobe(rows: CypressLobeRows): CypressLobe {
-  const sections = rows.spans
-    .map(([py, left, right]) => ({
-      heightFraction: 1 - py,
-      sourceCenter: (left + right) / 2,
-      sourceHalfWidth: Math.max(0.004, (right - left) / 2),
-    }))
+  const raw = rows.spans
+    .map(([py, left, right]) => {
+      const sourceCenter = (left + right) / 2
+      const sourceHalfWidth = Math.max(0.0035, (right - left) / 2)
+      return {
+        heightFraction: 1 - py,
+        sourceCenter,
+        sourceHalfWidth,
+        paintCenter: sourceCenter,
+        paintHalfWidth: sourceHalfWidth,
+      }
+    })
     .sort((a, b) => a.heightFraction - b.heightFraction)
+  const sections = smoothSourceSections(raw, 6).map((section) => ({
+    ...section,
+    sourceHalfWidth:
+      section.sourceHalfWidth *
+      (section.heightFraction > 0.9
+        ? Math.max(0.05, Math.pow((1 - section.heightFraction) / 0.1, 0.65))
+        : 1),
+  }))
   return {
     id: 'main',
     kind: 'main',
@@ -197,15 +247,30 @@ function frondLobe(
 ): CypressLobe {
   const widthDenominator = Math.max(1, rows.width - 1)
   const heightDenominator = Math.max(1, rows.height - 1)
-  const source = chainTopToBottom
-    .map((run) => ({
-      heightFraction: 1 - run.y / heightDenominator,
-      sourceCenter: (run.x0 + run.x1) / 2 / widthDenominator,
-      sourceHalfWidth: Math.max(0.004, (run.x1 - run.x0 + 1) / 2 / widthDenominator),
-    }))
-    .reverse()
+  const source = smoothSourceSections(chainTopToBottom
+    .map((run) => {
+      const sourceCenter = (run.x0 + run.x1) / 2 / widthDenominator
+      const sourceHalfWidth = Math.max(
+        0.004,
+        (run.x1 - run.x0 + 1) / 2 / widthDenominator,
+      )
+      return {
+        heightFraction: 1 - run.y / heightDenominator,
+        sourceCenter,
+        sourceHalfWidth,
+        paintCenter: sourceCenter,
+        paintHalfWidth: sourceHalfWidth,
+      }
+    })
+    .reverse(), 2)
   const sourceBase = source[0]
   const sourceTip = source[source.length - 1]
+  const sourceSpan = sourceTip.heightFraction - sourceBase.heightFraction
+  const peakWidth = Math.max(
+    0.1,
+    Math.max(...source.map((section) => section.sourceHalfWidth)) * 1.8,
+    sourceSpan * 0.8,
+  )
   const primaryAtBase = rowSpanAt(1 - sourceBase.heightFraction, rows)
   const side =
     sourceBase.sourceCenter < (primaryAtBase.left + primaryAtBase.right) / 2
@@ -227,18 +292,25 @@ function frondLobe(
   const root: CypressLobeSection = {
     heightFraction: rootHeight,
     sourceCenter: sourceBase.sourceCenter + rootShift,
-    sourceHalfWidth: Math.max(sourceBase.sourceHalfWidth * 1.15, primaryHalfWidth * 0.2),
+    sourceHalfWidth: Math.max(sourceBase.sourceHalfWidth * 1.15, primaryHalfWidth * 0.2, peakWidth * 0.55),
+    paintCenter: primaryCentre,
+    paintHalfWidth: Math.max(0.0035, primaryHalfWidth),
   }
   const bridge: CypressLobeSection[] = []
   const bridgeSteps = 4
   for (let step = 1; step < bridgeSteps; step++) {
     const t = step / bridgeSteps
+    const heightFraction =
+      root.heightFraction + (sourceBase.heightFraction - root.heightFraction) * t
+    const primary = rowSpanAt(1 - heightFraction, rows)
     bridge.push({
-      heightFraction: root.heightFraction + (sourceBase.heightFraction - root.heightFraction) * t,
+      heightFraction,
       sourceCenter: root.sourceCenter + (sourceBase.sourceCenter - root.sourceCenter) * t,
       sourceHalfWidth:
         root.sourceHalfWidth +
         (Math.max(sourceBase.sourceHalfWidth, root.sourceHalfWidth * 0.7) - root.sourceHalfWidth) * t,
+      paintCenter: (primary.left + primary.right) / 2,
+      paintHalfWidth: Math.max(0.0035, (primary.right - primary.left) / 2),
     })
   }
   const tipExtension = Math.max(0.018, (sourceTip.heightFraction - sourceBase.heightFraction) * 0.14)
@@ -246,14 +318,27 @@ function frondLobe(
     heightFraction: Math.min(0.995, sourceTip.heightFraction + tipExtension),
     sourceCenter: sourceTip.sourceCenter + sign * Math.min(0.018, tipExtension * 0.15),
     sourceHalfWidth: 0.0035,
+    paintCenter: sourceTip.paintCenter,
+    paintHalfWidth: Math.max(0.0035, sourceTip.paintHalfWidth * 0.35),
   }
+  const sections = [root, ...bridge, ...source, tip]
+    .sort((a, b) => a.heightFraction - b.heightFraction)
+    .map((section) => {
+      if (section === tip) return section
+      const progress =
+        (section.heightFraction - root.heightFraction) /
+        Math.max(1e-6, tip.heightFraction - root.heightFraction)
+      const flameEnvelope =
+        peakWidth *
+        (0.55 * (1 - progress) +
+          0.75 * Math.pow(Math.max(0, Math.sin(Math.PI * progress)), 0.65))
+      return { ...section, sourceHalfWidth: Math.max(section.sourceHalfWidth, flameEnvelope) }
+    })
   return {
     id: `frond-${index + 1}`,
     kind: 'frond',
     side,
-    sections: [root, ...bridge, ...source, tip].sort(
-      (a, b) => a.heightFraction - b.heightFraction,
-    ),
+    sections,
     sourceHeightRange: [sourceBase.heightFraction, sourceTip.heightFraction],
     sourceMaxRimDistance: maxRimDistance(chainTopToBottom, rows),
   }
@@ -263,7 +348,7 @@ export function buildCypressLobePlan(
   rows: CypressLobeRows,
   options: CypressLobePlanOptions = {},
 ): CypressLobePlan {
-  const minTrackRows = options.minTrackRows ?? 16
+  const minTrackRows = options.minTrackRows ?? 28
   const maxFronds = options.maxFronds ?? 5
   const maximumRimDistance = options.maxRimDistance ?? 3
   const chains = trackSatelliteRuns(rows, {

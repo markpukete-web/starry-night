@@ -5,9 +5,14 @@ import test from 'node:test'
 import {
   buildCypressLobePlan,
   lobeIntervalsAt,
+  sampleCypressLobe,
   type CypressLobeRows,
 } from '../src/scene/cypressLobes.ts'
-import { buildCypressLobeSolid } from '../src/scene/cypressLobeGeometry.ts'
+import {
+  buildCypressLobeSolid,
+  mapCypressLobeSurface,
+} from '../src/scene/cypressLobeGeometry.ts'
+import { generateCypressLobeStrokes } from '../src/scene/cypressLobeStrokes.ts'
 
 function fixtureRows(): CypressLobeRows {
   const satellites = []
@@ -55,7 +60,7 @@ test('the real plan retains the strongest mid-height frond that the old top-thir
   const plan = buildCypressLobePlan(rows)
   const fronds = plan.lobes.filter((lobe) => lobe.kind === 'frond')
 
-  assert.ok(fronds.length >= 2 && fronds.length <= 4)
+  assert.equal(fronds.length, 2)
   assert.ok(
     fronds.some(
       (lobe) =>
@@ -67,6 +72,16 @@ test('the real plan retains the strongest mid-height frond that the old top-thir
     fronds.every((lobe) => lobe.sourceMaxRimDistance <= 3),
     'distant dark sky strokes must not become cypress geometry',
   )
+  assert.ok(
+    fronds.every(
+      (lobe) => Math.max(...lobe.sections.map((section) => section.sourceHalfWidth)) >= 0.1,
+    ),
+    'major source fronds need a flame envelope, not needle-width run geometry',
+  )
+  const main = plan.lobes[0]
+  const nearTip = lobeIntervalsAt({ ...plan, lobes: [main] }, 0.95)[0]
+  const tip = lobeIntervalsAt({ ...plan, lobes: [main] }, 1)[0]
+  assert.ok(tip.right - tip.left < (nearTip.right - nearTip.left) * 0.35)
 })
 
 test('closed lobe rings project to their source intervals from the design bearing', () => {
@@ -85,10 +100,11 @@ test('closed lobe rings project to their source intervals from the design bearin
     sectionsPerHeight: 48,
     depthRatio: 0.42,
   })
-  const screenX = [-Math.sin(bearing), 0, Math.cos(bearing)] as const
+  const screenX = [Math.sin(bearing), 0, -Math.cos(bearing)] as const
 
   assert.ok(solid.positions.length > 0)
   assert.ok(solid.indices.length > 0)
+  assert.equal(solid.sourceUvs.length, (solid.positions.length / 3) * 2)
   for (const ring of solid.rings) {
     const projected: number[] = []
     for (let vertex = 0; vertex <= 12; vertex++) {
@@ -107,6 +123,23 @@ test('closed lobe rings project to their source intervals from the design bearin
       solid.positions.slice(first, first + 3),
       solid.positions.slice(seam, seam + 3),
     )
+    const rightUv = ring.vertexStart * 2
+    const frontUv = (ring.vertexStart + 3) * 2
+    const leftUv = (ring.vertexStart + 6) * 2
+    assert.ok(
+      Math.abs(
+        solid.sourceUvs[rightUv] -
+          (ring.source.paintCenter + ring.source.paintHalfWidth)
+      ) < 1e-6,
+    )
+    assert.ok(Math.abs(solid.sourceUvs[frontUv] - ring.source.paintCenter) < 1e-6)
+    assert.ok(
+      Math.abs(
+        solid.sourceUvs[leftUv] -
+          (ring.source.paintCenter - ring.source.paintHalfWidth)
+      ) < 1e-6,
+    )
+    assert.ok(Math.abs(solid.sourceUvs[rightUv + 1] - (1 - ring.heightFraction)) < 1e-6)
   }
   assert.ok(
     solid.indices.every((index) => index >= 0 && index < solid.positions.length / 3),
@@ -132,4 +165,117 @@ test('closed lobe rings project to their source intervals from the design bearin
     ]
     assert.ok(cross[0] ** 2 + cross[1] ** 2 + cross[2] ** 2 > 1e-16)
   }
+})
+
+test('frond geometry can broaden without sampling the surrounding blue sky', () => {
+  const plan = buildCypressLobePlan(fixtureRows(), {
+    minTrackRows: 8,
+    maxFronds: 3,
+  })
+  const frond = plan.lobes.find((lobe) => lobe.kind === 'frond')
+  assert.ok(frond)
+  const sourceHeight = 1 - 34 / 99
+  const section = frond.sections.reduce((closest, candidate) =>
+    Math.abs(candidate.heightFraction - sourceHeight) <
+    Math.abs(closest.heightFraction - sourceHeight)
+      ? candidate
+      : closest,
+  )
+
+  assert.ok(
+    section.sourceHalfWidth > section.paintHalfWidth,
+    'the lobe envelope may be broad, but its texture domain must remain on source paint',
+  )
+  assert.ok(section.paintCenter - section.paintHalfWidth >= 75 / 99)
+  assert.ok(section.paintCenter + section.paintHalfWidth <= 83 / 99)
+})
+
+test('multi-scale source strokes stay inside their owning lobe and paint every frond', () => {
+  const plan = buildCypressLobePlan(fixtureRows(), {
+    minTrackRows: 8,
+    maxFronds: 3,
+  })
+  const options = {
+    seed: 0xc1f3,
+    structuralCount: 80,
+    fillCount: 160,
+    structuralLength: 0.3,
+    fillLength: 0.14,
+    structuralSteps: 19,
+    fillSteps: 11,
+    reliefSpread: 0.04,
+  }
+  const strokes = generateCypressLobeStrokes(plan, options)
+
+  assert.deepEqual(strokes, generateCypressLobeStrokes(plan, options))
+  assert.ok(plan.lobes.every((lobe) => strokes.some((stroke) => stroke.lobeId === lobe.id)))
+  for (const stroke of strokes) {
+    const lobe = plan.lobes.find((candidate) => candidate.id === stroke.lobeId)
+    assert.ok(lobe)
+    for (const sample of stroke.samples) {
+      const interval = lobeIntervalsAt(
+        { ...plan, lobes: [lobe] },
+        sample.heightFraction,
+      )[0]
+      assert.ok(interval)
+      assert.ok(sample.sourceX >= interval.left - 1e-6)
+      assert.ok(sample.sourceX <= interval.right + 1e-6)
+      const section = sampleCypressLobe(lobe, sample.heightFraction)
+      assert.ok(section)
+      assert.ok(sample.paintX >= section.paintCenter - section.paintHalfWidth - 1e-6)
+      assert.ok(sample.paintX <= section.paintCenter + section.paintHalfWidth + 1e-6)
+    }
+  }
+  const medianSpan = (scale: 'structural' | 'fill') => {
+    const spans = strokes
+      .filter((stroke) => stroke.scale === scale)
+      .map(
+        (stroke) =>
+          stroke.samples[stroke.samples.length - 1].heightFraction -
+          stroke.samples[0].heightFraction,
+      )
+      .sort((a, b) => a - b)
+    return spans[Math.floor(spans.length / 2)]
+  }
+  assert.ok(medianSpan('structural') > medianSpan('fill') * 1.6)
+})
+
+test('front and back lobe surfaces preserve source x while carrying real camera depth', () => {
+  const plan = buildCypressLobePlan(fixtureRows(), {
+    minTrackRows: 8,
+    maxFronds: 3,
+  })
+  const lobe = plan.lobes[1]
+  const bearing = Math.PI * 0.36
+  const options = {
+    bearing,
+    height: 2.7,
+    sourceToWorld: 0.5,
+    sourceAnchor: 0.5,
+    radialSegments: 12,
+    mainSections: 40,
+    sectionsPerHeight: 48,
+    depthRatio: 0.42,
+  }
+  const sample = {
+    heightFraction: 0.64,
+    lateral: 0.35,
+    sourceX: 0,
+    sourceY: 0.36,
+  }
+  const section = lobeIntervalsAt({ ...plan, lobes: [lobe] }, sample.heightFraction)[0]
+  assert.ok(section)
+  sample.sourceX = section.left + (section.right - section.left) * 0.675
+  const front = mapCypressLobeSurface(lobe, sample, options, true)
+  const back = mapCypressLobeSurface(lobe, sample, options, false)
+  const screenX = [Math.sin(bearing), 0, -Math.cos(bearing)] as const
+  const view = [Math.cos(bearing), 0, Math.sin(bearing)] as const
+  const project = (point: readonly [number, number, number], axis: typeof screenX) =>
+    point[0] * axis[0] + point[1] * axis[1] + point[2] * axis[2]
+  const expected = (sample.sourceX - options.sourceAnchor) * options.sourceToWorld
+
+  assert.ok(Math.abs(project(front.position, screenX) - expected) < 1e-6)
+  assert.ok(Math.abs(project(back.position, screenX) - expected) < 1e-6)
+  assert.ok(project(front.position, view) > 0)
+  assert.ok(project(back.position, view) < 0)
 })

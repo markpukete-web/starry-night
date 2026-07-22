@@ -28,9 +28,22 @@ export type CypressLobeRing = {
 
 export type CypressLobeSolid = {
   positions: number[]
+  /** Per-vertex baked-crop coordinates: x then top-origin y. */
+  sourceUvs: number[]
   indices: number[]
   rings: CypressLobeRing[]
   lobeRanges: { lobeId: string; firstVertex: number; vertexCount: number }[]
+}
+
+export type CypressLobeSurfaceSample = {
+  heightFraction: number
+  lateral: number
+  sourceX: number
+}
+
+export type CypressLobeSurfacePoint = {
+  position: readonly [number, number, number]
+  normal: readonly [number, number, number]
 }
 
 const DEFAULTS: Omit<CypressLobeSolidOptions, 'bearing' | 'height' | 'sourceToWorld' | 'sourceAnchor'> = {
@@ -38,6 +51,39 @@ const DEFAULTS: Omit<CypressLobeSolidOptions, 'bearing' | 'height' | 'sourceToWo
   mainSections: 96,
   sectionsPerHeight: 72,
   depthRatio: 0.42,
+}
+
+export function mapCypressLobeSurface(
+  lobe: CypressLobePlan['lobes'][number],
+  sample: CypressLobeSurfaceSample,
+  options: CypressLobeSolidOptions,
+  frontFacing: boolean,
+): CypressLobeSurfacePoint {
+  const section = sampleCypressLobe(lobe, sample.heightFraction)
+  if (!section) throw new Error(`sample lies outside cypress lobe ${lobe.id}`)
+  const screenX = [Math.sin(options.bearing), 0, -Math.cos(options.bearing)] as const
+  const viewDirection = [Math.cos(options.bearing), 0, Math.sin(options.bearing)] as const
+  const projected = (sample.sourceX - options.sourceAnchor) * options.sourceToWorld
+  const widthRadius = Math.max(0.002, section.sourceHalfWidth * options.sourceToWorld)
+  const depthRadius = Math.max(0.002, widthRadius * options.depthRatio)
+  const lateral = Math.min(0.999, Math.max(-0.999, sample.lateral))
+  const depthUnit = Math.sqrt(Math.max(0, 1 - lateral * lateral))
+  const facing = frontFacing ? 1 : -1
+  const depth = depthUnit * depthRadius * facing
+  const position = [
+    screenX[0] * projected + viewDirection[0] * depth,
+    sample.heightFraction * options.height,
+    screenX[2] * projected + viewDirection[2] * depth,
+  ] as const
+  const normalAcross = lateral / widthRadius
+  const normalDepth = (depthUnit * facing) / depthRadius
+  const normalLength = Math.hypot(normalAcross, normalDepth) || 1
+  const normal = [
+    (screenX[0] * normalAcross + viewDirection[0] * normalDepth) / normalLength,
+    0,
+    (screenX[2] * normalAcross + viewDirection[2] * normalDepth) / normalLength,
+  ] as const
+  return { position, normal }
 }
 
 /**
@@ -57,16 +103,17 @@ export function buildCypressLobeSolid(
     throw new Error('cypress lobe radialSegments must be an even integer >= 4')
   }
   const positions: number[] = []
+  const sourceUvs: number[] = []
   const indices: number[] = []
   const rings: CypressLobeRing[] = []
   const lobeRanges: CypressLobeSolid['lobeRanges'] = []
-  const screenX = [-Math.sin(options.bearing), 0, Math.cos(options.bearing)] as const
+  const screenX = [Math.sin(options.bearing), 0, -Math.cos(options.bearing)] as const
   const viewDirection = [Math.cos(options.bearing), 0, Math.sin(options.bearing)] as const
-  const ringSize = options.radialSegments + 1
 
-  const pushPosition = (x: number, y: number, z: number) => {
+  const pushPosition = (x: number, y: number, z: number, sourceU: number, sourceV: number) => {
     const index = positions.length / 3
     positions.push(x, y, z)
+    sourceUvs.push(sourceU, sourceV)
     return index
   }
 
@@ -104,10 +151,15 @@ export function buildCypressLobeSolid(
           centreZ + screenX[2] * across + viewDirection[2] * depth,
         ] as const
         if (radialIndex === 0) seam = point
-        pushPosition(...point)
+        const paintU = source.paintCenter + Math.cos(angle) * source.paintHalfWidth
+        pushPosition(...point, paintU, 1 - heightFraction)
       }
       if (!seam) throw new Error('cypress lobe ring has no seam vertex')
-      pushPosition(...seam)
+      pushPosition(
+        ...seam,
+        source.paintCenter + source.paintHalfWidth,
+        1 - heightFraction,
+      )
       const ring = {
         lobeId: lobe.id,
         heightFraction,
@@ -146,7 +198,8 @@ export function buildCypressLobeSolid(
         const x = positions[source]
         const y = positions[source + 1]
         const z = positions[source + 2]
-        pushPosition(x, y, z)
+        const sourceUv = (ring.vertexStart + radialIndex) * 2
+        pushPosition(x, y, z, sourceUvs[sourceUv], sourceUvs[sourceUv + 1])
         centreX += x
         centreY += y
         centreZ += z
@@ -155,6 +208,8 @@ export function buildCypressLobeSolid(
         centreX / options.radialSegments,
         centreY / options.radialSegments,
         centreZ / options.radialSegments,
+        ring.source.paintCenter,
+        1 - ring.heightFraction,
       )
       for (let radialIndex = 0; radialIndex < options.radialSegments; radialIndex++) {
         const current = duplicateStart + radialIndex
@@ -171,5 +226,5 @@ export function buildCypressLobeSolid(
     })
   }
 
-  return { positions, indices, rings, lobeRanges }
+  return { positions, sourceUvs, indices, rings, lobeRanges }
 }
