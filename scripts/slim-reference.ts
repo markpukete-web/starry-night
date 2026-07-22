@@ -44,7 +44,7 @@ const DIR = resolve(import.meta.dirname, '../public/reference');
  * WebP is BIGGER for them; measure before adding to this list, don't assume.
  * Paths are referenced from src/scene/PaintingFlowSky3D.tsx — keep the two in step.
  */
-const WEBP_ASSETS = ['painting-filled', 'sky-extend-left', 'sky-extend-right'];
+const WEBP_ASSETS = ['painting-filled', 'sky-extend-left', 'sky-extend-right', 'cypress-skin'];
 
 function haveWebpTools(): boolean {
   try {
@@ -61,7 +61,10 @@ function losslessWebp(pngPath: string, rgba: Uint8Array, width: number, height: 
   const out = join(tmpdir(), `slim-${basename(pngPath)}.webp`);
   const back = join(tmpdir(), `slim-${basename(pngPath)}.check.png`);
   try {
-    execFileSync('cwebp', ['-quiet', '-lossless', '-z', '9', pngPath, '-o', out]);
+    // `-exact` preserves RGB beneath transparent texels. The cypress skin keeps nearest-valid
+    // paint there for edge sampling while alpha remains the containment mask; default WebP is
+    // allowed to discard those hidden RGB bytes even in lossless mode.
+    execFileSync('cwebp', ['-quiet', '-lossless', '-exact', '-z', '9', pngPath, '-o', out]);
     execFileSync('dwebp', ['-quiet', out, '-o', back]);
     const check = decodePNG(readFileSync(back));
     if (check.width !== width || check.height !== height) return null;
