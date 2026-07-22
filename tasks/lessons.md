@@ -1756,3 +1756,25 @@ what kept going wrong, because the pattern is more useful than the individual bu
   (base/middle/top); the desktop final pipeline is 8.33 ms mean, 9.0 ms p95 over 599 intervals;
   nine runtime captures report zero errors; 96 tests, lint, build and reduced-motion pass. The
   matched source/live crop is `output/playwright/cypress-compound-final-2026-07-22/original-vs-live.png`.
+
+## Authored night balance — remove the wash before adding a grade (2026-07-22)
+
+- **A liked screenshot can identify the mechanism, not just the mood.** Mark's darker comparison
+  measured almost identically to the existing no-post render. A four-way view (his screenshot,
+  no-post, selective Bloom, and selective Bloom plus grade) showed that entering the composer path
+  lifted the pale ribbon field across the whole sky. The desired contrast was already authored.
+- **Do not grade around a post-processing ownership error.** A stronger display-domain grade made
+  the bloomed version moodier, but it also crushed the village and biased the cypress darker. The
+  structural fix was to remove full-frame Bloom from the diorama. Existing additive moon and star
+  halo sprites remain readable and luminous without it, satisfying the original visual contract.
+- **A colour heuristic can become pipeline-dependent.** The cypress distribution check originally
+  used one broad screen rectangle plus `treeishColour`. With Bloom removed, dark cobalt sky around
+  the narrow tip passed that heuristic and doubled the sampled top pixels, reporting a false
+  ΔE76 10.47. Stencilling first with the source cypress alpha reduced the accepted authored result
+  to 0.85 / 0.70 / 3.62 (base/middle/top). It remains a regional comparison, not registered
+  per-pixel evidence.
+- **Current local evidence, still Mark-gated:** nine captures report zero errors; desktop final is
+  8.33 ms mean / 9.1 ms p95 over 599 intervals, and the desktop no-post control is 8.33 / 8.9 ms;
+  96 tests, lint, production build and reduced-motion pass. Evidence lives at
+  `output/playwright/night-balance-authored-2026-07-22/` and
+  `output/playwright/night-balance-authored-perf-2026-07-22/`.

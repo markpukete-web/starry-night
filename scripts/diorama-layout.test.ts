@@ -52,6 +52,7 @@ test('S4 side fade: full paint across the canvas and inner strips, gone at the s
 
 test('diorama recovery preserves source ribbons and rejects native dome replacement', () => {
   assert.equal(DIORAMA_RECOVERY_CONTRACT.preserveSourceSpaceRibbons, true)
+  assert.equal(DIORAMA_RECOVERY_CONTRACT.sourceAuthoredHalosRemainReadableWithoutBloom, true)
   assert.equal(DIORAMA_RECOVERY_CONTRACT.rejectNativeDomeReplacement, true)
   assert.equal(DIORAMA_RECOVERY_CONTRACT.frontArcOnlyForThisSlice, true)
   assert.equal(DIORAMA_RECOVERY_CONTRACT.isolateCypressAndEdgeFixes, true)

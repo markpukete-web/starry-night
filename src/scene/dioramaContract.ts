@@ -61,6 +61,7 @@ export const DIORAMA_VISUAL_CONTRACT = {
 
 export const DIORAMA_RECOVERY_CONTRACT = {
   preserveSourceSpaceRibbons: true,
+  sourceAuthoredHalosRemainReadableWithoutBloom: true,
   rejectNativeDomeReplacement: true,
   frontArcOnlyForThisSlice: true,
   isolateCypressAndEdgeFixes: true,

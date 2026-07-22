@@ -1,6 +1,5 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei'
-import { EffectComposer, Bloom } from '@react-three/postprocessing'
 import { Suspense, useEffect, useMemo } from 'react'
 import { Diorama } from './Diorama'
 import { PaintingFlowSky3D } from './PaintingFlowSky3D'
@@ -57,8 +56,7 @@ function PerfProbe() {
   const { gl } = useThree()
   useEffect(() => {
     const previous = gl.info.autoReset
-    // EffectComposer performs several renderer passes. Its normal auto-reset leaves only the last
-    // fullscreen triangle visible to the probe, so accumulate all passes and reset once per frame.
+    // Accumulate every renderer pass, then reset once per measured frame.
     setRendererInfoAutoReset(gl.info, false)
     return () => {
       setRendererInfoAutoReset(gl.info, previous)
@@ -89,7 +87,6 @@ function Scene({ reduced }: { reduced: boolean }) {
   const isPortrait = typeof window !== 'undefined' && window.innerHeight > window.innerWidth
   const camera = isPortrait && view === 'design' ? DIORAMA_CAMERAS.mobile : DIORAMA_CAMERAS[view]
   const background = useMemo(() => (debug === 'stage' ? '#071020' : '#06112a'), [debug])
-  const usePost = debug === 'final'
   const measurePerformance = readPerfMode()
 
   return (
@@ -118,11 +115,7 @@ function Scene({ reduced }: { reduced: boolean }) {
         {debug !== 'flow' && <Diorama debug={debug === 'stage' ? 'stage' : 'final'} />}
         {debug !== 'stage' && <PaintingFlowSky3D paused={reduced} debug={debug === 'flow' ? 'flow' : 'final'} />}
       </Suspense>
-      {usePost && (
-        <EffectComposer>
-          <Bloom intensity={0.5} luminanceThreshold={0.58} mipmapBlur radius={0.5} />
-        </EffectComposer>
-      )}
+      {/* Authored additive moon/star halos supply the glow. Full-frame bloom washes out the pale sky strokes. */}
     </>
   )
 }

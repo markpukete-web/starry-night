@@ -59,12 +59,23 @@ for (let y = 0; y < source.height; y++) {
   }
 }
 
-// Deterministic 1600x900 design-camera bounds, padded inside the tree's silhouette. Chroma gates
-// reject the blue sky behind it; restricting x/y rejects the dark island and village below.
+// Deterministic 1600x900 design-camera bounds. The source-projected front is registered to this
+// crop, so its alpha is a conservative silhouette stencil; the chroma gate then rejects any
+// residual edge sky. A rectangle plus chroma alone is not sufficient because the authored
+// no-post cobalt is dark enough to satisfy `treeishColour` around the narrow upper flame.
 const renderedRegions: Record<Region, Lab[]> = { base: [], middle: [], top: [] }
 const bounds = { left: 400, right: 548, top: 96, bottom: 670 }
 for (let y = bounds.top; y <= bounds.bottom; y++) {
   for (let x = bounds.left; x <= bounds.right; x++) {
+    const sourceX = Math.min(
+      source.width - 1,
+      Math.max(0, Math.round(((x - bounds.left) / (bounds.right - bounds.left)) * (source.width - 1))),
+    )
+    const sourceY = Math.min(
+      source.height - 1,
+      Math.max(0, Math.round(((y - bounds.top) / (bounds.bottom - bounds.top)) * (source.height - 1))),
+    )
+    if (source.rgba[(sourceY * source.width + sourceX) * 4 + 3] === 0) continue
     const index = (y * capture.width + x) * 4
     const red = capture.rgba[index]
     const green = capture.rgba[index + 1]

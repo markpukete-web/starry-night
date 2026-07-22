@@ -9,13 +9,17 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## ▶ PICK UP HERE (next session) — compound cypress correction at Mark visual gate
+## ▶ PICK UP HERE (next session) — compound cypress + authored night balance at Mark visual gate
 
 **Where we stopped (2026-07-22):** Mark rejected the first implemented second pass after an
 original/live comparison exposed the same black-fur read. That implementation has now been
 structurally replaced locally on `sky-brushdab`: the painting's persistent row runs form one main
 closed lobe plus two connected side lobes, and the painting itself is source-projected onto those
-volumes. **Checklist item 7 remains at Mark's visual gate. Nothing from this repair was pushed.**
+volumes. Mark then approved implementing the darker, higher-contrast mood in his 2026-07-22
+screenshot. Isolation proved that screenshot already matched the authored no-post render; the
+full-frame composer was lifting the pale sky strokes. Bloom has therefore been removed from the
+diorama rather than countered with a heavy grade. **Checklist items 1 and 7 remain at Mark's visual
+gate. Nothing from either repair was pushed.**
 
 **Review in this order:**
 
@@ -27,6 +31,8 @@ volumes. **Checklist item 7 remains at Mark's visual gate. Nothing from this rep
 4. `output/playwright/cypress-compound-final-2026-07-22/mobile-drag-left.png` — portrait viewport
    after orbiting the otherwise off-screen far-left tree into view
 5. `reference/derived/cypress-lobe-gate.png` — source paint beside the retained lobe identities
+6. `output/playwright/night-balance-authored-2026-07-22/desktop-centre.png` — the approved darker
+   direction implemented without a full-frame post pass
 
 **What changed after the rejection:**
 
@@ -40,22 +46,26 @@ volumes. **Checklist item 7 remains at Mark's visual gate. Nothing from this rep
 - The procedural overlay fell from 2,200 ribbons to **48 front + 9 mirrored back** sparse relief
   accents (**4,902 vertices / 4,788 triangles**). This removed both the short-mark fur and the
   evenly spaced bark waves seen in intermediate captures.
+- Full-frame Bloom was removed. Authored additive moon/star halos still supply the glow, while the
+  cobalt sky and foreground retain the local contrast visible in Mark's reference screenshot.
+  `debug=final` and `debug=nopost` intentionally converge; the latter remains a regression control.
 
 **Current evidence:**
 
 - Original/live matched crop: `output/playwright/cypress-compound-final-2026-07-22/original-vs-live.png`
 - Displayed regional Lab distribution (honestly not registered per-pixel): mean ΔE76 base
-  **0.91**, middle **1.98**, top **2.05**, all below the locked tolerance of 10
+  **0.85**, middle **0.70**, top **3.62**, all below the locked tolerance of 10 after the
+  source-alpha stencil excludes surrounding cobalt from the regional sample
 - Nine deterministic runtime views, including final/no-post/orbit boundaries: **0 errors**
-- Local 1600×900 final pipeline, 599 intervals: mean **8.33 ms**, p95 **9.0 ms**, max **9.5 ms**;
-  no-post p95 **9.1 ms**. Portrait viewport p95 **9.1 ms** on desktop hardware only; the locked
+- Local 1600×900 authored final pipeline, 599 intervals: mean **8.33 ms**, p95 **9.1 ms**, max
+  **9.7 ms**; no-post p95 **8.9 ms**. Portrait viewport p95 **9.3 ms** on desktop hardware only; the locked
   real mid-tier mobile gate remains checklist item 3
 - **96 tests pass**, lint clean, production build green; reduced-motion frames byte-identical
   while the control churns
 
-**NEXT:** Mark reviews the live localhost tree and the matched crop. If accepted, mark checklist
-item 7 done; if not, record the precise remaining source/live gap before another change. Item 8
-(village) follows only after this gate. **Do not push unless Mark asks.**
+**NEXT:** Mark reviews the live localhost tree and authored night balance. If accepted, mark
+checklist items 1 and 7 done; if not, record the precise remaining source/live or tonal gap before
+another change. Item 8 (village) follows only after the cypress gate. **Do not push unless Mark asks.**
 
 **Git:** compound topology `9b5abc8`, closed geometry `334fbd2`, source-projected runtime
 `59cce94`, plus the documentation commit that follows this note; all local on `sky-brushdab`.
@@ -125,7 +135,7 @@ stop and ask about (CLAUDE.md "Stop and ask Mark when"). `Claude` items are mech
 
 | # | Item | Owner | State |
 |---|------|-------|-------|
-| 1 | **Lighting/bloom balance** — `&debug=nopost` vs final; the piece currently ships whatever bloom the S4 work left | Mark | open |
+| 1 | **Lighting/bloom balance** — Mark approved the darker screenshot direction; isolation showed it matched no-post, so the redundant full-frame Bloom wash was removed instead of adding a compensating grade. Evidence: `output/playwright/night-balance-authored-2026-07-22/` | Mark | **AT MARK VISUAL GATE — local only, not pushed** |
 | 2 | **Mobile portrait framing** — responsive fov keeps cypress edge + central whorl + steeple, but the MOON can't fit a portrait frame (≈42° off-centre on the arc); needs a portrait-specific camera bearing | Mark (composition) | open |
 | 3 | **Perf on real hardware** — locked criterion: 60 fps desktop, 30 fps mid-tier mobile. Headless cannot measure this; needs a real device pass. Includes confirming stroke budget + DPR caps (Tunables) hold up | Mark to run, Claude to retune | open |
 | 4 | **Deploy mechanics** — Vercel prod, Deployment Protection, `starrynight.markma.dev` DNS (Cloudflare CNAME, grey-cloud). CLAUDE.md: anything touching deploy/DNS/analytics is stop-and-ask | Mark | open |
