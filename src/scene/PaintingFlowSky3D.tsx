@@ -272,38 +272,17 @@ function makeMoonHaloTexture(): CanvasTexture {
   cnv.width = cnv.height = s
   const ctx = cnv.getContext('2d')!
   const g = ctx.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2)
-  g.addColorStop(0, 'rgba(255,242,187,0.98)')
-  g.addColorStop(0.24, 'rgba(248,214,112,0.62)')
-  g.addColorStop(0.52, 'rgba(229,184,84,0.25)')
+  // Soft core (0.98→0.5): the halo now sits ON the painted moon (MOON_PAINTED_UV) whose disc
+  // the highlight lift already brightens — a hot additive core blew the crescent's gold out to
+  // white. The painting keeps the crescent readable inside the glow; the halo's job is only the
+  // outer radiance (2026-07-22 moon fix).
+  g.addColorStop(0, 'rgba(255,242,187,0.5)')
+  g.addColorStop(0.24, 'rgba(248,214,112,0.42)')
+  g.addColorStop(0.52, 'rgba(229,184,84,0.22)')
   g.addColorStop(0.82, 'rgba(207,165,82,0.06)')
   g.addColorStop(1, 'rgba(207,165,82,0)')
   ctx.fillStyle = g
   ctx.fillRect(0, 0, s, s)
-  const tex = new CanvasTexture(cnv)
-  tex.needsUpdate = true
-  return tex
-}
-
-function makeMoonCrescentTexture(): CanvasTexture {
-  const s = 256
-  const cnv = document.createElement('canvas')
-  cnv.width = cnv.height = s
-  const ctx = cnv.getContext('2d')!
-  const cx = s / 2
-  const cy = s / 2
-  const r = s * 0.33
-  const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r)
-  g.addColorStop(0, 'rgba(253,243,189,1)')
-  g.addColorStop(0.62, 'rgba(236,211,95,1)')
-  g.addColorStop(1, 'rgba(202,164,62,1)')
-  ctx.fillStyle = g
-  ctx.beginPath()
-  ctx.arc(cx, cy, r, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.globalCompositeOperation = 'destination-out'
-  ctx.beginPath()
-  ctx.arc(cx + r * 0.5, cy - r * 0.48, r * 0.95, 0, Math.PI * 2)
-  ctx.fill()
   const tex = new CanvasTexture(cnv)
   tex.needsUpdate = true
   return tex
@@ -329,11 +308,20 @@ function makeStarHaloTexture(): CanvasTexture {
   return tex
 }
 
+// The PAINTED moon's centre — bright-warm pixel centroid of the scan's moon corner (lum>170,
+// r+g>2.2b over 360x330+1230+30; ring-verified 2026-07-22). NOT the same as skySwirls' MOON_UV
+// (0.85,0.16), which anchors the moon's VORTEX — same trap as the star guards (lessons 07-16):
+// the SWIRLS table cannot supply painted-body positions. The authored crescent sprite used to
+// sit at the vortex anchor, doubling the source's own moon 78px away (Mark: "mismatched").
+const MOON_PAINTED_UV: [number, number] = [0.8987, 0.1697]
+
 function SourceOrbs({ debug }: { debug: PaintingFlowSkyDebug }) {
   const moonHalo = useMemo(() => makeMoonHaloTexture(), [])
-  const moonCrescent = useMemo(() => makeMoonCrescentTexture(), [])
   const starHalo = useMemo(() => makeStarHaloTexture(), [])
-  const moonPosition = useMemo(() => uvToDioramaSkyPosition(MOON_UV[0], MOON_UV[1], new Vector3(), DOME_R - 0.02), [])
+  const moonPosition = useMemo(
+    () => uvToDioramaSkyPosition(MOON_PAINTED_UV[0], MOON_PAINTED_UV[1], new Vector3(), DOME_R - 0.02),
+    [],
+  )
   const stars = useMemo(
     () =>
       SWIRLS.filter(([u, v, , r]) => {
@@ -352,14 +340,16 @@ function SourceOrbs({ debug }: { debug: PaintingFlowSkyDebug }) {
   useEffect(
     () => () => {
       moonHalo.dispose()
-      moonCrescent.dispose()
       starHalo.dispose()
     },
-    [moonCrescent, moonHalo, starHalo],
+    [moonHalo, starHalo],
   )
 
   return (
     <group>
+      {/* The moon BODY is the painting's own pixels (crescent-in-disc, now lifted by the
+          highlight gain); authored layers add only the additive glow paint cannot emit.
+          The old flat crescent sprite doubled the source moon and is gone. */}
       <group position={moonPosition}>
         <sprite scale={[4.25, 4.25, 1]} renderOrder={3}>
           <spriteMaterial
@@ -370,9 +360,6 @@ function SourceOrbs({ debug }: { debug: PaintingFlowSkyDebug }) {
             depthWrite={false}
             toneMapped={false}
           />
-        </sprite>
-        <sprite scale={[1.45, 1.45, 1]} renderOrder={4}>
-          <spriteMaterial map={moonCrescent} transparent opacity={1} depthWrite={false} toneMapped={false} />
         </sprite>
       </group>
       <pointLight position={moonPosition} intensity={debug === 'flow' ? 12 : 18} distance={24} color="#f0d98a" />
