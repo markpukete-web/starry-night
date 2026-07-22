@@ -19,6 +19,10 @@ const newArr = (): Arr => ({ positions: [], colors: [], indices: [] })
 
 const HOUSE = new Color(PALETTE.house).multiplyScalar(1.28) // dark blue-violet walls
 const ROOF = new Color(PALETTE.roof).multiplyScalar(1.32)
+// Per-house differentiation lerps toward these second swatches (same documented lifts as their
+// partners) — interpolation between palette families only, no free hue rotation (plan 2026-07-22).
+const HOUSE_B = new Color(PALETTE.villageCool).multiplyScalar(1.28)
+const ROOF_B = new Color(PALETTE.ground).multiplyScalar(1.32)
 // The painting's church is pale INSIDE the nocturne band — its spire measures the same value as
 // the sky behind it (84.5 vs 84.9) and separates by drawn outline, not brightness (the S1
 // contours carry that job now). The old ×2.05 + 30% white lerp measured 202 on screen — the
@@ -105,7 +109,9 @@ function rot(x: number, z: number, cx: number, cz: number, yaw: number): [number
   return [cx + dx * Math.cos(yaw) - dz * Math.sin(yaw), cz + dx * Math.sin(yaw) + dz * Math.cos(yaw)]
 }
 
-const STROKES_PER_AREA = 230 // light cladding — the base face must stay visible between marks
+const STROKES_PER_AREA = 700 // dense cladding — the painting's houses are stroke-built (band
+// 3×3 stddev 11.3 vs our 1.9 at 230, tasks/2026-07-22-village-look.md); the contour pass owns
+// the silhouette so the marks may now cover the face
 const WALL_FLECK = new Color(PALETTE.hillsCrest).multiplyScalar(1.6) // pale moonlit stroke accents
 const _pa = new Vector3()
 const _pb = new Vector3()
@@ -142,16 +148,21 @@ function cladQuad(
   const lit = litColor(base, _n)
   const n = Math.max(3, Math.round(area * STROKES_PER_AREA * (0.85 + 0.3 * rng())))
   const col = new Color()
+  // marks lie in quantised COURSES across the stroke axis — Van Gogh lays wall and roof strokes
+  // in rows, and uniform scatter at this density reads as fur, not paint (s3 retune pass 2)
+  const crossLen = (strokeAlong === 'ab' ? _v : _u).length()
+  const rows = Math.max(2, Math.min(8, Math.round(crossLen / 0.045)))
   for (let i = 0; i < n; i++) {
-    const s = 0.12 + 0.76 * rng()
-    const t = 0.12 + 0.76 * rng()
+    const s = 0.06 + 0.88 * rng()
+    const row = Math.floor(rng() * rows)
+    const t = (row + 0.5 + (rng() - 0.5) * 0.36) / rows
     _pa.copy(a).lerp(b, s)
     _pb.copy(d).lerp(c, s)
-    _pos.copy(_pa).lerp(_pb, t).addScaledVector(_n, 0.006 + 0.005 * rng())
+    _pos.copy(_pa).lerp(_pb, t).addScaledVector(_n, 0.002 + 0.003 * rng())
     col.copy(lit).multiplyScalar(kickLo + kickSpan * rng())
     if (fleckP > 0 && rng() < fleckP) col.lerp(WALL_FLECK, 0.45 + 0.25 * rng())
-    const halfLen = 0.042 + 0.032 * rng()
-    const halfWid = 0.011 + 0.008 * rng()
+    const halfLen = 0.048 + 0.034 * rng()
+    const halfWid = 0.009 + 0.006 * rng()
     pushBrush(brush, _pos, _tanAB, _n, halfLen, halfWid, col)
   }
 }
@@ -185,26 +196,34 @@ function pushHouse(
   const bbr = corner(1, -1, y0)
   const btr = corner(1, -1, y1)
   const btl = corner(-1, -1, y1)
-  pushQuad(arr, fbl, fbr, ftr, ftl, HOUSE) // front
-  pushQuad(arr, bbr, bbl, btl, btr, HOUSE) // back
-  pushQuad(arr, bbl, fbl, ftl, btl, HOUSE) // left
-  pushQuad(arr, fbr, bbr, btr, ftr, HOUSE) // right
+  // per-house identity: lerp within the palette families so the seven houses stop being clones.
+  // A minority of houses go PALE (the painting's white-walled houses flanking the church) via
+  // the village region's own pale swatch — still interpolation inside the derived family.
+  const wall =
+    rng() < 0.3
+      ? new Color(PALETTE.steeple).multiplyScalar(1.12).lerp(HOUSE, 0.25 + 0.2 * rng())
+      : HOUSE.clone().lerp(HOUSE_B, 0.55 * rng())
+  const roof = ROOF.clone().lerp(ROOF_B, 0.6 * rng())
+  pushQuad(arr, fbl, fbr, ftr, ftl, wall) // front
+  pushQuad(arr, bbr, bbl, btl, btr, wall) // back
+  pushQuad(arr, bbl, fbl, ftl, btl, wall) // left
+  pushQuad(arr, fbr, bbr, btr, ftr, wall) // right
   // walls want harder value contrast + occasional pale flecks or they stay flat CAD blue
-  cladQuad(brush, rng, fbl, fbr, ftr, ftl, HOUSE, 0.65, 0.8, 'ab', 0.12)
-  cladQuad(brush, rng, bbr, bbl, btl, btr, HOUSE, 0.65, 0.8, 'ab', 0.12)
-  cladQuad(brush, rng, bbl, fbl, ftl, btl, HOUSE, 0.65, 0.8, 'ab', 0.12)
-  cladQuad(brush, rng, fbr, bbr, btr, ftr, HOUSE, 0.65, 0.8, 'ab', 0.12)
+  cladQuad(brush, rng, fbl, fbr, ftr, ftl, wall, 0.56, 1.05, 'ab', 0.12)
+  cladQuad(brush, rng, bbr, bbl, btl, btr, wall, 0.56, 1.05, 'ab', 0.12)
+  cladQuad(brush, rng, bbl, fbl, ftl, btl, wall, 0.56, 1.05, 'ab', 0.12)
+  cladQuad(brush, rng, fbr, bbr, btr, ftr, wall, 0.56, 1.05, 'ab', 0.12)
   // gable roof: ridge along the depth axis
   const rf = corner(0, 1, ridge)
   const rb = corner(0, -1, ridge)
-  pushQuad(arr, ftl, ftr, rf, rf, ROOF) // front gable (degenerate 4th → triangle)
-  pushQuad(arr, btr, btl, rb, rb, ROOF) // back gable
-  pushQuad(arr, ftl, rf, rb, btl, ROOF) // left roof pitch
-  pushQuad(arr, ftr, btr, rb, rf, ROOF) // right roof pitch
-  cladQuad(brush, rng, ftl, ftr, rf, rf, ROOF)
-  cladQuad(brush, rng, btr, btl, rb, rb, ROOF)
-  cladQuad(brush, rng, ftl, rf, rb, btl, ROOF) // strokes run up the pitch
-  cladQuad(brush, rng, ftr, btr, rb, rf, ROOF, 0.76, 0.54, 'ad') // up the pitch (the a→d edge here)
+  pushQuad(arr, ftl, ftr, rf, rf, roof) // front gable (degenerate 4th → triangle)
+  pushQuad(arr, btr, btl, rb, rb, roof) // back gable
+  pushQuad(arr, ftl, rf, rb, btl, roof) // left roof pitch
+  pushQuad(arr, ftr, btr, rb, rf, roof) // right roof pitch
+  cladQuad(brush, rng, ftl, ftr, rf, rf, roof, 0.66, 0.68)
+  cladQuad(brush, rng, btr, btl, rb, rb, roof, 0.66, 0.68)
+  cladQuad(brush, rng, ftl, rf, rb, btl, roof, 0.66, 0.68) // strokes run up the pitch
+  cladQuad(brush, rng, ftr, btr, rb, rf, roof, 0.7, 0.68, 'ad') // up the pitch (the a→d edge here)
 
   // the drawn contour — each edge owned here, exactly once, using the corners above
   const nFront = faceNormal(fbl, fbr, ftl)
