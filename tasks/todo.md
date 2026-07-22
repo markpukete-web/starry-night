@@ -139,9 +139,17 @@ in the same conversation as deploy, and it is stop-and-ask like everything else 
   the Timeline narrates.
 - **`record/2d-streamline-flow` is already safe and stays.** Local and `origin` both at `8ccf903`,
   fully backed up. It is a permanent record of the 2D era, never to be deleted or merged.
-- **Sequencing at release:** pass the pre-release gate first → promote `main` → *then* deploy, so
-  production never publishes the June dome by accident. Confirm with Mark whether Vercel should
-  build from `main` (the default) once promoted.
+- **Sequencing at release — check the Vercel wiring BEFORE moving `main`.** The rule that holds
+  either way: *never deploy from `main` until `main` holds the piece.* But whether moving `main`
+  is itself a publishing act depends on how the project is connected, and that has NOT been
+  verified:
+  - **If Vercel is CLI-driven** (the June deploy was `vercel --yes` from the local directory, and
+    `.vercel/project.json` is a CLI link — suggestive, not proof), then moving `main` publishes
+    nothing; deploying stays a separate deliberate command.
+  - **If the Vercel project is connected to the GitHub repo**, pushing the moved `main` **is** the
+    production deploy — there is no "promote first, deploy later" gap to stand in.
+  So step one at release is to look at the project's Git settings, not to move the branch. Both
+  the move and the deploy are stop-and-ask regardless.
 - **Until then `sky-brushdab` stays the working branch**, and pushing it is backup only.
 
 **Session start ritual, unchanged:** read `tasks/lessons.md` (it is the project's memory, and the
