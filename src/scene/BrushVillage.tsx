@@ -373,6 +373,14 @@ const _winT = new Vector3(1, 0, 0)
 function pushWindow(arr: Arr, rng: () => number, cx: number, cz: number, y: number, size: number): void {
   const zw = cz + 0.016 // proud of the wall face so the brush cladding never covers the glow
   const col = new Color()
+  // painted glow-bleed: the painting carries warm ochre strokes in the WALL around each lit
+  // window (bloom used to fake this bleed; now it is authored paint, 2026-07-22 night lift)
+  const bleed = 2 + Math.floor(rng() * 2)
+  for (let i = 0; i < bleed; i++) {
+    _pos.set(cx + (rng() - 0.5) * size * 1.5, y + (rng() - 0.5) * size * 1.3, zw - 0.004)
+    col.copy(WINDOW_PAINT).multiplyScalar(0.5 + 0.2 * rng())
+    pushBrush(arr, _pos, _winT, _winN, size * (0.6 + 0.3 * rng()), size * (0.3 + 0.16 * rng()), col)
+  }
   // one or two offset daubs give the blob its irregular edge — kept BRIGHT (≥ ×0.95): dim
   // olive daubs at swatch value vanished against the stroked walls (s5 retune pass 2)
   const daubs = 1 + Math.floor(rng() * 2)

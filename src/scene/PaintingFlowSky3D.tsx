@@ -103,7 +103,7 @@ const ribbonFrag = /* glsl */ `
       // mean 73 / luminous(>150) 4.6% vs the painting's 102 / 11.6% (2026-07-22, Mark's call:
       // lift the stars and swirl band, keep the deep night).
       float srcLum = dot(vColor, vec3(0.299, 0.587, 0.114));
-      col *= 1.0 + 0.38 * smoothstep(0.38, 0.72, srcLum);
+      col *= 1.0 + 0.52 * smoothstep(0.32, 0.68, srcLum);
     }
 
     float a = edge * taper * uOpacity * vEdgeFade;
@@ -174,11 +174,12 @@ const washFrag = /* glsl */ `
       gl_FragColor = vec4(col, a * 0.5);
       return;
     }
-    col *= vec3(0.67, 0.79, 1.0);
-    // Same source-keyed highlight lift as the ribbons (see strokeFrag) — the wash carries the
-    // pale band between strokes, so lifting only the ribbons left the band flat.
+    // Night grade, softened from (0.67,0.79,1.0): that cool-down sank the whole band ~22%
+    // before the highlight lift keyed on it, so the ramp barely engaged (night-lift p2 measured
+    // +1.6 for a 37% gain notch). Key the lift on the TRUE source paleness instead.
     float srcLum = dot(col, vec3(0.299, 0.587, 0.114));
-    col *= 1.0 + 0.38 * smoothstep(0.3, 0.62, srcLum);
+    col *= vec3(0.74, 0.84, 1.0);
+    col *= 1.0 + 0.52 * smoothstep(0.3, 0.62, srcLum);
     gl_FragColor = vec4(col, a * 0.68);
   }
 `
