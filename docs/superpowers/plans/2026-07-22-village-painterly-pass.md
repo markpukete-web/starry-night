@@ -1,5 +1,13 @@
 # Village painterly pass — checklist item 8 (plan v2, 2026-07-22)
 
+> ## ✅ EXECUTED AND GATE-PASSED (Mark, live, 2026-07-22) — this plan is history, not a to-do
+>
+> All six slices landed as written (`deddf0a` S0 → `11b75e0` S5), plus a night-lift and moon fix
+> Mark asked for after the gate. Outcome and evidence: `tasks/todo.md` ▶ WHERE WE ARE. Lessons:
+> `tasks/lessons.md` (2026-07-22 entries). Kept for the method — the look → measure → design →
+> cross-review → slice order is what made the pass tractable, and it is the same order the
+> cypress needed.
+
 v2 after Codex cross-review round 1. What changed: warm colours now enter through the
 derivation pipeline (palette.json), not palette.ts constants; S3 split into two slices per the
 one-change-per-capture lesson; per-house colour variation constrained to palette families (no

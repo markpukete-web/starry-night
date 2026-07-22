@@ -9,11 +9,21 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## ▶ WHERE WE ARE (2026-07-22, later) — village pass BUILT (S0–S5); ⏳ at Mark's visual gate
+## ▶ WHERE WE ARE (2026-07-22, evening) — village ✅ GATE PASSED. **ALL BUILD WORK IS DONE.**
 
-**Checklist item 8 is implemented and verified; Mark gates on the captures.** The three gaps
-named in `tasks/2026-07-22-village-look.md` (Mark confirmed the list live) were closed in six
-slices after a two-round plan cross-review with Codex
+**Gate call (Mark, live): "great job. I like it. gate passed."** Checklist **item 8 PASSES**, and
+with it the last piece of build work on the pre-release checklist. Everything still open —
+mobile portrait framing, real-device perf, deploy, portfolio link-out — is **Mark's**, not
+Claude's. See NEXT SESSION below before starting anything.
+
+Three sessions closed the last three build items in one day: cypress (item 7) and lighting
+(item 1) this morning, village (item 8) tonight, plus two post-gate tuning passes Mark asked
+for — the night lift and the moon.
+
+### What landed tonight
+
+The three gaps named in `tasks/2026-07-22-village-look.md` (Mark confirmed the list live) were
+closed in six slices after a two-round plan cross-review with Codex
 (`docs/superpowers/plans/2026-07-22-village-painterly-pass.md`, all round-1 findings
 dispositioned in the plan):
 
@@ -37,31 +47,66 @@ dispositioned in the plan):
 identical to the cypress-pass baseline; DPR caps untouched; real-device fps remains item 3.
 Indicators (painting/live): stddev 11.32/2.30 · spire delta −0.37/−4.28 · warm 9.78/10.89.
 
-**Review in this order** (all in `output/playwright/`):
-1. `village-pass-2026-07-22-s5p3/village-original-vs-live.png` — final matched crop
-2. `village-look-2026-07-22/village-original-vs-live.png` — the morning baseline, for the delta
-3. `village-pass-2026-07-22-s5p3/desktop-centre.png` + `mobile-centre.png` + drag boundaries
-4. Live: `npm run dev` → `http://localhost:5173/?mode=diorama&clean=1`
+### Then two post-gate passes Mark asked for — the night, and the moon
 
-**If the gate passes:** items 2 (mobile portrait framing), 3 (real-device perf), 4 (deploy) are
-what remains — all Mark-owned. Nothing pushed this session yet.
+**The night lift** (`e075bd4` → `3b94eca`). Mark showed a pre-bloom-removal screenshot and asked
+for an honest before/after. Measured on matched central sky crops (mean · luminous >150 · deep
+night <60) — **painting 101.7 · 11.6% · 17.1%**; bloom state 130.2 · 15.1% · **2.7%**; the
+post-removal tune 73.1 · 4.6% · 36.0%. Read: bloom was right to go (it had destroyed the cobalt
+floor) but the tune then undershot the painting's *luminosity* by as much as bloom overshot it.
+Mark: "lift the stars and swirl band like you said," then "I will let you drive."
+- Source-keyed highlight gain in BOTH sky shaders — pale source strokes brighten, cobalt floor
+  untouched — plus broader/brighter star halos and painted ochre glow-bleed around the village
+  windows (the bleed bloom used to fake).
+- p2 was the diagnostic: a 37% gain notch moved the sky **+1.6**, because the wash's night grade
+  `×(0.67,0.79,1.0)` sank the band before the lift keyed on it. Softening to `(0.74,0.84,1.0)`
+  and keying on true source paleness moved it +8.2. **Landed: 94.8 · 11.4% · 24.2%** — luminous
+  mass within 0.2 pts of the painting, deep night kept. Item 1's no-bloom decision stands
+  untouched; this tunes within it. Evidence: `night-lift-2026-07-22-p{1,2,3}/`.
 
-**Addendum (same session, Mark's call):** after an honest before/after read of the bloom
-removal, Mark asked for the stars and swirl band lifted — `e075bd4`: source-keyed highlight
-gain in the ribbon+wash shaders (pale strokes only, cobalt floor untouched) + broader/brighter
-star halos. Sky mean 73→85, luminous mass 4.6→8.5% (painting: 102/11.6%), deep night kept.
-Stopped at the look, not the number — the crop includes dimmer side-extension zones the
-painting lacks. Item 1's no-bloom decision stands; this tunes within it. Landed at `3b94eca`
-(p3: wash cool-down softened — it was sinking the band before the lift keyed on it): luminous
-mass 11.4% vs painting 11.6%, mean 94.8 vs 101.7. Evidence: `night-lift-2026-07-22-p{1,2,3}/`.
+**The moon** (`908b8ce`), after Mark flagged it "mismatched". The authored crescent sprite sat at
+`skySwirls`' `MOON_UV` — the moon's **vortex** anchor, 78 px from the painted body (the exact
+star-guard trap from lessons 07-16) — so it read as a second moon beside the painting's own.
+Sprite **deleted**: the source's crescent-in-disc is the moon now, with halo and moonlight
+re-centred on the measured painted centroid uv(0.8987,0.1697) and the halo core softened so the
+crescent's gold stays readable inside the glow. This also closes the 0003 "busy moon corner"
+residual. Evidence: `moon-fix-2026-07-22-p2/`.
 
-**Moon fix (same session, Mark flagged "mismatched"):** `908b8ce` — the authored crescent
-sprite sat at skySwirls' MOON_UV (the moon's VORTEX anchor, 78px from the painted body; the
-star-guard trap from lessons 07-16) and doubled the painting's own moon. Sprite deleted; halo +
-moonlight re-centred on the measured painted centroid uv(0.8987,0.1697); halo core softened so
-the crescent's gold reads inside the glow. This closes the 0003 "busy moon corner" residual.
-Checklist item 2 (moon can't fit portrait framing) is unchanged and stays open — composition,
-Mark's call. Evidence: `moon-fix-2026-07-22-p2/`.
+### Evidence for the record (all in `output/playwright/`)
+
+1. `moon-fix-2026-07-22-p2/desktop-centre.png` — **the piece as it stands** (final state)
+2. `village-pass-2026-07-22-s5p3/village-original-vs-live.png` — village vs painting, matched
+3. `village-look-2026-07-22/village-original-vs-live.png` — the morning baseline, for the delta
+4. `night-lift-2026-07-22-p3/` · `moon-fix-2026-07-22-p{1,2}/` — the two tuning passes
+
+---
+
+## ▶ NEXT SESSION — READ THIS FIRST: there is no build work queued
+
+**Do not open the code looking for the next slice.** The pre-release checklist is down to four
+items and **every one of them is Mark's call** (composition, his hardware, deploy, portfolio):
+
+| # | What | Why it is not Claude's to start |
+|---|------|--------------------------------|
+| 2 | Mobile portrait framing | Composition call. The moon sits ≈42° off-centre on the arc; fov alone cannot bring it into portrait, so it needs a portrait-specific camera *bearing* — which changes the composition. Mark decides. |
+| 3 | Perf on real hardware | Needs Mark's machine + a mid-tier phone. Headless is software-rendered and reads 0 fps; the `--perf` numbers are desktop-only (mean 8.33 ms / p95 ~9.1). |
+| 4 | Deploy mechanics | CLAUDE.md: anything touching deploy, DNS or analytics is stop-and-ask. |
+| 6 | Portfolio link-out | Post-deploy, Mark's site. |
+
+**What Claude MAY usefully do, if Mark wants it** (offer, do not assume):
+- **Prepare item 2 rather than decide it** — produce 2–3 portrait framing *candidates* as
+  captures (different camera bearings, each holding cypress + whorl + steeple, trading how much
+  moon they include) so Mark picks a composition from pictures instead of describing one. This
+  is the same "give Mark something to look at" move that unblocked the cypress and village.
+- Nothing else. **Scope growth goes in this file, not into the code** (CLAUDE.md). Preset dials,
+  time-of-day, audio, other paintings: out of scope, permanently or until post-release.
+
+**Push state:** everything above is **committed on `sky-brushdab` and NOT pushed** — the last
+push was this morning's cypress-gate work. Ask Mark before pushing; `main` still carries only the
+2D era and nothing is merged.
+
+**Session start ritual, unchanged:** read `tasks/lessons.md` (it is the project's memory, and the
+2026-07-22 entries are dense), then this file, then CLAUDE.md if the bar is in question.
 
 ---
 
@@ -286,13 +331,17 @@ stop and ask about (CLAUDE.md "Stop and ask Mark when"). `Claude` items are mech
 | 5 | ~~WebP for the three colour assets~~ | Mark | ✅ **DONE 2026-07-21** — lossless taken, lossy rejected; payload 12.21 → 10.04 MB |
 | 6 | **Portfolio link-out** — markma.dev links to the finished piece (CLAUDE.md: it links out, full stop — never embedded) | Mark | open, post-deploy |
 | 7 | ~~Cypress second painterly pass~~ | Claude built, Mark gated | ✅ **PASSED 2026-07-22** — colour and stroke length solved, silhouette topology matches. Residual findings in `tasks/2026-07-22-cypress-review-findings.md` judged minor and not actioned |
-| 8 | **Village second painterly pass** | Claude built, Mark gates | ⏳ **BUILT 2026-07-22** (S0–S5, see WHERE WE ARE) — at Mark's visual gate |
+| 8 | ~~Village second painterly pass~~ | Claude built, Mark gated | ✅ **PASSED 2026-07-22** — drawn contours, stroke-built walls, church held in the nocturne band, warm pigment + painted windows. *"gate passed"* |
 
-**Item 8's first step is not code and not a design — it is a look.** The cypress pass only became
-tractable once Mark named three concrete gaps against the painting (near-black, fur-not-flame,
-bulbous) and the design was shaped by a measurement rather than a hunch. The village gets the same
-order: capture it, read it against the reference crop, name what is wrong in those terms, and only
-then design. Sequenced after item 7 so the cladding technique is proven once before it is reused.
+**Status of this checklist as of 2026-07-22 evening: 4 of 8 closed, and ALL BUILD WORK IS DONE.**
+Items 1, 5, 7 and 8 are passed. The four still open (2, 3, 4, 6) are Mark-owned — composition,
+his hardware, deploy, portfolio. See ▶ NEXT SESSION at the top before starting anything.
+
+*(Historical, kept because it is the method that worked twice:* **item 8's first step was not code
+and not a design — it was a look.** *The cypress pass only became tractable once three concrete
+gaps were named against the painting (near-black, fur-not-flame, bulbous) and the design was
+shaped by a measurement rather than a hunch. The village got the same order — game-boxes /
+glowing-church / missing-warmth — and it worked the same way.)*
 
 Already satisfied, listed so the gate can be checked end-to-end rather than re-litigated:
 
