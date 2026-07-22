@@ -101,9 +101,9 @@ items and **every one of them is Mark's call** (composition, his hardware, deplo
 - Nothing else. **Scope growth goes in this file, not into the code** (CLAUDE.md). Preset dials,
   time-of-day, audio, other paintings: out of scope, permanently or until post-release.
 
-**Push state:** everything above is **committed on `sky-brushdab` and NOT pushed** — the last
-push was this morning's cypress-gate work. Ask Mark before pushing; `main` still carries only the
-2D era and nothing is merged.
+**Push state:** everything above is **committed and pushed** to `origin/sky-brushdab`
+(`2b208d8..c37430a`, 2026-07-22 evening, Mark asked). `main` still carries only the 2D era and
+nothing is merged — push is backup, not release; the pre-release gate is still open.
 
 **Session start ritual, unchanged:** read `tasks/lessons.md` (it is the project's memory, and the
 2026-07-22 entries are dense), then this file, then CLAUDE.md if the bar is in question.
