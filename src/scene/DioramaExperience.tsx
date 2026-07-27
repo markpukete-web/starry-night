@@ -1,6 +1,6 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei'
-import { Suspense, useEffect, useMemo } from 'react'
+import { Suspense, useEffect, useMemo, type ReactNode } from 'react'
 import { Diorama } from './Diorama'
 import { PaintingFlowSky3D } from './PaintingFlowSky3D'
 import {
@@ -13,6 +13,8 @@ import {
 type Props = {
   clean?: boolean
   reduced?: boolean
+  /** Visitor chrome (attribution, original placard, control dock) — rendered over the canvas. */
+  children?: ReactNode
 }
 
 function queryValue(name: string) {
@@ -120,12 +122,13 @@ function Scene({ reduced }: { reduced: boolean }) {
   )
 }
 
-export function DioramaExperience({ clean = false, reduced = false }: Props) {
+export function DioramaExperience({ clean = false, reduced = false, children }: Props) {
   return (
     <main className={`visitor-shell diorama-shell${clean ? ' is-clean-capture' : ''}`}>
       <Canvas frameloop="always" dpr={[1, 1.5]} gl={{ preserveDrawingBuffer: true, antialias: true }}>
         <Scene reduced={reduced} />
       </Canvas>
+      {children}
     </main>
   )
 }

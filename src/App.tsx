@@ -7,6 +7,7 @@ import { StreamlineSky } from './scene/StreamlineSky'
 import { CanopyExperience } from './scene/CanopyExperience'
 import { DioramaExperience } from './scene/DioramaExperience'
 import { ReliefExperience } from './scene/ReliefExperience'
+import { VisitorChrome } from './VisitorChrome'
 
 /** prefers-reduced-motion: a dignified still painting, no churn (locked acceptance criterion). */
 function usePrefersReducedMotion() {
@@ -22,58 +23,24 @@ function usePrefersReducedMotion() {
   return reduced
 }
 
-function VisitorButton({
-  active,
-  disabled,
-  icon,
-  label,
-  onClick,
-}: {
-  active?: boolean
-  disabled?: boolean
-  icon: string
-  label: string
-  onClick: () => void
-}) {
-  return (
-    <button
-      type="button"
-      className={`visitor-control${active ? ' is-active' : ''}`}
-      aria-label={label}
-      aria-pressed={active}
-      disabled={disabled}
-      onClick={onClick}
-    >
-      <span aria-hidden="true">{icon}</span>
-      <span className="visitor-control-label">{label}</span>
-    </button>
-  )
-}
-
 export default function App() {
   const reduced = usePrefersReducedMotion()
   const [visitorPaused, setVisitorPaused] = useState(false)
   const [showOriginal, setShowOriginal] = useState(false)
-  const [fullscreen, setFullscreen] = useState(false)
   const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
   const mode = params.get('mode') ?? 'diorama'
   const clean = params.get('clean') === '1'
   const motionPaused = reduced || visitorPaused
-  const fullscreenSupported = typeof document !== 'undefined' && Boolean(document.fullscreenEnabled)
 
-  useEffect(() => {
-    const onFullscreenChange = () => setFullscreen(Boolean(document.fullscreenElement))
-    document.addEventListener('fullscreenchange', onFullscreenChange)
-    return () => document.removeEventListener('fullscreenchange', onFullscreenChange)
-  }, [])
-
-  const toggleFullscreen = () => {
-    if (document.fullscreenElement) {
-      void document.exitFullscreen().catch(() => undefined)
-    } else if (document.documentElement.requestFullscreen) {
-      void document.documentElement.requestFullscreen().catch(() => undefined)
-    }
-  }
+  const chrome = (
+    <VisitorChrome
+      reduced={reduced}
+      visitorPaused={visitorPaused}
+      onTogglePause={() => setVisitorPaused((paused) => !paused)}
+      showOriginal={showOriginal}
+      onToggleOriginal={() => setShowOriginal((shown) => !shown)}
+    />
+  )
 
   if (mode === 'canopy') {
     return <CanopyExperience clean={clean} reduced={motionPaused} />
@@ -84,7 +51,11 @@ export default function App() {
   }
 
   if (mode === 'diorama') {
-    return <DioramaExperience clean={clean} reduced={motionPaused} />
+    return (
+      <DioramaExperience clean={clean} reduced={motionPaused}>
+        {chrome}
+      </DioramaExperience>
+    )
   }
 
   return (
@@ -98,37 +69,7 @@ export default function App() {
         </Suspense>
         {import.meta.env.DEV && <Stats />}
       </Canvas>
-      <header className="visitor-title" aria-label="Artwork">
-        <h1>The Starry Night</h1>
-        <p>Vincent van Gogh, 1889 · Mark Ma</p>
-      </header>
-      {showOriginal && (
-        <aside className="visitor-reference" aria-label="Original painting reference">
-          <img src="/reference/painting.jpg" alt="The original Starry Night painting" draggable={false} />
-        </aside>
-      )}
-      <nav className="visitor-dock" aria-label="Artwork controls">
-        <VisitorButton
-          active={motionPaused}
-          disabled={reduced}
-          icon={motionPaused ? '▶' : 'Ⅱ'}
-          label={reduced ? 'Motion paused by system setting' : visitorPaused ? 'Play motion' : 'Pause motion'}
-          onClick={() => setVisitorPaused((p) => !p)}
-        />
-        <VisitorButton
-          active={showOriginal}
-          icon="◨"
-          label={showOriginal ? 'Hide original' : 'Show original'}
-          onClick={() => setShowOriginal((shown) => !shown)}
-        />
-        <VisitorButton
-          active={fullscreen}
-          disabled={!fullscreenSupported}
-          icon="⛶"
-          label={fullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-          onClick={toggleFullscreen}
-        />
-      </nav>
+      {chrome}
     </main>
   )
 }

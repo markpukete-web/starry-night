@@ -191,11 +191,29 @@ button {
     font-size: 11px;
   }
 
+  /* Span the width and wrap rather than centring a too-wide row — three labelled pills do not fit
+     a 390px phone, and translateX(-50%) clipped them off BOTH edges. Labels are kept (the point of
+     the pills) and the row wraps instead. */
   .visitor-dock {
-    right: auto;
+    right: 14px;
     bottom: max(14px, env(safe-area-inset-bottom));
-    left: 50%;
-    transform: translateX(-50%);
+    left: 14px;
+    transform: none;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .visitor-control {
+    height: 36px;
+    padding: 0 11px;
+    font-size: 12px;
+  }
+
+  /* On a phone the 300px placard swallowed most of the frame; it must read as a reference, not
+     replace the piece. Sits clear of a wrapped dock. */
+  .visitor-reference {
+    width: min(196px, 52vw);
+    bottom: 128px;
   }
 }
 
