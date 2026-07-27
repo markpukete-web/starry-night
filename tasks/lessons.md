@@ -1963,3 +1963,16 @@ defect remaining." Mark's answer was *"those findings are minor"* — gate passe
   `Page.captureScreenshot` driven over a websocket, with `--force-prefers-reduced-motion` to still
   the scene. Script kept at the session scratchpad's `capture-chrome.mjs` — worth promoting into
   `scripts/` if visitor chrome gets checked again.
+- 2026-07-27 — **Do not diagnose visitor-facing browser features in the agent browser.** "Fullscreen
+  doesn't do anything" cost a full systematic-debugging pass; the answer was that the automation
+  browser refuses the request while Mark's ordinary Chrome profile honours it. Everything measured
+  said the code was sound — Playwright reported `fullscreenElement: HTML` with the label flipping,
+  a clean headed Chrome grew the viewport 1200x713 -> 1512x949, and a *maximised* one (the condition
+  Mark was actually in) grew 787 -> 949 with the canvas following. The gap was never in the code:
+  it was the browser doing the looking. Two things carry: (1) **APIs gated on user gesture,
+  permission policy or window management — fullscreen, clipboard, pointer lock, notifications,
+  autoplay — are exactly where an automated context diverges from a visitor's**, so confirm them in
+  a real profile before believing a bug report or a green test; (2) the divergence was only
+  *diagnosable* because the silent `.catch(() => undefined)` was replaced with a warning first
+  (`baec2ad`) — **a swallowed error makes "the browser refused" and "the button is broken" the same
+  observation**, and that is the defect worth fixing whether or not it explains the symptom.
