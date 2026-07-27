@@ -9,6 +9,78 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
+## ▶ WHERE WE ARE (2026-07-27) — deploy wiring SETTLED; one build item reopened
+
+Two facts established this session, both verified rather than inferred.
+
+### 1. Moving `main` IS the deploy — confirmed, Mark was right
+
+The open question from `0f41f67` ("check the wiring first") is closed. The Vercel project **is
+connected to GitHub**, queried from the API (`/v9/projects/prj_1bvAN2…`):
+
+```
+link: { type: "github", repo: "starry-night", org: "markpukete-web",
+        productionBranch: "main", repoId: 1267354367 }
+autoAssignCustomDomains: true
+```
+
+So `git push origin main` after the fast-forward **triggers the production build and deploy by
+itself**. There is no "promote first, deploy later" gap — the two are one action.
+
+**Why the earlier inference was wrong:** the note reasoned that a CLI-shaped `.vercel/project.json`
+plus a CLI-run June deploy suggested a CLI-only project. Both things are true *and* the GitHub link
+exists — a project can be git-connected and still accept `vercel --yes` from a laptop. The
+`starry-night-git-main-…vercel.app` alias was the visible tell. `vercel project inspect` prints no
+git section on CLI v54, which is what made this look settled when it was not.
+**Rule: for the fact that decides whether an action publishes, query the API, don't read the tea
+leaves.** Same family as the 07-22 branch-topology error.
+
+### 2. The visitor controls do not exist on the shipping route — new checklist item 9
+
+Mark: *"we have show original van Gogh's painting as an option, I would like to add this in too."*
+Verified — it exists, but **not where the visitor lands**.
+
+`App.tsx:59` defaults `mode` to `diorama`; `App.tsx:87` returns `<DioramaExperience>` **early**, and
+that component (`DioramaExperience.tsx:123–130`) renders only a `<Canvas>`. The dock — pause,
+**Show original**, fullscreen — and the `<h1>The Starry Night · Vincent van Gogh, 1889 · Mark Ma`
+card live in the fallback branch below that return, reachable only via a non-diorama `?mode=`.
+
+Proof by accessibility snapshot, dev server at `:5173`:
+
+| Route | Snapshot |
+|---|---|
+| `/` (what ships) | `- main [ref=e3]` — one bare element, **zero interactive controls, no attribution** |
+| `/?mode=painting` (2D) | heading + `Vincent van Gogh, 1889 · Mark Ma` + 3 buttons: Pause · **Show original** · Fullscreen |
+
+**Not affected:** the locked `prefers-reduced-motion` criterion still holds — `reduced` is passed
+into `DioramaExperience` and freezes the churn. It is the *manual* affordances and the attribution
+that are missing, not the accessibility contract.
+
+**Consequence: deploying today publishes an uncontrollable, unattributed canvas.** Recorded as
+item 9. The design question for Mark is what "show original" *means* in 3D — head-on the diorama
+is the painting's composition (locked criterion), but once orbited a comparison would mislead.
+
+**Mark's call, same session:** port the dock **as-is** (the placard treatment carries over
+unchanged; no 3D-specific compare design for now), and **build item 9 before promoting `main`**, so
+nothing ever publishes uncredited. Built and verified — see "Item 9 evidence" in the checklist.
+
+### Next move — the promotion, and it is Mark's
+
+With item 9 built, the remaining path is entirely Mark's:
+
+```sh
+git switch main && git merge --ff-only sky-brushdab && git push origin main
+```
+
+**That push deploys to production** (verified above). Before running it, decide:
+Deployment Protection (the June preview returned 401 — if it is still on, "live" is not public),
+and `starrynight.markma.dev` DNS. Both stop-and-ask. Items 2 (mobile portrait framing) and 3
+(real-hardware fps) remain open and are unaffected by item 9.
+
+---
+
+## ▶ Superseded 2026-07-27 — the 07-22 evening record
+
 ## ▶ WHERE WE ARE (2026-07-22, evening) — village ✅ GATE PASSED. **ALL BUILD WORK IS DONE.**
 
 **Gate call (Mark, live): "great job. I like it. gate passed."** Checklist **item 8 PASSES**, and
@@ -374,15 +446,39 @@ stop and ask about (CLAUDE.md "Stop and ask Mark when"). `Claude` items are mech
 | 1 | ~~Lighting/bloom balance~~ | Mark | ✅ **PASSED 2026-07-22** — middle-ground authored lighting pass accepted & pushed (`b3420f8`). Sky & foreground midtones lifted 8–11%, halos radiate, deep cobalt floor preserved |
 | 2 | **Mobile portrait framing** — responsive fov keeps cypress edge + central whorl + steeple, but the MOON can't fit a portrait frame (≈42° off-centre on the arc); needs a portrait-specific camera bearing | Mark (composition) | open |
 | 3 | **Perf on real hardware** — locked criterion: 60 fps desktop, 30 fps mid-tier mobile. Headless cannot measure this; needs a real device pass. Includes confirming stroke budget + DPR caps (Tunables) hold up | Mark to run, Claude to retune | open |
-| 4 | **Deploy mechanics** — Vercel prod, Deployment Protection, `starrynight.markma.dev` DNS (Cloudflare CNAME, grey-cloud). **Includes the branch endgame: promote `sky-brushdab` → `main` (fast-forward) BEFORE deploying, so production can't publish the June vortex dome — see "Mark's decision, branch endgame" above.** CLAUDE.md: anything touching deploy/DNS/analytics is stop-and-ask | Mark | open |
+| 4 | **Deploy mechanics** — Vercel prod, Deployment Protection, `starrynight.markma.dev` DNS (Cloudflare CNAME, grey-cloud). **Includes the branch endgame: promote `sky-brushdab` → `main` (fast-forward), which — VERIFIED 2026-07-27 — *is itself the production deploy*, see below.** CLAUDE.md: anything touching deploy/DNS/analytics is stop-and-ask | Mark | open |
 | 5 | ~~WebP for the three colour assets~~ | Mark | ✅ **DONE 2026-07-21** — lossless taken, lossy rejected; payload 12.21 → 10.04 MB |
 | 6 | **Portfolio link-out** — markma.dev links to the finished piece (CLAUDE.md: it links out, full stop — never embedded) | Mark | open, post-deploy |
 | 7 | ~~Cypress second painterly pass~~ | Claude built, Mark gated | ✅ **PASSED 2026-07-22** — colour and stroke length solved, silhouette topology matches. Residual findings in `tasks/2026-07-22-cypress-review-findings.md` judged minor and not actioned |
 | 8 | ~~Village second painterly pass~~ | Claude built, Mark gated | ✅ **PASSED 2026-07-22** — drawn contours, stroke-built walls, church held in the nocturne band, warm pigment + painted windows. *"gate passed"* |
+| 9 | ~~Visitor controls in the diorama~~ | Mark scoped, Claude built | ✅ **BUILT 2026-07-27, awaiting Mark's look** — chrome extracted to `src/VisitorChrome.tsx`, shared by both routes. Attribution + Pause / Show original / Fullscreen now on the shipping route. Render pixel-unchanged; mobile overflow fixed |
 
-**Status of this checklist as of 2026-07-22 evening: 4 of 8 closed, and ALL BUILD WORK IS DONE.**
-Items 1, 5, 7 and 8 are passed. The four still open (2, 3, 4, 6) are Mark-owned — composition,
-his hardware, deploy, portfolio. See ▶ NEXT SESSION at the top before starting anything.
+**Status of this checklist as of 2026-07-27: 4 of 9 closed, item 9 built and awaiting Mark's eye.**
+Items 1, 5, 7 and 8 are passed. Items 2, 3, 4 and 6 are Mark-owned — composition, his hardware,
+deploy, portfolio. The 2026-07-22 claim that "ALL BUILD WORK IS DONE" was true of the *painting*,
+not of the *product* around it.
+
+### Item 9 evidence (2026-07-27)
+
+Mark's scope call: **port the dock as-is** (not a 3D-specific compare design), and **build 9 before
+promoting `main`** so nothing publishes uncredited.
+
+- `src/VisitorChrome.tsx` — title card, original placard, control dock. One implementation, used by
+  the diorama and the 2D route, so they cannot drift apart again.
+- `DioramaExperience` takes `children` and renders them inside its existing `<main class="visitor-shell">`,
+  which means the established `.is-clean-capture` rule hides all of it under `?clean=1` — the capture
+  tooling needed no change.
+- **The render is untouched, measured not assumed.** Two capture runs on the same code differ by
+  RMSE 0.0029 (desktop-centre) purely from animation phase; the 07-22 gate baseline vs post-change
+  differs by **0.00014**. Across seven views, baseline-vs-after sits at or below same-code jitter.
+- **Mobile defect found by looking, not by the tests.** The pre-existing `translateX(-50%)` centring
+  clipped the three labelled pills off BOTH edges at 390 px, and the 300 px placard swallowed the
+  frame. Fixed by spanning the dock and letting it wrap, shrinking the pills, and scaling the
+  placard to `min(196px, 52vw)` clear of the wrapped dock. Verified numerically at 360/390/430 in
+  both motion states: no overflow, no overlap.
+- The `prefers-reduced-motion` pause label is the width worst case — visible text shortened to
+  "Motion paused" while the full "Motion paused by system setting" stays as the `aria-label`.
+- Verification: 96/96 tests, lint, build, `check:reduced` PASS.
 
 *(Historical, kept because it is the method that worked twice:* **item 8's first step was not code
 and not a design — it was a look.** *The cypress pass only became tractable once three concrete

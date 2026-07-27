@@ -1917,3 +1917,49 @@ defect remaining." Mark's answer was *"those findings are minor"* — gate passe
   carries the June `vercel preview deployed` commit, so any deployment still pointed at `main`
   would publish the vortex dome rather than the gated piece. **A stale fact in the record can
   become a shipping mistake**; this one is now flagged against checklist item 4.
+
+- 2026-07-27 — **For the fact that decides whether an action publishes, query the API — don't read
+  the tea leaves.** The record had reasoned that a CLI-shaped `.vercel/project.json` plus a
+  CLI-run June deploy meant a CLI-only project, so moving `main` "probably" published nothing.
+  `vercel project inspect` seemed to confirm it — no git section in the output. All of that was
+  circumstantial, and all of it was wrong: `GET /v9/projects/{id}` returns
+  `link: {type: "github", productionBranch: "main"}`. Pushing the moved `main` **is** the
+  production deploy. Two things carry: (1) the CLI's *absence* of a field is not the API's
+  absence of the fact — v54 simply doesn't print the git section; the `-git-main-` alias in the
+  domain list was the visible tell I under-weighted; (2) a project being git-connected and being
+  CLI-deployable are not exclusive, so "the June deploy was a CLI run" was never evidence for
+  anything. Same family as the 07-22 branch-topology error: **topology claims are cheap to verify
+  and expensive to get wrong.**
+- 2026-07-27 — **"All build work is done" was true of the painting and false of the product.**
+  Three gates' worth of painterly work closed, and the checklist read 4-of-8 with nothing left for
+  Claude — but nobody had opened the shipping route and looked at the DOM. `mode` defaults to
+  `diorama`, which returns early from `App.tsx`, so the entire visitor dock (pause, **Show
+  original**, fullscreen) and the Van Gogh / Mark Ma attribution card — all sitting in the
+  fallback branch *below* that return — never render for a visitor. The a11y snapshot of `/` is
+  `- main [ref=e3]`: one element, no controls, no credit. Mark found it from memory of a feature,
+  not from the record. **A gate that only ever looks at captures cannot see a missing button** —
+  the visual-review discipline photographs the canvas, and the canvas looked perfect. Add a DOM
+  read to the pre-release pass, not just a picture.
+- 2026-07-27 — **The layout bug was invisible to every check except looking at it.** Item 9's port
+  passed lint, 96 tests, build and `check:reduced`, and the desktop capture looked right. On a
+  390 px phone the dock was clipped off BOTH edges and the placard covered half the frame. Cause:
+  the pre-existing mobile rule centred the dock with `left:50%; transform:translateX(-50%)`, which
+  turns "too wide" into symmetric clipping rather than a visible overflow — and nothing had ever
+  rendered that dock at phone width on the shipping route before. Two things carry: (1) **centring
+  hides overflow**; span-and-wrap fails visibly and safely instead, (2) once a picture named the
+  defect, `getBoundingClientRect` across 360/390/430 in both motion states was the cheap way to
+  prove the fix — **look to find it, measure to close it.**
+- 2026-07-27 — **Establish the jitter before calling a diff a regression.** Comparing the
+  post-change capture to the 07-22 gate baseline gave RMSE 0.0029 on desktop-centre, well above the
+  0.0002–0.0013 noise floor the record quotes — which looked like the chrome had disturbed the
+  render. It had not: two runs of the *same* code differ by 0.0029 too, because the sky is
+  advecting and captures land on different animation phases. Baseline-vs-after was actually
+  0.00014. **A noise floor quoted from another pass is not this pass's noise floor** — the control
+  run costs one command and turns an alarming number into a null result.
+- 2026-07-27 — **Playwright's `page.screenshot` stalls on an always-animating canvas; raw CDP does
+  not.** Repeated timeouts ("waiting for fonts to load… fonts loaded", then nothing) blocked the
+  visual check. `capture-diorama.mjs` sidesteps it by grabbing `canvas.toDataURL()`, but that can
+  never show DOM chrome. The tool that works for full-page-with-chrome is CDP
+  `Page.captureScreenshot` driven over a websocket, with `--force-prefers-reduced-motion` to still
+  the scene. Script kept at the session scratchpad's `capture-chrome.mjs` — worth promoting into
+  `scripts/` if visitor chrome gets checked again.
