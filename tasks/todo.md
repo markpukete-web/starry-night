@@ -9,6 +9,33 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
+## ▶ WHERE WE ARE (2026-07-27, end of session) — item 9 CLOSED. Only Mark's four remain.
+
+**The piece and the product around it are both done.** Item 9 closed by Mark after testing the
+controls in his own browser. The pre-release checklist stands at **5 of 9**, and every remaining
+item (2 mobile framing, 3 real-hardware perf, 4 deploy, 6 portfolio link-out) is Mark's call.
+
+**Repo state at session end:** branch `sky-brushdab`, working tree clean, tip `3ed269f`.
+**Four commits ahead of `origin/sky-brushdab` — NOT pushed** (pushing now spawns a Vercel preview
+build, since the project is git-connected). **172 commits ahead of `main`**, and `main` is a direct
+ancestor, so the promotion is still a clean fast-forward.
+
+| Commit | What |
+|---|---|
+| `953424f` | feat — the shipping route gets its controls and its credit |
+| `1a70e68` | docs — item 9 recorded; Vercel wiring verified |
+| `baec2ad` | fix — stop swallowing fullscreen failures |
+| `3ed269f` | docs — the agent-browser lesson |
+
+**The one decision left before release:** `git switch main && git merge --ff-only sky-brushdab &&
+git push origin main` **is the production deploy**. Before running it, settle Deployment Protection
+(June returned 401 — if still on, "live" is not public) and `starrynight.markma.dev` DNS. Both
+stop-and-ask.
+
+---
+
+## ▶ Superseded — earlier on 2026-07-27
+
 ## ▶ WHERE WE ARE (2026-07-27) — deploy wiring SETTLED; one build item reopened
 
 Two facts established this session, both verified rather than inferred.
@@ -451,12 +478,11 @@ stop and ask about (CLAUDE.md "Stop and ask Mark when"). `Claude` items are mech
 | 6 | **Portfolio link-out** — markma.dev links to the finished piece (CLAUDE.md: it links out, full stop — never embedded) | Mark | open, post-deploy |
 | 7 | ~~Cypress second painterly pass~~ | Claude built, Mark gated | ✅ **PASSED 2026-07-22** — colour and stroke length solved, silhouette topology matches. Residual findings in `tasks/2026-07-22-cypress-review-findings.md` judged minor and not actioned |
 | 8 | ~~Village second painterly pass~~ | Claude built, Mark gated | ✅ **PASSED 2026-07-22** — drawn contours, stroke-built walls, church held in the nocturne band, warm pigment + painted windows. *"gate passed"* |
-| 9 | ~~Visitor controls in the diorama~~ | Mark scoped, Claude built | ✅ **BUILT 2026-07-27, awaiting Mark's look** — chrome extracted to `src/VisitorChrome.tsx`, shared by both routes. Attribution + Pause / Show original / Fullscreen now on the shipping route. Render pixel-unchanged; mobile overflow fixed |
+| 9 | ~~Visitor controls in the diorama~~ | Mark scoped, Claude built, Mark closed | ✅ **CLOSED 2026-07-27** — chrome extracted to `src/VisitorChrome.tsx`, shared by both routes. Attribution + Pause / Show original / Fullscreen on the shipping route, all four verified working by Mark in his own browser profile. Render pixel-unchanged; mobile overflow fixed |
 
-**Status of this checklist as of 2026-07-27: 4 of 9 closed, item 9 built and awaiting Mark's eye.**
-Items 1, 5, 7 and 8 are passed. Items 2, 3, 4 and 6 are Mark-owned — composition, his hardware,
-deploy, portfolio. The 2026-07-22 claim that "ALL BUILD WORK IS DONE" was true of the *painting*,
-not of the *product* around it.
+**Status of this checklist as of 2026-07-27: 5 of 9 closed. ALL BUILD WORK IS DONE — again, and
+this time the product was checked, not just the painting.** Items 1, 5, 7, 8 and 9 are passed. The
+four still open (2, 3, 4, 6) are Mark-owned: composition, his hardware, deploy, portfolio.
 
 ### Item 9 evidence (2026-07-27)
 
@@ -478,7 +504,22 @@ promoting `main`** so nothing publishes uncredited.
   both motion states: no overflow, no overlap.
 - The `prefers-reduced-motion` pause label is the width worst case — visible text shortened to
   "Motion paused" while the full "Motion paused by system setting" stays as the `aria-label`.
-- Verification: 96/96 tests, lint, build, `check:reduced` PASS.
+- **Fullscreen false alarm, worth not repeating.** Mark reported the fullscreen button doing
+  nothing. It was pre-existing code, byte-identical to before the extraction, and it is *correct*:
+  verified in Playwright, in a clean headed Chrome (viewport 1200x713 → 1512x949, canvas following)
+  and in a **maximised** one (787 → 949). It works in Mark's ordinary Chrome profile; it is the
+  **agent/automation browser that refuses it**. See lessons 2026-07-27. One real defect fell out and
+  was fixed (`baec2ad`): `.catch(() => undefined)` was swallowing every failure, making "the browser
+  refused" and "the button is broken" the same observation.
+- **Closing verification at `3ed269f`:** 96/96 tests, lint, build, `check:reduced` PASS — and the
+  **production bundle** was served via `vite preview` and captured, confirming the chrome renders in
+  the built artefact (not just dev, where `leva` differs). That build is what deploys.
+
+**Known, not a defect — the fov/aspect note.** The diorama camera uses a fixed vertical fov (50),
+not an aspect-responsive one. A taller viewport therefore *narrows* the horizontal field by ~17%
+rather than revealing more scene, so fullscreen reads as a slight zoom rather than an opening-up.
+This is the same property behind item 2's portrait letterboxing — **one aspect-responsive fov
+decision would improve both**, and it is a composition call, so it is Mark's.
 
 *(Historical, kept because it is the method that worked twice:* **item 8's first step was not code
 and not a design — it was a look.** *The cypress pass only became tractable once three concrete
