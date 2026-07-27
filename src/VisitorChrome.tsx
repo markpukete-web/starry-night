@@ -63,12 +63,24 @@ export function VisitorChrome({
     return () => document.removeEventListener('fullscreenchange', onFullscreenChange)
   }, [])
 
+  // Failures used to be swallowed by `.catch(() => undefined)`, which made "the browser refused"
+  // indistinguishable from "the button is broken" — no console entry, no state change, nothing.
+  // Surface them instead; a fullscreen request can legitimately be rejected (iframe policy, no user
+  // gesture), and when it is we want to be able to see why.
   const toggleFullscreen = () => {
+    const warn = (what: string) => (error: unknown) =>
+      console.warn(`[starry-night] ${what} was rejected by the browser:`, error)
+
     if (document.fullscreenElement) {
-      void document.exitFullscreen().catch(() => undefined)
-    } else if (document.documentElement.requestFullscreen) {
-      void document.documentElement.requestFullscreen().catch(() => undefined)
+      void document.exitFullscreen().catch(warn('exitFullscreen'))
+      return
     }
+    const root = document.documentElement
+    if (!root.requestFullscreen) {
+      console.warn('[starry-night] this browser exposes no requestFullscreen on documentElement')
+      return
+    }
+    void root.requestFullscreen().catch(warn('requestFullscreen'))
   }
 
   return (
