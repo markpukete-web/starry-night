@@ -2,6 +2,8 @@
 
 Van Gogh's *The Starry Night*, made movable — an interactive 3D rendition where the sky churns the way he painted it.
 
+**→ Live: <https://starry-night-blue.vercel.app>**
+
 Built with three.js / React Three Fiber. Vibe-coded with Claude Code; product thinking, taste, and
 the love for this painting are [Mark's](https://markma.dev).
 
@@ -11,6 +13,36 @@ the love for this painting are [Mark's](https://markma.dev).
 npm install
 npm run dev
 ```
+
+Node 24 LTS. The build scripts are executed straight by Node (`node scripts/foo.ts`), so they need a
+Node new enough to strip TypeScript natively; Vercel builds on 24.x.
+
+### Routes and debug switches
+
+`mode` defaults to `diorama`, which is what a visitor gets.
+
+| Query | Effect |
+|---|---|
+| `?mode=diorama` | the shipped orbitable 3D diorama (default) |
+| `?mode=painting` | the flat 2D route — any value that is not `diorama`/`canopy`/`relief` lands here |
+| `?mode=canopy` · `?mode=relief` | earlier experiments, kept for comparison |
+| `&clean=1` | hides all visitor chrome — how captures stay comparable |
+| `&debug=nopost` · `&debug=flow` · `&debug=stage` | no post pass · sky only · foreground only |
+| `&view=orbit` | the orbit-preset camera instead of the home pose |
+| `&perf=1` | frame-timing probe on `window.__perf`, pipeline otherwise untouched |
+
+### Verifying
+
+```bash
+npm run lint && npm run test:sky && npm run build
+npm run check:reduced     # prefers-reduced-motion yields a still frame; the control churns
+npm run check:viewport    # camera AND visitor chrome survive a live device rotation
+npm run capture:diorama -- output/playwright/<name>   # nine deterministic views
+```
+
+`check:viewport` and `check:reduced` drive a real headless browser, because the failures they guard
+are live ones — a stale camera after a resize, or chrome that only clips at a viewport nobody tested.
+Unit tests pin the constants and cannot see either.
 
 ### Asset pipeline (only when re-baking reference assets)
 
@@ -48,3 +80,27 @@ Two items are open rather than done. The custom domain `starrynight.markma.dev` 
 `.vercel.app` URL is the address for now. And the locked 30 fps mid-tier-mobile criterion is accepted
 **unverified** — it was waived by the owner rather than measured, since headless cannot read real device
 frame rates; desktop sits at mean 8.33 ms / p95 ~9.1 ms.
+
+## Deploying
+
+The Vercel project is connected to this repo with `main` as its production branch, so **pushing `main`
+is the deploy** — there is no separate publish step. Work happens on `sky-brushdab` and reaches
+production by fast-forward:
+
+```bash
+git switch main && git merge --ff-only sky-brushdab && git push origin main
+```
+
+Keep the working checkout off `main` between releases. Preview deployments sit behind Vercel
+authentication; production does not.
+
+## Where things live
+
+| Path | |
+|---|---|
+| `src/scene/` | the scene — `DioramaExperience` composes `Diorama` (island, cypress, village, shrubs) under `PaintingFlowSky3D` |
+| `src/scene/dioramaContract.ts` | cameras and the locked orbit envelope, stated as orbit parameters |
+| `scripts/` | the offline pipeline, the browser checks, and the unit tests |
+| `public/reference/` | the derived assets the runtime samples — committed, so a clone just runs |
+| `tasks/todo.md` · `tasks/lessons.md` | the plan of record and the project's memory — **read both before changing anything** |
+| `docs/decisions/` | why the reference pipeline, the movable decision, and the inpaint/extend work are the way they are |
