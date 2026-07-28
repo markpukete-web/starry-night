@@ -559,7 +559,7 @@ stop and ask about (CLAUDE.md "Stop and ask Mark when"). `Claude` items are mech
 |---|------|-------|-------|
 | 1 | ~~Lighting/bloom balance~~ | Mark | ✅ **PASSED 2026-07-22** — middle-ground authored lighting pass accepted & pushed (`b3420f8`). Sky & foreground midtones lifted 8–11%, halos radiate, deep cobalt floor preserved |
 | 2 | ~~Mobile portrait framing~~ | Claude measured + built, Mark chose | ✅ **DECIDED 2026-07-28 — candidate C, the whole composition letterboxed.** Corrected two inherited errors on the way: the moon is the *cheap* anchor (the cypress is expensive), and the old portrait camera was silently distance-clamped (9.18 vs a 5.6 cap) so it held neither. Now stated as orbit parameters and pinned by two tests |
-| 3 | **Perf on real hardware** — locked criterion: 60 fps desktop, 30 fps mid-tier mobile. Headless cannot measure this; needs a real device pass. Includes confirming stroke budget + DPR caps (Tunables) hold up | Mark to run, Claude to retune | open |
+| 3 | ~~Perf on real hardware~~ | Mark | ✅ **WAIVED 2026-07-28 (Mark): "cell phone hardware is minor, I am not too worried about it."** Not measured on a real device; desktop `--perf` is mean 8.33 ms / p95 ~9.1. The locked 30 fps mid-tier mobile criterion is therefore accepted UNVERIFIED, by the owner's explicit call. If a phone ever reads badly, the levers are the stroke budget and the DPR caps in Tunables |
 | 4 | **Deploy mechanics** — Vercel prod, Deployment Protection, `starrynight.markma.dev` DNS (Cloudflare CNAME, grey-cloud). **Includes the branch endgame: promote `sky-brushdab` → `main` (fast-forward), which — VERIFIED 2026-07-27 — *is itself the production deploy*, see below.** CLAUDE.md: anything touching deploy/DNS/analytics is stop-and-ask | Mark | open |
 | 5 | ~~WebP for the three colour assets~~ | Mark | ✅ **DONE 2026-07-21** — lossless taken, lossy rejected; payload 12.21 → 10.04 MB |
 | 6 | **Portfolio link-out** — markma.dev links to the finished piece (CLAUDE.md: it links out, full stop — never embedded) | Mark | open, post-deploy |
@@ -567,9 +567,21 @@ stop and ask about (CLAUDE.md "Stop and ask Mark when"). `Claude` items are mech
 | 8 | ~~Village second painterly pass~~ | Claude built, Mark gated | ✅ **PASSED 2026-07-22** — drawn contours, stroke-built walls, church held in the nocturne band, warm pigment + painted windows. *"gate passed"* |
 | 9 | ~~Visitor controls in the diorama~~ | Mark scoped, Claude built, Mark closed | ✅ **CLOSED 2026-07-27** — chrome extracted to `src/VisitorChrome.tsx`, shared by both routes. Attribution + Pause / Show original / Fullscreen on the shipping route, all four verified working by Mark in his own browser profile. Render pixel-unchanged; mobile overflow fixed |
 
-**Status of this checklist as of 2026-07-28: 6 of 9 closed.** Items 1, 2, 5, 7, 8 and 9 are
-passed. **Three remain, all Mark-owned:** 3 (perf on his hardware), 4 (deploy), 6 (portfolio
-link-out). Item 2 closed when Mark picked candidate C from the measured portrait framings.
+**Status of this checklist as of 2026-07-28: 7 of 9 closed.** Items 1, 2, 3, 5, 7, 8 and 9 are
+done — 3 by Mark's explicit waiver rather than by measurement. **Two remain:** 4 (deploy) and
+6 (portfolio link-out, post-deploy).
+
+**Deploy facts verified 2026-07-28, correcting the record:**
+- **Deployment Protection is NOT a release blocker.** It covers PREVIEWS only. The production
+  alias `starry-night-blue.vercel.app` returns **HTTP 200** publicly; preview URLs 302 to
+  `vercel.com/sso-api`. The June "401" that worried this file was a preview, not production.
+- **Production is public RIGHT NOW and serving the June vortex dome** (`247e816`). Unlinked, but
+  reachable. Moving `main` is what replaces it.
+- **`starrynight.markma.dev` is not wired.** It resolves via Cloudflare (same IPs as markma.dev)
+  but returns **404**, and the Vercel project's domain list does not include it. Attaching it is a
+  separate two-sided step: add the domain in Vercel, then the Cloudflare CNAME (grey-cloud).
+- **The promotion is reversible.** The current production deployment is `isRollbackCandidate: true`,
+  so Vercel can roll straight back.
 
 ### Item 9 evidence (2026-07-27)
 
