@@ -2050,3 +2050,17 @@ defect remaining." Mark's answer was *"those findings are minor"* — gate passe
   `prefers-reduced-motion` (which makes them comparable pixel-for-pixel instead of through a noise
   floor) and requires them identical. **Checked it FAILS on the broken code before trusting it** —
   it reported DIFFERENT on both transitions pre-fix, so it is not vacuous.
+- 2026-07-28 — **The rotation gap turned out to hide a defect that had nothing to do with rotation.**
+  Extending `check:viewport` to assert visitor-chrome geometry was meant to prove that media queries
+  re-evaluate on resize (they do). What it actually found was the **original placard covering the
+  title on a phone in LANDSCAPE (844×390) — on a FRESH load, no rotation involved.** Cause: 844px is
+  wider than the 640px phone breakpoint, so a landscape phone takes the *desktop* chrome rules in a
+  window with no vertical room; the placard is sized off the long axis (`min(300px, 100vw - 32px)`)
+  and grew to ~254px tall in a 390px-tall frame. Item 9 had verified the chrome at 360/390/430 —
+  all **portrait** widths — so the short-viewport case had never been laid out at all. Fixed with
+  `@media (min-width: 641px) and (max-height: 520px) { width: min(300px, 38vh) }`, sizing it from
+  the short axis. Two things carry: (1) **a breakpoint on width alone cannot describe a phone**,
+  because the same device supplies both a 390px and an 844px viewport; test the short axis
+  explicitly, (2) **the check you write to close a suspected gap is worth running even when you
+  expect it to pass** — the value was not the rotation assertion but the five viewports it forced
+  me to enumerate.

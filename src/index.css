@@ -217,6 +217,18 @@ button {
   }
 }
 
+/* A phone in LANDSCAPE is wider than the 640px breakpoint — so it takes the desktop chrome rules —
+   but only ~390px tall. The placard is sized off the long axis (min(300px, …)), which in a short
+   window made it tall enough to reach up into the title and cover the attribution. Size it from the
+   SHORT axis here instead: 38vw-equivalent in vh keeps the 3840:3041 image about 30vh tall, so it
+   stays clear of both the title above and the dock below. Scoped to min-width 641px so the phone
+   breakpoint above keeps owning narrow viewports and its wrapped dock. */
+@media (min-width: 641px) and (max-height: 520px) {
+  .visitor-reference {
+    width: min(300px, 38vh);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .visitor-control,
   .visitor-control::after {
