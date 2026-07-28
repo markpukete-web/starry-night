@@ -37,6 +37,14 @@ painting's persistent row runs, and the painting's pixels are projected onto tha
 brushwork being synthesised. Full-frame bloom came out of the diorama in the same pass — the contrast was
 already authored, and the wash was flattening the sky's strokes.
 
-Four of the five review gates have passed (reference pipeline, the movable decision, first full animated
-sky, foreground complete). **Pre-release is the one that remains** — mobile portrait framing, performance
-on real hardware, a painterly pass over the village, and deploy. Not released yet.
+The village had the same treatment — drawn cloisonnist contours, stroke-built walls, the church held inside
+the nocturne band, and painted window glow.
+
+**Released 2026-07-28 — live at <https://starry-night-blue.vercel.app>.** All five review gates have
+passed: reference pipeline, the movable decision, first full animated sky, foreground complete, and
+pre-release. Production deploys from `main`.
+
+Two items are open rather than done. The custom domain `starrynight.markma.dev` is not attached yet, so the
+`.vercel.app` URL is the address for now. And the locked 30 fps mid-tier-mobile criterion is accepted
+**unverified** — it was waived by the owner rather than measured, since headless cannot read real device
+frame rates; desktop sits at mean 8.33 ms / p95 ~9.1 ms.

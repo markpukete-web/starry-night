@@ -9,6 +9,51 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
+## ▶ NEXT SESSION — START HERE (written 2026-07-28, at release)
+
+**The piece is RELEASED and live. The project has changed phase: there is no pre-release gate left
+to work towards, and `main` now deploys to production on every push.** Read that sentence before
+opening any code — the habits from the build phase (commit freely on `sky-brushdab`, push as
+backup) are still safe, but *promoting* is now a publishing act.
+
+**Live:** <https://starry-night-blue.vercel.app> · production = `main` · deploys on push.
+
+**Session start ritual, unchanged:** read `tasks/lessons.md` (it is the memory and the 07-28
+entries are dense), then this file. CLAUDE.md only if the bar is in question.
+
+**Repo state at hand-off:** working branch `sky-brushdab` (deliberately NOT `main`, so no casual
+commit publishes), clean tree, everything pushed. Three branches, all in sync with `origin` —
+see "Branch model" below; nothing about them is broken or pending.
+
+### The only two things outstanding — both Mark's, neither blocking
+
+1. **Custom domain `starrynight.markma.dev`** — not attached. It resolves via Cloudflare but
+   **404s**, and it is absent from the Vercel project's domain list. Two-sided job: add the domain
+   in the Vercel project, then a Cloudflare CNAME (grey-cloud, per CLAUDE.md). Claude can do the
+   Vercel half on Mark's say-so; the Cloudflare half is Mark's. Stop-and-ask either way (DNS).
+2. **Portfolio link-out** — markma.dev links out to the live URL. Different repo. CLAUDE.md is
+   explicit: it links out, never embeds.
+
+### Known and accepted, so nobody reopens them by surprise
+
+- **The 30 fps mid-tier-mobile criterion is accepted UNVERIFIED**, waived by Mark 2026-07-28
+  ("cell phone hardware is minor"). It was never measured on a real device — headless reads 0 fps.
+  If a phone ever reads badly the levers are the stroke budget and the DPR caps in Tunables.
+- **Portrait carries a ~19% band of unpainted sky at the top.** That is candidate C's accepted
+  cost, chosen by Mark over two alternatives that filled the frame by dropping an anchor. Not a bug.
+- **The fixed vertical fov** is still fixed. An aspect-responsive one would shrink that band *and*
+  fix fullscreen-reads-as-zoom. Composition change, so Mark's call — offered twice, not built.
+- **Deployment Protection stays ON for previews** and does not affect production. Preview URLs 302
+  to `vercel.com/sso-api`; you must be logged in to open one. Production is public.
+
+### If picking up genuinely new work
+
+Nothing is queued. CLAUDE.md's Out of scope still binds (audio, VR/AR, other paintings, gallery
+framing — never; preset dials / time-of-day — Phase 2 at the earliest, and only now that
+pre-release has passed). Scope ideas go in this file, not into the code.
+
+---
+
 ## ▶ RELEASED (2026-07-28) — the piece is LIVE in production
 
 **`git push origin main` ran at Mark's explicit go. The diorama is live.**
@@ -32,13 +77,25 @@ below — never edited in place.
 | 4 | Deploy mechanics | **mostly done** — prod deploy ✅, Deployment Protection resolved (previews only, never blocked release) ✅. **`starrynight.markma.dev` NOT attached** — resolves via Cloudflare but 404s, and it is absent from the Vercel project's domain list. Two-sided: add the domain in Vercel, then the Cloudflare CNAME (grey-cloud) |
 | 6 | Portfolio link-out | open — markma.dev links out to the live URL. Mark's other repo |
 
-### Branch model from here — worth deciding deliberately
+### Branch model from here — Mark's call, left as-is 2026-07-28
 
-`main` and `sky-brushdab` are now the same commit, and **`main` is wired to production: any push to
-it deploys.** The working checkout was moved back to `sky-brushdab` after the promotion so no
-casual commit publishes by accident. Options: keep `sky-brushdab` as the working branch and
-fast-forward `main` at each release (what just happened, and it worked), or retire it and branch
-per change. Mark's call; recorded rather than assumed.
+Three branches, local and `origin` in sync. **Mark's decision: leave them as they are.**
+
+| Branch | Tip | What it is |
+|---|---|---|
+| `main` | `91b5085` | **Production.** Deploys on push. GitHub default (`origin/HEAD → main`) |
+| `sky-brushdab` | `1b6fda0`+ | The working branch. Sits 1+ commits ahead of `main` (release-record docs) |
+| `record/2d-streamline-flow` | `8ccf903` (06-24) | The 2D era, kept |
+
+**Correction worth carrying:** `record/2d-streamline-flow` is **no longer a divergent line**. Since
+the 181-commit fast-forward it is 125 behind / **0 ahead** of `main` — `git merge-base --is-ancestor`
+confirms it is fully contained in `main`'s history. It is now a *bookmark* on the June 24 tip of the
+2D era, not a branch protecting unique commits; deleting it would lose the label and nothing else.
+Mark kept it knowing that.
+
+**The working model that just proved itself:** commit on `sky-brushdab`, push freely (backup only,
+spawns a preview), and at release `git switch main && git merge --ff-only sky-brushdab &&
+git push origin main`. That push IS the deploy. Keep the checkout off `main` between releases.
 
 ---
 
