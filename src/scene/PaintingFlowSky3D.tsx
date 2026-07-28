@@ -9,6 +9,7 @@ import {
   CanvasTexture,
   Color,
   DoubleSide,
+  Matrix4,
   NoColorSpace,
   NormalBlending,
   Quaternion,
@@ -35,6 +36,14 @@ type PaintingFlowSkyDebug = 'final' | 'flow'
 type Props = {
   paused?: boolean
   debug?: PaintingFlowSkyDebug
+  /**
+   * The home camera the sky's composition is keyed to. The sky is rotation-locked to the camera,
+   * so the painting sits wherever `q_camera(home)⁻¹` puts it and stays there through the orbit.
+   * Derived from the active camera SPEC rather than latched from the first rendered frame: on a
+   * device rotation the camera spec changes, and a frame-1 latch left the sky keyed to the
+   * previous orientation — camera right, sky ~21° off, moon clipped (Codex, 2026-07-28).
+   */
+  home: { position: readonly [number, number, number]; target: readonly [number, number, number] }
 }
 
 const ribbonVert = /* glsl */ `
@@ -385,9 +394,18 @@ function SourceOrbs({ debug }: { debug: PaintingFlowSkyDebug }) {
   )
 }
 
-export function PaintingFlowSky3D({ paused = false, debug = 'final' }: Props) {
+export function PaintingFlowSky3D({ paused = false, debug = 'final', home }: Props) {
   const skyRoot = useRef<Group>(null)
-  const initialCameraInverse = useRef<Quaternion | null>(null)
+  // Camera-convention lookAt (Matrix4.lookAt puts +Z from target back to eye, as three does for
+  // isCamera objects), so this equals the live camera's quaternion at rest at the home pose —
+  // provided the pose sits inside DIORAMA_ORBIT and so is never clamped. `diorama-layout.test.ts`
+  // holds that invariant for every authored camera.
+  const homeInverse = useMemo(() => {
+    const eye = new Vector3(...home.position)
+    const target = new Vector3(...home.target)
+    const matrix = new Matrix4().lookAt(eye, target, new Vector3(0, 1, 0))
+    return new Quaternion().setFromRotationMatrix(matrix).invert()
+  }, [home])
   // The FILLED assets: the cypress cut-out replaced offline with the painting's own sky patches,
   // plus the S4 side strips continuing the painting past its L/R edges
   // (docs/decisions/0003-inpaint-extend.md). The 2D routes keep the unfilled originals.
@@ -573,9 +591,8 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final' }: Props) {
 
   /* eslint-disable react-hooks/immutability -- R3F render-loop writes: camera-locked sky rotation + time uniform */
   useFrame(({ camera }, dt) => {
-    initialCameraInverse.current ??= camera.quaternion.clone().invert()
     if (skyRoot.current) {
-      skyRoot.current.quaternion.copy(camera.quaternion).multiply(initialCameraInverse.current)
+      skyRoot.current.quaternion.copy(camera.quaternion).multiply(homeInverse)
     }
     if (paused) return
     ribbonMaterial.uniforms.uTime.value += dt

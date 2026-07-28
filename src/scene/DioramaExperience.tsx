@@ -86,7 +86,11 @@ function PerfProbe() {
 function Scene({ reduced }: { reduced: boolean }) {
   const debug = readDebugMode()
   const view = readViewMode()
-  const isPortrait = typeof window !== 'undefined' && window.innerHeight > window.innerWidth
+  // R3F's `size` is the canvas size and re-renders on resize. Reading window.inner* here instead
+  // left the camera stale until reload, so rotating a device kept the previous orientation's
+  // framing — landscape→portrait held the desktop close-up (Codex, 2026-07-28).
+  const { size } = useThree()
+  const isPortrait = size.height > size.width
   const camera = isPortrait && view === 'design' ? DIORAMA_CAMERAS.mobile : DIORAMA_CAMERAS[view]
   const background = useMemo(() => (debug === 'stage' ? '#071020' : '#06112a'), [debug])
   const measurePerformance = readPerfMode()
@@ -115,7 +119,14 @@ function Scene({ reduced }: { reduced: boolean }) {
       {measurePerformance && <PerfProbe />}
       <Suspense fallback={null}>
         {debug !== 'flow' && <Diorama debug={debug === 'stage' ? 'stage' : 'final'} />}
-        {debug !== 'stage' && <PaintingFlowSky3D paused={reduced} debug={debug === 'flow' ? 'flow' : 'final'} />}
+        {debug !== 'stage' && (
+          <PaintingFlowSky3D
+            paused={reduced}
+            debug={debug === 'flow' ? 'flow' : 'final'}
+            /* a stable module constant, so the sky's home quaternion memo holds across renders */
+            home={camera}
+          />
+        )}
       </Suspense>
       {/* Authored additive moon/star halos supply the glow. Full-frame bloom washes out the pale sky strokes. */}
     </>

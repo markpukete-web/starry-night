@@ -18,6 +18,7 @@
     "compare:village": "node scripts/compare-village.mjs",
     "check:village": "node scripts/check-village-colour.ts",
     "check:reduced": "node scripts/check-reduced-motion.mjs",
+    "check:viewport": "node scripts/check-viewport-camera.mjs",
     "test:sky": "node --test scripts/sky-mapping.test.ts scripts/flow-field.test.ts scripts/dab-field.test.ts scripts/streamline-geometry.test.ts scripts/front-canopy-mapping.test.ts scripts/diorama-layout.test.ts scripts/relief-contract.test.ts scripts/painting-regions.test.ts scripts/brush-forms.test.ts scripts/inpaint.test.ts scripts/png.test.ts scripts/cypress-field.test.ts scripts/cypress-mapping.test.ts scripts/cypress-strokes.test.ts scripts/cypress-lobes.test.ts"
   },
   "dependencies": {

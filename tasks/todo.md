@@ -31,6 +31,33 @@ shipped · A · B · C left to right):
 renders C (`output/playwright/portrait-applied-2026-07-28/mobile-centre.png`) and **desktop is
 untouched** — only `mobile` changed, and the non-portrait branch still reads `DIORAMA_CAMERAS[view]`.
 
+### Then: device rotation did not switch cameras at all (Codex review, same day) — FIXED
+
+Codex caught that all of the above only applied on a **fresh load**. Rotating an open page kept the
+previous orientation's framing until reload. Reproduced, and it turned out to be **two** faults, the
+second hiding behind the first:
+
+1. **Stale camera** — `isPortrait` read `window.inner*` during render without subscribing to canvas
+   size, so `Scene` never re-rendered on resize. Landscape→portrait kept the desktop close-up: no
+   moon, no cypress. Fixed with R3F's reactive `useThree().size`.
+2. **Stale sky** — `PaintingFlowSky3D` latched `initialCameraInverse` from the *first rendered
+   frame*. Once the camera followed the resize the sky was still keyed to the old orientation, so
+   the composition sat ~21° off and **the moon was clipped at the right edge** — the exact thing
+   candidate C was chosen for. Fixed by deriving the home quaternion from the active camera spec
+   (`Matrix4.lookAt`, camera convention) instead of latching a frame.
+
+The two are one invariant: the spec-derived home equals the live camera only while the pose is
+never clamped, which the envelope test added earlier the same day guarantees.
+
+**Evidence** (`output/playwright/resize-verify-*`, all under `prefers-reduced-motion` so frames are
+deterministic — rotated vs fresh, in bytes): `740432 vs 416304` before → `422942 vs 416304` after
+fix 1 → **`416304 vs 416304`** after fix 2. **No regression:** a fresh load is **byte-identical**
+before and after the sky change, in both orientations.
+
+**New browser-level guard: `npm run check:viewport`** (`scripts/check-viewport-camera.mjs`). The
+unit test could never catch this — it pins constants, and the constants were right the whole time.
+Confirmed the new check FAILS on the broken code before trusting it.
+
 ### What the measurement changed about item 2
 
 The checklist described item 2 as "the MOON can't fit a portrait frame". That is **not** the
@@ -593,7 +620,10 @@ Already satisfied, listed so the gate can be checked end-to-end rather than re-l
 - [x] Camera stays within the locked orbit limits (polar 0.2–1.62, distance 3–5.5, no pan/free-fly)
 - [x] Ship hygiene — reference PNGs 18.17 → 11.20 MB lossless (2026-07-21); `leva` aliased out of
       the production build (vite.config.ts)
-- [x] `npm run lint` clean; `npm run test:sky` green (**96 tests**); `npm run build` green
+- [x] `npm run lint` clean; `npm run test:sky` green (**98 tests**); `npm run build` green
+- [x] `npm run check:viewport` green — rotating an open page reaches the same framing as a fresh
+      load, in both directions (added 2026-07-28 after Codex found device rotation never switched
+      cameras; a constants-only unit test cannot catch it)
 - [x] README reflects the orbitable-diorama reality, not the scaffold
 
 **Explicitly NOT in this gate** (CLAUDE.md Out of scope / Phase 2): preset dials (time-of-day,

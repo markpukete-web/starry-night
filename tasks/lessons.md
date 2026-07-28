@@ -2023,3 +2023,30 @@ defect remaining." Mark's answer was *"those findings are minor"* — gate passe
   beautiful crop" and "the whole subject", expect the whole subject to win here. Same direction as
   the 07-22 calibration (his ship bar differs from my review bar) but on the opposite axis: there
   he accepted less than I wanted, here he accepted a visible flaw to keep the composition intact.
+- 2026-07-28 — **A correct bug report can still be a half-diagnosis; fix the named cause, then
+  RE-MEASURE.** Codex reported that rotating an open page never switched camera, and named the
+  cause exactly: `isPortrait` read `window.inner*` during render without subscribing to canvas
+  size, so `Scene` never re-rendered. That was true and the fix (`useThree().size`) was right —
+  and the transition still failed. A second half was hiding behind it: `PaintingFlowSky3D` latched
+  `initialCameraInverse` from the FIRST rendered frame, so once the camera did follow the resize,
+  the sky was still keyed to the previous orientation — camera right, sky ~21° off, moon clipped
+  at the edge. Byte sizes told the story the report could not: 740432 vs 416304 before the first
+  fix, 422942 vs 416304 after it, 416304 vs 416304 after the second. **Had I stopped when the
+  reported cause was fixed, I would have shipped a portrait that looked nearly right and dropped
+  the moon** — the one thing candidate C was chosen for.
+- 2026-07-28 — **"Latch it on the first frame" is a hidden dependency on load order.** The sky's
+  home orientation was captured from whatever the camera happened to be on frame 1, which is
+  correct exactly once and silently wrong after any camera change. Replacing it with a value
+  DERIVED from the active camera spec (`Matrix4.lookAt`, camera convention) removed the ordering
+  dependency — and reproduced the old behaviour **byte-for-byte** on a fresh load in both
+  orientations under reduced motion, so it was a strict improvement rather than a trade. The
+  derivation is only equal to the live camera while the pose sits inside `DIORAMA_ORBIT` and is
+  never clamped — which the envelope test added earlier the same day now guarantees. **Two changes
+  that looked unrelated turned out to be one invariant.**
+- 2026-07-28 — **A test that pins constants cannot catch a live failure.** `diorama-layout.test.ts`
+  asserted the portrait camera's numbers and passed happily throughout the whole resize bug: the
+  constants were right, the wiring was not. The failure only exists in a browser that has been
+  resized without reloading. `npm run check:viewport` captures a fresh load and a rotated one under
+  `prefers-reduced-motion` (which makes them comparable pixel-for-pixel instead of through a noise
+  floor) and requires them identical. **Checked it FAILS on the broken code before trusting it** —
+  it reported DIFFERENT on both transitions pre-fix, so it is not vacuous.
