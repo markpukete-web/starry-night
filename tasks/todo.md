@@ -21,9 +21,13 @@ backup) are still safe, but *promoting* is now a publishing act.
 **Session start ritual, unchanged:** read `tasks/lessons.md` (it is the memory and the 07-28
 entries are dense), then this file. CLAUDE.md only if the bar is in question.
 
-**Repo state at hand-off:** working branch `sky-brushdab` (deliberately NOT `main`, so no casual
-commit publishes), clean tree, everything pushed. Three branches, all in sync with `origin` —
-see "Branch model" below; nothing about them is broken or pending.
+**Repo state at hand-off:** on `main`, clean tree, everything pushed. **`sky-brushdab` was merged
+and DELETED on 2026-07-28** (Mark's call) after it was confirmed identical to `main`, so no commits
+were lost. Two branches remain: `main` and the frozen `record/2d-streamline-flow`.
+
+⚠️ **There is no staging branch in front of production any more.** `main` is the working branch AND
+the deploy trigger, so a casual `git push` publishes. For anything beyond a typo: branch, verify
+there (`lint`, `test:sky`, `build`, `check:reduced`, `check:viewport`), then fast-forward `main`.
 
 ### The only two things outstanding — both Mark's, neither blocking
 
@@ -77,15 +81,18 @@ pre-release has passed). Scope ideas go in this file, not into the code.
 | 4 | Deploy mechanics | **mostly done** — prod deploy ✅, Deployment Protection resolved (previews only, never blocked release) ✅. **`starrynight.markma.dev` NOT attached** — resolves via Cloudflare but 404s, and it is absent from the Vercel project's domain list. Two-sided: add the domain in Vercel, then the Cloudflare CNAME (grey-cloud) |
 | 6 | Portfolio link-out | open — markma.dev links out to the live URL. Mark's other repo |
 
-### Branch model from here — Mark's call, left as-is 2026-07-28
+### Branch model — settled 2026-07-28, second call: sky-brushdab retired
 
-Three branches, local and `origin` in sync. **Mark's decision: leave them as they are.**
+Mark first kept all three branches, then an hour later retired the working branch: *"I don't think I
+need the sky-brushdab branch now, let's merge to main."* Merged (fast-forward, it was already
+identical to `main`) and deleted local + `origin`. **No commits were lost — every one is in `main`.**
 
 | Branch | Tip | What it is |
 |---|---|---|
-| `main` | `91b5085` | **Production.** Deploys on push. GitHub default (`origin/HEAD → main`) |
-| `sky-brushdab` | `1b6fda0`+ | The working branch. Sits 1+ commits ahead of `main` (release-record docs) |
-| `record/2d-streamline-flow` | `8ccf903` (06-24) | The 2D era, kept |
+| `main` | `95f46a5`+ | **Production and the working branch.** Deploys on push. GitHub default |
+| `record/2d-streamline-flow` | `8ccf903` (06-24) | The 2D era, a frozen bookmark |
+
+To recreate a working branch at any time: `git switch -c <name> main`.
 
 **Correction worth carrying:** `record/2d-streamline-flow` is **no longer a divergent line**. Since
 the 181-commit fast-forward it is 125 behind / **0 ahead** of `main` — `git merge-base --is-ancestor`
@@ -93,9 +100,9 @@ confirms it is fully contained in `main`'s history. It is now a *bookmark* on th
 2D era, not a branch protecting unique commits; deleting it would lose the label and nothing else.
 Mark kept it knowing that.
 
-**The working model that just proved itself:** commit on `sky-brushdab`, push freely (backup only,
-spawns a preview), and at release `git switch main && git merge --ff-only sky-brushdab &&
-git push origin main`. That push IS the deploy. Keep the checkout off `main` between releases.
+**The working model now:** `main` is both the working branch and the deploy trigger, so the safety
+that `sky-brushdab` used to provide has to come from discipline instead. Branch for any real change,
+verify on the branch, fast-forward `main` to publish. A branch push only ever makes a preview.
 
 ---
 

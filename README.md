@@ -84,15 +84,20 @@ frame rates; desktop sits at mean 8.33 ms / p95 ~9.1 ms.
 ## Deploying
 
 The Vercel project is connected to this repo with `main` as its production branch, so **pushing `main`
-is the deploy** — there is no separate publish step. Work happens on `sky-brushdab` and reaches
-production by fast-forward:
+is the deploy** — there is no separate publish step, and there is no staging branch in front of it.
+
+`main` is the only long-lived branch (`record/2d-streamline-flow` is a frozen bookmark on the 2D era).
+So for anything beyond a typo, branch, verify there, then fast-forward:
 
 ```bash
-git switch main && git merge --ff-only sky-brushdab && git push origin main
+git switch -c <change>            # work here, push freely — a branch push only makes a preview
+npm run lint && npm run test:sky && npm run build
+npm run check:reduced && npm run check:viewport
+git switch main && git merge --ff-only <change> && git push origin main   # this deploys
 ```
 
-Keep the working checkout off `main` between releases. Preview deployments sit behind Vercel
-authentication; production does not.
+Preview deployments sit behind Vercel authentication; production does not. If a deploy goes wrong, the
+previous production deployment is a rollback candidate in the Vercel dashboard.
 
 ## Where things live
 
