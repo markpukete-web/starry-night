@@ -1,6 +1,42 @@
 export type DioramaDebugMode = 'final' | 'nopost' | 'stage' | 'flow'
 export type DioramaViewMode = 'design' | 'orbit'
 
+export type OrbitPose = {
+  target: readonly [number, number, number]
+  azimuthDeg: number
+  polarDeg: number
+  distance: number
+  fov: number
+}
+
+/**
+ * Orbit parameters → a camera spec, in OrbitControls' spherical convention (polar from +Y,
+ * azimuth about +Y from +Z).
+ *
+ * Stating a camera this way keeps it honest about DIORAMA_ORBIT. The portrait camera used to be
+ * authored as a raw position at distance 9.18 against a 5.6 cap, so OrbitControls clamped it on
+ * its first update() and the framing rendered a third closer than intended — losing the cypress
+ * and clipping the moon on every modern phone aspect, while the record claimed it held the
+ * cypress (measured 2026-07-28). An authored camera outside the envelope is a wish, not a setting.
+ */
+export function orbitPose(pose: OrbitPose) {
+  const polar = (pose.polarDeg * Math.PI) / 180
+  const azimuth = (pose.azimuthDeg * Math.PI) / 180
+  const sp = Math.sin(polar)
+  return {
+    position: [
+      pose.target[0] + pose.distance * sp * Math.sin(azimuth),
+      pose.target[1] + pose.distance * Math.cos(polar),
+      pose.target[2] + pose.distance * sp * Math.cos(azimuth),
+    ] as [number, number, number],
+    target: pose.target,
+    fov: pose.fov,
+    near: 0.08,
+    far: 48,
+    pose,
+  }
+}
+
 export const DIORAMA_CAMERAS = {
   design: {
     position: [0.62, 1.18, 5.18] as const,
@@ -9,13 +45,24 @@ export const DIORAMA_CAMERAS = {
     near: 0.08,
     far: 48,
   },
-  mobile: {
-    position: [0.72, 1.18, 9.2] as const,
-    target: [0.9, 1.0, 0.02] as const,
-    fov: 86,
-    near: 0.08,
-    far: 48,
-  },
+  /**
+   * Portrait home — Mark's pick, 2026-07-28 (pre-release checklist item 2): the WHOLE
+   * composition, letterboxed. Holds all four anchors at once — moon, full-height cypress, the
+   * central whorl and the steeple — at every phone aspect from 360x800 to 430x932.
+   *
+   * The accepted cost is a band of unpainted sky (~19%) at the top of the frame. A portrait frame
+   * is taller than the painted world, and no pose in a ~30k search holds the moon without one:
+   * the moon sits high enough that reaching it overruns the painting's top edge. The two
+   * alternatives Mark weighed dropped an anchor to buy a filled frame — A the moon, B the cypress.
+   * The dark below the island is not part of that cost; it is the gate-passed floating look.
+   */
+  mobile: orbitPose({
+    target: [0.4, 0.8, 0.02],
+    azimuthDeg: -15,
+    polarDeg: 88.9,
+    distance: 5.4,
+    fov: 88,
+  }),
   orbit: {
     position: [3.65, 1.55, 3.95] as const,
     target: [-0.08, 0.9, 0.08] as const,
@@ -23,97 +70,9 @@ export const DIORAMA_CAMERAS = {
     near: 0.08,
     far: 48,
   },
-} as const
+}
 
 export const DIORAMA_CAMERA = DIORAMA_CAMERAS.design
-
-/**
- * Pre-release checklist item 2 — portrait framing candidates for Mark's composition call.
- * Driven by `?portrait=a|b|c`; with no param the shipped default (DIORAMA_CAMERAS.mobile) is
- * unchanged, so this adds a review affordance and decides nothing.
- *
- * Expressed as ORBIT parameters rather than a raw position, because OrbitControls clamps the
- * authored offset into DIORAMA_ORBIT on its first update — the shipped `mobile` spec asks for
- * distance 9.18 and silently renders at 5.6. Stating azimuth/polar/distance keeps a candidate
- * honest about living inside the locked envelope.
- *
- * The painting is landscape (1.26:1) and a phone is 0.46:1, so a portrait frame CANNOT hold the
- * whole composition and stay filled — something is always given up. These three are the honest
- * poles of that choice, all measured at the worst phone aspect (360x800):
- *
- *   - the cypress and the moon are the composition's two anchors, at opposite ends. A portrait
- *     crop reaches one or the other, not both, unless it pulls back far enough to letterbox.
- *   - including the MOON costs a flat band of unpainted sky at the top — zero poses in the search
- *     hold the moon without one, because the moon sits high enough that reaching it pushes the
- *     frame past the painting's top edge.
- *   - the dark area BELOW the island is not a defect: it is the gate-passed floating-island look
- *     (see the desktop capture). Only the flat band ABOVE the sky is unpainted background.
- */
-export type PortraitCandidate = {
-  label: string
-  note: string
-  target: readonly [number, number, number]
-  azimuthDeg: number
-  polarDeg: number
-  distance: number
-  fov: number
-}
-
-export const DIORAMA_PORTRAIT_CANDIDATES: Record<string, PortraitCandidate> = {
-  a: {
-    label: 'Cypress side — no moon',
-    note:
-      'the cypress full height as the moon\'s counterweight, whorl + village + steeple with it. ' +
-      'Sky fills the frame edge to edge — NO unpainted band anywhere. Biggest paint. Cost: the moon ' +
-      'is off-frame until you orbit right. fov 62 is also closest to the desktop lens (50)',
-    target: [-0.4, 0.9, 0.02],
-    azimuthDeg: 27.5,
-    polarDeg: 88.9,
-    distance: 5.2,
-    fov: 62,
-  },
-  b: {
-    label: 'Moon side — no cypress',
-    note:
-      'the moon, whorl, the WHOLE village and the steeple, paint larger than C. Cost: the cypress ' +
-      'is off-frame, and a ~13% flat band of unpainted sky at the top — the least any moon-holding ' +
-      'pose can do (no pose in the search holds the moon without one)',
-    target: [0.6, 0.6, 0.02],
-    azimuthDeg: -15,
-    polarDeg: 88.9,
-    distance: 5.0,
-    fov: 84,
-  },
-  c: {
-    label: 'Whole composition — letterboxed',
-    note:
-      'everything held at once: moon, full cypress, whorl, steeple. Cost: a ~19% flat band at the ' +
-      'top and the paint reads ~30% smaller than A or B. The safe-but-smallest option',
-    target: [0.4, 0.8, 0.02],
-    azimuthDeg: -15,
-    polarDeg: 88.9,
-    distance: 5.4,
-    fov: 88,
-  },
-}
-
-/** Orbit parameters → world position, matching OrbitControls' spherical convention. */
-export function portraitCandidateCamera(c: PortraitCandidate) {
-  const polar = (c.polarDeg * Math.PI) / 180
-  const azimuth = (c.azimuthDeg * Math.PI) / 180
-  const sp = Math.sin(polar)
-  return {
-    position: [
-      c.target[0] + c.distance * sp * Math.sin(azimuth),
-      c.target[1] + c.distance * Math.cos(polar),
-      c.target[2] + c.distance * sp * Math.cos(azimuth),
-    ] as [number, number, number],
-    target: c.target,
-    fov: c.fov,
-    near: 0.08,
-    far: 48,
-  }
-}
 
 export const DIORAMA_ORBIT = {
   minDistance: 3.25,

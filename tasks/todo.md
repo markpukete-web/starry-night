@@ -9,21 +9,27 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## ▶ WHERE WE ARE (2026-07-28) — item 2 PREPARED, not decided. Three candidates await Mark's pick.
+## ▶ WHERE WE ARE (2026-07-28) — item 2 ✅ DECIDED AND APPLIED. Three of Mark's four remain.
 
-Mark asked for the portrait framing candidates to be built. They are built, measured and captured;
-**the composition choice is still his** and nothing about the shipped default has changed.
+**Mark's call: candidate C — the whole composition, letterboxed.** Everything held at once — moon,
+full-height cypress, central whorl, steeple — at every phone aspect from 360×800 to 430×932, at
+the cost of a ~19% band of unpainted sky at the top and paint that reads ~30% smaller than the
+alternatives. Applied to `DIORAMA_CAMERAS.mobile`; the two rejected candidates and the `?portrait=`
+review affordance are deleted rather than left as dead scaffolding.
 
-**Drive them live** (`npm run dev`, portrait window or device toolbar):
+The three Mark chose between (captures kept at
+`output/playwright/portrait-candidates-2026-07-28-final/portrait-candidates-sheet.png`,
+shipped · A · B · C left to right):
 
-| | URL | What it keeps | What it costs |
+| | Kept | Cost | Outcome |
 |---|---|---|---|
-| **A** | `/?mode=diorama&portrait=a` | full cypress, whorl, village, steeple; **sky fills the frame, no empty band anywhere**; biggest paint | **no moon** until you orbit right; home sits at az +27.5° so the view is off head-on |
-| **B** | `/?mode=diorama&portrait=b` | **moon**, whorl, whole village, steeple; paint larger than C | **no cypress**; ~13% flat band of unpainted sky at the top |
-| **C** | `/?mode=diorama&portrait=c` | **everything** — moon, full cypress, whorl, steeple; reads most like the painting | ~19% top band; paint ~30% smaller than A or B |
+| A | full cypress, whorl, village, steeple; **sky fills the frame, no band at all**; biggest paint | **no moon**; home off head-on at az +27.5° | not taken |
+| B | **moon**, whorl, whole village, steeple; paint larger than C | **no cypress**; ~13% top band | not taken |
+| **C** | **everything** — moon, full cypress, whorl, steeple | ~19% top band; smallest paint | ✅ **shipped** |
 
-Captures: `output/playwright/portrait-candidates-2026-07-28-final/` — start with
-`portrait-candidates-sheet.png` (shipped · A · B · C, left to right).
+**Verified after applying:** 98/98 tests (two new), lint, build, `check:reduced` all pass; portrait
+renders C (`output/playwright/portrait-applied-2026-07-28/mobile-centre.png`) and **desktop is
+untouched** — only `mobile` changed, and the non-portrait branch still reads `DIORAMA_CAMERAS[view]`.
 
 ### What the measurement changed about item 2
 
@@ -45,19 +51,19 @@ Also settled while looking: the dark area **below** the island is not a defect �
 gate-passed floating-island look (`moon-fix-2026-07-22-p2/desktop-centre.png`). Only the flat band
 **above** the sky is unpainted background.
 
-### What was added to the code (default behaviour unchanged)
+### What changed in the code
 
-- `DIORAMA_PORTRAIT_CANDIDATES` + `portraitCandidateCamera()` in `dioramaContract.ts`, stated as
-  azimuth/polar/distance so a candidate cannot sit outside the locked orbit envelope unnoticed.
-- `?portrait=a|b|c` in `DioramaExperience.tsx`. With no param the expression reduces to exactly the
-  previous one, so desktop and the shipped portrait are untouched.
-- Verified at HEAD: 96/96 tests, lint, build, `check:reduced` all pass.
+- `orbitPose()` in `dioramaContract.ts` — cameras stated as azimuth/polar/distance instead of a raw
+  position, so a pose cannot sit outside `DIORAMA_ORBIT` unnoticed. `DIORAMA_CAMERAS.mobile` is now
+  built from it (target [0.4, 0.8, 0.02], az −15°, polar 88.9°, distance 5.4, fov 88).
+- **Two new tests** in `scripts/diorama-layout.test.ts`: every authored camera must lie inside the
+  orbit envelope (this one fails on the old spec — distance 9.184 vs the 5.6 cap, so it is not
+  vacuous), and the portrait home holds Mark's chosen pose against a silent revert.
+- The candidate scaffolding and `?portrait=` reader are removed now the decision is made.
 
-**When Mark picks one**, applying it is a two-line change: copy that candidate's numbers into
-`DIORAMA_CAMERAS.mobile` (or point the portrait branch at the candidate) and delete the other two.
-Item 2 then closes. **If none of them is right, the useful next lever is the fov/aspect decision
-already flagged under item 9** — the camera uses a fixed vertical fov, so an aspect-responsive one
-would change both portrait and the fullscreen-reads-as-zoom behaviour.
+**Still open and unaffected:** the fixed vertical fov flagged under item 9. An aspect-responsive fov
+would shrink C's top band *and* fix the fullscreen-reads-as-zoom behaviour, but it is a composition
+change and therefore Mark's — noted, not built.
 
 ---
 
@@ -525,7 +531,7 @@ stop and ask about (CLAUDE.md "Stop and ask Mark when"). `Claude` items are mech
 | # | Item | Owner | State |
 |---|------|-------|-------|
 | 1 | ~~Lighting/bloom balance~~ | Mark | ✅ **PASSED 2026-07-22** — middle-ground authored lighting pass accepted & pushed (`b3420f8`). Sky & foreground midtones lifted 8–11%, halos radiate, deep cobalt floor preserved |
-| 2 | **Mobile portrait framing** — ~~the MOON can't fit~~ **corrected 2026-07-28: the moon is the cheap anchor, the CYPRESS is the expensive one, and the shipped portrait camera is silently distance-clamped so it holds neither.** Three measured candidates built and captured for Mark's pick — see WHERE WE ARE at the top of this file | Mark (composition) | **open — awaiting Mark's pick of A / B / C** |
+| 2 | ~~Mobile portrait framing~~ | Claude measured + built, Mark chose | ✅ **DECIDED 2026-07-28 — candidate C, the whole composition letterboxed.** Corrected two inherited errors on the way: the moon is the *cheap* anchor (the cypress is expensive), and the old portrait camera was silently distance-clamped (9.18 vs a 5.6 cap) so it held neither. Now stated as orbit parameters and pinned by two tests |
 | 3 | **Perf on real hardware** — locked criterion: 60 fps desktop, 30 fps mid-tier mobile. Headless cannot measure this; needs a real device pass. Includes confirming stroke budget + DPR caps (Tunables) hold up | Mark to run, Claude to retune | open |
 | 4 | **Deploy mechanics** — Vercel prod, Deployment Protection, `starrynight.markma.dev` DNS (Cloudflare CNAME, grey-cloud). **Includes the branch endgame: promote `sky-brushdab` → `main` (fast-forward), which — VERIFIED 2026-07-27 — *is itself the production deploy*, see below.** CLAUDE.md: anything touching deploy/DNS/analytics is stop-and-ask | Mark | open |
 | 5 | ~~WebP for the three colour assets~~ | Mark | ✅ **DONE 2026-07-21** — lossless taken, lossy rejected; payload 12.21 → 10.04 MB |
@@ -534,9 +540,9 @@ stop and ask about (CLAUDE.md "Stop and ask Mark when"). `Claude` items are mech
 | 8 | ~~Village second painterly pass~~ | Claude built, Mark gated | ✅ **PASSED 2026-07-22** — drawn contours, stroke-built walls, church held in the nocturne band, warm pigment + painted windows. *"gate passed"* |
 | 9 | ~~Visitor controls in the diorama~~ | Mark scoped, Claude built, Mark closed | ✅ **CLOSED 2026-07-27** — chrome extracted to `src/VisitorChrome.tsx`, shared by both routes. Attribution + Pause / Show original / Fullscreen on the shipping route, all four verified working by Mark in his own browser profile. Render pixel-unchanged; mobile overflow fixed |
 
-**Status of this checklist as of 2026-07-27: 5 of 9 closed. ALL BUILD WORK IS DONE — again, and
-this time the product was checked, not just the painting.** Items 1, 5, 7, 8 and 9 are passed. The
-four still open (2, 3, 4, 6) are Mark-owned: composition, his hardware, deploy, portfolio.
+**Status of this checklist as of 2026-07-28: 6 of 9 closed.** Items 1, 2, 5, 7, 8 and 9 are
+passed. **Three remain, all Mark-owned:** 3 (perf on his hardware), 4 (deploy), 6 (portfolio
+link-out). Item 2 closed when Mark picked candidate C from the measured portrait framings.
 
 ### Item 9 evidence (2026-07-27)
 

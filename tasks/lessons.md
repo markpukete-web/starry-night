@@ -2014,3 +2014,12 @@ defect remaining." Mark's answer was *"those findings are minor"* — gate passe
   sky filling the frame edge-to-edge exists at fov 62 / az 27.5°. So the portrait trade is not
   "how much moon" (the inherited framing of item 2) but **which anchor you keep** — they sit at
   opposite ends of a landscape painting and a phone reaches one or the other.
+- 2026-07-28 — **Mark chose the letterbox over the filled frame.** Given three portrait framings —
+  A (sky filling the frame edge-to-edge, biggest paint, no moon), B (moon, no cypress, ~13% band)
+  and C (everything held, ~19% band, smallest paint) — the call was C without hesitation.
+  Calibration worth carrying: **completeness of the composition beat impact of the paint.** My own
+  read had ranked A the most striking image; the owner's bar is that the piece must still be
+  *Starry Night*, and Starry Night has both the cypress and the moon. When a trade is between "more
+  beautiful crop" and "the whole subject", expect the whole subject to win here. Same direction as
+  the 07-22 calibration (his ship bar differs from my review bar) but on the opposite axis: there
+  he accepted less than I wanted, here he accepted a visible flaw to keep the composition intact.
