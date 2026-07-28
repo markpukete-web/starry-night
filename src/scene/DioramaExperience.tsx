@@ -6,6 +6,8 @@ import { PaintingFlowSky3D } from './PaintingFlowSky3D'
 import {
   DIORAMA_CAMERAS,
   DIORAMA_ORBIT,
+  DIORAMA_PORTRAIT_CANDIDATES,
+  portraitCandidateCamera,
   type DioramaDebugMode,
   type DioramaViewMode,
 } from './dioramaContract'
@@ -33,6 +35,13 @@ function readViewMode(): DioramaViewMode {
 
 function readPerfMode(): boolean {
   return queryValue('perf') === '1'
+}
+
+/** `?portrait=a|b|c` — checklist item 2 review affordance. No param = the shipped default. */
+function readPortraitCandidate() {
+  const key = queryValue('portrait')
+  const candidate = key ? DIORAMA_PORTRAIT_CANDIDATES[key] : undefined
+  return candidate ? portraitCandidateCamera(candidate) : null
 }
 
 type PerfWindow = Window & {
@@ -87,7 +96,8 @@ function Scene({ reduced }: { reduced: boolean }) {
   const debug = readDebugMode()
   const view = readViewMode()
   const isPortrait = typeof window !== 'undefined' && window.innerHeight > window.innerWidth
-  const camera = isPortrait && view === 'design' ? DIORAMA_CAMERAS.mobile : DIORAMA_CAMERAS[view]
+  const shipped = isPortrait && view === 'design' ? DIORAMA_CAMERAS.mobile : DIORAMA_CAMERAS[view]
+  const camera = (isPortrait && view === 'design' ? readPortraitCandidate() : null) ?? shipped
   const background = useMemo(() => (debug === 'stage' ? '#071020' : '#06112a'), [debug])
   const measurePerformance = readPerfMode()
 

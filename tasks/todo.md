@@ -9,6 +9,60 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
+## ▶ WHERE WE ARE (2026-07-28) — item 2 PREPARED, not decided. Three candidates await Mark's pick.
+
+Mark asked for the portrait framing candidates to be built. They are built, measured and captured;
+**the composition choice is still his** and nothing about the shipped default has changed.
+
+**Drive them live** (`npm run dev`, portrait window or device toolbar):
+
+| | URL | What it keeps | What it costs |
+|---|---|---|---|
+| **A** | `/?mode=diorama&portrait=a` | full cypress, whorl, village, steeple; **sky fills the frame, no empty band anywhere**; biggest paint | **no moon** until you orbit right; home sits at az +27.5° so the view is off head-on |
+| **B** | `/?mode=diorama&portrait=b` | **moon**, whorl, whole village, steeple; paint larger than C | **no cypress**; ~13% flat band of unpainted sky at the top |
+| **C** | `/?mode=diorama&portrait=c` | **everything** — moon, full cypress, whorl, steeple; reads most like the painting | ~19% top band; paint ~30% smaller than A or B |
+
+Captures: `output/playwright/portrait-candidates-2026-07-28-final/` — start with
+`portrait-candidates-sheet.png` (shipped · A · B · C, left to right).
+
+### What the measurement changed about item 2
+
+The checklist described item 2 as "the MOON can't fit a portrait frame". That is **not** the
+binding constraint, and two inherited facts were wrong:
+
+1. **The shipped portrait camera never rendered as authored.** `DIORAMA_CAMERAS.mobile` asks for
+   distance 9.18; `DIORAMA_ORBIT.maxDistance` is 5.6, so OrbitControls clamps it on the first
+   update. The framing is a third tighter than intended — which is why today it loses the cypress
+   **and** clips the moon on every modern phone aspect (360×800 / 390×844 / 412×915 / 430×932).
+   It only holds on the old 375×667 aspect.
+2. **The moon is the cheap anchor; the cypress is the expensive one.** Across a ~30k-pose search,
+   zero poses hold the moon without a flat band at the top of the frame — it sits high enough that
+   reaching it overruns the painting's top edge. A full-height cypress with the sky filling the
+   frame edge-to-edge does exist (candidate A). The real trade is **which anchor you keep**: they
+   are at opposite ends of a landscape painting and a phone frame reaches one or the other.
+
+Also settled while looking: the dark area **below** the island is not a defect — it is the
+gate-passed floating-island look (`moon-fix-2026-07-22-p2/desktop-centre.png`). Only the flat band
+**above** the sky is unpainted background.
+
+### What was added to the code (default behaviour unchanged)
+
+- `DIORAMA_PORTRAIT_CANDIDATES` + `portraitCandidateCamera()` in `dioramaContract.ts`, stated as
+  azimuth/polar/distance so a candidate cannot sit outside the locked orbit envelope unnoticed.
+- `?portrait=a|b|c` in `DioramaExperience.tsx`. With no param the expression reduces to exactly the
+  previous one, so desktop and the shipped portrait are untouched.
+- Verified at HEAD: 96/96 tests, lint, build, `check:reduced` all pass.
+
+**When Mark picks one**, applying it is a two-line change: copy that candidate's numbers into
+`DIORAMA_CAMERAS.mobile` (or point the portrait branch at the candidate) and delete the other two.
+Item 2 then closes. **If none of them is right, the useful next lever is the fov/aspect decision
+already flagged under item 9** — the camera uses a fixed vertical fov, so an aspect-responsive one
+would change both portrait and the fullscreen-reads-as-zoom behaviour.
+
+---
+
+## ▶ Superseded 2026-07-28 — the 07-27 end-of-session record
+
 ## ▶ WHERE WE ARE (2026-07-27, end of session) — item 9 CLOSED. Only Mark's four remain.
 
 **The piece and the product around it are both done.** Item 9 closed by Mark after testing the
@@ -471,7 +525,7 @@ stop and ask about (CLAUDE.md "Stop and ask Mark when"). `Claude` items are mech
 | # | Item | Owner | State |
 |---|------|-------|-------|
 | 1 | ~~Lighting/bloom balance~~ | Mark | ✅ **PASSED 2026-07-22** — middle-ground authored lighting pass accepted & pushed (`b3420f8`). Sky & foreground midtones lifted 8–11%, halos radiate, deep cobalt floor preserved |
-| 2 | **Mobile portrait framing** — responsive fov keeps cypress edge + central whorl + steeple, but the MOON can't fit a portrait frame (≈42° off-centre on the arc); needs a portrait-specific camera bearing | Mark (composition) | open |
+| 2 | **Mobile portrait framing** — ~~the MOON can't fit~~ **corrected 2026-07-28: the moon is the cheap anchor, the CYPRESS is the expensive one, and the shipped portrait camera is silently distance-clamped so it holds neither.** Three measured candidates built and captured for Mark's pick — see WHERE WE ARE at the top of this file | Mark (composition) | **open — awaiting Mark's pick of A / B / C** |
 | 3 | **Perf on real hardware** — locked criterion: 60 fps desktop, 30 fps mid-tier mobile. Headless cannot measure this; needs a real device pass. Includes confirming stroke budget + DPR caps (Tunables) hold up | Mark to run, Claude to retune | open |
 | 4 | **Deploy mechanics** — Vercel prod, Deployment Protection, `starrynight.markma.dev` DNS (Cloudflare CNAME, grey-cloud). **Includes the branch endgame: promote `sky-brushdab` → `main` (fast-forward), which — VERIFIED 2026-07-27 — *is itself the production deploy*, see below.** CLAUDE.md: anything touching deploy/DNS/analytics is stop-and-ask | Mark | open |
 | 5 | ~~WebP for the three colour assets~~ | Mark | ✅ **DONE 2026-07-21** — lossless taken, lossy rejected; payload 12.21 → 10.04 MB |

@@ -1976,3 +1976,41 @@ defect remaining." Mark's answer was *"those findings are minor"* — gate passe
   *diagnosable* because the silent `.catch(() => undefined)` was replaced with a warning first
   (`baec2ad`) — **a swallowed error makes "the browser refused" and "the button is broken" the same
   observation**, and that is the defect worth fixing whether or not it explains the symptom.
+- 2026-07-28 — **A framing metric that counts landmarks cannot see an empty frame.** Item 2's
+  candidates were designed against "are moon / cypress / whorl / steeple inside the frame", and the
+  first set scored perfectly — all four held at every phone aspect, generous margins. The captures
+  showed why that was worthless: 39–51% of each frame was flat background, because a portrait frame
+  is TALLER than the painted world and outruns it at both ends (the sky's top edge and the island's
+  keel both fall inside it). The metric's own logic made it worse — widening fov to buy landmark
+  margin buys void faster than subject, so the "safest" candidate (fov 100) was the emptiest at 51%.
+  **Add the negative space to the measurement, not just the subjects**; `sky-top.y` and
+  `island-keel.y` turned an invisible defect into two numbers. Same family as the 07-27 missing-dock
+  lesson: the check looked at what it expected to be there.
+- 2026-07-28 — **Calibrate a defect list against the gate-passed state before fixing anything.** I
+  had "empty area below the island" at the top of the portrait defect list and spent a pass
+  designing it out. Opening the gate-passed desktop capture (`moon-fix-2026-07-22-p2`) settled it in
+  seconds: the island floats in exactly that dark, and Mark passed it. Only the flat band ABOVE the
+  sky is unpainted background. **A capture that already passed a gate is the cheapest possible
+  control for "is this a defect or the design"** — and I nearly spent the retune cap removing an
+  authored look.
+- 2026-07-28 — **With OrbitControls, "aim higher" means "move the camera higher".** The fix for the
+  bottom void looked obvious — raise the target so the island sits on the bottom edge. It worked
+  numerically (bottom void 18% → 0%) and produced a plan view of the village, because polar is
+  measured FROM the target, so raising the target lifts the camera with it and the level look now
+  stares down at the island. Tilting up instead of rising needs polar > 90°, and
+  `maxPolarAngle` 1.62 rad (92.8°) allows only 2.8° of it. **Target height and camera height are
+  the same lever here** — the only real ways to fill a tall frame are fov and distance.
+- 2026-07-28 — **The shipped portrait camera never rendered as authored.** `DIORAMA_CAMERAS.mobile`
+  asks for position (0.72, 1.18, 9.2) — distance 9.18 from its target — and `DIORAMA_ORBIT.maxDistance`
+  is 5.6, so OrbitControls' first `update()` silently pulls it to 5.6. The "wider/farther mobile
+  camera" recorded on 2026-06-15 is a third closer than intended, which is why portrait lost the
+  cypress AND clipped the moon on every modern phone aspect while the record claimed it held the
+  cypress. **An authored camera outside the orbit envelope is a wish, not a setting** — state
+  portrait poses as azimuth/polar/distance so the envelope is visible in the numbers.
+- 2026-07-28 — **In portrait, the moon costs a letterbox band; measured, not guessed.** Across a
+  ~30k-pose search (fov × distance × target × azimuth) at the worst phone aspect, ZERO poses hold
+  the moon without flat background at the top — it sits high enough that reaching it pushes the
+  frame past the painting's top edge. The cypress has no such cost: a full-height cypress with the
+  sky filling the frame edge-to-edge exists at fov 62 / az 27.5°. So the portrait trade is not
+  "how much moon" (the inherited framing of item 2) but **which anchor you keep** — they sit at
+  opposite ends of a landscape painting and a phone reaches one or the other.
