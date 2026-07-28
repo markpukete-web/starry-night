@@ -621,9 +621,15 @@ Already satisfied, listed so the gate can be checked end-to-end rather than re-l
 - [x] Ship hygiene — reference PNGs 18.17 → 11.20 MB lossless (2026-07-21); `leva` aliased out of
       the production build (vite.config.ts)
 - [x] `npm run lint` clean; `npm run test:sky` green (**98 tests**); `npm run build` green
-- [x] `npm run check:viewport` green — rotating an open page reaches the same framing as a fresh
-      load, in both directions (added 2026-07-28 after Codex found device rotation never switched
-      cameras; a constants-only unit test cannot catch it)
+- [x] `npm run check:viewport` green — covers BOTH the camera and the visitor chrome across seven
+      viewports and three live rotations (added 2026-07-28 after Codex found device rotation never
+      switched cameras; a constants-only unit test cannot catch it). Closing the chrome half turned
+      up a defect that predates the rotation work and is not rotation-specific: **on a phone in
+      LANDSCAPE (844×390) the original placard covered the title and attribution, on a fresh load.**
+      844px is wider than the 640px phone breakpoint, so a landscape phone takes the *desktop* chrome
+      rules in a window with no vertical room. Item 9 had verified the chrome at 360/390/430 — all
+      portrait widths — so the short axis had never been laid out. Fixed by sizing the placard from
+      the short axis (`min-width: 641px and max-height: 520px`)
 - [x] README reflects the orbitable-diorama reality, not the scaffold
 
 **Explicitly NOT in this gate** (CLAUDE.md Out of scope / Phase 2): preset dials (time-of-day,
