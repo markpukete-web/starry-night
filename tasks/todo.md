@@ -9,6 +9,41 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
+## ▶ RELEASED (2026-07-28) — the piece is LIVE in production
+
+**`git push origin main` ran at Mark's explicit go. The diorama is live.**
+
+- Production deployment `dpl_GD55SVdzGX5Abq57ZMpsDx7oavSK` — **target production, state READY**,
+  commit `91b5085` on `main`. Confirmed from the Vercel API, not inferred from a 200.
+- **`https://starry-night-blue.vercel.app`** — public, HTTP 200, no SSO gate.
+- The promotion was the clean 181-commit fast-forward `247e816..91b5085`. The June vortex dome is
+  now ancestry; nothing was forced and the build-in-public history is intact.
+- **Verified by looking at the LIVE site**, not just the build: nine capture views against the
+  production URL. Desktop composition correct; portrait renders candidate C with moon, full
+  cypress, whorl and steeple. `output/playwright/production-live-2026-07-28/`.
+- Pre-flight before the push: the production bundle was built, served locally and put through
+  `check:viewport` (all ten cases) plus a nine-view capture — the artefact, not the dev server.
+- **Rollback is available**: the previous production deployment remains a rollback candidate.
+
+### What is left
+
+| # | Item | State |
+|---|------|-------|
+| 4 | Deploy mechanics | **mostly done** — prod deploy ✅, Deployment Protection resolved (previews only, never blocked release) ✅. **`starrynight.markma.dev` NOT attached** — resolves via Cloudflare but 404s, and it is absent from the Vercel project's domain list. Two-sided: add the domain in Vercel, then the Cloudflare CNAME (grey-cloud) |
+| 6 | Portfolio link-out | open — markma.dev links out to the live URL. Mark's other repo |
+
+### Branch model from here — worth deciding deliberately
+
+`main` and `sky-brushdab` are now the same commit, and **`main` is wired to production: any push to
+it deploys.** The working checkout was moved back to `sky-brushdab` after the promotion so no
+casual commit publishes by accident. Options: keep `sky-brushdab` as the working branch and
+fast-forward `main` at each release (what just happened, and it worked), or retire it and branch
+per change. Mark's call; recorded rather than assumed.
+
+---
+
+## ▶ Superseded by the release — the pre-cutover record
+
 ## ▶ WHERE WE ARE (2026-07-28) — item 2 ✅ DECIDED AND APPLIED. Three of Mark's four remain.
 
 **Mark's call: candidate C — the whole composition, letterboxed.** Everything held at once — moon,
