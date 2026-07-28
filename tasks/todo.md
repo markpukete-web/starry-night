@@ -13,8 +13,8 @@ below — never edited in place.
 
 **The piece is RELEASED and live. The project has changed phase: there is no pre-release gate left
 to work towards, and `main` now deploys to production on every push.** Read that sentence before
-opening any code — the habits from the build phase (commit freely on `sky-brushdab`, push as
-backup) are still safe, but *promoting* is now a publishing act.
+opening any code — the build-phase habit of committing and pushing freely is no longer safe by
+default, because the branch that made it safe is gone.
 
 **Live:** <https://starry-night-blue.vercel.app> · production = `main` · deploys on push.
 
@@ -49,6 +49,11 @@ there (`lint`, `test:sky`, `build`, `check:reduced`, `check:viewport`), then fas
   fix fullscreen-reads-as-zoom. Composition change, so Mark's call — offered twice, not built.
 - **Deployment Protection stays ON for previews** and does not affect production. Preview URLs 302
   to `vercel.com/sso-api`; you must be logged in to open one. Production is public.
+- **The favicon is 438 KB and that was accepted, not missed.** `favicon-starry-night-v2.png` is a
+  512×512 painted icon (Codex, 2026-07-28), verified legible at 32px and still readable at 16px.
+  Lossless recompression only reaches ~392 KB — the weight is real image data. The proper fix is a
+  small 32×32 alongside it with `sizes` attributes, so a tab fetches ~2 KB instead. **Offered to
+  Mark and not taken**; do not "fix" it silently. The orphaned `public/favicon.svg` was deleted.
 
 ### If picking up genuinely new work
 

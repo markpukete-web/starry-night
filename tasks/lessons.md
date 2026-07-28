@@ -2064,3 +2064,12 @@ defect remaining." Mark's answer was *"those findings are minor"* — gate passe
   explicitly, (2) **the check you write to close a suspected gap is worth running even when you
   expect it to pass** — the value was not the rotation assertion but the five viewports it forced
   me to enumerate.
+- 2026-07-28 — **Retiring the staging branch moves safety from structure to discipline.** With
+  `sky-brushdab` gone, `main` is both the working branch and the deploy trigger, so the thing that
+  used to make "commit freely, push as backup" safe no longer exists — a casual push now publishes.
+  The merge itself was risk-free (verified `main` and `sky-brushdab` were the same commit before
+  deleting, so no commit could be lost, and the branch is recreatable with `git switch -c`), but the
+  *habit* it protected was not. Worth carrying: **when a branch is deleted, the instructions that
+  referenced it become traps, not just staleness.** README, `tasks/todo.md` and the vault's pickup
+  note all told the next reader to work on a branch that no longer existed; each was corrected in
+  the same change rather than left for the next session to trip over.
