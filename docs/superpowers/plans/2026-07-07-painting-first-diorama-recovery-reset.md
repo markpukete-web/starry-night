@@ -46,7 +46,7 @@
 - Modify: `src/scene/Diorama.tsx`
 - Modify: `src/scene/dioramaContract.ts`
 - Modify: `scripts/diorama-layout.test.ts`
-- Keep: `tasks/todo.md`, `tasks/lessons.md`, `/Users/markma/File Vault/The starry-night/Status.md`, `/Users/markma/File Vault/The starry-night/Timeline.md`
+- Keep: `tasks/todo.md`, `tasks/lessons.md`, `~/File Vault/The starry-night/Status.md`, `~/File Vault/The starry-night/Timeline.md`
 
 - [ ] **Step 1: Save the failed native-dome diff as evidence**
 
@@ -571,8 +571,8 @@ git commit -m "chore(3d): add reusable diorama capture script"
 **Files:**
 - Modify: `tasks/todo.md`
 - Modify: `tasks/lessons.md`
-- Modify: `/Users/markma/File Vault/The starry-night/Status.md`
-- Modify: `/Users/markma/File Vault/The starry-night/Timeline.md`
+- Modify: `~/File Vault/The starry-night/Status.md`
+- Modify: `~/File Vault/The starry-night/Timeline.md`
 
 - [ ] **Step 1: Review captures in this order**
 

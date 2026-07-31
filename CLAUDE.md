@@ -9,7 +9,7 @@ build.
 
 Standalone by decision (2026-06-12): its own repo, its own deploy. It is **not** a scene inside
 markma.dev and not bound by that project's spec. Once finished it links from the portfolio and
-lives at `starrynight.markma.dev` (Vercel Hobby + Cloudflare DNS subdomain, CNAME grey-cloud).
+lives at `starrynight.markma.dev` (Vercel Hobby + Cloudflare custom domain).
 
 ## The bar (locked — only Mark edits this section)
 

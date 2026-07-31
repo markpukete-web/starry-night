@@ -24,6 +24,9 @@ dist-ssr
 *.sw?
 scratch/
 .vercel
+.claude/
+*.env
+*.env.*
 
 # Phase 0: heavy, deterministically regenerable analysis intermediates + gate captures.
 # Recreate with `npm run derive-reference`. The shipped assets live in public/reference/.
