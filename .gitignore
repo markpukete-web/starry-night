@@ -27,6 +27,9 @@ scratch/
 .claude/
 *.env
 *.env.*
+# `*.env.*` also matches `.env.example`. There is no template here today, but if one is ever added it
+# must stay tracked rather than being silently ignored.
+!.env.example
 
 # Phase 0: heavy, deterministically regenerable analysis intermediates + gate captures.
 # Recreate with `npm run derive-reference`. The shipped assets live in public/reference/.
