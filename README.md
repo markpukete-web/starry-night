@@ -5,7 +5,8 @@ Van Gogh's *The Starry Night*, made movable — an interactive 3D rendition wher
 **→ Live: <https://starrynight.markma.dev>** (Vercel fallback: <https://starry-night-blue.vercel.app>)
 
 Built with three.js / React Three Fiber. Vibe-coded with Claude Code; product thinking, taste, and
-the love for this painting are [Mark's](https://markma.dev).
+the love for this painting are [Mark's](https://markma.dev). It hangs inside that portfolio as The
+Easel, alongside [TrackView 3D](https://trackview3d.markma.dev).
 
 ## Run
 
