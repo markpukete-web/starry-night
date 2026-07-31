@@ -9,34 +9,40 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## ▶ NEXT SESSION — START HERE (written 2026-07-28, at release)
+## ▶ NEXT SESSION — START HERE (reconciled 2026-07-31)
 
 **The piece is RELEASED and live. The project has changed phase: there is no pre-release gate left
 to work towards, and `main` now deploys to production on every push.** Read that sentence before
 opening any code — the build-phase habit of committing and pushing freely is no longer safe by
 default, because the branch that made it safe is gone.
 
-**Live:** <https://starry-night-blue.vercel.app> · production = `main` · deploys on push.
+**Live:** <https://starrynight.markma.dev> (Vercel fallback: <https://starry-night-blue.vercel.app>) · production = `main` · deploys on push.
 
 **Session start ritual, unchanged:** read `tasks/lessons.md` (it is the memory and the 07-28
 entries are dense), then this file. CLAUDE.md only if the bar is in question.
 
-**Repo state at hand-off:** on `main`, clean tree, everything pushed. **`sky-brushdab` was merged
+**Repo state at the release hand-off:** on `main`, clean tree, everything pushed. **`sky-brushdab` was merged
 and DELETED on 2026-07-28** (Mark's call) after it was confirmed identical to `main`, so no commits
 were lost. Two branches remain: `main` and the frozen `record/2d-streamline-flow`.
+
+**At the time of this reconciliation:** the note-only edits remain uncommitted/unpushed.
 
 ⚠️ **There is no staging branch in front of production any more.** `main` is the working branch AND
 the deploy trigger, so a casual `git push` publishes. For anything beyond a typo: branch, verify
 there (`lint`, `test:sky`, `build`, `check:reduced`, `check:viewport`), then fast-forward `main`.
 
-### The only two things outstanding — both Mark's, neither blocking
+### Release follow-up state — nothing blocking
 
-1. **Custom domain `starrynight.markma.dev`** — not attached. It resolves via Cloudflare but
-   **404s**, and it is absent from the Vercel project's domain list. Two-sided job: add the domain
-   in the Vercel project, then a Cloudflare CNAME (grey-cloud, per CLAUDE.md). Claude can do the
-   Vercel half on Mark's say-so; the Cloudflare half is Mark's. Stop-and-ask either way (DNS).
-2. **Portfolio link-out** — markma.dev links out to the live URL. Different repo. CLAUDE.md is
-   explicit: it links out, never embeds.
+- **Custom domain `starrynight.markma.dev`** — live and returning HTTP 200. It is currently
+  Cloudflare-proxied; the earlier DNS-only (grey-cloud) plan is a configuration note, not a release
+  blocker.
+- **Portfolio link-out** — verified live on markma.dev, pointing to the custom domain. This work lives in
+  the separate portfolio repo.
+- **30 fps mid-tier-mobile** — accepted **UNVERIFIED**, waived by Mark 2026-07-28. Do not reopen unless
+  a real phone reports a problem; the available levers are the stroke budget and DPR caps.
+
+The older release-day sections below preserve their historical state; this hand-off block is the current
+status.
 
 ### Known and accepted, so nobody reopens them by surprise
 
@@ -79,12 +85,12 @@ pre-release has passed). Scope ideas go in this file, not into the code.
   `check:viewport` (all ten cases) plus a nine-view capture — the artefact, not the dev server.
 - **Rollback is available**: the previous production deployment remains a rollback candidate.
 
-### What is left
+### Release checklist status
 
 | # | Item | State |
 |---|------|-------|
-| 4 | Deploy mechanics | **mostly done** — prod deploy ✅, Deployment Protection resolved (previews only, never blocked release) ✅. **`starrynight.markma.dev` NOT attached** — resolves via Cloudflare but 404s, and it is absent from the Vercel project's domain list. Two-sided: add the domain in Vercel, then the Cloudflare CNAME (grey-cloud) |
-| 6 | Portfolio link-out | open — markma.dev links out to the live URL. Mark's other repo |
+| 4 | Deploy mechanics | ✅ **DONE 2026-07-31** — production deploy and custom domain verified live; previews remain protected |
+| 6 | Portfolio link-out | ✅ **DONE 2026-07-31** — markma.dev links to `https://starrynight.markma.dev` |
 
 ### Branch model — settled 2026-07-28, second call: sky-brushdab retired
 
@@ -664,16 +670,16 @@ stop and ask about (CLAUDE.md "Stop and ask Mark when"). `Claude` items are mech
 | 1 | ~~Lighting/bloom balance~~ | Mark | ✅ **PASSED 2026-07-22** — middle-ground authored lighting pass accepted & pushed (`b3420f8`). Sky & foreground midtones lifted 8–11%, halos radiate, deep cobalt floor preserved |
 | 2 | ~~Mobile portrait framing~~ | Claude measured + built, Mark chose | ✅ **DECIDED 2026-07-28 — candidate C, the whole composition letterboxed.** Corrected two inherited errors on the way: the moon is the *cheap* anchor (the cypress is expensive), and the old portrait camera was silently distance-clamped (9.18 vs a 5.6 cap) so it held neither. Now stated as orbit parameters and pinned by two tests |
 | 3 | ~~Perf on real hardware~~ | Mark | ✅ **WAIVED 2026-07-28 (Mark): "cell phone hardware is minor, I am not too worried about it."** Not measured on a real device; desktop `--perf` is mean 8.33 ms / p95 ~9.1. The locked 30 fps mid-tier mobile criterion is therefore accepted UNVERIFIED, by the owner's explicit call. If a phone ever reads badly, the levers are the stroke budget and the DPR caps in Tunables |
-| 4 | **Deploy mechanics** — Vercel prod, Deployment Protection, `starrynight.markma.dev` DNS (Cloudflare CNAME, grey-cloud). **Includes the branch endgame: promote `sky-brushdab` → `main` (fast-forward), which — VERIFIED 2026-07-27 — *is itself the production deploy*, see below.** CLAUDE.md: anything touching deploy/DNS/analytics is stop-and-ask | Mark | open |
+| 4 | **Deploy mechanics** — Vercel prod, Deployment Protection, `starrynight.markma.dev` DNS, and the branch endgame are complete. The live domain is currently Cloudflare-proxied; the older grey-cloud wording is retained only as historical configuration context. | Mark | ✅ DONE 2026-07-31 |
 | 5 | ~~WebP for the three colour assets~~ | Mark | ✅ **DONE 2026-07-21** — lossless taken, lossy rejected; payload 12.21 → 10.04 MB |
-| 6 | **Portfolio link-out** — markma.dev links to the finished piece (CLAUDE.md: it links out, full stop — never embedded) | Mark | open, post-deploy |
+| 6 | **Portfolio link-out** — markma.dev links to the finished piece (CLAUDE.md: it links out, full stop — never embedded) | Mark | ✅ DONE 2026-07-31 |
 | 7 | ~~Cypress second painterly pass~~ | Claude built, Mark gated | ✅ **PASSED 2026-07-22** — colour and stroke length solved, silhouette topology matches. Residual findings in `tasks/2026-07-22-cypress-review-findings.md` judged minor and not actioned |
 | 8 | ~~Village second painterly pass~~ | Claude built, Mark gated | ✅ **PASSED 2026-07-22** — drawn contours, stroke-built walls, church held in the nocturne band, warm pigment + painted windows. *"gate passed"* |
 | 9 | ~~Visitor controls in the diorama~~ | Mark scoped, Claude built, Mark closed | ✅ **CLOSED 2026-07-27** — chrome extracted to `src/VisitorChrome.tsx`, shared by both routes. Attribution + Pause / Show original / Fullscreen on the shipping route, all four verified working by Mark in his own browser profile. Render pixel-unchanged; mobile overflow fixed |
 
-**Status of this checklist as of 2026-07-28: 7 of 9 closed.** Items 1, 2, 3, 5, 7, 8 and 9 are
-done — 3 by Mark's explicit waiver rather than by measurement. **Two remain:** 4 (deploy) and
-6 (portfolio link-out, post-deploy).
+**Historical release-day snapshot (2026-07-28): 7 of 9 closed.** Items 1, 2, 3, 5, 7, 8 and 9 were
+done — 3 by Mark's explicit waiver rather than by measurement. At that point, 4 (deploy) and 6
+(portfolio link-out) remained; both are now closed in the current hand-off above.
 
 **Deploy facts verified 2026-07-28, correcting the record:**
 - **Deployment Protection is NOT a release blocker.** It covers PREVIEWS only. The production

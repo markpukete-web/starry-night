@@ -2,7 +2,7 @@
 
 Van Gogh's *The Starry Night*, made movable — an interactive 3D rendition where the sky churns the way he painted it.
 
-**→ Live: <https://starry-night-blue.vercel.app>**
+**→ Live: <https://starrynight.markma.dev>** (Vercel fallback: <https://starry-night-blue.vercel.app>)
 
 Built with three.js / React Three Fiber. Vibe-coded with Claude Code; product thinking, taste, and
 the love for this painting are [Mark's](https://markma.dev).
@@ -72,14 +72,15 @@ already authored, and the wash was flattening the sky's strokes.
 The village had the same treatment — drawn cloisonnist contours, stroke-built walls, the church held inside
 the nocturne band, and painted window glow.
 
-**Released 2026-07-28 — live at <https://starry-night-blue.vercel.app>.** All five review gates have
+**Released 2026-07-28 — live at <https://starrynight.markma.dev>.** All five review gates have
 passed: reference pipeline, the movable decision, first full animated sky, foreground complete, and
 pre-release. Production deploys from `main`.
 
-Two items are open rather than done. The custom domain `starrynight.markma.dev` is not attached yet, so the
-`.vercel.app` URL is the address for now. And the locked 30 fps mid-tier-mobile criterion is accepted
-**unverified** — it was waived by the owner rather than measured, since headless cannot read real device
-frame rates; desktop sits at mean 8.33 ms / p95 ~9.1 ms.
+The custom domain and portfolio link-out are live. The locked 30 fps mid-tier-mobile criterion remains
+accepted **unverified** — it was waived by the owner rather than measured, since headless cannot read real
+device frame rates; desktop sits at mean 8.33 ms / p95 ~9.1 ms. The custom domain is currently served
+through Cloudflare proxying; the earlier DNS-only (grey-cloud) plan is configuration history, not a release
+blocker.
 
 ## Deploying
 
