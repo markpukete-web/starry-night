@@ -87,7 +87,12 @@ export function VisitorChrome({
     <>
       <header className="visitor-title" aria-label="Artwork">
         <h1>The Starry Night</h1>
-        <p>Vincent van Gogh, 1889 · Mark Ma</p>
+        <p>
+          Vincent van Gogh, 1889 ·{' '}
+          <a href="https://markma.dev" target="_blank" rel="noopener noreferrer">
+            Mark Ma
+          </a>
+        </p>
       </header>
       {showOriginal && (
         <aside className="visitor-reference" aria-label="Original painting reference">

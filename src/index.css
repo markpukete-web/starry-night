@@ -74,6 +74,32 @@ button {
   letter-spacing: 0;
 }
 
+/* The placard sets `pointer-events: none` so it never swallows a drag on the diorama behind it.
+   That would leave the credit link rendering as live while being unclickable, so re-enable pointer
+   events on the anchor ALONE — the rest of the placard stays transparent to the mouse. */
+.visitor-title a {
+  pointer-events: auto;
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: rgba(244, 234, 211, 0.35);
+  text-underline-offset: 2px;
+  transition:
+    color 160ms ease,
+    text-decoration-color 160ms ease;
+}
+
+.visitor-title a:hover,
+.visitor-title a:focus-visible {
+  color: #fff5d6;
+  text-decoration-color: rgba(255, 245, 214, 0.9);
+}
+
+.visitor-title a:focus-visible {
+  border-radius: 2px;
+  outline: 2px solid rgba(255, 245, 214, 0.9);
+  outline-offset: 3px;
+}
+
 .visitor-dock {
   position: fixed;
   right: 16px;
