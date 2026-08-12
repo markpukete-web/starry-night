@@ -8,6 +8,14 @@ on:
   pull_request:
   push:
     branches: [main]
+  # gitleaks-action scopes its scan to the EVENT's commits — a PR scan covers the PR's commits and a
+  # push scan covers the push, which is what you want for catching a leak as it arrives. It is NOT a
+  # history scan: `fetch-depth: 0` only makes the older objects available. Verified from the run log,
+  # which showed `--log-opts=...af4d70ba^..af4d70ba` and `1 commits scanned`.
+  # So the history is covered separately, on a schedule and on demand, where the action scans everything.
+  schedule:
+    - cron: '0 17 * * 0'
+  workflow_dispatch:
 
 concurrency:
   # A newer push supersedes the run in flight for the same ref.
@@ -21,6 +29,8 @@ jobs:
   check:
     name: lint · test · build
     runs-on: ubuntu-latest
+    # Nothing to lint or test on the weekly history audit; that run is for the secret scan only.
+    if: github.event_name != 'schedule'
     steps:
       - uses: actions/checkout@v7
 
@@ -51,7 +61,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          # gitleaks scans history — a token added and removed in a later commit is still leaked.
+          # Needed for the scheduled full-history audit, and so the action can diff a PR against its
+          # base. It does NOT by itself widen the per-PR scan — see the note on the triggers above.
           fetch-depth: 0
 
       - uses: gitleaks/gitleaks-action@v2
