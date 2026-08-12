@@ -1,0 +1,59 @@
+name: CI
+
+# This repo had no automated checks: `lint` and the 98-case `test:sky` suite ran only when someone
+# chose to run them, and the only thing looking at a pull request was Vercel's build. This runs the
+# commands already defined in package.json so the result is a fact on the PR rather than a claim.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  # A newer push supersedes the run in flight for the same ref.
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: lint · test · build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          # Matches this project's Vercel setting (24.x). It also has to be a Node that strips TypeScript
+          # natively, because `test:sky` runs `node --test` directly against .ts files — 24.x does.
+          node-version: 24.x
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      # The geometry/colour contracts for the painting — 98 cases at the time of writing.
+      - run: npm run test:sky
+
+      - run: npm run build
+
+  secrets:
+    name: secret scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # gitleaks lists the PR's commits to scope its scan; without this it gets
+      # 403 "Resource not accessible by integration".
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # gitleaks scans history — a token added and removed in a later commit is still leaked.
+          fetch-depth: 0
+
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
