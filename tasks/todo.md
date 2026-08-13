@@ -9,7 +9,7 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## ▶ NEXT SESSION — START HERE (reconciled 2026-07-31)
+## ▶ NEXT SESSION — START HERE (reconciled 2026-08-13)
 
 **The piece is RELEASED and live. The project has changed phase: there is no pre-release gate left
 to work towards, and `main` now deploys to production on every push.** Read that sentence before
@@ -41,6 +41,33 @@ there (`lint`, `test:sky`, `build`, `check:reduced`, `check:viewport`), then fas
 - **30 fps mid-tier-mobile** — accepted **UNVERIFIED**, waived by Mark 2026-07-28. Do not reopen unless
   a real phone reports a problem; the available levers are the stroke budget and DPR caps.
 
+### Discoverability follow-up — Search Console and Starry Night crawl surface (2026-08-13)
+
+- **Main portfolio indexing request** — Mark manually configured Google Search Console and requested
+  indexing for `https://markma.dev/`, `/standard`, `/standard/projects/first-furlong`, and `/nz`.
+  No agent authenticated to Google or operated the Search Console session. Status is **REQUESTED;
+  WAITING ON GOOGLE** — this does not yet mean indexed or appearing in search.
+- **Starry Night property coverage** — check whether Mark's Search Console property is the Domain
+  property `markma.dev` (which includes `starrynight.markma.dev`) or only the URL-prefix property
+  `https://markma.dev/` (which does not). Do not create or verify another property silently.
+- **Starry Night crawl-surface finding** — the live custom domain returns HTTP 200 but only a 496-byte
+  HTML shell with an empty `<div id="root"></div>`. It currently has no meta description, canonical,
+  Open Graph/Twitter metadata, or sitemap; `/sitemap.xml` returns 404. `robots.txt` allows general
+  search crawling but does not advertise a Starry Night sitemap. The Vercel fallback returns the same
+  shell and neither host declares the custom domain canonical.
+- **Next bounded technical lane (not started)** — after Mark authorises implementation, branch from
+  `main` and add concise static/no-JavaScript body content, title/description, a self-referencing
+  `https://starrynight.markma.dev/` canonical, route social metadata, a one-URL sitemap, a robots
+  sitemap declaration, and build-time contracts that prevent an empty production root. Preserve the
+  current artwork, WebGL, motion, controls, and visual assets; do not add query-mode or capture URLs
+  to the sitemap.
+- **Order after implementation** — deploy and verify the public HTML, sitemap, and robots responses;
+  then inspect Starry Night in Search Console, submit its sitemap, run a live test, and request
+  indexing only after the custom-domain canonical and substantive body are confirmed.
+- **Authentication boundary** — Google sign-in, 2FA, CAPTCHA, property verification, DNS, and
+  authenticated Search Console actions remain Mark-only. Do not grant broad macOS Accessibility
+  permissions or attempt Playwright/Puppeteer/Selenium sign-in as part of this lane.
+
 The older release-day sections below preserve their historical state; this hand-off block is the current
 status.
 
@@ -63,7 +90,8 @@ status.
 
 ### If picking up genuinely new work
 
-Nothing is queued. CLAUDE.md's Out of scope still binds (audio, VR/AR, other paintings, gallery
+No visual work is queued. The discoverability follow-up above is the only open technical lane.
+CLAUDE.md's Out of scope still binds (audio, VR/AR, other paintings, gallery
 framing — never; preset dials / time-of-day — Phase 2 at the earliest, and only now that
 pre-release has passed). Scope ideas go in this file, not into the code.
 

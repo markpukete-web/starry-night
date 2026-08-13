@@ -92,6 +92,14 @@ export function VisitorChrome({
           <a href="https://markma.dev" target="_blank" rel="noopener noreferrer">
             Mark Ma
           </a>
+          {' · '}
+          <a
+            href="https://github.com/markpukete-web/starry-night"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            GitHub
+          </a>
         </p>
       </header>
       {showOriginal && (

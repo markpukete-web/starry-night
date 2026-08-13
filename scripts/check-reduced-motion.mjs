@@ -37,7 +37,7 @@ async function urlOk(url) {
   }
 }
 
-async function waitForUrl(url, timeoutMs = 15000) {
+async function waitForUrl(url, timeoutMs = 25000) {
   const start = Date.now()
   while (Date.now() - start < timeoutMs) {
     if (await urlOk(url)) return true
