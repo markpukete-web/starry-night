@@ -17,17 +17,6 @@ on:
     - cron: '0 17 * * 0'
   workflow_dispatch:
 
-concurrency:
-  # A newer run of the SAME KIND supersedes the one in flight for that ref.
-  #
-  # `github.event_name` is in the key deliberately. On a `schedule` or `workflow_dispatch` run
-  # `github.ref` is `refs/heads/main` — the same ref a push to main uses — so keying on the ref
-  # alone puts the full-history audit and the push run in one group, and `cancel-in-progress`
-  # lets either kill the other. Both directions lose something real: a push replaces the audit
-  # with a scan scoped to its own commits, silently voiding the history coverage the schedule
-  # exists to provide; and a cron cancels the push's checks without running a replacement.
-  group: ci-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -38,6 +27,20 @@ jobs:
     runs-on: ubuntu-latest
     # Nothing to lint or test on the weekly history audit; that run is for the secret scan only.
     if: github.event_name != 'schedule'
+    # Cancellation lives HERE, on the replaceable job, and deliberately NOT at workflow level.
+    # A superseded lint/build is worth nothing, so dropping it saves minutes. A superseded SECRET
+    # SCAN is a different thing entirely: gitleaks scans the pushed RANGE — the command is
+    # `<firstNewCommit>^..<after>` — so the replacement run begins AFTER the commits the cancelled
+    # one was covering. Cancel push A's scan when push B lands and A's commits are scanned by
+    # nobody until the weekly audit. The `secrets` job therefore carries no concurrency group at
+    # all: those runs queue rather than cancel, which costs seconds and closes the hole.
+    #
+    # `github.event_name` is in the key because on a `schedule` / `workflow_dispatch` run
+    # `github.ref` is `refs/heads/main`, the same ref a push uses; without it a manual audit and a
+    # push run would still cancel one another.
+    concurrency:
+      group: ci-check-${{ github.event_name }}-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v7
 
