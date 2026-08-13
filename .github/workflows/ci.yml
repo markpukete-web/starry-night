@@ -1,0 +1,80 @@
+name: CI
+
+# This repo had no automated checks: `lint` and the 98-case `test:sky` suite ran only when someone
+# chose to run them, and the only thing looking at a pull request was Vercel's build. This runs the
+# commands already defined in package.json so the result is a fact on the PR rather than a claim.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  # gitleaks-action scopes its scan to the EVENT's commits — a PR scan covers the PR's commits and a
+  # push scan covers the push, which is what you want for catching a leak as it arrives. It is NOT a
+  # history scan: `fetch-depth: 0` only makes the older objects available. Verified from the run log,
+  # which showed `--log-opts=...af4d70ba^..af4d70ba` and `1 commits scanned`.
+  # So the history is covered separately, on a schedule and on demand, where the action scans everything.
+  schedule:
+    - cron: '0 17 * * 0'
+  workflow_dispatch:
+
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: lint · test · build
+    runs-on: ubuntu-latest
+    # Nothing to lint or test on the weekly history audit; that run is for the secret scan only.
+    if: github.event_name != 'schedule'
+    # Cancellation lives HERE, on the replaceable job, and deliberately NOT at workflow level.
+    # A superseded lint/build is worth nothing, so dropping it saves minutes. A superseded SECRET
+    # SCAN is a different thing entirely: gitleaks scans the pushed RANGE — the command is
+    # `<firstNewCommit>^..<after>` — so the replacement run begins AFTER the commits the cancelled
+    # one was covering. Cancel push A's scan when push B lands and A's commits are scanned by
+    # nobody until the weekly audit. The `secrets` job therefore carries no concurrency group at
+    # all: those runs queue rather than cancel, which costs seconds and closes the hole.
+    #
+    # `github.event_name` is in the key because on a `schedule` / `workflow_dispatch` run
+    # `github.ref` is `refs/heads/main`, the same ref a push uses; without it a manual audit and a
+    # push run would still cancel one another.
+    concurrency:
+      group: ci-check-${{ github.event_name }}-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          # Matches this project's Vercel setting (24.x). It also has to be a Node that strips TypeScript
+          # natively, because `test:sky` runs `node --test` directly against .ts files — 24.x does.
+          node-version: 24.x
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      # The geometry/colour contracts for the painting — 98 cases at the time of writing.
+      - run: npm run test:sky
+
+      - run: npm run build
+
+  secrets:
+    name: secret scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # gitleaks lists the PR's commits to scope its scan; without this it gets
+      # 403 "Resource not accessible by integration".
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Needed for the scheduled full-history audit, and so the action can diff a PR against its
+          # base. It does NOT by itself widen the per-PR scan — see the note on the triggers above.
+          fetch-depth: 0
+
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
