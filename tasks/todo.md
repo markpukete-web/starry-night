@@ -9,27 +9,61 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## ▶ NEXT SESSION — START HERE (reconciled 2026-08-13)
+## ▶ NEXT SESSION — START HERE (reconciled 2026-09-24)
 
-**The piece is RELEASED and live. The project has changed phase: there is no pre-release gate left
-to work towards, and `main` now deploys to production on every push.** Read that sentence before
-opening any code — the build-phase habit of committing and pushing freely is no longer safe by
-default, because the branch that made it safe is gone.
+**The piece is RELEASED and live, and `main` deploys to production on every change that lands on
+it.** Since 2026-09-24 the only way onto `main` is a merged pull request — see the ⚠️ note below.
 
-**Live:** <https://starrynight.markma.dev> (Vercel fallback: <https://starry-night-blue.vercel.app>) · production = `main` · deploys on push.
+**Live:** <https://starrynight.markma.dev> (Vercel fallback: <https://starry-night-blue.vercel.app>) · production = `main` · deploys on every merge.
 
-**Session start ritual, unchanged:** read `tasks/lessons.md` (it is the memory and the 07-28
-entries are dense), then this file. CLAUDE.md only if the bar is in question.
+**Session start ritual:** read `tasks/lessons.md` (it is the memory and the 07-28
+entries are dense), then this file. Re-read CLAUDE.md before any direction call — the bar is
+central to the make-it-alive work below.
 
 **Repo state at the release hand-off:** on `main`, clean tree, everything pushed. **`sky-brushdab` was merged
 and DELETED on 2026-07-28** (Mark's call) after it was confirmed identical to `main`, so no commits
 were lost. Two branches remain: `main` and the frozen `record/2d-streamline-flow`.
 
-**At the time of this reconciliation:** the note-only edits remain uncommitted/unpushed.
+**Local checkout, 2026-09-24:** Mark's local `main` showed uncommitted changes (probably the
+note-only edits from the 08-13 reconciliation). Reconcile them against this file before trusting either.
 
-⚠️ **There is no staging branch in front of production any more.** `main` is the working branch AND
-the deploy trigger, so a casual `git push` publishes. For anything beyond a typo: branch, verify
-there (`lint`, `test:sky`, `build`, `check:reduced`, `check:viewport`), then fast-forward `main`.
+⚠️ **`main` is PR-only (GitHub ruleset "protect main", set up by Mark 2026-09-24).** Direct pushes,
+force-pushes and deletion are blocked; a PR merges only once `lint · test · build` and `secret scan`
+pass. The bypass list is deliberately EMPTY — agent sessions push with Mark's credentials, so an
+admin bypass would let them straight through. Emergency route: Mark sets the ruleset to Disabled,
+fixes, re-enables. Workflow for every change, typos included: branch → verify (`lint`, `test:sky`,
+`build`; plus `check:reduced` and `check:viewport` on Mac — they cannot run as root in a cloud
+session) → PR → merge, which deploys. Never test the ruleset by pushing to `main`.
+
+### Direction — make it alive (Mark, 2026-09-24)
+
+Mark: the released piece feels flat — it does not yet carry the painting's soul. Diagnosis (a cloud
+session, from the code and notes — not yet confirmed against captures): the 2026-07-05 plan (below,
+"route check") had two halves. The Petros Vrellis flow half was built and shipped. The Temponaut
+half — "cinematic glow, pacing, and musical drama, only after the flow spine works" — was never
+started. Today the sky's only motion is one steady-tempo brightness phase along fixed ribbons
+(`src/scene/PaintingFlowSky3D.tsx`, `ribbonFrag`); the foreground is static; nothing responds to the
+visitor; there is no arrival.
+
+**Decisions:** keep the bar exactly as locked · no sound (still out of scope) · build in a LOCAL Mac
+session, where captures work.
+
+- [ ] **Prototype A+B**, on a branch, behind a query flag so the shipped default is untouched:
+  - **A — breath and drama in the EXISTING medium** (light travelling through fixed strokes; do not
+    reintroduce strokes moving over the painting — see "Medium beats magnitude" in lessons): tempo
+    that varies over time (gusts through the luminous swirl band, the great whorl surging and easing,
+    star halos breathing at different rates, the moon's glow pulsing), contrast (energy in the swirl
+    band, the deep blue calmer), impasto that catches raking light under orbit, a flame-like flicker
+    in the cypress, a glimmer in the village windows. Watch for boil (lessons, ~line 1269).
+  - **B — touch:** the pointer or finger sends a local surge of light along nearby ribbons that
+    swirls, then decays back to the derived flow; tapping a star flares it. Resolve the drag
+    conflict with orbit on touch devices.
+  - Hold reduced-motion, 60 fps desktop and the orbit limits. Stop at Mark's review with captures and
+    the Vercel preview link.
+- [ ] **Then C — arrival story:** open on the flat painting, one line from Vincent's letter, the sky
+  starts to breathe, the camera pushes through the frame into the diorama.
+- Later, only if Mark wants: sound (would need the out-of-scope lock lifted) and a short
+  Remotion reel for sharing.
 
 ### Release follow-up state — nothing blocking
 
@@ -50,17 +84,14 @@ there (`lint`, `test:sky`, `build`, `check:reduced`, `check:viewport`), then fas
 - **Starry Night property coverage** — check whether Mark's Search Console property is the Domain
   property `markma.dev` (which includes `starrynight.markma.dev`) or only the URL-prefix property
   `https://markma.dev/` (which does not). Do not create or verify another property silently.
-- **Starry Night crawl-surface finding** — the live custom domain returns HTTP 200 but only a 496-byte
-  HTML shell with an empty `<div id="root"></div>`. It currently has no meta description, canonical,
-  Open Graph/Twitter metadata, or sitemap; `/sitemap.xml` returns 404. `robots.txt` allows general
-  search crawling but does not advertise a Starry Night sitemap. The Vercel fallback returns the same
-  shell and neither host declares the custom domain canonical.
-- **Next bounded technical lane (not started)** — after Mark authorises implementation, branch from
-  `main` and add concise static/no-JavaScript body content, title/description, a self-referencing
-  `https://starrynight.markma.dev/` canonical, route social metadata, a one-URL sitemap, a robots
-  sitemap declaration, and build-time contracts that prevent an empty production root. Preserve the
-  current artwork, WebGL, motion, controls, and visual assets; do not add query-mode or capture URLs
-  to the sitemap.
+- **Starry Night crawl surface — mostly LANDED 2026-08-13** (`52d05a7`, `40aee77`). `index.html`
+  now carries the title, description, a self-referencing `https://starrynight.markma.dev/` canonical,
+  Open Graph/Twitter metadata and a `<noscript>` body; `public/sitemap.xml` lists the one URL and
+  `robots.txt` declares it. Verified in production 2026-09-24 (fallback host, same deployment):
+  page, `/sitemap.xml` and `/robots.txt` all HTTP 200 with that content.
+- [ ] **Still missing from that lane:** the build-time contract that fails the build on an empty
+  production root — no script or test checks it today. Keep query-mode and capture URLs out of the
+  sitemap.
 - **Order after implementation** — deploy and verify the public HTML, sitemap, and robots responses;
   then inspect Starry Night in Search Console, submit its sitemap, run a live test, and request
   indexing only after the custom-domain canonical and substantive body are confirmed.
@@ -71,13 +102,15 @@ there (`lint`, `test:sky`, `build`, `check:reduced`, `check:viewport`), then fas
 ### Security audit — public-repo pass (2026-09-24)
 
 No secrets in any of the 171 commits, no exploitable code path, and no vulnerable package reaches
-visitors. Hardening landed on `claude/kind-heisenberg-kirt7w`: actions pinned to commit SHAs,
+visitors. Hardening merged to `main` via PR #3 (`b4b8e20`): actions pinned to commit SHAs,
 `.github/dependabot.yml` (actions only, monthly, grouped), `npm audit fix` (lockfile only, 11
-transitive bumps, production bundle byte-identical). Still open, all **Mark-only** (settings, not code):
+transitive bumps, production bundle byte-identical). Dependabot's first PR (#4, `gitleaks-action`
+2.3.9 → 3.0.0, the Node 20 → 24 runtime move) was checked against the upstream tag and merged
+(`b5f8334`). Settings, all **Mark-only**:
 
-- [ ] **Ruleset on `main`** — require a PR with `lint · test · build` and `secret scan` passing; block
-  force-push and deletion. `main` is unprotected and deploys to production on every push. Once on,
-  agent sessions can no longer push to `main` directly — update the ⚠️ note above to say PR-only.
+- [x] **Ruleset on `main`** — done by Mark in the GitHub UI 2026-09-24: PR required (0 approvals),
+  `lint · test · build` + `secret scan` required, force-push and deletion blocked, empty bypass list.
+  Verified: the branches API flipped `main` from `protected: false` to `true`. See the ⚠️ note above.
 - [ ] **Settings → Code security** — confirm Dependabot alerts, Dependabot security updates, secret
   scanning and push protection are on. npm security fixes depend on the security-updates switch,
   because `dependabot.yml` deliberately has no npm entry (see the comment in that file).
@@ -109,8 +142,9 @@ status.
 
 ### If picking up genuinely new work
 
-No visual work is queued. The discoverability follow-up above is the only open technical lane.
-CLAUDE.md's Out of scope still binds (audio, VR/AR, other paintings, gallery
+**Visual work IS queued (2026-09-24): "Direction — make it alive" at the top of this file**
+(prototype A+B, then C) is the current lane. The discoverability follow-up keeps one small open
+item, the build-time empty-root contract. CLAUDE.md's Out of scope still binds (audio, VR/AR, other paintings, gallery
 framing — never; preset dials / time-of-day — Phase 2 at the earliest, and only now that
 pre-release has passed). Scope ideas go in this file, not into the code.
 
@@ -161,6 +195,8 @@ Mark kept it knowing that.
 **The working model now:** `main` is both the working branch and the deploy trigger, so the safety
 that `sky-brushdab` used to provide has to come from discipline instead. Branch for any real change,
 verify on the branch, fast-forward `main` to publish. A branch push only ever makes a preview.
+*(Superseded 2026-09-24: `main` is now PR-only under a ruleset, so publishing means merging a PR,
+not fast-forwarding — see the ⚠️ note at the top.)*
 
 ---
 
