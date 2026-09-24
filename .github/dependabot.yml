@@ -1,0 +1,19 @@
+version: 2
+
+# Actions only, on purpose. ci.yml pins every action to a commit SHA; this is what keeps those pins
+# moving, as one grouped PR a month that updates the SHA and its `# vX.Y.Z` comment together.
+#
+# npm is deliberately NOT listed. Routine npm version bumps are the wrong default here: three.js
+# breaks API in minor releases, and CI (lint, test:sky, build) cannot see a visual regression, so a
+# green bump PR could still change the painting. npm SECURITY fixes don't need an entry here — they
+# come from Dependabot security updates, switched on in the repo's Settings → Code security.
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ['*']
+    commit-message:
+      prefix: ci
