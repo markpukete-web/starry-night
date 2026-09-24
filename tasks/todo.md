@@ -68,6 +68,25 @@ there (`lint`, `test:sky`, `build`, `check:reduced`, `check:viewport`), then fas
   authenticated Search Console actions remain Mark-only. Do not grant broad macOS Accessibility
   permissions or attempt Playwright/Puppeteer/Selenium sign-in as part of this lane.
 
+### Security audit — public-repo pass (2026-09-24)
+
+No secrets in any of the 171 commits, no exploitable code path, and no vulnerable package reaches
+visitors. Hardening landed on `claude/kind-heisenberg-kirt7w`: actions pinned to commit SHAs,
+`.github/dependabot.yml` (actions only, monthly, grouped), `npm audit fix` (lockfile only, 11
+transitive bumps, production bundle byte-identical). Still open, all **Mark-only** (settings, not code):
+
+- [ ] **Ruleset on `main`** — require a PR with `lint · test · build` and `secret scan` passing; block
+  force-push and deletion. `main` is unprotected and deploys to production on every push. Once on,
+  agent sessions can no longer push to `main` directly — update the ⚠️ note above to say PR-only.
+- [ ] **Settings → Code security** — confirm Dependabot alerts, Dependabot security updates, secret
+  scanning and push protection are on. npm security fixes depend on the security-updates switch,
+  because `dependabot.yml` deliberately has no npm entry (see the comment in that file).
+- [ ] **Vercel → Settings → Git** — confirm Git Fork Protection is on. The API could not prove it (the
+  project listed under both filter values).
+- [ ] **Optional:** noreply commit email for future commits; add a `LICENSE` if "open source" is meant
+  literally (without one the code is all-rights-reserved); security headers via `vercel.json`
+  (CSP needs a browser test against the WebGL scene first — low impact, static page, no auth).
+
 The older release-day sections below preserve their historical state; this hand-off block is the current
 status.
 

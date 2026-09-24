@@ -21,6 +21,11 @@ on:
 permissions:
   contents: read
 
+# Every action is pinned to a full commit SHA, with its release in the trailing comment. A tag like
+# `@v2` can be moved to different code by whoever controls the action's repo (the 2025
+# tj-actions/changed-files compromise worked exactly that way); a SHA cannot. Dependabot
+# (.github/dependabot.yml) proposes the bumps, so pinning does not mean freezing.
+
 jobs:
   check:
     name: lint · test · build
@@ -42,9 +47,9 @@ jobs:
       group: ci-check-${{ github.event_name }}-${{ github.ref }}
       cancel-in-progress: true
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           # Matches this project's Vercel setting (24.x). It also has to be a Node that strips TypeScript
           # natively, because `test:sky` runs `node --test` directly against .ts files — 24.x does.
@@ -69,12 +74,12 @@ jobs:
       # 403 "Resource not accessible by integration".
       pull-requests: read
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # Needed for the scheduled full-history audit, and so the action can diff a PR against its
           # base. It does NOT by itself widen the per-PR scan — see the note on the triggers above.
           fetch-depth: 0
 
-      - uses: gitleaks/gitleaks-action@v2
+      - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -2073,3 +2073,21 @@ defect remaining." Mark's answer was *"those findings are minor"* — gate passe
   referenced it become traps, not just staleness.** README, `tasks/todo.md` and the vault's pickup
   note all told the next reader to work on a branch that no longer existed; each was corrected in
   the same change rather than left for the next session to trip over.
+- 2026-09-24 — **An API filter that returns the same answer for both values has proved nothing.**
+  The public-repo security audit tried to confirm Vercel's Git Fork Protection by listing projects
+  with `gitForkProtection=1` — the project came back, which looked like a yes. Asking again with
+  `=0` returned it too, so the filter was being ignored and the "yes" was an artefact. **Always run
+  the negative case before trusting a filter as evidence.** Same shape as the 07-28 lesson about
+  checking that `check:viewport` FAILS on broken code: a check you have never seen say "no" is not
+  a check.
+- 2026-09-24 — **A byte-identical bundle hash is the cheapest proof that a dependency bump is
+  inert.** `npm audit fix` moved 11 transitive packages, two of them nominally `[prod]` (`colord`
+  via leva, `fflate` via three-stdlib). Rebuilding produced the same `index-RuY3F0pE.js` as the live
+  site, which settles it: leva is aliased to a stub in production and fflate's unzip path is
+  tree-shaken, so neither advisory ever reached a visitor. Classify `npm audit` hits by what the
+  built bundle contains, not by the lockfile's `dev` flag.
+- 2026-09-24 — **Cloud sessions run as root, and headless Chrome refuses root without
+  `--no-sandbox`, which this environment's permission guard blocks.** So `check:reduced` and
+  `check:viewport` cannot run in a cloud session; they are Mac-local checks. When a change leaves
+  the production bundle byte-identical, say so and hand the two browser checks to Mark rather than
+  reporting the suite as green.
