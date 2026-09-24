@@ -142,8 +142,9 @@ status.
 
 ### If picking up genuinely new work
 
-No visual work is queued. The discoverability follow-up above is the only open technical lane.
-CLAUDE.md's Out of scope still binds (audio, VR/AR, other paintings, gallery
+**Visual work IS queued (2026-09-24): "Direction — make it alive" at the top of this file**
+(prototype A+B, then C) is the current lane. The discoverability follow-up keeps one small open
+item, the build-time empty-root contract. CLAUDE.md's Out of scope still binds (audio, VR/AR, other paintings, gallery
 framing — never; preset dials / time-of-day — Phase 2 at the earliest, and only now that
 pre-release has passed). Scope ideas go in this file, not into the code.
 
