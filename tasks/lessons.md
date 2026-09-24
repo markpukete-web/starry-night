@@ -2091,3 +2091,11 @@ defect remaining." Mark's answer was *"those findings are minor"* — gate passe
   `check:viewport` cannot run in a cloud session; they are Mac-local checks. When a change leaves
   the production bundle byte-identical, say so and hand the two browser checks to Mark rather than
   reporting the suite as green.
+- 2026-09-24 — **A ruleset with no target is saved but protects nothing.** Mark built the `main`
+  ruleset in the GitHub UI and got "This ruleset does not target any resources and will not be
+  applied": rules and target branches are separate sections, and a ruleset starts with no target.
+  Fix: Target branches → Add target → Include default branch (API: `conditions.ref_name.include:
+  ["~DEFAULT_BRANCH"]`). The branches API's `protected` flag DOES reflect a ruleset — it flipped
+  `false` → `true` for `main` once the target was set — which gave a no-push way to verify it.
+  Also carried: **leave the bypass list empty.** Agent sessions push with Mark's credentials, so an
+  admin bypass would exempt every agent too, and the ruleset would guard nothing.
