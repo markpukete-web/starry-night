@@ -2151,3 +2151,21 @@ page: `output/playwright/village-study-2026-10-05/`.
   band and hid the church base. The peer-confirmed R5 response removes the failed front mass
   without disturbing the architectural paint or the back band's seeded sequence. The resulting
   open gap must be judged in the actual scene; deletion is not proof of a finished foliage medium.
+
+
+## Village foliage — source-painted rows, 2026-10-05
+
+- **The source paint needs a matching silhouette.** A low connected row traced through actual
+  brush crests works where a smooth dome with synthetic pale chevrons read as a hill. The dark
+  front band passed a five-view falsifying probe before the lighter back row was built. Short
+  separately sampled tops and closed ends retained volume under orbit; the high-angle hedge/rope
+  reading and near softness remain explicit taste residuals, not hidden by green geometry tests.
+- **Check composition against the painting and the camera, not an inherited sentence.** Reviewer's
+  original “below the nave roof, as the painting has it” premise was wrong. The actual crown band
+  rises above neighbouring roofs. Its projected crest and matching horizontal/vertical source scale
+  prevented spending a rendered pass on foliage hidden behind the houses. The correction was made
+  before construction and confirmed independently; original source contour remained unchanged.
+- **Preserve accepted work at the buffer boundary.** The F1 front row remained an exact prefix when
+  the back row was added. Architecture matched an isolated F1 export with only the old tree call
+  omitted. Default screenshots remained AE0. Exact preservation and a rendered quality judgement
+  answer different questions; both were kept for Mark's gate. See `tasks/2026-10-05-village-foliage.md`.

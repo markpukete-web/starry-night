@@ -9,11 +9,12 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## Village study — R5 checkpoint approved; foliage next, 2026-10-05
+## Village study — R5 and F2 approved; commit/push authorised, 2026-10-05
 
 Mark reopened the village's visual character and authorised a bounded local study while retaining
 his final taste gate. Lead owns the visual work; Worker handles mechanical captures/checks;
-Reviewer is peer review. Branch `codex/village-authored-study`; no release authorised.
+Reviewer is peer review. Branch `codex/village-authored-study`; Mark authorised commit/push of the
+approved study. No merge or production/default-route promotion is authorised.
 
 - [x] Read CLAUDE.md, lessons (medium/boil and September 24), and this plan; review painting and live scene.
 - [x] Archive paused baseline and same-environment desktop timing; approve bounded plan through peer and feasibility reviews.
@@ -24,9 +25,13 @@ Reviewer is peer review. Branch `codex/village-authored-study`; no release autho
 - [x] Mark rejected the foreground tree clump: it reads as a hill in front of the church. He authorised Lead to continue this correction with Reviewer while he walks.
 - [x] Review and execute one focused removal pass (R5); Lead opened all 11 authored views, three bright views and Blender diagnostic. Church is clear; exposed ground and remaining back foliage are named reservations. Matching R4/R5 comparison and review page are ready; all Lead checks and default AE0 passed.
 - [x] Mark: “Okay, it looks better. let's commit and work on next”. R5 is approved as the local checkpoint; continue with the proposed foliage pass. This does not authorise release or default-route promotion.
-- [ ] Next slice: low, dark authored foliage linking the village; preserve the clear church base and compare against R5. Lead owns visual work, Reviewer peer critique, Worker mechanical checks/captures.
+- [x] Commit the approved R5 checkpoint as `92a8f56` (`feat(village): add source-painted village study`).
+- [x] Author two source-painted foliage rows in two reviewed passes: low dark front band, lighter traced back crown row replacing the synthetic dome. Architecture and sky unchanged. Reviewer SHOW; Lead opened every F2 view and reran lint/build/98 tests, geometry, reduced-motion and viewport guards; default AE0.
+- [x] Mark visual gate on F2: “Looks better. Commit and push. Well record where we at”. Foliage is approved. Known residuals are a narrow hedge at high angle, softer foliage paint at near, and old context houses beside the authored cluster; R5's mirrored architecture paint remains recorded.
+- [ ] Commit/push the approved branch and record the verified remote checkpoint in the foliage handoff.
+- [ ] Next session: inspect approved F2/R5/reference evidence, then agree the next bounded visual slice or study-promotion plan with Mark. No additional foliage retune is queued. Keep sky/camera/default behaviour unchanged until separately scoped.
 
-Durable gate record: `tasks/2026-10-05-village-study.md`. Evidence and working plan: `scratch/village-study-2026-10-05/plan.md` and
+Durable gate records: `tasks/2026-10-05-village-study.md` and `tasks/2026-10-05-village-foliage.md`. F2 comparison: `output/playwright/village-foliage-2026-10-05/index.html`. Evidence and working plan: `scratch/village-study-2026-10-05/plan.md` and
 `output/playwright/village-study-2026-10-05/`. Default view is preserved; local flags
 `villageStudy=value`, `villageStudy=authored`, `villageStudy=authored-bright` are DEV-only.
 

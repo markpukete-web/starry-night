@@ -1,5 +1,4 @@
 import { BufferAttribute, BufferGeometry, Color, Vector3 } from 'three'
-import { mulberry32 } from './brush.ts'
 import { makeBrushArrays, pushBrushRibbon, type BrushArrays } from './brushForms'
 import { islandHeightAt } from './islandShape'
 import { PALETTE } from './palette'
@@ -21,7 +20,6 @@ type Building = {
 const INK = new Color(PALETTE.ground)
 const BLUE = new Color(PALETTE.house)
 const PALE = new Color(PALETTE.steeple)
-const GREEN = new Color(PALETTE.villageCool)
 const OCHRE = new Color(PALETTE.windowOchre)
 const SIENNA = new Color(PALETTE.roofSienna)
 const ROOF = new Color(PALETTE.roof)
@@ -242,77 +240,86 @@ function church(solid: BrushArrays, skin: SkinArrays, paint: BrushArrays): void 
   }
 }
 
-// Retain the back band. Mark rejected the front mass on 2026-10-05: its raised,
-// pale canopy read as a hill and hid the church base. Leave that space open for this study.
-const TREES = [
-  { x: 0.31, z: 0.12, rx: 0.55, rz: 0.20, h: 0.25 },
+// Traced crest and lower edge of the dark front row in the 1600×1267 source painting.
+// The rising lower edge on the right excludes the neighbouring pale roof.
+const FRONT_ROW = [
+  [742, 1137, 1141], [745, 1128, 1142], [748, 1120, 1142], [753, 1113, 1142],
+  [758, 1110, 1142], [765, 1108, 1142], [773, 1110, 1142], [779, 1115, 1142],
+  [785, 1112, 1142], [792, 1108, 1142], [798, 1107, 1141], [804, 1109, 1140],
+  [810, 1112, 1138], [817, 1111, 1134], [823, 1115, 1131], [829, 1121, 1127],
 ]
 
-function trees(solid: BrushArrays, paint: BrushArrays, rng: () => number): void {
-  for (const tree of TREES) {
-    const { x, z, rx, rz, h } = tree
-    const surface = (radius: number, theta: number) => {
-      const boundary = 1 + 0.09 * Math.sin(theta * 3 + x) + 0.055 * Math.sin(theta * 7)
-      const dx = Math.cos(theta) * radius * rx * boundary
-      const dz = Math.sin(theta) * radius * rz * boundary
-      const crest = 0.85 + 0.12 * Math.cos(dx / rx * 4.5 + 0.4) + 0.1 * Math.sin(theta * 2) * radius
-      // The whole skirt follows the actual terrain; centre-only seating left the downhill rim aloft.
-      const ground = islandHeightAt(x + dx, z + dz) - 0.025
-      return new Vector3(x + dx, ground + h * Math.pow(Math.max(0, 1 - radius * radius), 0.62) * crest, z + dz)
-    }
-    const nrm = (radius: number, theta: number) => {
-      const p = surface(radius, theta)
-      const out = surface(radius + 0.002, theta).sub(p)
-      const around = surface(radius, theta + 0.002).sub(p)
-      return around.cross(out).normalize()
-    }
-    for (let r = 0; r < 32; r++) for (let s = 0; s < 80; s++) {
-      const a = r / 32, b = (r + 1) / 32
-      const u = s / 80 * Math.PI * 2, v = (s + 1) / 80 * Math.PI * 2
-      polygon(solid, [surface(a, u), surface(b, u), surface(b, v), surface(a, v)], GREEN.clone().lerp(BLUE, 0.1).lerp(INK, 0.12 + a * 0.38))
-    }
-    // Close the buried skirt so the object stays a solid from a low orbit.
-    polygon(solid, Array.from({ length: 80 }, (_, i) => surface(1, -i / 80 * Math.PI * 2)), INK)
-    for (let i = 0; i < 180; i++) {
-      const theta = rng() * Math.PI * 2
-      const radius = 0.30 + Math.sqrt(rng()) * 0.62
-      const arc = 0.3 + rng() * 0.3
-      const col = GREEN.clone().lerp(BLUE, 0.08 + rng() * 0.15).multiplyScalar(1.1 + rng() * 0.55)
-      // Pale tree paint uses the same swatch, lifted 2.2× in sRGB to match the reference crescents.
-      if (i % 4 === 1) col.copy(BLUE).multiplyScalar(1.9) // distinct ultramarine, derived swatch × linear lift
-      else if (i % 5 === 0) col.copy(GREEN).convertLinearToSRGB().multiplyScalar(2.2).convertSRGBToLinear()
-      else if (i % 7 === 0) col.copy(INK)
-      const width = 0.035 + rng() * 0.015
-      const lift = 0.006 + rng() * 0.004 // broad overlapping marks need separate, deterministic paint layers
-      const start = paint.positions.length / 3, steps = 12
-      for (let j = 0; j <= steps; j++) {
-        const t = j / steps
-        const q = radius - 0.095 * Math.sin(t * Math.PI)
-        const angle = theta + (t - 0.5) * arc
-        const radialScale = surface(q + 0.002, angle).distanceTo(surface(q - 0.002, angle)) / 0.004
-        const halfWidth = width * (0.28 + 0.22 * Math.sin(t * Math.PI)) / radialScale
-        for (const side of [-1, 1]) {
-          const r = Math.max(0.03, Math.min(0.97, q + side * halfWidth))
-          // Both width edges follow the curved surface; a tangent-plane ribbon cuts into troughs.
-          const p = surface(r, angle).addScaledVector(nrm(r, angle), lift)
-          paint.positions.push(p.x, p.y, p.z)
-          paint.colors.push(col.r, col.g, col.b)
-        }
-      }
-      for (let j = 0; j < steps; j++) {
-        const a = start + j * 2
-        paint.indices.push(a, a + 1, a + 2, a + 1, a + 3, a + 2)
-      }
-    }
+// Back crown row: four-pixel stations retain its pale curling crest.
+const BACK_ROW = [
+  [1004, 991, 998], [1008, 983, 1000], [1012, 979, 1001], [1016, 977, 1001],
+  [1020, 976, 1001], [1024, 974, 1002], [1028, 976, 1002], [1032, 974, 1002],
+  [1036, 972, 1001], [1040, 972, 1001], [1044, 974, 1001], [1048, 977, 1000],
+  [1052, 976, 1000], [1056, 978, 999], [1060, 975, 999], [1064, 975, 998],
+  [1068, 972, 997], [1072, 970, 996], [1076, 972, 995], [1080, 968, 995],
+  [1084, 964, 995], [1088, 962, 995], [1092, 962, 995], [1096, 959, 996],
+  [1100, 957, 997], [1104, 954, 997], [1108, 955, 998], [1112, 955, 999],
+  [1116, 956, 1000], [1120, 957, 1001], [1124, 960, 1002], [1128, 960, 1003],
+  [1132, 963, 1003], [1136, 965, 1004], [1140, 969, 1005], [1144, 968, 1007],
+  [1148, 970, 1008], [1152, 974, 1010], [1156, 974, 1011], [1160, 976, 1012],
+  [1164, 975, 1013], [1168, 974, 1014], [1172, 972, 1015], [1176, 972, 1015],
+  [1180, 972, 1016], [1184, 974, 1016], [1188, 976, 1016], [1192, 977, 1017],
+  [1196, 977, 1017], [1200, 984, 1017], [1204, 993, 1017], [1208, 1003, 1017],
+  [1212, 1011, 1017],
+]
+
+function foliageRow(foliage: SkinArrays, back = false): void {
+  const scale = back ? 1.20 / 208 : 0.0038
+  const maxHeight = back ? 44 * scale : 0.1292
+  const face = (vertices: Vector3[], pixels: number[][], shade: number) => {
+    polygon(foliage, vertices, new Color(shade, shade, shade))
+    // Match Cypress: pixel indices, flipY=false; no second V inversion.
+    for (const [x, y] of pixels) foliage.uv.push(x / 1599, y / 1266)
   }
+  const stations = (back ? BACK_ROW : FRONT_ROW).map(([sx, crest, base]) => {
+    const u = (sx - (back ? 1004 : 742)) / (back ? 208 : 87)
+    const x = (back ? -0.18 : -0.57) + (back ? 1.20 : 0.44) * u
+    const z = (back ? 0.22 : 0.94) + (back ? 0.02 : 0.015) * Math.sin(Math.PI * u)
+    const ground = islandHeightAt(x, z), h = (base - crest) * scale, depth = h / maxHeight * 0.10
+    const topZ = z - h * Math.tan(Math.PI / 12), backGround = islandHeightAt(x, z - depth)
+    return {
+      sx, crest, base, u, h, depth,
+      bf: new Vector3(x, ground - 0.018, z),
+      tf: new Vector3(x, ground + h, topZ),
+      bb: new Vector3(x, backGround - 0.018, z - depth),
+      tb: new Vector3(x, Math.max(backGround - 0.016, ground + h - 0.008), topZ - depth),
+    }
+  })
+  const backUV = (s: typeof stations[number], top: boolean) =>
+    back ? [s.sx, s.crest + (s.base - s.crest) * (top ? 0.30 : 0.95)]
+      : [681 + 59 * s.u, 1140 - (top ? s.h / 0.1292 * 32 : 0)]
+  const topFrom = back ? 0.30 : 0.25, topTo = back ? 0.70 : 0.75
+  for (let i = 0; i < stations.length - 1; i++) {
+    const a = stations[i], b = stations[i + 1]
+    face([a.bf, b.bf, b.tf, a.tf],
+      [[a.sx, a.base], [b.sx, b.base], [b.sx, b.crest], [a.sx, a.crest]], 1)
+    // Short, separately sampled top strip; the front image never wraps over the crest.
+    const topUV = (s: typeof a, t: number) => [s.sx, s.crest + (s.base - s.crest) * t]
+    face([a.tf, b.tf, b.tb, a.tb], [topUV(a, topFrom), topUV(b, topFrom), topUV(b, topTo), topUV(a, topTo)], 0.88)
+    face([b.bb, a.bb, a.tb, b.tb], [backUV(b, false), backUV(a, false), backUV(a, true), backUV(b, true)], 0.75)
+    face([a.bb, b.bb, b.bf, a.bf], [topUV(a, 0.6), topUV(b, 0.6), topUV(b, 0.8), topUV(a, 0.8)], 0.7)
+  }
+  const endUV = (s: typeof stations[number]) => {
+    const right = 760 + 18 * s.depth / 0.10, top = 1140 - 26 * s.h / maxHeight
+    return [[760, 1140], [760, top], [right, top], [right, 1140]]
+  }
+  const left = stations[0], right = stations[stations.length - 1]
+  face([left.bf, left.tf, left.tb, left.bb], endUV(left), 0.82)
+  const rightUV = endUV(right)
+  face([right.bf, right.bb, right.tb, right.tf], [rightUV[0], rightUV[3], rightUV[2], rightUV[1]], 0.82)
 }
 
 export function buildVillageStudy() {
   const solid = makeBrushArrays(), paint = makeBrushArrays()
   const skin: SkinArrays = { ...makeBrushArrays(), uv: [] }
-  const rng = mulberry32(0x1005_1889)
+  const foliage: SkinArrays = { ...makeBrushArrays(), uv: [] }
   NEIGHBOURS.forEach(b => building(solid, skin, paint, b))
   church(solid, skin, paint)
-  trees(solid, paint, rng)
-  return { solid: geometry(solid), paint: geometry(paint), skin: geometry(skin) }
+  foliageRow(foliage)
+  foliageRow(foliage, true)
+  return { solid: geometry(solid), paint: geometry(paint), skin: geometry(skin), foliage: geometry(foliage) }
 }
