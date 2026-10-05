@@ -2,8 +2,22 @@
 
 **Current checkpoint: F2 visually approved.** Mark: “Looks better. Commit and push. Well record
 where we at”. This closes the foliage taste gate and authorises committing and pushing
-`codex/village-authored-study`. Delivery is pending below; no merge or production promotion is
-authorised. The approved study remains behind the existing DEV-only flag.
+`codex/village-authored-study`. The implementation is committed and pushed; delivery evidence is
+below. The approved study remains behind the existing DEV-only flag. No merge or production
+promotion is authorised.
+
+## Delivered checkpoint
+
+- Branch: `codex/village-authored-study`, tracking `origin/codex/village-authored-study`.
+- R5 architecture checkpoint: `92a8f56c4b8ac83105a2cfdba8bdc430db1760e9`.
+- Approved F2 implementation: `2c6809b759bcee354e3b99a4dbabc21d75f15ce8`
+  (`feat(village): replace synthetic foliage with painted rows`). Both checkpoints are on origin.
+- `git -c core.fsmonitor=false push -u origin HEAD:refs/heads/codex/village-authored-study`
+  succeeded on 2026-10-05. A subsequent `git ls-remote --heads` returned the exact F2 SHA above.
+  This final status update is a documentation-only follow-up to that published implementation.
+- The only unrelated working-tree change is the pre-existing Search Console portion of
+  `tasks/todo.md`; it is preserved locally and excluded from these commits. No PR or merge was
+  performed. The production default remains unchanged; preview deployment status is not asserted.
 
 Earlier, Mark approved the R5 improvement and authorised “commit and work on next”. Checkpoint:
 `92a8f56` (`feat(village): add source-painted village study`). The unrelated Search Console edits in
@@ -15,11 +29,11 @@ mass. Lead owns visual work; Reviewer is peer critique; Worker owns mechanical c
 Sky, camera, approved architectural paint and default route are outside this slice. Mark keeps
 the final taste gate. Two of the maximum four rendered passes were used.
 
-Method consultation favours source-painted **rows with traced crests**, steep fronts and short,
+Method consultation favoured source-painted **rows with traced crests**, steep fronts and short,
 separately textured darker tops/ends. Smooth domes with paint applied would repeat the failed hill.
-First test one low dark front row against R5, leaving the back unchanged. Only if that falsifying
-probe passes will a reviewed disposition replace the back band. Source is the original painting;
-the exact painting texture is already used by Cypress and can share the same sampler settings.
+We first tested one low dark front row against R5, leaving the back unchanged. Only after that
+falsifying probe passed did a reviewed disposition replace the back band. Source is the original
+painting; its texture is already used by Cypress and shares the same sampler settings.
 
 - [x] Commit R5 and preserve prior evidence.
 - [x] Peer method opinion and mechanical source/texture/export reconnaissance.
@@ -30,7 +44,7 @@ the exact painting texture is already used by Cypress and can share the same sam
 - [x] Lead final checks and independent visual review; Reviewer SHOW.
 - [x] Final comparison page: Lead opened rendered page, checked slider and all image/data links.
 - [x] Mark's taste gate on F2: “Looks better. Commit and push.”
-- [ ] Commit and push the approved study branch, then record the verified remote checkpoint.
+- [x] Commit and push the approved study branch, then record the verified remote checkpoint.
 
 Working plan and reports: `scratch/village-foliage-2026-10-05/`. Exact F1 plan `F1-plan.md`, source
 contour `front-row-source.json` and labelled proof `front-row-source.png`.
@@ -99,7 +113,7 @@ rectangles: centre back row luma 70 / 10% pale versus source 74 / 11%; not a who
   These did not cross the method reject line. Two of four rendered passes used; further form/depth
   tuning is a new disposition only if Mark flags it. No sky/camera/island/architecture scope expansion.
 
-**State:** R5 committed as `92a8f56`; F2 approved for commit and branch push. Mark's foliage taste
+**State:** R5 `92a8f56` and F2 `2c6809b` are committed and pushed. Mark's foliage taste
 gate is CLOSED. The default route is unchanged; production promotion is a separate decision.
 Existing unrelated Search Console todo edits are preserved. Main comparison path is
 `output/playwright/village-foliage-2026-10-05/index.html`; runtime

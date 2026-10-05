@@ -9,7 +9,7 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## Village study — R5 and F2 approved; commit/push authorised, 2026-10-05
+## Village study — R5 and F2 approved, committed and pushed, 2026-10-05
 
 Mark reopened the village's visual character and authorised a bounded local study while retaining
 his final taste gate. Lead owns the visual work; Worker handles mechanical captures/checks;
@@ -28,7 +28,7 @@ approved study. No merge or production/default-route promotion is authorised.
 - [x] Commit the approved R5 checkpoint as `92a8f56` (`feat(village): add source-painted village study`).
 - [x] Author two source-painted foliage rows in two reviewed passes: low dark front band, lighter traced back crown row replacing the synthetic dome. Architecture and sky unchanged. Reviewer SHOW; Lead opened every F2 view and reran lint/build/98 tests, geometry, reduced-motion and viewport guards; default AE0.
 - [x] Mark visual gate on F2: “Looks better. Commit and push. Well record where we at”. Foliage is approved. Known residuals are a narrow hedge at high angle, softer foliage paint at near, and old context houses beside the authored cluster; R5's mirrored architecture paint remains recorded.
-- [ ] Commit/push the approved branch and record the verified remote checkpoint in the foliage handoff.
+- [x] Commit/push the approved branch: R5 `92a8f56`, F2 `2c6809b`. Origin was independently checked at the exact F2 SHA; the documentation follow-up records delivery and pickup in `tasks/2026-10-05-village-foliage.md`.
 - [ ] Next session: inspect approved F2/R5/reference evidence, then agree the next bounded visual slice or study-promotion plan with Mark. No additional foliage retune is queued. Keep sky/camera/default behaviour unchanged until separately scoped.
 
 Durable gate records: `tasks/2026-10-05-village-study.md` and `tasks/2026-10-05-village-foliage.md`. F2 comparison: `output/playwright/village-foliage-2026-10-05/index.html`. Evidence and working plan: `scratch/village-study-2026-10-05/plan.md` and
