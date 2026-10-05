@@ -6,6 +6,98 @@ where we at”. This closes the foliage taste gate and authorises committing and
 below. The approved study remains behind the existing DEV-only flag. No merge or production
 promotion is authorised.
 
+## Fresh-agent start — clarified 2026-10-06
+
+**There is no implementation or visual gate currently waiting to be finished.** R5 and F2 are
+accepted checkpoints. The next task is to establish Mark's next bounded scope, using this record
+and the approved view; the older sky backlog in `tasks/todo.md` is not the active assignment.
+
+Read `CLAUDE.md`, `tasks/lessons.md` and the top village section of `tasks/todo.md` first. In lessons,
+find “Medium beats magnitude”, the adjacent boil warning and the 2026-09-24 entries by text rather
+than relying on old line numbers. All paths below are relative to the repository root.
+
+```sh
+cd /Users/markma/Projects/starry-night  # use your checkout path on another machine
+git -c core.fsmonitor=false status --short --branch
+git -c core.fsmonitor=false log --oneline --decorate -3
+git -c core.fsmonitor=false diff -- tasks/todo.md
+git -c core.fsmonitor=false diff --cached -- tasks/todo.md
+git -c core.fsmonitor=false merge-base --is-ancestor 2c6809b HEAD
+```
+
+Expected branch: `codex/village-authored-study`, containing F2 `2c6809b`; later documentation commits
+are expected. The ancestry check is silent: exit 0 means HEAD contains F2; a non-zero exit requires
+inspecting the branch/history before relying on this handoff. The published close-out before this
+clarification was `df3111f`. Refresh the actual
+state instead of treating those hashes as a permanently current tip. On this machine the only
+pre-existing dirty hunk is Search Console work in `tasks/todo.md`. Preserve it; do not discard it,
+stage the whole file, or switch a dirty checkout merely to match this note.
+
+To view the study, reuse a verified dev server for **this checkout**, or start one:
+
+```sh
+npm run dev -- --host 127.0.0.1 --port 5181 --strictPort
+```
+
+Open `http://127.0.0.1:5181/?mode=diorama&clean=1&villageStudy=authored`.
+The comparison is `http://127.0.0.1:5181/output/playwright/village-foliage-2026-10-05/index.html`
+**only if the local output directory exists**. A production build/preview does not render this
+DEV-only study. If the port is occupied, inspect ownership or choose another port and adjust the
+URLs; another project may be running concurrently. Use an isolated browser profile/tab for captures.
+
+If the ignored gallery or scratch evidence is absent on another machine, the tracked source and
+painting remain sufficient to open the current study. Historical comparisons, Blender inspections
+and raw reports are unavailable there until copied or deliberately recreated; do not report them
+as newly verified. Never overwrite the saved R5/F1/F2 evidence with a new run.
+
+### Source and evidence map
+
+| Purpose | Path |
+| --- | --- |
+| Canonical original / runtime painting texture | `reference/starry-night-source.jpg` / `public/reference/painting.jpg` |
+| DEV route selection / materials and texture ownership | `src/scene/Diorama.tsx` / `src/scene/VillageStudy.tsx` |
+| Authored architecture and front/back foliage geometry | `src/scene/villageStudyGeometry.ts` |
+| Architectural UV patches and atlas recipe | `src/scene/villageStudyPatches.ts`, `src/scene/village-study-atlas.json`, `scripts/build-village-study-atlas.mjs` |
+| Committed architecture atlas / runtime geometry guard | `public/reference/village-study-atlas.webp` / `scripts/export-village-study.mjs` |
+| Prior architecture/removal history | `tasks/2026-10-05-village-study.md` |
+| Local peer verdict / mechanical report | `scratch/village-foliage-2026-10-05/reviewer-F2-final-report.md` / `scratch/village-foliage-2026-10-05/worker-F2-report.md` |
+| Local independent Lead logs and hash evidence | `scratch/village-foliage-2026-10-05/lead-checks-F2/`, `F2-source-hashes.json`, `F2-preservation.json` in the same parent folder |
+
+The shorter `reviewer-F2-final.md` and `reviewer-F2-confirm.md` files are dispatch briefs. The actual
+Reviewer responses are `reviewer-F2-final-report.md` and `reviewer-F2-confirmation.md` in that folder.
+
+### Validation when the next source change warrants it
+
+The results below are the completed 2026-10-05 checks, not checks rerun merely to clarify this
+handoff. Tracked commands can be run from any prepared checkout:
+
+```sh
+npm run lint
+npm run test:sky
+npm run build
+node scripts/export-village-study.mjs "scratch/village-recheck-$(date +%Y%m%d-%H%M%S)"
+```
+
+Default-route browser guards are `npm run check:reduced` and `npm run check:viewport`. The authored
+route was checked with local helpers `scratch/village-study-2026-10-05/check-reduced-motion-authored.mjs`
+and `check-viewport-camera-authored.mjs`; each accepts a new output directory as its first argument.
+The local eleven-view capture helper is `scratch/village-study-2026-10-05/worker-capture.mjs`
+with arguments `<new-output-directory> '&villageStudy=authored'`. These helpers use local Chrome and
+default to port 5179, separately from the human review server on 5181. Exact successful commands and exit
+statuses are in `lead-checks-F2/*.log` and `worker-F2-report.md`. The helpers are ignored and will be
+absent from a fresh clone; recover or explicitly recreate them before claiming a new authored-route
+gate. Default-route guards alone do not establish authored-route behaviour. Do browser checks on
+a supported local Mac, and record unrun checks explicitly in cloud environments.
+
+### Team and authority
+
+Roles in this slice were Lead for visual authorship and final verification, Reviewer for peer
+critique, Worker for mechanical captures/checks; Mark owns taste and release decisions. Honour the
+role in the new brief. When `HERDR_ENV=1` and a current brief establishes that team, read
+`/Users/markma/.claude/skills/agent-workflow/SKILL.md` and verify live agents with `herdr agent list`
+before dispatch. Prior pane addresses and the historical idle statements below are not live state.
+Outside that confirmed setup, use the standalone workflow rather than assuming external agents.
+
 ## Delivered checkpoint
 
 - Branch: `codex/village-authored-study`, tracking `origin/codex/village-authored-study`.

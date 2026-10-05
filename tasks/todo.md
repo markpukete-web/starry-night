@@ -11,6 +11,11 @@ below — never edited in place.
 
 ## Village study — R5 and F2 approved, committed and pushed, 2026-10-05
 
+**Current agent entry point (clarified 2026-10-06):** read
+`tasks/2026-10-05-village-foliage.md`, starting at **Fresh-agent start**. It contains startup commands,
+the source/evidence map, completed checks, local-only limitations and the next decision. No visual
+gate or implementation is pending; establish the next bounded scope with Mark before new work.
+
 Mark reopened the village's visual character and authorised a bounded local study while retaining
 his final taste gate. Lead owns the visual work; Worker handles mechanical captures/checks;
 Reviewer is peer review. Branch `codex/village-authored-study`; Mark authorised commit/push of the
@@ -35,7 +40,10 @@ Durable gate records: `tasks/2026-10-05-village-study.md` and `tasks/2026-10-05-
 `output/playwright/village-study-2026-10-05/`. Default view is preserved; local flags
 `villageStudy=value`, `villageStudy=authored`, `villageStudy=authored-bright` are DEV-only.
 
-## ▶ NEXT SESSION — START HERE (reconciled 2026-09-24)
+## Production constraints and earlier backlog — September 24 context
+
+The current pickup is the village handoff above. Release constraints in this section still apply;
+the older sky prototype checklist is background context, not an instruction to resume that work.
 
 **The piece is RELEASED and live, and `main` deploys to production on every change that lands on
 it.** Since 2026-09-24 the only way onto `main` is a merged pull request — see the ⚠️ note below.
