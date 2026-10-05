@@ -34,16 +34,16 @@ function rootPoint(ang: number, k: number, out: Vector3): Vector3 {
   return out.set(cx * rad, y, sz * rad)
 }
 
-export function BrushIsland() {
+export function BrushIsland({ studyValues = false }: { studyValues?: boolean }) {
   const geometries = useMemo(() => {
     const earth = new Color(PALETTE.hills)
     const abyss = earth.clone().multiplyScalar(0.07) // root dissolving into night
     const rootBase = earth.clone().multiplyScalar(0.70) // darker under-shell so stroke gaps read as shadow
-    const topBase = new Color(PALETTE.hills).multiplyScalar(1.88) // mid base under the strokes — not black
+    const topBase = new Color(PALETTE.hills).multiplyScalar(studyValues ? 1.15 : 1.88)
     // Van Gogh hill palette pushed to contrast: deep trough blue, lit blue-grey crest, teal mid
-    const hillDark = new Color('#284260')
-    const hillMid = new Color('#477594')
-    const hillLit = new Color(PALETTE.hillsCrest).multiplyScalar(2.72)
+    const hillDark = new Color(studyValues ? PALETTE.hills : '#284260')
+    const hillMid = studyValues ? new Color(PALETTE.house).lerp(new Color(PALETTE.steeple), 0.25) : new Color('#477594')
+    const hillLit = new Color(PALETTE.hillsCrest).multiplyScalar(studyValues ? 1.3 : 2.72)
 
     // --- closed rooted solid (dark base) ---
     const rows = RT + RS + 1
@@ -198,7 +198,7 @@ export function BrushIsland() {
     strokes.computeBoundingSphere()
 
     return { solid, strokes }
-  }, [])
+  }, [studyValues])
 
   const solidMat = useMemo(() => new MeshBasicMaterial({ vertexColors: true, toneMapped: false }), [])
   const strokeMat = useMemo(

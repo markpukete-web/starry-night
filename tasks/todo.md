@@ -9,6 +9,27 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
+## Village study — R5 checkpoint approved; foliage next, 2026-10-05
+
+Mark reopened the village's visual character and authorised a bounded local study while retaining
+his final taste gate. Lead owns the visual work; Worker handles mechanical captures/checks;
+Reviewer is peer review. Branch `codex/village-authored-study`; no release authorised.
+
+- [x] Read CLAUDE.md, lessons (medium/boil and September 24), and this plan; review painting and live scene.
+- [x] Archive paused baseline and same-environment desktop timing; approve bounded plan through peer and feasibility reviews.
+- [x] Value-only hill probe and first church/four-neighbour/two-tree study, retained as round 1 evidence.
+- [x] Reject the repeated strips/ribbed tree lobes; test source-derived architectural paint and curved tree envelopes.
+- [x] Finish four authored passes and peer review; Lead verified build/lint/98 sky tests, default/candidate reduced-motion and viewport guards, AE0 default preservation and all final views.
+- [x] Prepare original/baseline/candidate and the local comparison page for Mark's visual gate; architecture promising, trees and mirrored paint unresolved.
+- [x] Mark rejected the foreground tree clump: it reads as a hill in front of the church. He authorised Lead to continue this correction with Reviewer while he walks.
+- [x] Review and execute one focused removal pass (R5); Lead opened all 11 authored views, three bright views and Blender diagnostic. Church is clear; exposed ground and remaining back foliage are named reservations. Matching R4/R5 comparison and review page are ready; all Lead checks and default AE0 passed.
+- [x] Mark: “Okay, it looks better. let's commit and work on next”. R5 is approved as the local checkpoint; continue with the proposed foliage pass. This does not authorise release or default-route promotion.
+- [ ] Next slice: low, dark authored foliage linking the village; preserve the clear church base and compare against R5. Lead owns visual work, Reviewer peer critique, Worker mechanical checks/captures.
+
+Durable gate record: `tasks/2026-10-05-village-study.md`. Evidence and working plan: `scratch/village-study-2026-10-05/plan.md` and
+`output/playwright/village-study-2026-10-05/`. Default view is preserved; local flags
+`villageStudy=value`, `villageStudy=authored`, `villageStudy=authored-bright` are DEV-only.
+
 ## ▶ NEXT SESSION — START HERE (reconciled 2026-09-24)
 
 **The piece is RELEASED and live, and `main` deploys to production on every change that lands on
