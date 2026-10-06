@@ -9,12 +9,18 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## Village study — R5 and F2 approved, committed and pushed, 2026-10-05
+## Pickup — 2026-10-06: the painted village is live
 
-**Current agent entry point (clarified 2026-10-06):** read
-`tasks/2026-10-05-village-foliage.md`, starting at **Fresh-agent start**. It contains startup commands,
-the source/evidence map, completed checks, local-only limitations and the next decision. No visual
-gate or implementation is pending; establish the next bounded scope with Mark before new work.
+**Current agent entry point:** read `tasks/2026-10-06-handoff.md`. The source-painted village went live
+through PR #6 (`8f6e5ec`). Nothing is in progress or queued; agree the next slice with Mark first. The
+checked-out branch `docs/village-live-record` carries unpushed docs commits — base the next feature
+branch on it. Open for Mark: `main`'s ruleset has lost its PR and required-check rules.
+
+## Village study — R5, F2, C1 approved; promoted and live 2026-10-06 (history below)
+
+The section below is the record of the village work from 2026-10-05 to its release; its last items
+link the C1 slice and the promotion. The former entry point (`tasks/2026-10-05-village-foliage.md`,
+Fresh-agent start) is superseded.
 
 Mark reopened the village's visual character and authorised a bounded local study while retaining
 his final taste gate. Lead owns the visual work; Worker handles mechanical captures/checks;
