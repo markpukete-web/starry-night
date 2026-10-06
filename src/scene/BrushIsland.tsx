@@ -39,11 +39,13 @@ export function BrushIsland() {
     const earth = new Color(PALETTE.hills)
     const abyss = earth.clone().multiplyScalar(0.07) // root dissolving into night
     const rootBase = earth.clone().multiplyScalar(0.70) // darker under-shell so stroke gaps read as shadow
-    const topBase = new Color(PALETTE.hills).multiplyScalar(1.88) // mid base under the strokes — not black
-    // Van Gogh hill palette pushed to contrast: deep trough blue, lit blue-grey crest, teal mid
-    const hillDark = new Color('#284260')
-    const hillMid = new Color('#477594')
-    const hillLit = new Color(PALETTE.hillsCrest).multiplyScalar(2.72)
+    // Darker ground than the July values (top 1.88, #284260/#477594, crest 2.72): the 2026-10-05
+    // village study lowered them so the pale church and houses separate from the hill, and Mark
+    // approved the village on these values (R5, F2, C1 — tasks/2026-10-06-village-context.md).
+    const topBase = new Color(PALETTE.hills).multiplyScalar(1.15)
+    const hillDark = new Color(PALETTE.hills)
+    const hillMid = new Color(PALETTE.house).lerp(new Color(PALETTE.steeple), 0.25)
+    const hillLit = new Color(PALETTE.hillsCrest).multiplyScalar(1.3)
 
     // --- closed rooted solid (dark base) ---
     const rows = RT + RS + 1

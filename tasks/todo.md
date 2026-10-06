@@ -9,7 +9,45 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## ▶ NEXT SESSION — START HERE (reconciled 2026-09-24)
+## Village study — R5 and F2 approved, committed and pushed, 2026-10-05
+
+**Current agent entry point (clarified 2026-10-06):** read
+`tasks/2026-10-05-village-foliage.md`, starting at **Fresh-agent start**. It contains startup commands,
+the source/evidence map, completed checks, local-only limitations and the next decision. No visual
+gate or implementation is pending; establish the next bounded scope with Mark before new work.
+
+Mark reopened the village's visual character and authorised a bounded local study while retaining
+his final taste gate. Lead owns the visual work; Worker handles mechanical captures/checks;
+Reviewer is peer review. Branch `codex/village-authored-study`; Mark authorised commit/push of the
+approved study. No merge or production/default-route promotion is authorised.
+
+- [x] Read CLAUDE.md, lessons (medium/boil and September 24), and this plan; review painting and live scene.
+- [x] Archive paused baseline and same-environment desktop timing; approve bounded plan through peer and feasibility reviews.
+- [x] Value-only hill probe and first church/four-neighbour/two-tree study, retained as round 1 evidence.
+- [x] Reject the repeated strips/ribbed tree lobes; test source-derived architectural paint and curved tree envelopes.
+- [x] Finish four authored passes and peer review; Lead verified build/lint/98 sky tests, default/candidate reduced-motion and viewport guards, AE0 default preservation and all final views.
+- [x] Prepare original/baseline/candidate and the local comparison page for Mark's visual gate; architecture promising, trees and mirrored paint unresolved.
+- [x] Mark rejected the foreground tree clump: it reads as a hill in front of the church. He authorised Lead to continue this correction with Reviewer while he walks.
+- [x] Review and execute one focused removal pass (R5); Lead opened all 11 authored views, three bright views and Blender diagnostic. Church is clear; exposed ground and remaining back foliage are named reservations. Matching R4/R5 comparison and review page are ready; all Lead checks and default AE0 passed.
+- [x] Mark: “Okay, it looks better. let's commit and work on next”. R5 is approved as the local checkpoint; continue with the proposed foliage pass. This does not authorise release or default-route promotion.
+- [x] Commit the approved R5 checkpoint as `92a8f56` (`feat(village): add source-painted village study`).
+- [x] Author two source-painted foliage rows in two reviewed passes: low dark front band, lighter traced back crown row replacing the synthetic dome. Architecture and sky unchanged. Reviewer SHOW; Lead opened every F2 view and reran lint/build/98 tests, geometry, reduced-motion and viewport guards; default AE0.
+- [x] Mark visual gate on F2: “Looks better. Commit and push. Well record where we at”. Foliage is approved. Known residuals are a narrow hedge at high angle, softer foliage paint at near, and old context houses beside the authored cluster; R5's mirrored architecture paint remains recorded.
+- [x] Commit/push the approved branch: R5 `92a8f56`, F2 `2c6809b`. Origin was independently checked at the exact F2 SHA; the documentation follow-up records delivery and pickup in `tasks/2026-10-05-village-foliage.md`.
+- [x] 2026-10-06: Mark chose the next slice — "finish the village": repaint the last three procedural houses and four bushes in the same source-painted medium, DEV flag only.
+- [x] C1 built and gated (Lead Claude, Reviewer Fable, Worker Gemini): plan REVISE ×2 → revision 1 BUILD/READY → applied, frozen, all checks green, default AE0. Record: `tasks/2026-10-06-village-context.md`.
+- [x] **Mark's taste gate on C1**: "commit and push the branch then tackle the next". Committed and pushed on `codex/village-authored-study`.
+- [x] Promotion built on the branch (plan `scratch/village-promotion-2026-10-06/P1-plan.md`, Fable REVISE → BUILD, Gemini READY): `refactor(village): drop the study naming` + `feat(village): make the painted village the default`. Default route, dev and production build, is AE0 against the approved C1 views in all eleven.
+- [ ] **Mark merges the promotion PR (= deploy).** Before that, his call: `main`'s ruleset currently holds only `deletion` + `non_fast_forward` (no PR or required-check rules, checked 2026-10-06), and the Vercel preview is his to open (SSO).
+
+Durable gate records: `tasks/2026-10-05-village-study.md` and `tasks/2026-10-05-village-foliage.md`. F2 comparison: `output/playwright/village-foliage-2026-10-05/index.html`. Evidence and working plan: `scratch/village-study-2026-10-05/plan.md` and
+`output/playwright/village-study-2026-10-05/`. The `villageStudy` DEV flags were removed at promotion:
+the painted village is the default route; the old procedural village and shrubs are deleted.
+
+## Production constraints and earlier backlog — September 24 context
+
+The current pickup is the village handoff above. Release constraints in this section still apply;
+the older sky prototype checklist is background context, not an instruction to resume that work.
 
 **The piece is RELEASED and live, and `main` deploys to production on every change that lands on
 it.** Since 2026-09-24 the only way onto `main` is a merged pull request — see the ⚠️ note below.
@@ -81,9 +119,12 @@ session, where captures work.
   indexing for `https://markma.dev/`, `/standard`, `/standard/projects/first-furlong`, and `/nz`.
   No agent authenticated to Google or operated the Search Console session. Status is **REQUESTED;
   WAITING ON GOOGLE** — this does not yet mean indexed or appearing in search.
-- **Starry Night property coverage** — check whether Mark's Search Console property is the Domain
-  property `markma.dev` (which includes `starrynight.markma.dev`) or only the URL-prefix property
-  `https://markma.dev/` (which does not). Do not create or verify another property silently.
+- **Starry Night property setup** — Mark reports that Search Console setup is complete. Retain the
+  current property and do not create another one silently. The exact Domain-versus-URL-prefix type
+  is not duplicated here; if it matters later, verify coverage before any new submission.
+- **Starry Night Search Console submission** — Mark reports that Search Console setup and the
+  indexing submission for Starry Night were completed manually this morning. Status is **REQUESTED;
+  WAITING ON GOOGLE** — no claim of current indexing or search appearance has been made.
 - **Starry Night crawl surface — mostly LANDED 2026-08-13** (`52d05a7`, `40aee77`). `index.html`
   now carries the title, description, a self-referencing `https://starrynight.markma.dev/` canonical,
   Open Graph/Twitter metadata and a `<noscript>` body; `public/sitemap.xml` lists the one URL and
@@ -92,9 +133,9 @@ session, where captures work.
 - [ ] **Still missing from that lane:** the build-time contract that fails the build on an empty
   production root — no script or test checks it today. Keep query-mode and capture URLs out of the
   sitemap.
-- **Order after implementation** — deploy and verify the public HTML, sitemap, and robots responses;
-  then inspect Starry Night in Search Console, submit its sitemap, run a live test, and request
-  indexing only after the custom-domain canonical and substantive body are confirmed.
+- **Search Console follow-up** — after the remaining build-time contract is added and the public
+  responses are verified, rerun the live test and inspect the indexed result. The existing indexing
+  request is not proof of current indexing.
 - **Authentication boundary** — Google sign-in, 2FA, CAPTCHA, property verification, DNS, and
   authenticated Search Console actions remain Mark-only. Do not grant broad macOS Accessibility
   permissions or attempt Playwright/Puppeteer/Selenium sign-in as part of this lane.
@@ -601,11 +642,16 @@ design. The village gets the same order.
 
 | File | Lines | What it is |
 |---|---|---|
-| `src/scene/BrushVillage.tsx` | 302 | the houses and steeple |
-| `src/scene/BrushIsland.tsx` | 220 | the island mass the village sits on |
-| `src/scene/BrushShrubs.tsx` | 148 | the planting around it |
+| `src/scene/Village.tsx` | — | village meshes, atlas and painting textures |
+| `src/scene/villageGeometry.ts` | — | church, houses and traced foliage rows (source-painted, 2026-10) |
+| `src/scene/villagePatches.ts` · `village-atlas.json` | — | source pixel quads and their atlas UVs (`scripts/build-village-atlas.mjs`) |
+| `src/scene/BrushIsland.tsx` | — | the island mass the village sits on |
 | `src/scene/islandShape.ts` | — | island silhouette source |
-| `src/scene/Diorama.tsx` | 26 | assembles the three |
+| `src/scene/Diorama.tsx` | — | assembles island, village and cypress |
+
+The old procedural `BrushVillage.tsx` / `BrushShrubs.tsx` (this section's 2026-07 subject) were deleted
+when the painted village was promoted. The make-it-alive "glimmer in the village windows" will need its
+own layer: the painted windows are `opening()` marks inside the village `paint` mesh.
 
 The cypress technique that earned the gate pass, available to reuse: **project the painting's own
 pixels onto source-derived geometry** rather than synthesising Van Gogh procedurally

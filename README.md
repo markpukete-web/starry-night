@@ -70,8 +70,9 @@ painting's persistent row runs, and the painting's pixels are projected onto tha
 brushwork being synthesised. Full-frame bloom came out of the diorama in the same pass — the contrast was
 already authored, and the wash was flattening the sky's strokes.
 
-The village had the same treatment — drawn cloisonnist contours, stroke-built walls, the church held inside
-the nocturne band, and painted window glow.
+The village had the same treatment. The church, its neighbours and the surrounding houses are authored
+forms painted with patches cut from the scan, and the foliage between them is traced from the painting's
+own brush crests rather than generated.
 
 **Released 2026-07-28 — live at <https://starrynight.markma.dev>.** All five review gates have
 passed: reference pipeline, the movable decision, first full animated sky, foreground complete, and
@@ -105,7 +106,7 @@ previous production deployment is a rollback candidate in the Vercel dashboard.
 
 | Path | |
 |---|---|
-| `src/scene/` | the scene — `DioramaExperience` composes `Diorama` (island, cypress, village, shrubs) under `PaintingFlowSky3D` |
+| `src/scene/` | the scene — `DioramaExperience` composes `Diorama` (island, village, cypress) under `PaintingFlowSky3D` |
 | `src/scene/dioramaContract.ts` | cameras and the locked orbit envelope, stated as orbit parameters |
 | `scripts/` | the offline pipeline, the browser checks, and the unit tests |
 | `public/reference/` | the derived assets the runtime samples — committed, so a clone just runs |

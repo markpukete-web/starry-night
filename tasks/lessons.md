@@ -2099,3 +2099,93 @@ defect remaining." Mark's answer was *"those findings are minor"* — gate passe
   `false` → `true` for `main` once the target was set — which gave a no-push way to verify it.
   Also carried: **leave the bypass list empty.** Agent sessions push with Mark's credentials, so an
   admin bypass would exempt every agent too, and the ruleset would guard nothing.
+
+## Village authored study — 2026-10-05 (local; Mark's taste gate pending)
+
+- **Identity needs an authored relationship between forms.** Replacing the central church and
+  four neighbours as one composition made the oblique nave, low belfry, long spire, overlapping
+  eaves, sienna roof and striped foreground roof legible. A palette pass alone left the repeated
+  gable caps intact. Lead owned these visual decisions; Worker only captured and checked;
+  Reviewer supplied peer critique. Sky motion and camera were held fixed.
+- **The paint medium matters in the village too.** R1's repeated procedural roof/wall strips read
+  as clapboard and barcodes. Source-derived paint on the actual closed 3D faces carries the
+  painting's texture. The atlas uses explicit pixel quads from the original high-resolution scan;
+  contours and openings are separately anchored to each geometric face. This is a local study,
+  not an accepted replacement or a reason to texture-project the whole village.
+- **Cladding and underpaint must describe the same surface.** A slightly twisted roof's two flat
+  underpaint triangles pierced its bilinear textured grid. Sharing the same grid fixed that.
+  Tangent-plane tree ribbons similarly cut through curved troughs: both width edges must map
+  through the tree surface, with enough longitudinal samples and lift. A buried rim must follow
+  the actual terrain around the footprint, not only the ground under its centre.
+- **Source sampling still needs a brush-scale judgement.** Stretching a narrow plaster/roof
+  sample across a long face smears it. Mirrored subdivisions along the eave restored scale, but
+  eight repeats of a tiny roof patch made regular fluting and repeated source borders made a
+  frieze. R4 uses the full church roof quad (three repeats; narrowing at the ridge is an accepted
+  study tradeoff), and a plaster sample excluding the blue borders. Inspect both axes and the
+  near view, not just atlas resolution or centre thumbnails.
+- **Increasing mark width is not the same as finding the medium.** R3's thin tree scratches
+  became broader blue-green crescents in R4. They still read as flat procedural marks beside the
+  sampled architecture. That is a visual reservation, not a test failure to tune away with more
+  random detail. The fourth authored pass reaches this slice's retune cap; show the evidence to
+  Mark before further craft or expansion. The old island coast's saw-tooth edge remains a separate
+  residual; this slice did not change its geometry.
+- **A DEV flag needs candidate-specific evidence.** The existing reduced-motion and viewport
+  scripts construct the default URL. Passing them does not exercise `villageStudy=authored`;
+  mechanical scratch copies append the flag while retaining the assertions. Default preservation
+  is measured separately with paused same-camera PNG comparisons. Production JS excludes the
+  study module, but Vite still copies its public atlas into `dist/reference`; a future release
+  decision must account for that asset.
+- **Capture labels are not camera measurements.** The old `lookdown` drag moved towards ground
+  level. The final matrix adds an opposite-sign vertical drag and checks the resulting high view.
+  These remain documented input probes, not a claim to have read camera matrices. Rebuilding a
+  public atlas during HMR also requires a full browser reload; fresh isolated captures avoid the
+  stale-image/new-UV combination. Blender inspection is exported from runtime geometry, with
+  textures packed in the final `.blend`, so it cannot silently become a second layout.
+
+Plan, disposition and gate record: `tasks/2026-10-05-village-study.md`. Local captures and review
+page: `output/playwright/village-study-2026-10-05/`.
+
+- **Mark's object reading outranks a mechanically sound proxy.** At the R4 taste gate he read the
+  foreground tree mass as a little hill in front of the church. That was accurate: its height,
+  pale blue marks and single mound silhouette contradicted the painting's low, dark horizontal
+  band and hid the church base. The peer-confirmed R5 response removes the failed front mass
+  without disturbing the architectural paint or the back band's seeded sequence. The resulting
+  open gap must be judged in the actual scene; deletion is not proof of a finished foliage medium.
+
+
+## Village foliage — source-painted rows, 2026-10-05
+
+- **The source paint needs a matching silhouette.** A low connected row traced through actual
+  brush crests works where a smooth dome with synthetic pale chevrons read as a hill. The dark
+  front band passed a five-view falsifying probe before the lighter back row was built. Short
+  separately sampled tops and closed ends retained volume under orbit; the high-angle hedge/rope
+  reading and near softness remain explicit taste residuals, not hidden by green geometry tests.
+- **Check composition against the painting and the camera, not an inherited sentence.** Reviewer's
+  original “below the nave roof, as the painting has it” premise was wrong. The actual crown band
+  rises above neighbouring roofs. Its projected crest and matching horizontal/vertical source scale
+  prevented spending a rendered pass on foliage hidden behind the houses. The correction was made
+  before construction and confirmed independently; original source contour remained unchanged.
+- **Preserve accepted work at the buffer boundary.** The F1 front row remained an exact prefix when
+  the back row was added. Architecture matched an isolated F1 export with only the old tree call
+  omitted. Default screenshots remained AE0. Exact preservation and a rendered quality judgement
+  answer different questions; both were kept for Mark's gate. See `tasks/2026-10-05-village-foliage.md`.
+
+
+## Village context C1 — 2026-10-06
+
+- **A point is not a clearance test for a volume.** The plan cleared the LEFT row against the cypress's
+  base point; the lobe solid's ground footprint is ~0.5 wide, and 34 of its vertices sat inside the row.
+  Fable caught it by building the solid with BrushCypress's own options. Test against the geometry
+  that renders, not a proxy position. `scratch/village-context-2026-10-06/clearance/run.mjs` now does
+  this for every house and row, and it fails on the original plan (negative control).
+- **Uniform paint hides interpenetration; the painted medium exposes it.** Houses 3/4 and house 6/the
+  sienna neighbour had overlapped since F2, invisible under identical dark procedural paint. Distinct
+  source patches on each face would have shown a box inside a box. Re-check footprints whenever a
+  medium change gives neighbouring faces different paint.
+- **Render the draft in a sandbox copy while the plan is under review.** A full app copy under scratch
+  (own port, own atlas) gave the reviewers a real capture without touching the shared tree; the final
+  Worker captures were then pixel-identical (AE0) to the reviewed sandbox render, so the review
+  covered exactly what shipped.
+- **zsh does not word-split an unquoted `$FILES`.** A freeze manifest went out with no hashes because
+  `shasum $FILES` received one argument. List the paths literally or use an array; read the file you
+  just wrote before dispatching a brief that depends on it.
