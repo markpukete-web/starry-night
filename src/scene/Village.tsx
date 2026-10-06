@@ -4,7 +4,7 @@ import { useThree } from '@react-three/fiber'
 import { DoubleSide, MeshBasicMaterial, SRGBColorSpace } from 'three'
 import { buildVillage } from './villageGeometry'
 
-/** The bounded church-and-neighbours study, reachable only through the DEV comparison seam. */
+/** The village, church and foliage rows, painted with patches of the source painting (villageGeometry). */
 export function Village() {
   const meshes = useMemo(() => buildVillage(), [])
   const source = useTexture('/reference/village-atlas.webp')

@@ -8,7 +8,7 @@ import { VILLAGE_PATCHES, type VillagePatchName } from './villagePatches'
 // The church and four neighbours are authored as one knot. Axes and relative heights come
 // from painting.jpg's full lower village, not the old crop ending halfway through the town.
 // Three context houses and four foliage rows complete the village in the same medium.
-// This is a DEV study, not a replacement for the accepted foreground.
+// Developed as a DEV study (tasks/2026-10-05-village-*.md, 2026-10-06-village-context.md).
 type Face = readonly [Vector3, Vector3, Vector3, Vector3]
 type Pigment = 'wall' | 'pale' | 'roof' | 'sienna' | 'striped'
 type SkinArrays = BrushArrays & { uv: number[] }
@@ -36,7 +36,7 @@ const NEIGHBOURS: Building[] = [
     wall: 'wall', roof: 'roof', wallPatch: 'blueWallC', roofPatch: 'blueRoof', chimney: true, window: 'front' },
 ]
 
-// The three houses that stayed procedural beside the knot until C1 (BrushVillage houses 3, 4, 6),
+// The three houses that stayed procedural beside the knot until C1 (old BrushVillage houses 3, 4, 6),
 // painted from the matching part of the painting's village. The old footprints interpenetrated
 // their neighbours behind uniform dark paint, so each moved to clear every footprint by ≥0.02
 // (scratch/village-context-2026-10-06/clearance). Built after the church so the approved R5/F2
