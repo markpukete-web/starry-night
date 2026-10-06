@@ -2,12 +2,12 @@ import { useEffect, useMemo } from 'react'
 import { useTexture } from '@react-three/drei'
 import { useThree } from '@react-three/fiber'
 import { DoubleSide, MeshBasicMaterial, SRGBColorSpace } from 'three'
-import { buildVillageStudy } from './villageStudyGeometry'
+import { buildVillage } from './villageGeometry'
 
 /** The bounded church-and-neighbours study, reachable only through the DEV comparison seam. */
-export function VillageStudy() {
-  const meshes = useMemo(() => buildVillageStudy(), [])
-  const source = useTexture('/reference/village-study-atlas.webp')
+export function Village() {
+  const meshes = useMemo(() => buildVillage(), [])
+  const source = useTexture('/reference/village-atlas.webp')
   const foliageSource = useTexture('/reference/painting.jpg')
   const gl = useThree(state => state.gl)
   const texture = useMemo(() => {
@@ -39,11 +39,11 @@ export function VillageStudy() {
   useEffect(() => () => foliageMaterial.dispose(), [foliageMaterial])
   useEffect(() => () => foliageTexture.dispose(), [foliageTexture])
   return (
-    <group name="village-study">
-      <mesh name="village-study-solid" geometry={meshes.solid} material={material} renderOrder={2} />
-      <mesh name="village-study-skin" geometry={meshes.skin} material={skinMaterial} renderOrder={3} />
-      <mesh name="village-study-paint" geometry={meshes.paint} material={material} renderOrder={4} />
-      <mesh name="village-study-foliage" geometry={meshes.foliage} material={foliageMaterial} renderOrder={3} />
+    <group name="village">
+      <mesh name="village-solid" geometry={meshes.solid} material={material} renderOrder={2} />
+      <mesh name="village-skin" geometry={meshes.skin} material={skinMaterial} renderOrder={3} />
+      <mesh name="village-paint" geometry={meshes.paint} material={material} renderOrder={4} />
+      <mesh name="village-foliage" geometry={meshes.foliage} material={foliageMaterial} renderOrder={3} />
     </group>
   )
 }

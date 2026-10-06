@@ -3,7 +3,7 @@ import { BrushCypress } from './BrushCypress'
 import { BrushIsland } from './BrushIsland'
 import { BrushShrubs } from './BrushShrubs'
 import { BrushVillage } from './BrushVillage'
-const VillageStudy = import.meta.env.DEV ? lazy(() => import('./VillageStudy').then(m => ({ default: m.VillageStudy }))) : null
+const VillageStudy = import.meta.env.DEV ? lazy(() => import('./Village').then(m => ({ default: m.Village }))) : null
 
 /**
  * The Starry Night diorama, authored in Van Gogh brushstrokes. Every foreground surface is a real

@@ -2,8 +2,8 @@ import { BufferAttribute, BufferGeometry, Color, Vector3 } from 'three'
 import { makeBrushArrays, pushBrushRibbon, type BrushArrays } from './brushForms'
 import { islandHeightAt } from './islandShape'
 import { PALETTE } from './palette'
-import atlas from './village-study-atlas.json'
-import { VILLAGE_STUDY_PATCHES, type VillagePatchName } from './villageStudyPatches'
+import atlas from './village-atlas.json'
+import { VILLAGE_PATCHES, type VillagePatchName } from './villagePatches'
 
 // The church and four neighbours are authored as one knot. Axes and relative heights come
 // from painting.jpg's full lower village, not the old crop ending halfway through the town.
@@ -116,7 +116,7 @@ function mark(
 function paintFace(solid: BrushArrays, skin: SkinArrays,
   face: Face, kind: Pigment, patch: VillagePatchName, shade = 1): void {
   const base = pigment(kind).multiplyScalar(shade)
-  const pixels = VILLAGE_STUDY_PATCHES[patch]
+  const pixels = VILLAGE_PATCHES[patch]
   const sourceWidth = Math.hypot(pixels[1][0] - pixels[0][0], pixels[1][1] - pixels[0][1])
   // These narrow plaster/roof samples otherwise stretch each dab 4–6 times along an eave.
   // The locked home camera gives about 189 px/unit. Alternate mirrored tiles at that paint scale.
@@ -362,7 +362,7 @@ function foliageRow(foliage: SkinArrays, row: Row): void {
   face([right.bf, right.bb, right.tb, right.tf], [rightUV[0], rightUV[3], rightUV[2], rightUV[1]], 0.82)
 }
 
-export function buildVillageStudy() {
+export function buildVillage() {
   const solid = makeBrushArrays(), paint = makeBrushArrays()
   const skin: SkinArrays = { ...makeBrushArrays(), uv: [] }
   const foliage: SkinArrays = { ...makeBrushArrays(), uv: [] }

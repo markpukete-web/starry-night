@@ -1,13 +1,13 @@
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { VILLAGE_STUDY_PATCHES } from '../src/scene/villageStudyPatches.ts'
+import { VILLAGE_PATCHES } from '../src/scene/villagePatches.ts'
 
 // Local study asset only. ImageMagick is also used by the existing reference/capture workflow.
 // Tiles and the labelled patch map go to a NEW evidence folder so a rebuild never overwrites
-// an earlier gate's evidence: node scripts/build-village-study-atlas.mjs <evidence-dir>
+// an earlier gate's evidence: node scripts/build-village-atlas.mjs <evidence-dir>
 const evidence = process.argv[2]
-if (!evidence) throw new Error('usage: node scripts/build-village-study-atlas.mjs <evidence-dir>')
+if (!evidence) throw new Error('usage: node scripts/build-village-atlas.mjs <evidence-dir>')
 const source = 'reference/starry-night-source.jpg'
 const scratch = `${evidence}/atlas`
 mkdirSync(scratch, { recursive: true })
@@ -16,7 +16,7 @@ const size = 1024, cell = 256, margin = 10
 const compositing = ['-size', `${size}x${size}`, 'xc:#151b24']
 const entries = {}
 const draw = []
-for (const [index, [name, points]] of Object.entries(VILLAGE_STUDY_PATCHES).entries()) {
+for (const [index, [name, points]] of Object.entries(VILLAGE_PATCHES).entries()) {
   const xs = points.map(p => p[0]), ys = points.map(p => p[1])
   // Include neighbouring source paint as a mip/filter gutter, not an adjacent unrelated tile.
   const x = Math.floor((Math.min(...xs) - 4) / 1600 * sw)
@@ -36,9 +36,9 @@ for (const [index, [name, points]] of Object.entries(VILLAGE_STUDY_PATCHES).entr
   const colour = ['#ffdf72', '#f597b5', '#75efee', '#eeeeee'][index % 4]
   draw.push(`fill none stroke '${colour}' stroke-width 2 polygon ${points.map(p => p.join(',')).join(' ')} fill '${colour}' stroke '#111111' stroke-width 0.6 text ${Math.min(...xs)},${Math.min(...ys) - 8} '${name}'`)
 }
-const atlas = 'public/reference/village-study-atlas.webp'
+const atlas = 'public/reference/village-atlas.webp'
 execFileSync('magick', [...compositing, '-quality', '95', atlas])
-writeFileSync('src/scene/village-study-atlas.json', JSON.stringify({
+writeFileSync('src/scene/village-atlas.json', JSON.stringify({
   source, sourceSha256: createHash('sha256').update(readFileSync(source)).digest('hex'),
   atlas, size, patches: entries,
 }, null, 2) + '\n')

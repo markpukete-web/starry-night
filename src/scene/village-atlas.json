@@ -1,7 +1,7 @@
 {
   "source": "reference/starry-night-source.jpg",
   "sourceSha256": "bbd4df2538ef9e7e34ea9f415ec4f60c4007a841cb757f7d1f94da42910e0103",
-  "atlas": "public/reference/village-study-atlas.webp",
+  "atlas": "public/reference/village-atlas.webp",
   "size": 1024,
   "patches": {
     "paleLeft": [

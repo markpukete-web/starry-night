@@ -2,7 +2,7 @@
  * bottom-left, bottom-right, top-right, top-left. Patches are paint samples, not cutout buildings.
  * Geometric contours/openings own the drawing. See the labelled patch map in the study evidence.
  */
-export const VILLAGE_STUDY_PATCHES = {
+export const VILLAGE_PATCHES = {
   paleLeft: [[797, 1098], [808, 1098], [808, 1071], [797, 1071]],
   churchPlaster: [[884, 1110], [896, 1108], [896, 1082], [884, 1087]],
   blueWallA: [[756, 1201], [839, 1201], [839, 1178], [756, 1178]],
@@ -23,4 +23,4 @@ export const VILLAGE_STUDY_PATCHES = {
   blueRoofLeft: [[700, 1028], [755, 1028], [755, 1004], [700, 1004]],
 } as const
 
-export type VillagePatchName = keyof typeof VILLAGE_STUDY_PATCHES
+export type VillagePatchName = keyof typeof VILLAGE_PATCHES

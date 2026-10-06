@@ -8,11 +8,11 @@ import { rolldown } from 'rolldown'
 const directory = process.argv[2] || 'scratch/village-study-2026-10-05'
 mkdirSync(directory, { recursive: true })
 const file = resolve(directory, 'geometry.mjs')
-const bundle = await rolldown({ input: 'src/scene/villageStudyGeometry.ts', external: ['three'] })
+const bundle = await rolldown({ input: 'src/scene/villageGeometry.ts', external: ['three'] })
 await bundle.write({ file, format: 'es' })
 await bundle.close()
-const { buildVillageStudy } = await import(pathToFileURL(file).href)
-const meshes = buildVillageStudy(), repeat = buildVillageStudy(), output = {}
+const { buildVillage } = await import(pathToFileURL(file).href)
+const meshes = buildVillage(), repeat = buildVillage(), output = {}
 for (const [name, g] of Object.entries(meshes)) {
   const count = g.attributes.position.count
   assert(count > 0 && g.index.count > 0 && g.index.count % 3 === 0, `${name}: empty/invalid triangles`)
@@ -50,7 +50,7 @@ for (const [name, g] of Object.entries(meshes)) {
   output[name] = {
     positions: Array.from(g.attributes.position.array), colours: Array.from(g.attributes.color.array),
     indices: Array.from(g.index.array), uv: g.attributes.uv ? Array.from(g.attributes.uv.array) : null,
-    texture: name === 'skin' ? { path: 'public/reference/village-study-atlas.webp', flipY: true }
+    texture: name === 'skin' ? { path: 'public/reference/village-atlas.webp', flipY: true }
       : name === 'foliage' ? { path: 'public/reference/painting.jpg', flipY: false } : null,
     bounds: { min: g.boundingBox.min.toArray(), max: g.boundingBox.max.toArray() },
   }
