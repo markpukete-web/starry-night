@@ -122,3 +122,8 @@ the approved darker island values become the only values). The default route —
 production build served by `vite preview` — is AE0 against the approved C1 views in all eleven.
 Production JS +4.4 kB raw / +1.9 kB gzip; the atlas is one 119 kB webp request. Plan and reviews:
 `scratch/village-promotion-2026-10-06/`. Merge (= deploy) is Mark's.
+
+PR #6 (`codex/village-authored-study` → `main`, head `6b766de`): CI `lint · test · build` and
+`secret scan` pass, Vercel preview built (behind Vercel sign-in). Codex review completed on `6b766de`
+with a 👍 and no findings. Fable's diff review (FIX, two stale notes) was closed by `6b766de`. Waiting
+on Mark: the merge (= deploy) and whether to restore `main`'s PR and required-check rules first.
