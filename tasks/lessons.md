@@ -2194,8 +2194,12 @@ page: `output/playwright/village-study-2026-10-05/`.
 
 - **A recorded protection is not a live protection.** `tasks/todo.md` said `main` was PR-only with
   required checks (set up 2026-09-24). Fable checked the API before trusting it: the "Protect main"
-  ruleset now holds only `deletion` and `non_fast_forward`. The PR process still held because the plan
-  stopped at the merge, but nothing would have stopped a direct push. Read
+  ruleset holds only `deletion` and `non_fast_forward`, and its `updated_at` is two minutes after its
+  creation on 2026-09-24, so the PR and check rules were most likely never saved — not lost later. The
+  2026-09-24 verification used the branches API's `protected` flag, which the deletion rule alone flips:
+  a check that cannot tell "some rule" from "the rule you meant" proved nothing (same shape as the
+  ignored-filter lesson that day). The PR process still held because the plan stopped at the merge, but
+  nothing would have stopped a direct push. Read
   `gh api repos/<owner>/<repo>/rules/branches/main` before relying on the note; settings are Mark's.
 - **Prove the promotion against the approved captures, not against the old default.** The default
   route was required to be AE 0 against the C1 views Mark approved, in all eleven views, from the dev
