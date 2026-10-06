@@ -119,9 +119,12 @@ session, where captures work.
   indexing for `https://markma.dev/`, `/standard`, `/standard/projects/first-furlong`, and `/nz`.
   No agent authenticated to Google or operated the Search Console session. Status is **REQUESTED;
   WAITING ON GOOGLE** — this does not yet mean indexed or appearing in search.
-- **Starry Night property coverage** — check whether Mark's Search Console property is the Domain
-  property `markma.dev` (which includes `starrynight.markma.dev`) or only the URL-prefix property
-  `https://markma.dev/` (which does not). Do not create or verify another property silently.
+- **Starry Night property setup** — Mark reports that Search Console setup is complete. Retain the
+  current property and do not create another one silently. The exact Domain-versus-URL-prefix type
+  is not duplicated here; if it matters later, verify coverage before any new submission.
+- **Starry Night Search Console submission** — Mark reports that Search Console setup and the
+  indexing submission for Starry Night were completed manually this morning. Status is **REQUESTED;
+  WAITING ON GOOGLE** — no claim of current indexing or search appearance has been made.
 - **Starry Night crawl surface — mostly LANDED 2026-08-13** (`52d05a7`, `40aee77`). `index.html`
   now carries the title, description, a self-referencing `https://starrynight.markma.dev/` canonical,
   Open Graph/Twitter metadata and a `<noscript>` body; `public/sitemap.xml` lists the one URL and
@@ -130,9 +133,9 @@ session, where captures work.
 - [ ] **Still missing from that lane:** the build-time contract that fails the build on an empty
   production root — no script or test checks it today. Keep query-mode and capture URLs out of the
   sitemap.
-- **Order after implementation** — deploy and verify the public HTML, sitemap, and robots responses;
-  then inspect Starry Night in Search Console, submit its sitemap, run a live test, and request
-  indexing only after the custom-domain canonical and substantive body are confirmed.
+- **Search Console follow-up** — after the remaining build-time contract is added and the public
+  responses are verified, rerun the live test and inspect the indexed result. The existing indexing
+  request is not proof of current indexing.
 - **Authentication boundary** — Google sign-in, 2FA, CAPTCHA, property verification, DNS, and
   authenticated Search Console actions remain Mark-only. Do not grant broad macOS Accessibility
   permissions or attempt Playwright/Puppeteer/Selenium sign-in as part of this lane.
