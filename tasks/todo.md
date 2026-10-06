@@ -37,11 +37,12 @@ approved study. No merge or production/default-route promotion is authorised.
 - [x] 2026-10-06: Mark chose the next slice — "finish the village": repaint the last three procedural houses and four bushes in the same source-painted medium, DEV flag only.
 - [x] C1 built and gated (Lead Claude, Reviewer Fable, Worker Gemini): plan REVISE ×2 → revision 1 BUILD/READY → applied, frozen, all checks green, default AE0. Record: `tasks/2026-10-06-village-context.md`.
 - [x] **Mark's taste gate on C1**: "commit and push the branch then tackle the next". Committed and pushed on `codex/village-authored-study`.
-- [ ] After C1: the study-promotion PR (separate decision: flag removal, old village path, atlas in `dist/reference`, Codex review).
+- [x] Promotion built on the branch (plan `scratch/village-promotion-2026-10-06/P1-plan.md`, Fable REVISE → BUILD, Gemini READY): `refactor(village): drop the study naming` + `feat(village): make the painted village the default`. Default route, dev and production build, is AE0 against the approved C1 views in all eleven.
+- [ ] **Mark merges the promotion PR (= deploy).** Before that, his call: `main`'s ruleset currently holds only `deletion` + `non_fast_forward` (no PR or required-check rules, checked 2026-10-06), and the Vercel preview is his to open (SSO).
 
 Durable gate records: `tasks/2026-10-05-village-study.md` and `tasks/2026-10-05-village-foliage.md`. F2 comparison: `output/playwright/village-foliage-2026-10-05/index.html`. Evidence and working plan: `scratch/village-study-2026-10-05/plan.md` and
-`output/playwright/village-study-2026-10-05/`. Default view is preserved; local flags
-`villageStudy=value`, `villageStudy=authored`, `villageStudy=authored-bright` are DEV-only.
+`output/playwright/village-study-2026-10-05/`. The `villageStudy` DEV flags were removed at promotion:
+the painted village is the default route; the old procedural village and shrubs are deleted.
 
 ## Production constraints and earlier backlog — September 24 context
 
@@ -638,11 +639,16 @@ design. The village gets the same order.
 
 | File | Lines | What it is |
 |---|---|---|
-| `src/scene/BrushVillage.tsx` | 302 | the houses and steeple |
-| `src/scene/BrushIsland.tsx` | 220 | the island mass the village sits on |
-| `src/scene/BrushShrubs.tsx` | 148 | the planting around it |
+| `src/scene/Village.tsx` | — | village meshes, atlas and painting textures |
+| `src/scene/villageGeometry.ts` | — | church, houses and traced foliage rows (source-painted, 2026-10) |
+| `src/scene/villagePatches.ts` · `village-atlas.json` | — | source pixel quads and their atlas UVs (`scripts/build-village-atlas.mjs`) |
+| `src/scene/BrushIsland.tsx` | — | the island mass the village sits on |
 | `src/scene/islandShape.ts` | — | island silhouette source |
-| `src/scene/Diorama.tsx` | 26 | assembles the three |
+| `src/scene/Diorama.tsx` | — | assembles island, village and cypress |
+
+The old procedural `BrushVillage.tsx` / `BrushShrubs.tsx` (this section's 2026-07 subject) were deleted
+when the painted village was promoted. The make-it-alive "glimmer in the village windows" will need its
+own layer: the painted windows are `opening()` marks inside the village `paint` mesh.
 
 The cypress technique that earned the gate pass, available to reuse: **project the painting's own
 pixels onto source-derived geometry** rather than synthesising Van Gogh procedurally

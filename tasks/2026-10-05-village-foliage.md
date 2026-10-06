@@ -8,6 +8,10 @@ promotion is authorised.
 
 ## Fresh-agent start — clarified 2026-10-06
 
+> **Superseded 2026-10-06:** C1 (`tasks/2026-10-06-village-context.md`) completed the village and the
+> promotion removed the `villageStudy` flag; the painted village is the default route. The commands
+> below describe the F2 state and are kept as history.
+
 **There is no implementation or visual gate currently waiting to be finished.** R5 and F2 are
 accepted checkpoints. The next task is to establish Mark's next bounded scope, using this record
 and the approved view; the older sky backlog in `tasks/todo.md` is not the active assignment.

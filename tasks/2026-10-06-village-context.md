@@ -109,3 +109,12 @@ Rendering so far: two sandbox renders (pre-review draft `draft-probe`, revision 
 Mark, after the comparison page: "commit and push the branch then tackle the next". C1 is approved as a
 checkpoint. The next piece is the promotion PR his chosen option named ("After that comes a separate PR
 to put it live"); merging it deploys, so it stops at Mark before merge.
+
+## Promotion
+
+Built on the same branch as two commits: `refactor(village): drop the study naming` (pure rename,
+proven AE0) and `feat(village): make the painted village the default` (flag and old village deleted;
+the approved darker island values become the only values). The default route — dev server and the
+production build served by `vite preview` — is AE0 against the approved C1 views in all eleven.
+Production JS +4.4 kB raw / +1.9 kB gzip; the atlas is one 119 kB webp request. Plan and reviews:
+`scratch/village-promotion-2026-10-06/`. Merge (= deploy) is Mark's.
