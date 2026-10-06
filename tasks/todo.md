@@ -34,7 +34,10 @@ approved study. No merge or production/default-route promotion is authorised.
 - [x] Author two source-painted foliage rows in two reviewed passes: low dark front band, lighter traced back crown row replacing the synthetic dome. Architecture and sky unchanged. Reviewer SHOW; Lead opened every F2 view and reran lint/build/98 tests, geometry, reduced-motion and viewport guards; default AE0.
 - [x] Mark visual gate on F2: “Looks better. Commit and push. Well record where we at”. Foliage is approved. Known residuals are a narrow hedge at high angle, softer foliage paint at near, and old context houses beside the authored cluster; R5's mirrored architecture paint remains recorded.
 - [x] Commit/push the approved branch: R5 `92a8f56`, F2 `2c6809b`. Origin was independently checked at the exact F2 SHA; the documentation follow-up records delivery and pickup in `tasks/2026-10-05-village-foliage.md`.
-- [ ] Next session: inspect approved F2/R5/reference evidence, then agree the next bounded visual slice or study-promotion plan with Mark. No additional foliage retune is queued. Keep sky/camera/default behaviour unchanged until separately scoped.
+- [x] 2026-10-06: Mark chose the next slice — "finish the village": repaint the last three procedural houses and four bushes in the same source-painted medium, DEV flag only.
+- [x] C1 built and gated (Lead Claude, Reviewer Fable, Worker Gemini): plan REVISE ×2 → revision 1 BUILD/READY → applied, frozen, all checks green, default AE0. Record: `tasks/2026-10-06-village-context.md`.
+- [x] **Mark's taste gate on C1**: "commit and push the branch then tackle the next". Committed and pushed on `codex/village-authored-study`.
+- [ ] After C1: the study-promotion PR (separate decision: flag removal, old village path, atlas in `dist/reference`, Codex review).
 
 Durable gate records: `tasks/2026-10-05-village-study.md` and `tasks/2026-10-05-village-foliage.md`. F2 comparison: `output/playwright/village-foliage-2026-10-05/index.html`. Evidence and working plan: `scratch/village-study-2026-10-05/plan.md` and
 `output/playwright/village-study-2026-10-05/`. Default view is preserved; local flags

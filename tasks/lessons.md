@@ -2169,3 +2169,23 @@ page: `output/playwright/village-study-2026-10-05/`.
   the back row was added. Architecture matched an isolated F1 export with only the old tree call
   omitted. Default screenshots remained AE0. Exact preservation and a rendered quality judgement
   answer different questions; both were kept for Mark's gate. See `tasks/2026-10-05-village-foliage.md`.
+
+
+## Village context C1 — 2026-10-06
+
+- **A point is not a clearance test for a volume.** The plan cleared the LEFT row against the cypress's
+  base point; the lobe solid's ground footprint is ~0.5 wide, and 34 of its vertices sat inside the row.
+  Fable caught it by building the solid with BrushCypress's own options. Test against the geometry
+  that renders, not a proxy position. `scratch/village-context-2026-10-06/clearance/run.mjs` now does
+  this for every house and row, and it fails on the original plan (negative control).
+- **Uniform paint hides interpenetration; the painted medium exposes it.** Houses 3/4 and house 6/the
+  sienna neighbour had overlapped since F2, invisible under identical dark procedural paint. Distinct
+  source patches on each face would have shown a box inside a box. Re-check footprints whenever a
+  medium change gives neighbouring faces different paint.
+- **Render the draft in a sandbox copy while the plan is under review.** A full app copy under scratch
+  (own port, own atlas) gave the reviewers a real capture without touching the shared tree; the final
+  Worker captures were then pixel-identical (AE0) to the reviewed sandbox render, so the review
+  covered exactly what shipped.
+- **zsh does not word-split an unquoted `$FILES`.** A freeze manifest went out with no hashes because
+  `shasum $FILES` received one argument. List the paths literally or use an array; read the file you
+  just wrote before dispatching a brief that depends on it.
