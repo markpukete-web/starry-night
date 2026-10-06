@@ -4,6 +4,10 @@
 on top of the approved F2 checkpoint (`2c6809b`) and its docs (`ab763ac`). Nothing committed or pushed
 before Mark's gate. The study stays behind the DEV-only `villageStudy=authored` flag; the default route is unchanged.
 
+> **Superseded by the Promotion section below:** the `villageStudy` flag is gone and the painted
+> village is the default route. Statements here about the DEV flag and the unreferenced atlas describe
+> the C1 gate state.
+
 ## Intent and boundary
 
 Mark (2026-10-06), choosing from four options: "Repaint the 3 remaining old houses and 4 bushes the

@@ -3,7 +3,8 @@ import { createHash } from 'node:crypto'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { VILLAGE_PATCHES } from '../src/scene/villagePatches.ts'
 
-// Local study asset only. ImageMagick is also used by the existing reference/capture workflow.
+// Builds the shipped village atlas; rebuild only when villagePatches.ts changes. ImageMagick is
+// also used by the existing reference/capture workflow.
 // Tiles and the labelled patch map go to a NEW evidence folder so a rebuild never overwrites
 // an earlier gate's evidence: node scripts/build-village-atlas.mjs <evidence-dir>
 const evidence = process.argv[2]
