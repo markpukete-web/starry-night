@@ -20,10 +20,9 @@ export function Diorama({ debug = 'final' }: { debug?: 'final' | 'stage' }) {
     <group>
       <BrushIsland studyValues={study === 'value' || study === 'authored'} />
       {/* the village huddle + pale-spired church, nestled at the hills' foot */}
-      <BrushVillage omitStudyCluster={authored} />
-      {authored && VillageStudy && <VillageStudy />}
-      {/* dark bushes dotting the village edges and the ground band — foreground dressing */}
-      <BrushShrubs omitStudyCluster={authored} />
+      {authored && VillageStudy ? <VillageStudy /> : <BrushVillage />}
+      {/* dark bushes dotting the village edges and the ground band — the study paints its own rows */}
+      {!authored && <BrushShrubs />}
       {/* cypress, front-left — the dark flame, the vertical counterweight to the sky */}
       <BrushCypress />
     </group>

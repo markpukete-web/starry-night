@@ -29,7 +29,7 @@ const BUSHES: [number, number, number, number][] = [
 const RINGS = 7
 const SEG = 14
 
-export function BrushShrubs({ omitStudyCluster = false }: { omitStudyCluster?: boolean }) {
+export function BrushShrubs() {
   const geometries = useMemo(() => {
     const rng = mulberry32(0x0b05_11e5)
     // the cypress recipe at bush scale: a near-black COOL mass (an all-olive mass reads as a dirt
@@ -51,8 +51,7 @@ export function BrushShrubs({ omitStudyCluster = false }: { omitStudyCluster?: b
     const up = new Vector3(0, 1, 0)
     const strokeCol = new Color()
 
-    for (const [bushIndex, [cx, cz, r, squash]] of BUSHES.entries()) {
-      const lengths = [sPos.length, sCol.length, sIdx.length, arr.positions.length, arr.colors.length, arr.indices.length]
+    for (const [cx, cz, r, squash] of BUSHES) {
       const y0 = islandHeightAt(cx, cz) - 0.045 // seat into the ground, no floating rim
       // --- dark dome underpaint (gaps between strokes read as shadow, never void) ---
       const base = sPos.length / 3
@@ -110,11 +109,6 @@ export function BrushShrubs({ omitStudyCluster = false }: { omitStudyCluster?: b
         const halfWid = (0.14 + 0.1 * rng()) * r
         pushBrush(arr, p, tangent, nrm, halfLen, halfWid, strokeCol)
       }
-      // Keep the baseline random sequence for the four surrounding bushes. Only the study's
-      // four interior pebbles are removed, after their random samples have been consumed.
-      if (omitStudyCluster && [2, 3, 4, 7].includes(bushIndex)) {
-        ;[sPos.length, sCol.length, sIdx.length, arr.positions.length, arr.colors.length, arr.indices.length] = lengths
-      }
     }
 
     const solid = new BufferGeometry()
@@ -132,7 +126,7 @@ export function BrushShrubs({ omitStudyCluster = false }: { omitStudyCluster?: b
     strokes.computeBoundingSphere()
 
     return { solid, strokes }
-  }, [omitStudyCluster])
+  }, [])
 
   const solidMat = useMemo(() => new MeshBasicMaterial({ vertexColors: true, toneMapped: false }), [])
   const strokeMat = useMemo(

@@ -4,8 +4,12 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { VILLAGE_STUDY_PATCHES } from '../src/scene/villageStudyPatches.ts'
 
 // Local study asset only. ImageMagick is also used by the existing reference/capture workflow.
+// Tiles and the labelled patch map go to a NEW evidence folder so a rebuild never overwrites
+// an earlier gate's evidence: node scripts/build-village-study-atlas.mjs <evidence-dir>
+const evidence = process.argv[2]
+if (!evidence) throw new Error('usage: node scripts/build-village-study-atlas.mjs <evidence-dir>')
 const source = 'reference/starry-night-source.jpg'
-const scratch = 'scratch/village-study-2026-10-05/atlas'
+const scratch = `${evidence}/atlas`
 mkdirSync(scratch, { recursive: true })
 const [sw, sh] = execFileSync('magick', ['identify', '-format', '%w %h', source], { encoding: 'utf8' }).split(' ').map(Number)
 const size = 1024, cell = 256, margin = 10
@@ -38,7 +42,6 @@ writeFileSync('src/scene/village-study-atlas.json', JSON.stringify({
   source, sourceSha256: createHash('sha256').update(readFileSync(source)).digest('hex'),
   atlas, size, patches: entries,
 }, null, 2) + '\n')
-mkdirSync('output/playwright/village-study-2026-10-05', { recursive: true })
 execFileSync('magick', ['public/reference/painting.jpg', '-font', process.env.STUDY_FONT || '/System/Library/Fonts/Helvetica.ttc', '-pointsize', '16', '-draw', draw.join(' '),
-  '-crop', '830x492+640+775', '+repage', 'output/playwright/village-study-2026-10-05/patch-map.png'])
+  '-crop', '830x492+640+775', '+repage', `${evidence}/patch-map.png`])
 console.log(`${Object.keys(entries).length} patches from ${sw}x${sh} source -> ${atlas}`)

@@ -417,24 +417,19 @@ const WINDOWS: [number, number, number, number][] = [
   [-0.8, 0.61, 0.09, 0.045],
 ]
 
-export function BrushVillage({ omitStudyCluster = false }: { omitStudyCluster?: boolean }) {
+export function BrushVillage() {
   const { solid, strokes, windows } = useMemo(() => {
     const s = newArr()
     const brush = makeBrushArrays()
     const w = newArr()
     const rng = mulberry32(0x0b11a6e)
-    HOUSES.forEach(([cx, cz, hw, hd, hh, yaw], i) => {
-      // Consume the same seeded sequence for omitted forms: the three context houses retain
-      // their exact baseline paint while the DEV study replaces only the central knot.
-      const omit = omitStudyCluster && [0, 1, 2, 5].includes(i)
-      pushHouse(omit ? newArr() : s, omit ? makeBrushArrays() : brush, rng, cx, cz, hw, hd, hh, yaw, i === 1)
-    })
-    pushChurch(omitStudyCluster ? newArr() : s, omitStudyCluster ? makeBrushArrays() : brush, rng, CHURCH_POS[0], CHURCH_POS[1])
-    for (const [i, [cx, cz, yh, size]] of WINDOWS.entries()) {
-      pushWindow(omitStudyCluster && i < 3 ? newArr() : w, rng, cx, cz, islandHeightAt(cx, cz) + yh, size)
+    HOUSES.forEach(([cx, cz, hw, hd, hh, yaw], i) => pushHouse(s, brush, rng, cx, cz, hw, hd, hh, yaw, i === 1))
+    pushChurch(s, brush, rng, CHURCH_POS[0], CHURCH_POS[1])
+    for (const [cx, cz, yh, size] of WINDOWS) {
+      pushWindow(w, rng, cx, cz, islandHeightAt(cx, cz) + yh, size)
     }
     // belfry window on the church tower
-    pushWindow(omitStudyCluster ? newArr() : w, rng, CHURCH_POS[0], CHURCH_POS[1] + 0.17, islandHeightAt(...CHURCH_POS) + 0.4, 0.04)
+    pushWindow(w, rng, CHURCH_POS[0], CHURCH_POS[1] + 0.17, islandHeightAt(...CHURCH_POS) + 0.4, 0.04)
 
     const build = (a: Arr) => {
       const g = new BufferGeometry()
@@ -446,7 +441,7 @@ export function BrushVillage({ omitStudyCluster = false }: { omitStudyCluster?: 
       return g
     }
     return { solid: build(s), strokes: build(brush), windows: build(w) }
-  }, [omitStudyCluster])
+  }, [])
 
   const solidMat = useMemo(() => new MeshBasicMaterial({ vertexColors: true, toneMapped: false }), [])
   const strokeMat = useMemo(

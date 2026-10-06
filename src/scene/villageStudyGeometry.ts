@@ -7,6 +7,7 @@ import { VILLAGE_STUDY_PATCHES, type VillagePatchName } from './villageStudyPatc
 
 // The church and four neighbours are authored as one knot. Axes and relative heights come
 // from painting.jpg's full lower village, not the old crop ending halfway through the town.
+// Three context houses and four foliage rows complete the village in the same medium.
 // This is a DEV study, not a replacement for the accepted foreground.
 type Face = readonly [Vector3, Vector3, Vector3, Vector3]
 type Pigment = 'wall' | 'pale' | 'roof' | 'sienna' | 'striped'
@@ -33,6 +34,20 @@ const NEIGHBOURS: Building[] = [
     wall: 'wall', roof: 'striped', wallPatch: 'blueWallB', roofPatch: 'stripedRoof', window: 'side' },
   { x: 0.38, z: 0.43, w: 0.22, d: 0.29, eave: 0.22, pitch: 0.14, yaw: -0.26,
     wall: 'wall', roof: 'roof', wallPatch: 'blueWallC', roofPatch: 'blueRoof', chimney: true, window: 'front' },
+]
+
+// The three houses that stayed procedural beside the knot until C1 (BrushVillage houses 3, 4, 6),
+// painted from the matching part of the painting's village. The old footprints interpenetrated
+// their neighbours behind uniform dark paint, so each moved to clear every footprint by ≥0.02
+// (scratch/village-context-2026-10-06/clearance). Built after the church so the approved R5/F2
+// buffers stay an exact prefix.
+const CONTEXT: Building[] = [
+  { x: 0.77, z: 0.585, w: 0.28, d: 0.26, eave: 0.2, pitch: 0.14, yaw: -0.3,
+    wall: 'wall', roof: 'roof', wallPatch: 'blueWallD', roofPatch: 'navyRoofRight', window: 'front' },
+  { x: 1.1, z: 0.415, w: 0.3, d: 0.26, eave: 0.22, pitch: 0.14, yaw: 0.32,
+    wall: 'pale', roof: 'roof', wallPatch: 'paleLeft', roofPatch: 'brownRoof', window: 'front' },
+  { x: -0.86, z: 0.35, w: 0.3, d: 0.26, eave: 0.2, pitch: 0.14, yaw: 0.1,
+    wall: 'wall', roof: 'roof', wallPatch: 'blueWallLeft', roofPatch: 'blueRoofLeft', window: 'front' },
 ]
 
 function geometry(a: BrushArrays | SkinArrays): BufferGeometry {
@@ -267,18 +282,52 @@ const BACK_ROW = [
   [1212, 1011, 1017],
 ]
 
-function foliageRow(foliage: SkinArrays, back = false): void {
-  const scale = back ? 1.20 / 208 : 0.0038
-  const maxHeight = back ? 44 * scale : 0.1292
+// C1 context rows, traced like BACK_ROW: the round mass in the right village and the teal curls
+// between the cypress and the left houses. They replace the old procedural bushes 0, 1, 5, 6;
+// LEFT stands where bush 1 fronted the cypress foot, clear of the lobe solid.
+const RIGHT_ROW = [
+  [1182, 1136, 1170], [1186, 1129, 1170], [1190, 1126, 1170], [1195, 1123, 1170],
+  [1200, 1121, 1170], [1205, 1120, 1170], [1210, 1119, 1170], [1215, 1119, 1170],
+  [1220, 1118, 1170], [1225, 1118, 1170], [1230, 1119, 1170], [1235, 1121, 1170],
+  [1240, 1124, 1170], [1245, 1128, 1170], [1250, 1132, 1170], [1255, 1135, 1170],
+  [1260, 1138, 1170], [1265, 1141, 1170], [1270, 1144, 1170], [1275, 1150, 1170],
+  [1279, 1158, 1170],
+]
+const LEFT_ROW = [
+  [685, 1098, 1118], [690, 1092, 1120], [695, 1089, 1124], [700, 1088, 1127],
+  [705, 1088, 1128], [710, 1088, 1129], [715, 1089, 1130], [720, 1090, 1130],
+  [725, 1091, 1130], [730, 1093, 1130], [735, 1096, 1130], [740, 1100, 1130],
+  [745, 1105, 1130],
+]
+
+// Source span (sx0, sw) maps to world x0 + xw·u; the front face bows forward by `bow`.
+// FRONT keeps F1's literal, non-isotropic values and back-face UVs so its buffers stay exact.
+type Row = {
+  stations: number[][]; sx0: number; sw: number; x0: number; xw: number; z0: number; bow: number
+  scale: number; maxHeight: number; legacyFrontUV?: boolean
+}
+const ROWS: Row[] = [
+  { stations: FRONT_ROW, sx0: 742, sw: 87, x0: -0.57, xw: 0.44, z0: 0.94, bow: 0.015,
+    scale: 0.0038, maxHeight: 0.1292, legacyFrontUV: true },
+  { stations: BACK_ROW, sx0: 1004, sw: 208, x0: -0.18, xw: 1.2, z0: 0.22, bow: 0.02,
+    scale: 1.2 / 208, maxHeight: 44 * (1.2 / 208) },
+  { stations: RIGHT_ROW, sx0: 1182, sw: 97, x0: 1.32, xw: 97 * 0.0036, z0: 0.5, bow: 0.015,
+    scale: 0.0036, maxHeight: 52 * 0.0036 },
+  { stations: LEFT_ROW, sx0: 685, sw: 60, x0: -1.36, xw: 60 * 0.0045, z0: 0.95, bow: 0.015,
+    scale: 0.0045, maxHeight: 42 * 0.0045 },
+]
+
+function foliageRow(foliage: SkinArrays, row: Row): void {
+  const { scale, maxHeight } = row
   const face = (vertices: Vector3[], pixels: number[][], shade: number) => {
     polygon(foliage, vertices, new Color(shade, shade, shade))
     // Match Cypress: pixel indices, flipY=false; no second V inversion.
     for (const [x, y] of pixels) foliage.uv.push(x / 1599, y / 1266)
   }
-  const stations = (back ? BACK_ROW : FRONT_ROW).map(([sx, crest, base]) => {
-    const u = (sx - (back ? 1004 : 742)) / (back ? 208 : 87)
-    const x = (back ? -0.18 : -0.57) + (back ? 1.20 : 0.44) * u
-    const z = (back ? 0.22 : 0.94) + (back ? 0.02 : 0.015) * Math.sin(Math.PI * u)
+  const stations = row.stations.map(([sx, crest, base]) => {
+    const u = (sx - row.sx0) / row.sw
+    const x = row.x0 + row.xw * u
+    const z = row.z0 + row.bow * Math.sin(Math.PI * u)
     const ground = islandHeightAt(x, z), h = (base - crest) * scale, depth = h / maxHeight * 0.10
     const topZ = z - h * Math.tan(Math.PI / 12), backGround = islandHeightAt(x, z - depth)
     return {
@@ -290,9 +339,9 @@ function foliageRow(foliage: SkinArrays, back = false): void {
     }
   })
   const backUV = (s: typeof stations[number], top: boolean) =>
-    back ? [s.sx, s.crest + (s.base - s.crest) * (top ? 0.30 : 0.95)]
-      : [681 + 59 * s.u, 1140 - (top ? s.h / 0.1292 * 32 : 0)]
-  const topFrom = back ? 0.30 : 0.25, topTo = back ? 0.70 : 0.75
+    row.legacyFrontUV ? [681 + 59 * s.u, 1140 - (top ? s.h / 0.1292 * 32 : 0)]
+      : [s.sx, s.crest + (s.base - s.crest) * (top ? 0.30 : 0.95)]
+  const [topFrom, topTo] = row.legacyFrontUV ? [0.25, 0.75] : [0.30, 0.70]
   for (let i = 0; i < stations.length - 1; i++) {
     const a = stations[i], b = stations[i + 1]
     face([a.bf, b.bf, b.tf, a.tf],
@@ -319,7 +368,7 @@ export function buildVillageStudy() {
   const foliage: SkinArrays = { ...makeBrushArrays(), uv: [] }
   NEIGHBOURS.forEach(b => building(solid, skin, paint, b))
   church(solid, skin, paint)
-  foliageRow(foliage)
-  foliageRow(foliage, true)
+  CONTEXT.forEach(b => building(solid, skin, paint, b))
+  ROWS.forEach(row => foliageRow(foliage, row))
   return { solid: geometry(solid), paint: geometry(paint), skin: geometry(skin), foliage: geometry(foliage) }
 }

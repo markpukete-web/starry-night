@@ -14,6 +14,13 @@ export const VILLAGE_STUDY_PATCHES = {
   stripedRoof: [[981, 1225], [1083, 1222], [1113, 1179], [1019, 1182]],
   churchRoof: [[869, 1054], [879, 1038], [855, 1019], [852, 1024]],
   spire: [[902, 995], [916, 995], [906, 819], [906, 819]],
+  // C1 context houses: right village (blueWallD, navyRoofRight, brownRoof) and the left village
+  // beside the cypress (blueWallLeft, blueRoofLeft). Appended so existing atlas cells never move.
+  blueWallD: [[1175, 1082], [1250, 1082], [1250, 1064], [1175, 1064]],
+  navyRoofRight: [[1166, 1112], [1214, 1112], [1214, 1090], [1166, 1090]],
+  brownRoof: [[1280, 1114], [1345, 1114], [1345, 1090], [1280, 1090]],
+  blueWallLeft: [[652, 1078], [688, 1078], [688, 1050], [652, 1050]],
+  blueRoofLeft: [[700, 1028], [755, 1028], [755, 1004], [700, 1004]],
 } as const
 
 export type VillagePatchName = keyof typeof VILLAGE_STUDY_PATCHES
