@@ -127,3 +127,11 @@ PR #6 (`codex/village-authored-study` → `main`, head `6b766de`): CI `lint · t
 `secret scan` pass, Vercel preview built (behind Vercel sign-in). Codex review completed on `6b766de`
 with a 👍 and no findings. Fable's diff review (FIX, two stale notes) was closed by `6b766de`. Waiting
 on Mark: the merge (= deploy) and whether to restore `main`'s PR and required-check rules first.
+
+**Merged and deployed 2026-10-06.** Mark: "commit, push and deploy merge". Two docs commits went up
+first (`2022891` PR record, `5acbdf0` Mark's Search Console notes); CI passed on `5acbdf0`; the PR
+thread records that the Codex review covers `6b766de`. Merge `8f6e5ec`; Vercel production deployment
+succeeded. Live verification: bundle `index-BXmzVxdZ.js` (the hash proven AE 0 through `vite preview`),
+atlas 200 at its new name, `capture:diorama` against https://starrynight.markma.dev → village band AE 0
+against the approved C1 centre, `check:village` ΔE 8.16
+(`output/playwright/village-promotion-2026-10-06/live/`). Desktop and mobile captures opened by Lead.
