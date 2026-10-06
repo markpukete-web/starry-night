@@ -14,7 +14,7 @@ below — never edited in place.
 **Current agent entry point:** read `tasks/2026-10-06-handoff.md`. The source-painted village went live
 through PR #6 (`8f6e5ec`). Nothing is in progress or queued; agree the next slice with Mark first. The
 checked-out branch `docs/village-live-record` carries unpushed docs commits — base the next feature
-branch on it. Open for Mark: `main`'s ruleset has lost its PR and required-check rules.
+branch on it. `main` is PR-only again (ruleset completed 2026-10-06): branch → PR → green checks → merge.
 
 ## Village study — R5, F2, C1 approved; promoted and live 2026-10-06 (history below)
 
@@ -45,7 +45,7 @@ approved study. No merge or production/default-route promotion is authorised.
 - [x] **Mark's taste gate on C1**: "commit and push the branch then tackle the next". Committed and pushed on `codex/village-authored-study`.
 - [x] Promotion built on the branch (plan `scratch/village-promotion-2026-10-06/P1-plan.md`, Fable REVISE → BUILD, Gemini READY): `refactor(village): drop the study naming` + `feat(village): make the painted village the default`. Default route, dev and production build, is AE0 against the approved C1 views in all eleven.
 - [x] **Mark: "commit, push and deploy merge".** PR #6 merged as `8f6e5ec` on 2026-10-06 and deployed to production. Live check: the page loads the locally proven bundle `index-BXmzVxdZ.js`, `/reference/village-atlas.webp` serves (old study name 404s), the live village band is AE 0 against the approved C1 view, and `check:village` on the live site reads ΔE 8.16.
-- [ ] **Open for Mark:** `main`'s "Protect main" ruleset holds only `deletion` + `non_fast_forward` — no PR requirement and no required `lint · test · build` / `secret scan` checks (checked 2026-10-06; probably never saved, see the ruleset item below). Adding them is his call.
+- [x] `main`'s ruleset now requires a PR and the `lint · test · build` + `secret scan` checks (set 2026-10-06 on Mark's word; see the ruleset item below).
 - [ ] **Next session: agree the next slice with Mark.** Candidates already named: the bare ground under the village ("models on a board"), the loud striped roof and mirrored church roof, and the parked 24 September make-it-alive A+B prototype (below). Nothing is queued.
 
 Durable gate records: `tasks/2026-10-05-village-study.md` and `tasks/2026-10-05-village-foliage.md`. F2 comparison: `output/playwright/village-foliage-2026-10-05/index.html`. Evidence and working plan: `scratch/village-study-2026-10-05/plan.md` and
@@ -157,11 +157,15 @@ transitive bumps, production bundle byte-identical). Dependabot's first PR (#4, 
 2.3.9 → 3.0.0, the Node 20 → 24 runtime move) was checked against the upstream tag and merged
 (`b5f8334`). Settings, all **Mark-only**:
 
-- [ ] **Ruleset on `main`** — intended 2026-09-24: PR required (0 approvals), `lint · test · build` +
-  `secret scan` required, force-push and deletion blocked, empty bypass list. **Correction 2026-10-06:**
-  the API shows only `deletion` + `non_fast_forward` active, and the ruleset's `updated_at`
-  (2026-09-24 21:29 +10:00, two minutes after creation) means the PR and check rules were most
-  likely never saved. Mark to add them in Settings → Rules; Lead verifies with the rules API.
+- [x] **Ruleset on `main`** — intended 2026-09-24 (PR required, 0 approvals; `lint · test · build` +
+  `secret scan` required; force-push and deletion blocked; empty bypass list), but only `deletion` and
+  `non_fast_forward` were ever saved. **Completed 2026-10-06** by Lead on Mark's instruction ("if not
+  can you set it up for me"): `PUT rulesets/23934783` adding `pull_request` (0 approvals) and
+  `required_status_checks` (both contexts pinned to GitHub Actions, integration 15368, not strict).
+  Verified on `rules/branches/main`: all four rules, bypass empty. GitHub defaulted
+  `require_extra_approval_for_unattributed_changes: true` (not set by us); if a merge ever asks for an
+  approval Mark cannot give, that is the setting to review. Before/after JSON:
+  `scratch/village-promotion-2026-10-06/ruleset-*.json`.
   Verified: the branches API flipped `main` from `protected: false` to `true`. See the ⚠️ note above.
 - [ ] **Settings → Code security** — confirm Dependabot alerts, Dependabot security updates, secret
   scanning and push protection are on. npm security fixes depend on the security-updates switch,
