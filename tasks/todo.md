@@ -12,7 +12,7 @@ below — never edited in place.
 ## Pickup — 2026-10-06: the painted village is live
 
 **Current agent entry point:** read `tasks/2026-10-06-handoff.md`. The source-painted village went live
-through PR #6 (`8f6e5ec`). Nothing is in progress or queued; agree the next slice with Mark first. The
+through PR #6 (`8f6e5ec`). **Next: make-it-alive A, then B, then C, one at a time** (Mark, 2026-10-06); start with A. The
 checked-out branch `docs/village-live-record` carries unpushed docs commits — base the next feature
 branch on it. `main` is PR-only again (ruleset completed 2026-10-06): branch → PR → green checks → merge.
 
@@ -46,7 +46,7 @@ approved study. No merge or production/default-route promotion is authorised.
 - [x] Promotion built on the branch (plan `scratch/village-promotion-2026-10-06/P1-plan.md`, Fable REVISE → BUILD, Gemini READY): `refactor(village): drop the study naming` + `feat(village): make the painted village the default`. Default route, dev and production build, is AE0 against the approved C1 views in all eleven.
 - [x] **Mark: "commit, push and deploy merge".** PR #6 merged as `8f6e5ec` on 2026-10-06 and deployed to production. Live check: the page loads the locally proven bundle `index-BXmzVxdZ.js`, `/reference/village-atlas.webp` serves (old study name 404s), the live village band is AE 0 against the approved C1 view, and `check:village` on the live site reads ΔE 8.16.
 - [x] `main`'s ruleset now requires a PR and the `lint · test · build` + `secret scan` checks (set 2026-10-06 on Mark's word; see the ruleset item below).
-- [ ] **Next session: agree the next slice with Mark.** Candidates already named: the bare ground under the village ("models on a board"), the loud striped roof and mirrored church roof, and the parked 24 September make-it-alive A+B prototype (below). Nothing is queued.
+- [x] **Next slice agreed (Mark, 2026-10-06):** "Next session we will tackle A-C one by one" — the 24 September make-it-alive lane below, A first, each slice to Mark's gate before the next. The village detour came first "mainly because the original village really bother[ed]" him; it is done. Village residuals (bare ground, striped roof, mirrored church roof) stay recorded, not queued.
 
 Durable gate records: `tasks/2026-10-05-village-study.md` and `tasks/2026-10-05-village-foliage.md`. F2 comparison: `output/playwright/village-foliage-2026-10-05/index.html`. Evidence and working plan: `scratch/village-study-2026-10-05/plan.md` and
 `output/playwright/village-study-2026-10-05/`. The `villageStudy` DEV flags were removed at promotion:
@@ -94,7 +94,7 @@ visitor; there is no arrival.
 **Decisions:** keep the bar exactly as locked · no sound (still out of scope) · build in a LOCAL Mac
 session, where captures work.
 
-- [ ] **Prototype A+B**, on a branch, behind a query flag so the shipped default is untouched:
+- [ ] **Prototype A, then B** (Mark 2026-10-06: one at a time, A first, his gate between), on a branch, behind a query flag so the shipped default is untouched:
   - **A — breath and drama in the EXISTING medium** (light travelling through fixed strokes; do not
     reintroduce strokes moving over the painting — see "Medium beats magnitude" in lessons): tempo
     that varies over time (gusts through the luminous swirl band, the great whorl surging and easing,
