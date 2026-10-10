@@ -1,0 +1,67 @@
+# Simon Lee's "Impressionism lab" — study, 2026-10-11
+
+Mark found this on X and asked what we can learn from it. Study only: CLAUDE.md says study prior art,
+never copy its implementation or assets.
+
+## Sources
+
+- 2026-09-26, 82 s: <https://x.com/simonxxoo/status/2103800335529554108>. Post: a stylised Van Gogh
+  scene generator built with Codex over about a month, porting his Blender geometry nodes and oil-paint
+  materials to the browser.
+- 2026-10-07, 112 s: <https://x.com/simonxxoo/status/2107793610230075416>. Post: a fairly complete
+  *Starry Night* village, a weather system, and "the star-sky flow field I'd long wanted: real-time
+  brushstrokes, and the size and position of the stars affect the flow paths nearby".
+- Mark's downloads: `~/Downloads/videos/Simon Lee Van Gor/`. Local evidence (gitignored):
+  `scratch/simon-lee-study-2026-10-11/`.
+
+## What it is
+
+A scene generator, not a single painting. A gallery of about 11 Van Gogh paintings. Each scene is
+built from parametric generators (tree, church, moon, sky flow field) with seeds, sliders and a
+painter's-palette menu for placing objects. Free orbit and pan with Blender-style keys, a weather
+panel (rain, fog, wind), and a walk mode with a character that collects five objects and a letter
+from Vincent. Arrival: a loading ring of brush dabs, then "The Starry Night / Saint-Rémy-de-Provence
+1889.06" painted over the scene and fading as the camera pulls back.
+
+## Measured
+
+- **The sky strokes move.** Camera still, 28.5–31.0 s, central whorl crop at 4K: about 0.75 grey
+  levels of change per frame, steady. Larger single-frame changes at 28.63, 29.00, 29.37 and 30.00 s,
+  cause not identified. Over 1.9 s the strokes slide along the swirl and the pattern keeps its shape
+  (`w_pair.png`). Static loading screen reads 0.1–0.5 per half-second for comparison (`diff.txt`).
+- **There is no painting under the strokes.** The strokes are opaque, thick, lit as raised paint (his
+  "paint relief" slider reads 0.44) and cover the sky with dark blue between them.
+- **Composition, head-on** (`compare-t005.jpg`, painting left): the moon, the two central whorls and
+  the luminous band follow the painting closely. His panel says the sky follows the original's stroke
+  direction inside the frame and is driven by a list of swirls outside it. The departures are the
+  star positions, a single cone cypress instead of the flame, separate outlined peaks instead of the
+  rolling range, and a darker, larger town with many bright windows. A second cypress appears on the
+  right in other views.
+
+## The lesson worth testing
+
+In June, dabs drifting along the flow were rejected because they read as "a separate moving overlay"
+(`tasks/codex-motion-note-2026-06-22.md`). Those dabs moved over a 1:1 base copy of the painting
+(`tasks/lessons.md:1128`, `:1147`). Simon's moving strokes do not read as an overlay, and his sky has
+no base layer. So the June failure may have come from the base layer under the dabs, not from moving
+strokes as such. This is a hypothesis. It is untested at our fidelity bar. It is not a plan to reopen
+dabs.
+
+## Mapped to make-it-alive A–C
+
+- C (arrival): the title painted over the scene and fading as the camera pulls back is direct prior
+  art. His "generation process" replay (the sky painting itself) is a second candidate.
+- A (windows): his windows are many and bright. Ours must stay under the palette gate (ΔE 8.16 of 10).
+- A (impasto): his relief lighting shows what "catches raking light" can look like.
+- B (touch): his flow responds to star size and position. A tapped star that flares could also stir
+  its own ring of strokes.
+
+## Open question for Mark
+
+Mark said this is the 3D exploration he first had in mind. Free roam, weather dials, other paintings
+and a gallery are in CLAUDE.md's locked Out-of-scope list, and the bar requires motion and colour
+derived from the scan. Only Mark can change those sections. Asked 2026-10-11: borrow narrow lessons
+under the current bar, or reopen the direction?
+
+Noted ideas, not queued (scope rule): rain and fog, fireflies, walk mode and collectibles, the
+painter's-palette placement menu.
