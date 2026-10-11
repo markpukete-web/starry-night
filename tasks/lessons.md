@@ -2250,3 +2250,29 @@ also in Codex's list). None was in the design; all were in the proof. Patterns w
   would have passed on broken code.
 - **A delegate can confirm the obvious reading of an ambiguous spec.** Gemini computed four T2 hashes
   because the plan left the fixture open; the fix was to pin every input in the plan, not to pick one.
+
+## Sky choice build and gate — 2026-10-11
+
+- **Read the edges of a capture, not only its centre.** The moving sky's right edge drew the painting with a
+  hard seam for three commits. It was in my own captures; I judged the whorl and stars and missed it. Fable
+  found it (F1): a clamped painting sample read the scan's pale weave border in the side strips. Crop all
+  four edges of every capture before calling a pass done.
+- **A raw ShaderMaterial shows linear colour as if it were display colour.** `Color.set(hex)` converts to
+  linear; the shader writes it unconverted, so the palette's #2d3c60 showed as (8, 16, 43). Harmless where a
+  wash covers it, visible the moment it becomes the gap between opaque strokes. `setStyle(hex,
+  LinearSRGBColorSpace)` passes the hex through unchanged.
+- **Measure the real field before choosing a threshold.** The turn cutoff of cos 0.5 cut 6,784 real curves
+  near swirls and left holes. A histogram on the real flow field showed every reversal (cos < −0.5) lies near a
+  swirl and none elsewhere, so −0.5 cuts only the V-kinks.
+- **Do not edit the code a delegate is gating.** I applied review fixes to the dev server Gemini was capturing
+  against; anything after the edit was mixed evidence. Stop the delegate, commit, then rerun on the commit.
+- **A guard script catches what a reviewer reads past.** Fable's F7 fix value was "by reading, not measured"
+  for other sizes; `check:viewport` failed it at 640×360 within minutes. Run the existing guards after every
+  review fix, not only at the end.
+- **Measure a hitch with an independent frame loop.** The scene's own `useFrame` probe showed no long frame in
+  production while an injected `requestAnimationFrame` gap tracker showed 207.8 ms. Cause not identified.
+  Trust the independent tracker (`scratch/sky-choice-2026-10-11/gate/first-toggle-gap.mjs`).
+- **React StrictMode runs effect cleanups once at mount in dev.** A disposal log counted those; the unmount
+  check must count only disposals after the unmount (`gate/harness-probe.mjs`).
+- **Tunables change logged:** added the diorama sky ribbon budget to CLAUDE.md Tunables (painted light 3,200
+  requested / 194,850 triangles; moving 25,600 / 678,296; one count for every device). Measured 2026-10-11.

@@ -125,7 +125,7 @@ As v1. Tunables wording: "sky ribbon budget" — requested ribbons, retained rib
    AE 0 against the candidate in light mode. Repeat on the candidate after visiting moving and back.
 4. Reduced motion (F1, F9): fixed `check:reduced` passes for default and for `?sky=moving`. Its
    normal-motion control frame differs from a light frame at the same pinned t (moving was selected).
-   Same-page probe `gate/media-probe.mjs`: choose moving → emulate `reduce` → button gone, two frames
+   Same-page probe `gate/media-probe.mjs`: choose moving → emulate `reduce` → button disabled (was "gone" until review F8), two frames
    equal, equal to a fresh reduced light still. Repeat with visitor pause on. Clear `reduce` → moving
    returns and visitor pause is as it was.
 5. `check:viewport`. `capture:diorama` into a new folder, `check:village <that folder>`: ΔE 8.16 ± 0.05.

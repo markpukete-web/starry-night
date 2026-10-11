@@ -9,21 +9,17 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## Pickup — 2026-10-11: building the sky choice (commit 1 of 5 done)
+## Pickup — 2026-10-11 (afternoon): sky choice built and gated — Mark's review next
 
-**Current agent entry point:** read `tasks/2026-10-11-handoff.md`. Plan of record:
-`tasks/2026-10-11-sky-choice-plan.md` (Codex BUILD, Gemini READY). Branch `feat/sky-choice` (local);
-commit 1 `315ab5a` done and mutation-proven. Next: commit 2 (moving-sky mode), 3 (dock button),
-4 (tuning — the moving sky fails the colour limit at ΔE 10.57 today), then gate, PR, Mark's review.
+**Current agent entry point:** `tasks/2026-10-11-handoff.md`. Record and gate: `tasks/2026-10-11-sky-choice.md`.
+Branch `feat/sky-choice` (local; Mark pushes after his review). Default sky pixel-identical to `main`.
 
-- [x] Sky-choice design approved by Mark (2026-10-11).
-- [x] Plan reviewed: Codex REVISE ×2 → BUILD; Gemini BLOCKED → READY.
-- [x] Commit 1 — stroke-builder options + tests T1–T5 (`315ab5a`), mutation proofs m1–m4.
-- [ ] Commit 2 — moving-sky mode in `PaintingFlowSky3D` (+ reduced-motion check URL fix).
-- [ ] Commit 3 — sky button in the visitor dock.
-- [ ] Commit 4 — tune the moving sky to the painting (sky ΔE < 10; pebbles, holes, size variety).
-- [ ] Codex diff review → Lead gate (checks 1–12 + R1/R2 harnesses) → commit 5 docs → PR.
-- [ ] Mark: captures + phone on the Vercel preview → merge on his word.
+- [x] Sky-choice design approved by Mark; plan reviewed (Codex BUILD, Gemini READY).
+- [x] Commits 1–4: builder options, moving-sky mode, dock button, tuning (`315ab5a`..`29f869b`).
+- [x] Fable implementation review FIX → fixes `3262865`, `58a1560` → GATE.
+- [x] Lead gate: all checks pass (`tasks/2026-10-11-sky-choice.md`, gate record).
+- [ ] **Mark: taste review** on captures, the four open items in the record, phone on the Vercel preview.
+- [ ] On Mark's word: push, PR, read the Codex/Fable PR review, merge (= deploy).
 - [ ] Then make-it-alive A (its tempo drives both skies), B, C.
 
 ### Proposed to Mark — visitor brush controls (Mark, 2026-10-11)
