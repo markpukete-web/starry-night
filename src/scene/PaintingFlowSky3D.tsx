@@ -168,6 +168,10 @@ const ribbonFrag = /* glsl */ `
   }
 `
 
+// The light sky's vertex shader with the ribbon's identity `flat`: interpolating a constant across a
+// triangle drifts in the last bits, and the stroke hash below amplifies that into per-pixel speckle.
+const movingVert = ribbonVert.replace('varying float vPhase;', 'flat varying float vPhase;')
+
 const movingFrag = /* glsl */ `
   precision highp float;
   uniform float uTime;
@@ -177,37 +181,60 @@ const movingFrag = /* glsl */ `
   uniform float uOpacity;
   varying float vLen;
   varying float vAcross;
-  varying float vPhase;
+  flat varying float vPhase;
   varying float vRate;
   varying vec3 vColor;
   varying float vEdgeFade;
 
+  float hash1(float n) { return fract(sin(n) * 43758.5453); }
+  float noise1(float x) {
+    float i = floor(x);
+    float f = fract(x);
+    return mix(hash1(i), hash1(i + 1.0), f * f * (3.0 - 2.0 * f));
+  }
+
   void main() {
     float t = uTime;
-    // where this fragment sits inside its sliding period; the stroke occupies [0, uStroke)
-    float s = fract((vLen - t * uSpeed * vRate) / uPeriod + vPhase / 6.2831853);
-    if (s > uStroke) discard;
-    float w = s / uStroke;
+    // which sliding period this fragment is in (one stroke each) and where inside it
+    float pos = (vLen - t * uSpeed * vRate) / uPeriod + vPhase / 6.2831853;
+    float slot = floor(pos);
+    float id = slot * 17.13 + floor(vPhase * 1000.0);
+    // each stroke its own length, inside its period so neighbours never overlap
+    float strokeLen = min(0.95, uStroke * mix(0.8, 1.25, hash1(id)));
+    float s = pos - slot;
+    if (s > strokeLen) discard;
+    float w = s / strokeLen;
     // the stroke is born at the path's start and dies at its end
-    float centre = vLen - (w - 0.5) * uStroke * uPeriod;
+    float centre = vLen - (w - 0.5) * strokeLen * uPeriod;
     float life = smoothstep(0.0, 0.12, centre) * smoothstep(1.0, 0.88, centre);
     float x = abs(w - 0.5) * 2.0;
     float y = abs(vAcross - 0.5) * 2.0;
-    float r = pow(max(1.0 - pow(x, 2.5), 0.0), 0.4) * mix(0.72, 1.0, w); // rounded ends, fuller head
-    float a = (1.0 - smoothstep(r - 0.08, r, y)) * life * uOpacity * vEdgeFade;
+    float side = vAcross * 2.0 - 1.0;
+    // bristle lanes run along the stroke: two octaves across it, seeded per stroke, drifting a little
+    // along it so a lane can thin out or merge
+    float seed = hash1(id + 3.1) * 40.0;
+    float streak = 0.62 * noise1(side * 4.5 + seed + w * 0.8) + 0.38 * noise1(side * 11.0 + seed * 1.7 - w * 1.5);
+    // rounded, fuller head; the flanks wobble with the lanes instead of a ruled edge
+    float r = pow(max(1.0 - pow(x, 2.5), 0.0), 0.4) * mix(0.72, 1.0, w) * (0.9 + 0.1 * noise1(w * 9.0 + seed));
+    float aa = fwidth(y) * 0.75;
+    float a = (1.0 - smoothstep(r - aa, r, y)) * life * uOpacity * vEdgeFade;
+    // dry brush: toward the tail the paint runs out and the thin lanes break first
+    if (streak < smoothstep(0.3, 0.0, w) * 0.7) discard;
     if (a < 0.02) discard;
     // raised paint: one flank lit, the other in shadow, a ridge between, a darker rim
-    float side = vAcross * 2.0 - 1.0;
     float relief = 0.86 - 0.22 * side + 0.12 * (1.0 - y * y);
-    float bristle = 0.92 + 0.08 * sin(vAcross * 22.0 + vPhase * 3.0);
+    float bristle = mix(0.8, 1.1, streak);
     float rim = mix(0.72, 1.0, smoothstep(0.95, 0.6, y));
     vec3 col = vColor * relief * bristle * rim;
+    // the most loaded lanes carry a paler streak of the same paint, as in the painting's broken colour
+    col = mix(col, col * 1.15 + 0.03, smoothstep(0.75, 0.95, streak) * 0.4);
     float lum = dot(col, vec3(0.299, 0.587, 0.114));
     col = clamp(mix(vec3(lum), col, 1.3), 0.0, 1.05);
     float srcLum = dot(vColor, vec3(0.299, 0.587, 0.114));
     // a lighter lift than the light sky's 0.52: that one offsets translucent strokes over a dark wash,
-    // and on opaque strokes it lifted the sky band to ΔE 10.57 (tune p1)
-    col *= 1.0 + 0.2 * smoothstep(0.32, 0.68, srcLum);
+    // and on opaque strokes it lifted the sky band to ΔE 10.57 (tune p1). 0.2 → 0.08 when the streaked
+    // strokes covered more of the dark gaps and the sky read lighter, mean L 54.6 against 46.7 (polish p3)
+    col *= 1.0 + 0.08 * smoothstep(0.32, 0.68, srcLum);
     gl_FragColor = vec4(col, a);
   }
 `
@@ -770,7 +797,7 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
           uStroke: { value: MOVING.stroke },
           uOpacity: { value: MOVING.opacity },
         },
-        vertexShader: ribbonVert,
+        vertexShader: movingVert,
         fragmentShader: movingFrag,
         transparent: true,
         depthWrite: false,
