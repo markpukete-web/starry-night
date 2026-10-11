@@ -67,7 +67,10 @@ const MOVING = {
   // cut only reversals: near swirls 19,723 turns had cos < -0.5 (the V-kinks), elsewhere none; 0.5 also
   // cut 6,784 real curves near swirls and left holes at star halos and whorl eyes (tune p2)
   maxTurnCos: -0.5,
-  minPoints: 9,
+  // 9 → 5: where the flow reverses (round the whorl eye, between the two swirls) the cut leaves short paths,
+  // and 9 dropped them, so the background showed through. The sky rect's background share 4.8% → 3.0%, and
+  // 2.3% with the shorter fade below (scratch/sky-polish-2026-10-11/coverage-variants.py)
+  minPoints: 5,
   speed: 0.06,
   period: 0.45,
   stroke: 0.7,
@@ -236,7 +239,8 @@ const movingFrag = /* glsl */ `
     // the stroke is born at the path's start and dies at its end
     float centre = vLen - (w - 0.5) * strokeLen * uPeriod;
     // edges always ascending: GLSL leaves smoothstep with edge0 > edge1 undefined (review R2)
-    float life = smoothstep(0.0, 0.12, centre) * (1.0 - smoothstep(0.88, 1.0, centre));
+    // fade 0.12 → 0.05 of the path: the long fades left each path's ends nearly bare (coverage, polish c3)
+    float life = smoothstep(0.0, 0.05, centre) * (1.0 - smoothstep(0.95, 1.0, centre));
     float x = abs(w - 0.5) * 2.0;
     float y = abs(vAcross - 0.5) * 2.0;
     float side = vAcross * 2.0 - 1.0;
@@ -275,7 +279,9 @@ const movingFrag = /* glsl */ `
     // a lighter lift than the light sky's 0.52: that one offsets translucent strokes over a dark wash,
     // and on opaque strokes it lifted the sky band to ΔE 10.57 (tune p1). 0.2 → 0.08 when the streaked
     // strokes covered more of the dark gaps and the sky read lighter, mean L 54.6 against 46.7 (polish p3)
-    col *= 1.0 + 0.08 * smoothstep(0.32, 0.68, srcLum);
+    // × 0.93: once the strokes covered the dark gaps the sky read lighter, mean L 55.1 against the painting's
+    // 46.7 (polish c1); now 52.4, dE76 6.96
+    col *= 0.93 * (1.0 + 0.08 * smoothstep(0.32, 0.68, srcLum));
     gl_FragColor = vec4(col, a);
   }
 `
