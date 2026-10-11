@@ -196,7 +196,7 @@ const movingFrag = /* glsl */ `
   void main() {
     // edge width first: derivatives need the whole pixel quad, so before any discard. vAcross is smooth,
     // unlike y below, whose kink at the centre line gives a false zero
-    float aa = fwidth(vAcross) * 1.5;
+    float aa = max(fwidth(vAcross) * 1.5, 1e-4);
     float t = uTime;
     // which sliding period this fragment is in (one stroke each) and where inside it
     float pos = (vLen - t * uSpeed * vRate) / uPeriod + vPhase / 6.2831853;
@@ -209,7 +209,8 @@ const movingFrag = /* glsl */ `
     float w = s / strokeLen;
     // the stroke is born at the path's start and dies at its end
     float centre = vLen - (w - 0.5) * strokeLen * uPeriod;
-    float life = smoothstep(0.0, 0.12, centre) * smoothstep(1.0, 0.88, centre);
+    // edges always ascending: GLSL leaves smoothstep with edge0 > edge1 undefined (review R2)
+    float life = smoothstep(0.0, 0.12, centre) * (1.0 - smoothstep(0.88, 1.0, centre));
     float x = abs(w - 0.5) * 2.0;
     float y = abs(vAcross - 0.5) * 2.0;
     float side = vAcross * 2.0 - 1.0;
@@ -223,11 +224,11 @@ const movingFrag = /* glsl */ `
     // the lanes cost four hashes, so only for fragments inside the stroke's outline
     float streak = 0.62 * noise1(side * 4.5 + seed + w * 0.8) + 0.38 * noise1(side * 11.0 + seed * 1.7 - w * 1.5);
     // dry brush: toward the tail the paint runs out and the thin lanes break first
-    if (streak < smoothstep(0.3, 0.0, w) * 0.7) discard;
+    if (streak < (1.0 - smoothstep(0.0, 0.3, w)) * 0.7) discard;
     // raised paint: one flank lit, the other in shadow, a ridge between, a darker rim
     float relief = 0.86 - 0.22 * side + 0.12 * (1.0 - y * y);
     float bristle = mix(0.8, 1.1, streak);
-    float rim = mix(0.72, 1.0, smoothstep(0.95, 0.6, y));
+    float rim = mix(0.72, 1.0, 1.0 - smoothstep(0.6, 0.95, y));
     vec3 col = vColor * relief * bristle * rim;
     // the most loaded lanes carry a paler streak of the same paint, as in the painting's broken colour
     col = mix(col, col * 1.15 + 0.03, smoothstep(0.75, 0.95, streak) * 0.4);
