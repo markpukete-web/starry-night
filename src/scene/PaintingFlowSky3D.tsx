@@ -69,7 +69,9 @@ const MOVING = {
   maxTurnCos: -0.5,
   // 9 → 5: where the flow reverses (round the whorl eye, between the two swirls) the cut leaves short paths,
   // and 9 dropped them, so the background showed through. The sky rect's background share 4.8% → 3.0%, and
-  // 2.3% with the shorter fade below (scratch/sky-polish-2026-10-11/coverage-variants.py)
+  // 2.3% with the shorter fade below (scratch/sky-polish-2026-10-11/coverage-variants.py). The price: 12.6% of
+  // paths are 5–8 points, so short oval dabs return, most visibly in the whorl eye (Fable review-v4). A stroke
+  // length in path units, from a per-ribbon length attribute, would give them full strokes instead. Not built.
   minPoints: 5,
   speed: 0.06,
   period: 0.45,
