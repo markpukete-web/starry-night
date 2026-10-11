@@ -9,11 +9,13 @@ import {
   CanvasTexture,
   Color,
   DoubleSide,
+  LinearSRGBColorSpace,
   Matrix4,
   NoColorSpace,
   NormalBlending,
   Quaternion,
   ShaderMaterial,
+  SRGBColorSpace,
   type Group,
   Vector3,
 } from 'three'
@@ -45,7 +47,9 @@ export type SkyStyle = 'light' | 'moving'
 const MOVING = {
   countScale: 8,
   widthScale: 1.8,
-  maxTurnCos: 0.5,
+  // cut only reversals: near swirls 19,723 turns had cos < -0.5 (the V-kinks), elsewhere none; 0.5 also
+  // cut 6,784 real curves near swirls and left holes at star halos and whorl eyes (tune p2)
+  maxTurnCos: -0.5,
   minPoints: 9,
   speed: 0.06,
   period: 0.45,
@@ -53,10 +57,19 @@ const MOVING = {
   opacity: 0.97,
 }
 
-/** Gradient behind the sky, as multipliers of the palette's two deepest sky colours. Light = today's values. */
-const GRADIENT: Record<SkyStyle, { top: number; bottom: number }> = {
-  light: { top: 0.58, bottom: 0.68 },
-  moving: { top: 1, bottom: 0.85 },
+/**
+ * Gradient behind the sky, as multipliers of the palette's two deepest sky colours. Light keeps today's
+ * values, and with them today's colour-space slip: `Color.set(hex)` converts to linear and this raw
+ * shader writes linear values, so the light gradient shows near the background navy, (8, 16, 43).
+ * Barely any of it shows under the light sky's wash. The moving sky's gaps ARE this gradient, so there
+ * it is the palette colour as displayed: the painting's darkest whorl paint averages (35, 53, 97) and
+ * Simon Lee's gaps (38, 54, 90) (tune p3).
+ */
+type GradientEnd = { scale: number; asDisplayed: boolean }
+const GRADIENT: Record<SkyStyle, { top: GradientEnd; bottom: GradientEnd }> = {
+  light: { top: { scale: 0.58, asDisplayed: false }, bottom: { scale: 0.68, asDisplayed: false } },
+  // the bottom keeps today's dark value, so the void around the island stays night (tune p4)
+  moving: { top: { scale: 1, asDisplayed: true }, bottom: { scale: 0.68, asDisplayed: false } },
 }
 
 /** Capture seam: a finite `window.__skyTime` pins both sky clocks, so motion can be captured frame-exact. */
@@ -193,7 +206,9 @@ const movingFrag = /* glsl */ `
     float lum = dot(col, vec3(0.299, 0.587, 0.114));
     col = clamp(mix(vec3(lum), col, 1.3), 0.0, 1.05);
     float srcLum = dot(vColor, vec3(0.299, 0.587, 0.114));
-    col *= 1.0 + 0.52 * smoothstep(0.32, 0.68, srcLum);
+    // a lighter lift than the light sky's 0.52: that one offsets translucent strokes over a dark wash,
+    // and on opaque strokes it lifted the sky band to ΔE 10.57 (tune p1)
+    col *= 1.0 + 0.2 * smoothstep(0.32, 0.68, srcLum);
     gl_FragColor = vec4(col, a);
   }
 `
@@ -581,8 +596,8 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
     () =>
       new ShaderMaterial({
         uniforms: {
-          uTop: { value: new Color(PALETTE.skyZenith).multiplyScalar(GRADIENT.light.top) },
-          uBottom: { value: new Color(PALETTE.skyHorizon).multiplyScalar(GRADIENT.light.bottom) },
+          uTop: { value: new Color(PALETTE.skyZenith).multiplyScalar(GRADIENT.light.top.scale) },
+          uBottom: { value: new Color(PALETTE.skyHorizon).multiplyScalar(GRADIENT.light.bottom.scale) },
         },
         vertexShader: gradientVert,
         fragmentShader: gradientFrag,
@@ -752,8 +767,11 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
     /* eslint-disable react-hooks/immutability -- intentional R3F uniform writes */
     washMaterial.uniforms.uMovingSky.value = mode === 'moving' ? 1 : 0
     // Set from the palette each time, never multiplied in place, so switching cannot drift.
-    gradientMaterial.uniforms.uTop.value.set(PALETTE.skyZenith).multiplyScalar(GRADIENT[mode].top)
-    gradientMaterial.uniforms.uBottom.value.set(PALETTE.skyHorizon).multiplyScalar(GRADIENT[mode].bottom)
+    // LinearSRGBColorSpace = "these numbers are already working values": the hex reaches the screen unchanged
+    const space = (end: GradientEnd) => (end.asDisplayed ? LinearSRGBColorSpace : SRGBColorSpace)
+    const { top, bottom } = GRADIENT[mode]
+    gradientMaterial.uniforms.uTop.value.setStyle(PALETTE.skyZenith, space(top)).multiplyScalar(top.scale)
+    gradientMaterial.uniforms.uBottom.value.setStyle(PALETTE.skyHorizon, space(bottom)).multiplyScalar(bottom.scale)
     /* eslint-enable react-hooks/immutability */
   }, [gradientMaterial, mode, washMaterial])
 
