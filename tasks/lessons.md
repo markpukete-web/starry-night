@@ -2276,3 +2276,21 @@ also in Codex's list). None was in the design; all were in the proof. Patterns w
   check must count only disposals after the unmount (`gate/harness-probe.mjs`).
 - **Tunables change logged:** added the diorama sky ribbon budget to CLAUDE.md Tunables (painted light 3,200
   requested / 194,850 triangles; moving 25,600 / 678,296; one count for every device). Measured 2026-10-11.
+
+## Moving-sky refinement — 2026-10-11 (Mark: "room to improve")
+
+- **The mean-Lab gate cannot see flat paint.** The moving sky passed at ΔE 6.67 while reading as cut paper.
+  At 1:1 my eye called the strokes greyer than the painting, but per-pixel chroma matched (28.0 against 27.2).
+  The defect was texture: mean |ΔL| between neighbours 2.42 against the painting's 4.6
+  (`scratch/sky-polish-2026-10-11/sky-stats.ts`). Measure the eye's claim before tuning to it.
+- **Hashing an interpolated per-ribbon constant amplifies its last-bit drift.** Barycentric interpolation of a
+  constant is not exact, and `fract(sin(x) * 43758)` turns a 1e-5 error into a different hash. Pass the
+  identity as a `flat` varying (`movingVert`).
+- **Probe at the painted body, not at the `SWIRLS` anchor.** A hole probe centred on the `SWIRLS` star found
+  normal ribbon density and nearly cleared the builder. The painted star sits 0.056 from that anchor, and
+  there the core had almost no ribbon points. Same trap as the star guards (lessons 07-16).
+- **Blurring the painting averages complementary paint into mud.** A ground of the painting at mip bias 4
+  turned yellow-and-blue star halos olive grey and raised ΔE 6.89 → 8.18. A ground shown only in zero-count
+  cells filled only the very centre and pasted a static patch into a whorl eye. Both reverted at the pass cap.
+- **Coverage lifts lightness.** Longer, softer strokes covered more of the navy gaps and raised mean L
+  52.6 → 54.6. The highlight lift came down 0.2 → 0.08 to hold the sky's lightness.
