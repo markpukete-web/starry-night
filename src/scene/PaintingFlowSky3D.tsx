@@ -77,6 +77,10 @@ const MOVING = {
   period: 0.45,
   stroke: 0.7,
   opacity: 0.97,
+  // the moon's additive glow; the light sky keeps 0.68. Opaque strokes ring the moon here, so the same glow read
+  // brighter (Mark, 2026-10-11 evening: "dim the moon glow a bit more"). 0.5 puts the moon's patch at L 80.4
+  // against the light sky's 80.8; 0.68 gave 85.0 and 0.4 gave 77.8 (scratch/sky-polish-2026-10-11/moon/)
+  moonGlow: 0.5,
 }
 
 /**
@@ -571,7 +575,7 @@ function makeStarHaloTexture(): CanvasTexture {
 // sit at the vortex anchor, doubling the source's own moon 78px away (Mark: "mismatched").
 const MOON_PAINTED_UV: [number, number] = [0.8987, 0.1697]
 
-function SourceOrbs({ debug }: { debug: PaintingFlowSkyDebug }) {
+function SourceOrbs({ debug, moonGlow = 0.68 }: { debug: PaintingFlowSkyDebug; moonGlow?: number }) {
   const moonHalo = useMemo(() => makeMoonHaloTexture(), [])
   const starHalo = useMemo(() => makeStarHaloTexture(), [])
   const moonPosition = useMemo(
@@ -612,7 +616,7 @@ function SourceOrbs({ debug }: { debug: PaintingFlowSkyDebug }) {
             map={moonHalo}
             blending={AdditiveBlending}
             transparent
-            opacity={debug === 'flow' ? 0.72 : 0.68}
+            opacity={debug === 'flow' ? 0.72 : moonGlow}
             depthWrite={false}
             toneMapped={false}
           />
@@ -996,7 +1000,7 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
       {ribbons.geometry && (
         <mesh geometry={ribbons.geometry} material={ribbons.material} frustumCulled={false} renderOrder={2} />
       )}
-      <SourceOrbs debug={debug} />
+      <SourceOrbs debug={debug} moonGlow={mode === 'moving' ? MOVING.moonGlow : undefined} />
     </group>
   )
 }
