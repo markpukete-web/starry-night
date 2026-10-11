@@ -205,7 +205,13 @@ async function main() {
   const vite = await startViteIfNeeded()
   const port = 9223 + Math.floor(Math.random() * 500)
   const chrome = startChrome(port)
-  const base = `${appUrl}?mode=diorama&clean=1`
+  // Set the route on top of any query already in DIORAMA_CAPTURE_URL (e.g. ?sky=moving). Appending
+  // "?mode=…" to such a URL made sky = "moving?mode=diorama", so the check silently ran the default sky.
+  const baseUrl = new URL(appUrl)
+  baseUrl.searchParams.set('mode', 'diorama')
+  baseUrl.searchParams.set('clean', '1')
+  const base = baseUrl.toString()
+  console.log(`page query: ${baseUrl.search}`)
   try {
     await waitForChrome(port)
 
