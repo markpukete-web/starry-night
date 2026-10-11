@@ -115,9 +115,10 @@ already; whether that reads as a sticker is Mark's taste call. The authored star
 - Merged by Mark's word ("Merge") at 09:10 UTC as `e80fdf7`. Vercel production deploy success. The live site
   serves `index-ZUOexa09.js` (was `index-BXmzVxdZ.js`), which loads `movingSky.worker-jcp41_I2.js`. Default and
   `?sky=moving` captured live and looked at (`scratch/sky-polish-2026-10-11/live/`).
-- Not done before merge: Mark's phone check of the moving sky. Still open below.
+- Mark's phone check, after the merge on the live site: "looks okay".
 - Tidy-up: local `docs/village-live-record` and `feat/sky-choice` deleted (both fully on `main`); the gate worktree
-  and its 5183 server removed. `spike/moving-sky` kept until Mark says.
+  and its 5183 server removed. `spike/moving-sky` (`905223d`) deleted on Mark's word. The 60-frame test
+  sequences in scratch were cleared on his word; reports, scripts, single captures and the two videos are kept.
 
 ## Open for Mark (his calls)
 
@@ -126,7 +127,7 @@ already; whether that reads as a sticker is Mark's taste call. The authored star
    phone's band above the sky are lighter than in painted light (7, 14, 39); at orbit the side strip reads paler.
 2. ~~First switch hitch.~~ Fixed in `69c1364` (Web Worker, Codex PR #7 P2). The strokes now take about 0.32 s to
    land after the click on an M5 Pro, with no frozen frame. A phone will take longer to land, not freeze.
-3. **Phone** (Fable F3, deferred): 25,600 requested ribbons on every device. Measure on a real phone on the
+3. **Phone** (Fable F3): checked by Mark on the live site, "looks okay". 25,600 requested ribbons on every device. Measure on a real phone on the
    Vercel preview. If it fails, fold a device class read once at build into the count (keeps resize free).
    The afternoon refinement raised the risk mostly in fill, not triangles: per-fragment work grew (lane noise,
    derivatives, sheen) and the star-body layer is a second sky-sized pass that samples the painting at every

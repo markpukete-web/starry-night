@@ -11,12 +11,12 @@ below — never edited in place.
 
 ## Pickup — 2026-10-11 (evening): the sky choice is LIVE (PR #7, `e80fdf7`)
 
-**Current agent entry point:** `tasks/2026-10-11-sky-choice.md` (record, gates, reviews, open items). `main` is at
+**Current agent entry point:** `tasks/2026-10-11-handoff.md`, top section. Record: `tasks/2026-10-11-sky-choice.md`. `main` is at
 `e80fdf7`. This docs branch, `docs/sky-choice-live-record`, is local: base the next feature branch on it so these
 notes ride up with the next PR.
 
-- [ ] **Mark: phone check** of `?sky=moving` on the live site (not done before merge).
-- [ ] Mark: delete `spike/moving-sky` (local, throwaway) when he says.
+- [x] Mark: phone check of `?sky=moving` on the live site: "looks okay" (2026-10-11 night).
+- [x] `spike/moving-sky` deleted on Mark's word (`905223d`). 60-frame test sequences cleared from scratch (2.9 GB → 737 MB).
 - [ ] Next: make-it-alive A (breath and drama; its tempo drives both skies), then B (touch), then C (arrival).
 - Ideas noted, not queued (each Mark's call): full-length strokes for the short dabs, star-body layer as patches
   (if a phone struggles), visitor brush controls, Vincent's window / fuller village.
