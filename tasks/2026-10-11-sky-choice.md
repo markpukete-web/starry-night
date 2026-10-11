@@ -1,4 +1,4 @@
-# Sky choice — built, reviewed and gated, 2026-10-11 (Mark's taste review pending)
+# Sky choice — built, reviewed, gated and refined, 2026-10-11 (Mark's taste review pending)
 
 Visitors choose the sky with a "Sky: painted light / Sky: moving strokes" button that leads the dock on the
 3D diorama. Painted light is today's sky and stays the default, pixel-identical to production. Moving strokes
@@ -42,11 +42,54 @@ Evidence root: `scratch/sky-choice-2026-10-11/` (gitignored, on this Mac).
 Reviews: Codex plan REVISE → REVISE → BUILD; Gemini plan BLOCKED → READY; Fable implementation FIX → GATE
 (`reviewer-impl-v1.md`, `reviewer-impl-v2.md`).
 
+## Refinement — Mark: "room to improve" (afternoon, 2026-10-11)
+
+Evidence root: `scratch/sky-polish-2026-10-11/` (gitignored). Reviews: Codex `reviewer/review-v1.md` (shader FIX,
+star-hole design REVISE, proposed design D) → `reviewer/review-v2.md` (FIX: N1 body sampling after a discard, N2 pop
+detector blind to one-frame pops) → Fable as Consultant, Codex's 5-hour usage spent, `consultant/review-v3.md`
+(GATE: N1 and N2 closed; N3, a stride blind spot in the scratch detector, fixed by adopting its stride-8 windows).
+
+| Commit | What |
+| --- | --- |
+| `0918095` | Moving strokes painted: bristle lanes, dry-brush tails, per-stroke length, soft edges; lift 0.2 → 0.08 |
+| `8fce8e9` | Lane hashes only inside the stroke outline; edge width before any discard (101 → 109 fps) |
+| `bcc2c4d` | Codex R1 (derivative floor) and R2 (ascending `smoothstep` edges); pixel-identical |
+| `a16c780` | Codex design D: the measured star and moon bodies kept as the scan's paint over the strokes |
+| `e40975c` | Codex N1: the bodies sample the painting before the discard; pixel-identical, 110–111 fps |
+
+What was wrong, measured: the strokes held half the painting's texture (mean neighbour |ΔL| 2.42 against 4.6;
+chroma matched, 28.0 against 27.2). Seven star cores and the moon showed the navy background: found with a magenta
+background (`holes/`). The cause at the photographed star: ribbons circle the core, and the turn cut and minimum
+length drop the short ones there (Codex C1). Two ground-layer attempts (blurred painting, zero-count cells) were
+worse and were reverted at the pass cap.
+
+Gate on `a16c780` (worker `worker-gate2.md`, READY; Lead re-measured frame rate and first switch). `e40975c` then
+changed no pixel at design, orbit or phone size (Lead) and matched byte for byte at design (Fable):
+
+| Check | Result |
+| --- | --- |
+| lint (`src`, `scripts`), `test:sky`, build | 0 errors, 106/106, built |
+| Default still vs `main`, 11 views | AE 0 in all 11 |
+| Default motion vs `main`, 12 pairs incl. after visiting moving | AE 0 in all 12 |
+| `check:reduced` default and moving; `check:viewport` | pass, pass, pass |
+| Sky colour ΔE76 (limit 10) | moving 7.88 (was 6.67 this morning): the opaque moon is brighter |
+| Frame rate, M5 Pro, production | moving 107.7 fps, p95 10.4 ms, 706,376 triangles (+28,080 body layer); light 120 fps |
+| First switch, production | 183–210 ms in four runs (was 207.8) |
+| Local pops, 60 fps over 1 s | none at this sensitivity (max 3.4 against a threshold of 4). `pop-check.ts` flags all 13 planted controls: one frame, two frames, persistent, tile-row and corner splits. Not a proof of no pops at lower contrast or other times |
+
+One long frame of 35–40 ms in each steady perf window is the perf tool's own read: it moved from 14.04 s to
+20.05 s when the read moved (`perf-gaps.mjs`, `perf-gaps20.mjs`).
+
+Still open in the moving sky: crescent gaps around the whorl eye and in the upper left read as dark paint between
+strokes (left by choice: a static patch there read as pasted). The star bodies are static, as the warm bodies were
+already; whether that reads as a sticker is Mark's taste call. The authored star spheres and halos still sit at
+`SWIRLS` positions, off some painted stars, in both skies (pre-existing on `main`).
+
 ## Open for Mark (his calls)
 
-1. **Taste.** Does the moving sky earn its place as an option? Residuals: dark rings inside some star halos;
-   strokes too even in size; the void around the island (23, 35, 70) and the phone's band above the sky are
-   lighter than in painted light (7, 14, 39); at orbit the side strip reads paler.
+1. **Taste.** Does the moving sky earn its place as an option? Refined this afternoon (section above). Residuals:
+   static star bodies; dark crescents round the whorl eye; the void around the island (23, 35, 70) and the
+   phone's band above the sky are lighter than in painted light (7, 14, 39); at orbit the side strip reads paler.
 2. **First switch hitch.** One 0.2 s frame on an M5 Pro, the first time only. A phone will be longer.
    Option: build the moving strokes in idle time after load (costs work for visitors who never switch).
 3. **Phone** (Fable F3, deferred): 25,600 requested ribbons on every device. Measure on a real phone on the

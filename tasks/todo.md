@@ -9,7 +9,7 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## Pickup — 2026-10-11 (afternoon): sky choice built and gated — Mark's review next
+## Pickup — 2026-10-11 (afternoon): sky choice built, gated and refined — Mark's review next
 
 **Current agent entry point:** `tasks/2026-10-11-handoff.md`. Record and gate: `tasks/2026-10-11-sky-choice.md`.
 Branch `feat/sky-choice` (local; Mark pushes after his review). Default sky pixel-identical to `main`.
@@ -18,6 +18,7 @@ Branch `feat/sky-choice` (local; Mark pushes after his review). Default sky pixe
 - [x] Commits 1–4: builder options, moving-sky mode, dock button, tuning (`315ab5a`..`29f869b`).
 - [x] Fable implementation review FIX → fixes `3262865`, `58a1560` → GATE.
 - [x] Lead gate: all checks pass (`tasks/2026-10-11-sky-choice.md`, gate record).
+- [x] Mark: "room to improve" → moving sky refined, Codex-reviewed, gated (`0918095`..`a16c780`, record section "Refinement").
 - [ ] **Mark: taste review** on captures, the four open items in the record, phone on the Vercel preview.
 - [ ] On Mark's word: push, PR, read the Codex/Fable PR review, merge (= deploy).
 - [ ] Then make-it-alive A (its tempo drives both skies), B, C.
