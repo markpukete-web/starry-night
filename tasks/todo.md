@@ -9,7 +9,19 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## Pickup — 2026-10-11 (afternoon): sky choice built, gated and refined — Mark's review next
+## Pickup — 2026-10-11 (evening): the sky choice is LIVE (PR #7, `e80fdf7`)
+
+**Current agent entry point:** `tasks/2026-10-11-sky-choice.md` (record, gates, reviews, open items). `main` is at
+`e80fdf7`. This docs branch, `docs/sky-choice-live-record`, is local: base the next feature branch on it so these
+notes ride up with the next PR.
+
+- [ ] **Mark: phone check** of `?sky=moving` on the live site (not done before merge).
+- [ ] Mark: delete `spike/moving-sky` (local, throwaway) when he says.
+- [ ] Next: make-it-alive A (breath and drama; its tempo drives both skies), then B (touch), then C (arrival).
+- Ideas noted, not queued (each Mark's call): full-length strokes for the short dabs, star-body layer as patches
+  (if a phone struggles), visitor brush controls, Vincent's window / fuller village.
+
+## Pickup — 2026-10-11 (afternoon): sky choice built, gated and refined (superseded by the evening pickup above)
 
 **Current agent entry point:** `tasks/2026-10-11-handoff.md`. Record and gate: `tasks/2026-10-11-sky-choice.md`.
 Branch `feat/sky-choice` (local; Mark pushes after his review). Default sky pixel-identical to `main`.
@@ -20,8 +32,8 @@ Branch `feat/sky-choice` (local; Mark pushes after his review). Default sky pixe
 - [x] Lead gate: all checks pass (`tasks/2026-10-11-sky-choice.md`, gate record).
 - [x] Mark: "room to improve" → moving sky refined, Codex-reviewed, gated (`0918095`..`a16c780`, record section "Refinement").
 - [x] Mark: taste review at his Mac (moon dimmed, then glow tuned); "push it and open the PR" (2026-10-11 evening).
-- [ ] **Mark: phone check** of the moving sky on the Vercel preview before merging.
-- [ ] On Mark's word: push, PR, read the Codex/Fable PR review, merge (= deploy).
+- [ ] Mark: phone check of the moving sky (moved to the evening pickup).
+- [x] On Mark's word: pushed, PR #7, Codex review answered (P2 fixed, re-review 👍), merged `e80fdf7` (= deployed).
 - [ ] Then make-it-alive A (its tempo drives both skies), B, C.
 
 ### Proposed to Mark — visitor brush controls (Mark, 2026-10-11)

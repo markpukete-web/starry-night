@@ -2318,3 +2318,9 @@ also in Codex's list). None was in the design; all were in the proof. Patterns w
   carried over in three small commits without giving up the bar. Mark agreed the split, 2026-10-11.
 - **Name the cost a fix puts on the visitor.** `minPoints` 5 bought coverage with short dabs; the commit said only
   the gain until Fable asked (review-v4). Write the trade where the setting lives.
+- **A worker removes the freeze but moves the wait.** Building the moving strokes in a Web Worker took the first
+  switch from one 230 ms frame to none, and the strokes land 0.32 s later. Fable's plan check caught what the
+  plan's own rule hid: on the `?sky=moving` deep link the wait showed the light strokes first. Ask where else a
+  "show the old state until the new one arrives" rule applies before shipping it.
+- **A shell watch loop is code.** Two watches failed today on their own bugs: zsh's read-only `status`, and
+  nested quotes in an inline Python one-liner. Run a watch's command once in the foreground before arming it.

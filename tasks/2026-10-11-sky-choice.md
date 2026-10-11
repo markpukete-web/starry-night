@@ -1,4 +1,4 @@
-# Sky choice — built, reviewed, gated and refined, 2026-10-11 (Mark reviewed; PR opened on his word)
+# Sky choice — LIVE 2026-10-11 (PR #7, merge `e80fdf7`)
 
 Visitors choose the sky with a "Sky: painted light / Sky: moving strokes" button that leads the dock on the
 3D diorama. Painted light is today's sky and stays the default, pixel-identical to production. Moving strokes
@@ -104,17 +104,32 @@ strokes (left by choice: a static patch there read as pasted). The star bodies a
 already; whether that reads as a sticker is Mark's taste call. The authored star spheres and halos still sit at
 `SWIRLS` positions, off some painted stars, in both skies (pre-existing on `main`).
 
+## Shipped — PR #7, 2026-10-11 evening
+
+- Pushed and opened on Mark's word ("push it and open the PR"). Opened as draft, marked ready to trigger Codex.
+- Codex PR review on `d800c56`: one P2, the first-switch freeze (225–234 ms on an M5 Pro). Fixed in `69c1364`:
+  the moving strokes build in a Web Worker (`movingSky.worker.ts`, `skyRibbonArrays.ts`). Plan checked by Fable
+  first (`consultant/plan-worker.md`, GO), which also caught the `?sky=moving` deep link flashing the light strokes
+  (fixed in the same commit). Largest frame after the click 17.4–18.6 ms; the strokes land 0.32 s after it.
+  Thread answered with the evidence; Codex re-review on `69c1364`: 👍, no findings. CI green.
+- Merged by Mark's word ("Merge") at 09:10 UTC as `e80fdf7`. Vercel production deploy success. The live site
+  serves `index-ZUOexa09.js` (was `index-BXmzVxdZ.js`), which loads `movingSky.worker-jcp41_I2.js`. Default and
+  `?sky=moving` captured live and looked at (`scratch/sky-polish-2026-10-11/live/`).
+- Not done before merge: Mark's phone check of the moving sky. Still open below.
+- Tidy-up: local `docs/village-live-record` and `feat/sky-choice` deleted (both fully on `main`); the gate worktree
+  and its 5183 server removed. `spike/moving-sky` kept until Mark says.
+
 ## Open for Mark (his calls)
 
 1. **Taste.** Does the moving sky earn its place as an option? Refined this afternoon (section above). Residuals:
    static star bodies; dark crescents round the whorl eye; the void around the island (23, 35, 70) and the
    phone's band above the sky are lighter than in painted light (7, 14, 39); at orbit the side strip reads paler.
-2. **First switch hitch.** One 0.2 s frame on an M5 Pro, the first time only. A phone will be longer.
-   Option: build the moving strokes in idle time after load (costs work for visitors who never switch).
+2. ~~First switch hitch.~~ Fixed in `69c1364` (Web Worker, Codex PR #7 P2). The strokes now take about 0.32 s to
+   land after the click on an M5 Pro, with no frozen frame. A phone will take longer to land, not freeze.
 3. **Phone** (Fable F3, deferred): 25,600 requested ribbons on every device. Measure on a real phone on the
    Vercel preview. If it fails, fold a device class read once at build into the count (keeps resize free).
    The afternoon refinement raised the risk mostly in fill, not triangles: per-fragment work grew (lane noise,
    derivatives, sheen) and the star-body layer is a second sky-sized pass that samples the painting at every
    fragment. If a phone falls short, the cheap lever is that layer's geometry: eight small patches round the
    bodies instead of the full dome strip.
-4. **Push** `feat/sky-choice` and open the PR (merge = deploy).
+4. ~~Push and PR.~~ Done: PR #7, merged `e80fdf7`, live.
