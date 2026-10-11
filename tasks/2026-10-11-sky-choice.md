@@ -110,4 +110,8 @@ already; whether that reads as a sticker is Mark's taste call. The authored star
    Option: build the moving strokes in idle time after load (costs work for visitors who never switch).
 3. **Phone** (Fable F3, deferred): 25,600 requested ribbons on every device. Measure on a real phone on the
    Vercel preview. If it fails, fold a device class read once at build into the count (keeps resize free).
+   The afternoon refinement raised the risk mostly in fill, not triangles: per-fragment work grew (lane noise,
+   derivatives, sheen) and the star-body layer is a second sky-sized pass that samples the painting at every
+   fragment. If a phone falls short, the cheap lever is that layer's geometry: eight small patches round the
+   bodies instead of the full dome strip.
 4. **Push** `feat/sky-choice` and open the PR (merge = deploy).
