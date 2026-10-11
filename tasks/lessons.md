@@ -2294,3 +2294,19 @@ also in Codex's list). None was in the design; all were in the proof. Patterns w
   cells filled only the very centre and pasted a static patch into a whorl eye. Both reverted at the pass cap.
 - **Coverage lifts lightness.** Longer, softer strokes covered more of the navy gaps and raised mean L
   52.6 → 54.6. The highlight lift came down 0.2 → 0.08 to hold the sky's lightness.
+- **A mipmapped texture lookup is a derivative too.** Codex N1: `bodiesFrag` sampled the painting after a
+  fragment-dependent discard. No `fwidth` was in sight, but implicit LOD reads the whole pixel quad. Sample first,
+  discard after. Check every shader for any texture lookup or derivative below its first discard.
+- **A detector needs failing controls of every shape the defect can take.** My pop detector passed a planted pop
+  that stayed on screen. It missed a one-frame pop, because entry and exit cancel in a pairwise ratio (Codex N2).
+  It then missed the same pop straddling a 16 px tile row (Fable N3). Plant one-frame, two-frame, persistent and
+  tile-boundary pops, and require each to fail, before citing "no pops".
+- **Register the photographed feature before naming its cause.** My close-up showed the lower star while my probe
+  measured the upper one, with a non-production seed (Codex C1). Project the probe point onto the capture
+  (`scratch/sky-polish-2026-10-11/project.ts`) and use the runtime seed.
+- **Opaque objects draw before every transparent one, whatever `renderOrder` says.** The authored star spheres
+  poke half through the wash's surface, which hides their top half in the light sky today. An opaque body layer
+  at that radius made it a dark dot. Placing the layer at the strokes' radius, behind the spheres, fixed it.
+- **Measure coverage in the render, not in the geometry.** Stroke centre-line counts said four stars had gaps;
+  a magenta background showed seven stars and the moon (`holes/`). Life fades, discards and widths decide what
+  shows.
