@@ -2189,3 +2189,132 @@ page: `output/playwright/village-study-2026-10-05/`.
 - **zsh does not word-split an unquoted `$FILES`.** A freeze manifest went out with no hashes because
   `shasum $FILES` received one argument. List the paths literally or use an array; read the file you
   just wrote before dispatching a brief that depends on it.
+
+## Village promotion — 2026-10-06
+
+- **A recorded protection is not a live protection.** `tasks/todo.md` said `main` was PR-only with
+  required checks (set up 2026-09-24). Fable checked the API before trusting it: the "Protect main"
+  ruleset holds only `deletion` and `non_fast_forward`, and its `updated_at` is two minutes after its
+  creation on 2026-09-24, so the PR and check rules were most likely never saved — not lost later. The
+  2026-09-24 verification used the branches API's `protected` flag, which the deletion rule alone flips:
+  a check that cannot tell "some rule" from "the rule you meant" proved nothing (same shape as the
+  ignored-filter lesson that day). The PR process still held because the plan stopped at the merge, but
+  nothing would have stopped a direct push. Read
+  `gh api repos/<owner>/<repo>/rules/branches/main` before relying on the note; settings are Mark's.
+- **Prove the promotion against the approved captures, not against the old default.** The default
+  route was required to be AE 0 against the C1 views Mark approved, in all eleven views, from the dev
+  server and from `vite preview` of the production build; the live site was then checked the same way
+  (village band AE 0). A rename commit with its own AE 0 proof kept the behaviour change reviewable.
+
+## Moving-sky spike — Simon Lee's model tested, 2026-10-11 (Mark's verdict pending)
+
+Branch `spike/moving-sky` (`905223d`, throwaway, never merge), flag `?sky=moving`. Short opaque
+single-colour strokes slide along the existing source streamlines; the painting copy (wash) is gone
+from the sky band except the scan's own warm star/moon bodies, drawn over the strokes. Evidence:
+`scratch/moving-sky-spike-2026-10-11/` (pass crops `whorl-compare-p{2,3,4}.png`, `compare-whorl-4s.mp4`).
+
+- **Thick opaque strokes expose path faults that thin translucent ones hid.** The source ribbons
+  fold into V-shaped kinks where heading continuity is relaxed near swirl centres. Invisible at 0.6
+  opacity and 0.004 width; obvious as arrowheads at full opacity and twice the width (pass 3).
+- **A stroke sized as a fraction of its path turns short paths into pebbles.** Cutting trails at
+  sharp turns (pass 4) fixed the kinks and created round dabs, because the stroke window is a
+  fraction of normalised path length. Fix: a minimum path length, or a stroke length in absolute uv.
+- **One colour per stroke was the step that made it read as paint.** Per-vertex colour streaked
+  each stroke through several colours; taking the path midpoint's colour (pass 3) gave the
+  painting's distinct marks. Bristle texture at the doubled width read as corrugated metal (pass 1).
+- **Pinned-clock capture makes motion judgeable headless.** `window.__skyTime` (spike branch) plus
+  `scratch/moving-sky-spike-2026-10-11/frames.mjs` renders exact times: 60 frames at 15 fps in ~16 s,
+  despite software rendering. `perf.mjs` there runs a HEADED Chrome for a real-GPU frame rate:
+  120 fps (display cap), p95 9.3 ms for both skies on Mark's Mac at 625k vs 195k triangles.
+
+## Sky-choice plan review — what three review rounds caught, 2026-10-11
+
+Plan `tasks/2026-10-11-sky-choice-plan.md`. Codex found 13 defects across two rounds, Gemini 5 (all
+also in Codex's list). None was in the design; all were in the proof. Patterns worth keeping:
+
+- **Appending a query string to a URL that may already have one silently changes what is tested.**
+  `check-reduced-motion.mjs` built `${appUrl}?mode=…`; with `?sky=moving` in `appUrl` the page parsed
+  `sky = "moving?mode=diorama"` and the check passed on the default sky. Build URLs with `URL` and
+  `searchParams.set`, and prove the variant was actually selected.
+- **A pinned clock cannot test the clock.** Pinning `uTime` for frame-exact captures overrides the very
+  advance a "motion unchanged" gate claims to check; a doubled increment passes. Test the clock with the
+  pin absent, against recorded `dt`.
+- **NaN passes a `>=` threshold.** The sky colour script read past a wrong-sized capture, got NaN, and
+  `NaN >= 10` is false, so it passed. Gate scripts must reject bad input and non-finite values first.
+- **A golden fixture with one flat colour cannot catch a colour-sampling bug.** The first T2 candidate
+  used the uniform `holeScene()`; the adopted `rampScene()` has an asymmetric ramp, varied flow and
+  side strips with their own colour.
+- **Write the wrong implementation, then make the test fail on it.** Each new builder test was checked
+  against a named wrong version (requested-points guard, painting-space sample, cutoff before the flip,
+  cutoff removed): `scratch/sky-choice-2026-10-11/gate/mutations/`. Three of the plan's first five tests
+  would have passed on broken code.
+- **A delegate can confirm the obvious reading of an ambiguous spec.** Gemini computed four T2 hashes
+  because the plan left the fixture open; the fix was to pin every input in the plan, not to pick one.
+
+## Sky choice build and gate — 2026-10-11
+
+- **Read the edges of a capture, not only its centre.** The moving sky's right edge drew the painting with a
+  hard seam for three commits. It was in my own captures; I judged the whorl and stars and missed it. Fable
+  found it (F1): a clamped painting sample read the scan's pale weave border in the side strips. Crop all
+  four edges of every capture before calling a pass done.
+- **A raw ShaderMaterial shows linear colour as if it were display colour.** `Color.set(hex)` converts to
+  linear; the shader writes it unconverted, so the palette's #2d3c60 showed as (8, 16, 43). Harmless where a
+  wash covers it, visible the moment it becomes the gap between opaque strokes. `setStyle(hex,
+  LinearSRGBColorSpace)` passes the hex through unchanged.
+- **Measure the real field before choosing a threshold.** The turn cutoff of cos 0.5 cut 6,784 real curves
+  near swirls and left holes. A histogram on the real flow field showed every reversal (cos < −0.5) lies near a
+  swirl and none elsewhere, so −0.5 cuts only the V-kinks.
+- **Do not edit the code a delegate is gating.** I applied review fixes to the dev server Gemini was capturing
+  against; anything after the edit was mixed evidence. Stop the delegate, commit, then rerun on the commit.
+- **A guard script catches what a reviewer reads past.** Fable's F7 fix value was "by reading, not measured"
+  for other sizes; `check:viewport` failed it at 640×360 within minutes. Run the existing guards after every
+  review fix, not only at the end.
+- **Measure a hitch with an independent frame loop.** The scene's own `useFrame` probe showed no long frame in
+  production while an injected `requestAnimationFrame` gap tracker showed 207.8 ms. Cause not identified.
+  Trust the independent tracker (`scratch/sky-choice-2026-10-11/gate/first-toggle-gap.mjs`).
+- **React StrictMode runs effect cleanups once at mount in dev.** A disposal log counted those; the unmount
+  check must count only disposals after the unmount (`gate/harness-probe.mjs`).
+- **Tunables change logged:** added the diorama sky ribbon budget to CLAUDE.md Tunables (painted light 3,200
+  requested / 194,850 triangles; moving 25,600 / 678,296; one count for every device). Measured 2026-10-11.
+
+## Moving-sky refinement — 2026-10-11 (Mark: "room to improve")
+
+- **The mean-Lab gate cannot see flat paint.** The moving sky passed at ΔE 6.67 while reading as cut paper.
+  At 1:1 my eye called the strokes greyer than the painting, but per-pixel chroma matched (28.0 against 27.2).
+  The defect was texture: mean |ΔL| between neighbours 2.42 against the painting's 4.6
+  (`scratch/sky-polish-2026-10-11/sky-stats.ts`). Measure the eye's claim before tuning to it.
+- **Hashing an interpolated per-ribbon constant amplifies its last-bit drift.** Barycentric interpolation of a
+  constant is not exact, and `fract(sin(x) * 43758)` turns a 1e-5 error into a different hash. Pass the
+  identity as a `flat` varying (`movingVert`).
+- **Probe at the painted body, not at the `SWIRLS` anchor.** A hole probe centred on the `SWIRLS` star found
+  normal ribbon density and nearly cleared the builder. The painted star sits 0.056 from that anchor, and
+  there the core had almost no ribbon points. Same trap as the star guards (lessons 07-16).
+- **Blurring the painting averages complementary paint into mud.** A ground of the painting at mip bias 4
+  turned yellow-and-blue star halos olive grey and raised ΔE 6.89 → 8.18. A ground shown only in zero-count
+  cells filled only the very centre and pasted a static patch into a whorl eye. Both reverted at the pass cap.
+- **Coverage lifts lightness.** Longer, softer strokes covered more of the navy gaps and raised mean L
+  52.6 → 54.6. The highlight lift came down 0.2 → 0.08 to hold the sky's lightness.
+- **A mipmapped texture lookup is a derivative too.** Codex N1: `bodiesFrag` sampled the painting after a
+  fragment-dependent discard. No `fwidth` was in sight, but implicit LOD reads the whole pixel quad. Sample first,
+  discard after. Check every shader for any texture lookup or derivative below its first discard.
+- **A detector needs failing controls of every shape the defect can take.** My pop detector passed a planted pop
+  that stayed on screen. It missed a one-frame pop, because entry and exit cancel in a pairwise ratio (Codex N2).
+  It then missed the same pop straddling a 16 px tile row (Fable N3). Plant one-frame, two-frame, persistent and
+  tile-boundary pops, and require each to fail, before citing "no pops".
+- **Register the photographed feature before naming its cause.** My close-up showed the lower star while my probe
+  measured the upper one, with a non-production seed (Codex C1). Project the probe point onto the capture
+  (`scratch/sky-polish-2026-10-11/project.ts`) and use the runtime seed.
+- **Opaque objects draw before every transparent one, whatever `renderOrder` says.** The authored star spheres
+  poke half through the wash's surface, which hides their top half in the light sky today. An opaque body layer
+  at that radius made it a dark dot. Placing the layer at the strokes' radius, behind the spheres, fixed it.
+- **Measure coverage in the render, not in the geometry.** Stroke centre-line counts said four stars had gaps;
+  a magenta background showed seven stars and the moon (`holes/`). Life fades, discards and widths decide what
+  shows.
+- **Tunables change logged:** the moving sky's budget line now reads 25,600 requested, minPoints 5, 601,128 ribbon
+  and 737,970 scene triangles, 103 fps on an M5 Pro. The old 678,296 was the scene total, not the ribbon mesh
+  (Codex review-v1); the line now names both.
+- **Borrow a reference's craft, not its method.** Simon Lee's strokes beat ours as brushwork, but his palette,
+  stars and outer swirls are authored, not derived from the scan. Lighting, coverage and path smoothing
+  carried over in three small commits without giving up the bar. Mark agreed the split, 2026-10-11.
+- **Name the cost a fix puts on the visitor.** `minPoints` 5 bought coverage with short dabs; the commit said only
+  the gain until Fable asked (review-v4). Write the trade where the setting lives.

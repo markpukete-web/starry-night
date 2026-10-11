@@ -243,6 +243,15 @@ button {
   }
 }
 
+/* Below 360px the four pills wrap to three rows (3 × 36 + 4 × 8 + 14 = 154px) and covered the placard's
+   lower 28px at 320px (review F7). 172 keeps the 18px clearance two rows have. Only here: at 640 × 360 a
+   higher placard ran into the title (check:viewport, short-and-narrow). */
+@media (max-width: 359px) {
+  .visitor-reference {
+    bottom: 172px;
+  }
+}
+
 /* A phone in LANDSCAPE is wider than the 640px breakpoint — so it takes the desktop chrome rules —
    but only ~390px tall. The placard is sized off the long axis (min(300px, …)), which in a short
    window made it tall enough to reach up into the title and cover the attribution. Size it from the

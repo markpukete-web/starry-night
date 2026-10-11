@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import type { SkyStyle } from './scene/PaintingFlowSky3D'
 
 function VisitorButton({
   active,
@@ -39,6 +40,10 @@ type Props = {
   onTogglePause: () => void
   showOriginal: boolean
   onToggleOriginal: () => void
+  /** The visitor's sky choice. */
+  sky?: SkyStyle
+  /** Given only on the diorama route, which has the two skies. */
+  onToggleSky?: () => void
 }
 
 /**
@@ -52,6 +57,8 @@ export function VisitorChrome({
   onTogglePause,
   showOriginal,
   onToggleOriginal,
+  sky = 'light',
+  onToggleSky,
 }: Props) {
   const [fullscreen, setFullscreen] = useState(false)
   const fullscreenSupported = typeof document !== 'undefined' && Boolean(document.fullscreenEnabled)
@@ -108,6 +115,18 @@ export function VisitorChrome({
         </aside>
       )}
       <nav className="visitor-dock" aria-label="Artwork controls">
+        {/* Under system reduced motion the sky is the painted still, so the choice is disabled, like the
+            pause button: removing it dropped keyboard focus to the page (review F8). The choice is kept. */}
+        {onToggleSky && (
+          <VisitorButton
+            active={!reduced && sky === 'moving'}
+            disabled={reduced}
+            icon="≋"
+            label={reduced ? 'Sky choice paused by system setting' : sky === 'moving' ? 'Switch sky to painted light' : 'Switch sky to moving strokes'}
+            text={reduced || sky === 'light' ? 'Sky: painted light' : 'Sky: moving strokes'}
+            onClick={onToggleSky}
+          />
+        )}
         <VisitorButton
           active={motionPaused}
           disabled={reduced}

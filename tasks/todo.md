@@ -9,12 +9,66 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## Village study — R5 and F2 approved, committed and pushed, 2026-10-05
+## Pickup — 2026-10-11 (afternoon): sky choice built, gated and refined — Mark's review next
 
-**Current agent entry point (clarified 2026-10-06):** read
-`tasks/2026-10-05-village-foliage.md`, starting at **Fresh-agent start**. It contains startup commands,
-the source/evidence map, completed checks, local-only limitations and the next decision. No visual
-gate or implementation is pending; establish the next bounded scope with Mark before new work.
+**Current agent entry point:** `tasks/2026-10-11-handoff.md`. Record and gate: `tasks/2026-10-11-sky-choice.md`.
+Branch `feat/sky-choice` (local; Mark pushes after his review). Default sky pixel-identical to `main`.
+
+- [x] Sky-choice design approved by Mark; plan reviewed (Codex BUILD, Gemini READY).
+- [x] Commits 1–4: builder options, moving-sky mode, dock button, tuning (`315ab5a`..`29f869b`).
+- [x] Fable implementation review FIX → fixes `3262865`, `58a1560` → GATE.
+- [x] Lead gate: all checks pass (`tasks/2026-10-11-sky-choice.md`, gate record).
+- [x] Mark: "room to improve" → moving sky refined, Codex-reviewed, gated (`0918095`..`a16c780`, record section "Refinement").
+- [x] Mark: taste review at his Mac (moon dimmed, then glow tuned); "push it and open the PR" (2026-10-11 evening).
+- [ ] **Mark: phone check** of the moving sky on the Vercel preview before merging.
+- [ ] On Mark's word: push, PR, read the Codex/Fable PR review, merge (= deploy).
+- [ ] Then make-it-alive A (its tempo drives both skies), B, C.
+
+### Proposed to Mark — visitor brush controls (Mark, 2026-10-11)
+
+Mark: in Simon Lee's project "he has set up some brush bars so that users can move and make the paint
+the way they want, I remember we use to have it too". We did: the dev-only `leva` panel (stroke count,
+width, speed, shimmer…; "set as default" writes `src/scene/sky-tuning.json`). It was never shipped to
+visitors (production aliases `leva` to `src/dev/leva-stub.ts`) and today it exists only on the flat 2D
+route (`LivingPainting`, `StreamlineSky`); the 3D sky reads the saved values but has no panel. A
+visitor-facing version would be a small, designed set of paint controls, not the dev panel. It is close
+to the locked "preset dials" item, so it is Mark's call. Noted, not queued. Natural fit: after the sky
+choice, alongside make-it-alive B (touch).
+
+## Direction confirmed — 2026-10-11
+
+Mark, after the Simon Lee study (`tasks/2026-10-11-simon-lee-study.md`): "my original thought was to
+turn the original painting into a 3D world", alive, moving and viewable from different angles. It is
+The Starry Night only — no generator, no other paintings, no gallery framing. **Decision: keep the
+current bar and start make-it-alive A.** Weather dials and exploring further into the scene are ideas
+to learn from, not queued. Both touch locked Out-of-scope items, so any change to them is Mark's call.
+
+### After the moving-sky spike — Mark, 2026-10-11
+
+- **Sky as a visitor choice (requested).** "I think user should choose for the sky and let them
+  gauge." His read: the live sky "feels better at a whole"; the moving-stroke sky "surely is closer to
+  the original paint (might need to fine tune)". So: live stays the default, moving strokes become
+  an option once tuned. Design pending Mark's approval; it would come before A, so A's tempo can
+  drive both skies.
+- **Proposed to Mark — the view from Vincent's window.** Mark: "think of myself as Van Gogh sitting in
+  that position at night and watching the sky and outside of the window ... I always wanted to know
+  what he might be seeing and what the village might have look like." Simon's fully built village is
+  what he admired most. The village was not visible from the asylum window and is largely invented,
+  so a fuller village is an invented extension in the derived style. It touches scope: noted, not
+  queued. It also fits C (the arrival), which already plans a line from Vincent's letter.
+
+## Pickup — 2026-10-06: the painted village is live (superseded by the 2026-10-11 pickup above)
+
+**Current agent entry point:** read `tasks/2026-10-06-handoff.md`. The source-painted village went live
+through PR #6 (`8f6e5ec`). **Next: make-it-alive A, then B, then C, one at a time** (Mark, 2026-10-06); start with A. The
+checked-out branch `docs/village-live-record` carries unpushed docs commits — base the next feature
+branch on it. `main` is PR-only again (ruleset completed 2026-10-06): branch → PR → green checks → merge.
+
+## Village study — R5, F2, C1 approved; promoted and live 2026-10-06 (history below)
+
+The section below is the record of the village work from 2026-10-05 to its release; its last items
+link the C1 slice and the promotion. The former entry point (`tasks/2026-10-05-village-foliage.md`,
+Fresh-agent start) is superseded.
 
 Mark reopened the village's visual character and authorised a bounded local study while retaining
 his final taste gate. Lead owns the visual work; Worker handles mechanical captures/checks;
@@ -38,7 +92,9 @@ approved study. No merge or production/default-route promotion is authorised.
 - [x] C1 built and gated (Lead Claude, Reviewer Fable, Worker Gemini): plan REVISE ×2 → revision 1 BUILD/READY → applied, frozen, all checks green, default AE0. Record: `tasks/2026-10-06-village-context.md`.
 - [x] **Mark's taste gate on C1**: "commit and push the branch then tackle the next". Committed and pushed on `codex/village-authored-study`.
 - [x] Promotion built on the branch (plan `scratch/village-promotion-2026-10-06/P1-plan.md`, Fable REVISE → BUILD, Gemini READY): `refactor(village): drop the study naming` + `feat(village): make the painted village the default`. Default route, dev and production build, is AE0 against the approved C1 views in all eleven.
-- [ ] **Mark merges the promotion PR (= deploy).** Before that, his call: `main`'s ruleset currently holds only `deletion` + `non_fast_forward` (no PR or required-check rules, checked 2026-10-06), and the Vercel preview is his to open (SSO).
+- [x] **Mark: "commit, push and deploy merge".** PR #6 merged as `8f6e5ec` on 2026-10-06 and deployed to production. Live check: the page loads the locally proven bundle `index-BXmzVxdZ.js`, `/reference/village-atlas.webp` serves (old study name 404s), the live village band is AE 0 against the approved C1 view, and `check:village` on the live site reads ΔE 8.16.
+- [x] `main`'s ruleset now requires a PR and the `lint · test · build` + `secret scan` checks (set 2026-10-06 on Mark's word; see the ruleset item below).
+- [x] **Next slice agreed (Mark, 2026-10-06):** "Next session we will tackle A-C one by one" — the 24 September make-it-alive lane below, A first, each slice to Mark's gate before the next. The village detour came first "mainly because the original village really bother[ed]" him; it is done. Village residuals (bare ground, striped roof, mirrored church roof) stay recorded, not queued.
 
 Durable gate records: `tasks/2026-10-05-village-study.md` and `tasks/2026-10-05-village-foliage.md`. F2 comparison: `output/playwright/village-foliage-2026-10-05/index.html`. Evidence and working plan: `scratch/village-study-2026-10-05/plan.md` and
 `output/playwright/village-study-2026-10-05/`. The `villageStudy` DEV flags were removed at promotion:
@@ -86,7 +142,7 @@ visitor; there is no arrival.
 **Decisions:** keep the bar exactly as locked · no sound (still out of scope) · build in a LOCAL Mac
 session, where captures work.
 
-- [ ] **Prototype A+B**, on a branch, behind a query flag so the shipped default is untouched:
+- [ ] **Prototype A, then B** (Mark 2026-10-06: one at a time, A first, his gate between), on a branch, behind a query flag so the shipped default is untouched:
   - **A — breath and drama in the EXISTING medium** (light travelling through fixed strokes; do not
     reintroduce strokes moving over the painting — see "Medium beats magnitude" in lessons): tempo
     that varies over time (gusts through the luminous swirl band, the great whorl surging and easing,
@@ -149,8 +205,15 @@ transitive bumps, production bundle byte-identical). Dependabot's first PR (#4, 
 2.3.9 → 3.0.0, the Node 20 → 24 runtime move) was checked against the upstream tag and merged
 (`b5f8334`). Settings, all **Mark-only**:
 
-- [x] **Ruleset on `main`** — done by Mark in the GitHub UI 2026-09-24: PR required (0 approvals),
-  `lint · test · build` + `secret scan` required, force-push and deletion blocked, empty bypass list.
+- [x] **Ruleset on `main`** — intended 2026-09-24 (PR required, 0 approvals; `lint · test · build` +
+  `secret scan` required; force-push and deletion blocked; empty bypass list), but only `deletion` and
+  `non_fast_forward` were ever saved. **Completed 2026-10-06** by Lead on Mark's instruction ("if not
+  can you set it up for me"): `PUT rulesets/23934783` adding `pull_request` (0 approvals) and
+  `required_status_checks` (both contexts pinned to GitHub Actions, integration 15368, not strict).
+  Verified on `rules/branches/main`: all four rules, bypass empty. GitHub defaulted
+  `require_extra_approval_for_unattributed_changes: true` (not set by us); if a merge ever asks for an
+  approval Mark cannot give, that is the setting to review. Before/after JSON:
+  `scratch/village-promotion-2026-10-06/ruleset-*.json`.
   Verified: the branches API flipped `main` from `protected: false` to `true`. See the ⚠️ note above.
 - [ ] **Settings → Code security** — confirm Dependabot alerts, Dependabot security updates, secret
   scanning and push protection are on. npm security fixes depend on the security-updates switch,

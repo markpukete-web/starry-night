@@ -47,6 +47,24 @@ export type SourceRibbonBuildOptions = {
    * the wash stops drawing.
    */
   trailMaxV?: number
+  /**
+   * Moving sky: end a trail where its heading turns sharper than this cosine. Thick opaque strokes
+   * show the V-kinks that thin translucent ribbons hid (spike/moving-sky, 2026-10-11). Unset = off.
+   */
+  maxTurnCos?: number
+  /**
+   * Drop a trail whose REALISED length is under this many points. The moving stroke is a fraction of
+   * its path, so a path cut short by an edge, trailMaxV or a sharp turn draws a round "pebble". Default 3.
+   */
+  minPoints?: number
+  /** Moving sky: every vertex takes the colour at the ribbon's middle point, one colour per stroke. */
+  colourPerRibbon?: boolean
+  /**
+   * Moving sky: soften each path's corners with a 1-2-1 average of its interior points. The nearest-texel flow
+   * turns a path 15° or more at 31% of its upper-left corners, which thick strokes show as zig-zags; most of
+   * that is field noise, not the step (Fable review-v4). Endpoints stay. Default off.
+   */
+  smoothTrail?: boolean
 }
 
 export type SourceRibbonGeometry = {
@@ -124,6 +142,10 @@ export function buildSourceStreamlineRibbons({
   openSkyBandV,
   uPad = 0,
   trailMaxV = 1,
+  maxTurnCos,
+  minPoints = 3,
+  colourPerRibbon = false,
+  smoothTrail = false,
 }: SourceRibbonBuildOptions): SourceRibbonGeometry {
   const rng = mulberry32(seed)
   const vertices: SourceRibbonVertex[] = []
@@ -179,6 +201,8 @@ export function buildSourceStreamlineRibbons({
           cx = -cx
           cy = -cy
         }
+        // after the flip correction, so a mere sign flip of the undirected field is never a "turn"
+        if (maxTurnCos !== undefined && (cx * hx + cy * hy) / (Math.hypot(cx, cy) * Math.hypot(hx, hy) || 1) < maxTurnCos) break
         hx = cx
         hy = cy
       }
@@ -188,13 +212,24 @@ export function buildSourceStreamlineRibbons({
       if (curU < 0 || curU > 1 || curV < 0 || curV > 1) break
     }
 
-    if (trail.length < 3) return
+    // a ribbon needs two points for its tangent (pTrail[1]), whatever minPoints says
+    if (trail.length < Math.max(2, minPoints)) return
+    const path = smoothTrail
+      ? trail.map((p, k): [number, number] =>
+          k === 0 || k === trail.length - 1
+            ? p
+            : [(trail[k - 1][0] + 2 * p[0] + trail[k + 1][0]) / 4, (trail[k - 1][1] + 2 * p[1] + trail[k + 1][1]) / 4],
+        )
+      : trail
 
     // Geometry is emitted in PAINTING space (colour still samples the composite): tangents,
     // normals and widths are computed after the conversion, so with uPad 0 the output is
     // byte-identical to the pre-S4 builder.
-    const pTrail = uPad === 0 ? trail : trail.map(([tu, tv]) => [toPaintU(tu), tv] as [number, number])
-    const m = trail.length
+    const pTrail = uPad === 0 ? path : path.map(([tu, tv]) => [toPaintU(tu), tv] as [number, number])
+    const m = path.length
+    // composite space, like the per-vertex sample below
+    const mid = path[Math.floor((m - 1) / 2)]
+    const ribbonColour = colourPerRibbon ? sampleColour(paintingData, mid[0], mid[1]) : null
     for (let k = 0; k < m; k++) {
       const lenN = k / (m - 1)
       const w = halfW * (1.0 - 0.45 * lenN)
@@ -215,7 +250,7 @@ export function buildSourceStreamlineRibbons({
       const ny = tx / tmag
       // straight sample — in 3D mode paintingData is the offline-filled painting, so hole
       // texels are already real sky paint
-      const color = sampleColour(paintingData, trail[k][0], trail[k][1])
+      const color = ribbonColour ?? sampleColour(paintingData, path[k][0], path[k][1])
 
       vertices.push(
         { u: pTrail[k][0] + nx * w, v: pTrail[k][1] + ny * w, len: lenN, across: 0, phase, rate, color },

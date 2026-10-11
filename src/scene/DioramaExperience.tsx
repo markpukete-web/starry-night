@@ -2,7 +2,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei'
 import { Suspense, useEffect, useMemo, type ReactNode } from 'react'
 import { Diorama } from './Diorama'
-import { PaintingFlowSky3D } from './PaintingFlowSky3D'
+import { PaintingFlowSky3D, type SkyStyle } from './PaintingFlowSky3D'
 import {
   DIORAMA_CAMERAS,
   DIORAMA_ORBIT,
@@ -13,6 +13,10 @@ import {
 type Props = {
   clean?: boolean
   reduced?: boolean
+  /** The visitor's sky choice. */
+  sky?: SkyStyle
+  /** System reduced motion: forces the painted-light still whatever the choice. */
+  still?: boolean
   /** Visitor chrome (attribution, original placard, control dock) — rendered over the canvas. */
   children?: ReactNode
 }
@@ -83,7 +87,7 @@ function PerfProbe() {
   return null
 }
 
-function Scene({ reduced }: { reduced: boolean }) {
+function Scene({ reduced, sky, still }: { reduced: boolean; sky: SkyStyle; still: boolean }) {
   const debug = readDebugMode()
   const view = readViewMode()
   // R3F's `size` is the canvas size and re-renders on resize. Reading window.inner* here instead
@@ -122,6 +126,8 @@ function Scene({ reduced }: { reduced: boolean }) {
         {debug !== 'stage' && (
           <PaintingFlowSky3D
             paused={reduced}
+            sky={sky}
+            still={still}
             debug={debug === 'flow' ? 'flow' : 'final'}
             /* a stable module constant, so the sky's home quaternion memo holds across renders */
             home={camera}
@@ -133,11 +139,11 @@ function Scene({ reduced }: { reduced: boolean }) {
   )
 }
 
-export function DioramaExperience({ clean = false, reduced = false, children }: Props) {
+export function DioramaExperience({ clean = false, reduced = false, sky = 'light', still = false, children }: Props) {
   return (
     <main className={`visitor-shell diorama-shell${clean ? ' is-clean-capture' : ''}`}>
       <Canvas frameloop="always" dpr={[1, 1.5]} gl={{ preserveDrawingBuffer: true, antialias: true }}>
-        <Scene reduced={reduced} />
+        <Scene reduced={reduced} sky={sky} still={still} />
       </Canvas>
       {children}
     </main>
