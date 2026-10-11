@@ -9,6 +9,14 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
+## Direction confirmed — 2026-10-11
+
+Mark, after the Simon Lee study (`tasks/2026-10-11-simon-lee-study.md`): "my original thought was to
+turn the original painting into a 3D world", alive, moving and viewable from different angles. It is
+The Starry Night only — no generator, no other paintings, no gallery framing. **Decision: keep the
+current bar and start make-it-alive A.** Weather dials and exploring further into the scene are ideas
+to learn from, not queued. Both touch locked Out-of-scope items, so any change to them is Mark's call.
+
 ## Pickup — 2026-10-06: the painted village is live
 
 **Current agent entry point:** read `tasks/2026-10-06-handoff.md`. The source-painted village went live

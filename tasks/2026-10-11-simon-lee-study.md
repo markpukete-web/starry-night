@@ -63,5 +63,9 @@ and a gallery are in CLAUDE.md's locked Out-of-scope list, and the bar requires 
 derived from the scan. Only Mark can change those sections. Asked 2026-10-11: borrow narrow lessons
 under the current bar, or reopen the direction?
 
+**Answered the same day.** His intent was always The Starry Night itself as a 3D world seen from
+different angles, not a generator or gallery. Keep the current bar and start A. Weather dials and
+exploration are ideas to learn from, not queued (`tasks/todo.md`, "Direction confirmed").
+
 Noted ideas, not queued (scope rule): rain and fog, fireflies, walk mode and collectibles, the
 painter's-palette placement menu.
