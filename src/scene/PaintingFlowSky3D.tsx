@@ -386,8 +386,8 @@ ${paintedGlsl('')}
 /**
  * Moving sky only: the painted star and moon bodies, kept as the scan's own paint over the strokes. The flow
  * carries ribbons round a star's core, and the turn cut drops the short ones there, so each star showed a navy
- * disc, and the moon showed a third of the navy through its 68% wash (Codex review-v1, design D). Graded as the
- * wash, so a body reads as the light sky's own star.
+ * disc, and the moon showed a third of the navy through its 68% wash (Codex review-v1, design D). Graded with
+ * the wash's night grade but not its lift, so at full opacity a body reads as bright as the light sky's own.
  */
 const bodiesFrag = /* glsl */ `
   precision highp float;
@@ -414,9 +414,10 @@ ${paintedGlsl('')}
     vec3 col = painted(vUv.x, vUv.y);
     float a = body * vEdgeFade;
     if (a < 0.02) discard;
-    float srcLum = dot(col, vec3(0.299, 0.587, 0.114));
+    // the wash's night grade without its highlight lift: the lift makes up for the wash's 0.68 opacity, and on
+    // these opaque bodies it blew the moon to L 91.9 against the light sky's 80.8 (Mark, 2026-10-11 evening).
+    // Without it the moon reads 85.0 and the stars within 4 of the light sky.
     col *= vec3(0.74, 0.84, 1.0);
-    col *= 1.0 + 0.52 * smoothstep(0.3, 0.62, srcLum);
     gl_FragColor = vec4(col, a);
   }
 `
