@@ -35,6 +35,23 @@ import { DIORAMA_CAPTURE } from './dioramaContract'
 
 type PaintingFlowSkyDebug = 'final' | 'flow'
 
+/**
+ * The bodies `bodiesFrag` keeps: painting u, v and radius (isotropic scan px / 1600). Star centres are warm-pixel
+ * centroids on the filled scan. Radii reach the last 6 px ring still 20% empty in three captures with a magenta
+ * background, plus 12 px (scratch/sky-polish-2026-10-11/hole-radii.ts, 2026-10-11). The far-left star's
+ * centre is its hole's, as its warm paint sits off-centre. The moon is MOON_PAINTED_UV and its painted disc.
+ */
+const MOVING_BODIES: readonly (readonly [u: number, v: number, r: number])[] = [
+  [0.8987, 0.1697, 0.06], // moon
+  [0.2374, 0.1723, 0.025],
+  [0.7033, 0.2356, 0.043],
+  [0.3501, 0.5274, 0.0385],
+  [0.606, 0.0854, 0.043],
+  [0.1306, 0.4836, 0.03],
+  [0.04, 0.46, 0.017],
+  [0.3267, 0.3288, 0.0166],
+]
+
 /** The visitor's sky: today's light travelling through fixed strokes, or strokes that travel. */
 export type SkyStyle = 'light' | 'moving'
 
@@ -243,6 +260,31 @@ const movingFrag = /* glsl */ `
   }
 `
 
+/**
+ * The painting at painting-space u with the S4 side strips, as GLSL. `bias` is an optional mip-bias argument
+ * (", 1.0"). The wash passes '' and so compiles the same text it did before the moving sky's bodies existed.
+ */
+const paintedGlsl = (bias: string) => /* glsl */ `
+  // The painting at painting-space u, with the S4 side strips past its edges.
+  // Texture hand-off: bilinear cannot blend ACROSS textures, so a hard branch leaves a
+  // dashed hairline where the regrown border meets the canvas — feather the switch instead.
+  vec3 painted(float pu, float v) {
+    float FEATHER = 0.006;
+    float tL = 1.0 - smoothstep(uBorderU - FEATHER, uBorderU, pu);
+    float tR = smoothstep(1.0 - uBorderU, 1.0 - uBorderU + FEATHER, pu);
+    vec3 col = texture2D(uPainting, vec2(clamp(pu, 0.0, 1.0), v)${bias}).rgb;
+    if (tL > 0.0) {
+      vec3 left = texture2D(uExtendLeft, vec2((pu + uExtendU) / (uExtendU + uBorderU), v)${bias}).rgb;
+      col = mix(col, left, tL);
+    }
+    if (tR > 0.0) {
+      vec3 right = texture2D(uExtendRight, vec2((pu - (1.0 - uBorderU)) / (uExtendU + uBorderU), v)${bias}).rgb;
+      col = mix(col, right, tR);
+    }
+    return col;
+  }
+`
+
 const washVert = /* glsl */ `
   attribute float aEdgeFade;
   varying vec2 vUv;
@@ -266,26 +308,7 @@ const washFrag = /* glsl */ `
   uniform int uMovingSky;
   varying vec2 vUv;
   varying float vEdgeFade;
-
-  // The painting at painting-space u, with the S4 side strips past its edges.
-  // Texture hand-off: bilinear cannot blend ACROSS textures, so a hard branch leaves a
-  // dashed hairline where the regrown border meets the canvas — feather the switch instead.
-  vec3 painted(float pu, float v) {
-    float FEATHER = 0.006;
-    float tL = 1.0 - smoothstep(uBorderU - FEATHER, uBorderU, pu);
-    float tR = smoothstep(1.0 - uBorderU, 1.0 - uBorderU + FEATHER, pu);
-    vec3 col = texture2D(uPainting, vec2(clamp(pu, 0.0, 1.0), v)).rgb;
-    if (tL > 0.0) {
-      vec3 left = texture2D(uExtendLeft, vec2((pu + uExtendU) / (uExtendU + uBorderU), v)).rgb;
-      col = mix(col, left, tL);
-    }
-    if (tR > 0.0) {
-      vec3 right = texture2D(uExtendRight, vec2((pu - (1.0 - uBorderU)) / (uExtendU + uBorderU), v)).rgb;
-      col = mix(col, right, tR);
-    }
-    return col;
-  }
-
+${paintedGlsl('')}
   void main() {
     // vUv.x is PAINTING-space u and runs past [0,1] by uExtendU onto the S4 side strips
     // (sky-extend-{left,right}.png — the painting continued offline with its own sky patches,
@@ -332,6 +355,42 @@ const washFrag = /* glsl */ `
   }
 `
 
+/**
+ * Moving sky only: the painted star and moon bodies, kept as the scan's own paint over the strokes. The flow
+ * carries ribbons round a star's core, and the turn cut drops the short ones there, so each star showed a navy
+ * disc, and the moon showed a third of the navy through its 68% wash (Codex review-v1, design D). Graded as the
+ * wash, so a body reads as the light sky's own star.
+ */
+const bodiesFrag = /* glsl */ `
+  precision highp float;
+  uniform sampler2D uPainting;
+  uniform sampler2D uExtendLeft;
+  uniform sampler2D uExtendRight;
+  uniform float uExtendU;
+  uniform float uBorderU;
+  uniform vec3 uBodies[${MOVING_BODIES.length}];
+  varying vec2 vUv;
+  varying float vEdgeFade;
+${paintedGlsl('')}
+  void main() {
+    // radii are isotropic scan pixels: one unit of v is the scan's height, 1267 of its 1600 px width
+    const float ASPECT = 1267.0 / 1600.0;
+    float body = 0.0;
+    for (int i = 0; i < ${MOVING_BODIES.length}; i++) {
+      vec3 b = uBodies[i];
+      float d = length(vec2(vUv.x - b.x, (vUv.y - b.y) * ASPECT));
+      body = max(body, 1.0 - smoothstep(0.7 * b.z, b.z, d));
+    }
+    float a = body * vEdgeFade;
+    if (a < 0.02) discard;
+    vec3 col = painted(vUv.x, vUv.y);
+    float srcLum = dot(col, vec3(0.299, 0.587, 0.114));
+    col *= vec3(0.74, 0.84, 1.0);
+    col *= 1.0 + 0.52 * smoothstep(0.3, 0.62, srcLum);
+    gl_FragColor = vec4(col, a);
+  }
+`
+
 const gradientVert = /* glsl */ `
   varying vec3 vDir;
   void main() {
@@ -351,7 +410,7 @@ const gradientFrag = /* glsl */ `
   }
 `
 
-function makeSkyWashGeometry() {
+function makeSkyWashGeometry(radius = DOME_R - 0.05) {
   // spans the S4 side strips too: paintU ∈ [−SIDE_EXTEND_U, 1 + SIDE_EXTEND_U], same mesh
   // density per unit of u as the pre-S4 112-column canvas-only wash
   const cols = 180
@@ -366,7 +425,7 @@ function makeSkyWashGeometry() {
     const v = y / rows
     for (let x = 0; x <= cols; x++) {
       const u = -SIDE_EXTEND_U + (x / cols) * (1 + 2 * SIDE_EXTEND_U)
-      uvToDioramaSkyPosition(u, v, p, DOME_R - 0.05)
+      uvToDioramaSkyPosition(u, v, p, radius)
       positions.push(p.x, p.y, p.z)
       uvs.push(u, v)
       edge.push(dioramaSourceEdgeFade(u, v))
@@ -666,6 +725,9 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
   )
 
   const washGeometry = useMemo(() => makeSkyWashGeometry(), [])
+  // the bodies sit at the strokes' radius, behind the authored star spheres (front at DOME_R − 0.056 or nearer).
+  // At the wash's radius a sphere pokes half through, and full-opacity paint hid its top half (polish D1).
+  const bodiesGeometry = useMemo(() => makeSkyWashGeometry(DOME_R), [])
   const washMaterial = useMemo(
     () =>
       new ShaderMaterial({
@@ -687,6 +749,27 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
         side: DoubleSide,
       }),
     [extendLeft, extendRight, isFlowDebug, mask, painting],
+  )
+
+  const bodiesMaterial = useMemo(
+    () =>
+      new ShaderMaterial({
+        uniforms: {
+          uPainting: { value: painting },
+          uExtendLeft: { value: extendLeft },
+          uExtendRight: { value: extendRight },
+          uExtendU: { value: SIDE_EXTEND_U },
+          uBorderU: { value: SIDE_BORDER_U },
+          uBodies: { value: MOVING_BODIES.map(([u, v, r]) => new Vector3(u, v, r)) },
+        },
+        vertexShader: washVert,
+        fragmentShader: bodiesFrag,
+        transparent: true,
+        depthWrite: false,
+        depthTest: true,
+        side: DoubleSide,
+      }),
+    [extendLeft, extendRight, painting],
   )
 
   // The seven source images, memoised on their identities so the geometry memos below see a stable input.
@@ -857,9 +940,11 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
   useEffect(() => () => geometry?.dispose(), [geometry])
   useEffect(() => () => movingGeometry?.dispose(), [movingGeometry])
   useEffect(() => () => washGeometry.dispose(), [washGeometry])
+  useEffect(() => () => bodiesGeometry.dispose(), [bodiesGeometry])
   useEffect(() => () => ribbonMaterial.dispose(), [ribbonMaterial])
   useEffect(() => () => movingMaterial.dispose(), [movingMaterial])
   useEffect(() => () => washMaterial.dispose(), [washMaterial])
+  useEffect(() => () => bodiesMaterial.dispose(), [bodiesMaterial])
   useEffect(() => () => gradientMaterial.dispose(), [gradientMaterial])
 
   // One ribbon mesh; its geometry and material switch together. A swapped prop never unmounts the mesh.
@@ -875,6 +960,7 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
           painting past the canvas edges and melt into the gradient via the side fade */}
       {/* moving sky: the wash keeps only the scan's star and moon bodies, drawn OVER the opaque strokes */}
       <mesh geometry={washGeometry} material={washMaterial} frustumCulled={false} renderOrder={mode === 'moving' ? 2.5 : -1} />
+      <mesh geometry={bodiesGeometry} material={bodiesMaterial} frustumCulled={false} renderOrder={2.6} visible={mode === 'moving'} />
       {ribbons.geometry && (
         <mesh geometry={ribbons.geometry} material={ribbons.material} frustumCulled={false} renderOrder={2} />
       )}
