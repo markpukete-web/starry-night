@@ -9,6 +9,23 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
+## Pickup — 2026-10-11: building the sky choice (commit 1 of 5 done)
+
+**Current agent entry point:** read `tasks/2026-10-11-handoff.md`. Plan of record:
+`tasks/2026-10-11-sky-choice-plan.md` (Codex BUILD, Gemini READY). Branch `feat/sky-choice` (local);
+commit 1 `315ab5a` done and mutation-proven. Next: commit 2 (moving-sky mode), 3 (dock button),
+4 (tuning — the moving sky fails the colour limit at ΔE 10.57 today), then gate, PR, Mark's review.
+
+- [x] Sky-choice design approved by Mark (2026-10-11).
+- [x] Plan reviewed: Codex REVISE ×2 → BUILD; Gemini BLOCKED → READY.
+- [x] Commit 1 — stroke-builder options + tests T1–T5 (`315ab5a`), mutation proofs m1–m4.
+- [ ] Commit 2 — moving-sky mode in `PaintingFlowSky3D` (+ reduced-motion check URL fix).
+- [ ] Commit 3 — sky button in the visitor dock.
+- [ ] Commit 4 — tune the moving sky to the painting (sky ΔE < 10; pebbles, holes, size variety).
+- [ ] Codex diff review → Lead gate (checks 1–12 + R1/R2 harnesses) → commit 5 docs → PR.
+- [ ] Mark: captures + phone on the Vercel preview → merge on his word.
+- [ ] Then make-it-alive A (its tempo drives both skies), B, C.
+
 ## Direction confirmed — 2026-10-11
 
 Mark, after the Simon Lee study (`tasks/2026-10-11-simon-lee-study.md`): "my original thought was to
@@ -31,7 +48,7 @@ to learn from, not queued. Both touch locked Out-of-scope items, so any change t
   so a fuller village is an invented extension in the derived style. It touches scope: noted, not
   queued. It also fits C (the arrival), which already plans a line from Vincent's letter.
 
-## Pickup — 2026-10-06: the painted village is live
+## Pickup — 2026-10-06: the painted village is live (superseded by the 2026-10-11 pickup above)
 
 **Current agent entry point:** read `tasks/2026-10-06-handoff.md`. The source-painted village went live
 through PR #6 (`8f6e5ec`). **Next: make-it-alive A, then B, then C, one at a time** (Mark, 2026-10-06); start with A. The

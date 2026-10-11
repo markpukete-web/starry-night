@@ -2226,3 +2226,27 @@ from the sky band except the scan's own warm star/moon bodies, drawn over the st
   `scratch/moving-sky-spike-2026-10-11/frames.mjs` renders exact times: 60 frames at 15 fps in ~16 s,
   despite software rendering. `perf.mjs` there runs a HEADED Chrome for a real-GPU frame rate:
   120 fps (display cap), p95 9.3 ms for both skies on Mark's Mac at 625k vs 195k triangles.
+
+## Sky-choice plan review — what three review rounds caught, 2026-10-11
+
+Plan `tasks/2026-10-11-sky-choice-plan.md`. Codex found 13 defects across two rounds, Gemini 5 (all
+also in Codex's list). None was in the design; all were in the proof. Patterns worth keeping:
+
+- **Appending a query string to a URL that may already have one silently changes what is tested.**
+  `check-reduced-motion.mjs` built `${appUrl}?mode=…`; with `?sky=moving` in `appUrl` the page parsed
+  `sky = "moving?mode=diorama"` and the check passed on the default sky. Build URLs with `URL` and
+  `searchParams.set`, and prove the variant was actually selected.
+- **A pinned clock cannot test the clock.** Pinning `uTime` for frame-exact captures overrides the very
+  advance a "motion unchanged" gate claims to check; a doubled increment passes. Test the clock with the
+  pin absent, against recorded `dt`.
+- **NaN passes a `>=` threshold.** The sky colour script read past a wrong-sized capture, got NaN, and
+  `NaN >= 10` is false, so it passed. Gate scripts must reject bad input and non-finite values first.
+- **A golden fixture with one flat colour cannot catch a colour-sampling bug.** The first T2 candidate
+  used the uniform `holeScene()`; the adopted `rampScene()` has an asymmetric ramp, varied flow and
+  side strips with their own colour.
+- **Write the wrong implementation, then make the test fail on it.** Each new builder test was checked
+  against a named wrong version (requested-points guard, painting-space sample, cutoff before the flip,
+  cutoff removed): `scratch/sky-choice-2026-10-11/gate/mutations/`. Three of the plan's first five tests
+  would have passed on broken code.
+- **A delegate can confirm the obvious reading of an ambiguous spec.** Gemini computed four T2 hashes
+  because the plan left the fixture open; the fix was to pin every input in the plan, not to pick one.
