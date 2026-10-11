@@ -78,9 +78,9 @@ const MOVING = {
   stroke: 0.7,
   opacity: 0.97,
   // the moon's additive glow; the light sky keeps 0.68. Opaque strokes ring the moon here, so the same glow read
-  // brighter (Mark, 2026-10-11 evening: "dim the moon glow a bit more"). 0.5 puts the moon's patch at L 80.4
-  // against the light sky's 80.8; 0.68 gave 85.0 and 0.4 gave 77.8 (scratch/sky-polish-2026-10-11/moon/)
-  moonGlow: 0.5,
+  // brighter (Mark, 2026-10-11 evening: "dim the moon glow a bit more", then "slightly brighter"). Moon patch L:
+  // 0.68 gave 85.0, 0.5 gave 80.4 against the light sky's 80.8, 0.4 gave 77.8 (scratch/sky-polish-2026-10-11/moon/)
+  moonGlow: 0.58,
 }
 
 /**
