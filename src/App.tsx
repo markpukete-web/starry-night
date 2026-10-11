@@ -6,6 +6,7 @@ import { LivingPainting } from './scene/LivingPainting'
 import { StreamlineSky } from './scene/StreamlineSky'
 import { CanopyExperience } from './scene/CanopyExperience'
 import { DioramaExperience } from './scene/DioramaExperience'
+import type { SkyStyle } from './scene/PaintingFlowSky3D'
 import { ReliefExperience } from './scene/ReliefExperience'
 import { VisitorChrome } from './VisitorChrome'
 
@@ -27,6 +28,11 @@ export default function App() {
   const reduced = usePrefersReducedMotion()
   const [visitorPaused, setVisitorPaused] = useState(false)
   const [showOriginal, setShowOriginal] = useState(false)
+  // The visitor's sky. `?sky=moving` opens on moving strokes, so either sky can be linked. Reduced
+  // motion hides the choice but keeps it, and it returns when the system setting is cleared.
+  const [sky, setSky] = useState<SkyStyle>(() =>
+    typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('sky') === 'moving' ? 'moving' : 'light',
+  )
   const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
   const mode = params.get('mode') ?? 'diorama'
   const clean = params.get('clean') === '1'
@@ -39,6 +45,9 @@ export default function App() {
       onTogglePause={() => setVisitorPaused((paused) => !paused)}
       showOriginal={showOriginal}
       onToggleOriginal={() => setShowOriginal((shown) => !shown)}
+      sky={sky}
+      // only the 3D diorama has the two skies; the flat 2D route never shows the choice
+      onToggleSky={mode === 'diorama' ? () => setSky((current) => (current === 'moving' ? 'light' : 'moving')) : undefined}
     />
   )
 
@@ -52,7 +61,7 @@ export default function App() {
 
   if (mode === 'diorama') {
     return (
-      <DioramaExperience clean={clean} reduced={motionPaused}>
+      <DioramaExperience clean={clean} reduced={motionPaused} sky={sky} still={reduced}>
         {chrome}
       </DioramaExperience>
     )
