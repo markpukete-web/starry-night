@@ -406,6 +406,13 @@ test('T6 smoothTrail moves only interior centre-line points, to the 1-2-1 averag
           ? centre(plain, s + 2 * k)
           : [0, 1].map((c) => (centre(plain, s + 2 * (k - 1))[c] + 2 * centre(plain, s + 2 * k)[c] + centre(plain, s + 2 * (k + 1))[c]) / 4)
       for (const c of [0, 1]) assert.ok(Math.abs(got[c] - want[c]) < 1e-12, `ribbon at ${s}, point ${k}`)
+      if (k > 0 && k < n - 1) {
+        // the width runs across the SMOOTHED path: the pair's offset is normal to its central difference
+        const off = [smooth.vertices[s + 2 * k].u - smooth.vertices[s + 2 * k + 1].u, smooth.vertices[s + 2 * k].v - smooth.vertices[s + 2 * k + 1].v]
+        const tan = [0, 1].map((c) => centre(smooth, s + 2 * (k + 1))[c] - centre(smooth, s + 2 * (k - 1))[c])
+        const cos = (off[0] * tan[0] + off[1] * tan[1]) / (Math.hypot(...off) * Math.hypot(...tan) || 1)
+        assert.ok(Math.abs(cos) < 1e-9, `ribbon at ${s}, point ${k}: width not normal to the smoothed path`)
+      }
       if (Math.hypot(got[0] - centre(plain, s + 2 * k)[0], got[1] - centre(plain, s + 2 * k)[1]) > 1e-9) moved = true
     }
   }

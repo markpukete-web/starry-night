@@ -56,6 +56,10 @@ detector blind to one-frame pops) → Fable as Consultant, Codex's 5-hour usage 
 | `bcc2c4d` | Codex R1 (derivative floor) and R2 (ascending `smoothstep` edges); pixel-identical |
 | `a16c780` | Codex design D: the measured star and moon bodies kept as the scan's paint over the strokes |
 | `e40975c` | Codex N1: the bodies sample the painting before the discard; pixel-identical, 110–111 fps |
+| `f193fd9` | One raking light from the upper left for every stroke, lane ridges lit, a soft sheen (Simon study) |
+| `c083397` | Coverage: `minPoints` 9 → 5, path fade 0.12 → 0.05, × 0.93 trim; background 4.8% → 2.3% |
+| `c8deb18` | `smoothTrail`: 1-2-1 path smoothing, moving sky only, test T6; the upper-left zig-zags soften |
+| `ff16fb9` | The short-dab trade recorded beside `minPoints` (Fable review-v4) |
 
 What was wrong, measured: the strokes held half the painting's texture (mean neighbour |ΔL| 2.42 against 4.6;
 chroma matched, 28.0 against 27.2). Seven star cores and the moon showed the navy background: found with a magenta
@@ -79,6 +83,18 @@ changed no pixel at design, orbit or phone size (Lead) and matched byte for byte
 
 One long frame of 35–40 ms in each steady perf window is the perf tool's own read: it moved from 14.04 s to
 20.05 s when the read moved (`perf-gaps.mjs`, `perf-gaps20.mjs`).
+
+Mark's direction after comparing with Simon Lee (2026-10-11): keep the scan-derived sky and borrow three craft
+techniques, not the method: one raking light, denser coverage, cleaner paths. All three are in. Fable reviewed
+`f193fd9` and `c083397` (`consultant/review-v4.md`, GATE) and found the path noise cause (a quarter the Euler
+step, three quarters the flow field's texel noise). Coverage costs short oval dabs in the whorl eye: 12.6% of
+paths are 5–8 points. Gate on `c083397` (`worker-gate3.md`, READY): default sky AE 0 in 11 stills and 12 motion
+pairs, reduced motion and viewport pass, moving 100.6–101.7 fps, first switch 200–225 ms, no pops. Fable reviewed
+`c8deb18` (`consultant/review-v5.md`, GATE): light sky byte-identical with the real assets, no trail split by the
+strip seam or `trailMaxV`, folds over 20° 0.9% → 0.3%, upper-left corners over 15° 31% → 16%. T6 then gained a
+check that the width runs across the smoothed path (Fable's m3 now turns it red). Gate on `ff16fb9`
+(`worker-gate4.md`, READY): default sky AE 0 in 11 stills and 12 motion pairs, reduced motion and viewport pass,
+107/107 tests, moving 102.6–103.4 fps, light 119.9, first switch 225–234 ms, no pops (max 3.1, planted control 7.4).
 
 Still open in the moving sky: crescent gaps around the whorl eye and in the upper left read as dark paint between
 strokes (left by choice: a static patch there read as pasted). The star bodies are static, as the warm bodies were

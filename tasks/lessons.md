@@ -2310,3 +2310,11 @@ also in Codex's list). None was in the design; all were in the proof. Patterns w
 - **Measure coverage in the render, not in the geometry.** Stroke centre-line counts said four stars had gaps;
   a magenta background showed seven stars and the moon (`holes/`). Life fades, discards and widths decide what
   shows.
+- **Tunables change logged:** the moving sky's budget line now reads 25,600 requested, minPoints 5, 601,128 ribbon
+  and 737,970 scene triangles, 103 fps on an M5 Pro. The old 678,296 was the scene total, not the ribbon mesh
+  (Codex review-v1); the line now names both.
+- **Borrow a reference's craft, not its method.** Simon Lee's strokes beat ours as brushwork, but his palette,
+  stars and outer swirls are authored, not derived from the scan. Lighting, coverage and path smoothing
+  carried over in three small commits without giving up the bar. Mark agreed the split, 2026-10-11.
+- **Name the cost a fix puts on the visitor.** `minPoints` 5 bought coverage with short dabs; the commit said only
+  the gain until Fable asked (review-v4). Write the trade where the setting lives.

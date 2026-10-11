@@ -106,8 +106,10 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
 
 - Instanced stroke budget: start 8,000 desktop / 3,000 mobile
 - Diorama sky ribbon budget (2026-10-11): painted light 3,200 requested ribbons (2,000 × 1.6 for the side
-  strips), 194,850 triangles; moving strokes 25,600 requested (×8), 678,296 triangles, one count for every
-  device so a resize never rebuilds. Both 120 fps on an M5 Pro; phone unmeasured.
+  strips), 194,850 scene triangles, 120 fps on an M5 Pro. Moving strokes 25,600 requested (×8), minPoints 5,
+  601,128 ribbon triangles and 737,970 scene triangles with the star-body layer, 103 fps on an M5 Pro (was
+  678,296 and 120 fps before the afternoon refinement). One count for every device, so a resize never
+  rebuilds. Phone unmeasured.
 - Palette tolerance: ΔE < 10 per region to begin; tighten as quality improves
 - devicePixelRatio cap: 2 desktop / 1.5 mobile
 - Camera orbit limits: polar 0.2–1.62 rad (≈11°–93°), distance 3–5.5; azimuth free; no pan (3D diorama).
