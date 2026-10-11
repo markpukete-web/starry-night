@@ -19,10 +19,12 @@ import {
   type Group,
   Vector3,
 } from 'three'
-import { useImageData, type ImageData2D } from './useImageData'
+import { useImageData } from './useImageData'
 import { tuned } from './tuning'
-import { buildSourceStreamlineRibbons, type SourceRibbonGeometry } from './streamlineGeometry'
-import { DOME_R, smoothstep } from './skyMapping'
+import { buildSourceStreamlineRibbons } from './streamlineGeometry'
+import { arraysToGeometry, composite, ribbonsToArrays } from './skyRibbonArrays'
+import type { MovingBuildReply, MovingBuildRequest } from './movingSky.worker'
+import { DOME_R } from './skyMapping'
 import {
   dioramaSourceEdgeFade,
   SIDE_BORDER_U,
@@ -487,44 +489,6 @@ function makeSkyWashGeometry(radius = DOME_R - 0.05) {
   return g
 }
 
-/**
- * Stitch [left strip | base | right strip] into one wide CPU buffer for ribbon integration.
- * Each strip covers paintU ∈ [−SIDE_EXTEND_U, SIDE_BORDER_U] (mirrored on the right) and OWNS
- * the base's weave-border columns — the strips overwrite them, exactly as the wash renders.
- */
-function compositeSideExtended(base: ImageData2D, left: ImageData2D, right: ImageData2D): ImageData2D {
-  const borderPx = Math.round(SIDE_BORDER_U * base.width)
-  const padPx = left.width - borderPx
-  const width = base.width + 2 * padPx
-  const data = new Uint8ClampedArray(width * base.height * 4)
-  const blit = (src: ImageData2D, dstX: number): void => {
-    for (let y = 0; y < base.height; y++) {
-      data.set(src.data.subarray(y * src.width * 4, (y + 1) * src.width * 4), (y * width + dstX) * 4)
-    }
-  }
-  blit(base, padPx)
-  blit(left, 0)
-  blit(right, padPx + base.width - borderPx)
-  return { data, width, height: base.height }
-}
-
-type SkyImages = Record<
-  'flowData' | 'maskData' | 'paintingData' | 'extendLeftData' | 'extendRightData' | 'extendFlowLeftData' | 'extendFlowRightData',
-  ImageData2D
->
-
-/**
- * Both skies integrate across the composite [left strip | canvas | right strip] so the churn carries over
- * the canvas edges; count scales with the wider domain to hold front density. Built inside each geometry
- * memo and then dropped: kept for the session the two composites held 21 MB the light sky never reads again
- * (review F2).
- */
-function composite(i: SkyImages) {
-  const compositePainting = compositeSideExtended(i.paintingData, i.extendLeftData, i.extendRightData)
-  const compositeFlow = compositeSideExtended(i.flowData, i.extendFlowLeftData, i.extendFlowRightData)
-  const uPad = (compositePainting.width - i.paintingData.width) / 2 / i.paintingData.width
-  return { compositePainting, compositeFlow, maskData: i.maskData, uPad }
-}
 
 function makeMoonHaloTexture(): CanvasTexture {
   const s = 256
@@ -645,56 +609,7 @@ function SourceOrbs({ debug, moonGlow = 0.68 }: { debug: PaintingFlowSkyDebug; m
   )
 }
 
-/** Run `build` and, in development only, log how long it took (first-use cost of the moving sky). */
-function devTimed<T>(label: string, build: () => T): T {
-  if (!import.meta.env.DEV) return build()
-  const started = performance.now()
-  const result = build()
-  console.info(`[sky] ${label}: ${Math.round(performance.now() - started)} ms`)
-  return result
-}
 
-/** Project built ribbons onto the diorama sky and pack their attributes. Shared by both skies. */
-function ribbonsToGeometry(ribbons: SourceRibbonGeometry): BufferGeometry {
-  const positions: number[] = []
-  const colors: number[] = []
-  const aLen: number[] = []
-  const aAcross: number[] = []
-  const aPhase: number[] = []
-  const aRate: number[] = []
-  const aEdgeFade: number[] = []
-  const p = new Vector3()
-
-  for (const vertex of ribbons.vertices) {
-    uvToDioramaSkyPosition(vertex.u, vertex.v, p)
-    positions.push(p.x, p.y, p.z)
-    colors.push(...vertex.color)
-    aLen.push(vertex.len)
-    aAcross.push(vertex.across)
-    aPhase.push(vertex.phase)
-    aRate.push(vertex.rate)
-    // Below the sky band the island covers the canvas centre but NOT the edge columns or the
-    // strips — ribbon segments there float under the wash's skirt as stray dots over the bare
-    // gradient (the pre-S4 side fade hid the edge ones). Outside the old fade margins the
-    // ribbons must exit the melt BEFORE the wash does (a ribbon's bell cross-section peaks
-    // above the dissolving wash continuum at every v, reading as a dotted arc — p4), so their
-    // window ends at 0.62 where the wash's skyBand (washFrag 0.58–0.7) still has body.
-    const subBandSkirt = vertex.u < 0.22 || vertex.u > 0.78 ? 1 - smoothstep(0.5, 0.62, vertex.v) : 1
-    aEdgeFade.push(dioramaSourceEdgeFade(vertex.u, vertex.v) * subBandSkirt)
-  }
-
-  const geo = new BufferGeometry()
-  geo.setAttribute('position', new BufferAttribute(new Float32Array(positions), 3))
-  geo.setAttribute('aColor', new BufferAttribute(new Float32Array(colors), 3))
-  geo.setAttribute('aLen', new BufferAttribute(new Float32Array(aLen), 1))
-  geo.setAttribute('aAcross', new BufferAttribute(new Float32Array(aAcross), 1))
-  geo.setAttribute('aPhase', new BufferAttribute(new Float32Array(aPhase), 1))
-  geo.setAttribute('aRate', new BufferAttribute(new Float32Array(aRate), 1))
-  geo.setAttribute('aEdgeFade', new BufferAttribute(new Float32Array(aEdgeFade), 1))
-  geo.setIndex(ribbons.indices)
-  geo.computeBoundingSphere()
-  return geo
-}
 
 export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky = 'light', still = false }: Props) {
   const skyRoot = useRef<Group>(null)
@@ -838,38 +753,61 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
       // arcs on the bare gradient
       trailMaxV: 0.7,
     })
-    return ribbonsToGeometry(ribbons)
+    return arraysToGeometry(ribbonsToArrays(ribbons))
   }, [images, isFlowDebug])
 
-  // The moving sky's own, denser strokes: built on first use, one count for every orientation, so a
-  // resize never rebuilds it (review F7). Same seed and streamline field as the light sky.
-  const movingGeometry = useMemo(() => {
-    if (!movingEver || !images) return null
-    return devTimed('moving-stroke geometry (composite + build + attributes + bounds)', () => {
-      const sources = composite(images)
-      const { compositePainting, compositeFlow, uPad } = sources
-      return ribbonsToGeometry(buildSourceStreamlineRibbons({
-      flowData: compositeFlow,
-      maskData: sources.maskData,
-      paintingData: compositePainting,
-      count: Math.round(tuned('count', 2000) * MOVING.countScale * (1 + 2 * uPad)),
-      strokeWidth: tuned('strokeWidth', 0.0032) * 1.18 * MOVING.widthScale,
-      points: tuned('points', 16),
-      stepSize: tuned('stepSize', 0.012),
-      seed: DIORAMA_CAPTURE.seed,
-      openSkyBandV: 0.62,
-      uPad,
-      trailMaxV: 0.7,
-      maxTurnCos: MOVING.maxTurnCos,
-      minPoints: MOVING.minPoints,
-      colourPerRibbon: true,
-      smoothTrail: true,
-      }))
-    })
+  // The moving sky's own, denser strokes: built on first use, one count for every orientation, so a resize never
+  // rebuilds it (review F7). Same seed and streamline field as the light sky. Built in a worker: in the render it
+  // froze the first switch for about 230 ms on an M5 Pro (Codex, PR #7). The light sky shows until it arrives.
+  const [movingGeometry, setMovingGeometry] = useState<BufferGeometry | null>(null)
+  useEffect(() => {
+    if (!movingEver || !images) return
+    const worker = new Worker(new URL('./movingSky.worker.ts', import.meta.url), { type: 'module' })
+    let built: BufferGeometry | null = null
+    const sent = performance.now()
+    worker.onmessage = (event: MessageEvent<MovingBuildReply>) => {
+      worker.terminate()
+      if ('error' in event.data) {
+        console.error('[sky] moving-stroke build failed; the sky stays painted light.', event.data.error)
+        return
+      }
+      built = arraysToGeometry(event.data.arrays)
+      if (import.meta.env.DEV) {
+        console.info(`[sky] moving-stroke geometry: ${Math.round(event.data.ms)} ms in the worker, ${Math.round(performance.now() - sent)} ms round trip`)
+      }
+      setMovingGeometry(built)
+    }
+    worker.onerror = (event) => console.error('[sky] moving-stroke worker failed; the sky stays painted light.', event.message)
+    const request: MovingBuildRequest = {
+      images,
+      countPerUnit: tuned('count', 2000) * MOVING.countScale,
+      options: {
+        strokeWidth: tuned('strokeWidth', 0.0032) * 1.18 * MOVING.widthScale,
+        points: tuned('points', 16),
+        stepSize: tuned('stepSize', 0.012),
+        seed: DIORAMA_CAPTURE.seed,
+        openSkyBandV: 0.62,
+        trailMaxV: 0.7,
+        maxTurnCos: MOVING.maxTurnCos,
+        minPoints: MOVING.minPoints,
+        colourPerRibbon: true,
+        smoothTrail: true,
+      },
+    }
+    worker.postMessage(request)
+    // a StrictMode remount or an unmount stops a build in flight, and frees a finished one
+    return () => {
+      worker.terminate()
+      built?.dispose()
+    }
   }, [images, movingEver])
 
   // Geometry is ready before the mode flips; the layout effect below switches wash and gradient in the same frame.
   const mode: SkyStyle = wanted === 'moving' && movingGeometry ? 'moving' : 'light'
+  // Opened on ?sky=moving: until the worker's strokes land, draw no strokes rather than flash the light sky's for
+  // about 0.3 s (Fable, plan-worker P2). After a click the light strokes stay until the swap, so nothing blanks.
+  const [openedOnMoving] = useState(() => wanted === 'moving')
+  const awaitingMoving = openedOnMoving && wanted === 'moving' && !movingGeometry
 
   const ribbonMaterial = useMemo(
     () =>
@@ -974,7 +912,6 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
   // One cleanup per resource, keyed on that resource alone: a combined effect disposed the stable
   // wash and gradient materials whenever the ribbon material was rebuilt on pause (review F7).
   useEffect(() => () => geometry?.dispose(), [geometry])
-  useEffect(() => () => movingGeometry?.dispose(), [movingGeometry])
   useEffect(() => () => washGeometry.dispose(), [washGeometry])
   useEffect(() => () => bodiesGeometry.dispose(), [bodiesGeometry])
   useEffect(() => () => ribbonMaterial.dispose(), [ribbonMaterial])
@@ -997,7 +934,7 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
       {/* moving sky: the wash keeps only the scan's star and moon bodies, drawn OVER the opaque strokes */}
       <mesh geometry={washGeometry} material={washMaterial} frustumCulled={false} renderOrder={mode === 'moving' ? 2.5 : -1} />
       <mesh geometry={bodiesGeometry} material={bodiesMaterial} frustumCulled={false} renderOrder={2.6} visible={mode === 'moving'} />
-      {ribbons.geometry && (
+      {ribbons.geometry && !awaitingMoving && (
         <mesh geometry={ribbons.geometry} material={ribbons.material} frustumCulled={false} renderOrder={2} />
       )}
       <SourceOrbs debug={debug} moonGlow={mode === 'moving' ? MOVING.moonGlow : undefined} />
