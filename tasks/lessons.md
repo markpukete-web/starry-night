@@ -2205,3 +2205,24 @@ page: `output/playwright/village-study-2026-10-05/`.
   route was required to be AE 0 against the C1 views Mark approved, in all eleven views, from the dev
   server and from `vite preview` of the production build; the live site was then checked the same way
   (village band AE 0). A rename commit with its own AE 0 proof kept the behaviour change reviewable.
+
+## Moving-sky spike — Simon Lee's model tested, 2026-10-11 (Mark's verdict pending)
+
+Branch `spike/moving-sky` (`905223d`, throwaway, never merge), flag `?sky=moving`. Short opaque
+single-colour strokes slide along the existing source streamlines; the painting copy (wash) is gone
+from the sky band except the scan's own warm star/moon bodies, drawn over the strokes. Evidence:
+`scratch/moving-sky-spike-2026-10-11/` (pass crops `whorl-compare-p{2,3,4}.png`, `compare-whorl-4s.mp4`).
+
+- **Thick opaque strokes expose path faults that thin translucent ones hid.** The source ribbons
+  fold into V-shaped kinks where heading continuity is relaxed near swirl centres. Invisible at 0.6
+  opacity and 0.004 width; obvious as arrowheads at full opacity and twice the width (pass 3).
+- **A stroke sized as a fraction of its path turns short paths into pebbles.** Cutting trails at
+  sharp turns (pass 4) fixed the kinks and created round dabs, because the stroke window is a
+  fraction of normalised path length. Fix: a minimum path length, or a stroke length in absolute uv.
+- **One colour per stroke was the step that made it read as paint.** Per-vertex colour streaked
+  each stroke through several colours; taking the path midpoint's colour (pass 3) gave the
+  painting's distinct marks. Bristle texture at the doubled width read as corrugated metal (pass 1).
+- **Pinned-clock capture makes motion judgeable headless.** `window.__skyTime` (spike branch) plus
+  `scratch/moving-sky-spike-2026-10-11/frames.mjs` renders exact times: 60 frames at 15 fps in ~16 s,
+  despite software rendering. `perf.mjs` there runs a HEADED Chrome for a real-GPU frame rate:
+  120 fps (display cap), p95 9.3 ms for both skies on Mark's Mac at 625k vs 195k triangles.
