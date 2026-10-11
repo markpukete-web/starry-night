@@ -17,6 +17,20 @@ The Starry Night only — no generator, no other paintings, no gallery framing. 
 current bar and start make-it-alive A.** Weather dials and exploring further into the scene are ideas
 to learn from, not queued. Both touch locked Out-of-scope items, so any change to them is Mark's call.
 
+### After the moving-sky spike — Mark, 2026-10-11
+
+- **Sky as a visitor choice (requested).** "I think user should choose for the sky and let them
+  gauge." His read: the live sky "feels better at a whole"; the moving-stroke sky "surely is closer to
+  the original paint (might need to fine tune)". So: live stays the default, moving strokes become
+  an option once tuned. Design pending Mark's approval; it would come before A, so A's tempo can
+  drive both skies.
+- **Proposed to Mark — the view from Vincent's window.** Mark: "think of myself as Van Gogh sitting in
+  that position at night and watching the sky and outside of the window ... I always wanted to know
+  what he might be seeing and what the village might have look like." Simon's fully built village is
+  what he admired most. The village was not visible from the asylum window and is largely invented,
+  so a fuller village is an invented extension in the derived style. It touches scope: noted, not
+  queued. It also fits C (the arrival), which already plans a line from Vincent's letter.
+
 ## Pickup — 2026-10-06: the painted village is live
 
 **Current agent entry point:** read `tasks/2026-10-06-handoff.md`. The source-painted village went live
