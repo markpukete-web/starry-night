@@ -308,7 +308,7 @@ test('T1 unset moving-sky options equal their explicit defaults', () => {
     openSkyBandV: 1,
   }
   for (const opts of [hole, rampScene()]) {
-    assert.deepEqual(buildSourceStreamlineRibbons(opts), buildSourceStreamlineRibbons({ ...opts, maxTurnCos: undefined, minPoints: 3, colourPerRibbon: false }))
+    assert.deepEqual(buildSourceStreamlineRibbons(opts), buildSourceStreamlineRibbons({ ...opts, maxTurnCos: undefined, minPoints: 3, colourPerRibbon: false, smoothTrail: false }))
   }
 })
 
@@ -386,4 +386,28 @@ test('T5 colourPerRibbon gives each ribbon the composite-space colour at its mid
     if (plain.vertices.slice(s, e).some((v) => v.color.join() !== want.join())) varied = true
   }
   assert.ok(varied, 'positive control: without the option some ribbon changes colour along its length')
+})
+
+test('T6 smoothTrail moves only interior centre-line points, to the 1-2-1 average, and keeps the topology', () => {
+  const plain = buildSourceStreamlineRibbons(rampScene())
+  const smooth = buildSourceStreamlineRibbons({ ...rampScene(), smoothTrail: true })
+  assert.deepEqual(smooth.indices, plain.indices)
+  const meta = (v: Built['vertices'][number]) => [v.len, v.across, v.phase, v.rate]
+  assert.deepEqual(smooth.vertices.map(meta), plain.vertices.map(meta))
+  // the centre line is the mean of each across pair: the ±normal offsets cancel
+  const centre = (b: Built, i: number) => [(b.vertices[i].u + b.vertices[i + 1].u) / 2, (b.vertices[i].v + b.vertices[i + 1].v) / 2]
+  let moved = false
+  for (const [s, e] of ribbonRanges(plain)) {
+    const n = (e - s) / 2
+    for (let k = 0; k < n; k++) {
+      const got = centre(smooth, s + 2 * k)
+      const want =
+        k === 0 || k === n - 1
+          ? centre(plain, s + 2 * k)
+          : [0, 1].map((c) => (centre(plain, s + 2 * (k - 1))[c] + 2 * centre(plain, s + 2 * k)[c] + centre(plain, s + 2 * (k + 1))[c]) / 4)
+      for (const c of [0, 1]) assert.ok(Math.abs(got[c] - want[c]) < 1e-12, `ribbon at ${s}, point ${k}`)
+      if (Math.hypot(got[0] - centre(plain, s + 2 * k)[0], got[1] - centre(plain, s + 2 * k)[1]) > 1e-9) moved = true
+    }
+  }
+  assert.ok(moved, 'positive control: the ramp scene has corners for the smoothing to move')
 })

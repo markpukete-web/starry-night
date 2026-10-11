@@ -856,6 +856,7 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
       maxTurnCos: MOVING.maxTurnCos,
       minPoints: MOVING.minPoints,
       colourPerRibbon: true,
+      smoothTrail: true,
       }))
     })
   }, [images, movingEver])
