@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import test from 'node:test'
 import { buildSourceStreamlineRibbons } from '../src/scene/streamlineGeometry.ts'
+import { SWIRLS } from '../src/scene/skySwirls.ts'
 import type { ImageData2D } from '../src/scene/useImageData.ts'
 
 function image(width: number, height: number, rgba: [number, number, number, number]): ImageData2D {
@@ -206,4 +208,182 @@ test('without openSkyBandV (2D routes) mask holes stay unseeded', () => {
   const holeU = (holeW / 64) * 0.9
   const inside = built.vertices.filter((vertex) => vertex.u < holeU).length
   assert.ok(inside / built.vertices.length < 0.1, `only trail drift may enter the hole, got ${inside}/${built.vertices.length}`)
+})
+
+// ── Moving-sky builder options (feat/sky-choice, plan scratch/sky-choice-2026-10-11/plan-v2.md) ──
+
+type BuildOptions = Parameters<typeof buildSourceStreamlineRibbons>[0]
+type Built = ReturnType<typeof buildSourceStreamlineRibbons>
+
+/**
+ * T2 golden fixture, a byte-for-byte port of scratch/sky-choice-2026-10-11/golden/ramp-scene.mjs.
+ * Asymmetric colour ramp (so a colour-sampling error shows), varied flow direction, and side strips
+ * (uPad 0.25) with their own blue, as the shipping diorama sky builds them.
+ */
+function rampScene(): BuildOptions {
+  const W = 48
+  const H = 48
+  const pad = 12
+  const compW = W + 2 * pad
+  const painting = image(compW, H, [0, 0, 0, 0])
+  const flow = image(compW, H, [0, 0, 0, 0])
+  const mask = image(W, H, [255, 255, 255, 255])
+  for (let y = 0; y < H; y++)
+    for (let x = 0; x < compW; x++) {
+      const i = (y * compW + x) * 4
+      const strip = x < pad || x >= pad + W
+      painting.data.set([Math.round((255 * x) / (compW - 1)), Math.round((255 * y) / (H - 1)), strip ? 220 : 60, 255], i)
+      const angle = 0.9 * (x / (compW - 1))
+      flow.data.set([Math.round(((Math.cos(angle) + 1) / 2) * 255), Math.round(((Math.sin(angle) + 1) / 2) * 255), 128, 255], i)
+    }
+  return {
+    flowData: flow,
+    maskData: mask,
+    paintingData: painting,
+    count: 60,
+    strokeWidth: 0.004,
+    points: 16,
+    stepSize: 0.02,
+    seed: 123,
+    openSkyBandV: 0.62,
+    uPad: pad / W,
+    trailMaxV: 0.7,
+  }
+}
+
+/** A 64×64 field flowing +x left of u = 0.5 and along `right` (image axes, y down) from there on. */
+function splitScene(right: [number, number]): BuildOptions {
+  const size = 64
+  const flow = image(size, size, [255, 128, 128, 255])
+  const enc = (d: number) => Math.round(((d + 1) / 2) * 255)
+  for (let y = 0; y < size; y++)
+    for (let x = size / 2; x < size; x++) flow.data.set([enc(right[0]), enc(right[1]), 128, 255], (y * size + x) * 4)
+  return {
+    flowData: flow,
+    maskData: image(size, size, [255, 255, 255, 255]),
+    paintingData: image(size, size, [40, 90, 180, 255]),
+    count: 200,
+    strokeWidth: 0.004,
+    points: 16,
+    stepSize: 0.01,
+    seed: 123,
+  }
+}
+
+/** Ribbons as [start, end) vertex ranges. A ribbon starts at its first point's across-0 vertex. */
+function ribbonRanges(out: Built): [number, number][] {
+  const starts = out.vertices.flatMap((v, i) => (v.len === 0 && v.across === 0 ? [i] : []))
+  return starts.map((s, k) => [s, starts[k + 1] ?? out.vertices.length])
+}
+
+/** Centreline points of one ribbon: the mean of each vertex pair (the width is symmetric). */
+function centreline(out: Built, [s, e]: [number, number]): [number, number][] {
+  const pts: [number, number][] = []
+  for (let i = s; i < e; i += 2) pts.push([(out.vertices[i].u + out.vertices[i + 1].u) / 2, (out.vertices[i].v + out.vertices[i + 1].v) / 2])
+  return pts
+}
+
+/** Cosine of the turn between each pair of consecutive centreline segments. */
+function turnCosines(pts: [number, number][]): number[] {
+  const out: number[] = []
+  for (let k = 2; k < pts.length; k++) {
+    const a = [pts[k - 1][0] - pts[k - 2][0], pts[k - 1][1] - pts[k - 2][1]]
+    const b = [pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]]
+    out.push((a[0] * b[0] + a[1] * b[1]) / (Math.hypot(a[0], a[1]) * Math.hypot(b[0], b[1])))
+  }
+  return out
+}
+
+test('T1 unset moving-sky options equal their explicit defaults', () => {
+  const { painting, mask } = holeScene()
+  const hole: BuildOptions = {
+    flowData: image(64, 64, [255, 128, 255, 255]),
+    maskData: mask,
+    paintingData: painting,
+    count: 60,
+    strokeWidth: 0.004,
+    points: 8,
+    stepSize: 0.01,
+    seed: 123,
+    openSkyBandV: 1,
+  }
+  for (const opts of [hole, rampScene()]) {
+    assert.deepEqual(buildSourceStreamlineRibbons(opts), buildSourceStreamlineRibbons({ ...opts, maxTurnCos: undefined, minPoints: 3, colourPerRibbon: false }))
+  }
+})
+
+test('T2 default build is byte-identical to base c20d8b1 on the ramp scene', () => {
+  // Golden from a clean `git archive c20d8b1` export: scratch/sky-choice-2026-10-11/golden/golden.raw.txt
+  // (Lead), reproduced independently by the Worker and the Reviewer on 2026-10-11.
+  const out = buildSourceStreamlineRibbons(rampScene())
+  assert.equal(createHash('sha256').update(JSON.stringify(out)).digest('hex'), '0da6971aa6bc79df2478ea450251d0ecf504b4ef990dc317bfd885f61fa95095')
+})
+
+test('T3a maxTurnCos ends a trail before any turn sharper than the limit', () => {
+  const out = buildSourceStreamlineRibbons({ ...splitScene([0, 1]), maxTurnCos: 0.5 })
+  const ribbons = ribbonRanges(out).map((r) => centreline(out, r))
+  for (const pts of ribbons) for (const c of turnCosines(pts)) assert.ok(c >= 0.5 - 1e-9, `kept a turn with cos ${c}`)
+  assert.ok(ribbons.some((pts) => pts.length >= 3 && pts[0][0] < 0.45), 'no left-seeded prefix survived')
+})
+
+test('T3b without maxTurnCos the same field keeps the sharp turn (positive control)', () => {
+  const out = buildSourceStreamlineRibbons(splitScene([0, 1]))
+  const ribbons = ribbonRanges(out).map((r) => centreline(out, r))
+  assert.ok(ribbons.some((pts) => turnCosines(pts).some((c) => c < 0.5)))
+})
+
+test('T3c maxTurnCos keeps a turn gentler than the limit', () => {
+  const out = buildSourceStreamlineRibbons({ ...splitScene([Math.cos(Math.PI / 6), Math.sin(Math.PI / 6)]), maxTurnCos: 0.5 })
+  const ribbons = ribbonRanges(out).map((r) => centreline(out, r))
+  assert.ok(ribbons.some((pts) => turnCosines(pts).some((c) => c > 0.5 && c < 0.99)))
+})
+
+test('T3d the flip correction runs before the turn cutoff', () => {
+  const out = buildSourceStreamlineRibbons({ ...splitScene([-1, 0]), maxTurnCos: 0.5 })
+  const outsideSwirls = ([u, v]: [number, number]) => SWIRLS.every(([su, sv, , sr]) => Math.hypot(u - su, v - sv) >= sr * 1.5)
+  const crossed = ribbonRanges(out)
+    .map((r) => centreline(out, r))
+    .filter((pts) => pts[0][0] < 0.45)
+    .filter((pts) => {
+      const at = pts.findIndex(([u]) => u >= 0.5)
+      return at >= 0 && outsideSwirls(pts[at]) && pts.filter(([u]) => u > 0.5).length >= 2
+    })
+  assert.ok(crossed.length > 0, 'no left-seeded ribbon continued across the reversal')
+})
+
+test('T4 minPoints drops ribbons by realised length, leaving the rest unchanged', () => {
+  const opts = { ...rampScene(), trailMaxV: 0.5 }
+  const all = buildSourceStreamlineRibbons(opts)
+  const lengths = ribbonRanges(all).map(([s, e]) => (e - s) / 2)
+  assert.ok(lengths.includes(7) && lengths.includes(8), `fixture must hold both sides of the boundary: ${lengths}`)
+  const expected: Built = { vertices: [], indices: [] }
+  for (const [s, e] of ribbonRanges(all)) {
+    const m = (e - s) / 2
+    if (m < 8) continue
+    const base = expected.vertices.length
+    expected.vertices.push(...all.vertices.slice(s, e))
+    for (let k = 0; k < m - 1; k++) {
+      const v0 = base + k * 2
+      expected.indices.push(v0, v0 + 1, v0 + 2, v0 + 1, v0 + 3, v0 + 2)
+    }
+  }
+  assert.deepEqual(buildSourceStreamlineRibbons({ ...opts, minPoints: 8 }), expected)
+})
+
+test('T5 colourPerRibbon gives each ribbon the composite-space colour at its middle point', () => {
+  const plain = buildSourceStreamlineRibbons(rampScene())
+  const single = buildSourceStreamlineRibbons({ ...rampScene(), colourPerRibbon: true })
+  const strip = ({ u }: { u: number }) => u < 0 || u > 1
+  assert.ok(plain.vertices.some(strip), 'fixture must keep a side-strip ribbon')
+  assert.deepEqual(single.indices, plain.indices)
+  const shape = (v: Built['vertices'][number]) => [v.u, v.v, v.len, v.across, v.phase, v.rate]
+  assert.deepEqual(single.vertices.map(shape), plain.vertices.map(shape))
+  let varied = false
+  for (const [s, e] of ribbonRanges(plain)) {
+    const mid = s + 2 * Math.floor(((e - s) / 2 - 1) / 2)
+    const want = plain.vertices[mid].color
+    for (let i = s; i < e; i++) assert.deepEqual(single.vertices[i].color, want, `ribbon at ${s}, vertex ${i}`)
+    if (plain.vertices.slice(s, e).some((v) => v.color.join() !== want.join())) varied = true
+  }
+  assert.ok(varied, 'positive control: without the option some ribbon changes colour along its length')
 })
