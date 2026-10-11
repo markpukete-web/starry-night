@@ -26,6 +26,17 @@ commit 1 `315ab5a` done and mutation-proven. Next: commit 2 (moving-sky mode), 3
 - [ ] Mark: captures + phone on the Vercel preview → merge on his word.
 - [ ] Then make-it-alive A (its tempo drives both skies), B, C.
 
+### Proposed to Mark — visitor brush controls (Mark, 2026-10-11)
+
+Mark: in Simon Lee's project "he has set up some brush bars so that users can move and make the paint
+the way they want, I remember we use to have it too". We did: the dev-only `leva` panel (stroke count,
+width, speed, shimmer…; "set as default" writes `src/scene/sky-tuning.json`). It was never shipped to
+visitors (production aliases `leva` to `src/dev/leva-stub.ts`) and today it exists only on the flat 2D
+route (`LivingPainting`, `StreamlineSky`); the 3D sky reads the saved values but has no panel. A
+visitor-facing version would be a small, designed set of paint controls, not the dev panel. It is close
+to the locked "preset dials" item, so it is Mark's call. Noted, not queued. Natural fit: after the sky
+choice, alongside make-it-alive B (touch).
+
 ## Direction confirmed — 2026-10-11
 
 Mark, after the Simon Lee study (`tasks/2026-10-11-simon-lee-study.md`): "my original thought was to
