@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { useTexture } from '@react-three/drei'
 import {
@@ -175,7 +175,6 @@ const movingFrag = /* glsl */ `
   uniform float uPeriod;
   uniform float uStroke;
   uniform float uOpacity;
-  uniform float uFreeze;
   varying float vLen;
   varying float vAcross;
   varying float vPhase;
@@ -184,7 +183,7 @@ const movingFrag = /* glsl */ `
   varying float vEdgeFade;
 
   void main() {
-    float t = mix(uTime, 0.0, uFreeze);
+    float t = uTime;
     // where this fragment sits inside its sliding period; the stroke occupies [0, uStroke)
     float s = fract((vLen - t * uSpeed * vRate) / uPeriod + vPhase / 6.2831853);
     if (s > uStroke) discard;
@@ -236,6 +235,26 @@ const washFrag = /* glsl */ `
   uniform int uMovingSky;
   varying vec2 vUv;
   varying float vEdgeFade;
+
+  // The painting at painting-space u, with the S4 side strips past its edges.
+  // Texture hand-off: bilinear cannot blend ACROSS textures, so a hard branch leaves a
+  // dashed hairline where the regrown border meets the canvas — feather the switch instead.
+  vec3 painted(float pu, float v) {
+    float FEATHER = 0.006;
+    float tL = 1.0 - smoothstep(uBorderU - FEATHER, uBorderU, pu);
+    float tR = smoothstep(1.0 - uBorderU, 1.0 - uBorderU + FEATHER, pu);
+    vec3 col = texture2D(uPainting, vec2(clamp(pu, 0.0, 1.0), v)).rgb;
+    if (tL > 0.0) {
+      vec3 left = texture2D(uExtendLeft, vec2((pu + uExtendU) / (uExtendU + uBorderU), v)).rgb;
+      col = mix(col, left, tL);
+    }
+    if (tR > 0.0) {
+      vec3 right = texture2D(uExtendRight, vec2((pu - (1.0 - uBorderU)) / (uExtendU + uBorderU), v)).rgb;
+      col = mix(col, right, tR);
+    }
+    return col;
+  }
+
   void main() {
     // vUv.x is PAINTING-space u and runs past [0,1] by uExtendU onto the S4 side strips
     // (sky-extend-{left,right}.png — the painting continued offline with its own sky patches,
@@ -258,26 +277,15 @@ const washFrag = /* glsl */ `
     if (uMovingSky == 1) {
       // Moving sky: no painting under the strokes. Keep the scan's own warm star and moon bodies
       // (drawn over the strokes) and the horizon rows below the stroke band.
-      vec3 src = texture2D(uPainting, vec2(clamp(pu, 0.0, 1.0), vUv.y)).rgb;
+      // decide from the colour this fragment will draw: clamping pu sampled the scan's pale weave
+      // border into the side strips and painted them in (review F1)
+      vec3 src = painted(pu, vUv.y);
       float srcL = dot(src, vec3(0.299, 0.587, 0.114));
       float body = smoothstep(0.04, 0.14, 0.5 * (src.r + src.g) - src.b) * smoothstep(0.42, 0.58, srcL);
       a = max(mask * smoothstep(0.62, 0.68, vUv.y), body * step(vUv.y, 0.6)) * vEdgeFade;
     }
     if (a < 0.02) discard;
-    // Texture hand-off: bilinear cannot blend ACROSS textures, so a hard branch leaves a
-    // dashed hairline where the regrown border meets the canvas — feather the switch instead.
-    float FEATHER = 0.006;
-    float tL = 1.0 - smoothstep(uBorderU - FEATHER, uBorderU, pu);
-    float tR = smoothstep(1.0 - uBorderU, 1.0 - uBorderU + FEATHER, pu);
-    vec3 col = texture2D(uPainting, vec2(clamp(pu, 0.0, 1.0), vUv.y)).rgb;
-    if (tL > 0.0) {
-      vec3 left = texture2D(uExtendLeft, vec2((pu + uExtendU) / (uExtendU + uBorderU), vUv.y)).rgb;
-      col = mix(col, left, tL);
-    }
-    if (tR > 0.0) {
-      vec3 right = texture2D(uExtendRight, vec2((pu - (1.0 - uBorderU)) / (uExtendU + uBorderU), vUv.y)).rgb;
-      col = mix(col, right, tR);
-    }
+    vec3 col = painted(pu, vUv.y);
     if (uDebugMode == 1) {
       col = mix(vec3(0.03, 0.08, 0.18), vec3(0.12, 0.38, 0.96), mask);
       gl_FragColor = vec4(col, a * 0.5);
@@ -373,6 +381,24 @@ function compositeSideExtended(base: ImageData2D, left: ImageData2D, right: Imag
   blit(left, 0)
   blit(right, padPx + base.width - borderPx)
   return { data, width, height: base.height }
+}
+
+type SkyImages = Record<
+  'flowData' | 'maskData' | 'paintingData' | 'extendLeftData' | 'extendRightData' | 'extendFlowLeftData' | 'extendFlowRightData',
+  ImageData2D
+>
+
+/**
+ * Both skies integrate across the composite [left strip | canvas | right strip] so the churn carries over
+ * the canvas edges; count scales with the wider domain to hold front density. Built inside each geometry
+ * memo and then dropped: kept for the session the two composites held 21 MB the light sky never reads again
+ * (review F2).
+ */
+function composite(i: SkyImages) {
+  const compositePainting = compositeSideExtended(i.paintingData, i.extendLeftData, i.extendRightData)
+  const compositeFlow = compositeSideExtended(i.flowData, i.extendFlowLeftData, i.extendFlowRightData)
+  const uPad = (compositePainting.width - i.paintingData.width) / 2 / i.paintingData.width
+  return { compositePainting, compositeFlow, maskData: i.maskData, uPad }
 }
 
 function makeMoonHaloTexture(): CanvasTexture {
@@ -632,20 +658,18 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
     [extendLeft, extendRight, isFlowDebug, mask, painting],
   )
 
-  // Both skies integrate across the composite [left strip | canvas | right strip], built once.
-  const sources = useMemo(() => {
-    if (!flowData || !maskData || !paintingData) return null
-    if (!extendLeftData || !extendRightData || !extendFlowLeftData || !extendFlowRightData) return null
-    // ribbons integrate across the composite [left strip | canvas | right strip] so the churn
-    // carries over the canvas edges; count scales with the wider domain to hold front density
-    const compositePainting = compositeSideExtended(paintingData, extendLeftData, extendRightData)
-    const compositeFlow = compositeSideExtended(flowData, extendFlowLeftData, extendFlowRightData)
-    const uPad = (compositePainting.width - paintingData.width) / 2 / paintingData.width
-    return { compositePainting, compositeFlow, maskData, uPad }
-  }, [extendFlowLeftData, extendFlowRightData, extendLeftData, extendRightData, flowData, maskData, paintingData])
+  // The seven source images, memoised on their identities so the geometry memos below see a stable input.
+  const images = useMemo(
+    () =>
+      flowData && maskData && paintingData && extendLeftData && extendRightData && extendFlowLeftData && extendFlowRightData
+        ? { flowData, maskData, paintingData, extendLeftData, extendRightData, extendFlowLeftData, extendFlowRightData }
+        : null,
+    [extendFlowLeftData, extendFlowRightData, extendLeftData, extendRightData, flowData, maskData, paintingData],
+  )
 
   const geometry = useMemo(() => {
-    if (!sources) return null
+    if (!images) return null
+    const sources = composite(images)
     const { compositePainting, compositeFlow, uPad } = sources
     const ribbons = buildSourceStreamlineRibbons({
       flowData: compositeFlow,
@@ -666,14 +690,16 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
       trailMaxV: 0.7,
     })
     return ribbonsToGeometry(ribbons)
-  }, [isFlowDebug, sources])
+  }, [images, isFlowDebug])
 
   // The moving sky's own, denser strokes: built on first use, one count for every orientation, so a
   // resize never rebuilds it (review F7). Same seed and streamline field as the light sky.
   const movingGeometry = useMemo(() => {
-    if (!movingEver || !sources) return null
-    const { compositePainting, compositeFlow, uPad } = sources
-    return devTimed('moving-stroke geometry (build + attributes + bounds)', () => ribbonsToGeometry(buildSourceStreamlineRibbons({
+    if (!movingEver || !images) return null
+    return devTimed('moving-stroke geometry (composite + build + attributes + bounds)', () => {
+      const sources = composite(images)
+      const { compositePainting, compositeFlow, uPad } = sources
+      return ribbonsToGeometry(buildSourceStreamlineRibbons({
       flowData: compositeFlow,
       maskData: sources.maskData,
       paintingData: compositePainting,
@@ -688,10 +714,11 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
       maxTurnCos: MOVING.maxTurnCos,
       minPoints: MOVING.minPoints,
       colourPerRibbon: true,
-    })))
-  }, [movingEver, sources])
+      }))
+    })
+  }, [images, movingEver])
 
-  // Geometry is ready before the mode flips, so strokes, wash and gradient always change together.
+  // Geometry is ready before the mode flips; the layout effect below switches wash and gradient in the same frame.
   const mode: SkyStyle = wanted === 'moving' && movingGeometry ? 'moving' : 'light'
 
   const ribbonMaterial = useMemo(
@@ -742,7 +769,6 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
           uPeriod: { value: MOVING.period },
           uStroke: { value: MOVING.stroke },
           uOpacity: { value: MOVING.opacity },
-          uFreeze: { value: 0 },
         },
         vertexShader: ribbonVert,
         fragmentShader: movingFrag,
@@ -757,13 +783,15 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
 
   useEffect(() => {
     /* eslint-disable react-hooks/immutability -- intentional R3F uniform writes */
-    movingMaterial.uniforms.uFreeze.value = paused ? 1 : 0
     // The light material is rebuilt at t = 0 on every pause change; reset the moving clock to match.
+    // Paused, useFrame writes nothing, so t = 0 is the still.
     if (paused) movingMaterial.uniforms.uTime.value = 0
     /* eslint-enable react-hooks/immutability */
   }, [movingMaterial, paused])
 
-  useEffect(() => {
+  // Layout effect: runs before paint in every update lane, so the strokes, wash and gradient switch in the
+  // same frame. A passive effect could trail by one frame after a non-click update (review F4).
+  useLayoutEffect(() => {
     /* eslint-disable react-hooks/immutability -- intentional R3F uniform writes */
     washMaterial.uniforms.uMovingSky.value = mode === 'moving' ? 1 : 0
     // Set from the palette each time, never multiplied in place, so switching cannot drift.

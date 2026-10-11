@@ -115,14 +115,15 @@ export function VisitorChrome({
         </aside>
       )}
       <nav className="visitor-dock" aria-label="Artwork controls">
-        {/* Not offered under system reduced motion: the sky is the painted still there (the pause
-            button already says why motion is off). The choice itself is kept for later. */}
-        {onToggleSky && !reduced && (
+        {/* Under system reduced motion the sky is the painted still, so the choice is disabled, like the
+            pause button: removing it dropped keyboard focus to the page (review F8). The choice is kept. */}
+        {onToggleSky && (
           <VisitorButton
-            active={sky === 'moving'}
+            active={!reduced && sky === 'moving'}
+            disabled={reduced}
             icon="≋"
-            label={sky === 'moving' ? 'Switch sky to painted light' : 'Switch sky to moving strokes'}
-            text={sky === 'moving' ? 'Sky: moving strokes' : 'Sky: painted light'}
+            label={reduced ? 'Sky choice paused by system setting' : sky === 'moving' ? 'Switch sky to painted light' : 'Switch sky to moving strokes'}
+            text={reduced || sky === 'light' ? 'Sky: painted light' : 'Sky: moving strokes'}
             onClick={onToggleSky}
           />
         )}

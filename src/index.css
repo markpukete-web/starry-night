@@ -236,10 +236,11 @@ button {
   }
 
   /* On a phone the 300px placard swallowed most of the frame; it must read as a reference, not
-     replace the piece. Sits clear of a wrapped dock. */
+     replace the piece. Sits clear of a wrapped dock: four pills wrap to three rows at 320px
+     (3 × 36 + 4 × 8 + 14 = 154px), and 172 keeps the 18px clearance two rows had (review F7). */
   .visitor-reference {
     width: min(196px, 52vw);
-    bottom: 128px;
+    bottom: 172px;
   }
 }
 

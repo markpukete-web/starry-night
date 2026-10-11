@@ -205,7 +205,8 @@ export function buildSourceStreamlineRibbons({
       if (curU < 0 || curU > 1 || curV < 0 || curV > 1) break
     }
 
-    if (trail.length < minPoints) return
+    // a ribbon needs two points for its tangent (pTrail[1]), whatever minPoints says
+    if (trail.length < Math.max(2, minPoints)) return
 
     // Geometry is emitted in PAINTING space (colour still samples the composite): tangents,
     // normals and widths are computed after the conversion, so with uPad 0 the output is
