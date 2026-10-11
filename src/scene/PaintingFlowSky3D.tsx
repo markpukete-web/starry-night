@@ -194,6 +194,9 @@ const movingFrag = /* glsl */ `
   }
 
   void main() {
+    // edge width first: derivatives need the whole pixel quad, so before any discard. vAcross is smooth,
+    // unlike y below, whose kink at the centre line gives a false zero
+    float aa = fwidth(vAcross) * 1.5;
     float t = uTime;
     // which sliding period this fragment is in (one stroke each) and where inside it
     float pos = (vLen - t * uSpeed * vRate) / uPeriod + vPhase / 6.2831853;
@@ -210,17 +213,17 @@ const movingFrag = /* glsl */ `
     float x = abs(w - 0.5) * 2.0;
     float y = abs(vAcross - 0.5) * 2.0;
     float side = vAcross * 2.0 - 1.0;
-    // bristle lanes run along the stroke: two octaves across it, seeded per stroke, drifting a little
-    // along it so a lane can thin out or merge
+    // bristle lanes (below) run along the stroke: two octaves across it, seeded per stroke, drifting a
+    // little along it so a lane can thin out or merge
     float seed = hash1(id + 3.1) * 40.0;
-    float streak = 0.62 * noise1(side * 4.5 + seed + w * 0.8) + 0.38 * noise1(side * 11.0 + seed * 1.7 - w * 1.5);
-    // rounded, fuller head; the flanks wobble with the lanes instead of a ruled edge
+    // rounded, fuller head; the flanks wobble instead of a ruled edge
     float r = pow(max(1.0 - pow(x, 2.5), 0.0), 0.4) * mix(0.72, 1.0, w) * (0.9 + 0.1 * noise1(w * 9.0 + seed));
-    float aa = fwidth(y) * 0.75;
     float a = (1.0 - smoothstep(r - aa, r, y)) * life * uOpacity * vEdgeFade;
+    if (a < 0.02) discard;
+    // the lanes cost four hashes, so only for fragments inside the stroke's outline
+    float streak = 0.62 * noise1(side * 4.5 + seed + w * 0.8) + 0.38 * noise1(side * 11.0 + seed * 1.7 - w * 1.5);
     // dry brush: toward the tail the paint runs out and the thin lanes break first
     if (streak < smoothstep(0.3, 0.0, w) * 0.7) discard;
-    if (a < 0.02) discard;
     // raised paint: one flank lit, the other in shadow, a ridge between, a darker rim
     float relief = 0.86 - 0.22 * side + 0.12 * (1.0 - y * y);
     float bristle = mix(0.8, 1.1, streak);
