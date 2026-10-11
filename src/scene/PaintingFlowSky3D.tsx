@@ -209,11 +209,20 @@ const movingFrag = /* glsl */ `
     float f = fract(x);
     return mix(hash1(i), hash1(i + 1.0), f * f * (3.0 - 2.0 * f));
   }
+  // the same noise with its slope, so the bristle lanes can catch the light
+  vec2 noise1d(float x) {
+    float i = floor(x);
+    float f = fract(x);
+    float h0 = hash1(i);
+    float h1 = hash1(i + 1.0);
+    return vec2(mix(h0, h1, f * f * (3.0 - 2.0 * f)), (h1 - h0) * 6.0 * f * (1.0 - f));
+  }
 
   void main() {
-    // edge width first: derivatives need the whole pixel quad, so before any discard. vAcross is smooth,
-    // unlike y below, whose kink at the centre line gives a false zero
-    float aa = max(fwidth(vAcross) * 1.5, 1e-4);
+    // derivatives first: they need the whole pixel quad, so before any discard. vAcross is smooth, unlike y
+    // below, whose kink at the centre line gives a false zero. g also points across the stroke on screen.
+    vec2 g = vec2(dFdx(vAcross), dFdy(vAcross));
+    float aa = max((abs(g.x) + abs(g.y)) * 1.5, 1e-4);
     float t = uTime;
     // which sliding period this fragment is in (one stroke each) and where inside it
     float pos = (vLen - t * uSpeed * vRate) / uPeriod + vPhase / 6.2831853;
@@ -239,14 +248,25 @@ const movingFrag = /* glsl */ `
     float a = (1.0 - smoothstep(r - aa, r, y)) * life * uOpacity * vEdgeFade;
     if (a < 0.02) discard;
     // the lanes cost four hashes, so only for fragments inside the stroke's outline
-    float streak = 0.62 * noise1(side * 4.5 + seed + w * 0.8) + 0.38 * noise1(side * 11.0 + seed * 1.7 - w * 1.5);
+    vec2 lane1 = noise1d(side * 4.5 + seed + w * 0.8);
+    vec2 lane2 = noise1d(side * 11.0 + seed * 1.7 - w * 1.5);
+    float streak = 0.62 * lane1.x + 0.38 * lane2.x;
+    // the coarse lane's slope only: the fine lane runs about 11 cycles across a 10 px stroke, and lit it sparkled
+    float streakSlope = 0.62 * 4.5 * lane1.y;
     // dry brush: toward the tail the paint runs out and the thin lanes break first
     if (streak < (1.0 - smoothstep(0.0, 0.3, w)) * 0.7) discard;
-    // raised paint: one flank lit, the other in shadow, a ridge between, a darker rim
-    float relief = 0.86 - 0.22 * side + 0.12 * (1.0 - y * y);
+    // raised paint under one raking light from the upper left, the same for every stroke. Paint height across
+    // the stroke is a ridge plus the lanes, h = 0.5 (1 - side^2) + 0.05 streak. A flank is lit by how far it
+    // slopes toward the light: -dh/dside along g, the screen direction of rising side (window y is up).
+    float facing = dot(g / max(length(g), 1e-6), vec2(-0.6, 0.8));
+    float lit = (side - 0.12 * streakSlope) * facing;
+    float rake = 1.0 + 0.5 * lit;
+    float relief = (0.86 + 0.12 * (1.0 - y * y)) * rake;
     float bristle = mix(0.8, 1.1, streak);
     float rim = mix(0.72, 1.0, 1.0 - smoothstep(0.6, 0.95, y));
     vec3 col = vColor * relief * bristle * rim;
+    // wet paint: a soft sheen where a flank turns most toward the light
+    col += pow(max(lit, 0.0), 3.0) * 0.18;
     // the most loaded lanes carry a paler streak of the same paint, as in the painting's broken colour
     col = mix(col, col * 1.15 + 0.03, smoothstep(0.75, 0.95, streak) * 0.4);
     float lum = dot(col, vec3(0.299, 0.587, 0.114));
