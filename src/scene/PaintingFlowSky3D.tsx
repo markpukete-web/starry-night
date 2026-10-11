@@ -381,9 +381,11 @@ ${paintedGlsl('')}
       float d = length(vec2(vUv.x - b.x, (vUv.y - b.y) * ASPECT));
       body = max(body, 1.0 - smoothstep(0.7 * b.z, b.z, d));
     }
+    // sample before the discard: a mipmapped lookup takes implicit derivatives from the whole pixel quad, and
+    // GLSL leaves them undefined after a discard that only some of the quad took (Codex review-v2 N1)
+    vec3 col = painted(vUv.x, vUv.y);
     float a = body * vEdgeFade;
     if (a < 0.02) discard;
-    vec3 col = painted(vUv.x, vUv.y);
     float srcLum = dot(col, vec3(0.299, 0.587, 0.114));
     col *= vec3(0.74, 0.84, 1.0);
     col *= 1.0 + 0.52 * smoothstep(0.3, 0.62, srcLum);
