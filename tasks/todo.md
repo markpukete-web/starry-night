@@ -19,7 +19,8 @@ Branch `feat/sky-choice` (local; Mark pushes after his review). Default sky pixe
 - [x] Fable implementation review FIX → fixes `3262865`, `58a1560` → GATE.
 - [x] Lead gate: all checks pass (`tasks/2026-10-11-sky-choice.md`, gate record).
 - [x] Mark: "room to improve" → moving sky refined, Codex-reviewed, gated (`0918095`..`a16c780`, record section "Refinement").
-- [ ] **Mark: taste review** on captures, the four open items in the record, phone on the Vercel preview.
+- [x] Mark: taste review at his Mac (moon dimmed, then glow tuned); "push it and open the PR" (2026-10-11 evening).
+- [ ] **Mark: phone check** of the moving sky on the Vercel preview before merging.
 - [ ] On Mark's word: push, PR, read the Codex/Fable PR review, merge (= deploy).
 - [ ] Then make-it-alive A (its tempo drives both skies), B, C.
 

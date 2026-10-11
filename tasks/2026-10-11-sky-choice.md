@@ -1,4 +1,4 @@
-# Sky choice — built, reviewed, gated and refined, 2026-10-11 (Mark's taste review pending)
+# Sky choice — built, reviewed, gated and refined, 2026-10-11 (Mark reviewed; PR opened on his word)
 
 Visitors choose the sky with a "Sky: painted light / Sky: moving strokes" button that leads the dock on the
 3D diorama. Painted light is today's sky and stays the default, pixel-identical to production. Moving strokes
@@ -60,6 +60,9 @@ detector blind to one-frame pops) → Fable as Consultant, Codex's 5-hour usage 
 | `c083397` | Coverage: `minPoints` 9 → 5, path fade 0.12 → 0.05, × 0.93 trim; background 4.8% → 2.3% |
 | `c8deb18` | `smoothTrail`: 1-2-1 path smoothing, moving sky only, test T6; the upper-left zig-zags soften |
 | `ff16fb9` | The short-dab trade recorded beside `minPoints` (Fable review-v4) |
+| `d640d82` | T6 also checks the width runs across the smoothed path (Fable's m3 now red) |
+| `8d1ed6c` | Mark: moon too bright. Body layer drops the wash's lift: moon L 91.9 → 85.0 (light sky 80.8) |
+| `2ceea2d`, `4b971ad` | Mark: moon glow 0.68 → 0.5 → 0.58 in the moving sky only; moon L 82.5, sky dE76 5.25 |
 
 What was wrong, measured: the strokes held half the painting's texture (mean neighbour |ΔL| 2.42 against 4.6;
 chroma matched, 28.0 against 27.2). Seven star cores and the moon showed the navy background: found with a magenta
