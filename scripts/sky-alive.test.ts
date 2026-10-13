@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { ALIVE_DEFAULTS, GUST, hasAliveKnobs, gustLag, gustPulse, gustTime, gustUniformValues, gustWeight, HALO_BREATH, haloPeriod, meanTempoBound, readAliveTuning, ribbonGusts, whorlWeight } from '../src/scene/skyAlive.ts'
+import { ALIVE_DEFAULTS, ALIVE_KNOBS, aliveSavePayload, GUST, hasAliveKnobs, gustLag, gustPulse, gustTime, gustUniformValues, gustWeight, HALO_BREATH, haloPeriod, meanTempoBound, readAliveTuning, ribbonGusts, whorlWeight } from '../src/scene/skyAlive.ts'
 import { SWIRLS } from '../src/scene/skySwirls.ts'
 import { arraysToGeometry, ribbonBuffers, ribbonsToArrays } from '../src/scene/skyRibbonArrays.ts'
 import { buildSourceStreamlineRibbons } from '../src/scene/streamlineGeometry.ts'
@@ -424,4 +424,20 @@ test('T24 the surge knob reads, clamps and defaults like the others, and leaves 
   assert.equal(readAliveTuning(new URLSearchParams('surge=4')).surge, 1.5)
   assert.equal(hasAliveKnobs(new URLSearchParams('touch=1&surge=0.3')), true)
   assert.deepEqual(gustUniformValues({ ...ALIVE_DEFAULTS, surge: 1.5 }), gustUniformValues(ALIVE_DEFAULTS))
+})
+
+test('T26 the tuner saves only the knobs it shows: no touchSurge off the touch route, every alive key either way', () => {
+  const tuning = { ...ALIVE_DEFAULTS, surge: 0.6, flicker: 0.4 }
+  const shown = ALIVE_KNOBS.filter((name) => name !== 'surge')
+  const off = aliveSavePayload(tuning, shown)
+  assert.deepEqual(off, {
+    aliveGust: tuning.gust,
+    aliveLift: tuning.lift,
+    aliveShimmer: tuning.shimmer,
+    aliveBreath: tuning.breath,
+    aliveFlicker: 0.4,
+    aliveGlimmer: tuning.glimmer,
+  })
+  assert.equal('touchSurge' in off, false)
+  assert.deepEqual(aliveSavePayload(tuning, ALIVE_KNOBS), { ...off, touchSurge: 0.6 })
 })

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ALIVE_KNOB_MAX, ALIVE_KNOBS, type AliveTuning } from './scene/skyAlive'
+import { ALIVE_KNOB_MAX, ALIVE_KNOBS, aliveSavePayload, type AliveTuning } from './scene/skyAlive'
 import { saveDefaults } from './scene/tuning'
 
 /**
@@ -55,15 +55,8 @@ export function AliveTuner({
   const save = () => {
     // success only once the writer has written the file; a rejection or a failed write shows as such
     setStatus('saving…')
-    saveDefaults({
-      aliveGust: tuning.gust,
-      aliveLift: tuning.lift,
-      aliveShimmer: tuning.shimmer,
-      aliveBreath: tuning.breath,
-      aliveFlicker: tuning.flicker,
-      aliveGlimmer: tuning.glimmer,
-      touchSurge: tuning.surge,
-    })
+    // only the knobs this route shows: a hidden `surge` restored from storage must not overwrite the shipped one
+    saveDefaults(aliveSavePayload(tuning, knobs))
       .then(() => setStatus('saved to sky-tuning.json'))
       .catch((error: unknown) => setStatus(`save failed: ${error instanceof Error ? error.message : String(error)}`))
   }

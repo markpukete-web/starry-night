@@ -190,6 +190,29 @@ export function hasAliveKnobs(params: URLSearchParams): boolean {
   return ALIVE_KNOBS.some((name) => params.has(name))
 }
 
+/** Each knob's key in `sky-tuning.json` (the shipped defaults the tuner's "set as default" writes). */
+export const ALIVE_TUNING_KEYS: Record<keyof AliveTuning, string> = {
+  gust: 'aliveGust',
+  lift: 'aliveLift',
+  shimmer: 'aliveShimmer',
+  breath: 'aliveBreath',
+  flicker: 'aliveFlicker',
+  glimmer: 'aliveGlimmer',
+  surge: 'touchSurge',
+}
+
+/**
+ * The tuner's "set as default" payload: the shipped key of every knob it SHOWS, and nothing else. Off the touch
+ * route the `surge` slider is hidden, yet the tuner's state restores every knob from local storage, so a value
+ * left by an earlier touch-tuning session would have ridden an A-only save and silently overwritten the shipped
+ * `touchSurge` (Codex, PR #10 P2). The writer merges, so a key left out keeps its shipped value.
+ */
+export function aliveSavePayload(tuning: AliveTuning, knobs: readonly (keyof AliveTuning)[]): Record<string, number> {
+  const payload: Record<string, number> = {}
+  for (const name of knobs) payload[ALIVE_TUNING_KEYS[name]] = tuning[name]
+  return payload
+}
+
 /** The uniforms the shaders take for GUST, at a tuning: the amplitudes scaled to the knob's sum. */
 export function gustUniformValues(tuning: AliveTuning = ALIVE_DEFAULTS) {
   const scale = tuning.gust / GUST_SUM

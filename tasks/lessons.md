@@ -2513,3 +2513,8 @@ after PR #8 merged (`246e817`, "Merge it then start the second pass").
   never jump has to reach exactly zero before it is removed, and a live one must never be evicted. The gate then
   proved the pair across the kick's end differs exactly as the baseline's own.
 - **Tunables change logged** (CLAUDE.md, Tunables): B's entry, the constants above, shipped `surge` 1.
+- **A hidden knob still rides a save (Codex, PR #10 P2).** The tuner hid B's `surge` slider off the touch route but
+  its state restores every knob from local storage, and "set as default" sent them all: a surge left from a touch
+  session would have overwritten the shipped `touchSurge` during an A-only save. Build a save's payload from the
+  knobs shown, by construction (`aliveSavePayload`, T26), never from the whole state; the writer merges, so a key
+  left out keeps its shipped value.
