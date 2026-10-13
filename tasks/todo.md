@@ -9,13 +9,21 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## Pickup — 2026-10-13 (night): A's sky is on `main`; the second pass (cypress, windows) is built behind the flag
+## Pickup — 2026-10-13 (late): all of A is on `main` behind the flag; B (touch) is next
 
 **Current agent entry point:** this section, then `tasks/2026-10-13-alive-a2.md` (the second pass's record and gate),
-`tasks/2026-10-13-alive-a.md` (the sky's record) and `tasks/2026-10-11-handoff.md` (history). `main` is at `246e817`
-(PR #8 merged 2026-10-13 ~08:58 UTC on Mark's word, "Merge it"; Vercel production READY at it; the default route
-proved byte-identical to the pre-merge `e80fdf7` frames). Branch: `claude/confident-bohr-1y7p2u` from `246e817`
-carries the second pass; `docs/sky-choice-live-record` is merged and done.
+`tasks/2026-10-13-alive-a.md` (the sky's record) and `tasks/2026-10-11-handoff.md` (history). `main` is at `ad15650`
+(PR #9, the second pass, merged 2026-10-13 10:31 UTC on Mark's word, "merge to main"; Vercel production
+`dpl_BnJ1FVbHc1kacQaUYHGANGHR2WGY` READY at it; the flag is still off by default, visitors see today's piece).
+PR #8 (`246e817`) merged the sky's A earlier the same evening. Branches: `claude/confident-bohr-1y7p2u` (this
+session's, restarted from `ad15650`); `docs/sky-choice-live-record` and `feat/sky-choice` deleted by Mark after
+the merges (both fully contained in `main`; the cloud session's git access refuses ref deletion, HTTP 403);
+`record/2d-streamline-flow` kept on purpose.
+
+- [x] **PR #9 merged** (`ad15650`): the cypress flicker and the window glimmer at Mark's pick, both at full. CI green,
+  Codex no findings.
+- [ ] **B, touch** — next (Mark, 2026-10-13: "let's move to the next task"; the flag decision waits on his Mac checks).
+  Plan file first, fresh review, build behind its own flag, gate, Mark's taste gate on the preview.
 
 - [x] **PR #8 merged to `main`** (`246e817`). The flag stays off by default: visitors see today's sky.
 - [x] **A, second pass, built behind `?alive=1`** (2026-10-13 night, cloud session, Mark: "Merge it then start the
