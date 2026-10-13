@@ -157,14 +157,16 @@ export type AliveTuning = {
   flicker: number
   /** the village windows' glimmer, 0–1 (second pass, villageGlow.ts) */
   glimmer: number
+  /** B (touch): a multiplier on every surge's amplitude, 0–1.5 (touchSurge.ts) */
+  surge: number
 }
 
 const GUST_SUM = GUST.amplitudes.reduce((a, b) => a + b, 0)
 /** The code's own defaults. The shipped defaults are `sky-tuning.json`'s alive* keys, read in App.tsx. */
-export const ALIVE_DEFAULTS: AliveTuning = { gust: GUST_SUM, lift: GUST.lift, shimmer: GUST.shimmerShare, breath: 1, flicker: 0.5, glimmer: 0.5 }
+export const ALIVE_DEFAULTS: AliveTuning = { gust: GUST_SUM, lift: GUST.lift, shimmer: GUST.shimmerShare, breath: 1, flicker: 0.5, glimmer: 0.5, surge: 1 }
 /** Every knob's ceiling (the floor is 0); the tuner's sliders and the URL clamp share it. */
-export const ALIVE_KNOB_MAX: AliveTuning = { gust: 0.95, lift: 0.5, shimmer: 1, breath: 3, flicker: 1, glimmer: 1 }
-export const ALIVE_KNOBS = ['gust', 'lift', 'shimmer', 'breath', 'flicker', 'glimmer'] as const
+export const ALIVE_KNOB_MAX: AliveTuning = { gust: 0.95, lift: 0.5, shimmer: 1, breath: 3, flicker: 1, glimmer: 1, surge: 1.5 }
+export const ALIVE_KNOBS = ['gust', 'lift', 'shimmer', 'breath', 'flicker', 'glimmer', 'surge'] as const
 
 /** Clamp one knob into its range; a non-finite value is the given default. */
 export function clampAliveKnob(name: keyof AliveTuning, value: number, fallback: number): number {
@@ -180,12 +182,35 @@ export function readAliveTuning(params: URLSearchParams, defaults: AliveTuning =
     const value = raw === null || raw.trim() === '' ? NaN : Number(raw)
     return clampAliveKnob(name, value, defaults[name])
   }
-  return { gust: read('gust'), lift: read('lift'), shimmer: read('shimmer'), breath: read('breath'), flicker: read('flicker'), glimmer: read('glimmer') }
+  return { gust: read('gust'), lift: read('lift'), shimmer: read('shimmer'), breath: read('breath'), flicker: read('flicker'), glimmer: read('glimmer'), surge: read('surge') }
 }
 
 /** True when the URL carries any knob, so a stored tuner state must not override it. */
 export function hasAliveKnobs(params: URLSearchParams): boolean {
   return ALIVE_KNOBS.some((name) => params.has(name))
+}
+
+/** Each knob's key in `sky-tuning.json` (the shipped defaults the tuner's "set as default" writes). */
+export const ALIVE_TUNING_KEYS: Record<keyof AliveTuning, string> = {
+  gust: 'aliveGust',
+  lift: 'aliveLift',
+  shimmer: 'aliveShimmer',
+  breath: 'aliveBreath',
+  flicker: 'aliveFlicker',
+  glimmer: 'aliveGlimmer',
+  surge: 'touchSurge',
+}
+
+/**
+ * The tuner's "set as default" payload: the shipped key of every knob it SHOWS, and nothing else. Off the touch
+ * route the `surge` slider is hidden, yet the tuner's state restores every knob from local storage, so a value
+ * left by an earlier touch-tuning session would have ridden an A-only save and silently overwritten the shipped
+ * `touchSurge` (Codex, PR #10 P2). The writer merges, so a key left out keeps its shipped value.
+ */
+export function aliveSavePayload(tuning: AliveTuning, knobs: readonly (keyof AliveTuning)[]): Record<string, number> {
+  const payload: Record<string, number> = {}
+  for (const name of knobs) payload[ALIVE_TUNING_KEYS[name]] = tuning[name]
+  return payload
 }
 
 /** The uniforms the shaders take for GUST, at a tuning: the amplitudes scaled to the knob's sum. */

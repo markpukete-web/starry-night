@@ -2477,3 +2477,44 @@ after PR #8 merged (`246e817`, "Merge it then start the second pass").
   the softer window, Mark took both at full. Two passes, two ceilings: on this project the taste gate's prior is
   "more", and the next pass should build its range above where the author's eye says enough, with the gates
   policing boil and colour rather than caution policing strength.
+
+## B (touch) — the plan and its baseline, 2026-10-13 (late)
+
+- **A killed wrapper is not a killed job.** A capture chain started with `nohup` children; its wrapper shell was
+  killed (by its own `pkill -f`, whose pattern sat in the wrapper's command line because the script's text was
+  written in the same command), and the capture child carried on. The second run then shared the output directory
+  with the first: two Chromes at once, a "pinned clock self-check failed" from one of them, and frames of unknown
+  parentage. Before a re-run, `pgrep` the capture script and Chrome by name and kill them; wipe the directory; and
+  never write a script and invoke it in one command when the script's text contains the pattern a later `pkill`
+  will match. Kill servers by pid file.
+- **A scratch script that imports the app's modules must live under the repo** (`scratch/`, ignored): node resolves
+  `three` from the importing file's directory, so a script in the session scratchpad cannot find it.
+- **`-x ** 2` is a syntax error in JavaScript;** write `-(x ** 2)`.
+- **Check the mapping and the maths before the review lands,** without touching the files the reviewer is reading:
+  the dome's analytic inverse round-trips to 4e-16 and the angular isotropy factor is exactly the planned
+  `(SPAN_V·1.06)/(SPAN_H·1.16)` = 0.7252; the surge's tempo kick never steps backwards over three overlapping
+  surges on a dense grid, its crest runs at the planned speed, the lift is bounded and gone by five time constants.
+  One number for the eye check: a single surge stays visible about 3.7 s and runs 0.9 of the canvas width.
+- **Never edit a source file while a capture chain runs against the dev server.** Vite's reload under the capture
+  took the canvas away mid-read ("no canvas") and lost a frame set. Build and test first, then capture; or capture
+  against a production preview or a second worktree when a build must continue in parallel.
+- **A Gaussian never reaches zero, and an isolation gate needs a zero.** The first surge model moved every ribbon
+  in the sky by invisible amounts (the twin's mask covered the whole frame); a cutoff at three sigma on every term,
+  in the twin and the shader, made the untouched sky byte-identical again and the gate well-posed.
+- **DevTools waits for the page, and a software frame is most of a second.** Press and release awaited one after
+  the other landed 972 ms apart (a probe with timestamps showed it), so every synthetic tap read as a drag and the
+  gate blamed the code. Fired together they land 1 ms apart. When a synthetic gesture fails, probe the timestamps
+  the page saw before touching the classifier.
+- **A lit vertex reaches a whole triangle.** The twin's mask dilated by 10 px left stray diffs of 14 grey levels
+  along the ribbon: the lift interpolates across the segment to the next vertex pair, about 16 px. Dilate by a
+  segment, not by the stroke's width; the residue is then at most 1 grey level, the support's edge in float32.
+- **The reviewer's blocker that a plan's numbers hid.** The first plan's kick was monotone only while a surge
+  stayed in the list; pruning it would have stepped the clock back and re-birthed dead strokes. A term that must
+  never jump has to reach exactly zero before it is removed, and a live one must never be evicted. The gate then
+  proved the pair across the kick's end differs exactly as the baseline's own.
+- **Tunables change logged** (CLAUDE.md, Tunables): B's entry, the constants above, shipped `surge` 1.
+- **A hidden knob still rides a save (Codex, PR #10 P2).** The tuner hid B's `surge` slider off the touch route but
+  its state restores every knob from local storage, and "set as default" sent them all: a surge left from a touch
+  session would have overwritten the shipped `touchSurge` during an A-only save. Build a save's payload from the
+  knobs shown, by construction (`aliveSavePayload`, T26), never from the whole state; the writer merges, so a key
+  left out keeps its shipped value.

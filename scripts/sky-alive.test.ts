@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { ALIVE_DEFAULTS, GUST, hasAliveKnobs, gustLag, gustPulse, gustTime, gustUniformValues, gustWeight, HALO_BREATH, haloPeriod, meanTempoBound, readAliveTuning, ribbonGusts, whorlWeight } from '../src/scene/skyAlive.ts'
+import { ALIVE_DEFAULTS, ALIVE_KNOBS, aliveSavePayload, GUST, hasAliveKnobs, gustLag, gustPulse, gustTime, gustUniformValues, gustWeight, HALO_BREATH, haloPeriod, meanTempoBound, readAliveTuning, ribbonGusts, whorlWeight } from '../src/scene/skyAlive.ts'
 import { SWIRLS } from '../src/scene/skySwirls.ts'
 import { arraysToGeometry, ribbonBuffers, ribbonsToArrays } from '../src/scene/skyRibbonArrays.ts'
 import { buildSourceStreamlineRibbons } from '../src/scene/streamlineGeometry.ts'
@@ -12,6 +12,10 @@ import { CYPRESS_FLICKER, flickerEnv, flickerF, flickerFactor, flickerMeanBound,
 import { buildCypressLobePlan, type CypressLobeRows } from '../src/scene/cypressLobes.ts'
 import { CYPRESS_LOBE_STROKE_CONFIG, generateCypressLobeStrokes } from '../src/scene/cypressLobeStrokes.ts'
 import { glowFactor, glowMeanBound, glowOmega, glowPeriods, MARK_STEPS, markVertexCount, packGlow, WINDOW_GLOW } from '../src/scene/villageGlow.ts'
+import { Vector3 } from 'three'
+import { homeInverseQuaternion, skyPointFromRay, uvFromSkyDirection, uvToDioramaSkyPosition } from '../src/scene/dioramaSkyProjection.ts'
+import { DOME_R } from '../src/scene/skyMapping.ts'
+import { SKY_ASPECT } from '../src/scene/touchSurge.ts'
 
 // make-it-alive A (tasks/2026-10-13-alive-a-plan.md): T7–T9
 
@@ -134,12 +138,12 @@ test('T12 the live knobs: defaults when absent or unparseable, clamped to their 
   assert.ok(Math.abs(d.gust - GUST.amplitudes.reduce((a, b) => a + b, 0)) < 1e-12)
   const junk = readAliveTuning(new URLSearchParams('gust=abc&lift=&shimmer=NaN&breath=Infinity&flicker=x&glimmer='))
   assert.deepEqual(junk, ALIVE_DEFAULTS)
-  const high = readAliveTuning(new URLSearchParams('gust=5&lift=9&shimmer=2&breath=99&flicker=5&glimmer=7'))
-  assert.deepEqual(high, { gust: 0.95, lift: 0.5, shimmer: 1, breath: 3, flicker: 1, glimmer: 1 })
-  const low = readAliveTuning(new URLSearchParams('gust=-1&lift=-1&shimmer=-1&breath=-1&flicker=-1&glimmer=-1'))
-  assert.deepEqual(low, { gust: 0, lift: 0, shimmer: 0, breath: 0, flicker: 0, glimmer: 0 })
+  const high = readAliveTuning(new URLSearchParams('gust=5&lift=9&shimmer=2&breath=99&flicker=5&glimmer=7&surge=9'))
+  assert.deepEqual(high, { gust: 0.95, lift: 0.5, shimmer: 1, breath: 3, flicker: 1, glimmer: 1, surge: 1.5 })
+  const low = readAliveTuning(new URLSearchParams('gust=-1&lift=-1&shimmer=-1&breath=-1&flicker=-1&glimmer=-1&surge=-1'))
+  assert.deepEqual(low, { gust: 0, lift: 0, shimmer: 0, breath: 0, flicker: 0, glimmer: 0, surge: 0 })
   // the shipped defaults (sky-tuning.json's alive keys) are passed in; a URL knob still wins over them
-  const shipped = { gust: 0.95, lift: 0.3, shimmer: 1, breath: 2, flicker: 1, glimmer: 1 }
+  const shipped = { gust: 0.95, lift: 0.3, shimmer: 1, breath: 2, flicker: 1, glimmer: 1, surge: 1 }
   assert.deepEqual(readAliveTuning(new URLSearchParams(''), shipped), shipped)
   assert.deepEqual(readAliveTuning(new URLSearchParams('lift=0.1'), shipped), { ...shipped, lift: 0.1 })
   assert.equal(hasAliveKnobs(new URLSearchParams('alive=1&tune=1')), false)
@@ -323,4 +327,117 @@ test('T19 the shader injection replaces each chunk marker exactly once and throw
   assert.throws(() => replaceOnce('a b', 'c', 'x'), /exactly one/)
   assert.throws(() => replaceOnce('c c', 'c', 'x'), /exactly one/)
   assert.throws(() => injectAliveSource(vertex, fragment.replace('#include <color_fragment>', ''), injection), /color_fragment/)
+})
+
+// ---- B, touch (tasks/2026-10-13-touch-b-plan.md): the mapping, the packing, the knob
+
+test('T20 the sky mapping inverts: a round trip over the strips and the cap, the far root from inside and outside the dome, null on a miss', () => {
+  let worst = 0
+  for (let u = -0.3; u <= 1.3001; u += 0.05) {
+    for (let v = -0.1; v <= 0.9001; v += 0.05) {
+      const [iu, iv] = uvFromSkyDirection(uvToDioramaSkyPosition(u, v, new Vector3()))
+      worst = Math.max(worst, Math.abs(iu - u), Math.abs(iv - v))
+    }
+  }
+  assert.ok(worst < 1e-9, `round trip worst ${worst}`)
+  // from the home camera, inside the dome: the far root at DOME_R, on the ray's far side
+  const inside = new Vector3(0.62, 1.18, 5.18)
+  const target = uvToDioramaSkyPosition(0.62, 0.3, new Vector3())
+  const hit = skyPointFromRay(inside, target.clone().sub(inside), new Vector3())
+  assert.ok(hit && Math.abs(hit.length() - DOME_R) < 1e-9 && hit.distanceTo(target) < 1e-6)
+  // from the orbit's extreme, 6.52 from the origin, OUTSIDE the dome, looking in: still the far root (review F4)
+  const outside = new Vector3(0, 0, 6.52)
+  const through = skyPointFromRay(outside, new Vector3(0.1, -0.2, -1), new Vector3())
+  assert.ok(through && Math.abs(through.length() - DOME_R) < 1e-9 && through.z < 0, 'the painted far side, not the near cap')
+  // a ray that misses the sphere
+  assert.equal(skyPointFromRay(outside, new Vector3(0, 0, 1), new Vector3()), null)
+  assert.equal(skyPointFromRay(outside, new Vector3(1, 0, 0), new Vector3()), null)
+  // the home inverse: camera × homeInverse is the identity at the home pose (the sky is unrotated there)
+  const home = { position: [0.62, 1.18, 5.18] as const, target: [0.08, 1.03, 0.02] as const }
+  const q = homeInverseQuaternion(home)
+  assert.ok(Math.abs(q.length() - 1) < 1e-12)
+})
+
+test('T21 the touch attributes: the side pair shares its point and tangent, the tangent is unit in the isotropic metric and follows the ribbon, aSeg is one value per ribbon, flag off packs neither, every buffer transfers', () => {
+  const size = 64
+  const flow = flat(size, size, [255, 128, 0, 255])
+  const mask = flat(size, size, [255, 255, 255, 255])
+  const painting = flat(size, size, [120, 140, 200, 255])
+  const built = buildSourceStreamlineRibbons({ flowData: flow, maskData: mask, paintingData: painting, count: 12, strokeWidth: 0.004, points: 10, stepSize: 0.015, seed: 7 })
+  const arrays = ribbonsToArrays(built, { gust: true, touch: true })
+  assert.ok(arrays.aTouch && arrays.aSeg)
+  assert.equal(arrays.aTouch.length, built.vertices.length * 4)
+  assert.equal(arrays.aSeg.length, built.vertices.length * 4)
+  let ribbons = 0
+  for (let i = 0; i < built.vertices.length; i += 2) {
+    const a = arrays.aTouch.subarray(i * 4, i * 4 + 4)
+    const b = arrays.aTouch.subarray(i * 4 + 4, i * 4 + 8)
+    assert.deepEqual(Array.from(a), Array.from(b), `pair ${i} shares its point and tangent`)
+    const va = built.vertices[i]
+    const vb = built.vertices[i + 1]
+    assert.ok(Math.abs(a[0] - (va.u + vb.u) / 2) < 1e-6 && Math.abs(a[1] - (va.v + vb.v) / 2) < 1e-6, 'the pair mean')
+    assert.ok(Math.abs(Math.hypot(a[2], a[3]) - 1) < 1e-5, 'unit tangent')
+    // the tangent follows the ribbon: within 25° of the chord to the next pair of the same ribbon
+    const same = i + 2 < built.vertices.length && built.vertices[i + 2].phase === va.phase && built.vertices[i + 2].rate === va.rate
+    if (same) {
+      const n = arrays.aTouch.subarray((i + 2) * 4, (i + 2) * 4 + 4)
+      const cx = n[0] - a[0]
+      const cy = (n[1] - a[1]) * SKY_ASPECT
+      const mag = Math.hypot(cx, cy)
+      if (mag > 1e-9) assert.ok((a[2] * cx + a[3] * cy) / mag > Math.cos((25 * Math.PI) / 180), `tangent along the ribbon at ${i}`)
+    } else {
+      ribbons++
+    }
+    const seg = arrays.aSeg.subarray(i * 4, i * 4 + 4)
+    assert.deepEqual(Array.from(seg), Array.from(arrays.aSeg.subarray(i * 4 + 4, i * 4 + 8)))
+  }
+  // aSeg: one value per ribbon, its ends the ribbon's first and last pair means
+  let start = 0
+  while (start < built.vertices.length) {
+    const { phase, rate } = built.vertices[start]
+    let end = start
+    while (end < built.vertices.length && built.vertices[end].phase === phase && built.vertices[end].rate === rate) end++
+    const seg = Array.from(arrays.aSeg.subarray(start * 4, start * 4 + 4))
+    const first = arrays.aTouch.subarray(start * 4, start * 4 + 2)
+    const last = arrays.aTouch.subarray((end - 2) * 4, (end - 2) * 4 + 2)
+    assert.deepEqual(seg, [first[0], first[1], last[0], last[1]])
+    for (let i = start; i < end; i++) assert.deepEqual(Array.from(arrays.aSeg.subarray(i * 4, i * 4 + 4)), seg)
+    start = end
+  }
+  assert.ok(ribbons > 1)
+  // the geometry carries both as vec4, and every typed array transfers (A's F8)
+  const geometry = arraysToGeometry(arrays)
+  assert.equal(geometry.getAttribute('aTouch').itemSize, 4)
+  assert.equal(geometry.getAttribute('aSeg').itemSize, 4)
+  assert.equal(ribbonBuffers(arrays).length, Object.values(arrays).filter((v) => ArrayBuffer.isView(v)).length)
+  geometry.dispose()
+  // the flag off: neither packed
+  const plain = ribbonsToArrays(built, { gust: true })
+  assert.equal(plain.aTouch, undefined)
+  assert.equal(plain.aSeg, undefined)
+})
+
+test('T24 the surge knob reads, clamps and defaults like the others, and leaves the gust uniforms alone', () => {
+  const d = readAliveTuning(new URLSearchParams(''))
+  assert.equal(d.surge, ALIVE_DEFAULTS.surge)
+  assert.deepEqual(readAliveTuning(new URLSearchParams('surge=0.25')), { ...ALIVE_DEFAULTS, surge: 0.25 })
+  assert.equal(readAliveTuning(new URLSearchParams('surge=4')).surge, 1.5)
+  assert.equal(hasAliveKnobs(new URLSearchParams('touch=1&surge=0.3')), true)
+  assert.deepEqual(gustUniformValues({ ...ALIVE_DEFAULTS, surge: 1.5 }), gustUniformValues(ALIVE_DEFAULTS))
+})
+
+test('T26 the tuner saves only the knobs it shows: no touchSurge off the touch route, every alive key either way', () => {
+  const tuning = { ...ALIVE_DEFAULTS, surge: 0.6, flicker: 0.4 }
+  const shown = ALIVE_KNOBS.filter((name) => name !== 'surge')
+  const off = aliveSavePayload(tuning, shown)
+  assert.deepEqual(off, {
+    aliveGust: tuning.gust,
+    aliveLift: tuning.lift,
+    aliveShimmer: tuning.shimmer,
+    aliveBreath: tuning.breath,
+    aliveFlicker: 0.4,
+    aliveGlimmer: tuning.glimmer,
+  })
+  assert.equal('touchSurge' in off, false)
+  assert.deepEqual(aliveSavePayload(tuning, ALIVE_KNOBS), { ...off, touchSurge: 0.6 })
 })

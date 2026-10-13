@@ -9,6 +9,8 @@ export type MovingBuildRequest = {
   options: Omit<SourceRibbonBuildOptions, 'flowData' | 'maskData' | 'paintingData' | 'count' | 'uPad'>
   /** make-it-alive A: pack the gust attribute (the flag is on); off, the arrays are main's */
   gust?: boolean
+  /** B (touch): pack the touch attributes (its flag is on) */
+  touch?: boolean
 }
 
 export type MovingBuildReply = { arrays: RibbonArrays; ms: number } | { error: string }
@@ -16,7 +18,7 @@ export type MovingBuildReply = { arrays: RibbonArrays; ms: number } | { error: s
 self.onmessage = (event: MessageEvent<MovingBuildRequest>) => {
   const started = performance.now()
   try {
-    const { images, countPerUnit, options, gust = false } = event.data
+    const { images, countPerUnit, options, gust = false, touch = false } = event.data
     const { compositePainting, compositeFlow, maskData, uPad } = composite(images)
     const arrays = ribbonsToArrays(
       buildSourceStreamlineRibbons({
@@ -27,7 +29,7 @@ self.onmessage = (event: MessageEvent<MovingBuildRequest>) => {
         count: Math.round(countPerUnit * (1 + 2 * uPad)),
         uPad,
       }),
-      { gust },
+      { gust, touch },
     )
     const reply: MovingBuildReply = { arrays, ms: performance.now() - started }
     self.postMessage(reply, { transfer: ribbonBuffers(arrays) })

@@ -33,8 +33,9 @@ import {
   SIDE_EXTEND_U,
   uvToDioramaSkyPosition,
 } from './dioramaSkyProjection'
-import { MOON_R, MOON_UV, SWIRLS } from './skySwirls'
 import { ALIVE_DEFAULTS, gustGlsl, gustUniformValues, HALO_BREATH, haloPeriod, type AliveTuning } from './skyAlive'
+import { flareShape, pruneFlares, pruneKicks, pruneSurges, surgeUniformValues, TOUCH_SURGE, touchGlsl, type TouchStore } from './touchSurge'
+import { MOON_PAINTED_UV, STAR_ANCHORS } from './skyTargets'
 import { PALETTE } from './palette'
 import { DIORAMA_CAPTURE } from './dioramaContract'
 
@@ -115,6 +116,35 @@ function gustUniforms() {
   }
 }
 
+/** B's uniforms: the two lists as flat arrays mutated in place (review F12) and the constants from the table. */
+function touchUniforms() {
+  const c = surgeUniformValues()
+  return {
+    uSurgeCount: { value: 0 },
+    uSurge: { value: new Float32Array(16 * 4) },
+    uSurgeEnd: { value: new Float32Array(16) },
+    uKickCount: { value: 0 },
+    uKick: { value: new Float32Array(4 * 4) },
+    uTouchSpeed: { value: c.speed },
+    uTouchTau: { value: c.tau },
+    uTouchRise: { value: c.rise },
+    uTouchSigmaS: { value: c.sigmaS },
+    uTouchSigmaA: { value: c.sigmaA },
+    uTouchBloomAlong: { value: c.bloomAlong },
+    uTouchBloomAcross: { value: c.bloomAcross },
+    uTouchMaxLift: { value: c.maxLift },
+    uTouchFadeOut: { value: c.fadeOut },
+    uTouchKick: { value: c.kick },
+    uTouchKickRise: { value: c.kickRise },
+    uTouchKickDecay: { value: c.kickDecay },
+    uTouchKickSigma: { value: c.kickSigma },
+    uTouchSupport: { value: c.support },
+    uTouchWindowStart: { value: c.windowStart },
+    uTouchWindowEnd: { value: c.windowEnd },
+    uTouchAspect: { value: c.aspect },
+  }
+}
+
 /** Capture seam: a finite `window.__skyTime` pins both sky clocks, so motion can be captured frame-exact. */
 type SkyClockWindow = Window & { __skyTime?: number }
 
@@ -142,6 +172,10 @@ type Props = {
    * same pinned, advanced or paused time the halos do (second pass, A3). Without it the sky keeps its own ref.
    */
   clock?: RefObject<number>
+  /** B (`?touch=1`, implies alive): surges of light along the ribbons from the pointer, kicks and flares (touchSurge.ts). */
+  touch?: boolean
+  /** The store the scene's input hook writes; read into the uniforms each frame. */
+  touchStore?: RefObject<TouchStore>
 }
 
 // The ALIVE define (make-it-alive A, the flag on) compiles the gust clock in; without it the shaders are main's:
@@ -151,6 +185,12 @@ const ribbonVert = /* glsl */ `
   ${gustGlsl}
   uniform float uTime;
   attribute vec2 aGust;
+  #endif
+  #ifdef TOUCH
+  ${touchGlsl}
+  attribute vec4 aTouch;
+  attribute vec4 aSeg;
+  varying float vTouchLift;
   #endif
   attribute float aLen;
   attribute float aAcross;
@@ -176,6 +216,14 @@ const ribbonVert = /* glsl */ `
     #ifdef ALIVE
     vGustTime = gustTime(uTime, aGust);
     vGustLift = gustLift(uTime, aGust);
+    #endif
+    #ifdef TOUCH
+    // B: the touch terms as separate guarded statements after A's, so with no input A's run verbatim (review F9).
+    // The lift is per vertex (weighted by the ribbon's gust weight, A's derivation); the kick is one value per
+    // ribbon, from its centreline segment, so it can ride the flat clock without laddering (review F2).
+    vTouchLift = 0.0;
+    if (uSurgeCount > 0) vTouchLift = min(uTouchMaxLift, aGust.x * touchLift(aTouch, uTime));
+    if (uKickCount > 0) vGustTime += touchKick(aSeg, uTime);
     #endif
     vAcross = aAcross;
     vPhase = aPhase;
@@ -211,6 +259,10 @@ const ribbonFrag = /* glsl */ `
   #ifdef ALIVE
   flat varying float vGustTime;
   flat varying float vGustLift;
+  #endif
+  #ifdef TOUCH
+  uniform int uSurgeCount;
+  varying float vTouchLift;
   #endif
 
   void main() {
@@ -248,6 +300,9 @@ const ribbonFrag = /* glsl */ `
       // source-lum lift, so the palette numbers are reproducible (review F14).
       col *= 1.0 + vGustLift;
       #endif
+      #ifdef TOUCH
+      if (uSurgeCount > 0) col *= 1.0 + vTouchLift;
+      #endif
     }
 
     float a = edge * taper * uOpacity * vEdgeFade;
@@ -277,6 +332,10 @@ const movingFrag = /* glsl */ `
   #ifdef ALIVE
   flat varying float vGustTime;
   flat varying float vGustLift;
+  #endif
+  #ifdef TOUCH
+  uniform int uSurgeCount;
+  varying float vTouchLift;
   #endif
 
   float hash1(float n) { return fract(sin(n) * 43758.5453); }
@@ -363,6 +422,9 @@ const movingFrag = /* glsl */ `
     #ifdef ALIVE
     // A: a surge brightens the band a few percent, after the 0.93 lift line above (review F14)
     col *= 1.0 + vGustLift;
+    #endif
+    #ifdef TOUCH
+    if (uSurgeCount > 0) col *= 1.0 + vTouchLift;
     #endif
     gl_FragColor = vec4(col, a);
   }
@@ -606,19 +668,14 @@ function makeStarHaloTexture(): CanvasTexture {
   return tex
 }
 
-// The PAINTED moon's centre — bright-warm pixel centroid of the scan's moon corner (lum>170,
-// r+g>2.2b over 360x330+1230+30; ring-verified 2026-07-22). NOT the same as skySwirls' MOON_UV
-// (0.85,0.16), which anchors the moon's VORTEX — same trap as the star guards (lessons 07-16):
-// the SWIRLS table cannot supply painted-body positions. The authored crescent sprite used to
-// sit at the vortex anchor, doubling the source's own moon 78px away (Mark: "mismatched").
-const MOON_PAINTED_UV: [number, number] = [0.8987, 0.1697]
-
 function SourceOrbs({
   debug,
   moonGlow = 0.68,
   clock,
   alive,
   breath,
+  touch = false,
+  touchStore,
 }: {
   debug: PaintingFlowSkyDebug
   moonGlow?: number
@@ -628,6 +685,9 @@ function SourceOrbs({
   alive: boolean
   /** The `breath` knob: a multiplier on every halo's swing. */
   breath: number
+  /** B: a tapped star (or the moon) flares on its colour and scale; off, no write below touches them. */
+  touch?: boolean
+  touchStore?: RefObject<TouchStore>
 }) {
   const moonHalo = useMemo(() => makeMoonHaloTexture(), [])
   const starHalo = useMemo(() => makeStarHaloTexture(), [])
@@ -637,12 +697,7 @@ function SourceOrbs({
   )
   const stars = useMemo(
     () =>
-      SWIRLS.filter(([u, v, , r]) => {
-        const isMoon = Math.hypot(u - MOON_UV[0], v - MOON_UV[1]) < MOON_R * 1.5
-        const isWhorl = r > 0.071
-        const onCypress = u < 0.18 && v > 0.34
-        return !isMoon && !isWhorl && !onCypress
-      }).map(([u, v, sign, r], index) => ({
+      STAR_ANCHORS.map(([u, v, sign, r], index) => ({
         position: uvToDioramaSkyPosition(u, v, new Vector3(), DOME_R - 0.01),
         scale: index === 0 ? 0.94 : 0.62 + r * 2.2,
         sign,
@@ -663,16 +718,30 @@ function SourceOrbs({
   const starMaterials = useRef<(SpriteMaterial | null)[]>([])
   const starSprites = useRef<(Sprite | null)[]>([])
   const moonMaterial = useRef<SpriteMaterial | null>(null)
+  const moonSprite = useRef<Sprite | null>(null)
   // A2: each halo breathes at its own period, the moon slower and lower; every term is sin(ωt), 0 at t = 0, so
   // the paused still (clock 0) and the t = 0 frame equal today's. With the flag off amp is 0 and each write is
   // the base the JSX set, so the write is idempotent (plan review F1, F2). This frame loop subscribes before the
   // parent's and reads the previous frame's clock, which is harmless; a positive priority would switch R3F to
   // manual rendering (F9).
+  // B: a tapped halo flares on its COLOUR (the texel, before the additive clamp; opacity clips at 1, review F8)
+  // and its scale, a quick rise and a slow fall; the writes exist only with the flag on, so A's path is verbatim.
+  const flareOf = (index: number, t: number): number => {
+    let flare = 0
+    for (const f of touchStore?.current?.flares ?? []) if (f.index === index) flare += flareShape(t - f.t0)
+    return flare
+  }
   useFrame(() => {
     const t = clock.current ?? 0
     const amp = alive ? breath : 0
     if (moonMaterial.current) {
       moonMaterial.current.opacity = moonBase * (1 + amp * HALO_BREATH.moonOpacity * Math.sin((2 * Math.PI * t) / HALO_BREATH.moonPeriod))
+      if (touch && moonSprite.current) {
+        const flare = flareOf(stars.length, t)
+        moonMaterial.current.color.setScalar(1 + TOUCH_SURGE.flareColor * flare)
+        const scale = 4.25 * (1 + TOUCH_SURGE.flareScale * flare)
+        moonSprite.current.scale.set(scale, scale, 1)
+      }
     }
     stars.forEach((star, index) => {
       const material = starMaterials.current[index]
@@ -680,7 +749,12 @@ function SourceOrbs({
       if (!material || !sprite) return
       const breath = Math.sin((2 * Math.PI * t) / haloPeriod(index))
       material.opacity = starBase * (1 + amp * HALO_BREATH.opacity * breath)
-      const scale = star.scale * 1.85 * (1 + amp * HALO_BREATH.scale * breath)
+      let scale = star.scale * 1.85 * (1 + amp * HALO_BREATH.scale * breath)
+      if (touch) {
+        const flare = flareOf(index, t)
+        material.color.setScalar(1 + TOUCH_SURGE.flareColor * flare)
+        scale *= 1 + TOUCH_SURGE.flareScale * flare
+      }
       sprite.scale.set(scale, scale, 1)
     })
   })
@@ -691,7 +765,7 @@ function SourceOrbs({
           highlight gain); authored layers add only the additive glow paint cannot emit.
           The old flat crescent sprite doubled the source moon and is gone. */}
       <group position={moonPosition}>
-        <sprite scale={[4.25, 4.25, 1]} renderOrder={3}>
+        <sprite ref={moonSprite} scale={[4.25, 4.25, 1]} renderOrder={3}>
           <spriteMaterial
             ref={moonMaterial}
             map={moonHalo}
@@ -737,7 +811,7 @@ function SourceOrbs({
 
 
 
-export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky = 'light', still = false, alive = false, tuning = ALIVE_DEFAULTS, clock: sharedClock }: Props) {
+export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky = 'light', still = false, alive = false, tuning = ALIVE_DEFAULTS, clock: sharedClock, touch = false, touchStore }: Props) {
   const skyRoot = useRef<Group>(null)
   // the sky clock as this frame wrote it, for the halos' breath (A2) and the foreground (A3): pinned, advanced,
   // or 0 while paused. The scene's ref when given, else this one.
@@ -883,8 +957,8 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
       // arcs on the bare gradient
       trailMaxV: 0.7,
     })
-    return arraysToGeometry(ribbonsToArrays(ribbons, { gust: alive }))
-  }, [alive, images, isFlowDebug])
+    return arraysToGeometry(ribbonsToArrays(ribbons, { gust: alive, touch }))
+  }, [alive, images, isFlowDebug, touch])
 
   // The moving sky's own, denser strokes: built on first use, one count for every orientation, so a resize never
   // rebuilds it (review F7). Same seed and streamline field as the light sky. Built in a worker: in the render it
@@ -912,6 +986,7 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
       images,
       countPerUnit: tuned('count', 2000) * MOVING.countScale,
       gust: alive,
+      touch,
       options: {
         strokeWidth: tuned('strokeWidth', 0.0032) * 1.18 * MOVING.widthScale,
         points: tuned('points', 16),
@@ -931,7 +1006,7 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
       worker.terminate()
       built?.dispose()
     }
-  }, [alive, images, movingEver])
+  }, [alive, images, movingEver, touch])
 
   // Geometry is ready before the mode flips; the layout effect below switches wash and gradient in the same frame.
   const mode: SkyStyle = wanted === 'moving' && movingGeometry ? 'moving' : 'light'
@@ -956,8 +1031,9 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
           uBristleAmp: { value: tuned('bristleAmp', 0.22) },
           uDebugMode: { value: isFlowDebug ? 1 : 0 },
           ...(alive ? gustUniforms() : {}),
+          ...(touch ? touchUniforms() : {}),
         },
-        defines: alive ? { ALIVE: 1 } : {},
+        defines: alive ? { ALIVE: 1, ...(touch ? { TOUCH: 1 } : {}) } : {},
         vertexShader: ribbonVert,
         fragmentShader: ribbonFrag,
         transparent: true,
@@ -966,7 +1042,7 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
         blending: NormalBlending,
         side: DoubleSide,
       }),
-    [alive, isFlowDebug, paused],
+    [alive, isFlowDebug, paused, touch],
   )
 
   useEffect(() => {
@@ -991,8 +1067,9 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
           uStroke: { value: MOVING.stroke },
           uOpacity: { value: MOVING.opacity },
           ...(alive ? gustUniforms() : {}),
+          ...(touch ? touchUniforms() : {}),
         },
-        defines: alive ? { ALIVE: 1 } : {},
+        defines: alive ? { ALIVE: 1, ...(touch ? { TOUCH: 1 } : {}) } : {},
         vertexShader: movingVert,
         fragmentShader: movingFrag,
         transparent: true,
@@ -1001,7 +1078,7 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
         blending: NormalBlending,
         side: DoubleSide,
       }),
-    [alive],
+    [alive, touch],
   )
 
   useEffect(() => {
@@ -1042,8 +1119,14 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
       skyRoot.current.quaternion.copy(camera.quaternion).multiply(homeInverse)
     }
     if (paused) {
-      // the light material is rebuilt at t = 0 on a pause; the halos' still is the t = 0 state too
+      // the light material is rebuilt at t = 0 on a pause; the halos' still is the t = 0 state too. B: the
+      // store is cleared, so no surge with a pre-pause t0 lies in wait for the clock to catch up (review F7)
       clock.current = 0
+      if (touchStore?.current) {
+        touchStore.current.surges = []
+        touchStore.current.kicks = []
+        touchStore.current.flares = []
+      }
       return
     }
     const pinned = (window as SkyClockWindow).__skyTime
@@ -1051,12 +1134,45 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
       ribbonMaterial.uniforms.uTime.value = pinned
       movingMaterial.uniforms.uTime.value = pinned
       clock.current = pinned
-      return
+    } else {
+      ribbonMaterial.uniforms.uTime.value += dt
+      // both clocks run whichever sky is shown, so switching never jumps either one
+      movingMaterial.uniforms.uTime.value += dt
+      clock.current = ribbonMaterial.uniforms.uTime.value
     }
-    ribbonMaterial.uniforms.uTime.value += dt
-    // both clocks run whichever sky is shown, so switching never jumps either one
-    movingMaterial.uniforms.uTime.value += dt
-    clock.current = ribbonMaterial.uniforms.uTime.value
+    // B: the store into the uniforms, pruned first so nothing leaves a list with a value in it (review F1)
+    if (touch && touchStore?.current) {
+      const store = touchStore.current
+      const t = clock.current
+      store.surges = pruneSurges(store.surges, t)
+      store.kicks = pruneKicks(store.kicks, t)
+      store.flares = pruneFlares(store.flares, t)
+      for (const material of [ribbonMaterial, movingMaterial]) {
+        const u = material.uniforms
+        const surges = u.uSurge.value as Float32Array
+        const ends = u.uSurgeEnd.value as Float32Array
+        const n = Math.min(16, store.surges.length)
+        for (let i = 0; i < n; i++) {
+          const s = store.surges[i]
+          surges[i * 4] = s.u
+          surges[i * 4 + 1] = s.v
+          surges[i * 4 + 2] = s.t0
+          surges[i * 4 + 3] = s.amp
+          ends[i] = s.end
+        }
+        u.uSurgeCount.value = n
+        const kicks = u.uKick.value as Float32Array
+        const m = Math.min(4, store.kicks.length)
+        for (let i = 0; i < m; i++) {
+          const k = store.kicks[i]
+          kicks[i * 4] = k.u
+          kicks[i * 4 + 1] = k.v
+          kicks[i * 4 + 2] = k.t0
+          kicks[i * 4 + 3] = k.amp
+        }
+        u.uKickCount.value = m
+      }
+    }
   })
   /* eslint-enable react-hooks/immutability */
 
@@ -1088,7 +1204,7 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
       {ribbons.geometry && !awaitingMoving && (
         <mesh geometry={ribbons.geometry} material={ribbons.material} frustumCulled={false} renderOrder={2} />
       )}
-      <SourceOrbs debug={debug} moonGlow={mode === 'moving' ? MOVING.moonGlow : undefined} clock={clock} alive={alive} breath={tuning.breath} />
+      <SourceOrbs debug={debug} moonGlow={mode === 'moving' ? MOVING.moonGlow : undefined} clock={clock} alive={alive} breath={tuning.breath} touch={touch} touchStore={touchStore} />
     </group>
   )
 }

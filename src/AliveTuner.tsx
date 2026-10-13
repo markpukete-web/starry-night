@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ALIVE_KNOB_MAX, ALIVE_KNOBS, type AliveTuning } from './scene/skyAlive'
+import { ALIVE_KNOB_MAX, ALIVE_KNOBS, aliveSavePayload, type AliveTuning } from './scene/skyAlive'
 import { saveDefaults } from './scene/tuning'
 
 /**
@@ -9,7 +9,7 @@ import { saveDefaults } from './scene/tuning'
  * aliased out of production. On the dev server "set as default" writes the values to sky-tuning.json (the
  * shipped defaults) through the same `/__set-tuning` writer; elsewhere "copy" puts them on the clipboard.
  */
-const STEP: AliveTuning = { gust: 0.01, lift: 0.01, shimmer: 0.05, breath: 0.1, flicker: 0.05, glimmer: 0.05 }
+const STEP: AliveTuning = { gust: 0.01, lift: 0.01, shimmer: 0.05, breath: 0.1, flicker: 0.05, glimmer: 0.05, surge: 0.05 }
 const LABEL: Record<keyof AliveTuning, string> = {
   gust: 'gust (tempo surge)',
   lift: 'lift (brightness on a surge)',
@@ -17,25 +17,31 @@ const LABEL: Record<keyof AliveTuning, string> = {
   breath: 'breath (halos and moon)',
   flicker: 'flicker (cypress flame)',
   glimmer: 'glimmer (village windows)',
+  surge: 'surge (touch, B)',
 }
 
 export function AliveTuner({
   tuning,
   defaults,
   onChange,
+  touch = false,
 }: {
   tuning: AliveTuning
   defaults: AliveTuning
   onChange: (next: AliveTuning) => void
+  /** B's route: shows its `surge` slider and keeps `touch=1` on the share URL (review F11). */
+  touch?: boolean
 }) {
   const [status, setStatus] = useState('')
+  const knobs = touch ? ALIVE_KNOBS : ALIVE_KNOBS.filter((name) => name !== 'surge')
 
-  const summary = ALIVE_KNOBS.map((name) => `${name}=${tuning[name]}`).join(' ')
+  const summary = knobs.map((name) => `${name}=${tuning[name]}`).join(' ')
   const shareUrl = () => {
     const url = new URL(window.location.href)
     url.searchParams.set('alive', '1')
+    if (touch) url.searchParams.set('touch', '1')
     url.searchParams.delete('tune')
-    for (const name of ALIVE_KNOBS) url.searchParams.set(name, String(tuning[name]))
+    for (const name of knobs) url.searchParams.set(name, String(tuning[name]))
     return url.toString()
   }
 
@@ -49,14 +55,8 @@ export function AliveTuner({
   const save = () => {
     // success only once the writer has written the file; a rejection or a failed write shows as such
     setStatus('saving…')
-    saveDefaults({
-      aliveGust: tuning.gust,
-      aliveLift: tuning.lift,
-      aliveShimmer: tuning.shimmer,
-      aliveBreath: tuning.breath,
-      aliveFlicker: tuning.flicker,
-      aliveGlimmer: tuning.glimmer,
-    })
+    // only the knobs this route shows: a hidden `surge` restored from storage must not overwrite the shipped one
+    saveDefaults(aliveSavePayload(tuning, knobs))
       .then(() => setStatus('saved to sky-tuning.json'))
       .catch((error: unknown) => setStatus(`save failed: ${error instanceof Error ? error.message : String(error)}`))
   }
@@ -64,7 +64,7 @@ export function AliveTuner({
   return (
     <aside className="alive-tuner" aria-label="Sky tuning">
       <h2>Alive tuning</h2>
-      {ALIVE_KNOBS.map((name) => (
+      {knobs.map((name) => (
         <label key={name}>
           <span>
             {LABEL[name]} <output>{tuning[name].toFixed(2)}</output>

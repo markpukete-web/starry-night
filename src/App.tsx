@@ -23,6 +23,7 @@ const SHIPPED_ALIVE: AliveTuning = {
   breath: clampAliveKnob('breath', tuned('aliveBreath', ALIVE_DEFAULTS.breath), ALIVE_DEFAULTS.breath),
   flicker: clampAliveKnob('flicker', tuned('aliveFlicker', ALIVE_DEFAULTS.flicker), ALIVE_DEFAULTS.flicker),
   glimmer: clampAliveKnob('glimmer', tuned('aliveGlimmer', ALIVE_DEFAULTS.glimmer), ALIVE_DEFAULTS.glimmer),
+  surge: clampAliveKnob('surge', tuned('touchSurge', ALIVE_DEFAULTS.surge), ALIVE_DEFAULTS.surge),
 }
 
 /** prefers-reduced-motion: a dignified still painting, no churn (locked acceptance criterion). */
@@ -54,7 +55,9 @@ export default function App() {
   // make-it-alive A, behind a flag until Mark's gate (tasks/2026-10-13-alive-a-plan.md)
   // `?tune=1` opens Mark's tuner and implies the flag
   const tune = params.get('tune') === '1'
-  const alive = params.get('alive') === '1' || tune
+  // B, behind its own flag (tasks/2026-10-13-touch-b-plan.md); it rides A's variant, so it implies the flag
+  const touch = params.get('touch') === '1'
+  const alive = params.get('alive') === '1' || tune || touch
   // The shipped defaults for A's knobs live in sky-tuning.json (the tuner's "set as default" writes them);
   // a URL knob overrides them, and with the tuner open the last slider positions are remembered per browser.
   const [aliveTuning, setAliveTuning] = useState<AliveTuning>(() => {
@@ -91,7 +94,7 @@ export default function App() {
         // only the 3D diorama has the two skies; the flat 2D route never shows the choice
         onToggleSky={mode === 'diorama' ? () => setSky((current) => (current === 'moving' ? 'light' : 'moving')) : undefined}
       />
-      {tune && mode === 'diorama' && <AliveTuner tuning={aliveTuning} defaults={SHIPPED_ALIVE} onChange={onTune} />}
+      {tune && mode === 'diorama' && <AliveTuner tuning={aliveTuning} defaults={SHIPPED_ALIVE} onChange={onTune} touch={touch} />}
     </>
   )
 
@@ -105,7 +108,7 @@ export default function App() {
 
   if (mode === 'diorama') {
     return (
-      <DioramaExperience clean={clean} reduced={motionPaused} sky={sky} still={reduced} alive={alive} aliveTuning={aliveTuning}>
+      <DioramaExperience clean={clean} reduced={motionPaused} sky={sky} still={reduced} alive={alive} aliveTuning={aliveTuning} touch={touch}>
         {chrome}
       </DioramaExperience>
     )
