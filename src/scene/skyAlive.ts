@@ -128,7 +128,8 @@ export function gustPulse(t: number, amplitudes = GUST.amplitudes, periods = GUS
     s += amplitudes[i] * Math.sin(omega(periods[i]) * t)
     a += amplitudes[i]
   }
-  return s / a
+  // all-zero amplitudes (the gust knob at 0): no pulse, not NaN
+  return a > 0 ? s / a : 0
 }
 
 /** The finite-window error bound on the mean tempo over T seconds: w · Σ(Aᵢ Pᵢ) / (π T) (review F11). */
@@ -199,10 +200,13 @@ export const gustGlsl = /* glsl */ `
   float gustTime(float t, vec2 gust) {
     return t + uAlive * gust.x * (gustG(t - gust.y) - gustG(-gust.y));
   }
-  // the brightness lift on a surge: weight × the tempo's zero-mean part in -1..1, no lag, so 0 at t = 0
+  // the brightness lift on a surge: weight × the tempo's zero-mean part in -1..1, no lag, so 0 at t = 0.
+  // the gust knob at 0 zeroes every amplitude, and 0/0 would make the lift NaN (Codex, PR #8 P2): no gust, no lift.
   float gustLift(float t, vec2 gust) {
+    float total = uGustAmp.x + uGustAmp.y + uGustAmp.z;
+    if (total <= 0.0) return 0.0;
     vec3 s = uGustAmp * sin(uGustOmega * t);
-    return uAlive * uGustLift * gust.x * (s.x + s.y + s.z) / (uGustAmp.x + uGustAmp.y + uGustAmp.z);
+    return uAlive * uGustLift * gust.x * (s.x + s.y + s.z) / total;
   }
 `
 

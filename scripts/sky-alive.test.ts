@@ -133,3 +133,15 @@ test('T12 the live knobs: defaults when absent or unparseable, clamped to their 
     previous = now
   }
 })
+
+test('T13 the gust knob at 0: every amplitude 0, the pulse 0 rather than NaN, the clock exactly t', () => {
+  const off = readAliveTuning(new URLSearchParams('alive=1&gust=0'))
+  const { amplitudes } = gustUniformValues(off)
+  assert.deepEqual(amplitudes, [0, 0, 0])
+  for (const t of [0, 1.7, 33]) {
+    const pulse = gustPulse(t, amplitudes)
+    assert.ok(Number.isFinite(pulse), `pulse finite at t ${t}`)
+    assert.equal(pulse, 0)
+    assert.equal(gustTime(t, 1, 1.35, amplitudes), t)
+  }
+})
