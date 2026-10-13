@@ -2495,3 +2495,9 @@ after PR #8 merged (`246e817`, "Merge it then start the second pass").
   `(SPAN_V·1.06)/(SPAN_H·1.16)` = 0.7252; the surge's tempo kick never steps backwards over three overlapping
   surges on a dense grid, its crest runs at the planned speed, the lift is bounded and gone by five time constants.
   One number for the eye check: a single surge stays visible about 3.7 s and runs 0.9 of the canvas width.
+- **Never edit a source file while a capture chain runs against the dev server.** Vite's reload under the capture
+  took the canvas away mid-read ("no canvas") and lost a frame set. Build and test first, then capture; or capture
+  against a production preview or a second worktree when a build must continue in parallel.
+- **A Gaussian never reaches zero, and an isolation gate needs a zero.** The first surge model moved every ribbon
+  in the sky by invisible amounts (the twin's mask covered the whole frame); a cutoff at three sigma on every term,
+  in the twin and the shader, made the untouched sky byte-identical again and the gate well-posed.
