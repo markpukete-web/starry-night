@@ -9,9 +9,31 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## Pickup — 2026-10-13: make-it-alive A is built and gated; its retune is next
+## Pickup — 2026-10-13 (night): A's sky is on `main`; the second pass (cypress, windows) is built behind the flag
 
-**Current agent entry point:** this section, then `tasks/2026-10-13-alive-a.md` (A's record and gate) and
+**Current agent entry point:** this section, then `tasks/2026-10-13-alive-a2.md` (the second pass's record and gate),
+`tasks/2026-10-13-alive-a.md` (the sky's record) and `tasks/2026-10-11-handoff.md` (history). `main` is at `246e817`
+(PR #8 merged 2026-10-13 ~08:58 UTC on Mark's word, "Merge it"; Vercel production READY at it; the default route
+proved byte-identical to the pre-merge `e80fdf7` frames). Branch: `claude/confident-bohr-1y7p2u` from `246e817`
+carries the second pass; `docs/sky-choice-live-record` is merged and done.
+
+- [x] **PR #8 merged to `main`** (`246e817`). The flag stays off by default: visitors see today's sky.
+- [x] **A, second pass, built behind `?alive=1`** (2026-10-13 night, cloud session, Mark: "Merge it then start the
+  second pass"). Plan `tasks/2026-10-13-alive-a2-plan.md` (fresh review REVISE, F1–F19 applied before the build):
+  one sky clock for the whole diorama; a flame-like flicker climbing the cypress strokes (weights from the strokes'
+  own heights and tongues, a two-mode travelling wave, per fragment through `onBeforeCompile` on three's stock
+  material); the seven lit windows glimmering each at its own hashed rates; knobs `flicker` and `glimmer` on the
+  tuner, shipped at 0.5. Tests T14–T19 with mutation proofs (120 green). Gate in `tasks/2026-10-13-alive-a2.md`.
+- [ ] **Mark's gate on the second pass:** `?tune=1` on the preview, dial `flicker` and `glimmer`, say the numbers
+  (or "set as default" at the Mac). Then decide the flag: on for every visitor, or a choice. Still owed at the Mac
+  before the flip: AE 0 against `main` at pinned t on a real GPU, and `?perf=1` with everything on at the shipped
+  values (the second pass adds two sines and an exp per fragment over the cypress, about 6% of the frame).
+- [ ] Then B (touch), then C (arrival). Impasto under raking light at orbit stays impossible as specified (the sky
+  is camera-locked); a light that moves with the orbit angle is the nearest reading, Mark's call.
+
+## Pickup — 2026-10-13 (afternoon): make-it-alive A is built and gated; its retune is next (superseded by the night pickup above)
+
+**Current agent entry point (then):** this section, then `tasks/2026-10-13-alive-a.md` (A's record and gate) and
 `tasks/2026-10-11-handoff.md` (history). `main` is at `e80fdf7`. Branches: `docs/sky-choice-live-record` (the
 record branch, now carrying A: Mark, "merge to sky-choice-live-record first") and `claude/confident-bohr-1y7p2u`
 (A's build branch, merged into it on 2026-10-13).
@@ -44,14 +66,8 @@ record branch, now carrying A: Mark, "merge to sky-choice-live-record first") an
   (`sky-tuning.json` aliveGust 0.95, aliveLift 0.3, aliveShimmer 1, aliveBreath 2). URL knobs rejected as the way to
   tune ("build the tool so that I can tune myself like in previous we've done") → `src/AliveTuner.tsx`, `?tune=1`:
   sliders live on the sky, "set as default" on the dev server writes the JSON, copy on the preview.
-- [ ] **Merge PR #8 to `main`** (Mark; deploys; the flag stays off by default until he says otherwise). Then decide
-  the default: flip `alive` on for every visitor, or keep it a choice. Still owed at the Mac before the flag goes on
-  by default: default route AE 0 against `main` at pinned t, and `?perf=1` with the flag on at the shipped defaults.
-- [ ] **A, second pass (after Mark's gate):** the cypress flicker and the village window glimmer. Both touch authored
-  foreground materials (`MeshBasicMaterial` with vertex colours; windows painted into the atlas, no mask) and need
-  their own derivation. Impasto under raking light at orbit cannot be done as specified: the sky is rotation-locked
-  to the camera, so orbit never changes its view angle; a light that moves with the orbit angle is the nearest
-  reading, Mark's call.
+- [x] **Merge PR #8 to `main`** — done 2026-10-13 night, `246e817` (see the night pickup above).
+- [x] **A, second pass** — built 2026-10-13 night (see the night pickup above).
 - [ ] Then B (touch), then C (arrival).
 - Ideas noted, not queued (each Mark's call): full-length strokes for the short dabs, star-body layer as patches
   (if a phone struggles), visitor brush controls, Vincent's window / fuller village.
