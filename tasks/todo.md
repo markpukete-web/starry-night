@@ -24,8 +24,10 @@ carries the second pass; `docs/sky-choice-live-record` is merged and done.
   own heights and tongues, a two-mode travelling wave, per fragment through `onBeforeCompile` on three's stock
   material); the seven lit windows glimmering each at its own hashed rates; knobs `flicker` and `glimmer` on the
   tuner, shipped at 0.5. Tests T14–T19 with mutation proofs (120 green). Gate in `tasks/2026-10-13-alive-a2.md`.
-- [ ] **Mark's gate on the second pass:** `?tune=1` on the preview, dial `flicker` and `glimmer`, say the numbers
-  (or "set as default" at the Mac). Then decide the flag: on for every visitor, or a choice. Still owed at the Mac
+- [x] **Mark's gate on the second pass** (2026-10-13 night, preview): offered flicker 1 / glimmer 0.6 against both at
+  1; "I like the Both at full one" → shipped as the defaults (`sky-tuning.json` aliveFlicker 1, aliveGlimmer 1).
+- [ ] **Next:** a PR of `claude/confident-bohr-1y7p2u` to `main` when Mark asks (merging changes nothing visitors
+  see; the flag stays off). Then decide the flag: on for every visitor, or a choice. Still owed at the Mac
   before the flip: AE 0 against `main` at pinned t on a real GPU, and `?perf=1` with everything on at the shipped
   values (the second pass adds two sines and an exp per fragment over the cypress, about 6% of the frame).
 - [ ] Then B (touch), then C (arrival). Impasto under raking light at orbit stays impossible as specified (the sky

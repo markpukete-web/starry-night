@@ -17,6 +17,6 @@
   "aliveLift": 0.3,
   "aliveShimmer": 1,
   "aliveBreath": 2,
-  "aliveFlicker": 0.5,
-  "aliveGlimmer": 0.5
+  "aliveFlicker": 1,
+  "aliveGlimmer": 1
 }

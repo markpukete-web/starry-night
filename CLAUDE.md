@@ -128,8 +128,8 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   heights per second), envelope τ 1.5 s, depth 0.6 (±60% at the knob's maximum), floor 0.12, tip band 0.55–0.9 of
   the vertex's own lobe, tongue band |lateral| 0.40–0.75 (the strokes' 75th–95th percentiles), back strokes half
   the tongue, the underpaint solid half the knob. Window glimmer slow 2.3–4.1 s, fast 0.9–1.6 s (hashed per
-  window), shares 0.7 / 0.3, depth 0.6. Knobs `flicker` and `glimmer` 0–1, shipped at 0.5 / 0.5 until Mark dials
-  them (`?tune=1`, `sky-tuning.json` aliveFlicker / aliveGlimmer).
+  window), shares 0.7 / 0.3, depth 0.6. Knobs `flicker` and `glimmer` 0–1; shipped at 1 / 1, Mark's pick of
+  2026-10-13 ("I like the Both at full one"; `sky-tuning.json` aliveFlicker / aliveGlimmer, `?tune=1` still dials).
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)

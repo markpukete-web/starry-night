@@ -2473,3 +2473,7 @@ after PR #8 merged (`246e817`, "Merge it then start the second pass").
 - **Tunables change logged** (CLAUDE.md, Tunables): the second-pass entry (flicker periods 1.9 / 3.1 s, amplitudes
   0.6 / 0.4, 1.3 / 0.8 cycles, τ 1.5 s, depth 0.6, floor 0.12, tip 0.55–0.9 of the lobe, tongue 0.40–0.75, back
   half, solid half; glimmer 2.3–4.1 s and 0.9–1.6 s, shares 0.7 / 0.3, depth 0.6; knobs shipped at 0.5 / 0.5).
+- **He chose the strongest preset, again.** Offered flicker 1 / glimmer 0.6 against both at 1 with the reasoning for
+  the softer window, Mark took both at full. Two passes, two ceilings: on this project the taste gate's prior is
+  "more", and the next pass should build its range above where the author's eye says enough, with the gates
+  policing boil and colour rather than caution policing strength.
