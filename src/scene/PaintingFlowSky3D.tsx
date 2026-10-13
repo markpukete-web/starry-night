@@ -32,6 +32,7 @@ import {
   uvToDioramaSkyPosition,
 } from './dioramaSkyProjection'
 import { MOON_R, MOON_UV, SWIRLS } from './skySwirls'
+import { GUST, gustGlsl, gustUniformValues } from './skyAlive'
 import { PALETTE } from './palette'
 import { DIORAMA_CAPTURE } from './dioramaContract'
 
@@ -100,6 +101,18 @@ const GRADIENT: Record<SkyStyle, { top: GradientEnd; bottom: GradientEnd }> = {
   moving: { top: { scale: 1, asDisplayed: true }, bottom: { scale: 0.68, asDisplayed: false } },
 }
 
+/** The gust clock's uniforms, the same for both ribbon materials; `uAlive` is set from the prop in a layout effect. */
+function gustUniforms() {
+  const { omega, amplitudes } = gustUniformValues()
+  return {
+    uAlive: { value: 0 },
+    uGustOmega: { value: new Vector3(...omega) },
+    uGustAmp: { value: new Vector3(...amplitudes) },
+    uGustLift: { value: GUST.lift },
+    uGustShimmer: { value: GUST.shimmerShare },
+  }
+}
+
 /** Capture seam: a finite `window.__skyTime` pins both sky clocks, so motion can be captured frame-exact. */
 type SkyClockWindow = Window & { __skyTime?: number }
 
@@ -118,23 +131,33 @@ type Props = {
   sky?: SkyStyle
   /** System reduced motion: always the painted-light still, whatever the choice. */
   still?: boolean
+  /** Make-it-alive A (`?alive=1`): the gust clock in both skies, halos breathing. Off = today's sky, bit for bit. */
+  alive?: boolean
 }
 
 const ribbonVert = /* glsl */ `
+  ${gustGlsl}
+  uniform float uTime;
   attribute float aLen;
   attribute float aAcross;
   attribute float aPhase;
   attribute float aRate;
   attribute vec3 aColor;
   attribute float aEdgeFade;
+  attribute vec2 aGust;
   varying float vLen;
   varying float vAcross;
   varying float vPhase;
   varying float vRate;
   varying vec3 vColor;
   varying float vEdgeFade;
+  // make-it-alive A: the ribbon's warped clock and its brightness lift this frame (skyAlive.ts)
+  varying float vGustTime;
+  varying float vGustLift;
   void main() {
     vLen = aLen;
+    vGustTime = gustTime(uTime, aGust);
+    vGustLift = gustLift(uTime, aGust);
     vAcross = aAcross;
     vPhase = aPhase;
     vRate = aRate;
@@ -147,6 +170,7 @@ const ribbonVert = /* glsl */ `
 const ribbonFrag = /* glsl */ `
   precision highp float;
   uniform float uTime;
+  uniform float uGustShimmer;
   uniform float uSpeed;
   uniform float uOpacity;
   uniform float uPulseScale;
@@ -163,13 +187,18 @@ const ribbonFrag = /* glsl */ `
   varying float vRate;
   varying vec3 vColor;
   varying float vEdgeFade;
+  varying float vGustTime;
+  varying float vGustLift;
 
   void main() {
     float edge = sin(clamp(vAcross, 0.0, 1.0) * 3.14159);
     float taper = smoothstep(0.0, 0.15, vLen) * smoothstep(1.0, 0.85, vLen);
-    float flowTime = mix(uTime, 0.0, uFreeze);
+    // make-it-alive A: the flow term takes the whole warp, the shimmer a share of it (it is the boil knob). With
+    // uAlive 0 vGustTime is uTime, so both are uTime exactly: t + x·(t − t) = t.
+    float flowTime = mix(vGustTime, 0.0, uFreeze);
+    float shimmerTime = mix(uTime + uGustShimmer * (vGustTime - uTime), 0.0, uFreeze);
     float flow = 0.5 + 0.5 * sin(vLen * uPulseScale - flowTime * uSpeed * vRate + vPhase);
-    float shimmer = 0.5 + 0.5 * sin(vLen * (uPulseScale * uShimmerScale) - flowTime * (uSpeed * uShimmerSpeed) * vRate + vPhase * 2.7);
+    float shimmer = 0.5 + 0.5 * sin(vLen * (uPulseScale * uShimmerScale) - shimmerTime * (uSpeed * uShimmerSpeed) * vRate + vPhase * 2.7);
     float combinedFlow = mix(flow, shimmer, uShimmerMix);
     float bristle = (1.0 - uBristleAmp) + uBristleAmp * sin(vAcross * uBristleFreq + sin(vLen * 45.0) * 3.0);
 
@@ -187,6 +216,9 @@ const ribbonFrag = /* glsl */ `
       // lift the stars and swirl band, keep the deep night).
       float srcLum = dot(vColor, vec3(0.299, 0.587, 0.114));
       col *= 1.0 + 0.52 * smoothstep(0.32, 0.68, srcLum);
+      // A: a surge brightens the band a few percent; the calm floor barely moves. After the clamp and the
+      // source-lum lift, so the palette numbers are reproducible (review F14).
+      col *= 1.0 + vGustLift;
     }
 
     float a = edge * taper * uOpacity * vEdgeFade;
@@ -198,7 +230,12 @@ const ribbonFrag = /* glsl */ `
 
 // The light sky's vertex shader with the ribbon's identity `flat`: interpolating a constant across a
 // triangle drifts in the last bits, and the stroke hash below amplifies that into per-pixel speckle.
-const movingVert = ribbonVert.replace('varying float vPhase;', 'flat varying float vPhase;')
+const movingVert = ribbonVert
+  .replace('varying float vPhase;', 'flat varying float vPhase;')
+  // the warped clock is a per-ribbon constant too, and the stroke slot below floors a value that depends on it;
+  // interpolating it would drift in the last bits (lessons 2026-10-11)
+  .replace('varying float vGustTime;', 'flat varying float vGustTime;')
+  .replace('varying float vGustLift;', 'flat varying float vGustLift;')
 
 const movingFrag = /* glsl */ `
   precision highp float;
@@ -213,6 +250,8 @@ const movingFrag = /* glsl */ `
   varying float vRate;
   varying vec3 vColor;
   varying float vEdgeFade;
+  flat varying float vGustTime;
+  flat varying float vGustLift;
 
   float hash1(float n) { return fract(sin(n) * 43758.5453); }
   float noise1(float x) {
@@ -234,7 +273,8 @@ const movingFrag = /* glsl */ `
     // below, whose kink at the centre line gives a false zero. g also points across the stroke on screen.
     vec2 g = vec2(dFdx(vAcross), dFdy(vAcross));
     float aa = max((abs(g.x) + abs(g.y)) * 1.5, 1e-4);
-    float t = uTime;
+    // make-it-alive A: the ribbon's warped clock; with uAlive 0 it is uTime exactly (skyAlive.ts)
+    float t = vGustTime;
     // which sliding period this fragment is in (one stroke each) and where inside it
     float pos = (vLen - t * uSpeed * vRate) / uPeriod + vPhase / 6.2831853;
     float slot = floor(pos);
@@ -290,6 +330,8 @@ const movingFrag = /* glsl */ `
     // × 0.93: once the strokes covered the dark gaps the sky read lighter, mean L 55.1 against the painting's
     // 46.7 (polish c1); now 52.4, dE76 6.96
     col *= 0.93 * (1.0 + 0.08 * smoothstep(0.32, 0.68, srcLum));
+    // A: a surge brightens the band a few percent, after the 0.93 lift line above (review F14)
+    col *= 1.0 + vGustLift;
     gl_FragColor = vec4(col, a);
   }
 `
@@ -611,7 +653,7 @@ function SourceOrbs({ debug, moonGlow = 0.68 }: { debug: PaintingFlowSkyDebug; m
 
 
 
-export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky = 'light', still = false }: Props) {
+export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky = 'light', still = false, alive = false }: Props) {
   const skyRoot = useRef<Group>(null)
   // Camera-convention lookAt (Matrix4.lookAt puts +Z from target back to eye, as three does for
   // isCamera objects), so this equals the live camera's quaternion at rest at the home pose —
@@ -824,6 +866,7 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
           uBristleFreq: { value: tuned('bristleFreq', 75) },
           uBristleAmp: { value: tuned('bristleAmp', 0.22) },
           uDebugMode: { value: isFlowDebug ? 1 : 0 },
+          ...gustUniforms(),
         },
         vertexShader: ribbonVert,
         fragmentShader: ribbonFrag,
@@ -857,6 +900,7 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
           uPeriod: { value: MOVING.period },
           uStroke: { value: MOVING.stroke },
           uOpacity: { value: MOVING.opacity },
+          ...gustUniforms(),
         },
         vertexShader: movingVert,
         fragmentShader: movingFrag,
@@ -881,6 +925,8 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
   // same frame. A passive effect could trail by one frame after a non-click update (review F4).
   useLayoutEffect(() => {
     /* eslint-disable react-hooks/immutability -- intentional R3F uniform writes */
+    ribbonMaterial.uniforms.uAlive.value = alive ? 1 : 0
+    movingMaterial.uniforms.uAlive.value = alive ? 1 : 0
     washMaterial.uniforms.uMovingSky.value = mode === 'moving' ? 1 : 0
     // Set from the palette each time, never multiplied in place, so switching cannot drift.
     // LinearSRGBColorSpace = "these numbers are already working values": the hex reaches the screen unchanged
@@ -889,7 +935,7 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
     gradientMaterial.uniforms.uTop.value.setStyle(PALETTE.skyZenith, space(top)).multiplyScalar(top.scale)
     gradientMaterial.uniforms.uBottom.value.setStyle(PALETTE.skyHorizon, space(bottom)).multiplyScalar(bottom.scale)
     /* eslint-enable react-hooks/immutability */
-  }, [gradientMaterial, mode, washMaterial])
+  }, [alive, gradientMaterial, mode, movingMaterial, ribbonMaterial, washMaterial])
 
   /* eslint-disable react-hooks/immutability -- R3F render-loop writes: camera-locked sky rotation + time uniform */
   useFrame(({ camera }, dt) => {

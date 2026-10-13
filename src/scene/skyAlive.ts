@@ -19,8 +19,14 @@ export const GUST = {
   amplitudes: [0.36, 0.22, 0.12],
   /** seconds a gust takes to cross the canvas, left to right: lag = u × travel */
   travel: 3,
-  /** brightness lift at a full surge, scaled by the ribbon's weight */
+  /** brightness lift at a full surge, scaled by the ribbon's weight; no lag, so it is 0 at t = 0 for every ribbon */
   lift: 0.06,
+  /**
+   * How much of the warp the light sky's shimmer term takes (the flow term takes all of it). The shimmer runs at
+   * 3× the flow's rate and is the knob that tips into boil (lessons 2026-06-22), so a full surge of 1.7× would run
+   * it at 5.1×; half the warp caps it at 4×. Decided at the first capture (review F6).
+   */
+  shimmerShare: 0.5,
   /** the calm floor: every ribbon breathes at least this much of the gust (the deep blue, calmer) */
   floor: 0.15,
   /**
@@ -71,12 +77,14 @@ export function ribbonGusts(vertices: readonly SourceRibbonVertex[]): Float32Arr
   const out = new Float32Array(vertices.length * 2)
   let start = 0
   while (start < vertices.length) {
-    const phase = vertices[start].phase
+    // the (phase, rate) pair: two adjacent ribbons drawing the same 32-bit phase is ~6e-6 likely and deterministic
+    // for the seed, so the pair closes that door (review F7)
+    const { phase, rate } = vertices[start]
     let end = start
     let lum = 0
     let u = 0
     let v = 0
-    while (end < vertices.length && vertices[end].phase === phase) {
+    while (end < vertices.length && vertices[end].phase === phase && vertices[end].rate === rate) {
       lum += luminance(vertices[end].color)
       u += vertices[end].u
       v += vertices[end].v
@@ -108,15 +116,22 @@ export function gustTime(t: number, weight: number, lag: number, amplitudes = GU
   return t + weight * (gustG(t - lag, amplitudes, periods) - gustG(-lag, amplitudes, periods))
 }
 
-/** TS twin of the shader's pulse: the tempo's zero-mean part, normalised to ±1. */
-export function gustPulse(t: number, lag: number, amplitudes = GUST.amplitudes, periods = GUST.periods): number {
+/** TS twin of the shader's pulse: the tempo's zero-mean part, normalised to ±1, with no lag (0 at t = 0). */
+export function gustPulse(t: number, amplitudes = GUST.amplitudes, periods = GUST.periods): number {
   let s = 0
   let a = 0
   for (let i = 0; i < 3; i++) {
-    s += amplitudes[i] * Math.sin(omega(periods[i]) * (t - lag))
+    s += amplitudes[i] * Math.sin(omega(periods[i]) * t)
     a += amplitudes[i]
   }
   return s / a
+}
+
+/** The finite-window error bound on the mean tempo over T seconds: w · Σ(Aᵢ Pᵢ) / (π T) (review F11). */
+export function meanTempoBound(seconds: number, weight = 1, amplitudes = GUST.amplitudes, periods = GUST.periods): number {
+  let s = 0
+  for (let i = 0; i < 3; i++) s += amplitudes[i] * periods[i]
+  return (weight * s) / (Math.PI * seconds)
 }
 
 /** The uniforms the shaders take for GUST. */
@@ -128,8 +143,10 @@ export function gustUniformValues() {
 }
 
 /**
- * The GLSL shared by both ribbon fragment shaders. `uAlive` 0 gives gustTime(t) = t + 0·x = t exactly, so the
- * default sky is unchanged by construction (and measured, gate check 2).
+ * The GLSL shared by both ribbon VERTEX shaders: the warp is one value per ribbon per frame, so it is computed
+ * per vertex and passed down, not nine transcendentals per fragment of a full-viewport mesh (review F3).
+ * `uAlive` is 0 or 1, never a strength: above 1 the clock could run backwards. At 0, gustTime(t) = t + 0·x = t,
+ * expected exact at the IEEE level and proven by the gate's AE 0 captures, not assumed (review F5).
  */
 export const gustGlsl = /* glsl */ `
   uniform float uAlive;
@@ -144,14 +161,18 @@ export const gustGlsl = /* glsl */ `
   float gustTime(float t, vec2 gust) {
     return t + uAlive * gust.x * (gustG(t - gust.y) - gustG(-gust.y));
   }
-  // the tempo's zero-mean part in -1..1, for the brightness lift on a surge
-  float gustPulse(float t, vec2 gust) {
-    vec3 s = uGustAmp * sin(uGustOmega * (t - gust.y));
-    return (s.x + s.y + s.z) / (uGustAmp.x + uGustAmp.y + uGustAmp.z);
+  // the brightness lift on a surge: weight × the tempo's zero-mean part in -1..1, no lag, so 0 at t = 0
+  float gustLift(float t, vec2 gust) {
+    vec3 s = uGustAmp * sin(uGustOmega * t);
+    return uAlive * uGustLift * gust.x * (s.x + s.y + s.z) / (uGustAmp.x + uGustAmp.y + uGustAmp.z);
   }
 `
 
-/** A2: each star halo breathes at its own rate; the moon pulses slower and lower. */
+/**
+ * A2: each star halo breathes at its own rate; the moon pulses slower and lower. No phase offsets: every breath
+ * is sin(ωt), 0 at t = 0, so the paused still and the t = 0 frame equal today's (review F1, F2); the hashed
+ * periods desynchronise the stars within a few seconds.
+ */
 export const HALO_BREATH = {
   opacity: 0.14,
   scale: 0.05,
@@ -166,10 +187,7 @@ function hash(n: number): number {
   return x - Math.floor(x)
 }
 
-/** A star's own breath, from its index in the halo list: period in seconds and phase in radians. */
-export function haloBreath(index: number): { period: number; phase: number } {
-  return {
-    period: HALO_BREATH.periodMin + (HALO_BREATH.periodMax - HALO_BREATH.periodMin) * hash(index),
-    phase: 2 * Math.PI * hash(index + 7),
-  }
+/** A star's own breath period in seconds, from its index in the halo list. */
+export function haloPeriod(index: number): number {
+  return HALO_BREATH.periodMin + (HALO_BREATH.periodMax - HALO_BREATH.periodMin) * hash(index)
 }

@@ -1,9 +1,10 @@
 import { BufferAttribute, BufferGeometry, Vector3 } from 'three'
 import type { ImageData2D } from './useImageData'
 import type { SourceRibbonGeometry } from './streamlineGeometry'
-import { smoothstep } from './skyMapping'
-import { ribbonGusts } from './skyAlive'
-import { dioramaSourceEdgeFade, SIDE_BORDER_U, uvToDioramaSkyPosition } from './dioramaSkyProjection'
+// `.ts` extensions so scripts/sky-alive.test.ts can run the packer under node (review F8)
+import { smoothstep } from './skyMapping.ts'
+import { ribbonGusts } from './skyAlive.ts'
+import { dioramaSourceEdgeFade, SIDE_BORDER_U, uvToDioramaSkyPosition } from './dioramaSkyProjection.ts'
 
 // The sky's ribbon build, with no React and no DOM, so the moving sky can run it in a worker (Codex, PR #7:
 // built in the render, the first switch froze for about 230 ms on an M5 Pro).
