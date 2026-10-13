@@ -138,6 +138,7 @@ function touchUniforms() {
     uTouchKickRise: { value: c.kickRise },
     uTouchKickDecay: { value: c.kickDecay },
     uTouchKickSigma: { value: c.kickSigma },
+    uTouchSupport: { value: c.support },
     uTouchWindowStart: { value: c.windowStart },
     uTouchWindowEnd: { value: c.windowEnd },
     uTouchAspect: { value: c.aspect },

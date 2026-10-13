@@ -61,8 +61,14 @@ test('T22 the lift twin: nothing at or before t0, a rise, a bounded sum, a crest
   const bloomAlong = surgeTerms([0.5 + 0.05, 0.3], along, live(0.5, 0.3, 0), 0.05)
   const bloomAcross = surgeTerms([0.5, 0.3 + 0.05 / SKY_ASPECT], along, live(0.5, 0.3, 0), 0.05)
   assert.ok(bloomAlong > 2 * bloomAcross)
-  // an upstream vertex takes the bloom only
+  // an upstream vertex takes the bloom's tail only (along −0.2 is inside the bloom's 3σ of 0.24), and beyond the
+  // support exactly nothing (finite support)
   assert.ok(surgeTerms([0.3, 0.3], along, live(0.5, 0.3, 0), 0.8) < 1e-3)
+  assert.equal(surgeTerms([0.5 - T.support * T.bloomAlong * 1.01, 0.3], along, live(0.5, 0.3, 0), 0.8), 0, 'upstream beyond 3σ: exactly 0')
+  const acrossSupport = T.support * Math.max(T.sigmaA, T.bloomAcross)
+  assert.equal(surgeTerms([0.5 + T.speed * 0.4, 0.3 + (acrossSupport * 1.01) / SKY_ASPECT], along, live(0.5, 0.3, 0), 0.4), 0, 'beside the crest beyond both supports: exactly 0')
+  assert.ok(surgeTerms([0.5 + T.speed * 0.4, 0.3 + (T.support * T.sigmaA * 0.99) / SKY_ASPECT], along, live(0.5, 0.3, 0), 0.4) > 0, 'just inside the pulse: lit')
+  assert.equal(surgeTerms([0.5 + T.support * T.bloomAlong * 1.01 + 0.0001, 0.3], along, live(0.5, 0.3, 0), 0.0001), 0, 'the bloom beyond 3σ at age 0+: exactly 0')
   // closed exactly by the window, and gone from the list after it
   assert.equal(closingWindow(T.windowEnd), 0)
   assert.equal(closingWindow(T.windowEnd + 1), 0)
@@ -104,10 +110,12 @@ test('T22b the kick: 0 at age 0, closed to exactly 0 by the window, never evicte
     previous = clock
   }
   assert.ok(slowest > 0.5, `the strokes never run below half speed at the knob's maximum with four taps (slowest rate ${slowest.toFixed(3)})`)
-  // the kick reaches a whole ribbon from its end, and the neighbour ribbon less
+  // the kick reaches a whole ribbon from its end, the neighbour ribbon less, and beyond the support exactly nothing
   const near = kickTerms([0.5, 0.3, 0.9, 0.3], { u: 0.5, v: 0.3, t0: 0, amp: 1 }, 0.5)
-  const far = kickTerms([0.5, 0.3 + 0.12 / SKY_ASPECT, 0.9, 0.3 + 0.12 / SKY_ASPECT], { u: 0.5, v: 0.3, t0: 0, amp: 1 }, 0.5)
+  const far = kickTerms([0.5, 0.3 + 0.08 / SKY_ASPECT, 0.9, 0.3 + 0.08 / SKY_ASPECT], { u: 0.5, v: 0.3, t0: 0, amp: 1 }, 0.5)
   assert.ok(near > 0.1 && far < 0.2 * near)
+  const beyond = T.support * T.kickSigma * 1.01
+  assert.equal(kickTerms([0.5, 0.3 + beyond / SKY_ASPECT, 0.9, 0.3 + beyond / SKY_ASPECT], { u: 0.5, v: 0.3, t0: 0, amp: 1 }, 0.5), 0)
 })
 
 test('T22c the lift list: the oldest live one fades on eviction and keeps its slot to its end, a full set of slots refuses, entries drop at their end or window, hovers need distance and time', () => {

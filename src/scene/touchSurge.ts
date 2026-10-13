@@ -60,7 +60,13 @@ export const TOUCH_SURGE = {
   kick: 0.4,
   kickRise: 0.4,
   kickDecay: 3,
-  kickSigma: 0.08,
+  kickSigma: 0.05,
+  /**
+   * Every falloff is cut to EXACTLY zero beyond this many sigmas (e^(−9) = 1.2e-4 of the peak, invisible): a
+   * Gaussian never reaches zero, and a touch would otherwise move every ribbon in the sky by amounts below
+   * sight, which no isolation gate can tell from a defect. Finite support makes the untouched sky byte-identical.
+   */
+  support: 3,
   /** live kicks the shader takes; a tap beyond it lifts without kicking, never evicting a live one (review F1) */
   maxKicks: 4,
   /** every term closes between these ages and is pruned after the second */
@@ -125,13 +131,15 @@ export function surgeTerms(uv: readonly [number, number], tangent: readonly [num
   const px = dx - along * tangent[0]
   const py = dy - along * tangent[1]
   const across = Math.hypot(px, py)
-  const E = surge.amp * (1 - Math.exp(-age / T.rise)) * Math.exp(-age / T.tau) * closingWindow(age, T) * endWindow(t, surge.end, T)
   const sa = (along - T.speed * age) / T.sigmaS
   const sb = across / T.sigmaA
-  const S = Math.exp(-(sa * sa)) * Math.exp(-(sb * sb))
   const ba = along / T.bloomAlong
   const bb = across / T.bloomAcross
-  const B = Math.exp(-(ba * ba)) * Math.exp(-(bb * bb))
+  const cut = T.support * T.support
+  const S = sa * sa + sb * sb > cut ? 0 : Math.exp(-(sa * sa)) * Math.exp(-(sb * sb))
+  const B = ba * ba + bb * bb > cut ? 0 : Math.exp(-(ba * ba)) * Math.exp(-(bb * bb))
+  if (S === 0 && B === 0) return 0
+  const E = surge.amp * (1 - Math.exp(-age / T.rise)) * Math.exp(-age / T.tau) * closingWindow(age, T) * endWindow(t, surge.end, T)
   return E * (S + 0.5 * B)
 }
 
@@ -166,8 +174,9 @@ export function kickTerms(segment: readonly [number, number, number, number], ki
   const p: [number, number] = [kick.u, kick.v * SKY_ASPECT]
   const a: [number, number] = [segment[0], segment[1] * SKY_ASPECT]
   const b: [number, number] = [segment[2], segment[3] * SKY_ASPECT]
-  const dist = segmentDistance(p, a, b)
-  const Bseg = Math.exp(-((dist / T.kickSigma) ** 2))
+  const dist = segmentDistance(p, a, b) / T.kickSigma
+  if (dist > T.support) return 0
+  const Bseg = Math.exp(-(dist * dist))
   return kick.amp * T.kick * Bseg * kickShape(age, T)
 }
 
@@ -322,6 +331,7 @@ export function surgeUniformValues(T = TOUCH_SURGE) {
     kickRise: T.kickRise,
     kickDecay: T.kickDecay,
     kickSigma: T.kickSigma,
+    support: T.support,
     windowStart: T.windowStart,
     windowEnd: T.windowEnd,
     aspect: SKY_ASPECT,
@@ -352,6 +362,7 @@ export const touchGlsl = /* glsl */ `
   uniform float uTouchKickRise;
   uniform float uTouchKickDecay;
   uniform float uTouchKickSigma;
+  uniform float uTouchSupport;
   uniform float uTouchWindowStart;
   uniform float uTouchWindowEnd;
   uniform float uTouchAspect;
@@ -371,14 +382,17 @@ export const touchGlsl = /* glsl */ `
       float along = dot(d, touch.zw);
       vec2 perp = d - along * touch.zw;
       float across = length(perp);
-      float E = s.w * (1.0 - exp(-age / uTouchRise)) * exp(-age / uTouchTau) * touchWindow(age)
-        * (1.0 - smoothstep(uSurgeEnd[k] - uTouchFadeOut, uSurgeEnd[k], t));
       float sa = (along - uTouchSpeed * age) / uTouchSigmaS;
       float sb = across / uTouchSigmaA;
-      float S = exp(-sa * sa) * exp(-sb * sb);
       float ba = along / uTouchBloomAlong;
       float bb = across / uTouchBloomAcross;
-      float B = exp(-ba * ba) * exp(-bb * bb);
+      float cut = uTouchSupport * uTouchSupport;
+      // finite support: exactly 0 beyond the cutoff, so an untouched ribbon is untouched in bytes
+      float S = sa * sa + sb * sb > cut ? 0.0 : exp(-sa * sa) * exp(-sb * sb);
+      float B = ba * ba + bb * bb > cut ? 0.0 : exp(-ba * ba) * exp(-bb * bb);
+      if (S == 0.0 && B == 0.0) continue;
+      float E = s.w * (1.0 - exp(-age / uTouchRise)) * exp(-age / uTouchTau) * touchWindow(age)
+        * (1.0 - smoothstep(uSurgeEnd[k] - uTouchFadeOut, uSurgeEnd[k], t));
       lift += E * (S + 0.5 * B);
     }
     return lift;
@@ -399,6 +413,7 @@ export const touchGlsl = /* glsl */ `
       float age = t - s.z;
       if (age <= 0.0) continue;
       float dist = touchSegDist(vec2(s.x, s.y * uTouchAspect), a, b) / uTouchKickSigma;
+      if (dist > uTouchSupport) continue;
       float Bseg = exp(-dist * dist);
       float g = (1.0 - exp(-age / uTouchKickRise)) * exp(-age / uTouchKickDecay) * touchWindow(age);
       warp += s.w * uTouchKick * Bseg * g;
