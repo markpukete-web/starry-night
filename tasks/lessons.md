@@ -2422,3 +2422,58 @@ Plan `tasks/2026-10-13-alive-a-plan.md`, record `tasks/2026-10-13-alive-a.md`. B
   the moving sky's at 5.8 (further, under 10); the halos' top-of-breath opacity exceeds 1 under additive blending
   and over-brightens, which he saw and accepted. Record what the chosen numbers cost before the next pass argues
   about them.
+
+## Make-it-alive A, second pass — the cypress flicker and the window glimmer, 2026-10-13 (night)
+
+Plan `tasks/2026-10-13-alive-a2-plan.md`, record `tasks/2026-10-13-alive-a2.md`. Built and gated in the cloud session
+after PR #8 merged (`246e817`, "Merge it then start the second pass").
+
+- **"Merged" needs a read, not a nod — twice in one day.** Mark wrote "merged to main"; GitHub showed PR #8 open,
+  `origin/main` unmoved and production at PR #7, the same shape as the afternoon's "merged" that meant the record
+  branch. Read the PR, the ref and the deployment before building on a merge. The merge then went through the API
+  on his word in one call.
+- **The fresh review paid again: six blockers in a plan that had already been numerically checked.** A per-vertex
+  factor through a plain varying is not exactly 1 at t = 0 (the sky's grey-level lesson, in a new coat); a GLSL
+  `fract(sin · 43758)` is not the TS hash in float32, so a shader-side hash cannot be tested from node; my own
+  transient check sampled four heights and missed the overshoot (max 1.42 at h 0.185) a search over h found; two
+  meshes shared one material object, so "the solid is untouched" was false; the colour gates' rects are
+  registration bands, not footprints (the tree reaches x 380, the striped house's windows y 685); and a count I
+  had corrected in one section of the plan survived in another. Review the plan with the code open, and have the
+  reviewer measure on a capture what the author asserted from memory.
+- **Make the zero exact by construction, not by cancellation.** `sin(ωt − kh) − sin(−kh)·e^(−t/τ)` is 0 at t = 0
+  only if the GPU's `sin` is exactly odd; `env(t) · Σ…` with `env = t > 0 ? 1 − e^(−t/τ) : 0` is 0 by a branch,
+  and bounded by Σ Aᵢ for every t besides. The gate then proved every alive route byte-identical to the default at
+  t = 0 with the injections compiled, and the paused still passed `check:reduced` twice.
+- **`onBeforeCompile` keeps the off path in bytes with no shader fork.** Three's stock `MeshBasicMaterial`, a
+  multiply after `<color_fragment>`, a distinct `customProgramCacheKey` per variant (the default key is the
+  callback's source text, which two materials sharing one helper would share), uniforms assigned on the compile
+  parameters and written from the frame loop. The default route matched `main` on all 12 baseline frames.
+- **Isolate the feature with the other knobs at 0, then classify every differing pixel.** With the sky knobs at 0
+  the sky is exactly the default, so a flicker-only frame differs from `main` only where the flicker draws:
+  26–30k pixels inside the measured cypress footprint, 189 inside the window footprint for the glimmer, 0 anywhere
+  else, at every time tried. Cheaper and sharper than a ΔE on a region.
+- **A dark pigment bounds a brightness effect.** ±60% of the cypress's green is at most about 15 grey levels on
+  the brightest tongues (the first diff frame's max was 23 on the strokes' edges), so the flicker at the knob's
+  maximum reads as moderate in the stills; the sky's lesson ("cautious by design read as nothing at all") says to
+  expect Mark to want more. The retune lever is the depth constant; the ceiling on the knob is the review's floor
+  on the factor (0.4), to be renegotiated with him rather than quietly raised.
+- **`0 · (negative)` is `−0`, and `assert.equal` is `Object.is`-strict about it.** The factor `1 + (−0)` is exactly
+  1, which is what matters; the test asserts `=== 0` on the wave and strict equality on the factor.
+- **Read a prop in the frame loop; do not copy it into a ref during render.** `react-hooks/refs` flags the render-
+  time write, and the halos already read their `clock` prop inside `useFrame` without one. The `immutability`
+  disable comment goes around the `useFrame` call, not inside its body.
+- **Run the mutation proofs as a chain that restores the file.** Three mutations (no tongue term, no envelope, an
+  off-by-one lit range) each turned exactly one test red, and the sources came back from a copy in the same
+  command. A forgotten revert is a bug the next commit ships.
+- **The capture script's frame names are `Number`'s.** `--times 8.0` writes `m-t8.png`; a strip builder that
+  formats its own names misses every whole second. Build the list from the script's own JSON, or format as it does.
+- **The colour gates read baked references that are not checked in** (`reference/derived/cypress-skin-source.png`,
+  `_work-painting.png`); a fresh clone must rebake them before `check-cypress-colour` or `check:village` can run.
+  The record names which bake produces which file.
+- **Tunables change logged** (CLAUDE.md, Tunables): the second-pass entry (flicker periods 1.9 / 3.1 s, amplitudes
+  0.6 / 0.4, 1.3 / 0.8 cycles, τ 1.5 s, depth 0.6, floor 0.12, tip 0.55–0.9 of the lobe, tongue 0.40–0.75, back
+  half, solid half; glimmer 2.3–4.1 s and 0.9–1.6 s, shares 0.7 / 0.3, depth 0.6; knobs shipped at 0.5 / 0.5).
+- **He chose the strongest preset, again.** Offered flicker 1 / glimmer 0.6 against both at 1 with the reasoning for
+  the softer window, Mark took both at full. Two passes, two ceilings: on this project the taste gate's prior is
+  "more", and the next pass should build its range above where the author's eye says enough, with the gates
+  policing boil and colour rather than caution policing strength.

@@ -21,6 +21,8 @@ const SHIPPED_ALIVE: AliveTuning = {
   lift: clampAliveKnob('lift', tuned('aliveLift', ALIVE_DEFAULTS.lift), ALIVE_DEFAULTS.lift),
   shimmer: clampAliveKnob('shimmer', tuned('aliveShimmer', ALIVE_DEFAULTS.shimmer), ALIVE_DEFAULTS.shimmer),
   breath: clampAliveKnob('breath', tuned('aliveBreath', ALIVE_DEFAULTS.breath), ALIVE_DEFAULTS.breath),
+  flicker: clampAliveKnob('flicker', tuned('aliveFlicker', ALIVE_DEFAULTS.flicker), ALIVE_DEFAULTS.flicker),
+  glimmer: clampAliveKnob('glimmer', tuned('aliveGlimmer', ALIVE_DEFAULTS.glimmer), ALIVE_DEFAULTS.glimmer),
 }
 
 /** prefers-reduced-motion: a dignified still painting, no churn (locked acceptance criterion). */

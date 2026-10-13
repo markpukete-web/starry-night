@@ -65,6 +65,10 @@ for (let y = 0; y < source.height; y++) {
 // no-post cobalt is dark enough to satisfy `treeishColour` around the narrow upper flame.
 const renderedRegions: Record<Region, Lab[]> = { base: [], middle: [], top: [] }
 const bounds = { left: 400, right: 548, top: 96, bottom: 670 }
+// Stencil pixels the chroma gate rejects: a bright stroke leaves the tree family and drops out of the means, so a
+// lit frame (make-it-alive A's flicker) can under-report; the share is printed so a gate can bound its change.
+let stencil = 0
+let rejected = 0
 for (let y = bounds.top; y <= bounds.bottom; y++) {
   for (let x = bounds.left; x <= bounds.right; x++) {
     const sourceX = Math.min(
@@ -76,11 +80,15 @@ for (let y = bounds.top; y <= bounds.bottom; y++) {
       Math.max(0, Math.round(((y - bounds.top) / (bounds.bottom - bounds.top)) * (source.height - 1))),
     )
     if (source.rgba[(sourceY * source.width + sourceX) * 4 + 3] === 0) continue
+    stencil++
     const index = (y * capture.width + x) * 4
     const red = capture.rgba[index]
     const green = capture.rgba[index + 1]
     const blue = capture.rgba[index + 2]
-    if (!treeishColour(red / 255, green / 255, blue / 255)) continue
+    if (!treeishColour(red / 255, green / 255, blue / 255)) {
+      rejected++
+      continue
+    }
     const heightFraction = (bounds.bottom - y) / (bounds.bottom - bounds.top)
     renderedRegions[regionAt(heightFraction)].push(srgbToLab(red, green, blue))
   }
@@ -125,5 +133,6 @@ for (const region of ['base', 'middle', 'top'] as const) {
   )
   if (difference >= 10) failed = true
 }
+console.log(JSON.stringify({ stencil, rejected, rejectedShare: Number((rejected / Math.max(1, stencil)).toFixed(4)) }))
 console.log('comparison=regional Lab distribution (not registered per-pixel ΔE)')
 if (failed) process.exitCode = 1
