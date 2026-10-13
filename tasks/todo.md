@@ -20,9 +20,10 @@ below — never edited in place.
   `?alive=1`, Mark's knob picks shipped; the flag is OFF by default, visitors see today's piece. Vercel production
   READY at it. PR #8 (`246e817`) and PR #9 (`ad15650`) merged 2026-10-13; their branches deleted by Mark.
 - **Branch `claude/confident-bohr-1y7p2u`** (from `ad15650`) carries B: the touch surge behind `?touch=1` (implies
-  `alive`), gated in the cloud session (`tasks/2026-10-13-touch-b.md`, every row green). Not yet a PR. Its Vercel
-  preview: `https://starry-night-git-claude-confide-0e1ba3-markpukete-webs-projects.vercel.app/` — `?touch=1` to
-  feel it (hover, drag, tap, tap a star), `?touch=1&tune=1` for the `surge` slider beside A's six.
+  `alive`), gated in the cloud session (`tasks/2026-10-13-touch-b.md`, every row green). PR #10 opened 2026-10-13 on
+  Mark's word ("create PR"), unmerged: merging deploys, both flags stay off. Its Vercel preview:
+  `https://starry-night-git-claude-confide-0e1ba3-markpukete-webs-projects.vercel.app/` — `?touch=1` to feel it
+  (hover, drag, tap, tap a star), `?touch=1&tune=1` for the `surge` slider beside A's six.
 - **Still owed at the Mac** (a real GPU; the cloud cannot): AE 0 of the default route against `main` at pinned t,
   and `?perf=1` with everything on (`?touch=1`, shipped knobs), desktop and a phone. The locked bar is 60 / 30 fps.
   B adds up to 16 lift and 4 kick evaluations per vertex on the moving sky's 647k vertices, under count guards.
@@ -42,8 +43,8 @@ below — never edited in place.
   clicks, drags and phone taps through DevTools behave; the colour gate closer to the painting; reduced motion
   and viewport PASS; 128 tests.
 - [ ] **Mark's gate on B** (the preview above): feel on a Mac and a phone; the `surge` knob; whether a drag on touch
-  should trail as well as orbit (it does now); whether the kick's settle reads as settling or as a stall. Then a
-  PR of the branch to `main` on his word (merging changes nothing visitors see; both flags stay off).
+  should trail as well as orbit (it does now); whether the kick's settle reads as settling or as a stall. Then
+  merge PR #10 on his word (merging changes nothing visitors see; both flags stay off).
 - [ ] **The flag decision** after the Mac checks: `alive` (and `touch`) on for every visitor, or a choice.
 - [ ] **C, arrival:** open on the flat painting, one line from Vincent's letter, the sky starts to breathe, the camera
   pushes through the frame into the diorama. Plan file first, fresh review, flag, gate, as A and B.
@@ -74,8 +75,8 @@ refuses ref deletion, HTTP 403); `record/2d-streamline-flow` kept on purpose.
   tuner, shipped at 0.5. Tests T14–T19 with mutation proofs (120 green). Gate in `tasks/2026-10-13-alive-a2.md`.
 - [x] **Mark's gate on the second pass** (2026-10-13 night, preview): offered flicker 1 / glimmer 0.6 against both at
   1; "I like the Both at full one" → shipped as the defaults (`sky-tuning.json` aliveFlicker 1, aliveGlimmer 1).
-- [ ] **Next:** a PR of `claude/confident-bohr-1y7p2u` to `main` when Mark asks (merging changes nothing visitors
-  see; the flag stays off). Then decide the flag: on for every visitor, or a choice. Still owed at the Mac
+- [x] **Next:** a PR of `claude/confident-bohr-1y7p2u` to `main` when Mark asks: done as PR #9, merged `ad15650`
+  (the flag stays off). Then decide the flag: on for every visitor, or a choice. Still owed at the Mac
   before the flip: AE 0 against `main` at pinned t on a real GPU, and `?perf=1` with everything on at the shipped
   values (the second pass adds two sines and an exp per fragment over the cypress, about 6% of the frame).
 - [ ] Then B (touch), then C (arrival). Impasto under raking light at orbit stays impossible as specified (the sky
