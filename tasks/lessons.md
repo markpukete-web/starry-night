@@ -2477,3 +2477,21 @@ after PR #8 merged (`246e817`, "Merge it then start the second pass").
   the softer window, Mark took both at full. Two passes, two ceilings: on this project the taste gate's prior is
   "more", and the next pass should build its range above where the author's eye says enough, with the gates
   policing boil and colour rather than caution policing strength.
+
+## B (touch) — the plan and its baseline, 2026-10-13 (late)
+
+- **A killed wrapper is not a killed job.** A capture chain started with `nohup` children; its wrapper shell was
+  killed (by its own `pkill -f`, whose pattern sat in the wrapper's command line because the script's text was
+  written in the same command), and the capture child carried on. The second run then shared the output directory
+  with the first: two Chromes at once, a "pinned clock self-check failed" from one of them, and frames of unknown
+  parentage. Before a re-run, `pgrep` the capture script and Chrome by name and kill them; wipe the directory; and
+  never write a script and invoke it in one command when the script's text contains the pattern a later `pkill`
+  will match. Kill servers by pid file.
+- **A scratch script that imports the app's modules must live under the repo** (`scratch/`, ignored): node resolves
+  `three` from the importing file's directory, so a script in the session scratchpad cannot find it.
+- **`-x ** 2` is a syntax error in JavaScript;** write `-(x ** 2)`.
+- **Check the mapping and the maths before the review lands,** without touching the files the reviewer is reading:
+  the dome's analytic inverse round-trips to 4e-16 and the angular isotropy factor is exactly the planned
+  `(SPAN_V·1.06)/(SPAN_H·1.16)` = 0.7252; the surge's tempo kick never steps backwards over three overlapping
+  surges on a dense grid, its crest runs at the planned speed, the lift is bounded and gone by five time constants.
+  One number for the eye check: a single surge stays visible about 3.7 s and runs 0.9 of the canvas width.
