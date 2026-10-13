@@ -2501,3 +2501,15 @@ after PR #8 merged (`246e817`, "Merge it then start the second pass").
 - **A Gaussian never reaches zero, and an isolation gate needs a zero.** The first surge model moved every ribbon
   in the sky by invisible amounts (the twin's mask covered the whole frame); a cutoff at three sigma on every term,
   in the twin and the shader, made the untouched sky byte-identical again and the gate well-posed.
+- **DevTools waits for the page, and a software frame is most of a second.** Press and release awaited one after
+  the other landed 972 ms apart (a probe with timestamps showed it), so every synthetic tap read as a drag and the
+  gate blamed the code. Fired together they land 1 ms apart. When a synthetic gesture fails, probe the timestamps
+  the page saw before touching the classifier.
+- **A lit vertex reaches a whole triangle.** The twin's mask dilated by 10 px left stray diffs of 14 grey levels
+  along the ribbon: the lift interpolates across the segment to the next vertex pair, about 16 px. Dilate by a
+  segment, not by the stroke's width; the residue is then at most 1 grey level, the support's edge in float32.
+- **The reviewer's blocker that a plan's numbers hid.** The first plan's kick was monotone only while a surge
+  stayed in the list; pruning it would have stepped the clock back and re-birthed dead strokes. A term that must
+  never jump has to reach exactly zero before it is removed, and a live one must never be evicted. The gate then
+  proved the pair across the kick's end differs exactly as the baseline's own.
+- **Tunables change logged** (CLAUDE.md, Tunables): B's entry, the constants above, shipped `surge` 1.

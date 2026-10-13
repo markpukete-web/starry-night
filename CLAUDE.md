@@ -130,6 +130,13 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   the tongue, the underpaint solid half the knob. Window glimmer slow 2.3–4.1 s, fast 0.9–1.6 s (hashed per
   window), shares 0.7 / 0.3, depth 0.6. Knobs `flicker` and `glimmer` 0–1; shipped at 1 / 1, Mark's pick of
   2026-10-13 ("I like the Both at full one"; `sky-tuning.json` aliveFlicker / aliveGlimmer, `?tune=1` still dials).
+- B, touch, behind `?touch=1` (implies `alive`; 2026-10-13, `src/scene/touchSurge.ts`): the lift's pulse speed 0.25
+  canvas widths/s, σ 0.06 along × 0.025 across, bloom σ 0.08 × 0.04 along the stroke, rise 0.08 s, decay τ 1.6 s,
+  ceiling 0.5 (A's), 12 live surges in 16 slots with a 0.25 s fade on eviction; the kick 0.4 s of clock, rise 0.4 s,
+  decay 3 s, σ 0.05 from the ribbon's centreline segment, closed to zero by 10 s, max 4, never evicted live; every
+  falloff cut at 3σ; hover amp 0.5 at ≥ 60 ms and ≥ 0.02 u, tap ≤ 300 ms and ≤ 8 px; star radius 0.04, moon 0.06;
+  flare ×2.2 colour, ×1.5 scale, 0.12 s rise, 1.4 s fall. Knob `surge` 0–1.5, shipped 1 (`sky-tuning.json`
+  `touchSurge`), untuned by Mark.
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)

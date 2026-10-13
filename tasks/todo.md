@@ -9,21 +9,61 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## Pickup — 2026-10-13 (late): all of A is on `main` behind the flag; B (touch) is next
+## Pickup — 2026-10-13 (night): B (touch) is built and gated on the branch; Mark's feel gate is next
 
-**Current agent entry point:** this section, then `tasks/2026-10-13-alive-a2.md` (the second pass's record and gate),
-`tasks/2026-10-13-alive-a.md` (the sky's record) and `tasks/2026-10-11-handoff.md` (history). `main` is at `ad15650`
-(PR #9, the second pass, merged 2026-10-13 10:31 UTC on Mark's word, "merge to main"; Vercel production
-`dpl_BnJ1FVbHc1kacQaUYHGANGHR2WGY` READY at it; the flag is still off by default, visitors see today's piece).
-PR #8 (`246e817`) merged the sky's A earlier the same evening. Branches: `claude/confident-bohr-1y7p2u` (this
-session's, restarted from `ad15650`); `docs/sky-choice-live-record` and `feat/sky-choice` deleted by Mark after
-the merges (both fully contained in `main`; the cloud session's git access refuses ref deletion, HTTP 403);
-`record/2d-streamline-flow` kept on purpose.
+**Current agent entry point, cloud or Mac:** this section, then `tasks/2026-10-13-touch-b.md` (B's record and gate),
+`tasks/2026-10-13-touch-b-plan.md` (its reviewed plan), `tasks/2026-10-13-alive-a2.md` and `tasks/2026-10-13-alive-a.md`
+(A's records), `tasks/2026-10-11-handoff.md` (history). Read `tasks/lessons.md` from "B (touch)" down.
+
+**Where things are.**
+- `main` is at `ad15650`: all of A (the sky's gust and halos, the cypress flicker, the window glimmer) behind
+  `?alive=1`, Mark's knob picks shipped; the flag is OFF by default, visitors see today's piece. Vercel production
+  READY at it. PR #8 (`246e817`) and PR #9 (`ad15650`) merged 2026-10-13; their branches deleted by Mark.
+- **Branch `claude/confident-bohr-1y7p2u`** (from `ad15650`) carries B: the touch surge behind `?touch=1` (implies
+  `alive`), gated in the cloud session (`tasks/2026-10-13-touch-b.md`, every row green). Not yet a PR. Its Vercel
+  preview: `https://starry-night-git-claude-confide-0e1ba3-markpukete-webs-projects.vercel.app/` — `?touch=1` to
+  feel it (hover, drag, tap, tap a star), `?touch=1&tune=1` for the `surge` slider beside A's six.
+- **Still owed at the Mac** (a real GPU; the cloud cannot): AE 0 of the default route against `main` at pinned t,
+  and `?perf=1` with everything on (`?touch=1`, shipped knobs), desktop and a phone. The locked bar is 60 / 30 fps.
+  B adds up to 16 lift and 4 kick evaluations per vertex on the moving sky's 647k vertices, under count guards.
+- **The capture tooling runs in either place.** Mac: `npm run capture:diorama` etc. as before. Cloud:
+  `CHROME_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome CHROME_FLAGS=--no-sandbox CAPTURE_SETTLE_MS=12000`
+  before the scripts; the dev server on 5179; one Chrome at a time; no source edits while a chain runs. The
+  pinned-frame and compare scripts are tracked (`scripts/capture-sky-frames.mjs`, `compare-frames.mjs`); B's gate
+  tools and the twin's mask live in the repo's ignored `scratch/touch-b-2026-10-13/` (the mask tool, the screen
+  predictor) and the session scratchpad (the injector and gesture driver; rebuild from the record if lost).
+
+- [x] **B built and gated** (2026-10-13 night, cloud session; Mark: "keep going, build B once the review lands").
+  Plan reviewed (REVISE, F1–F13 applied: a kick that settles to exactly zero before pruning, one kick per ribbon
+  on the flat clock, A's lift ceiling, the far sphere root, the listeners' element, the pair-mean packing, the
+  store cleared on pause, the flare on colour, guarded statements, a runnable mask, finite support). Gate:
+  default and alive byte-identical to their baselines; the touch route with no input identical to alive; every
+  differing pixel of an injected surge inside the twin's mask on both skies; no pop across the kick's end; real
+  clicks, drags and phone taps through DevTools behave; the colour gate closer to the painting; reduced motion
+  and viewport PASS; 128 tests.
+- [ ] **Mark's gate on B** (the preview above): feel on a Mac and a phone; the `surge` knob; whether a drag on touch
+  should trail as well as orbit (it does now); whether the kick's settle reads as settling or as a stall. Then a
+  PR of the branch to `main` on his word (merging changes nothing visitors see; both flags stay off).
+- [ ] **The flag decision** after the Mac checks: `alive` (and `touch`) on for every visitor, or a choice.
+- [ ] **C, arrival:** open on the flat painting, one line from Vincent's letter, the sky starts to breathe, the camera
+  pushes through the frame into the diorama. Plan file first, fresh review, flag, gate, as A and B.
+- Open from A: impasto under raking light at orbit cannot be built as specified (the sky is camera-locked); a light
+  that moves with the orbit angle is the nearest reading, Mark's call. B: a tap over the cypress or the village
+  surges the sky behind it (acceptable for a first pass, or masked later).
+- Ideas noted, not queued (each Mark's call): full-length strokes for the short dabs, the star-body layer as patches
+  if a phone struggles, visitor brush controls, Vincent's window / a fuller village; later only if wanted: sound
+  (the out-of-scope lock would lift), a short shareable reel (a new dependency, stop-and-ask).
+
+## Pickup — 2026-10-13 (late): all of A is on `main` behind the flag; B (touch) is next (superseded by the night pickup above)
+
+**Then:** `main` at `ad15650` (PR #9 merged 2026-10-13 10:31 UTC on Mark's word; Vercel production
+`dpl_BnJ1FVbHc1kacQaUYHGANGHR2WGY` READY at it). PR #8 (`246e817`) merged the sky's A earlier the same evening.
+`docs/sky-choice-live-record` and `feat/sky-choice` deleted by Mark after the merges (the cloud session's git access
+refuses ref deletion, HTTP 403); `record/2d-streamline-flow` kept on purpose.
 
 - [x] **PR #9 merged** (`ad15650`): the cypress flicker and the window glimmer at Mark's pick, both at full. CI green,
   Codex no findings.
-- [ ] **B, touch** — next (Mark, 2026-10-13: "let's move to the next task"; the flag decision waits on his Mac checks).
-  Plan file first, fresh review, build behind its own flag, gate, Mark's taste gate on the preview.
+- [x] **B, touch** — built and gated (see the night pickup above).
 
 - [x] **PR #8 merged to `main`** (`246e817`). The flag stays off by default: visitors see today's sky.
 - [x] **A, second pass, built behind `?alive=1`** (2026-10-13 night, cloud session, Mark: "Merge it then start the
