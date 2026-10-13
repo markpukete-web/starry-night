@@ -26,6 +26,7 @@ if (!chromePath) {
 mkdirSync(outDir, { recursive: true })
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+const SETTLE_MS = Number(process.env.CAPTURE_SETTLE_MS ?? 0) || 0
 
 async function urlOk(url) {
   try {
@@ -85,6 +86,9 @@ function startChrome(port) {
   const userDataDir = mkdtempSync(join(tmpdir(), 'starry-diorama-chrome-'))
   const child = spawn(chromePath, [
     '--headless=new',
+    // Extra launch flags, e.g. CHROME_FLAGS=--no-sandbox: Chrome refuses to run as root without it, which is
+    // the case in a cloud session. Empty by default, so a Mac run launches exactly as before.
+    ...(process.env.CHROME_FLAGS ?? '').split(/\s+/).filter(Boolean),
     '--hide-scrollbars',
     '--mute-audio',
     '--disable-background-networking',
@@ -187,7 +191,9 @@ async function newPage(port, url, viewport, errors) {
     if (probe.result.value === true) break
     if (Date.now() - start > 20000) throw new Error(`no canvas at ${url} after 20s`)
   }
-  await sleep(1800)
+  // CAPTURE_SETTLE_MS adds to every post-load wait: software WebGL in a cloud session takes ~10 s to decode the
+  // painting and build the cypress, and a capture before that shows no cypress. Unset on a Mac.
+  await sleep(1800 + SETTLE_MS)
   return { page, targetId: target.id }
 }
 
