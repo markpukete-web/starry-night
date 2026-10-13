@@ -34,8 +34,14 @@ record branch, now carrying A: Mark, "merge to sky-choice-live-record first") an
   nothing visitors see); a retune pass follows. Proposed pass 1: amplitudes sum 0.7 → 0.9, shimmer share 0.5 → 1.0,
   lift 6% → 15%, halo breath ±14/5% → ±30/12%, moon ±8% → ±18%, plus URL knobs (`gust`, `lift`, `breath`) so Mark
   dials the strength live and the chosen values become the defaults. Boil is the risk; captures decide.
-- [ ] **Retune pass 1 of 4 on A** (above), then Mark's gate again. Still owed at the Mac before it counts: default
-  route AE 0 against `main` at pinned t, and `?perf=1` with the flag on.
+- [x] **Retune pass 1 of 4 on A** (2026-10-13, cloud session, Mark: "keep on working A, retune pass 1 on cloud
+  session"; done on `docs/sky-choice-live-record` before the merge to `main`, PR #8). Defaults raised (amplitude sum
+  0.9, lift 0.15, shimmer share 1, halo ±30/12%, moon ±18%) and live knobs `?alive=1&gust=&lift=&shimmer=&breath=`
+  so Mark dials the strength on the preview. Gate in `tasks/2026-10-13-alive-a.md`, "Retune pass 1".
+- [ ] **Mark's gate on pass 1** (preview with `?alive=1` and `?alive=1&sky=moving`, then the knobs): tell me the
+  numbers that read right and I bake them in as the defaults. Then merge PR #8 to `main` (deploys; the flag stays
+  off by default until he says otherwise). Still owed at the Mac before the flag goes on by default: default route
+  AE 0 against `main` at pinned t, and `?perf=1` with the flag on.
 - [ ] **A, second pass (after Mark's gate):** the cypress flicker and the village window glimmer. Both touch authored
   foreground materials (`MeshBasicMaterial` with vertex colours; windows painted into the atlas, no mask) and need
   their own derivation. Impasto under raking light at orbit cannot be done as specified: the sky is rotation-locked

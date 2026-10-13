@@ -2386,3 +2386,23 @@ Plan `tasks/2026-10-13-alive-a-plan.md`, record `tasks/2026-10-13-alive-a.md`. B
   16.3 s, amplitudes 0.36 / 0.22 / 0.12, travel 3 s per canvas width left to right, lift 0.06, shimmer share
   0.5, floor 0.15, band luminance 0.38–0.52; halos 4.5–9 s (±14% opacity, ±5% scale), moon 13 s (±8%). Set
   2026-10-13; untuned by Mark.
+
+## Make-it-alive A, retune pass 1 — 2026-10-13
+
+- **Cautious by design read as nothing at all.** A's first strength (tempo 0.3×–1.7×, lift 6%, shimmer at half the
+  warp) passed every gate and Mark could not see the main difference on the preview. The boil lessons argued for
+  caution; the taste gate argued the other way. Build the first pass at the strength the eye needs and let the
+  captures police boil, rather than the reverse.
+- **Give the taste gate knobs, not pushes.** URL knobs (`gust`, `lift`, `shimmer`, `breath`) let Mark dial the
+  strength live on a preview and name the numbers; each push-and-look round otherwise costs a build, a gate and a
+  deploy. Clamp every knob where a guarantee lives (the gust sum under 1 keeps the clock monotone).
+- **`Number('')` is 0.** An empty knob (`lift=`) read as zero, not as missing; the test caught it because it tried
+  the empty case. Treat empty as absent before parsing.
+- **A self-set working bound is not the locked criterion.** The plan's "pair ΔE under 1.5" was a first-pass guess;
+  pass 1 exceeds it at the tempo peak (1.83 light, 2.33 moving) while the locked band ΔE against the painting
+  stays at 2.6–3.9 of 10, and the light sky actually moves closer to the painting's lightness. Report both; only
+  the locked one gates.
+- **Capture the strips round the peak, not from t = 0.** The tempo's first peak at the whorl is at 3.28 s (lag
+  1.35 s) and its deep trough at 28.9 s; a strip from 0–3 s shows the ramp, not the extreme the boil question is
+  about. Compute the peaks from the TS twin of the clock and centre the windows on them.
+- **Tunables change logged** (CLAUDE.md, Tunables): pass 1 values as above, 2026-10-13; the knobs' defaults.

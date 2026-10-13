@@ -116,9 +116,11 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   Max polar raised 1.5→1.62 on 2026-06-21 so the home view sits eye-level head-on to match the painting
   (Mark live review); still a hard limit, no free-fly/pan.
 - Make-it-alive A, behind `?alive=1` until Mark's gate (2026-10-13, `src/scene/skyAlive.ts`): gust periods
-  9.7 / 5.9 / 16.3 s, amplitudes 0.36 / 0.22 / 0.12 (tempo 0.3×–1.7× in the band, mean 1), travel 3 s per canvas
-  width left to right, brightness lift 0.06, light-sky shimmer share 0.5, calm floor 0.15, band luminance
-  0.38–0.52 (the ribbons' 35th–90th percentiles); star halos 4.5–9 s (±14% opacity, ±5% scale), moon 13 s (±8%).
+  9.7 / 5.9 / 16.3 s, amplitudes 0.46 / 0.28 / 0.16 (sum 0.90; tempo 0.1×–1.9× in the band, mean 1; pass 1 raised
+  them from 0.36 / 0.22 / 0.12), travel 3 s per canvas width left to right, brightness lift 0.15 (was 0.06),
+  light-sky shimmer share 1 (was 0.5), calm floor 0.15, band luminance 0.38–0.52 (the ribbons' 35th–90th
+  percentiles); star halos 4.5–9 s (±30% opacity, ±12% scale; were ±14/5%), moon 13 s (±18%, was ±8%). Live knobs
+  `?gust=&lift=&shimmer=&breath=` for Mark's tuning, clamped so the clock never runs backwards.
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)
