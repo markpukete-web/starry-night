@@ -9,12 +9,14 @@ import { saveDefaults } from './scene/tuning'
  * aliased out of production. On the dev server "set as default" writes the values to sky-tuning.json (the
  * shipped defaults) through the same `/__set-tuning` writer; elsewhere "copy" puts them on the clipboard.
  */
-const STEP: AliveTuning = { gust: 0.01, lift: 0.01, shimmer: 0.05, breath: 0.1 }
+const STEP: AliveTuning = { gust: 0.01, lift: 0.01, shimmer: 0.05, breath: 0.1, flicker: 0.05, glimmer: 0.05 }
 const LABEL: Record<keyof AliveTuning, string> = {
   gust: 'gust (tempo surge)',
   lift: 'lift (brightness on a surge)',
   shimmer: 'shimmer (light sky pulse)',
   breath: 'breath (halos and moon)',
+  flicker: 'flicker (cypress flame)',
+  glimmer: 'glimmer (village windows)',
 }
 
 export function AliveTuner({
@@ -47,7 +49,14 @@ export function AliveTuner({
   const save = () => {
     // success only once the writer has written the file; a rejection or a failed write shows as such
     setStatus('saving…')
-    saveDefaults({ aliveGust: tuning.gust, aliveLift: tuning.lift, aliveShimmer: tuning.shimmer, aliveBreath: tuning.breath })
+    saveDefaults({
+      aliveGust: tuning.gust,
+      aliveLift: tuning.lift,
+      aliveShimmer: tuning.shimmer,
+      aliveBreath: tuning.breath,
+      aliveFlicker: tuning.flicker,
+      aliveGlimmer: tuning.glimmer,
+    })
       .then(() => setStatus('saved to sky-tuning.json'))
       .catch((error: unknown) => setStatus(`save failed: ${error instanceof Error ? error.message : String(error)}`))
   }

@@ -149,11 +149,13 @@ async function main() {
     }
     await sleep(2500 + SETTLE_MS)
     const summary = { url, viewport, times, frames: [], errors: page.errors }
+    const firstMoving = times.find((t) => t > 0)
     for (const t of times) {
       await page.send('Runtime.evaluate', { expression: `window.__skyTime = ${t}` })
       const a = await readFrame(page)
-      // the self-check on the first frame only: a readback costs seconds under software rendering
-      if (t === times[0]) {
+      // the self-check on the first frame and the first t > 0 only (a readback costs seconds under software
+      // rendering): at t = 0 a foreground reading the clock one frame late would still show as pinned
+      if (t === times[0] || t === firstMoving) {
         const b = await readFrame(page)
         if (!a.equals(b)) throw new Error(`pinned clock self-check failed at t=${t}: two reads differ, so the page is not pinned`)
       }

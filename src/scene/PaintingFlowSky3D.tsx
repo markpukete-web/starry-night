@@ -137,6 +137,11 @@ type Props = {
   alive?: boolean
   /** The live knobs (skyAlive.ts `readAliveTuning`); applied through uniforms, no rebuild. */
   tuning?: AliveTuning
+  /**
+   * The one sky clock, owned by the scene so the foreground (the cypress flicker, the window glimmer) reads the
+   * same pinned, advanced or paused time the halos do (second pass, A3). Without it the sky keeps its own ref.
+   */
+  clock?: RefObject<number>
 }
 
 // The ALIVE define (make-it-alive A, the flag on) compiles the gust clock in; without it the shaders are main's:
@@ -732,10 +737,12 @@ function SourceOrbs({
 
 
 
-export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky = 'light', still = false, alive = false, tuning = ALIVE_DEFAULTS }: Props) {
+export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky = 'light', still = false, alive = false, tuning = ALIVE_DEFAULTS, clock: sharedClock }: Props) {
   const skyRoot = useRef<Group>(null)
-  // the sky clock as this frame wrote it, for the halos' breath (A2): pinned, advanced, or 0 while paused
-  const clock = useRef(0)
+  // the sky clock as this frame wrote it, for the halos' breath (A2) and the foreground (A3): pinned, advanced,
+  // or 0 while paused. The scene's ref when given, else this one.
+  const ownClock = useRef(0)
+  const clock = sharedClock ?? ownClock
   // Camera-convention lookAt (Matrix4.lookAt puts +Z from target back to eye, as three does for
   // isCamera objects), so this equals the live camera's quaternion at rest at the home pose —
   // provided the pose sits inside DIORAMA_ORBIT and so is never clamped. `diorama-layout.test.ts`

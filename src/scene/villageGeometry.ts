@@ -3,6 +3,7 @@ import { makeBrushArrays, pushBrushRibbon, type BrushArrays } from './brushForms
 import { islandHeightAt } from './islandShape'
 import { PALETTE } from './palette'
 import atlas from './village-atlas.json'
+import { MARK_STEPS, markVertexCount, packGlow, type LitRange } from './villageGlow'
 import { VILLAGE_PATCHES, type VillagePatchName } from './villagePatches'
 
 // The church and four neighbours are authored as one knot. Axes and relative heights come
@@ -12,6 +13,8 @@ import { VILLAGE_PATCHES, type VillagePatchName } from './villagePatches'
 type Face = readonly [Vector3, Vector3, Vector3, Vector3]
 type Pigment = 'wall' | 'pale' | 'roof' | 'sienna' | 'striped'
 type SkinArrays = BrushArrays & { uv: number[] }
+/** The paint mesh's arrays, with the vertex range of every lit window mark (make-it-alive A, second pass: the glimmer). */
+type PaintArrays = BrushArrays & { lit: LitRange[] }
 type Building = {
   x: number; z: number; w: number; d: number; eave: number; pitch: number; yaw: number
   wall: Pigment; roof: Pigment; window?: 'front' | 'side'; door?: boolean; chimney?: boolean
@@ -50,11 +53,12 @@ const CONTEXT: Building[] = [
     wall: 'wall', roof: 'roof', wallPatch: 'blueWallLeft', roofPatch: 'blueRoofLeft', window: 'front' },
 ]
 
-function geometry(a: BrushArrays | SkinArrays): BufferGeometry {
+function geometry(a: BrushArrays | SkinArrays, glow?: Float32Array): BufferGeometry {
   const g = new BufferGeometry()
   g.setAttribute('position', new BufferAttribute(new Float32Array(a.positions), 3))
   g.setAttribute('color', new BufferAttribute(new Float32Array(a.colors), 3))
   if ('uv' in a) g.setAttribute('uv', new BufferAttribute(new Float32Array(a.uv), 2))
+  if (glow) g.setAttribute('aGlow', new BufferAttribute(glow, 3))
   g.setIndex(a.indices)
   g.computeVertexNormals()
   g.computeBoundingSphere()
@@ -94,7 +98,7 @@ function mark(
   across: number, halfWidth: number, col: Color, bend = 0, lift = 0.0025,
 ): void {
   const start = arr.positions.length / 3
-  const steps = 4
+  const steps = MARK_STEPS
   for (let i = 0; i <= steps; i++) {
     const t = i / steps
     const s = from + (to - from) * t
@@ -163,19 +167,24 @@ function edge(paint: BrushArrays, a: Vector3, b: Vector3, n: Vector3, width = 0.
   pushBrushRibbon(paint, p, p.map(() => n), p.map(() => INK), width, 0.25)
 }
 
-function opening(paint: BrushArrays, f: Face, u: number, v: number, width: number, height: number, lit = false): void {
+function opening(paint: PaintArrays, f: Face, u: number, v: number, width: number, height: number, lit = false): void {
   const coords = [
     [u - width / 2, v - height / 2], [u + width / 2, v - height / 2],
     [u + width / 2, v + height * 0.3], [u, v + height / 2], [u - width / 2, v + height * 0.3],
   ]
   polygon(paint, coords.map(([s, t]) => point(f, s, t, 0.007)), INK.clone().multiplyScalar(0.7))
   if (lit) {
+    // the lit mark's vertex range, for the glimmer attribute (villageGlow.ts); the dark opening above has none
+    const start = paint.positions.length / 3
     mark(paint, f, 'v', v - height * 0.37, v + height * 0.28, u - width * 0.1, width * 0.22,
       OCHRE.clone().multiplyScalar(1.25), 0, 0.009)
+    const count = paint.positions.length / 3 - start
+    if (count !== markVertexCount()) throw new Error(`lit window mark pushed ${count} vertices, expected ${markVertexCount()}`)
+    paint.lit.push({ start, count })
   }
 }
 
-function building(solid: BrushArrays, skin: SkinArrays, paint: BrushArrays, b: Building): void {
+function building(solid: BrushArrays, skin: SkinArrays, paint: PaintArrays, b: Building): void {
   const c = Math.cos(b.yaw), s = Math.sin(b.yaw)
   const corner = (x: number, z: number, y: number) => new Vector3(b.x + x * c - z * s, y, b.z + x * s + z * c)
   const footprint = [[-1, 1], [1, 1], [1, -1], [-1, -1]].map(([x, z]) => corner(x * b.w / 2, z * b.d / 2, 0))
@@ -225,7 +234,7 @@ function building(solid: BrushArrays, skin: SkinArrays, paint: BrushArrays, b: B
   }
 }
 
-function church(solid: BrushArrays, skin: SkinArrays, paint: BrushArrays): void {
+function church(solid: BrushArrays, skin: SkinArrays, paint: PaintArrays): void {
   building(solid, skin, paint, {
     x: -0.036, z: 0.37, w: 0.26, d: 0.31, eave: 0.24, pitch: 0.185, yaw: 0.65,
     wall: 'pale', roof: 'roof', wallPatch: 'churchPlaster', roofPatch: 'churchRoof', door: true,
@@ -362,13 +371,25 @@ function foliageRow(foliage: SkinArrays, row: Row): void {
   face([right.bf, right.bb, right.tb, right.tf], [rightUV[0], rightUV[3], rightUV[2], rightUV[1]], 0.82)
 }
 
-export function buildVillage() {
-  const solid = makeBrushArrays(), paint = makeBrushArrays()
+/**
+ * The village's four meshes. With `glow` (make-it-alive A, second pass, the flag on) the paint mesh carries
+ * `aGlow` = [weight, ω₁, ω₂] on the lit window marks (villageGlow.ts); off, the geometry is today's, bit for bit.
+ */
+export function buildVillage({ glow = false }: { glow?: boolean } = {}) {
+  const solid = makeBrushArrays()
+  const paint: PaintArrays = { ...makeBrushArrays(), lit: [] }
   const skin: SkinArrays = { ...makeBrushArrays(), uv: [] }
   const foliage: SkinArrays = { ...makeBrushArrays(), uv: [] }
   NEIGHBOURS.forEach(b => building(solid, skin, paint, b))
   church(solid, skin, paint)
   CONTEXT.forEach(b => building(solid, skin, paint, b))
   ROWS.forEach(row => foliageRow(foliage, row))
-  return { solid: geometry(solid), paint: geometry(paint), skin: geometry(skin), foliage: geometry(foliage) }
+  return {
+    solid: geometry(solid),
+    paint: geometry(paint, glow ? packGlow(paint.positions.length / 3, paint.lit) : undefined),
+    skin: geometry(skin),
+    foliage: geometry(foliage),
+    /** the lit window marks, for the gate's seam */
+    litMarks: paint.lit.length,
+  }
 }

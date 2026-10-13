@@ -1,5 +1,6 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useLayoutEffect, useMemo, type RefObject } from 'react'
 import { useTexture } from '@react-three/drei'
+import { useFrame } from '@react-three/fiber'
 import {
   BufferAttribute,
   BufferGeometry,
@@ -32,6 +33,9 @@ import { cypressViewBearing } from './cypressMapping'
 import { sampleCypressImage, type CypressTexel } from './cypressStrokes'
 import { DIORAMA_CAMERAS } from './dioramaContract'
 import { useImageData, type ImageData2D } from './useImageData'
+import { injectAlive } from './aliveMaterial'
+import { flickerGlsl, flickerUniformValues, flickerWeight, lobeHeight, pushFlicker } from './cypressFlicker'
+import { ALIVE_DEFAULTS, type AliveTuning } from './skyAlive'
 
 /**
  * Source-derived compound cypress. The painting's persistent row runs own the topology: one main
@@ -80,7 +84,33 @@ function sourceTexel(
   )
 }
 
-export function BrushCypress() {
+/** Dev seam for the gate: the foreground's alive attribute counts, read by the capture step (second pass, F11). */
+type AliveFoliageWindow = Window & { __aliveFoliage?: { flickerVertices?: number; glowMarks?: number; glowVertices?: number } }
+
+/** The flicker's uniforms for one material; the frame loop writes uTime, the layout effect uFlicker. */
+function flickerUniforms(solid: boolean) {
+  const v = flickerUniformValues(ALIVE_DEFAULTS, solid)
+  return {
+    uTime: { value: 0 },
+    uFlicker: { value: v.strength },
+    uFlickerOmega: { value: v.omega },
+    uFlickerK: { value: v.k },
+    uFlickerAmp: { value: v.amplitudes },
+    uFlickerTau: { value: v.tau },
+  }
+}
+
+export function BrushCypress({
+  clock,
+  alive = false,
+  tuning = ALIVE_DEFAULTS,
+}: {
+  /** The one sky clock (second pass, A3): pinned, advanced, or 0 while paused. */
+  clock?: RefObject<number>
+  /** Make-it-alive A: the flame-like flicker up the strokes (cypressFlicker.ts). Off = today's tree, bit for bit. */
+  alive?: boolean
+  tuning?: AliveTuning
+} = {}) {
   const paintingData = useImageData('/reference/painting.jpg')
   const paintingTexture = useTexture('/reference/painting.jpg')
   const cypressTexture = useMemo(() => {
@@ -126,6 +156,21 @@ export function BrushCypress() {
       new BufferAttribute(new Float32Array(compiled.positions), 3),
     )
     solid.setAttribute('uv', new BufferAttribute(new Float32Array(solidUvs), 2))
+    if (alive) {
+      // the flicker's [w, h] per vertex: h is the stroke axis (the solid's source v is 1 − heightFraction), the
+      // weight the tip term on the vertex's height within its own lobe; the body has no tongues (lateral 0)
+      const solidFlicker: number[] = []
+      const lobeRange = new Map(plan.lobes.map((lobe) => [lobe.id, [lobe.sections[0].heightFraction, lobe.sections[lobe.sections.length - 1].heightFraction] as const]))
+      for (const range of compiled.lobeRanges) {
+        const [start, end] = lobeRange.get(range.lobeId) ?? [0, 1]
+        for (let i = range.firstVertex; i < range.firstVertex + range.vertexCount; i++) {
+          const h = 1 - compiled.sourceUvs[i * 2 + 1]
+          pushFlicker(solidFlicker, flickerWeight(lobeHeight(h, start, end), 0), h)
+        }
+      }
+      if (solidFlicker.length !== compiled.positions.length / 3 * 2) throw new Error('cypress solid flicker attribute out of step with its vertices')
+      solid.setAttribute('aFlicker', new BufferAttribute(new Float32Array(solidFlicker), 2))
+    }
     solid.setIndex(compiled.indices)
     solid.computeVertexNormals()
     solid.computeBoundingSphere()
@@ -146,6 +191,9 @@ export function BrushCypress() {
     })
     const lobeById = new Map(plan.lobes.map((lobe) => [lobe.id, lobe]))
     const arrays = makeBrushArrays()
+    // the flicker's [w, h] per stroke vertex, packed by the vertex count before and after each ribbon push, since
+    // a push can return without pushing (review F10)
+    const strokeFlicker: number[] = []
     const point = new Vector3()
     const normal = new Vector3()
     const strokeColour = new Color()
@@ -183,6 +231,7 @@ export function BrushCypress() {
           colours.push(strokeColour.clone())
         }
         if (points.length >= 3) {
+          const before = arrays.positions.length / 3
           pushBrushRibbon(
             arrays,
             points,
@@ -191,6 +240,21 @@ export function BrushCypress() {
             stroke.scale === 'structural' ? STRUCTURAL_HALF_WIDTH : FILL_HALF_WIDTH,
             stroke.scale === 'structural' ? 0.9 : 0.92,
           )
+          if (alive) {
+            const pushed = arrays.positions.length / 3 - before
+            if (pushed !== 0 && pushed !== points.length * 2) throw new Error('cypress ribbon pushed an unexpected vertex count')
+            if (pushed > 0) {
+              const lateral = Math.abs(stroke.samples.reduce((sum, sample) => sum + sample.lateral, 0) / stroke.samples.length)
+              const lobeStart = lobe.sections[0].heightFraction
+              const lobeEnd = lobe.sections[lobe.sections.length - 1].heightFraction
+              // the ribbon packs two vertices (left, right) per sample, in sample order
+              for (const sample of stroke.samples) {
+                const w = flickerWeight(lobeHeight(sample.heightFraction, lobeStart, lobeEnd), lateral, !frontFacing)
+                pushFlicker(strokeFlicker, w, sample.heightFraction)
+                pushFlicker(strokeFlicker, w, sample.heightFraction)
+              }
+            }
+          }
         }
       }
     }
@@ -201,6 +265,10 @@ export function BrushCypress() {
       new BufferAttribute(new Float32Array(arrays.positions), 3),
     )
     strokes.setAttribute('color', new BufferAttribute(new Float32Array(arrays.colors), 3))
+    if (alive) {
+      if (strokeFlicker.length !== arrays.positions.length / 3 * 2) throw new Error('cypress stroke flicker attribute out of step with its vertices')
+      strokes.setAttribute('aFlicker', new BufferAttribute(new Float32Array(strokeFlicker), 2))
+    }
     strokes.setIndex(arrays.indices)
     strokes.computeVertexNormals()
     strokes.computeBoundingSphere()
@@ -215,22 +283,54 @@ export function BrushCypress() {
     }
 
     return { solid, strokes }
-  }, [paintingData])
+  }, [alive, paintingData])
 
-  const solidMaterial = useMemo(
-    () =>
-      new MeshBasicMaterial({
-        color: CYPRESS_COLOUR_LIFT,
-        map: cypressTexture,
-        toneMapped: false,
-        side: DoubleSide,
-      }),
-    [cypressTexture],
-  )
-  const strokeMaterial = useMemo(
-    () => new MeshBasicMaterial({ vertexColors: true, toneMapped: false, side: DoubleSide }),
-    [],
-  )
+  // With the flag on, the same materials take the flicker through onBeforeCompile (aliveMaterial.ts): three's
+  // stock program with a multiply after the vertex-colour chunk. Off, they are untouched, today's bytes.
+  const solidUniforms = useMemo(() => flickerUniforms(true), [])
+  const strokeUniforms = useMemo(() => flickerUniforms(false), [])
+  const solidMaterial = useMemo(() => {
+    const material = new MeshBasicMaterial({
+      color: CYPRESS_COLOUR_LIFT,
+      map: cypressTexture,
+      toneMapped: false,
+      side: DoubleSide,
+    })
+    if (alive) injectAlive(material, { key: 'alive-flicker-solid', uniforms: solidUniforms, ...flickerGlsl })
+    return material
+  }, [alive, cypressTexture, solidUniforms])
+  const strokeMaterial = useMemo(() => {
+    const material = new MeshBasicMaterial({ vertexColors: true, toneMapped: false, side: DoubleSide })
+    if (alive) injectAlive(material, { key: 'alive-flicker-strokes', uniforms: strokeUniforms, ...flickerGlsl })
+    return material
+  }, [alive, strokeUniforms])
+
+  // the knob, through the uniforms: a slider never rebuilds the tree
+  useLayoutEffect(() => {
+    if (!alive) return
+    /* eslint-disable react-hooks/immutability -- intentional R3F uniform writes */
+    solidUniforms.uFlicker.value = flickerUniformValues(tuning, true).strength
+    strokeUniforms.uFlicker.value = flickerUniformValues(tuning, false).strength
+    /* eslint-enable react-hooks/immutability */
+  }, [alive, solidUniforms, strokeUniforms, tuning])
+
+  // the sky clock as the sky's frame loop last wrote it (one frame behind, like the halos); 0 off or paused
+  /* eslint-disable react-hooks/immutability -- R3F render-loop writes: the time uniform */
+  useFrame(() => {
+    if (!alive) return
+    const t = clock?.current ?? 0
+    solidUniforms.uTime.value = t
+    strokeUniforms.uTime.value = t
+  })
+  /* eslint-enable react-hooks/immutability */
+
+  // the gate's dev seam: how many vertices carry the attribute
+  useEffect(() => {
+    if (!alive || !geometries) return
+    const seam = (window as AliveFoliageWindow).__aliveFoliage ?? {}
+    seam.flickerVertices = geometries.strokes.getAttribute('aFlicker').count + geometries.solid.getAttribute('aFlicker').count
+    ;(window as AliveFoliageWindow).__aliveFoliage = seam
+  }, [alive, geometries])
 
   useEffect(() => () => geometries?.solid.dispose(), [geometries])
   useEffect(() => () => geometries?.strokes.dispose(), [geometries])

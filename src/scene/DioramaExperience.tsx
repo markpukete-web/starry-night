@@ -1,6 +1,6 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei'
-import { Suspense, useEffect, useMemo, type ReactNode } from 'react'
+import { Suspense, useEffect, useMemo, useRef, type ReactNode } from 'react'
 import { Diorama } from './Diorama'
 import { PaintingFlowSky3D, type SkyStyle } from './PaintingFlowSky3D'
 import type { AliveTuning } from './skyAlive'
@@ -103,6 +103,10 @@ function Scene({ reduced, sky, still, alive, aliveTuning }: { reduced: boolean; 
   const camera = isPortrait && view === 'design' ? DIORAMA_CAMERAS.mobile : DIORAMA_CAMERAS[view]
   const background = useMemo(() => (debug === 'stage' ? '#071020' : '#06112a'), [debug])
   const measurePerformance = readPerfMode()
+  // The one sky clock (make-it-alive A, second pass): the sky's frame loop writes it (pinned, advanced, or 0 while
+  // paused) and the foreground reads it, so the cypress and the windows keep the sky's time. With no sky
+  // (`?debug=stage`) it stays 0 and the foreground stands still.
+  const skyClock = useRef(0)
 
   return (
     <>
@@ -127,7 +131,7 @@ function Scene({ reduced, sky, still, alive, aliveTuning }: { reduced: boolean; 
       />
       {measurePerformance && <PerfProbe />}
       <Suspense fallback={null}>
-        {debug !== 'flow' && <Diorama debug={debug === 'stage' ? 'stage' : 'final'} />}
+        {debug !== 'flow' && <Diorama debug={debug === 'stage' ? 'stage' : 'final'} clock={skyClock} alive={alive} tuning={aliveTuning} />}
         {debug !== 'stage' && (
           <PaintingFlowSky3D
             paused={reduced}
@@ -135,6 +139,7 @@ function Scene({ reduced, sky, still, alive, aliveTuning }: { reduced: boolean; 
             still={still}
             alive={alive}
             tuning={aliveTuning}
+            clock={skyClock}
             debug={debug === 'flow' ? 'flow' : 'final'}
             /* a stable module constant, so the sky's home quaternion memo holds across renders */
             home={camera}
