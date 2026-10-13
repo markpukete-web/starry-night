@@ -25,6 +25,7 @@ if (!chromePath) {
 
 mkdirSync(outDir, { recursive: true })
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+const SETTLE_MS = Number(process.env.CAPTURE_SETTLE_MS ?? 0) || 0
 
 async function urlOk(url) {
   try {
@@ -83,6 +84,9 @@ function startChrome(port) {
     chromePath,
     [
       '--headless=new',
+      // Extra launch flags, e.g. CHROME_FLAGS=--no-sandbox: Chrome refuses to run as root without it, which is
+      // the case in a cloud session. Empty by default, so a Mac run launches exactly as before.
+      ...(process.env.CHROME_FLAGS ?? '').split(/\s+/).filter(Boolean),
       '--hide-scrollbars',
       '--mute-audio',
       '--disable-background-networking',
@@ -167,7 +171,9 @@ async function newPage(port, url, { reduce }) {
     if (probe.result.value === true) break
     if (Date.now() - start > 20000) throw new Error(`no canvas at ${url} after 20s`)
   }
-  await sleep(2500) // let textures resolve and the first frames settle
+  // CAPTURE_SETTLE_MS: software WebGL in a cloud session needs ~10 s more before the cypress draws, and a
+  // frame A before it is a false FAIL. Unset on a Mac.
+  await sleep(2500 + SETTLE_MS) // let textures resolve and the first frames settle
   return page
 }
 

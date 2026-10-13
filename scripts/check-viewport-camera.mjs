@@ -36,6 +36,7 @@ if (!chromePath) {
 }
 mkdirSync(outDir, { recursive: true })
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+const SETTLE_MS = Number(process.env.CAPTURE_SETTLE_MS ?? 0) || 0
 
 const PORTRAIT = { width: 390, height: 844 }
 const LANDSCAPE = { width: 1600, height: 900 }
@@ -87,6 +88,9 @@ function startChrome(port) {
     chromePath,
     [
       '--headless=new',
+      // Extra launch flags, e.g. CHROME_FLAGS=--no-sandbox: Chrome refuses to run as root without it, which is
+      // the case in a cloud session. Empty by default, so a Mac run launches exactly as before.
+      ...(process.env.CHROME_FLAGS ?? '').split(/\s+/).filter(Boolean),
       '--hide-scrollbars',
       '--mute-audio',
       '--disable-background-networking',
@@ -177,7 +181,9 @@ async function newPage(port, viewport, errors, { clean = true } = {}) {
     if (probe.result.value === true) break
     if (Date.now() - start > 25000) throw new Error('no canvas')
   }
-  await sleep(2500)
+  // CAPTURE_SETTLE_MS: software WebGL in a cloud session draws the cypress ~10 s late, and a fresh-load frame
+  // without it never matches the rotated one. Unset on a Mac.
+  await sleep(2500 + SETTLE_MS)
   return page
 }
 
@@ -282,7 +288,7 @@ async function main() {
 
       page = await newPage(port, from, errors)
       await setViewport(page, to)
-      await sleep(2500)
+      await sleep(2500 + SETTLE_MS)
       const rotated = await shot(page, join(outDir, `${name}-rotated.png`))
       page.close()
 

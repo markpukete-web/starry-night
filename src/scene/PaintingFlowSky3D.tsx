@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { useTexture } from '@react-three/drei'
 import {
@@ -17,6 +17,8 @@ import {
   ShaderMaterial,
   SRGBColorSpace,
   type Group,
+  type Sprite,
+  type SpriteMaterial,
   Vector3,
 } from 'three'
 import { useImageData } from './useImageData'
@@ -32,6 +34,7 @@ import {
   uvToDioramaSkyPosition,
 } from './dioramaSkyProjection'
 import { MOON_R, MOON_UV, SWIRLS } from './skySwirls'
+import { ALIVE_DEFAULTS, gustGlsl, gustUniformValues, HALO_BREATH, haloPeriod, type AliveTuning } from './skyAlive'
 import { PALETTE } from './palette'
 import { DIORAMA_CAPTURE } from './dioramaContract'
 
@@ -100,6 +103,18 @@ const GRADIENT: Record<SkyStyle, { top: GradientEnd; bottom: GradientEnd }> = {
   moving: { top: { scale: 1, asDisplayed: true }, bottom: { scale: 0.68, asDisplayed: false } },
 }
 
+/** The gust clock's uniforms, the same for both ribbon materials; `uAlive` and the knobs are set in a layout effect. */
+function gustUniforms() {
+  const { omega, amplitudes, lift, shimmer } = gustUniformValues()
+  return {
+    uAlive: { value: 0 },
+    uGustOmega: { value: new Vector3(...omega) },
+    uGustAmp: { value: new Vector3(...amplitudes) },
+    uGustLift: { value: lift },
+    uGustShimmer: { value: shimmer },
+  }
+}
+
 /** Capture seam: a finite `window.__skyTime` pins both sky clocks, so motion can be captured frame-exact. */
 type SkyClockWindow = Window & { __skyTime?: number }
 
@@ -118,9 +133,20 @@ type Props = {
   sky?: SkyStyle
   /** System reduced motion: always the painted-light still, whatever the choice. */
   still?: boolean
+  /** Make-it-alive A (`?alive=1`): the gust clock in both skies, halos breathing. Off = today's sky, bit for bit. */
+  alive?: boolean
+  /** The live knobs (skyAlive.ts `readAliveTuning`); applied through uniforms, no rebuild. */
+  tuning?: AliveTuning
 }
 
+// The ALIVE define (make-it-alive A, the flag on) compiles the gust clock in; without it the shaders are main's:
+// no gust attribute, uniforms or varyings (Codex, PR #8).
 const ribbonVert = /* glsl */ `
+  #ifdef ALIVE
+  ${gustGlsl}
+  uniform float uTime;
+  attribute vec2 aGust;
+  #endif
   attribute float aLen;
   attribute float aAcross;
   attribute float aPhase;
@@ -133,8 +159,19 @@ const ribbonVert = /* glsl */ `
   varying float vRate;
   varying vec3 vColor;
   varying float vEdgeFade;
+  #ifdef ALIVE
+  // make-it-alive A: the ribbon's warped clock and its brightness lift this frame (skyAlive.ts). flat: a constant
+  // interpolated across a triangle drifts in the last bits, and at t = 3.7 that drift moved one grey level on the
+  // default light sky against main (gate 2, 2026-10-13); flat carries the provoking vertex's value exactly.
+  flat varying float vGustTime;
+  flat varying float vGustLift;
+  #endif
   void main() {
     vLen = aLen;
+    #ifdef ALIVE
+    vGustTime = gustTime(uTime, aGust);
+    vGustLift = gustLift(uTime, aGust);
+    #endif
     vAcross = aAcross;
     vPhase = aPhase;
     vRate = aRate;
@@ -147,6 +184,9 @@ const ribbonVert = /* glsl */ `
 const ribbonFrag = /* glsl */ `
   precision highp float;
   uniform float uTime;
+  #ifdef ALIVE
+  uniform float uGustShimmer;
+  #endif
   uniform float uSpeed;
   uniform float uOpacity;
   uniform float uPulseScale;
@@ -163,13 +203,24 @@ const ribbonFrag = /* glsl */ `
   varying float vRate;
   varying vec3 vColor;
   varying float vEdgeFade;
+  #ifdef ALIVE
+  flat varying float vGustTime;
+  flat varying float vGustLift;
+  #endif
 
   void main() {
     float edge = sin(clamp(vAcross, 0.0, 1.0) * 3.14159);
     float taper = smoothstep(0.0, 0.15, vLen) * smoothstep(1.0, 0.85, vLen);
+    #ifdef ALIVE
+    // make-it-alive A: the flow term takes the whole warp, the shimmer a share of it (it is the boil knob)
+    float flowTime = mix(vGustTime, 0.0, uFreeze);
+    float shimmerTime = mix(uTime + uGustShimmer * (vGustTime - uTime), 0.0, uFreeze);
+    #else
     float flowTime = mix(uTime, 0.0, uFreeze);
+    float shimmerTime = flowTime;
+    #endif
     float flow = 0.5 + 0.5 * sin(vLen * uPulseScale - flowTime * uSpeed * vRate + vPhase);
-    float shimmer = 0.5 + 0.5 * sin(vLen * (uPulseScale * uShimmerScale) - flowTime * (uSpeed * uShimmerSpeed) * vRate + vPhase * 2.7);
+    float shimmer = 0.5 + 0.5 * sin(vLen * (uPulseScale * uShimmerScale) - shimmerTime * (uSpeed * uShimmerSpeed) * vRate + vPhase * 2.7);
     float combinedFlow = mix(flow, shimmer, uShimmerMix);
     float bristle = (1.0 - uBristleAmp) + uBristleAmp * sin(vAcross * uBristleFreq + sin(vLen * 45.0) * 3.0);
 
@@ -187,6 +238,11 @@ const ribbonFrag = /* glsl */ `
       // lift the stars and swirl band, keep the deep night).
       float srcLum = dot(vColor, vec3(0.299, 0.587, 0.114));
       col *= 1.0 + 0.52 * smoothstep(0.32, 0.68, srcLum);
+      #ifdef ALIVE
+      // A: a surge brightens the band a few percent; the calm floor barely moves. After the clamp and the
+      // source-lum lift, so the palette numbers are reproducible (review F14).
+      col *= 1.0 + vGustLift;
+      #endif
     }
 
     float a = edge * taper * uOpacity * vEdgeFade;
@@ -213,6 +269,10 @@ const movingFrag = /* glsl */ `
   varying float vRate;
   varying vec3 vColor;
   varying float vEdgeFade;
+  #ifdef ALIVE
+  flat varying float vGustTime;
+  flat varying float vGustLift;
+  #endif
 
   float hash1(float n) { return fract(sin(n) * 43758.5453); }
   float noise1(float x) {
@@ -234,7 +294,12 @@ const movingFrag = /* glsl */ `
     // below, whose kink at the centre line gives a false zero. g also points across the stroke on screen.
     vec2 g = vec2(dFdx(vAcross), dFdy(vAcross));
     float aa = max((abs(g.x) + abs(g.y)) * 1.5, 1e-4);
+    #ifdef ALIVE
+    // make-it-alive A: the ribbon's warped clock (skyAlive.ts)
+    float t = vGustTime;
+    #else
     float t = uTime;
+    #endif
     // which sliding period this fragment is in (one stroke each) and where inside it
     float pos = (vLen - t * uSpeed * vRate) / uPeriod + vPhase / 6.2831853;
     float slot = floor(pos);
@@ -290,6 +355,10 @@ const movingFrag = /* glsl */ `
     // × 0.93: once the strokes covered the dark gaps the sky read lighter, mean L 55.1 against the painting's
     // 46.7 (polish c1); now 52.4, dE76 6.96
     col *= 0.93 * (1.0 + 0.08 * smoothstep(0.32, 0.68, srcLum));
+    #ifdef ALIVE
+    // A: a surge brightens the band a few percent, after the 0.93 lift line above (review F14)
+    col *= 1.0 + vGustLift;
+    #endif
     gl_FragColor = vec4(col, a);
   }
 `
@@ -539,7 +608,22 @@ function makeStarHaloTexture(): CanvasTexture {
 // sit at the vortex anchor, doubling the source's own moon 78px away (Mark: "mismatched").
 const MOON_PAINTED_UV: [number, number] = [0.8987, 0.1697]
 
-function SourceOrbs({ debug, moonGlow = 0.68 }: { debug: PaintingFlowSkyDebug; moonGlow?: number }) {
+function SourceOrbs({
+  debug,
+  moonGlow = 0.68,
+  clock,
+  alive,
+  breath,
+}: {
+  debug: PaintingFlowSkyDebug
+  moonGlow?: number
+  /** The sky clock as the parent's frame loop last wrote it: pinned, advanced, or 0 while paused. */
+  clock: RefObject<number>
+  /** Make-it-alive A: halos breathe and the moon pulses; off, every write below is the base value. */
+  alive: boolean
+  /** The `breath` knob: a multiplier on every halo's swing. */
+  breath: number
+}) {
   const moonHalo = useMemo(() => makeMoonHaloTexture(), [])
   const starHalo = useMemo(() => makeStarHaloTexture(), [])
   const moonPosition = useMemo(
@@ -569,6 +653,33 @@ function SourceOrbs({ debug, moonGlow = 0.68 }: { debug: PaintingFlowSkyDebug; m
     [moonHalo, starHalo],
   )
 
+  const starBase = debug === 'flow' ? 0.72 : 0.9
+  const moonBase = debug === 'flow' ? 0.72 : moonGlow
+  const starMaterials = useRef<(SpriteMaterial | null)[]>([])
+  const starSprites = useRef<(Sprite | null)[]>([])
+  const moonMaterial = useRef<SpriteMaterial | null>(null)
+  // A2: each halo breathes at its own period, the moon slower and lower; every term is sin(ωt), 0 at t = 0, so
+  // the paused still (clock 0) and the t = 0 frame equal today's. With the flag off amp is 0 and each write is
+  // the base the JSX set, so the write is idempotent (plan review F1, F2). This frame loop subscribes before the
+  // parent's and reads the previous frame's clock, which is harmless; a positive priority would switch R3F to
+  // manual rendering (F9).
+  useFrame(() => {
+    const t = clock.current ?? 0
+    const amp = alive ? breath : 0
+    if (moonMaterial.current) {
+      moonMaterial.current.opacity = moonBase * (1 + amp * HALO_BREATH.moonOpacity * Math.sin((2 * Math.PI * t) / HALO_BREATH.moonPeriod))
+    }
+    stars.forEach((star, index) => {
+      const material = starMaterials.current[index]
+      const sprite = starSprites.current[index]
+      if (!material || !sprite) return
+      const breath = Math.sin((2 * Math.PI * t) / haloPeriod(index))
+      material.opacity = starBase * (1 + amp * HALO_BREATH.opacity * breath)
+      const scale = star.scale * 1.85 * (1 + amp * HALO_BREATH.scale * breath)
+      sprite.scale.set(scale, scale, 1)
+    })
+  })
+
   return (
     <group>
       {/* The moon BODY is the painting's own pixels (crescent-in-disc, now lifted by the
@@ -577,10 +688,11 @@ function SourceOrbs({ debug, moonGlow = 0.68 }: { debug: PaintingFlowSkyDebug; m
       <group position={moonPosition}>
         <sprite scale={[4.25, 4.25, 1]} renderOrder={3}>
           <spriteMaterial
+            ref={moonMaterial}
             map={moonHalo}
             blending={AdditiveBlending}
             transparent
-            opacity={debug === 'flow' ? 0.72 : moonGlow}
+            opacity={moonBase}
             depthWrite={false}
             toneMapped={false}
           />
@@ -589,12 +701,21 @@ function SourceOrbs({ debug, moonGlow = 0.68 }: { debug: PaintingFlowSkyDebug; m
       <pointLight position={moonPosition} intensity={debug === 'flow' ? 12 : 18} distance={24} color="#f0d98a" />
       {stars.map((star, index) => (
         <group key={index} position={star.position}>
-          <sprite scale={[star.scale * 1.85, star.scale * 1.85, 1]} renderOrder={3}>
+          <sprite
+            ref={(sprite) => {
+              starSprites.current[index] = sprite
+            }}
+            scale={[star.scale * 1.85, star.scale * 1.85, 1]}
+            renderOrder={3}
+          >
             <spriteMaterial
+              ref={(material) => {
+                starMaterials.current[index] = material
+              }}
               map={starHalo}
               blending={AdditiveBlending}
               transparent
-              opacity={debug === 'flow' ? 0.72 : 0.9}
+              opacity={starBase}
               depthWrite={false}
               toneMapped={false}
             />
@@ -611,8 +732,10 @@ function SourceOrbs({ debug, moonGlow = 0.68 }: { debug: PaintingFlowSkyDebug; m
 
 
 
-export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky = 'light', still = false }: Props) {
+export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky = 'light', still = false, alive = false, tuning = ALIVE_DEFAULTS }: Props) {
   const skyRoot = useRef<Group>(null)
+  // the sky clock as this frame wrote it, for the halos' breath (A2): pinned, advanced, or 0 while paused
+  const clock = useRef(0)
   // Camera-convention lookAt (Matrix4.lookAt puts +Z from target back to eye, as three does for
   // isCamera objects), so this equals the live camera's quaternion at rest at the home pose —
   // provided the pose sits inside DIORAMA_ORBIT and so is never clamped. `diorama-layout.test.ts`
@@ -753,8 +876,8 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
       // arcs on the bare gradient
       trailMaxV: 0.7,
     })
-    return arraysToGeometry(ribbonsToArrays(ribbons))
-  }, [images, isFlowDebug])
+    return arraysToGeometry(ribbonsToArrays(ribbons, { gust: alive }))
+  }, [alive, images, isFlowDebug])
 
   // The moving sky's own, denser strokes: built on first use, one count for every orientation, so a resize never
   // rebuilds it (review F7). Same seed and streamline field as the light sky. Built in a worker: in the render it
@@ -781,6 +904,7 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
     const request: MovingBuildRequest = {
       images,
       countPerUnit: tuned('count', 2000) * MOVING.countScale,
+      gust: alive,
       options: {
         strokeWidth: tuned('strokeWidth', 0.0032) * 1.18 * MOVING.widthScale,
         points: tuned('points', 16),
@@ -800,7 +924,7 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
       worker.terminate()
       built?.dispose()
     }
-  }, [images, movingEver])
+  }, [alive, images, movingEver])
 
   // Geometry is ready before the mode flips; the layout effect below switches wash and gradient in the same frame.
   const mode: SkyStyle = wanted === 'moving' && movingGeometry ? 'moving' : 'light'
@@ -824,7 +948,9 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
           uBristleFreq: { value: tuned('bristleFreq', 75) },
           uBristleAmp: { value: tuned('bristleAmp', 0.22) },
           uDebugMode: { value: isFlowDebug ? 1 : 0 },
+          ...(alive ? gustUniforms() : {}),
         },
+        defines: alive ? { ALIVE: 1 } : {},
         vertexShader: ribbonVert,
         fragmentShader: ribbonFrag,
         transparent: true,
@@ -833,7 +959,7 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
         blending: NormalBlending,
         side: DoubleSide,
       }),
-    [isFlowDebug, paused],
+    [alive, isFlowDebug, paused],
   )
 
   useEffect(() => {
@@ -857,7 +983,9 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
           uPeriod: { value: MOVING.period },
           uStroke: { value: MOVING.stroke },
           uOpacity: { value: MOVING.opacity },
+          ...(alive ? gustUniforms() : {}),
         },
+        defines: alive ? { ALIVE: 1 } : {},
         vertexShader: movingVert,
         fragmentShader: movingFrag,
         transparent: true,
@@ -866,7 +994,7 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
         blending: NormalBlending,
         side: DoubleSide,
       }),
-    [],
+    [alive],
   )
 
   useEffect(() => {
@@ -881,6 +1009,16 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
   // same frame. A passive effect could trail by one frame after a non-click update (review F4).
   useLayoutEffect(() => {
     /* eslint-disable react-hooks/immutability -- intentional R3F uniform writes */
+    // the gust uniforms exist only on the ALIVE variant
+    if (alive) {
+      const knobs = gustUniformValues(tuning)
+      for (const material of [ribbonMaterial, movingMaterial]) {
+        material.uniforms.uAlive.value = 1
+        material.uniforms.uGustAmp.value.set(...knobs.amplitudes)
+        material.uniforms.uGustLift.value = knobs.lift
+      }
+      ribbonMaterial.uniforms.uGustShimmer.value = knobs.shimmer
+    }
     washMaterial.uniforms.uMovingSky.value = mode === 'moving' ? 1 : 0
     // Set from the palette each time, never multiplied in place, so switching cannot drift.
     // LinearSRGBColorSpace = "these numbers are already working values": the hex reaches the screen unchanged
@@ -889,23 +1027,29 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
     gradientMaterial.uniforms.uTop.value.setStyle(PALETTE.skyZenith, space(top)).multiplyScalar(top.scale)
     gradientMaterial.uniforms.uBottom.value.setStyle(PALETTE.skyHorizon, space(bottom)).multiplyScalar(bottom.scale)
     /* eslint-enable react-hooks/immutability */
-  }, [gradientMaterial, mode, washMaterial])
+  }, [alive, gradientMaterial, mode, movingMaterial, ribbonMaterial, tuning, washMaterial])
 
   /* eslint-disable react-hooks/immutability -- R3F render-loop writes: camera-locked sky rotation + time uniform */
   useFrame(({ camera }, dt) => {
     if (skyRoot.current) {
       skyRoot.current.quaternion.copy(camera.quaternion).multiply(homeInverse)
     }
-    if (paused) return
+    if (paused) {
+      // the light material is rebuilt at t = 0 on a pause; the halos' still is the t = 0 state too
+      clock.current = 0
+      return
+    }
     const pinned = (window as SkyClockWindow).__skyTime
     if (typeof pinned === 'number' && Number.isFinite(pinned)) {
       ribbonMaterial.uniforms.uTime.value = pinned
       movingMaterial.uniforms.uTime.value = pinned
+      clock.current = pinned
       return
     }
     ribbonMaterial.uniforms.uTime.value += dt
     // both clocks run whichever sky is shown, so switching never jumps either one
     movingMaterial.uniforms.uTime.value += dt
+    clock.current = ribbonMaterial.uniforms.uTime.value
   })
   /* eslint-enable react-hooks/immutability */
 
@@ -937,7 +1081,7 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
       {ribbons.geometry && !awaitingMoving && (
         <mesh geometry={ribbons.geometry} material={ribbons.material} frustumCulled={false} renderOrder={2} />
       )}
-      <SourceOrbs debug={debug} moonGlow={mode === 'moving' ? MOVING.moonGlow : undefined} />
+      <SourceOrbs debug={debug} moonGlow={mode === 'moving' ? MOVING.moonGlow : undefined} clock={clock} alive={alive} breath={tuning.breath} />
     </group>
   )
 }

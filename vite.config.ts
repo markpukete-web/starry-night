@@ -10,6 +10,8 @@ const TUNING_FIELDS = new Set([
   'churnSpeed', 'flowAmount',
   'count', 'speed', 'opacity', 'strokeWidth', 'points', 'stepSize',
   'pulseScale', 'shimmerMix', 'shimmerSpeed', 'shimmerScale', 'bristleFreq', 'bristleAmp',
+  // make-it-alive A's knobs (src/AliveTuner.tsx "set as default")
+  'aliveGust', 'aliveLift', 'aliveShimmer', 'aliveBreath',
 ])
 
 // Dev-only middleware: the tuning panel's "set as default" button POSTs the current control values
@@ -52,7 +54,16 @@ function skyTuningWriter(): Plugin {
               else throw new Error(`invalid value for ${key}`)
             }
             const file = fileURLToPath(new URL('./src/scene/sky-tuning.json', import.meta.url))
-            fs.writeFileSync(file, JSON.stringify(clean, null, 2) + '\n')
+            // Merge into the file rather than replace it: two panels save here (the 2D leva panel its fourteen
+            // keys, the alive tuner its four), and either save used to wipe the other's defaults (Codex, PR #8).
+            let existing: Record<string, unknown> = {}
+            try {
+              const current: unknown = JSON.parse(fs.readFileSync(file, 'utf8'))
+              if (current !== null && typeof current === 'object' && !Array.isArray(current)) existing = current as Record<string, unknown>
+            } catch {
+              /* a missing or unreadable file starts from the submitted fields alone */
+            }
+            fs.writeFileSync(file, JSON.stringify({ ...existing, ...clean }, null, 2) + '\n')
             res.statusCode = 200
             res.end('ok')
           } catch (err) {

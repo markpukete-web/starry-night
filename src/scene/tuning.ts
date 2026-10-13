@@ -16,18 +16,23 @@ export function tuned(key: string, factory: number): number {
 }
 
 /**
- * POST the current panel values to the dev-only tuning writer, which rewrites `sky-tuning.json`.
- * Dev-only in practice: it is reached only from the leva "set as default" button, which never renders
- * in production (the panel is absent). The server allowlists + type-checks every field, so the client
- * need not pre-validate. Saving triggers an HMR reload, so the panel snaps to the just-saved defaults.
+ * POST the current panel values to the dev-only tuning writer, which merges them into `sky-tuning.json`.
+ * Dev-only in practice: it is reached only from the "set as default" buttons (the leva panel on the 2D
+ * route, the alive tuner on the diorama), which never render in production. The server allowlists +
+ * type-checks every field, so the client need not pre-validate. Saving triggers an HMR reload, so a panel
+ * snaps to the just-saved defaults. Resolves once the server has written the file and rejects otherwise,
+ * so a caller can report success only when it is true (Codex, PR #8); it also logs either way.
  */
-export function saveDefaults(values: Record<string, unknown>): void {
-  void fetch('/__set-tuning', {
+export function saveDefaults(values: Record<string, unknown>): Promise<void> {
+  return fetch('/__set-tuning', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(values),
   })
-    .then((r) => (r.ok ? r.text() : Promise.reject(new Error(`HTTP ${r.status}`))))
+    .then((r) => (r.ok ? r.text() : r.text().then((detail) => Promise.reject(new Error(`HTTP ${r.status}${detail ? `: ${detail}` : ''}`)))))
     .then(() => console.info('[sky-tuning] saved as default →', values))
-    .catch((e: unknown) => console.warn('[sky-tuning] save failed', e))
+    .catch((e: unknown) => {
+      console.warn('[sky-tuning] save failed', e)
+      throw e
+    })
 }

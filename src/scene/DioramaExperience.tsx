@@ -3,6 +3,7 @@ import { OrbitControls, PerspectiveCamera } from '@react-three/drei'
 import { Suspense, useEffect, useMemo, type ReactNode } from 'react'
 import { Diorama } from './Diorama'
 import { PaintingFlowSky3D, type SkyStyle } from './PaintingFlowSky3D'
+import type { AliveTuning } from './skyAlive'
 import {
   DIORAMA_CAMERAS,
   DIORAMA_ORBIT,
@@ -17,6 +18,10 @@ type Props = {
   sky?: SkyStyle
   /** System reduced motion: forces the painted-light still whatever the choice. */
   still?: boolean
+  /** Make-it-alive A behind `?alive=1`: the gust clock and breathing halos. */
+  alive?: boolean
+  /** The live knobs for A (`?gust=&lift=&shimmer=&breath=`). */
+  aliveTuning?: AliveTuning
   /** Visitor chrome (attribution, original placard, control dock) — rendered over the canvas. */
   children?: ReactNode
 }
@@ -87,7 +92,7 @@ function PerfProbe() {
   return null
 }
 
-function Scene({ reduced, sky, still }: { reduced: boolean; sky: SkyStyle; still: boolean }) {
+function Scene({ reduced, sky, still, alive, aliveTuning }: { reduced: boolean; sky: SkyStyle; still: boolean; alive: boolean; aliveTuning?: AliveTuning }) {
   const debug = readDebugMode()
   const view = readViewMode()
   // R3F's `size` is the canvas size and re-renders on resize. Reading window.inner* here instead
@@ -128,6 +133,8 @@ function Scene({ reduced, sky, still }: { reduced: boolean; sky: SkyStyle; still
             paused={reduced}
             sky={sky}
             still={still}
+            alive={alive}
+            tuning={aliveTuning}
             debug={debug === 'flow' ? 'flow' : 'final'}
             /* a stable module constant, so the sky's home quaternion memo holds across renders */
             home={camera}
@@ -139,11 +146,11 @@ function Scene({ reduced, sky, still }: { reduced: boolean; sky: SkyStyle; still
   )
 }
 
-export function DioramaExperience({ clean = false, reduced = false, sky = 'light', still = false, children }: Props) {
+export function DioramaExperience({ clean = false, reduced = false, sky = 'light', still = false, alive = false, aliveTuning, children }: Props) {
   return (
     <main className={`visitor-shell diorama-shell${clean ? ' is-clean-capture' : ''}`}>
       <Canvas frameloop="always" dpr={[1, 1.5]} gl={{ preserveDrawingBuffer: true, antialias: true }}>
-        <Scene reduced={reduced} sky={sky} still={still} />
+        <Scene reduced={reduced} sky={sky} still={still} alive={alive} aliveTuning={aliveTuning} />
       </Canvas>
       {children}
     </main>

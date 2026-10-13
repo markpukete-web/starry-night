@@ -7,8 +7,21 @@ import { StreamlineSky } from './scene/StreamlineSky'
 import { CanopyExperience } from './scene/CanopyExperience'
 import { DioramaExperience } from './scene/DioramaExperience'
 import type { SkyStyle } from './scene/PaintingFlowSky3D'
+import { ALIVE_DEFAULTS, ALIVE_KNOBS, clampAliveKnob, hasAliveKnobs, readAliveTuning, type AliveTuning } from './scene/skyAlive'
+import { tuned } from './scene/tuning'
+import { AliveTuner } from './AliveTuner'
 import { ReliefExperience } from './scene/ReliefExperience'
 import { VisitorChrome } from './VisitorChrome'
+
+const TUNER_STORAGE_KEY = 'starry-night:alive-tuning'
+
+/** The shipped defaults for A's knobs: sky-tuning.json's alive* keys (the tuner's "set as default" writes them). */
+const SHIPPED_ALIVE: AliveTuning = {
+  gust: clampAliveKnob('gust', tuned('aliveGust', ALIVE_DEFAULTS.gust), ALIVE_DEFAULTS.gust),
+  lift: clampAliveKnob('lift', tuned('aliveLift', ALIVE_DEFAULTS.lift), ALIVE_DEFAULTS.lift),
+  shimmer: clampAliveKnob('shimmer', tuned('aliveShimmer', ALIVE_DEFAULTS.shimmer), ALIVE_DEFAULTS.shimmer),
+  breath: clampAliveKnob('breath', tuned('aliveBreath', ALIVE_DEFAULTS.breath), ALIVE_DEFAULTS.breath),
+}
 
 /** prefers-reduced-motion: a dignified still painting, no churn (locked acceptance criterion). */
 function usePrefersReducedMotion() {
@@ -36,19 +49,48 @@ export default function App() {
   const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
   const mode = params.get('mode') ?? 'diorama'
   const clean = params.get('clean') === '1'
+  // make-it-alive A, behind a flag until Mark's gate (tasks/2026-10-13-alive-a-plan.md)
+  // `?tune=1` opens Mark's tuner and implies the flag
+  const tune = params.get('tune') === '1'
+  const alive = params.get('alive') === '1' || tune
+  // The shipped defaults for A's knobs live in sky-tuning.json (the tuner's "set as default" writes them);
+  // a URL knob overrides them, and with the tuner open the last slider positions are remembered per browser.
+  const [aliveTuning, setAliveTuning] = useState<AliveTuning>(() => {
+    if (hasAliveKnobs(params) || !tune) return readAliveTuning(params, SHIPPED_ALIVE)
+    try {
+      const stored = JSON.parse(window.localStorage.getItem(TUNER_STORAGE_KEY) ?? 'null') as Partial<AliveTuning> | null
+      if (!stored) return SHIPPED_ALIVE
+      const restored = { ...SHIPPED_ALIVE }
+      for (const name of ALIVE_KNOBS) restored[name] = clampAliveKnob(name, Number(stored[name]), SHIPPED_ALIVE[name])
+      return restored
+    } catch {
+      return SHIPPED_ALIVE
+    }
+  })
+  const onTune = (next: AliveTuning) => {
+    setAliveTuning(next)
+    try {
+      window.localStorage.setItem(TUNER_STORAGE_KEY, JSON.stringify(next))
+    } catch {
+      /* storage can be unavailable; the sliders still work for the page's life */
+    }
+  }
   const motionPaused = reduced || visitorPaused
 
   const chrome = (
-    <VisitorChrome
-      reduced={reduced}
-      visitorPaused={visitorPaused}
-      onTogglePause={() => setVisitorPaused((paused) => !paused)}
-      showOriginal={showOriginal}
-      onToggleOriginal={() => setShowOriginal((shown) => !shown)}
-      sky={sky}
-      // only the 3D diorama has the two skies; the flat 2D route never shows the choice
-      onToggleSky={mode === 'diorama' ? () => setSky((current) => (current === 'moving' ? 'light' : 'moving')) : undefined}
-    />
+    <>
+      <VisitorChrome
+        reduced={reduced}
+        visitorPaused={visitorPaused}
+        onTogglePause={() => setVisitorPaused((paused) => !paused)}
+        showOriginal={showOriginal}
+        onToggleOriginal={() => setShowOriginal((shown) => !shown)}
+        sky={sky}
+        // only the 3D diorama has the two skies; the flat 2D route never shows the choice
+        onToggleSky={mode === 'diorama' ? () => setSky((current) => (current === 'moving' ? 'light' : 'moving')) : undefined}
+      />
+      {tune && mode === 'diorama' && <AliveTuner tuning={aliveTuning} defaults={SHIPPED_ALIVE} onChange={onTune} />}
+    </>
   )
 
   if (mode === 'canopy') {
@@ -61,7 +103,7 @@ export default function App() {
 
   if (mode === 'diorama') {
     return (
-      <DioramaExperience clean={clean} reduced={motionPaused} sky={sky} still={reduced}>
+      <DioramaExperience clean={clean} reduced={motionPaused} sky={sky} still={reduced} alive={alive} aliveTuning={aliveTuning}>
         {chrome}
       </DioramaExperience>
     )

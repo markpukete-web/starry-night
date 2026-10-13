@@ -9,7 +9,66 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## Pickup — 2026-10-11 (afternoon): sky choice built, gated and refined — Mark's review next
+## Pickup — 2026-10-13: make-it-alive A is built and gated; its retune is next
+
+**Current agent entry point:** this section, then `tasks/2026-10-13-alive-a.md` (A's record and gate) and
+`tasks/2026-10-11-handoff.md` (history). `main` is at `e80fdf7`. Branches: `docs/sky-choice-live-record` (the
+record branch, now carrying A: Mark, "merge to sky-choice-live-record first") and `claude/confident-bohr-1y7p2u`
+(A's build branch, merged into it on 2026-10-13).
+
+- [x] PR #7 `feat(sky): let visitors choose a moving-stroke sky` merged as `e80fdf7` on 2026-10-11 and deployed
+  (Vercel production `dpl_3qJcJeYvEAQifGT4vv9GVc8jFhvU` READY at `e80fdf7`). Codex on the last commit `69c1364`
+  (the Web Worker build, answering its P2 first-switch hitch): "Didn't find any major issues".
+- [x] Mark: phone check of `?sky=moving` on the live site: "looks okay" (2026-10-11 night).
+- [x] `spike/moving-sky` deleted on Mark's word (`905223d`). 60-frame test sequences cleared from scratch (2.9 GB → 737 MB).
+- [x] 2026-10-13, cloud session: the three Chrome scripts gained `CHROME_FLAGS` and `CAPTURE_SETTLE_MS`, so
+  `capture:diorama`, `check:reduced` and `check:viewport` run in a cloud session after all (lessons, 2026-10-13).
+  All three pass at `e80fdf7` + that tooling. Frame rate is still never judgeable headless.
+- [x] **Make-it-alive A, built and gated (2026-10-13, cloud session, Mark: "Tackle A").** Behind `?alive=1` on
+  `claude/confident-bohr-1y7p2u`: the gust clock in both skies (the band and the whorls surge and ease, the floor
+  stays calm, a gust travels left to right), star halos breathing, the moon pulsing. Plan reviewed (REVISE → applied),
+  gate in `tasks/2026-10-13-alive-a.md`: default byte-identical to `main` at pinned t on both skies, flag identical
+  at t = 0, band ΔE within limits, reduced-motion and viewport guards pass, 112 tests. Retune passes used: 0 of 4.
+- [x] **Mark's first look at A** (2026-10-13, Vercel preview, flag on): "I can see it. I can't see the main
+  difference. let's just create PR." Verdict: too subtle. The PR goes up with A behind the flag (merging changes
+  nothing visitors see); a retune pass follows. Proposed pass 1: amplitudes sum 0.7 → 0.9, shimmer share 0.5 → 1.0,
+  lift 6% → 15%, halo breath ±14/5% → ±30/12%, moon ±8% → ±18%, plus URL knobs (`gust`, `lift`, `breath`) so Mark
+  dials the strength live and the chosen values become the defaults. Boil is the risk; captures decide.
+- [x] **Retune pass 1 of 4 on A** (2026-10-13, cloud session, Mark: "keep on working A, retune pass 1 on cloud
+  session"; done on `docs/sky-choice-live-record` before the merge to `main`, PR #8). Defaults raised (amplitude sum
+  0.9, lift 0.15, shimmer share 1, halo ±30/12%, moon ±18%) and live knobs `?alive=1&gust=&lift=&shimmer=&breath=`
+  so Mark dials the strength on the preview. Gate in `tasks/2026-10-13-alive-a.md`, "Retune pass 1": both skies
+  reviewed at the tempo peak and the light sky at the trough (no boil, no freeze), three Codex findings fixed (the
+  flag-off path is now main's shaders and geometry). Peak animations in `output/alive-a-pass1-2026-10-13/` (local).
+- [x] **Mark's gate on pass 1** (2026-10-13 evening): the strong preset "seems okay" → shipped as the defaults
+  (`sky-tuning.json` aliveGust 0.95, aliveLift 0.3, aliveShimmer 1, aliveBreath 2). URL knobs rejected as the way to
+  tune ("build the tool so that I can tune myself like in previous we've done") → `src/AliveTuner.tsx`, `?tune=1`:
+  sliders live on the sky, "set as default" on the dev server writes the JSON, copy on the preview.
+- [ ] **Merge PR #8 to `main`** (Mark; deploys; the flag stays off by default until he says otherwise). Then decide
+  the default: flip `alive` on for every visitor, or keep it a choice. Still owed at the Mac before the flag goes on
+  by default: default route AE 0 against `main` at pinned t, and `?perf=1` with the flag on at the shipped defaults.
+- [ ] **A, second pass (after Mark's gate):** the cypress flicker and the village window glimmer. Both touch authored
+  foreground materials (`MeshBasicMaterial` with vertex colours; windows painted into the atlas, no mask) and need
+  their own derivation. Impasto under raking light at orbit cannot be done as specified: the sky is rotation-locked
+  to the camera, so orbit never changes its view angle; a light that moves with the orbit angle is the nearest
+  reading, Mark's call.
+- [ ] Then B (touch), then C (arrival).
+- Ideas noted, not queued (each Mark's call): full-length strokes for the short dabs, star-body layer as patches
+  (if a phone struggles), visitor brush controls, Vincent's window / fuller village.
+
+## Pickup — 2026-10-11 (evening): the sky choice is LIVE (PR #7, `e80fdf7`) — superseded by the 2026-10-13 pickup above
+
+**Current agent entry point:** `tasks/2026-10-11-handoff.md`, top section. Record: `tasks/2026-10-11-sky-choice.md`. `main` is at
+`e80fdf7`. This docs branch, `docs/sky-choice-live-record`, is local: base the next feature branch on it so these
+notes ride up with the next PR.
+
+- [x] Mark: phone check of `?sky=moving` on the live site: "looks okay" (2026-10-11 night).
+- [x] `spike/moving-sky` deleted on Mark's word (`905223d`). 60-frame test sequences cleared from scratch (2.9 GB → 737 MB).
+- [x] Next: make-it-alive A (breath and drama; its tempo drives both skies) — built 2026-10-13, see above.
+- Ideas noted, not queued (each Mark's call): full-length strokes for the short dabs, star-body layer as patches
+  (if a phone struggles), visitor brush controls, Vincent's window / fuller village.
+
+## Pickup — 2026-10-11 (afternoon): sky choice built, gated and refined (superseded by the evening pickup above)
 
 **Current agent entry point:** `tasks/2026-10-11-handoff.md`. Record and gate: `tasks/2026-10-11-sky-choice.md`.
 Branch `feat/sky-choice` (local; Mark pushes after his review). Default sky pixel-identical to `main`.
@@ -20,8 +79,8 @@ Branch `feat/sky-choice` (local; Mark pushes after his review). Default sky pixe
 - [x] Lead gate: all checks pass (`tasks/2026-10-11-sky-choice.md`, gate record).
 - [x] Mark: "room to improve" → moving sky refined, Codex-reviewed, gated (`0918095`..`a16c780`, record section "Refinement").
 - [x] Mark: taste review at his Mac (moon dimmed, then glow tuned); "push it and open the PR" (2026-10-11 evening).
-- [ ] **Mark: phone check** of the moving sky on the Vercel preview before merging.
-- [ ] On Mark's word: push, PR, read the Codex/Fable PR review, merge (= deploy).
+- [ ] Mark: phone check of the moving sky (moved to the evening pickup).
+- [x] On Mark's word: pushed, PR #7, Codex review answered (P2 fixed, re-review 👍), merged `e80fdf7` (= deployed).
 - [ ] Then make-it-alive A (its tempo drives both skies), B, C.
 
 ### Proposed to Mark — visitor brush controls (Mark, 2026-10-11)

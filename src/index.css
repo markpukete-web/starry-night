@@ -270,3 +270,97 @@ button {
     transition: none;
   }
 }
+
+/* Mark's tuner for make-it-alive A (`?tune=1`): the dock's glass, sliders for the four knobs. */
+.alive-tuner {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 12;
+  width: 272px;
+  padding: 12px 14px 10px;
+  border: 1px solid rgba(244, 234, 211, 0.2);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(26, 41, 83, 0.72), rgba(9, 17, 39, 0.66)),
+    rgba(9, 17, 39, 0.66);
+  box-shadow: 0 18px 46px rgba(4, 7, 19, 0.34);
+  backdrop-filter: blur(10px) saturate(1.15);
+  color: #f7e7b5;
+  font-size: 12px;
+}
+
+.alive-tuner h2 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 620;
+  letter-spacing: 0.02em;
+}
+
+.alive-tuner label {
+  display: block;
+  margin: 0 0 8px;
+}
+
+.alive-tuner label span {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 2px;
+  opacity: 0.9;
+}
+
+.alive-tuner output {
+  font-variant-numeric: tabular-nums;
+}
+
+.alive-tuner input[type='range'] {
+  display: block;
+  width: 100%;
+  margin: 0;
+  accent-color: #f7e7b5;
+}
+
+.alive-tuner-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.alive-tuner-actions .visitor-control {
+  height: 32px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.alive-tuner-status {
+  margin: 8px 0 0;
+  font-size: 11px;
+  line-height: 1.35;
+  opacity: 0.8;
+  overflow-wrap: anywhere;
+}
+
+.visitor-shell.is-clean-capture .alive-tuner {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  /* above the dock, which wraps to two rows on a phone; three rows under 360px */
+  .alive-tuner {
+    top: auto;
+    right: 12px;
+    bottom: 132px;
+    left: 12px;
+    width: auto;
+    max-height: calc(100vh - 230px);
+    overflow: auto;
+  }
+}
+
+@media (max-width: 359px) {
+  .alive-tuner {
+    bottom: 180px;
+    max-height: calc(100vh - 278px);
+  }
+}
