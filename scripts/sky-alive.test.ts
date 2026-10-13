@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { GUST, gustLag, gustPulse, gustTime, gustWeight, HALO_BREATH, haloPeriod, meanTempoBound, ribbonGusts, whorlWeight } from '../src/scene/skyAlive.ts'
+import { ALIVE_DEFAULTS, GUST, gustLag, gustPulse, gustTime, gustUniformValues, gustWeight, HALO_BREATH, haloPeriod, meanTempoBound, readAliveTuning, ribbonGusts, whorlWeight } from '../src/scene/skyAlive.ts'
 import { SWIRLS } from '../src/scene/skySwirls.ts'
 import { arraysToGeometry, ribbonBuffers, ribbonsToArrays } from '../src/scene/skyRibbonArrays.ts'
 import { buildSourceStreamlineRibbons } from '../src/scene/streamlineGeometry.ts'
@@ -70,7 +70,8 @@ test('T9 the gust clock starts at 0, never runs backwards, and averages today\'s
     // the exact finite-window bound, not a round number (review F11)
     assert.ok(Math.abs(gustTime(120, 1, lag) / 120 - 1) <= meanTempoBound(120) * 1.001, 'mean tempo within the analytic bound over 120 s')
   }
-  assert.ok(meanTempoBound(120) < 0.02)
+  // the bound is small for any amplitudes under 1 with periods under 20 s: the window error, not a tempo bias
+  assert.ok(meanTempoBound(120) < 0.05)
   // the brightness lift is 0 at t = 0, whatever the lag, so the t = 0 frame equals today's (review F1)
   assert.equal(gustPulse(0), 0)
   // the flag off is exactly t, however large the warp would be
@@ -110,4 +111,25 @@ test('T11 every star halo breathes at its own period inside the range, and none 
   const periods = Array.from({ length: 12 }, (_, i) => haloPeriod(i))
   for (const p of periods) assert.ok(p >= HALO_BREATH.periodMin && p <= HALO_BREATH.periodMax, `period ${p} in range`)
   assert.equal(new Set(periods.map((p) => p.toFixed(3))).size, periods.length, 'distinct periods')
+})
+
+test('T12 the live knobs: defaults when absent or unparseable, clamped to their ranges, and the clock stays monotone at the gust maximum', () => {
+  const d = readAliveTuning(new URLSearchParams(''))
+  assert.deepEqual(d, ALIVE_DEFAULTS)
+  assert.ok(Math.abs(d.gust - GUST.amplitudes.reduce((a, b) => a + b, 0)) < 1e-12)
+  const junk = readAliveTuning(new URLSearchParams('gust=abc&lift=&shimmer=NaN&breath=Infinity'))
+  assert.deepEqual(junk, ALIVE_DEFAULTS)
+  const high = readAliveTuning(new URLSearchParams('gust=5&lift=9&shimmer=2&breath=99'))
+  assert.deepEqual(high, { gust: 0.95, lift: 0.5, shimmer: 1, breath: 3 })
+  const low = readAliveTuning(new URLSearchParams('gust=-1&lift=-1&shimmer=-1&breath=-1'))
+  assert.deepEqual(low, { gust: 0, lift: 0, shimmer: 0, breath: 0 })
+  // at the gust maximum the scaled amplitudes still sum under 1, so T stays monotone
+  const { amplitudes } = gustUniformValues(high)
+  assert.ok(amplitudes.reduce((a, b) => a + b, 0) < 1)
+  let previous = gustTime(0, 1, 1.5, amplitudes)
+  for (let i = 1; i <= 60 * 240; i++) {
+    const now = gustTime(i / 240, 1, 1.5, amplitudes)
+    assert.ok(now > previous, `monotone at the gust maximum, t ${i / 240}`)
+    previous = now
+  }
 })

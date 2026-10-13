@@ -34,7 +34,7 @@ import {
   uvToDioramaSkyPosition,
 } from './dioramaSkyProjection'
 import { MOON_R, MOON_UV, SWIRLS } from './skySwirls'
-import { GUST, gustGlsl, gustUniformValues, HALO_BREATH, haloPeriod } from './skyAlive'
+import { ALIVE_DEFAULTS, gustGlsl, gustUniformValues, HALO_BREATH, haloPeriod, type AliveTuning } from './skyAlive'
 import { PALETTE } from './palette'
 import { DIORAMA_CAPTURE } from './dioramaContract'
 
@@ -103,15 +103,15 @@ const GRADIENT: Record<SkyStyle, { top: GradientEnd; bottom: GradientEnd }> = {
   moving: { top: { scale: 1, asDisplayed: true }, bottom: { scale: 0.68, asDisplayed: false } },
 }
 
-/** The gust clock's uniforms, the same for both ribbon materials; `uAlive` is set from the prop in a layout effect. */
+/** The gust clock's uniforms, the same for both ribbon materials; `uAlive` and the knobs are set in a layout effect. */
 function gustUniforms() {
-  const { omega, amplitudes } = gustUniformValues()
+  const { omega, amplitudes, lift, shimmer } = gustUniformValues()
   return {
     uAlive: { value: 0 },
     uGustOmega: { value: new Vector3(...omega) },
     uGustAmp: { value: new Vector3(...amplitudes) },
-    uGustLift: { value: GUST.lift },
-    uGustShimmer: { value: GUST.shimmerShare },
+    uGustLift: { value: lift },
+    uGustShimmer: { value: shimmer },
   }
 }
 
@@ -135,6 +135,8 @@ type Props = {
   still?: boolean
   /** Make-it-alive A (`?alive=1`): the gust clock in both skies, halos breathing. Off = today's sky, bit for bit. */
   alive?: boolean
+  /** The live knobs (skyAlive.ts `readAliveTuning`); applied through uniforms, no rebuild. */
+  tuning?: AliveTuning
 }
 
 const ribbonVert = /* glsl */ `
@@ -592,6 +594,7 @@ function SourceOrbs({
   moonGlow = 0.68,
   clock,
   alive,
+  breath,
 }: {
   debug: PaintingFlowSkyDebug
   moonGlow?: number
@@ -599,6 +602,8 @@ function SourceOrbs({
   clock: RefObject<number>
   /** Make-it-alive A: halos breathe and the moon pulses; off, every write below is the base value. */
   alive: boolean
+  /** The `breath` knob: a multiplier on every halo's swing. */
+  breath: number
 }) {
   const moonHalo = useMemo(() => makeMoonHaloTexture(), [])
   const starHalo = useMemo(() => makeStarHaloTexture(), [])
@@ -641,7 +646,7 @@ function SourceOrbs({
   // manual rendering (F9).
   useFrame(() => {
     const t = clock.current ?? 0
-    const amp = alive ? 1 : 0
+    const amp = alive ? breath : 0
     if (moonMaterial.current) {
       moonMaterial.current.opacity = moonBase * (1 + amp * HALO_BREATH.moonOpacity * Math.sin((2 * Math.PI * t) / HALO_BREATH.moonPeriod))
     }
@@ -708,7 +713,7 @@ function SourceOrbs({
 
 
 
-export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky = 'light', still = false, alive = false }: Props) {
+export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky = 'light', still = false, alive = false, tuning = ALIVE_DEFAULTS }: Props) {
   const skyRoot = useRef<Group>(null)
   // the sky clock as this frame wrote it, for the halos' breath (A2): pinned, advanced, or 0 while paused
   const clock = useRef(0)
@@ -982,8 +987,13 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
   // same frame. A passive effect could trail by one frame after a non-click update (review F4).
   useLayoutEffect(() => {
     /* eslint-disable react-hooks/immutability -- intentional R3F uniform writes */
-    ribbonMaterial.uniforms.uAlive.value = alive ? 1 : 0
-    movingMaterial.uniforms.uAlive.value = alive ? 1 : 0
+    const knobs = gustUniformValues(tuning)
+    for (const material of [ribbonMaterial, movingMaterial]) {
+      material.uniforms.uAlive.value = alive ? 1 : 0
+      material.uniforms.uGustAmp.value.set(...knobs.amplitudes)
+      material.uniforms.uGustLift.value = knobs.lift
+    }
+    ribbonMaterial.uniforms.uGustShimmer.value = knobs.shimmer
     washMaterial.uniforms.uMovingSky.value = mode === 'moving' ? 1 : 0
     // Set from the palette each time, never multiplied in place, so switching cannot drift.
     // LinearSRGBColorSpace = "these numbers are already working values": the hex reaches the screen unchanged
@@ -992,7 +1002,7 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
     gradientMaterial.uniforms.uTop.value.setStyle(PALETTE.skyZenith, space(top)).multiplyScalar(top.scale)
     gradientMaterial.uniforms.uBottom.value.setStyle(PALETTE.skyHorizon, space(bottom)).multiplyScalar(bottom.scale)
     /* eslint-enable react-hooks/immutability */
-  }, [alive, gradientMaterial, mode, movingMaterial, ribbonMaterial, washMaterial])
+  }, [alive, gradientMaterial, mode, movingMaterial, ribbonMaterial, tuning, washMaterial])
 
   /* eslint-disable react-hooks/immutability -- R3F render-loop writes: camera-locked sky rotation + time uniform */
   useFrame(({ camera }, dt) => {
@@ -1046,7 +1056,7 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
       {ribbons.geometry && !awaitingMoving && (
         <mesh geometry={ribbons.geometry} material={ribbons.material} frustumCulled={false} renderOrder={2} />
       )}
-      <SourceOrbs debug={debug} moonGlow={mode === 'moving' ? MOVING.moonGlow : undefined} clock={clock} alive={alive} />
+      <SourceOrbs debug={debug} moonGlow={mode === 'moving' ? MOVING.moonGlow : undefined} clock={clock} alive={alive} breath={tuning.breath} />
     </group>
   )
 }

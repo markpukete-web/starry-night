@@ -7,6 +7,7 @@ import { StreamlineSky } from './scene/StreamlineSky'
 import { CanopyExperience } from './scene/CanopyExperience'
 import { DioramaExperience } from './scene/DioramaExperience'
 import type { SkyStyle } from './scene/PaintingFlowSky3D'
+import { readAliveTuning } from './scene/skyAlive'
 import { ReliefExperience } from './scene/ReliefExperience'
 import { VisitorChrome } from './VisitorChrome'
 
@@ -38,6 +39,8 @@ export default function App() {
   const clean = params.get('clean') === '1'
   // make-it-alive A, behind a flag until Mark's gate (tasks/2026-10-13-alive-a-plan.md)
   const alive = params.get('alive') === '1'
+  // the live knobs for A: gust (amplitude sum), lift, shimmer share, breath; clamped in readAliveTuning
+  const aliveTuning = readAliveTuning(params)
   const motionPaused = reduced || visitorPaused
 
   const chrome = (
@@ -63,7 +66,7 @@ export default function App() {
 
   if (mode === 'diorama') {
     return (
-      <DioramaExperience clean={clean} reduced={motionPaused} sky={sky} still={reduced} alive={alive}>
+      <DioramaExperience clean={clean} reduced={motionPaused} sky={sky} still={reduced} alive={alive} aliveTuning={aliveTuning}>
         {chrome}
       </DioramaExperience>
     )

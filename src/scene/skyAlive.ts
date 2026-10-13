@@ -15,18 +15,22 @@ import type { SourceRibbonVertex } from './streamlineGeometry.ts'
 export const GUST = {
   /** periods in seconds, incommensurate so the tempo never repeats */
   periods: [9.7, 5.9, 16.3],
-  /** tempo amplitudes; their sum stays under 1 so the warped clock never runs backwards */
-  amplitudes: [0.36, 0.22, 0.12],
+  /**
+   * tempo amplitudes; their sum stays under 1 so the warped clock never runs backwards. Retune pass 1
+   * (2026-10-13, Mark: "I can't see the main difference"): sum 0.70 → 0.90, tempo 0.1×–1.9× in the band.
+   */
+  amplitudes: [0.46, 0.28, 0.16],
   /** seconds a gust takes to cross the canvas, left to right: lag = u × travel */
   travel: 3,
-  /** brightness lift at a full surge, scaled by the ribbon's weight; no lag, so it is 0 at t = 0 for every ribbon */
-  lift: 0.06,
+  /** brightness lift at a full surge, scaled by the ribbon's weight; no lag, so it is 0 at t = 0 for every ribbon. Pass 1: 0.06 → 0.15 */
+  lift: 0.15,
   /**
    * How much of the warp the light sky's shimmer term takes (the flow term takes all of it). The shimmer runs at
    * 3× the flow's rate and is the knob that tips into boil (lessons 2026-06-22), so a full surge of 1.7× would run
-   * it at 5.1×; half the warp caps it at 4×. Decided at the first capture (review F6).
+   * it at 5.1×; half the warp caps it at 4×. Pass 1 takes the whole warp: at 0.5 the visible pulse (80% shimmer)
+   * carried only half the surge and Mark could not see it. Boil is checked by the strips.
    */
-  shimmerShare: 0.5,
+  shimmerShare: 1,
   /** the calm floor: every ribbon breathes at least this much of the gust (the deep blue, calmer) */
   floor: 0.15,
   /**
@@ -134,11 +138,45 @@ export function meanTempoBound(seconds: number, weight = 1, amplitudes = GUST.am
   return (weight * s) / (Math.PI * seconds)
 }
 
-/** The uniforms the shaders take for GUST. */
-export function gustUniformValues() {
+/**
+ * The live knobs (`?alive=1&gust=0.9&lift=0.15&shimmer=1&breath=1`): Mark dials the strength on a preview and the
+ * values that read right become the defaults. Every knob is clamped so the clock never runs backwards (gust is
+ * the amplitude SUM, under 1) and nothing explodes; a missing or unparseable knob is the default.
+ */
+export type AliveTuning = {
+  /** sum of the three tempo amplitudes, 0–0.95 (the proportions stay GUST.amplitudes') */
+  gust: number
+  /** brightness lift at a full surge, 0–0.5 */
+  lift: number
+  /** the shimmer's share of the warp, 0–1 */
+  shimmer: number
+  /** multiplier on the halo and moon breath, 0–3 */
+  breath: number
+}
+
+const GUST_SUM = GUST.amplitudes.reduce((a, b) => a + b, 0)
+export const ALIVE_DEFAULTS: AliveTuning = { gust: GUST_SUM, lift: GUST.lift, shimmer: GUST.shimmerShare, breath: 1 }
+const KNOB_MAX: AliveTuning = { gust: 0.95, lift: 0.5, shimmer: 1, breath: 3 }
+
+export function readAliveTuning(params: URLSearchParams): AliveTuning {
+  const read = (name: keyof AliveTuning): number => {
+    const raw = params.get(name)
+    // Number('') is 0, so an empty knob (`lift=`) must read as missing, not as zero
+    const value = raw === null || raw.trim() === '' ? NaN : Number(raw)
+    if (!Number.isFinite(value)) return ALIVE_DEFAULTS[name]
+    return Math.min(KNOB_MAX[name], Math.max(0, value))
+  }
+  return { gust: read('gust'), lift: read('lift'), shimmer: read('shimmer'), breath: read('breath') }
+}
+
+/** The uniforms the shaders take for GUST, at a tuning: the amplitudes scaled to the knob's sum. */
+export function gustUniformValues(tuning: AliveTuning = ALIVE_DEFAULTS) {
+  const scale = tuning.gust / GUST_SUM
   return {
     omega: GUST.periods.map(omega) as [number, number, number],
-    amplitudes: [...GUST.amplitudes] as [number, number, number],
+    amplitudes: GUST.amplitudes.map((a) => a * scale) as [number, number, number],
+    lift: tuning.lift,
+    shimmer: tuning.shimmer,
   }
 }
 
@@ -174,11 +212,12 @@ export const gustGlsl = /* glsl */ `
  * periods desynchronise the stars within a few seconds.
  */
 export const HALO_BREATH = {
-  opacity: 0.14,
-  scale: 0.05,
+  // pass 1: ±14% / ±5% → ±30% / ±12%, the moon ±8% → ±18%; `breath` multiplies all three
+  opacity: 0.3,
+  scale: 0.12,
   periodMin: 4.5,
   periodMax: 9,
-  moonOpacity: 0.08,
+  moonOpacity: 0.18,
   moonPeriod: 13,
 }
 
