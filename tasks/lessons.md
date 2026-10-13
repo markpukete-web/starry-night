@@ -2318,3 +2318,31 @@ also in Codex's list). None was in the design; all were in the proof. Patterns w
   carried over in three small commits without giving up the bar. Mark agreed the split, 2026-10-11.
 - **Name the cost a fix puts on the visitor.** `minPoints` 5 bought coverage with short dabs; the commit said only
   the gain until Fable asked (review-v4). Write the trade where the setting lives.
+
+## Cloud session captures — the Chrome guards run as root after all, 2026-10-13
+
+Session on `claude/confident-bohr-1y7p2u` from `main` at `e80fdf7`, two days after PR #7 merged.
+
+- **"Cannot run as root in a cloud session" named the symptom, not the cause.** Chrome exits at once as root
+  without `--no-sandbox` (crbug.com/638180). The three Chrome scripts (`capture:diorama`, `check:reduced`,
+  `check:viewport`) now read `CHROME_FLAGS` for extra launch flags; empty on a Mac, so nothing changes there.
+  Cloud invocation: `CHROME_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome CHROME_FLAGS=--no-sandbox
+  CAPTURE_SETTLE_MS=10000 npm run check:reduced` (the dev server on 5179 first).
+- **Software WebGL draws the cypress about ten seconds late, and every fixed wait straddled it.** The scene
+  appears ~6 s after navigation without the cypress (it waits on the painting's image data and the lobe plan,
+  CPU work that is slow here) and is complete by ~10 s. `check:reduced` saw frame A without it and frame B
+  with it (a "moving" still), `check:viewport` compared a fresh load without it to a rotation with it, and the
+  orbit-preset and phone captures were bare gradient. `CAPTURE_SETTLE_MS` adds to every post-load wait; at
+  10,000 all three pass and all nine views are complete. Measured with a probe that reads the canvas every
+  second after navigation (session scratchpad, not tracked).
+- **Identical byte counts across different runs told the two states apart before any image was opened.**
+  Frames here are deterministic: 3,009,367 bytes (no cypress) and 3,132,206 (cypress) recurred across the
+  capture, reduced and viewport runs. Repeating sizes in a "failed" comparison mean two states, not noise.
+- **Rule out the dead server before blaming the proxy.** Chrome's "127.0.0.1 refused to connect" came while the
+  dev server had died (the first capture attempt's orphaned Vite), not from the container's `HTTPS_PROXY`;
+  with the server up, `--no-sandbox` alone reaches it. `--no-proxy-server` was a false lead and is not needed.
+- **Still true:** a canvas readback takes ~3.5 s here (ReadPixels stall) and frame rate is never judgeable
+  headless. Whether these software frames match the Mac's GPU frames pixel for pixel was not tested; the
+  AE 0 comparisons in the records are Mac-to-Mac.
+- **The live host is unreachable from a cloud container** (proxy policy). Production state was confirmed
+  through the Vercel API instead: deployment `dpl_3qJcJeYvEAQifGT4vv9GVc8jFhvU` READY at `e80fdf7`.

@@ -9,20 +9,25 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## Pickup — 2026-10-11 (afternoon): sky choice built, gated and refined — Mark's review next
+## Pickup — 2026-10-13: the sky choice is live; make-it-alive A is next
 
-**Current agent entry point:** `tasks/2026-10-11-handoff.md`. Record and gate: `tasks/2026-10-11-sky-choice.md`.
-Branch `feat/sky-choice` (local; Mark pushes after his review). Default sky pixel-identical to `main`.
+**Current agent entry point:** this section, then `tasks/2026-10-11-handoff.md` (history) and the record
+`tasks/2026-10-11-sky-choice.md`. Branch for this session: `claude/confident-bohr-1y7p2u`, from `main` at `e80fdf7`.
 
-- [x] Sky-choice design approved by Mark; plan reviewed (Codex BUILD, Gemini READY).
-- [x] Commits 1–4: builder options, moving-sky mode, dock button, tuning (`315ab5a`..`29f869b`).
-- [x] Fable implementation review FIX → fixes `3262865`, `58a1560` → GATE.
-- [x] Lead gate: all checks pass (`tasks/2026-10-11-sky-choice.md`, gate record).
-- [x] Mark: "room to improve" → moving sky refined, Codex-reviewed, gated (`0918095`..`a16c780`, record section "Refinement").
-- [x] Mark: taste review at his Mac (moon dimmed, then glow tuned); "push it and open the PR" (2026-10-11 evening).
-- [ ] **Mark: phone check** of the moving sky on the Vercel preview before merging.
-- [ ] On Mark's word: push, PR, read the Codex/Fable PR review, merge (= deploy).
-- [ ] Then make-it-alive A (its tempo drives both skies), B, C.
+- [x] PR #7 `feat(sky): let visitors choose a moving-stroke sky` merged as `e80fdf7` on 2026-10-11. Codex reviewed
+  the last commit `69c1364` (the Web Worker build, answering its P2 first-switch hitch): "Didn't find any major
+  issues". Vercel production deployment `dpl_3qJcJeYvEAQifGT4vv9GVc8jFhvU` is READY at `e80fdf7`, so the live
+  site carries both skies. (Checked through the Vercel API on 2026-10-13; the live host is not reachable from a
+  cloud container.)
+- [ ] **Mark: phone check** of the moving sky on the live site (record item 3, "Phone"). Not recorded as done;
+  if it was, note the result here. If the phone falls short, the cheap lever is the star-body layer's geometry.
+- [x] 2026-10-13, cloud session: the three Chrome scripts gained `CHROME_FLAGS` and `CAPTURE_SETTLE_MS`, so
+  `capture:diorama`, `check:reduced` and `check:viewport` run in a cloud session after all (lessons, 2026-10-13).
+  All three pass at `e80fdf7` + that tooling. Frame rate is still never judgeable headless.
+- [ ] **Make-it-alive A** — the next slice (Mark, 2026-10-06 and 2026-10-11: A, then B, then C, one at a time, his
+  gate between). Its tempo drives both skies. Spec: "Direction — make it alive", A. Open question for Mark: build
+  it in a cloud session (captures and guards now work there; fps and feel do not) or at his Mac.
+- [ ] Then B (touch), then C (arrival).
 
 ### Proposed to Mark — visitor brush controls (Mark, 2026-10-11)
 
