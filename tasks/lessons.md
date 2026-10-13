@@ -2346,3 +2346,37 @@ Session on `claude/confident-bohr-1y7p2u` from `main` at `e80fdf7`, two days aft
   AE 0 comparisons in the records are Mac-to-Mac.
 - **The live host is unreachable from a cloud container** (proxy policy). Production state was confirmed
   through the Vercel API instead: deployment `dpl_3qJcJeYvEAQifGT4vv9GVc8jFhvU` READY at `e80fdf7`.
+
+## Make-it-alive A — the gust clock, 2026-10-13
+
+Plan `tasks/2026-10-13-alive-a-plan.md`, record `tasks/2026-10-13-alive-a.md`. Built and gated in a cloud session.
+
+- **Warp the clock, not the paths.** A's tempo is a per-ribbon time warp `T(t) = t + w (G(t − lag) − G(−lag))` on
+  the one sky clock; the flow field, the ribbons and the colours stay exactly as derived, and the mean tempo
+  over time is today's. With `uAlive` 0 every term is `t + 0·x`, and the default proved byte-identical to `main`
+  at pinned t on both skies. Expected exact, proven anyway: the first build was one grey level off.
+- **A per-ribbon constant through a plain varying is not constant.** The light shader read its warped clock
+  through an interpolated varying; at t = 3.7 a few pixels moved one grey level against `main`. `flat` fixed
+  it. The 2026-10-11 lesson named hashing as the amplifier; a `sin` of a growing clock amplifies too.
+- **Set thresholds from the real field's quantiles, and look at the map.** The band luminance window was first
+  guessed at 0.30–0.60; the light sky's 3,145 ribbons sit at lum 5% 0.257 / 50% 0.416 / 95% 0.551, so the
+  guess put the band on the median. 0.38–0.52 (about the 35th and 90th percentiles) lit the whorls and the
+  band right of the whorl and left the floor and the side strips calm, read on a weight map over the painting.
+- **A fixture must straddle the threshold or a mutation sails through.** T7's first fixture gave every vertex of
+  a ribbon a luminance on the same side of the band, so a per-vertex weight came out equal to the per-ribbon
+  one and the mutation passed. Vary the fixture across the threshold before trusting the proof.
+- **A fresh reviewer found what the author could not see in the gate.** Six fixes from one review of the plan:
+  the lift's lag and the halos' phases broke the t = 0 identity the gate was about to assert; the halo writer
+  ignored `paused`; nine transcendentals per fragment of a full-viewport mesh; a per-pixel ΔE on a sky whose
+  strokes move measures motion, not colour; and the warp drove the shimmer, the known boil knob, to 5×. Review
+  the plan before the build, with the shaders open.
+- **Compare band-mean Lab, not per-pixel, when strokes move.** Alive against default at the same pinned t
+  differs by ΔE76 0.1–0.5 in band mean while the per-pixel mean abs diff is 1–6 grey levels: the strokes are
+  elsewhere, the colour is the same.
+- **Four software-rendered Chromes at once all miss the canvas; one at a time they all find it.** And a
+  DevTools helper that resolves the whole message where the others resolve `.result` reads `undefined` as "no
+  canvas" with no error. Both cost a capture round.
+- **Tunables change logged** (CLAUDE.md, Tunables): make-it-alive A behind `?alive=1`: gust periods 9.7 / 5.9 /
+  16.3 s, amplitudes 0.36 / 0.22 / 0.12, travel 3 s per canvas width left to right, lift 0.06, shimmer share
+  0.5, floor 0.15, band luminance 0.38–0.52; halos 4.5–9 s (±14% opacity, ±5% scale), moon 13 s (±8%). Set
+  2026-10-13; untuned by Mark.

@@ -24,9 +24,20 @@ below — never edited in place.
 - [x] 2026-10-13, cloud session: the three Chrome scripts gained `CHROME_FLAGS` and `CAPTURE_SETTLE_MS`, so
   `capture:diorama`, `check:reduced` and `check:viewport` run in a cloud session after all (lessons, 2026-10-13).
   All three pass at `e80fdf7` + that tooling. Frame rate is still never judgeable headless.
-- [ ] **Make-it-alive A** — the next slice (Mark, 2026-10-06 and 2026-10-11: A, then B, then C, one at a time, his
-  gate between). Its tempo drives both skies. Spec: "Direction — make it alive", A. Open question for Mark: build
-  it in a cloud session (captures and guards now work there; fps and feel do not) or at his Mac.
+- [x] **Make-it-alive A, built and gated (2026-10-13, cloud session, Mark: "Tackle A").** Behind `?alive=1` on
+  `claude/confident-bohr-1y7p2u`: the gust clock in both skies (the band and the whorls surge and ease, the floor
+  stays calm, a gust travels left to right), star halos breathing, the moon pulsing. Plan reviewed (REVISE → applied),
+  gate in `tasks/2026-10-13-alive-a.md`: default byte-identical to `main` at pinned t on both skies, flag identical
+  at t = 0, band ΔE within limits, reduced-motion and viewport guards pass, 112 tests. Retune passes used: 0 of 4.
+- [ ] **Mark's gate on A** (taste and feel at the Mac and phone, Vercel preview with `?alive=1` and
+  `?alive=1&sky=moving`): does the surge read as the painting's own energy? Then: ship as the default, keep as an
+  option, or retune (amplitudes, periods, travel, lift, shimmer share are the knobs). Before it counts, at the Mac:
+  default route AE 0 against `main` at pinned t, and `?perf=1` with the flag on.
+- [ ] **A, second pass (after Mark's gate):** the cypress flicker and the village window glimmer. Both touch authored
+  foreground materials (`MeshBasicMaterial` with vertex colours; windows painted into the atlas, no mask) and need
+  their own derivation. Impasto under raking light at orbit cannot be done as specified: the sky is rotation-locked
+  to the camera, so orbit never changes its view angle; a light that moves with the orbit angle is the nearest
+  reading, Mark's call.
 - [ ] Then B (touch), then C (arrival).
 
 ### Proposed to Mark — visitor brush controls (Mark, 2026-10-11)
