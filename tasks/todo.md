@@ -37,7 +37,9 @@ record branch, now carrying A: Mark, "merge to sky-choice-live-record first") an
 - [x] **Retune pass 1 of 4 on A** (2026-10-13, cloud session, Mark: "keep on working A, retune pass 1 on cloud
   session"; done on `docs/sky-choice-live-record` before the merge to `main`, PR #8). Defaults raised (amplitude sum
   0.9, lift 0.15, shimmer share 1, halo ±30/12%, moon ±18%) and live knobs `?alive=1&gust=&lift=&shimmer=&breath=`
-  so Mark dials the strength on the preview. Gate in `tasks/2026-10-13-alive-a.md`, "Retune pass 1".
+  so Mark dials the strength on the preview. Gate in `tasks/2026-10-13-alive-a.md`, "Retune pass 1": both skies
+  reviewed at the tempo peak and the light sky at the trough (no boil, no freeze), three Codex findings fixed (the
+  flag-off path is now main's shaders and geometry). Peak animations in `output/alive-a-pass1-2026-10-13/` (local).
 - [ ] **Mark's gate on pass 1** (preview with `?alive=1` and `?alive=1&sky=moving`, then the knobs): tell me the
   numbers that read right and I bake them in as the defaults. Then merge PR #8 to `main` (deploys; the flag stays
   off by default until he says otherwise). Still owed at the Mac before the flag goes on by default: default route

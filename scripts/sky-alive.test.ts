@@ -95,7 +95,8 @@ test('T10 the packer carries aGust as a vec2 attribute and transfers every buffe
     stepSize: 0.01,
     seed: 123,
   })
-  const arrays = ribbonsToArrays(built)
+  const arrays = ribbonsToArrays(built, { gust: true })
+  assert.ok(arrays.aGust)
   assert.equal(arrays.aGust.length, built.vertices.length * 2)
   assert.deepEqual(Array.from(arrays.aGust), Array.from(ribbonGusts(built.vertices)))
   const geometry = arraysToGeometry(arrays)
@@ -105,6 +106,14 @@ test('T10 the packer carries aGust as a vec2 attribute and transfers every buffe
   const typed = Object.values(arrays).filter((v) => ArrayBuffer.isView(v))
   assert.equal(ribbonBuffers(arrays).length, typed.length)
   geometry.dispose()
+  // the flag off (the default): main's arrays and geometry, no gust attribute packed, uploaded or transferred
+  const plain = ribbonsToArrays(built)
+  assert.equal(plain.aGust, undefined)
+  const plainGeometry = arraysToGeometry(plain)
+  assert.equal(plainGeometry.getAttribute('aGust'), undefined)
+  assert.equal(ribbonBuffers(plain).length, Object.values(plain).filter((v) => ArrayBuffer.isView(v)).length)
+  assert.deepEqual(Array.from(plain.aLen), Array.from(arrays.aLen))
+  plainGeometry.dispose()
 })
 
 test('T11 every star halo breathes at its own period inside the range, and none at the same rate', () => {

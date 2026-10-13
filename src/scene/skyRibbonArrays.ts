@@ -17,8 +17,11 @@ export type RibbonArrays = {
   aPhase: Float32Array
   aRate: Float32Array
   aEdgeFade: Float32Array
-  /** [gust weight, gust lag] per vertex, one pair per ribbon (make-it-alive A, skyAlive.ts) */
-  aGust: Float32Array
+  /**
+   * [gust weight, gust lag] per vertex, one pair per ribbon (make-it-alive A, skyAlive.ts). Packed only when the
+   * alive flag is on: off, the geometry is main's, with none of the attribute's memory or transfer (Codex, PR #8).
+   */
+  aGust?: Float32Array
   index: Uint16Array | Uint32Array
 }
 
@@ -65,7 +68,7 @@ export function composite(i: SkyImages) {
  * Project built ribbons onto the diorama sky and pack their attributes as typed arrays. Shared by both skies:
  * the light sky on the main thread, the moving sky in `movingSky.worker.ts`.
  */
-export function ribbonsToArrays(ribbons: SourceRibbonGeometry): RibbonArrays {
+export function ribbonsToArrays(ribbons: SourceRibbonGeometry, { gust = false }: { gust?: boolean } = {}): RibbonArrays {
   const positions: number[] = []
   const colors: number[] = []
   const aLen: number[] = []
@@ -103,7 +106,7 @@ export function ribbonsToArrays(ribbons: SourceRibbonGeometry): RibbonArrays {
     aPhase: new Float32Array(aPhase),
     aRate: new Float32Array(aRate),
     aEdgeFade: new Float32Array(aEdgeFade),
-    aGust: ribbonGusts(ribbons.vertices),
+    ...(gust ? { aGust: ribbonGusts(ribbons.vertices) } : {}),
     // the index type three's setIndex(array) chose before the split, so the light geometry is unchanged
     index: maxIndex >= 65535 ? new Uint32Array(ribbons.indices) : new Uint16Array(ribbons.indices),
   }
@@ -119,7 +122,7 @@ export function arraysToGeometry(a: RibbonArrays): BufferGeometry {
   geo.setAttribute('aPhase', new BufferAttribute(a.aPhase, 1))
   geo.setAttribute('aRate', new BufferAttribute(a.aRate, 1))
   geo.setAttribute('aEdgeFade', new BufferAttribute(a.aEdgeFade, 1))
-  geo.setAttribute('aGust', new BufferAttribute(a.aGust, 2))
+  if (a.aGust) geo.setAttribute('aGust', new BufferAttribute(a.aGust, 2))
   geo.setIndex(new BufferAttribute(a.index, 1))
   geo.computeBoundingSphere()
   return geo
@@ -127,5 +130,5 @@ export function arraysToGeometry(a: RibbonArrays): BufferGeometry {
 
 /** Every buffer of a `RibbonArrays`, for `postMessage`'s transfer list. */
 export function ribbonBuffers(a: RibbonArrays): ArrayBuffer[] {
-  return [a.position, a.aColor, a.aLen, a.aAcross, a.aPhase, a.aRate, a.aEdgeFade, a.aGust, a.index].map((x) => x.buffer as ArrayBuffer)
+  return [a.position, a.aColor, a.aLen, a.aAcross, a.aPhase, a.aRate, a.aEdgeFade, ...(a.aGust ? [a.aGust] : []), a.index].map((x) => x.buffer as ArrayBuffer)
 }

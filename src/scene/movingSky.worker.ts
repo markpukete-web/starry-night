@@ -7,6 +7,8 @@ export type MovingBuildRequest = {
   /** The ribbon count before the side strips widen the domain: count = round(countPerUnit × (1 + 2 uPad)). */
   countPerUnit: number
   options: Omit<SourceRibbonBuildOptions, 'flowData' | 'maskData' | 'paintingData' | 'count' | 'uPad'>
+  /** make-it-alive A: pack the gust attribute (the flag is on); off, the arrays are main's */
+  gust?: boolean
 }
 
 export type MovingBuildReply = { arrays: RibbonArrays; ms: number } | { error: string }
@@ -14,7 +16,7 @@ export type MovingBuildReply = { arrays: RibbonArrays; ms: number } | { error: s
 self.onmessage = (event: MessageEvent<MovingBuildRequest>) => {
   const started = performance.now()
   try {
-    const { images, countPerUnit, options } = event.data
+    const { images, countPerUnit, options, gust = false } = event.data
     const { compositePainting, compositeFlow, maskData, uPad } = composite(images)
     const arrays = ribbonsToArrays(
       buildSourceStreamlineRibbons({
@@ -25,6 +27,7 @@ self.onmessage = (event: MessageEvent<MovingBuildRequest>) => {
         count: Math.round(countPerUnit * (1 + 2 * uPad)),
         uPad,
       }),
+      { gust },
     )
     const reply: MovingBuildReply = { arrays, ms: performance.now() - started }
     self.postMessage(reply, { transfer: ribbonBuffers(arrays) })

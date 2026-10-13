@@ -2406,3 +2406,9 @@ Plan `tasks/2026-10-13-alive-a-plan.md`, record `tasks/2026-10-13-alive-a.md`. B
   1.35 s) and its deep trough at 28.9 s; a strip from 0–3 s shows the ramp, not the extreme the boil question is
   about. Compute the peaks from the TS twin of the clock and centre the windows on them.
 - **Tunables change logged** (CLAUDE.md, Tunables): pass 1 values as above, 2026-10-13; the knobs' defaults.
+- **An opt-in feature's off path must be the old path in bytes, not just in arithmetic.** Three Codex findings
+  on PR #8 were the same lesson: the gust functions ran with the flag off (multiplied by zero), the attribute was
+  packed and uploaded with the flag off, and a knob at zero divided 0/0. The fix that ends the series is a variant:
+  flag off compiles main's shaders (`defines.ALIVE` absent) over main's geometry (no `aGust`); flag on is the
+  feature. The gate then proves the off path byte-identical to `main` and the on path byte-identical to its own
+  earlier captures, both cheap once the frame scripts exist.
