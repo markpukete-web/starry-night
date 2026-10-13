@@ -29,10 +29,13 @@ below — never edited in place.
   stays calm, a gust travels left to right), star halos breathing, the moon pulsing. Plan reviewed (REVISE → applied),
   gate in `tasks/2026-10-13-alive-a.md`: default byte-identical to `main` at pinned t on both skies, flag identical
   at t = 0, band ΔE within limits, reduced-motion and viewport guards pass, 112 tests. Retune passes used: 0 of 4.
-- [ ] **Mark's gate on A** (taste and feel at the Mac and phone, Vercel preview with `?alive=1` and
-  `?alive=1&sky=moving`): does the surge read as the painting's own energy? Then: ship as the default, keep as an
-  option, or retune (amplitudes, periods, travel, lift, shimmer share are the knobs). Before it counts, at the Mac:
-  default route AE 0 against `main` at pinned t, and `?perf=1` with the flag on.
+- [x] **Mark's first look at A** (2026-10-13, Vercel preview, flag on): "I can see it. I can't see the main
+  difference. let's just create PR." Verdict: too subtle. The PR goes up with A behind the flag (merging changes
+  nothing visitors see); a retune pass follows. Proposed pass 1: amplitudes sum 0.7 → 0.9, shimmer share 0.5 → 1.0,
+  lift 6% → 15%, halo breath ±14/5% → ±30/12%, moon ±8% → ±18%, plus URL knobs (`gust`, `lift`, `breath`) so Mark
+  dials the strength live and the chosen values become the defaults. Boil is the risk; captures decide.
+- [ ] **Retune pass 1 of 4 on A** (above), then Mark's gate again. Still owed at the Mac before it counts: default
+  route AE 0 against `main` at pinned t, and `?perf=1` with the flag on.
 - [ ] **A, second pass (after Mark's gate):** the cypress flicker and the village window glimmer. Both touch authored
   foreground materials (`MeshBasicMaterial` with vertex colours; windows painted into the atlas, no mask) and need
   their own derivation. Impasto under raking light at orbit cannot be done as specified: the sky is rotation-locked
