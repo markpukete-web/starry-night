@@ -4,6 +4,8 @@ import { Suspense, useEffect, useMemo, useRef, type ReactNode } from 'react'
 import { Diorama } from './Diorama'
 import { PaintingFlowSky3D, type SkyStyle } from './PaintingFlowSky3D'
 import type { AliveTuning } from './skyAlive'
+import { emptyTouchStore, type TouchStore } from './touchSurge'
+import { useTouchInput } from './useTouchInput'
 import {
   DIORAMA_CAMERAS,
   DIORAMA_ORBIT,
@@ -22,6 +24,8 @@ type Props = {
   alive?: boolean
   /** The live knobs for A (`?gust=&lift=&shimmer=&breath=`). */
   aliveTuning?: AliveTuning
+  /** B behind `?touch=1` (implies alive): surges of light from the pointer, kicks and flares. */
+  touch?: boolean
   /** Visitor chrome (attribution, original placard, control dock) — rendered over the canvas. */
   children?: ReactNode
 }
@@ -92,7 +96,7 @@ function PerfProbe() {
   return null
 }
 
-function Scene({ reduced, sky, still, alive, aliveTuning }: { reduced: boolean; sky: SkyStyle; still: boolean; alive: boolean; aliveTuning?: AliveTuning }) {
+function Scene({ reduced, sky, still, alive, aliveTuning, touch }: { reduced: boolean; sky: SkyStyle; still: boolean; alive: boolean; aliveTuning?: AliveTuning; touch: boolean }) {
   const debug = readDebugMode()
   const view = readViewMode()
   // R3F's `size` is the canvas size and re-renders on resize. Reading window.inner* here instead
@@ -107,6 +111,9 @@ function Scene({ reduced, sky, still, alive, aliveTuning }: { reduced: boolean; 
   // paused) and the foreground reads it, so the cypress and the windows keep the sky's time. With no sky
   // (`?debug=stage`) it stays 0 and the foreground stands still.
   const skyClock = useRef(0)
+  // B: the touch store the input hook writes and the sky reads; off while paused (the sky clears it too)
+  const touchStore = useRef<TouchStore>(emptyTouchStore())
+  useTouchInput({ enabled: touch && !reduced, store: touchStore, clock: skyClock, home: camera, knob: aliveTuning?.surge ?? 1 })
 
   return (
     <>
@@ -140,6 +147,8 @@ function Scene({ reduced, sky, still, alive, aliveTuning }: { reduced: boolean; 
             alive={alive}
             tuning={aliveTuning}
             clock={skyClock}
+            touch={touch}
+            touchStore={touchStore}
             debug={debug === 'flow' ? 'flow' : 'final'}
             /* a stable module constant, so the sky's home quaternion memo holds across renders */
             home={camera}
@@ -151,11 +160,11 @@ function Scene({ reduced, sky, still, alive, aliveTuning }: { reduced: boolean; 
   )
 }
 
-export function DioramaExperience({ clean = false, reduced = false, sky = 'light', still = false, alive = false, aliveTuning, children }: Props) {
+export function DioramaExperience({ clean = false, reduced = false, sky = 'light', still = false, alive = false, aliveTuning, touch = false, children }: Props) {
   return (
     <main className={`visitor-shell diorama-shell${clean ? ' is-clean-capture' : ''}`}>
       <Canvas frameloop="always" dpr={[1, 1.5]} gl={{ preserveDrawingBuffer: true, antialias: true }}>
-        <Scene reduced={reduced} sky={sky} still={still} alive={alive} aliveTuning={aliveTuning} />
+        <Scene reduced={reduced} sky={sky} still={still} alive={alive} aliveTuning={aliveTuning} touch={touch} />
       </Canvas>
       {children}
     </main>

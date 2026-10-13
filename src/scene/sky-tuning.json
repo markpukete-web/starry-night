@@ -18,5 +18,6 @@
   "aliveShimmer": 1,
   "aliveBreath": 2,
   "aliveFlicker": 1,
-  "aliveGlimmer": 1
+  "aliveGlimmer": 1,
+  "touchSurge": 1
 }

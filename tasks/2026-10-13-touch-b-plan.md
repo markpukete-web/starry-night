@@ -7,178 +7,243 @@ conflict with orbit on touch devices." Built in a cloud session on `claude/confi
 and shader variant), so the shipped default and the alive route both stay untouched until Mark's gate. Mark
 judges feel on the preview; this session gates the mechanics with synthetic input under a pinned clock.
 
+Reviewed by a fresh agent before the build (REVISE, F1–F13 below); the design here is the revised one.
+
 ## What is there today
 
-- **No pointer handling in the diorama.** `OrbitControls` (drei) owns drag on the canvas: one finger or the mouse
-  rotates within `DIORAMA_ORBIT`; no pan; damping on. `ReliefExperience` (a retired route) listened to
-  `pointermove` on `window`; nothing in the diorama does.
-- **The sky is camera-locked** (`skyRoot.quaternion = camera.quaternion × homeInverse`), a dome of radius `DOME_R`
-  6 about the scene origin, mapped by `uvToDioramaSkyPosition(u, v)`: `h = (u − 0.5)·SPAN_H·1.16`,
-  `w = (0.5 − v)·SPAN_V·1.06`, direction `FWD·cos w cos h + RIGHT·cos w sin h + TRUEUP·sin w` (SPAN_H 2.15,
-  SPAN_V = SPAN_H / 1.26). The camera orbits at distance 3–5.5 from a target near the origin, inside the dome, so
-  a ray from the camera through any screen point leaves the sphere exactly once. The strips run u past 0..1 by
-  0.3.
-- **Both ribbon shaders** carry per-vertex `aLen` (0..1 along the ribbon), `aAcross`, `aPhase`, `aRate`, `aColor`,
-  `aEdgeFade`, and with `ALIVE` the gust pair `aGust` and the `flat` varyings `vGustTime` / `vGustLift`. The light
-  sky's `ribbonFrag` applies `col *= 1 + vGustLift` after its clamp and source-lum lift; `movingFrag` after its
-  0.93 line, and its stroke slots floor a `flat` warped clock. `ribbonsToArrays` packs attributes from contiguous
-  per-ribbon vertex runs (the gust pair is grouped by the (phase, rate) pair); the moving worker takes `gust`.
-- **Halos** (`SourceOrbs`): the star list is `SWIRLS` minus the moon, the whorls and the cypress, each a sprite at
-  `uvToDioramaSkyPosition(u, v, DOME_R − 0.01)`; the frame loop writes opacity and scale from the clock (A2).
-- **Tooling.** `scripts/capture-diorama.mjs` already drives a synthetic drag through DevTools
-  (`Input.dispatchMouseEvent`); `capture-sky-frames.mjs` pins the clock. The tuner shows A's six sliders.
+- **No pointer handling in the diorama.** drei's `OrbitControls` (three-stdlib) binds `pointerdown` on the element
+  R3F connects events to (the wrapper div), binds move and up on the document, never captures the pointer and
+  `preventDefault`s only wheel, context menu and keys; `touch-action: none` is on that div. One finger rotates
+  within `DIORAMA_ORBIT` (polar 0.58–1.62, distance 3.25–5.6 about the target near the origin), two fingers dolly
+  (no pan), damping on.
+- **The sky is camera-locked** (`skyRoot.quaternion = camera.quaternion × homeInverse`, identity at the home pose),
+  a dome of radius `DOME_R` 6 about the scene origin, mapped by `uvToDioramaSkyPosition(u, v)`:
+  `h = (u − 0.5)·SPAN_H·1.16`, `w = (0.5 − v)·SPAN_V·1.06`, direction `FWD cos w cos h + RIGHT cos w sin h +
+  TRUEUP sin w`. At the orbit's extremes the camera sits OUTSIDE the dome (6.52 from the origin at polar 0.58,
+  azimuth π/4, distance 5.6), looking in through the unpainted cap (review F4). The strips run u past 0..1 by 0.3.
+- **Both ribbon shaders** carry per-vertex `aLen`, `aAcross`, `aPhase`, `aRate`, `aColor`, `aEdgeFade`, and with
+  `ALIVE` the gust pair `aGust` (weight, lag) and the `flat` varyings `vGustTime` / `vGustLift`. The light sky's
+  `ribbonFrag` applies `col *= 1 + vGustLift` after its clamp; `movingFrag` after its 0.93 line, and its stroke
+  slots floor the warped clock. The builder emits each ribbon's vertices as side PAIRS with offset uvs, contiguous
+  per ribbon; `ribbonsToArrays` groups a ribbon by its (phase, rate) pair; the moving worker takes `gust`.
+- **Halos** (`SourceOrbs`): the star list is `SWIRLS` minus the moon, the whorls and the cypress, sprites at
+  `uvToDioramaSkyPosition(u, v, DOME_R − 0.01)`, additive with `SrcAlpha`, so opacity clips at 1; the moon's halo
+  sits at `MOON_PAINTED_UV` (0.8987, 0.1697), not `MOON_UV`. The frame loop writes opacity and scale (A2).
+- **On pause** the light material is rebuilt at t = 0, the moving clock reset and the shared clock written 0.
+- **Tooling.** `capture-diorama.mjs` drives a synthetic drag (`Input.dispatchMouseEvent`); `capture-sky-frames.mjs`
+  pins the clock. The tuner shows A's six sliders.
 
 ## Design
 
 ### B1 — a screen point to a painting point
 
-Manual listeners on the canvas element (`gl.domElement`: `pointermove`, `pointerdown`, `pointerup`,
-`pointercancel`, `blur`), not R3F's pointer events: R3F raycasts every mesh under the pointer on each move, and the
-moving sky is 600k triangles (a frame-long stall per move). The hook turns the event into NDC, unprojects a ray
-through the active camera, intersects the sphere of radius `DOME_R` about the origin (the far root; the camera is
-inside), rotates the hit direction into the sky group's frame (`skyRoot.quaternion⁻¹`) and inverts the mapping
-analytically:
+Manual listeners, not R3F's object events: the mapping is exact and cheap without raycasting any mesh, and the
+ribbons need no handlers. `pointerdown` and `pointermove` on the element R3F connects events to
+(`useThree(s => s.events.connected) ?? gl.domElement`), `pointerup` and `pointercancel` on `window` (a release
+off the canvas must still close a gesture), reset on `visibilitychange` (review F5). NDC from the canvas's
+`getBoundingClientRect()`. The hook unprojects a ray through the active camera and intersects the sphere of radius
+`DOME_R` about the origin by the quadratic, taking the FAR root always (the painted far side, whether the camera
+is inside or outside the dome), null when the ray misses or the far root is behind the camera (F4); rotates the
+hit direction into the sky group's frame (`skyRoot.quaternion⁻¹`) and inverts the mapping analytically:
 
     h = atan2(d·RIGHT, d·FWD),  w = asin(d·TRUEUP)
     u = 0.5 + h / (SPAN_H·1.16),  v = 0.5 − w / (SPAN_V·1.06)
 
-`skyPointFromRay` and `uvFromSkyDirection` live in `dioramaSkyProjection.ts` beside the forward map (node-testable).
-A point is kept only for v in −0.1..0.75 and u in −0.3..1.3 (the sky; the hills and the island sit below). Because
-the sky turns with the camera, a screen point maps to nearly the same (u, v) at every orbit pose; the camera's
-offset from the origin (parallax inside the dome) is exact through the intersection, never approximated.
+`uvFromSkyDirection` and `skyPointFromRay` live in `dioramaSkyProjection.ts` beside the forward map (node-tested,
+round trip 4e-16; `|h| < π` and `|w| < π/2` over the strips and the cap, so no wrap). A point is kept only for v in
+−0.1..0.75 and u in −0.3..1.3 (the sky). drei's `controls.update()` runs at priority −1 before the sky's quaternion
+write, so the event-time camera and `skyRoot.quaternion⁻¹` agree.
 
 ### B2 — gestures, and the drag question
 
-- **Desktop:** the pointer moving over the sky sends a gentle surge every 60 ms at its point (amplitude 0.5 × the
-  knob); a click sends a strong one (1.0). Hover leaves the orbit alone; a mouse drag still orbits, and trails
-  surges too.
+- **Desktop:** the pointer moving over the sky sends a gentle trail (a lift-only surge, amplitude 0.5 × the knob)
+  when it has moved ≥ 0.02 u since the last and ≥ 60 ms have passed; a click sends a strong surge (1.0) that also
+  kicks the tempo (B3). Hover leaves the orbit alone; a mouse drag orbits and trails.
 - **Touch:** the drag conflict dissolves on inspection. The sky is camera-locked, so a finger moving across the
-  screen traces a well-defined path over the sky whether or not the diorama is turning under it. A one-finger drag
-  therefore does BOTH: OrbitControls rotates the diorama as today (the listeners never `preventDefault` and never
-  stop propagation) and the finger trails surges along its path. A tap (pointerdown to pointerup within 300 ms and
-  under 8 px) sends a strong surge, and when it lands within a star's radius the star flares (B4). Two fingers
-  (pinch) are the dolly as today and send nothing. This is a declared design choice for Mark's gate: the
-  alternative (tap only, no trail on drag) is one constant.
-- **Paused or reduced motion:** input is ignored (the surge list is not written), so the still is today's.
-- The classifier (tap vs drag; the throttle) is a pure function in `touchSurge.ts` with its thresholds in the
-  table, node-tested.
+  screen traces a well-defined path over the sky whether or not the diorama turns under it. A one-finger drag does
+  BOTH: OrbitControls rotates the diorama as today (our listeners never `preventDefault` and never stop
+  propagation; three-stdlib's handler coexists, checked in its source) and the finger trails. A tap (down to up
+  within 300 ms and 8 px) sends a strong surge with a kick, and when it lands within a star's radius the star
+  flares (B4). Two fingers dolly as today and send nothing. A declared design choice for Mark's gate; the
+  alternative (tap only, no trail) is one constant.
+- **Paused or reduced motion:** input is ignored and the store is cleared; the store is also cleared on the
+  material rebuild a pause causes, since the uniforms are recreated with it (F7).
 
 ### B3 — the surge, in both ribbon shaders
 
 A `TOUCH` define (requires `ALIVE`) compiles the surge in; the materials' memo keys and `customProgramCacheKey`
-gain it. Per vertex, with the flag on, `aTouch` = [u, v, tx, ty]: the vertex's painting point and the ribbon's unit
-tangent there in painting space (from its neighbours along the ribbon, built in `ribbonsToArrays`, grouped as the
-gust pair is; the moving worker takes `touch` like `gust`). Packed only with the flag: off, the geometry is A's.
+gain it. With the flag on, two per-vertex attributes are packed in `ribbonsToArrays` (grouped by the (phase, rate)
+pair; the moving worker takes `touch` like `gust`); off, the geometry is A's:
 
-Uniforms: `uTouchCount` (0–8), `uTouchUV[8]`, `uTouchT0[8]`, `uTouchAmp[8]`, written each frame from the surge
-store. For each surge k with `age = t − t0 ≥ 0` (else skipped), in angular-isotropic painting units
-(`d = uv − uvk`, `d.y *= (SPAN_V·1.06)/(SPAN_H·1.16)`):
+- `aTouch` = [u, v, tx, ty]: the vertex's painting point as the mean of its side pair (the builder offsets the
+  two sides, F6) and the ribbon's unit tangent there, stride two (pairs), one-sided at the ends, guarded like the
+  builder, normalised in the SAME isotropic metric the shader measures in (v scaled by `SKY_ASPECT` =
+  (SPAN_V·1.06)/(SPAN_H·1.16) = 0.7252), so `dot(d, t)` is the along-distance.
+- `aSeg` = [u0, v0, u1, v1]: the ribbon's centreline start and end (its first and last pair means), one value per
+  ribbon, for the kick (F2).
 
-    along  = dot(d, tangent)              signed, downstream positive
+Two lists reach the shader as uniform arrays mutated in place (F12): `uSurge[16]` vec4 (u, v, t0, amp) with
+`uSurgeEnd[16]` (the forced end, or a large value) for the LIFT, and `uKick[4]` vec4 (u, v, t0, amp) for the
+TEMPO; `uSurgeCount`, `uKickCount`. For each live entry with `age = t − t0 ≥ 0`, in isotropic units
+(`d = uv − uvk`, `d.y *= aspect`):
+
+    along  = dot(d, tangent)                    signed, downstream positive (increasing len, the signed field)
     across = |d − along·tangent|
-    E      = amp · e^(−age/τ)                                 the envelope, τ 1.6 s
-    S      = e^(−((along − speed·age)/σs)²) · e^(−(across/σa)²)   the pulse running down the ribbon
-    B      = e^(−(|d|/σ0)²)                                   the bloom where the finger is
-    lift_k = E · (S + 0.5·B)
-    warp_k = amp · kick · B · (1 − e^(−age/τ))                a local tempo kick that eases off
+    rise   = 1 − e^(−age/0.08)                  no pop-in: 0 at age 0 (F3)
+    E      = amp · rise · e^(−age/τ) · W(t)     τ 1.6 s; W the closing window (below)
+    S      = e^(−((along − speed·age)/σs)²) · e^(−(across/σa)²)       the pulse running down the ribbon
+    B      = e^(−(along/σb∥)²) · e^(−(across/σb⊥)²)                   the bloom, along the stroke, not a disc (F13)
+    lift_k = E · (S + B/2)
 
-`vTouchLift = min(maxLift, Σ lift_k)` (plain varying; smooth along a ribbon) multiplies the colour where
-`vGustLift` does: `col *= 1 + vGustLift + vTouchLift`. `Σ warp_k` is added into `vGustTime` (already `flat`), so the
-strokes near the finger rush and settle: the "swirl" is the derived flow itself, briefly faster, never a new path.
-Monotone: `d/dt warp_k = amp·kick·B·e^(−age/τ)/τ ≥ 0`, so the moving sky's slots never pop. The `S` term runs
-DOWNSTREAM along the tangent (speed 0.25 of the canvas width per second, σs 0.06, σa 0.025; σ0 0.08; kick 1.5 s;
-maxLift 1.5), so the light is sent along the strokes from the touch the way the great wave runs, not a ring.
-Upstream vertices see only the bloom.
+`vTouchLift = min(maxLift, aGust.x · Σ lift_k)` (plain varying; smooth along a ribbon, equal across its pair):
+weighted by the ribbon's own gust weight, so the band and the whorls carry the light and the cobalt floor stays
+calm, A's derivation (F3); `maxLift` 0.5, A's ceiling, so a strong surge is +50% at most and never blows a pale
+stroke past hue. Speed 0.25 of the canvas width per second, σs 0.06, σa 0.025, σb∥ 0.08, σb⊥ 0.04.
 
-With `uTouchCount` 0 the loop does not run and both terms are absent (the varying is exactly 0 at every vertex,
-and interpolated zeros are zero), so the touch route with no input is byte-identical to the alive route (gate 3).
-Constants in `TOUCH_SURGE` (`touchSurge.ts`) reach the shader as uniforms, with a TS twin for the tests, as A's do.
+The kick is ONE value per ribbon, so it can ride the `flat` clock without laddering (F2): evaluated in the vertex
+shader from the ribbon's centreline segment `aSeg`, `Bseg = e^(−(dist(uvk, segment)/σk)²)` (σk 0.08, point-to-
+segment distance in isotropic units: a touch near any part of a ribbon kicks that whole ribbon, neighbours
+smoothly less):
+
+    g(age) = (1 − e^(−age/τr)) · e^(−age/τk) · W(age)      τr 0.4 s, τk 3 s
+    warp   = Σ ampk · kick · Bseg · g(age)                 kick 0.4 s
+
+added into `vGustTime` for both skies (the shimmer's share formula is consistent with an added warp). `g` rises,
+lingers and settles to EXACTLY zero: `W(age) = 1 − smoothstep(7, 10, age)` closes it at 10 s, and a kick is
+pruned only once `age ≥ 10`, so nothing ever leaves the list with a value in it and the clock never steps back
+(F1). Between, `d/dt warp ≥ −Σ ampk·kick·Bseg·|g'|min`; with at most 4 kicks, amp ≤ knob max 1.5, `|g'|min` ≈
+0.17/s, the clock's rate stays above 1 − 4·1.5·0.4·0.17 ≈ 0.6: the strokes near a tap rush, linger, then run
+slower for a moment as it settles, never backwards, and the moving sky's slots never pop. A tap when four kicks
+are live and none finished lifts but does not kick (never evict a live kick). The lift list CAN evict: a new
+surge on a full list of 16 sets the oldest's `end` = now + 0.25 s and `W(t) = 1 − smoothstep(end − 0.25, end, t)`
+fades it out (a brightness fade, harmless); an entry is dropped once `t ≥ end` or `age ≥ 10`. The seam's
+`__touchInject(u, v, amp, t0)` takes `t0` explicitly so the gate never rides the clock ref's one-frame lag (F10).
+
+Both touch terms sit under `if (uSurgeCount > 0)` / `if (uKickCount > 0)` as SEPARATE statements after A's, so the
+no-input path executes A's statements verbatim and the touch route with no input is byte-identical to the alive
+route by construction, not by an FMA schedule (F9). Constants in `TOUCH_SURGE` (`touchSurge.ts`) reach the shader
+as uniforms, with a TS twin for the tests (`surgeTerms`, `kickTerms`, the list model), as A's do.
 
 ### B4 — a tapped star flares
 
-A tap within 0.04 (painting units) of a star's (u, v), or 0.06 of the moon's, pushes a flare {index, t0} (max 4).
-The halo writer adds `flare = F · (1 − e^(−age/0.12)) · e^(−age/1.4)` to the breath factor (F 1.2 opacity, 0.5
-scale): a quick rise and a slow fall, 0 at age 0. The star list's (u, v) is kept beside its positions for the hit
-test (`nearestStar(u, v)`, node-tested).
+A tap within 0.04 (isotropic painting units; 53–85 px at home on 1600×900, 25–55 on the phone, larger at the
+frame's edges) of a star's (u, v), or 0.06 of the moon's at `MOON_PAINTED_UV` (F8), pushes a flare {index, t0}
+(max 4, pruned at 5 s). The halo writer multiplies the sprite's `material.color` (the texel, before the additive
+clamp, so the falloff radiates outward; opacity clips, F8) by `1 + 1.2·flare(age)` and its scale by
+`1 + 0.5·flare(age)`, `flare = (1 − e^(−age/0.12)) · e^(−age/1.4)`: a quick rise and a slow fall, 0 at age 0.
+`nearestStar(u, v)` is node-tested.
 
-### B5 — the store, the clock, the seam, the knob
+### B5 — the store, the clock, the seams, the knob
 
-- A `SurgeStore` ref owned by `Scene`: `{ surges: {u, v, t0, amp}[], flares }`, written by the input hook, read by
-  the sky's frame loop into the uniform arrays (oldest replaced beyond 8; pruned after 5τ). `t0` is the sky clock
-  at the event, read through the shared clock ref (A3), so a pinned clock gates the surge frame-exactly.
-- Seam for the gate: `window.__touch = { surges, last }` and `window.__touchInject(u, v, amp)` (dev and the flag
-  only), so a surge can be placed at a known painting point without a pointer, and a real pointer event can be
-  checked against the analytic mapping.
-- Knob `surge` (0–2, default 1) scales every amplitude; on the tuner when the flag is on; `sky-tuning.json`
-  `touchSurge`; URL `?touch=1&surge=`. Flag and knob plumbing follow A's (`readAliveTuning` gains `surge`).
+- A `TouchStore` ref owned by `Scene`: `{ surges, kicks, flares }`, written by the input hook, read by the sky's
+  frame loop into the uniform arrays (and by `SourceOrbs` for flares). `t0` is the sky clock at the event through
+  the shared clock ref (A3). Cleared on pause, reduced motion and the material rebuild (F7).
+- Seams (the flag and dev only): `window.__touch = { surges, kicks, flares, last }`, `window.__touchInject(u, v, amp,
+  t0, kick?)`, `window.__camera()` (position and quaternion, for the drag check).
+- Knob `surge` (0–1.5, default 1) scales every amplitude; on the tuner when the flag is on, whose share URL sets
+  `touch=1` (F11); `sky-tuning.json` `touchSurge`; URL `?touch=1&surge=`. `readAliveTuning` gains `surge`.
 
 ## Commits
 
-1. `feat(sky): the inverse sky mapping and a touch-to-sky hook` — `uvFromSkyDirection`, `skyPointFromRay`, the
-   listeners and classifier, the store; nothing drawn yet.
-2. `feat(sky): a touch sends a surge of light along the ribbons behind ?touch=1` — `touchSurge.ts`, `aTouch`,
-   the TOUCH variant in both shaders, the uniforms.
+1. `feat(sky): the inverse sky mapping and the far-root ray` — `uvFromSkyDirection`, `skyPointFromRay`, T20.
+2. `feat(sky): a touch sends a surge of light along the ribbons behind ?touch=1` — the hook, the store, `aTouch`
+   and `aSeg`, the TOUCH variant in both shaders, the uniforms, the seams.
 3. `feat(sky): a tapped star flares` — the hit test and the halo flare.
 4. `feat(tuner): the surge knob` — knob, tuner, JSON, allowlist, App.
-5. `test(touch): the mapping, the packing, the surge twin, the classifier` — T20–T25.
+5. `test(touch): the mapping, the packing, the list model, the classifier` — T20–T25.
 6. `docs(tasks): B's record, lessons, Tunables`.
 
 ## Tests (node, `test:sky`)
 
-- **T20 mapping roundtrip:** for a grid of (u, v) over −0.3..1.3 × −0.1..0.9, `uvFromSkyDirection(uvToDioramaSkyPosition(u, v))`
-  returns (u, v) within 1e-9; `skyPointFromRay` from a camera inside the dome hits the far root at radius `DOME_R`.
-- **T21 tangent packing:** on a built ribbon set, each vertex's tangent is unit length, points from the previous
-  vertex toward the next in painting space (dot > 0.9 with the chord), and the flag-off arrays carry no `aTouch`.
-- **T22 the surge twin:** `lift` and `warp` are 0 for age < 0; `warp` is non-decreasing in t on a dense grid for
-  three surges at once; `lift ≤ maxLift`; both under 1e-3 of their peak after 5τ; the pulse's peak along the
-  tangent moves at `speed` (the crest at age a sits at `speed·a` within 1%); a vertex upstream (along < −3σs) takes
-  the bloom only.
-- **T23 the classifier:** down-up within 300 ms and 8 px is a tap; longer or further is a drag; the throttle emits
-  at most one move surge per 60 ms.
-- **T24 knobs:** `surge` defaults, clamps and reads like the six; `gustUniformValues` unchanged.
-- **T25 the star hit test:** the nearest star within its radius, none beyond, the moon at its larger radius.
-- Mutation proofs: dropping the tangent term (a ring instead of a run) turns T22's crest test red; `≥` to `>` in
-  the age guard turns the age-0 case red; the throttle removed turns T23 red.
+- **T20 mapping:** round trip over −0.3..1.3 × −0.1..0.9 within 1e-9; `skyPointFromRay` from inside the dome and
+  from the measured outside pose (6.52 from the origin) both return the far root at radius `DOME_R`; a ray that
+  misses returns null.
+- **T21 packing:** on a built ribbon set the side pair shares (u, v, tx, ty); the tangent is unit in the isotropic
+  metric and within 25° of the chord to the next pair; `aSeg` is one value per ribbon, its ends the first and last
+  pair means; flag-off arrays carry neither; `ribbonBuffers` lists both (A's F8).
+- **T22 the surge twin:** 0 for age < 0 and exactly 0 at age 0 (the rise); `lift ≤ maxLift`; the crest at
+  speed·age within 1%; ANISOTROPY: the lift at (along 0, across speed·age) under 10% of the lift at (along
+  speed·age, across 0) (F11); the bloom along a stroke longer than across; gone by 5τ.
+- **T22b the kick:** `g(0) = 0`, `g ≥ 0`, `g(10) = 0` exactly and 0 after; on a modelled list (push, refuse at 4,
+  prune at 10) of four coincident kicks at the knob's maximum and `Bseg` 1 the clock `t + Σ warp` is non-decreasing
+  on a 1/240 s grid across the pruning instants (F1); point-to-segment distance against three hand cases.
+- **T22c the lift list:** 17 pushes keep 16, the oldest gets an end 0.25 s out, W reaches 0 at the end and the entry
+  is dropped; entries drop at age 10; hover emission needs both ≥ 0.02 u and ≥ 60 ms.
+- **T23 the classifier:** as before.
+- **T24 knobs:** `surge` defaults, clamps and reads like the six; the tuner's share URL carries `touch=1` with the
+  flag on.
+- **T25 the star hit test:** nearest within radius, none beyond, the moon at its larger radius at `MOON_PAINTED_UV`.
+- Mutation proofs: the anisotropy assertion catches a radial pulse; `W` removed makes `g(10) ≠ 0`; the rise removed
+  makes `lift(0) ≠ 0`; the refusal removed lets a fifth kick in.
 
 ## Gate (this session; Mark's taste gate follows)
 
 Dev server 5179, `CHROME_FLAGS=--no-sandbox`, `CAPTURE_SETTLE_MS` 12,000, 1600×900 unless said. Baseline: the alive
-route on `ad15650` (`?alive=1`, shipped defaults) at pinned t, captured before the build.
+route on `ad15650` (`?alive=1`, shipped defaults) at pinned t, captured before the build (session scratch
+`b/frames-alive`: light 0 / 2.3 / 5 / 5.1 / 5.5 / 6.5 / 8 / 11.2 / 13, moving 0 / 3.7 / 5.1 / 5.5 / 6.5 / 8 / 13, phone
+light 0 / 5.5), its t = 0 frame byte-identical to A2's gate frame.
 
 1. lint, `tsc -b`, `test:sky`, build: green.
-2. **Default vs `main`:** unchanged (the twelve frames of A2's gate), and **`?alive=1` vs its baseline** unchanged
-   (B adds nothing to A's variant without the define).
+2. **Default vs `main`:** unchanged (the twelve frames of A2's gate), and **`?alive=1` vs its baseline** unchanged.
 3. **`?touch=1` with no input vs `?alive=1`** at t 0 / 2.3 / 11.2 (light) and 0 / 3.7 (moving): byte-identical.
-4. **An injected surge** at (u 0.62, v 0.30), amp 1, t0 = 5 on the touch route: frames at 5.1 / 5.5 / 6.5 / 8 / 13 vs the
-   alive baseline at the same times. Every differing pixel inside a disc of 220 px around the surge's screen
-   point plus the band downstream of it (x to the right, per the derived flow there), none in the cypress or
-   window footprints or beyond the band; at 13 (5τ) byte-identical again. Both skies.
-5. **A real pointer:** `Input.dispatchMouseEvent` move and click at (1000, 300) → the seam's last (u, v) within 0.01
-   of the analytic mapping's prediction for that screen point, one surge of amp 1. A drag with the existing
-   helper → the camera moved (the orbit still works) AND the seam holds ≥ 4 trailing surges along the path. A
-   tap on a star's screen point (from its uv through the mapping) → a flare: the diff against the baseline is
-   confined to that halo's disc. Phone (390×844): `Input.dispatchTouchEvent` tap and drag, the same two outcomes.
-6. **Colour:** band-mean Lab ΔE76 against the painting (A's crop) at the surge's peak frame: under 10.
-7. **Motion by eye:** 3 s at 10 fps around a surge, light and moving, crop at 1:1: the light runs along the strokes
+4. **An injected surge with a kick** at (u 0.62, v 0.30), amp 1, t0 = 5, through `__touchInject(…, 5, true)`: frames
+   at 5.1 / 5.5 / 6.5 / 8 / 13 vs the baseline. The mask is built from the TS twin (F10): the light sky's ribbons
+   built under node on the real assets (the WebP ones converted to PNG for the decoder), every vertex with lift or
+   warp above 1e-3 at the frame's t projected through the home camera and dilated by the ribbon's width + 4 px;
+   every differing pixel inside the mask, none in the cypress or window footprints; the diff's centroid at 5.1
+   within 20 px of the predicted screen point (945, 232); the crest's centroid moving +x between 5.5 and 6.5; at
+   13 only the kick's slowed strokes may differ, inside the mask. The moving sky's arrays build the same way.
+5. **Across a prune:** consecutive frames at 14.99 and 15.01 (the kick ends at 15) differ by at most A's own
+   per-0.01 s motion (measured on the baseline pair 5 / 5.1 scaled), no stroke appearing or vanishing.
+6. **A real pointer:** `Input.dispatchMouseEvent` move and click at (1000, 300) → the seam's last (u, v) within 0.01
+   of the mapping's prediction (0.660, 0.367), one surge of amp 1 and one kick. A drag with the existing helper's
+   events → `__camera()` changed (the orbit still works) AND the seam holds ≥ 4 trailing surges. A tap on a star
+   clear of the cypress (its screen point from its uv) → the diff against the baseline confined to that halo's
+   disc. Phone (390×844, `Emulation.setTouchEmulationEnabled` with `maxTouchPoints` 2, then
+   `Input.dispatchTouchEvent`): tap and drag, the same two outcomes.
+7. **Colour:** band-mean Lab ΔE76 against the painting (A's crop) at the surge's peak frame: under 10.
+8. **Motion by eye:** 3 s at 10 fps around a surge, light and moving, crop at 1:1: the light runs along the strokes
    away from the point, the strokes near it rush and settle, no ring, no pop, no stroke edge crawls; the flare
    rises fast and falls slow.
-8. `check:reduced` on `?touch=1` (input ignored while paused); `check:viewport` on `?touch=1`.
-9. Frame rate: not judgeable headless; per vertex the surge loop is up to 8 × (two exps and a few dots) on 100k–600k
-   vertices, nothing per fragment beyond one add. `?perf=1` owed at the Mac with the rest.
+9. `check:reduced` on `?touch=1` (input ignored while paused); `check:viewport` on `?touch=1`.
+10. Frame rate: not judgeable headless; per vertex up to 16 lift and 4 kick evaluations (a few exps each) on
+    100k–650k vertices, nothing per fragment beyond one add; `aTouch` and `aSeg` add 32 bytes per vertex (about
+    21 MB on the moving sky, packed only with the flag; recorded). `?perf=1` owed at the Mac with the rest.
 
 ## Risks
 
-- **A ring, not a run.** If the tangent term reads weak by eye (the pulse barely longer than it is wide), raise
-  σs or lower σa; the test's crest check keeps the direction honest.
-- **Too many surges.** Hover at 60 ms with τ 1.6 s holds about 27 live surges; the cap of 8 keeps the newest, so a
-  long trail fades from the back. If that reads as a short trail, the cap goes to 16 (the uniform arrays grow).
-- **Touches over the foreground.** A tap on the cypress maps to the sky behind it and surges there; acceptable for
-  a first pass, noted for Mark.
-- **The moving sky's slots and the kick.** Monotone by construction; the gate's consecutive frames prove no pop.
+- **A ring, not a run.** The anisotropy test keeps the pulse longer than wide; if the eye still reads a glow, σb⊥
+  comes down first.
+- **The trail saturating.** 16 live lift surges with a 0.25 s fade on eviction: a long slow trail fades from the
+  back; if that reads short, the cap goes to 24.
+- **Touches over the foreground.** A tap on the cypress maps to the sky behind it; acceptable for a first pass,
+  noted for Mark.
+- **The kick's slow-down.** The settle runs the strokes at no less than 0.6× for a moment at the knob's maximum
+  with four taps on one spot; the eye check decides whether that reads as "settling" or as a stall.
 - **The strips.** u past 0..1 is a valid surge point; the strips carry the same attributes.
 
 ## Review
 
-A fresh agent reviews this plan with `PaintingFlowSky3D.tsx`, `dioramaSkyProjection.ts`, `skyMapping.ts`,
-`skyRibbonArrays.ts`, `movingSky.worker.ts`, `DioramaExperience.tsx` and `skyAlive.ts` open, before the build, as
-both passes of A were. Findings are applied here and in `tasks/2026-10-13-touch-b.md` (the record).
+Reviewed before the build by a fresh agent with the shaders, the projection, the packer, the worker, the scene,
+three-stdlib's OrbitControls and three's Ray open. Verdict REVISE; applied above:
+
+- F1 (blocker) a pruned or evicted kick stepped the clock back → a kick that settles to exactly zero before it is
+  pruned, never evicted live; the lift list evicts with a fade.
+- F2 (blocker) a per-vertex kick through the `flat` clock laddered along a ribbon → one kick per ribbon from its
+  centreline segment.
+- F3 the lift popped in at full and could blow a stroke to white → a rise, `maxLift` 0.5, weighted by `aGust.x`.
+- F4 the camera leaves the dome at the orbit's extremes → the far root always, null on a miss.
+- F5 listeners: down/move on the connected element, up/cancel on `window`, `visibilitychange`; the rationale
+  corrected.
+- F6 the side pair's offset uvs → the pair mean; the tangent in the isotropic metric; `ribbonBuffers` tested.
+- F7 the store cleared on pause, reduced motion and the rebuild.
+- F8 the moon at `MOON_PAINTED_UV`; the flare on colour and scale, not opacity.
+- F9 the touch terms as separate guarded statements.
+- F10 a runnable mask from the TS twin; touch emulation; `t0` explicit on the seam.
+- F11 the anisotropy assertion; `surge` through the knob plumbing; the share URL.
+- F12 vec4 arrays mutated in place; the attribute cost recorded.
+- F13 the bloom along the stroke; the glow named as a reading.
+- Checked sound by the reviewer: the analytic inverse and its ranges; the ribbons at `DOME_R`; the group at the
+  origin; the update order of the controls and the sky; the shimmer's share with an added warp; "downstream" is
+  increasing len in both skies; `touch-action` and the two-finger dolly; no new dependency, no pan, the orbit
+  untouched; flag-off geometry unchanged by a flag-only attribute.

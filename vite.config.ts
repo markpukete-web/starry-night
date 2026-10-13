@@ -14,6 +14,8 @@ const TUNING_FIELDS = new Set([
   'aliveGust', 'aliveLift', 'aliveShimmer', 'aliveBreath',
   // the second pass's knobs (the cypress flicker, the window glimmer)
   'aliveFlicker', 'aliveGlimmer',
+  // B's knob (the touch surge)
+  'touchSurge',
 ])
 
 // Dev-only middleware: the tuning panel's "set as default" button POSTs the current control values
