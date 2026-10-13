@@ -45,8 +45,11 @@ export function AliveTuner({
       .catch(() => setStatus(text))
   }
   const save = () => {
+    // success only once the writer has written the file; a rejection or a failed write shows as such
+    setStatus('saving…')
     saveDefaults({ aliveGust: tuning.gust, aliveLift: tuning.lift, aliveShimmer: tuning.shimmer, aliveBreath: tuning.breath })
-    setStatus('saved to sky-tuning.json')
+      .then(() => setStatus('saved to sky-tuning.json'))
+      .catch((error: unknown) => setStatus(`save failed: ${error instanceof Error ? error.message : String(error)}`))
   }
 
   return (
