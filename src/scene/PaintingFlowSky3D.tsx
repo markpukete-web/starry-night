@@ -160,8 +160,15 @@ const ribbonVert = /* glsl */ `
   flat varying float vGustLift;
   void main() {
     vLen = aLen;
-    vGustTime = gustTime(uTime, aGust);
-    vGustLift = gustLift(uTime, aGust);
+    // a uniform branch, so a visitor who never turns the flag on pays none of the gust's nine transcendentals per
+    // vertex (Codex, PR #8 P1). The else branch is the exact default: t and 0.
+    if (uAlive > 0.5) {
+      vGustTime = gustTime(uTime, aGust);
+      vGustLift = gustLift(uTime, aGust);
+    } else {
+      vGustTime = uTime;
+      vGustLift = 0.0;
+    }
     vAcross = aAcross;
     vPhase = aPhase;
     vRate = aRate;
