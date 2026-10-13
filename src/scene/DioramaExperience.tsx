@@ -17,6 +17,8 @@ type Props = {
   sky?: SkyStyle
   /** System reduced motion: forces the painted-light still whatever the choice. */
   still?: boolean
+  /** Make-it-alive A behind `?alive=1`: the gust clock and breathing halos. */
+  alive?: boolean
   /** Visitor chrome (attribution, original placard, control dock) — rendered over the canvas. */
   children?: ReactNode
 }
@@ -87,7 +89,7 @@ function PerfProbe() {
   return null
 }
 
-function Scene({ reduced, sky, still }: { reduced: boolean; sky: SkyStyle; still: boolean }) {
+function Scene({ reduced, sky, still, alive }: { reduced: boolean; sky: SkyStyle; still: boolean; alive: boolean }) {
   const debug = readDebugMode()
   const view = readViewMode()
   // R3F's `size` is the canvas size and re-renders on resize. Reading window.inner* here instead
@@ -128,6 +130,7 @@ function Scene({ reduced, sky, still }: { reduced: boolean; sky: SkyStyle; still
             paused={reduced}
             sky={sky}
             still={still}
+            alive={alive}
             debug={debug === 'flow' ? 'flow' : 'final'}
             /* a stable module constant, so the sky's home quaternion memo holds across renders */
             home={camera}
@@ -139,11 +142,11 @@ function Scene({ reduced, sky, still }: { reduced: boolean; sky: SkyStyle; still
   )
 }
 
-export function DioramaExperience({ clean = false, reduced = false, sky = 'light', still = false, children }: Props) {
+export function DioramaExperience({ clean = false, reduced = false, sky = 'light', still = false, alive = false, children }: Props) {
   return (
     <main className={`visitor-shell diorama-shell${clean ? ' is-clean-capture' : ''}`}>
       <Canvas frameloop="always" dpr={[1, 1.5]} gl={{ preserveDrawingBuffer: true, antialias: true }}>
-        <Scene reduced={reduced} sky={sky} still={still} />
+        <Scene reduced={reduced} sky={sky} still={still} alive={alive} />
       </Canvas>
       {children}
     </main>

@@ -2324,3 +2324,65 @@ also in Codex's list). None was in the design; all were in the proof. Patterns w
   "show the old state until the new one arrives" rule applies before shipping it.
 - **A shell watch loop is code.** Two watches failed today on their own bugs: zsh's read-only `status`, and
   nested quotes in an inline Python one-liner. Run a watch's command once in the foreground before arming it.
+
+## Cloud session captures — the Chrome guards run as root after all, 2026-10-13
+
+Session on `claude/confident-bohr-1y7p2u` from `main` at `e80fdf7`, two days after PR #7 merged.
+
+- **"Cannot run as root in a cloud session" named the symptom, not the cause.** Chrome exits at once as root
+  without `--no-sandbox` (crbug.com/638180). The three Chrome scripts (`capture:diorama`, `check:reduced`,
+  `check:viewport`) now read `CHROME_FLAGS` for extra launch flags; empty on a Mac, so nothing changes there.
+  Cloud invocation: `CHROME_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome CHROME_FLAGS=--no-sandbox
+  CAPTURE_SETTLE_MS=10000 npm run check:reduced` (the dev server on 5179 first).
+- **Software WebGL draws the cypress about ten seconds late, and every fixed wait straddled it.** The scene
+  appears ~6 s after navigation without the cypress (it waits on the painting's image data and the lobe plan,
+  CPU work that is slow here) and is complete by ~10 s. `check:reduced` saw frame A without it and frame B
+  with it (a "moving" still), `check:viewport` compared a fresh load without it to a rotation with it, and the
+  orbit-preset and phone captures were bare gradient. `CAPTURE_SETTLE_MS` adds to every post-load wait; at
+  10,000 all three pass and all nine views are complete. Measured with a probe that reads the canvas every
+  second after navigation (session scratchpad, not tracked).
+- **Identical byte counts across different runs told the two states apart before any image was opened.**
+  Frames here are deterministic: 3,009,367 bytes (no cypress) and 3,132,206 (cypress) recurred across the
+  capture, reduced and viewport runs. Repeating sizes in a "failed" comparison mean two states, not noise.
+- **Rule out the dead server before blaming the proxy.** Chrome's "127.0.0.1 refused to connect" came while the
+  dev server had died (the first capture attempt's orphaned Vite), not from the container's `HTTPS_PROXY`;
+  with the server up, `--no-sandbox` alone reaches it. `--no-proxy-server` was a false lead and is not needed.
+- **Still true:** a canvas readback takes ~3.5 s here (ReadPixels stall) and frame rate is never judgeable
+  headless. Whether these software frames match the Mac's GPU frames pixel for pixel was not tested; the
+  AE 0 comparisons in the records are Mac-to-Mac.
+- **The live host is unreachable from a cloud container** (proxy policy). Production state was confirmed
+  through the Vercel API instead: deployment `dpl_3qJcJeYvEAQifGT4vv9GVc8jFhvU` READY at `e80fdf7`.
+
+## Make-it-alive A — the gust clock, 2026-10-13
+
+Plan `tasks/2026-10-13-alive-a-plan.md`, record `tasks/2026-10-13-alive-a.md`. Built and gated in a cloud session.
+
+- **Warp the clock, not the paths.** A's tempo is a per-ribbon time warp `T(t) = t + w (G(t − lag) − G(−lag))` on
+  the one sky clock; the flow field, the ribbons and the colours stay exactly as derived, and the mean tempo
+  over time is today's. With `uAlive` 0 every term is `t + 0·x`, and the default proved byte-identical to `main`
+  at pinned t on both skies. Expected exact, proven anyway: the first build was one grey level off.
+- **A per-ribbon constant through a plain varying is not constant.** The light shader read its warped clock
+  through an interpolated varying; at t = 3.7 a few pixels moved one grey level against `main`. `flat` fixed
+  it. The 2026-10-11 lesson named hashing as the amplifier; a `sin` of a growing clock amplifies too.
+- **Set thresholds from the real field's quantiles, and look at the map.** The band luminance window was first
+  guessed at 0.30–0.60; the light sky's 3,145 ribbons sit at lum 5% 0.257 / 50% 0.416 / 95% 0.551, so the
+  guess put the band on the median. 0.38–0.52 (about the 35th and 90th percentiles) lit the whorls and the
+  band right of the whorl and left the floor and the side strips calm, read on a weight map over the painting.
+- **A fixture must straddle the threshold or a mutation sails through.** T7's first fixture gave every vertex of
+  a ribbon a luminance on the same side of the band, so a per-vertex weight came out equal to the per-ribbon
+  one and the mutation passed. Vary the fixture across the threshold before trusting the proof.
+- **A fresh reviewer found what the author could not see in the gate.** Six fixes from one review of the plan:
+  the lift's lag and the halos' phases broke the t = 0 identity the gate was about to assert; the halo writer
+  ignored `paused`; nine transcendentals per fragment of a full-viewport mesh; a per-pixel ΔE on a sky whose
+  strokes move measures motion, not colour; and the warp drove the shimmer, the known boil knob, to 5×. Review
+  the plan before the build, with the shaders open.
+- **Compare band-mean Lab, not per-pixel, when strokes move.** Alive against default at the same pinned t
+  differs by ΔE76 0.1–0.5 in band mean while the per-pixel mean abs diff is 1–6 grey levels: the strokes are
+  elsewhere, the colour is the same.
+- **Four software-rendered Chromes at once all miss the canvas; one at a time they all find it.** And a
+  DevTools helper that resolves the whole message where the others resolve `.result` reads `undefined` as "no
+  canvas" with no error. Both cost a capture round.
+- **Tunables change logged** (CLAUDE.md, Tunables): make-it-alive A behind `?alive=1`: gust periods 9.7 / 5.9 /
+  16.3 s, amplitudes 0.36 / 0.22 / 0.12, travel 3 s per canvas width left to right, lift 0.06, shimmer share
+  0.5, floor 0.15, band luminance 0.38–0.52; halos 4.5–9 s (±14% opacity, ±5% scale), moon 13 s (±8%). Set
+  2026-10-13; untuned by Mark.

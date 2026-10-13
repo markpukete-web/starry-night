@@ -1,8 +1,10 @@
 import { BufferAttribute, BufferGeometry, Vector3 } from 'three'
 import type { ImageData2D } from './useImageData'
 import type { SourceRibbonGeometry } from './streamlineGeometry'
-import { smoothstep } from './skyMapping'
-import { dioramaSourceEdgeFade, SIDE_BORDER_U, uvToDioramaSkyPosition } from './dioramaSkyProjection'
+// `.ts` extensions so scripts/sky-alive.test.ts can run the packer under node (review F8)
+import { smoothstep } from './skyMapping.ts'
+import { ribbonGusts } from './skyAlive.ts'
+import { dioramaSourceEdgeFade, SIDE_BORDER_U, uvToDioramaSkyPosition } from './dioramaSkyProjection.ts'
 
 // The sky's ribbon build, with no React and no DOM, so the moving sky can run it in a worker (Codex, PR #7:
 // built in the render, the first switch froze for about 230 ms on an M5 Pro).
@@ -15,6 +17,8 @@ export type RibbonArrays = {
   aPhase: Float32Array
   aRate: Float32Array
   aEdgeFade: Float32Array
+  /** [gust weight, gust lag] per vertex, one pair per ribbon (make-it-alive A, skyAlive.ts) */
+  aGust: Float32Array
   index: Uint16Array | Uint32Array
 }
 
@@ -99,6 +103,7 @@ export function ribbonsToArrays(ribbons: SourceRibbonGeometry): RibbonArrays {
     aPhase: new Float32Array(aPhase),
     aRate: new Float32Array(aRate),
     aEdgeFade: new Float32Array(aEdgeFade),
+    aGust: ribbonGusts(ribbons.vertices),
     // the index type three's setIndex(array) chose before the split, so the light geometry is unchanged
     index: maxIndex >= 65535 ? new Uint32Array(ribbons.indices) : new Uint16Array(ribbons.indices),
   }
@@ -114,6 +119,7 @@ export function arraysToGeometry(a: RibbonArrays): BufferGeometry {
   geo.setAttribute('aPhase', new BufferAttribute(a.aPhase, 1))
   geo.setAttribute('aRate', new BufferAttribute(a.aRate, 1))
   geo.setAttribute('aEdgeFade', new BufferAttribute(a.aEdgeFade, 1))
+  geo.setAttribute('aGust', new BufferAttribute(a.aGust, 2))
   geo.setIndex(new BufferAttribute(a.index, 1))
   geo.computeBoundingSphere()
   return geo
@@ -121,5 +127,5 @@ export function arraysToGeometry(a: RibbonArrays): BufferGeometry {
 
 /** Every buffer of a `RibbonArrays`, for `postMessage`'s transfer list. */
 export function ribbonBuffers(a: RibbonArrays): ArrayBuffer[] {
-  return [a.position, a.aColor, a.aLen, a.aAcross, a.aPhase, a.aRate, a.aEdgeFade, a.index].map((x) => x.buffer as ArrayBuffer)
+  return [a.position, a.aColor, a.aLen, a.aAcross, a.aPhase, a.aRate, a.aEdgeFade, a.aGust, a.index].map((x) => x.buffer as ArrayBuffer)
 }

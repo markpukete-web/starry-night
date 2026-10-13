@@ -36,6 +36,8 @@ export default function App() {
   const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
   const mode = params.get('mode') ?? 'diorama'
   const clean = params.get('clean') === '1'
+  // make-it-alive A, behind a flag until Mark's gate (tasks/2026-10-13-alive-a-plan.md)
+  const alive = params.get('alive') === '1'
   const motionPaused = reduced || visitorPaused
 
   const chrome = (
@@ -61,7 +63,7 @@ export default function App() {
 
   if (mode === 'diorama') {
     return (
-      <DioramaExperience clean={clean} reduced={motionPaused} sky={sky} still={reduced}>
+      <DioramaExperience clean={clean} reduced={motionPaused} sky={sky} still={reduced} alive={alive}>
         {chrome}
       </DioramaExperience>
     )
