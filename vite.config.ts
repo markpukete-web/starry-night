@@ -10,6 +10,8 @@ const TUNING_FIELDS = new Set([
   'churnSpeed', 'flowAmount',
   'count', 'speed', 'opacity', 'strokeWidth', 'points', 'stepSize',
   'pulseScale', 'shimmerMix', 'shimmerSpeed', 'shimmerScale', 'bristleFreq', 'bristleAmp',
+  // make-it-alive A's knobs (src/AliveTuner.tsx "set as default")
+  'aliveGust', 'aliveLift', 'aliveShimmer', 'aliveBreath',
 ])
 
 // Dev-only middleware: the tuning panel's "set as default" button POSTs the current control values

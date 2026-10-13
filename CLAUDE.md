@@ -119,8 +119,10 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   9.7 / 5.9 / 16.3 s, amplitudes 0.46 / 0.28 / 0.16 (sum 0.90; tempo 0.1×–1.9× in the band, mean 1; pass 1 raised
   them from 0.36 / 0.22 / 0.12), travel 3 s per canvas width left to right, brightness lift 0.15 (was 0.06),
   light-sky shimmer share 1 (was 0.5), calm floor 0.15, band luminance 0.38–0.52 (the ribbons' 35th–90th
-  percentiles); star halos 4.5–9 s (±30% opacity, ±12% scale; were ±14/5%), moon 13 s (±18%, was ±8%). Live knobs
-  `?gust=&lift=&shimmer=&breath=` for Mark's tuning, clamped so the clock never runs backwards.
+  percentiles); star halos 4.5–9 s (±30% opacity, ±12% scale; were ±14/5%), moon 13 s (±18%, was ±8%). The
+  shipped knobs are `sky-tuning.json`'s alive keys, Mark's pick of 2026-10-13: gust 0.95 (amplitude sum), lift
+  0.3, shimmer 1, breath 2 (halos ±60/24%, moon ±36%). Tuner `?tune=1` (`src/AliveTuner.tsx`), URL knobs
+  `?gust=&lift=&shimmer=&breath=` still honoured; every knob clamped so the clock never runs backwards.
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)

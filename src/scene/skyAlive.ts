@@ -156,18 +156,32 @@ export type AliveTuning = {
 }
 
 const GUST_SUM = GUST.amplitudes.reduce((a, b) => a + b, 0)
+/** The code's own defaults. The shipped defaults are `sky-tuning.json`'s alive* keys, read in App.tsx. */
 export const ALIVE_DEFAULTS: AliveTuning = { gust: GUST_SUM, lift: GUST.lift, shimmer: GUST.shimmerShare, breath: 1 }
-const KNOB_MAX: AliveTuning = { gust: 0.95, lift: 0.5, shimmer: 1, breath: 3 }
+/** Every knob's ceiling (the floor is 0); the tuner's sliders and the URL clamp share it. */
+export const ALIVE_KNOB_MAX: AliveTuning = { gust: 0.95, lift: 0.5, shimmer: 1, breath: 3 }
+export const ALIVE_KNOBS = ['gust', 'lift', 'shimmer', 'breath'] as const
 
-export function readAliveTuning(params: URLSearchParams): AliveTuning {
+/** Clamp one knob into its range; a non-finite value is the given default. */
+export function clampAliveKnob(name: keyof AliveTuning, value: number, fallback: number): number {
+  if (!Number.isFinite(value)) return fallback
+  return Math.min(ALIVE_KNOB_MAX[name], Math.max(0, value))
+}
+
+/** A URL's knobs over the given defaults (the shipped ones from sky-tuning.json, or the code's). */
+export function readAliveTuning(params: URLSearchParams, defaults: AliveTuning = ALIVE_DEFAULTS): AliveTuning {
   const read = (name: keyof AliveTuning): number => {
     const raw = params.get(name)
     // Number('') is 0, so an empty knob (`lift=`) must read as missing, not as zero
     const value = raw === null || raw.trim() === '' ? NaN : Number(raw)
-    if (!Number.isFinite(value)) return ALIVE_DEFAULTS[name]
-    return Math.min(KNOB_MAX[name], Math.max(0, value))
+    return clampAliveKnob(name, value, defaults[name])
   }
   return { gust: read('gust'), lift: read('lift'), shimmer: read('shimmer'), breath: read('breath') }
+}
+
+/** True when the URL carries any knob, so a stored tuner state must not override it. */
+export function hasAliveKnobs(params: URLSearchParams): boolean {
+  return ALIVE_KNOBS.some((name) => params.has(name))
 }
 
 /** The uniforms the shaders take for GUST, at a tuning: the amplitudes scaled to the knob's sum. */

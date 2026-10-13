@@ -2412,3 +2412,13 @@ Plan `tasks/2026-10-13-alive-a-plan.md`, record `tasks/2026-10-13-alive-a.md`. B
   flag off compiles main's shaders (`defines.ALIVE` absent) over main's geometry (no `aGust`); flag on is the
   feature. The gate then proves the off path byte-identical to `main` and the on path byte-identical to its own
   earlier captures, both cheap once the frame scripts exist.
+- **The taste gate wants sliders, not URLs.** Mark on the URL knobs: "I don't like how this way works ... build the
+  tool so that I can tune myself like in previous we've done." The project already had that pattern (the dev leva
+  panel with "set as default" writing `sky-tuning.json`); the 3D route never got a panel, and leva is aliased out
+  of production, where Mark actually looks (the Vercel preview, the phone). A plain-React tuner on `?tune=1` works
+  on every build and feeds the same JSON writer on the dev server. Build the tuning tool where the person judges.
+- **He chose the strongest preset.** gust 0.95 / lift 0.3 / shimmer 1 / breath 2, from a list I offered as the
+  "strong" extreme. The lift lands the light sky's band at ΔE 2.5 from the painting (closer than the default) and
+  the moving sky's at 5.8 (further, under 10); the halos' top-of-breath opacity exceeds 1 under additive blending
+  and over-brightens, which he saw and accepted. Record what the chosen numbers cost before the next pass argues
+  about them.

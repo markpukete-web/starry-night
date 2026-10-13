@@ -40,10 +40,13 @@ record branch, now carrying A: Mark, "merge to sky-choice-live-record first") an
   so Mark dials the strength on the preview. Gate in `tasks/2026-10-13-alive-a.md`, "Retune pass 1": both skies
   reviewed at the tempo peak and the light sky at the trough (no boil, no freeze), three Codex findings fixed (the
   flag-off path is now main's shaders and geometry). Peak animations in `output/alive-a-pass1-2026-10-13/` (local).
-- [ ] **Mark's gate on pass 1** (preview with `?alive=1` and `?alive=1&sky=moving`, then the knobs): tell me the
-  numbers that read right and I bake them in as the defaults. Then merge PR #8 to `main` (deploys; the flag stays
-  off by default until he says otherwise). Still owed at the Mac before the flag goes on by default: default route
-  AE 0 against `main` at pinned t, and `?perf=1` with the flag on.
+- [x] **Mark's gate on pass 1** (2026-10-13 evening): the strong preset "seems okay" → shipped as the defaults
+  (`sky-tuning.json` aliveGust 0.95, aliveLift 0.3, aliveShimmer 1, aliveBreath 2). URL knobs rejected as the way to
+  tune ("build the tool so that I can tune myself like in previous we've done") → `src/AliveTuner.tsx`, `?tune=1`:
+  sliders live on the sky, "set as default" on the dev server writes the JSON, copy on the preview.
+- [ ] **Merge PR #8 to `main`** (Mark; deploys; the flag stays off by default until he says otherwise). Then decide
+  the default: flip `alive` on for every visitor, or keep it a choice. Still owed at the Mac before the flag goes on
+  by default: default route AE 0 against `main` at pinned t, and `?perf=1` with the flag on at the shipped defaults.
 - [ ] **A, second pass (after Mark's gate):** the cypress flicker and the village window glimmer. Both touch authored
   foreground materials (`MeshBasicMaterial` with vertex colours; windows painted into the atlas, no mask) and need
   their own derivation. Impasto under raking light at orbit cannot be done as specified: the sky is rotation-locked

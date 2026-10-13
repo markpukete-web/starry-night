@@ -12,5 +12,9 @@
   "shimmerSpeed": 3,
   "shimmerScale": 2.8,
   "bristleFreq": 75,
-  "bristleAmp": 0.22
+  "bristleAmp": 0.22,
+  "aliveGust": 0.95,
+  "aliveLift": 0.3,
+  "aliveShimmer": 1,
+  "aliveBreath": 2
 }

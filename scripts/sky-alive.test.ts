@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { ALIVE_DEFAULTS, GUST, gustLag, gustPulse, gustTime, gustUniformValues, gustWeight, HALO_BREATH, haloPeriod, meanTempoBound, readAliveTuning, ribbonGusts, whorlWeight } from '../src/scene/skyAlive.ts'
+import { ALIVE_DEFAULTS, GUST, hasAliveKnobs, gustLag, gustPulse, gustTime, gustUniformValues, gustWeight, HALO_BREATH, haloPeriod, meanTempoBound, readAliveTuning, ribbonGusts, whorlWeight } from '../src/scene/skyAlive.ts'
 import { SWIRLS } from '../src/scene/skySwirls.ts'
 import { arraysToGeometry, ribbonBuffers, ribbonsToArrays } from '../src/scene/skyRibbonArrays.ts'
 import { buildSourceStreamlineRibbons } from '../src/scene/streamlineGeometry.ts'
@@ -132,6 +132,12 @@ test('T12 the live knobs: defaults when absent or unparseable, clamped to their 
   assert.deepEqual(high, { gust: 0.95, lift: 0.5, shimmer: 1, breath: 3 })
   const low = readAliveTuning(new URLSearchParams('gust=-1&lift=-1&shimmer=-1&breath=-1'))
   assert.deepEqual(low, { gust: 0, lift: 0, shimmer: 0, breath: 0 })
+  // the shipped defaults (sky-tuning.json's alive keys) are passed in; a URL knob still wins over them
+  const shipped = { gust: 0.95, lift: 0.3, shimmer: 1, breath: 2 }
+  assert.deepEqual(readAliveTuning(new URLSearchParams(''), shipped), shipped)
+  assert.deepEqual(readAliveTuning(new URLSearchParams('lift=0.1'), shipped), { ...shipped, lift: 0.1 })
+  assert.equal(hasAliveKnobs(new URLSearchParams('alive=1&tune=1')), false)
+  assert.equal(hasAliveKnobs(new URLSearchParams('alive=1&breath=2')), true)
   // at the gust maximum the scaled amplitudes still sum under 1, so T stays monotone
   const { amplitudes } = gustUniformValues(high)
   assert.ok(amplitudes.reduce((a, b) => a + b, 0) < 1)
