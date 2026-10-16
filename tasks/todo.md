@@ -18,8 +18,9 @@ below — never edited in place.
 **Where things are.**
 - `main` at `3f1f87c`, production the same, both flags off. Unchanged this session.
 - Branch `fix/touch-codex-findings`, local only, from `d0852d3` (the cloud's last pickup, which never reached
-  `main`). Commits: `bec5480` (both fixes, T27 and T28), `1ae95ee` (`capture-sky-frames.mjs --eval`), and this
-  record. Nothing pushed, per Mark's rule that work stays local until he has seen it.
+  `main`). Commits: `bec5480` (both fixes, T27 and T28), `1ae95ee` (`capture-sky-frames.mjs --eval`), the records, and
+  `0fa7105` (painted light's tap light × 1.8, from Mark's first feel note: "in painted light, the cursor light is
+  weaker"; retune pass 1 of 4). Nothing pushed, per Mark's rule that work stays local until he has seen it.
 - Gate done: 131 tests, reviewer PASS (Fable, one P2 accepted and recorded), the Mac's owed GPU checks green
   (default byte-identical to the build before A, alive to `main`, desktop frame rate above 60 with the touch
   lists full). Detail in the B record.
