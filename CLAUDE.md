@@ -132,7 +132,8 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   2026-10-13 ("I like the Both at full one"; `sky-tuning.json` aliveFlicker / aliveGlimmer, `?tune=1` still dials).
 - B, touch, behind `?touch=1` (implies `alive`; 2026-10-13, `src/scene/touchSurge.ts`): the lift's pulse speed 0.25
   canvas widths/s, σ 0.06 along × 0.025 across, bloom σ 0.08 × 0.04 along the stroke, rise 0.08 s, decay τ 1.6 s,
-  ceiling 0.5 (A's), 12 live surges in 16 slots with a 0.25 s fade on eviction; the kick 0.4 s fed into the gust
+  ceiling 0.5 (A's), × 1.8 on the painted-light sky only (its glazes showed the lift at two thirds of the moving
+  sky's; 2026-10-16, Mark: "in painted light, the cursor light is weaker"), 12 live surges in 16 slots with a 0.25 s fade on eviction; the kick 0.4 s fed into the gust
   clock's argument, so its push follows the local wind, 0.023–0.78 s of flow on a full-weight ribbon, 0.4 s on
   average (set 2026-10-16 in `bec5480`, replacing 0.4 s added on top, which could run strokes backwards), rise 0.4 s,
   decay 3 s, σ 0.05 from the ribbon's centreline segment, closed to zero by 10 s, max 4, never evicted live; every

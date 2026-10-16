@@ -2550,3 +2550,11 @@ after PR #8 merged (`246e817`, "Merge it then start the second pass").
   a session scratchpad and died with it. `capture-sky-frames.mjs --eval` now replays B's tap rows anywhere.
 - **The desktop DPR cap in Tunables (2) does not match the code (1.5, `DioramaExperience.tsx:166`).** Found from
   the worker's canvas sizes, not fixed: today's frame rates are at 1.5. Mark's call which is the truth.
+- **The same lift reads weaker on a glaze.** Mark saw painted light's tap light as weaker. The lift multiplies a
+  stroke's colour, and painted light's strokes are glazes (alpha 0.61 × a soft edge), so only the glaze's share
+  of each pixel brightens. Two cheap single-variable builds ruled out the obvious causes first: clipping (no lit
+  pixel near white), the gust weight (both skies rose alike). Opacity alone closed a sixth of the gap. Compare
+  skies on relative gain, not added levels, because their strokes start at different brightness.
+- **Experiment in a worktree while Mark has the dev server open.** Each single-variable build ran in
+  `scratch/.../wt-exp` on its own preview port, so his page never reloaded mid-feel. Only the chosen change went
+  into the checkout.

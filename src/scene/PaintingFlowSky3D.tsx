@@ -307,7 +307,10 @@ const ribbonFrag = /* glsl */ `
       col *= 1.0 + vGustLift;
       #endif
       #ifdef TOUCH
-      if (uSurgeCount > 0) col *= 1.0 + vTouchLift;
+      // B: these strokes are glazes (alpha 0.61 × a soft edge, over the wash), so the lift reached the screen at
+      // two thirds of the moving sky's: lit pixels +7.6% against +11.5% at the bloom's peak. × 1.8 matches it
+      // (+11.6%), no pixel clipped. Mark, 2026-10-16: "in painted light, the cursor light is weaker".
+      if (uSurgeCount > 0) col *= 1.0 + 1.8 * vTouchLift;
       #endif
     }
 
