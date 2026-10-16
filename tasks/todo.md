@@ -4,10 +4,10 @@ Durable cross-session plan. `tasks/lessons.md` holds the memory; this holds the 
 Locked sections in CLAUDE.md are Mark's. Proposed changes to them go under "Proposed to Mark"
 below — never edited in place.
 
-> **Human-facing record (Obsidian):** `~/File Vault/The Starry-night` — dashboard (`_Map`), Status
-> (where we are), Sky evolution (visual journey), Concepts (glossary), Timeline. The repo files here
-> stay the source of truth; the vault is the navigable layer over them. At session start, read
-> `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
+> **The record lives in the repo** (Mark, 2026-10-16: "put the doc in the repo is better than write in our file
+> vault"). Write status, records and lessons here, not in the Obsidian vault at `~/File Vault/The Starry-night`.
+> Its `Status` note was last brought up to date on 2026-10-16 and is no longer maintained. At session start,
+> read `tasks/lessons.md`.
 
 ## Pickup — 2026-10-16 (Mac session): Codex's two late P2s fixed and gated, Mac GPU checks done, C next
 
@@ -26,8 +26,9 @@ below — never edited in place.
 - Both Codex threads on PR #10 (comments 4258874501, 4258874517) are still unanswered. The replies go up with
   the PR, naming the commit and the PR number, and the kick's feel change.
 
-- [ ] **Mark looks, then says push.** Then: push the branch, open the PR, let Codex's first review run, and answer
-  both PR #10 threads with the new PR's number and `bec5480`.
+- [ ] **Mark looks, then says push.** Then: push the branch and open the PR. About 3 minutes later, read the PR's
+  timeline for Codex's review, and post `@codex review` if there is no bot entry. Read the timeline again after any
+  merge (the 2026-10-13 miss). Answer both PR #10 threads with the new PR's number and `bec5480`.
 - [ ] **Mark's feel notes on B**, now on the fixed kick (its push follows the wind: strong in a gust, faint in a
   lull). Desktop on the PR preview. The phone's frame rate on a real phone (`?perf=1&touch=1`, both skies).
 - [ ] **The flag decision** after the feel notes: `alive` and `touch` on for every visitor, or a choice.
