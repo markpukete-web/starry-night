@@ -5,8 +5,9 @@
 //   node scripts/capture-sky-frames.mjs <outDir> --url 'http://127.0.0.1:5179/?mode=diorama&clean=1&alive=1' \
 //        --times 0,0.5,3.7,11.2 [--viewport desktop|mobile] [--prefix alive] [--eval '<js>']
 //
-// `--eval` runs in the page once it has settled, before the first pinned frame: a touch injected there with an
-// explicit t0 (`window.__touchInject(0.62, 0.3, 1, 5, true)`) replays B's gate rows on any machine.
+// `--eval` runs in the page once it has settled, with the clock already pinned to the first time. A touch
+// injected with an explicit t0 (`window.__touchInject(0.62, 0.3, 1, 5, true)`) replays B's gate rows on any
+// machine. The frames JSON records what the code returned (`evalResult`).
 // Env: CHROME_PATH, CHROME_FLAGS (--no-sandbox in a cloud session), CAPTURE_SETTLE_MS (about 10000 there).
 // Each frame is <outDir>/<prefix>-t<time>.png. The self-check: the pinned clock must be read back as finite, and
 // two reads at the same pinned time must be byte-identical, or the hook is not in the page (Codex F2, 2026-10-11).
@@ -151,11 +152,15 @@ async function main() {
       if (Date.now() - start > 25000) throw new Error(`no canvas at ${url}`)
     }
     await sleep(2500 + SETTLE_MS)
+    let evalResult = null
     if (evalBefore) {
-      const ran = await page.send('Runtime.evaluate', { expression: evalBefore, returnByValue: true })
+      // pin the clock in the same evaluation, before the page code: an unpinned frame between the two would prune
+      // an injected entry whose explicit t0 is older than the live clock's window (Codex, PR #11 P2)
+      const ran = await page.send('Runtime.evaluate', { expression: `window.__skyTime = ${times[0]};\n${evalBefore}`, returnByValue: true })
       if (ran.exceptionDetails) throw new Error(`--eval threw: ${ran.exceptionDetails.exception?.description ?? ran.exceptionDetails.text}`)
+      evalResult = ran.result.value ?? null
     }
-    const summary = { url, viewport, times, evalBefore, frames: [], errors: page.errors }
+    const summary = { url, viewport, times, evalBefore, evalResult, frames: [], errors: page.errors }
     const firstMoving = times.find((t) => t > 0)
     for (const t of times) {
       await page.send('Runtime.evaluate', { expression: `window.__skyTime = ${t}` })
