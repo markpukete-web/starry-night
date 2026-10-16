@@ -2558,3 +2558,7 @@ after PR #8 merged (`246e817`, "Merge it then start the second pass").
 - **Experiment in a worktree while Mark has the dev server open.** Each single-variable build ran in
   `scratch/.../wt-exp` on its own preview port, so his page never reloaded mid-feel. Only the chosen change went
   into the checkout.
+- **Two CDP calls race the frame loop.** `--eval` injected a tap and a second call pinned the clock. A live frame
+  between them pruned the tap whenever the live clock was past its window (15.45 s after a 13 s settle, t0 5).
+  One run survived by luck, so a single green proved nothing. A 200 ms pause between the calls made it fail every
+  time, and pinning in the same evaluation fixed it (Codex, PR #11 P2). Widen a race on purpose to get a red.
