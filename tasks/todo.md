@@ -9,9 +9,34 @@ below — never edited in place.
 > stay the source of truth; the vault is the navigable layer over them. At session start, read
 > `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
 
-## Pickup — 2026-10-13 (late night): A and B are both on `main` behind their flags; C (arrival) is first
+## Pickup — 2026-10-16 (Mac session): Codex's two late P2s fixed and gated, Mac GPU checks done, C next
 
-**Current agent entry point, cloud or Mac:** this section, then the night pickup below (B's detail and the tooling),
+**Current agent entry point:** this section, then the Mac section at the end of `tasks/2026-10-13-touch-b.md`
+(the fixes and their gate), then the late-night pickup below (C's brief). Read `tasks/lessons.md` from
+"The Mac session, 2026-10-16" down.
+
+**Where things are.**
+- `main` at `3f1f87c`, production the same, both flags off. Unchanged this session.
+- Branch `fix/touch-codex-findings`, local only, from `d0852d3` (the cloud's last pickup, which never reached
+  `main`). Commits: `bec5480` (both fixes, T27 and T28), `1ae95ee` (`capture-sky-frames.mjs --eval`), and this
+  record. Nothing pushed, per Mark's rule that work stays local until he has seen it.
+- Gate done: 131 tests, reviewer PASS (Fable, one P2 accepted and recorded), the Mac's owed GPU checks green
+  (default byte-identical to the build before A, alive to `main`, desktop frame rate above 60 with the touch
+  lists full). Detail in the B record.
+- Both Codex threads on PR #10 (comments 4258874501, 4258874517) are still unanswered. The replies go up with
+  the PR, naming the commit and the PR number, and the kick's feel change.
+
+- [ ] **Mark looks, then says push.** Then: push the branch, open the PR, let Codex's first review run, and answer
+  both PR #10 threads with the new PR's number and `bec5480`.
+- [ ] **Mark's feel notes on B**, now on the fixed kick (its push follows the wind: strong in a gust, faint in a
+  lull). Desktop on the PR preview. The phone's frame rate on a real phone (`?perf=1&touch=1`, both skies).
+- [ ] **The flag decision** after the feel notes: `alive` and `touch` on for every visitor, or a choice.
+- [ ] **The DPR cap:** Tunables says 2 on desktop, the code caps 1.5 (`DioramaExperience.tsx:166`). Mark's call.
+- [ ] **C, arrival:** unchanged, see the late-night pickup below. Plan file first, fresh review, then the build.
+
+## Pickup — 2026-10-13 (late night): A and B are both on `main` behind their flags; C (arrival) is first (superseded by the Mac session above)
+
+**Then the agent entry point, cloud or Mac:** this section, then the night pickup below (B's detail and the tooling),
 `tasks/2026-10-13-touch-b.md` (B's record and gate), `tasks/2026-10-13-touch-b-plan.md` (the shape a plan takes),
 `tasks/2026-10-13-alive-a2.md` and `tasks/2026-10-13-alive-a.md` (A's records). Read `tasks/lessons.md` from
 "B (touch)" down.
