@@ -4,12 +4,82 @@ Durable cross-session plan. `tasks/lessons.md` holds the memory; this holds the 
 Locked sections in CLAUDE.md are Mark's. Proposed changes to them go under "Proposed to Mark"
 below — never edited in place.
 
-> **Human-facing record (Obsidian):** `~/File Vault/The Starry-night` — dashboard (`_Map`), Status
-> (where we are), Sky evolution (visual journey), Concepts (glossary), Timeline. The repo files here
-> stay the source of truth; the vault is the navigable layer over them. At session start, read
-> `tasks/lessons.md`; the vault's `Status` note mirrors the current state for a quick human catch-up.
+> **The record lives in the repo** (Mark, 2026-10-16: "put the doc in the repo is better than write in our file
+> vault"). Write status, records and lessons here, not in the Obsidian vault at `~/File Vault/The Starry-night`.
+> Its `Status` note was last brought up to date on 2026-10-16 and is no longer maintained. At session start,
+> read `tasks/lessons.md`.
 
-## Pickup — 2026-10-13 (night): B (touch) is built and gated on the branch; Mark's feel gate is next
+## Pickup — 2026-10-16 (Mac session): Codex's two late P2s fixed and gated, Mac GPU checks done, C next
+
+**Current agent entry point:** this section, then the Mac section at the end of `tasks/2026-10-13-touch-b.md`
+(the fixes and their gate), then the late-night pickup below (C's brief). Read `tasks/lessons.md` from
+"The Mac session, 2026-10-16" down.
+
+**Where things are.**
+- `main` at `3f1f87c`, production the same, both flags off. Unchanged this session.
+- Branch `fix/touch-codex-findings`, local only, from `d0852d3` (the cloud's last pickup, which never reached
+  `main`). Commits: `bec5480` (both fixes, T27 and T28), `1ae95ee` (`capture-sky-frames.mjs --eval`), the records, and
+  `0fa7105` (painted light's tap light × 1.8, from Mark's first feel note: "in painted light, the cursor light is
+  weaker"; retune pass 1 of 4). Nothing pushed, per Mark's rule that work stays local until he has seen it.
+- Gate done: 131 tests, reviewer PASS (Fable, one P2 accepted and recorded), the Mac's owed GPU checks green
+  (default byte-identical to the build before A, alive to `main`, desktop frame rate above 60 with the touch
+  lists full). Detail in the B record.
+- Both Codex threads on PR #10 (comments 4258874501, 4258874517) are still unanswered. The replies go up with
+  the PR, naming the commit and the PR number, and the kick's feel change.
+
+- [ ] **Mark looks, then says push.** Then: push the branch and open the PR. About 3 minutes later, read the PR's
+  timeline for Codex's review, and post `@codex review` if there is no bot entry. Read the timeline again after any
+  merge (the 2026-10-13 miss). Answer both PR #10 threads with the new PR's number and `bec5480`.
+- [ ] **Mark's feel notes on B**, now on the fixed kick (its push follows the wind: strong in a gust, faint in a
+  lull). Desktop on the PR preview. The phone's frame rate on a real phone (`?perf=1&touch=1`, both skies).
+- [ ] **The flag decision** after the feel notes: `alive` and `touch` on for every visitor, or a choice.
+- [ ] **The DPR cap:** Tunables says 2 on desktop, the code caps 1.5 (`DioramaExperience.tsx:166`). Mark's call.
+- [ ] **C, arrival:** unchanged, see the late-night pickup below. Plan file first, fresh review, then the build.
+
+## Pickup — 2026-10-13 (late night): A and B are both on `main` behind their flags; C (arrival) is first (superseded by the Mac session above)
+
+**Then the agent entry point, cloud or Mac:** this section, then the night pickup below (B's detail and the tooling),
+`tasks/2026-10-13-touch-b.md` (B's record and gate), `tasks/2026-10-13-touch-b-plan.md` (the shape a plan takes),
+`tasks/2026-10-13-alive-a2.md` and `tasks/2026-10-13-alive-a.md` (A's records). Read `tasks/lessons.md` from
+"B (touch)" down.
+
+**Where things are.**
+- `main` is at `3f1f87c`: PR #10 merged 2026-10-13 12:53 UTC on Mark's word ("Merge it"); Vercel production
+  `dpl_1Xi4QeubausAyUZFbKp6WaZpHunv` READY at it. All of A behind `?alive=1` and B behind `?touch=1` (implies
+  `alive`), Mark's knob picks shipped (`surge` 1, untuned). Both flags OFF by default: visitors see today's piece,
+  byte-identical to before A. Codex's one finding on PR #10 (P2: the tuner's "set as default" sent the hidden
+  `surge` knob on an A-only route, so a value restored from local storage could overwrite the shipped one) was
+  fixed in `9dd2f2d` (`aliveSavePayload`, T26, 129 tests) before the merge; Codex's re-review of that commit was
+  still running when the merge landed.
+- **Branch `claude/confident-bohr-1y7p2u`** restarted from `3f1f87c`; this record is its first commit. It stays
+  the working branch (the cloud session's git access cannot delete branches, HTTP 403). PR #10's preview alias
+  (`https://starry-night-git-claude-confide-0e1ba3-markpukete-webs-projects.vercel.app/`) follows the branch, and
+  production now serves the same code: `?alive=1`, `?touch=1`, `?touch=1&tune=1` (the `surge` slider beside A's six).
+- **Still owed at the Mac** (a real GPU; the cloud cannot): AE 0 of the default route against the pre-A build at
+  pinned t; `?perf=1` with everything on (`?touch=1`, shipped knobs), desktop and a phone, against the locked
+  60 / 30 fps; and Mark's feel notes on B (the merge was not the feel gate): the kick's settle (settling or
+  stall), a drag on touch trailing as well as orbiting, a tap over the cypress or village surging the sky behind.
+  Any retune rides a later PR; the knobs are live on `?tune=1`.
+- **Tooling** as in the night pickup below (capture env for the cloud, the dev server on 5179, B's gate tools).
+
+**First thing next session: C, arrival.** Write `tasks/<date>-arrival-c-plan.md` first, nothing built before a
+fresh agent's review lands (as A and B). The brief, from the roadmap: open on the flat painting, one line from
+Vincent's letter, the sky starts to breathe, the camera pushes through the frame into the diorama; behind its own
+flag with the default byte-identical to `main` (the pattern of `?alive=1` and `?touch=1`); then build, gate (the
+identity baselines, motion by eye, reduced motion a dignified still, viewport), record, preview to Mark. Before
+writing the plan: `tasks/lessons.md` from "B (touch)" down, `tasks/2026-10-13-touch-b-plan.md` for the plan's
+shape and the review's blockers, `src/scene/DioramaExperience.tsx` and `src/App.tsx` for the camera's home, the
+routes and the flags, `tasks/2026-10-11-handoff.md` for the painting-first reading C opens on. Questions the plan
+must settle: which route C opens on (the flat painting is the 2D sky route or a still of the diorama head-on),
+where the letter line comes from (a public-domain letter, cited), how reduced motion arrives (no push, the still),
+and what the first frame is at t = 0 (byte-identical to the flag-off route or an authored still).
+
+- [x] **PR #10 merged** (`3f1f87c`, 2026-10-13; Mark: "Merge it"). Codex P2 fixed first (`9dd2f2d`).
+- [ ] **Mark's feel notes on B** at the Mac and a phone (production, `?touch=1`): see "Still owed" above.
+- [ ] **The flag decision** after the Mac checks: `alive` (and `touch`) on for every visitor, or a choice.
+- [ ] **C, arrival:** the plan file, then the review, then the build (above).
+
+## Pickup — 2026-10-13 (night): B (touch) built and gated on the branch (superseded by the late-night pickup above)
 
 **Current agent entry point, cloud or Mac:** this section, then `tasks/2026-10-13-touch-b.md` (B's record and gate),
 `tasks/2026-10-13-touch-b-plan.md` (its reviewed plan), `tasks/2026-10-13-alive-a2.md` and `tasks/2026-10-13-alive-a.md`
@@ -42,9 +112,8 @@ below — never edited in place.
   differing pixel of an injected surge inside the twin's mask on both skies; no pop across the kick's end; real
   clicks, drags and phone taps through DevTools behave; the colour gate closer to the painting; reduced motion
   and viewport PASS; 128 tests.
-- [ ] **Mark's gate on B** (the preview above): feel on a Mac and a phone; the `surge` knob; whether a drag on touch
-  should trail as well as orbit (it does now); whether the kick's settle reads as settling or as a stall. Then
-  merge PR #10 on his word (merging changes nothing visitors see; both flags stay off).
+- [x] **PR #10 merged** on Mark's word (`3f1f87c`, 2026-10-13 12:53 UTC); the feel notes (the `surge` knob, a drag
+  on touch trailing as well as orbiting, the kick's settle) stay open at the Mac, see the late-night pickup above.
 - [ ] **The flag decision** after the Mac checks: `alive` (and `touch`) on for every visitor, or a choice.
 - [ ] **C, arrival:** open on the flat painting, one line from Vincent's letter, the sky starts to breathe, the camera
   pushes through the frame into the diorama. Plan file first, fresh review, flag, gate, as A and B.

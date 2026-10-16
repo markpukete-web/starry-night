@@ -6,11 +6,13 @@ import {
   endWindow,
   flareShape,
   hoverDue,
+  kickedGustTime,
   kickShape,
   kickTerms,
   liftSum,
   nearestStar,
   NO_END,
+  pruneKicks,
   pruneSurges,
   pushKick,
   pushSurge,
@@ -18,11 +20,14 @@ import {
   SKY_ASPECT,
   surgeTerms,
   TOUCH_SURGE,
+  touchGlsl,
   warpSum,
   type Kick,
   type Surge,
 } from '../src/scene/touchSurge.ts'
+import { ALIVE_DEFAULTS, ALIVE_KNOB_MAX, gustTime, gustUniformValues } from '../src/scene/skyAlive.ts'
 import { SPAN_H, SPAN_V } from '../src/scene/skyMapping.ts'
+import { readFileSync } from 'node:fs'
 
 // ---- B, touch (tasks/2026-10-13-touch-b-plan.md)
 
@@ -180,4 +185,57 @@ test('T25 the star hit test and the flare', () => {
   }
   assert.ok(peakAge > 0.15 && peakAge < 0.5, `peak at ${peakAge}`)
   assert.ok(flareShape(5) < 0.05 * peak)
+})
+
+test('T27 the kicked clock never runs backwards in the deepest lull at the gust knob\'s maximum, the shipped value: the kick rides the gust clock\'s argument (Codex, PR #10 P2)', () => {
+  const { amplitudes } = gustUniformValues({ ...ALIVE_DEFAULTS, gust: ALIVE_KNOB_MAX.gust })
+  // the deepest lull of a full-weight ribbon over 400 s
+  let trough = 0
+  let slowest = Infinity
+  for (let t = 0; t < 400; t += 0.01) {
+    const rate = (gustTime(t + 0.01, 1, 0, amplitudes) - gustTime(t, 1, 0, amplitudes)) / 0.01
+    if (rate < slowest) {
+      slowest = rate
+      trough = t
+    }
+  }
+  // four taps at the surge knob's maximum, timed so the kick's steepest settle (age ≈ 1.7 s) lands in the lull
+  const segment: [number, number, number, number] = [0.4, 0.3, 0.6, 0.3]
+  let kicks: Kick[] = []
+  for (let i = 0; i < T.maxKicks; i++) {
+    const t0 = trough - 1.85 + i * 0.05
+    kicks = pushKick(kicks, { u: 0.5, v: 0.3, t0, amp: ALIVE_KNOB_MAX.surge }, t0).kicks
+  }
+  let addend = -Infinity
+  let addendBack = false
+  let previous = -Infinity
+  for (let t = trough - 3; t <= trough + 12; t += 1 / 240) {
+    kicks = pruneKicks(kicks, t)
+    // the defect's form, the kick added after the gust clock
+    const added = gustTime(t, 1, 0, amplitudes) + warpSum(segment, kicks, t)
+    if (added < addend) addendBack = true
+    addend = added
+    const clock = kickedGustTime(t, 1, 0, segment, kicks, amplitudes)
+    assert.ok(clock >= previous, `the kicked clock never steps back (t ${t.toFixed(3)}, lull tempo ${slowest.toFixed(3)}: ${clock} < ${previous})`)
+    previous = clock
+  }
+  assert.ok(addendBack, `the scenario is sharp: the kick added after the gust clock runs it backwards here (lull tempo ${slowest.toFixed(3)})`)
+  // the shader computes the same form as the twin
+  const vertex = readFileSync(new URL('../src/scene/PaintingFlowSky3D.tsx', import.meta.url), 'utf8')
+  assert.ok(vertex.includes('kt += touchKick(aSeg, uTime)') && vertex.includes('vGustTime = gustTime(kt, aGust)'), 'the kick goes into the gust clock\'s argument')
+  assert.ok(!vertex.includes('vGustTime += touchKick'), 'and is never added after it')
+})
+
+test('T28 the lift\'s forced-end fade is defined in float32 for a live surge: edges 0 and fadeOut, never NO_END − fadeOut and NO_END (Codex, PR #10 P2)', () => {
+  const f = Math.fround
+  assert.equal(f(f(NO_END) - f(T.fadeOut)), f(NO_END), 'the old edges collapse in float32, where GLSL leaves smoothstep undefined')
+  assert.ok(touchGlsl.includes('smoothstep(0.0, uTouchFadeOut, uSurgeEnd[k] - t)'), 'the shader fades on the time left')
+  assert.ok(!touchGlsl.includes('uSurgeEnd[k] - uTouchFadeOut'), 'and never on the collapsing edges')
+  // the rewrite changes no value: 1 − smoothstep(end − fadeOut, end, t) = smoothstep(0, fadeOut, end − t)
+  const smooth = (a: number, b: number, x: number) => {
+    const s = Math.min(1, Math.max(0, (x - a) / (b - a)))
+    return s * s * (3 - 2 * s)
+  }
+  for (let t = 9.5; t <= 10.5; t += 0.001) assert.ok(Math.abs(endWindow(t, 10) - (1 - smooth(10 - T.fadeOut, 10, t))) < 1e-12, `the same fade at t ${t}`)
+  assert.equal(endWindow(1e5, NO_END), 1, 'a live surge is not faded')
 })

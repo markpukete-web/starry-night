@@ -108,7 +108,10 @@ smoothly less):
     g(age) = (1 − e^(−age/τr)) · e^(−age/τk) · W(age)      τr 0.4 s, τk 3 s
     warp   = Σ ampk · kick · Bseg · g(age)                 kick 0.4 s
 
-added into `vGustTime` for both skies (the shimmer's share formula is consistent with an added warp). `g` rises,
+added into `vGustTime` for both skies (the shimmer's share formula is consistent with an added warp).
+(Superseded 2026-10-16, `bec5480`: the bound below holds against the plain clock only. On A's gust clock, whose
+tempo falls to 0.05, the settle ran strokes backwards. The kick now goes into the gust clock's argument,
+`gustTime(t + warp)`. See `tasks/2026-10-13-touch-b.md`, the Mac section.) `g` rises,
 lingers and settles to EXACTLY zero: `W(age) = 1 − smoothstep(7, 10, age)` closes it at 10 s, and a kick is
 pruned only once `age ≥ 10`, so nothing ever leaves the list with a value in it and the clock never steps back
 (F1). Between, `d/dt warp ≥ −Σ ampk·kick·Bseg·|g'|min`; with at most 4 kicks, amp ≤ knob max 1.5, `|g'|min` ≈

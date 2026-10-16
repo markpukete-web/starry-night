@@ -3,8 +3,11 @@
 // reads the canvas back, so motion can be judged and compared headless. Any URL, any viewport.
 //
 //   node scripts/capture-sky-frames.mjs <outDir> --url 'http://127.0.0.1:5179/?mode=diorama&clean=1&alive=1' \
-//        --times 0,0.5,3.7,11.2 [--viewport desktop|mobile] [--prefix alive]
+//        --times 0,0.5,3.7,11.2 [--viewport desktop|mobile] [--prefix alive] [--eval '<js>']
 //
+// `--eval` runs in the page once it has settled, with the clock already pinned to the first time. A touch
+// injected with an explicit t0 (`window.__touchInject(0.62, 0.3, 1, 5, true)`) replays B's gate rows on any
+// machine. The frames JSON records what the code returned (`evalResult`).
 // Env: CHROME_PATH, CHROME_FLAGS (--no-sandbox in a cloud session), CAPTURE_SETTLE_MS (about 10000 there).
 // Each frame is <outDir>/<prefix>-t<time>.png. The self-check: the pinned clock must be read back as finite, and
 // two reads at the same pinned time must be byte-identical, or the hook is not in the page (Codex F2, 2026-10-11).
@@ -20,13 +23,14 @@ const opt = (name, fallback) => {
   return i >= 0 ? args[i + 1] : fallback
 }
 if (!outDir || outDir.startsWith('--')) {
-  console.error('usage: capture-sky-frames.mjs <outDir> --url <url> --times 0,1,2 [--viewport desktop|mobile] [--prefix p]')
+  console.error('usage: capture-sky-frames.mjs <outDir> --url <url> --times 0,1,2 [--viewport desktop|mobile] [--prefix p] [--eval js]')
   process.exit(1)
 }
 const url = opt('url', 'http://127.0.0.1:5179/?mode=diorama&clean=1')
 const times = opt('times', '0,0.5,3.7,11.2').split(',').map(Number)
 const viewportName = opt('viewport', 'desktop')
 const prefix = opt('prefix', viewportName)
+const evalBefore = opt('eval', null)
 const viewport = viewportName === 'mobile' ? { width: 390, height: 844, mobile: true } : { width: 1600, height: 900, mobile: false }
 const chromePath =
   process.env.CHROME_PATH ||
@@ -148,7 +152,15 @@ async function main() {
       if (Date.now() - start > 25000) throw new Error(`no canvas at ${url}`)
     }
     await sleep(2500 + SETTLE_MS)
-    const summary = { url, viewport, times, frames: [], errors: page.errors }
+    let evalResult = null
+    if (evalBefore) {
+      // pin the clock in the same evaluation, before the page code: an unpinned frame between the two would prune
+      // an injected entry whose explicit t0 is older than the live clock's window (Codex, PR #11 P2)
+      const ran = await page.send('Runtime.evaluate', { expression: `window.__skyTime = ${times[0]};\n${evalBefore}`, returnByValue: true })
+      if (ran.exceptionDetails) throw new Error(`--eval threw: ${ran.exceptionDetails.exception?.description ?? ran.exceptionDetails.text}`)
+      evalResult = ran.result.value ?? null
+    }
+    const summary = { url, viewport, times, evalBefore, evalResult, frames: [], errors: page.errors }
     const firstMoving = times.find((t) => t > 0)
     for (const t of times) {
       await page.send('Runtime.evaluate', { expression: `window.__skyTime = ${t}` })

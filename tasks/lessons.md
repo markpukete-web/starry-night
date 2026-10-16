@@ -2518,3 +2518,47 @@ after PR #8 merged (`246e817`, "Merge it then start the second pass").
   session would have overwritten the shipped `touchSurge` during an A-only save. Build a save's payload from the
   knobs shown, by construction (`aliveSavePayload`, T26), never from the whole state; the writer merges, so a key
   left out keeps its shipped value.
+
+## The Mac session, 2026-10-16: Codex's two late P2s on PR #10
+
+- **A review can land after the merge.** PR #10 merged at 12:53 UTC on 2026-10-13. Codex's re-review of the last
+  fix posted two P2s at 12:54. Nobody read them for three days. After a merge, read the PR timeline once more
+  before closing the session, and answer what arrived late.
+- **A monotone proof holds only on the clock it was proved on.** T22b proved `t + K` never steps back, at tempo 1.
+  The shader added `K` on top of A's gust clock, whose tempo falls to 0.05 at the shipped knob, and the kick's
+  settle (−0.0665 s/s per tap) outran it. Prove the composition the shader computes. Putting the kick into the
+  clock's argument, `G(t + K)`, makes the proof a product of two positive slopes.
+- **A far sentinel breaks float32 maths on the GPU, and a 64-bit twin cannot see it.** `NO_END = 1e9` is exact in
+  float32, but `1e9 − 0.25` is not (the spacing is 64), so a `smoothstep` built on it had equal edges. Write a
+  fade on the time left, `end − t`, so its edges are constants. This driver happened to return the right value,
+  so look for the spec's word, not a symptom.
+- **Quote the shipped knob, not the code default.** I told Mark one tap stayed forwards, using `GUST_SUM` 0.90.
+  `sky-tuning.json` ships 0.95, and one tap could reverse. Read `sky-tuning.json` before quoting a knob.
+- **Give the worst case and the common case together.** One tap reverses at the triple trough only: 0.3% of tap
+  moments, 2.3% for two taps, 8.8% for four, never at weight 0.5 or below. The bound alone made it sound common.
+- **A fix that changes how something feels must say so where the knob lives.** Fable's P2: the composed kick's push
+  now swings 0.023–0.78 s with the wind (was 0.4 s). The fix was right, and the Tunables line, the plan and the
+  commit did not say so. Write the feel change into Tunables and the thread reply in the same pass.
+- **Software-rendered identity is not GPU identity.** The cloud's "touch with no input = alive" was byte-exact under
+  SwiftShader. On the M5 Pro it differs by one grey level at 3–7 pixels, on `main` too. Before blaming a change,
+  capture the parent on the same GPU: the fix's frames matched `main`'s pixel for pixel.
+- **Headless Chrome on this Mac runs on the GPU** (`ANGLE Metal Renderer: Apple M5 Pro`). Pinned captures here are
+  real-GPU evidence. Frame rate still needs a headed window.
+- **`vite preview` binds IPv6 only on macOS without `--host 127.0.0.1`,** so a capture aimed at `127.0.0.1` gets
+  ECONNREFUSED. Pass `--host 127.0.0.1` (the worker found it).
+- **A lost gate tool should come back as a tracked option, not a scratch script.** The cloud's tap injector lived in
+  a session scratchpad and died with it. `capture-sky-frames.mjs --eval` now replays B's tap rows anywhere.
+- **The desktop DPR cap in Tunables (2) does not match the code (1.5, `DioramaExperience.tsx:166`).** Found from
+  the worker's canvas sizes, not fixed: today's frame rates are at 1.5. Mark's call which is the truth.
+- **The same lift reads weaker on a glaze.** Mark saw painted light's tap light as weaker. The lift multiplies a
+  stroke's colour, and painted light's strokes are glazes (alpha 0.61 × a soft edge), so only the glaze's share
+  of each pixel brightens. Two cheap single-variable builds ruled out the obvious causes first: clipping (no lit
+  pixel near white), the gust weight (both skies rose alike). Opacity alone closed a sixth of the gap. Compare
+  skies on relative gain, not added levels, because their strokes start at different brightness.
+- **Experiment in a worktree while Mark has the dev server open.** Each single-variable build ran in
+  `scratch/.../wt-exp` on its own preview port, so his page never reloaded mid-feel. Only the chosen change went
+  into the checkout.
+- **Two CDP calls race the frame loop.** `--eval` injected a tap and a second call pinned the clock. A live frame
+  between them pruned the tap whenever the live clock was past its window (15.45 s after a 13 s settle, t0 5).
+  One run survived by luck, so a single green proved nothing. A 200 ms pause between the calls made it fail every
+  time, and pinning in the same evaluation fixed it (Codex, PR #11 P2). Widen a race on purpose to get a red.
