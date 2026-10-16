@@ -9,32 +9,31 @@ below — never edited in place.
 > Its `Status` note was last brought up to date on 2026-10-16 and is no longer maintained. At session start,
 > read `tasks/lessons.md`.
 
-## Pickup — 2026-10-16 (Mac session): Codex's two late P2s fixed and gated, Mac GPU checks done, C next
+## Pickup — 2026-10-16 (Mac session, late): PR #11 merged; the flag decision, then C
 
-**Current agent entry point:** this section, then the Mac section at the end of `tasks/2026-10-13-touch-b.md`
-(the fixes and their gate), then the late-night pickup below (C's brief). Read `tasks/lessons.md` from
+**Current agent entry point:** this section, then the Mac and painted-light sections at the end of
+`tasks/2026-10-13-touch-b.md`, then the late-night pickup below (C's brief). Read `tasks/lessons.md` from
 "The Mac session, 2026-10-16" down.
 
 **Where things are.**
-- `main` at `3f1f87c`, production the same, both flags off. Unchanged this session.
-- Branch `fix/touch-codex-findings`, local only, from `d0852d3` (the cloud's last pickup, which never reached
-  `main`). Commits: `bec5480` (both fixes, T27 and T28), `1ae95ee` (`capture-sky-frames.mjs --eval`), the records, and
-  `0fa7105` (painted light's tap light × 1.8, from Mark's first feel note: "in painted light, the cursor light is
-  weaker"; retune pass 1 of 4). Nothing pushed, per Mark's rule that work stays local until he has seen it.
-- Gate done: 131 tests, reviewer PASS (Fable, one P2 accepted and recorded), the Mac's owed GPU checks green
-  (default byte-identical to the build before A, alive to `main`, desktop frame rate above 60 with the touch
-  lists full). Detail in the B record.
-- Both Codex threads on PR #10 (comments 4258874501, 4258874517) are still unanswered. The replies go up with
-  the PR, naming the commit and the PR number, and the kick's feel change.
+- `main` at `5bbe243`: PR #11 merged 2026-10-16 14:27 UTC on Mark's word ("Yes, merge it"). Both flags stay off
+  by default, so visitors see no change. It carries both fixes for Codex's late P2s on PR #10 (`bec5480`), painted
+  light's tap light × 1.8 (`0fa7105`, Mark's first feel note), `capture-sky-frames.mjs --eval` (`1ae95ee`), and
+  Codex's one P2 on PR #11, fixed in `9b7115b` (the clock is pinned in the same evaluation as `--eval`).
+- Every Codex thread is answered: PR #10's two, PR #11's one. Codex re-reviewed the merged head `5e8367a` on its
+  own (trigger: new commits) and found nothing.
+- This record sits on the local branch `docs/after-pr-11`. It goes up with the next code PR.
+- Remote branches left for Mark to delete: `fix/touch-codex-findings` (merged) and `claude/confident-bohr-1y7p2u`
+  (its last commit `d0852d3` reached `main` through #11).
 
-- [ ] **Mark looks, then says push.** Then: push the branch and open the PR. About 3 minutes later, read the PR's
-  timeline for Codex's review, and post `@codex review` if there is no bot entry. Read the timeline again after any
-  merge (the 2026-10-13 miss). Answer both PR #10 threads with the new PR's number and `bec5480`.
-- [ ] **Mark's feel notes on B**, now on the fixed kick (its push follows the wind: strong in a gust, faint in a
-  lull). Desktop on the PR preview. The phone's frame rate on a real phone (`?perf=1&touch=1`, both skies).
-- [ ] **The flag decision** after the feel notes: `alive` and `touch` on for every visitor, or a choice.
+- [x] **Pushed and merged** (PR #11, `5bbe243`).
+- [ ] **Mark's feel notes on B** on the live site (`?touch=1`, both skies): the kick follows the wind, strong in a
+  gust and faint in a lull; painted light's tap light at × 1.8. Retune passes used: 1 of 4.
+- [ ] **The phone's frame rate** on a real phone (`?perf=1&touch=1`, both skies).
+- [ ] **The flag decision** after those: `alive` and `touch` on for every visitor, or a choice.
 - [ ] **The DPR cap:** Tunables says 2 on desktop, the code caps 1.5 (`DioramaExperience.tsx:166`). Mark's call.
 - [ ] **C, arrival:** unchanged, see the late-night pickup below. Plan file first, fresh review, then the build.
+  Recommended order (Lead, 2026-10-16): the flag decision first, because C opens into whichever sky visitors see.
 
 ## Pickup — 2026-10-13 (late night): A and B are both on `main` behind their flags; C (arrival) is first (superseded by the Mac session above)
 
