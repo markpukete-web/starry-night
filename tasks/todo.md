@@ -22,7 +22,13 @@ below — never edited in place.
   Codex's one P2 on PR #11, fixed in `9b7115b` (the clock is pinned in the same evaluation as `--eval`).
 - Every Codex thread is answered: PR #10's two, PR #11's one. Codex re-reviewed the merged head `5e8367a` on its
   own (trigger: new commits) and found nothing.
-- This record sits on the local branch `docs/after-pr-11`. It goes up with the next code PR.
+- This record sits on the local branch `docs/after-pr-11` (not pushed). It goes up with the next code PR: start
+  the next code branch from it, or merge it in.
+- Session ended 2026-10-17 early (Brisbane) on Mark's "record where we at, I am wrapping it". Nothing running:
+  no dev or preview servers, no extra worktrees, Herdr panes `w4:p4` (Fable, reviewer) and `w4:p5` (Antigravity,
+  worker) idle. The ignored `scratch/mac-session-2026-10-16/` (335 MB) holds the night's frames, crops, briefs,
+  the worker's and reviewer's reports, and the measuring tools `lead/lift-measure.ts` and `lead/diffpix.ts`.
+  Clear the frames when space matters. Keep the reports until C starts.
 - Remote branches left for Mark to delete: `fix/touch-codex-findings` (merged) and `claude/confident-bohr-1y7p2u`
   (its last commit `d0852d3` reached `main` through #11).
 

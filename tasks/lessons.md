@@ -2562,3 +2562,7 @@ after PR #8 merged (`246e817`, "Merge it then start the second pass").
   between them pruned the tap whenever the live clock was past its window (15.45 s after a 13 s settle, t0 5).
   One run survived by luck, so a single green proved nothing. A 200 ms pause between the calls made it fail every
   time, and pinning in the same evaluation fixed it (Codex, PR #11 P2). Widen a race on purpose to get a red.
+- **Codex also reviews new commits on an open PR.** After the P2 fix was pushed to #11, Codex re-reviewed the new
+  head by itself (trigger: "New commits") and posted only a 👍, which is easy to miss. I wrote in the merge note
+  that the last review covered the older commit, and had to correct it. Before writing which commit a review
+  covers, read the `codex-review-state` line in Codex's summary comment. It names the commit and the status.
