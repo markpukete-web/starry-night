@@ -214,16 +214,22 @@ const ribbonVert = /* glsl */ `
   void main() {
     vLen = aLen;
     #ifdef ALIVE
-    vGustTime = gustTime(uTime, aGust);
+    float kt = uTime;
+    #ifdef TOUCH
+    // B: the kick is one value per ribbon, from its centreline segment, so it can ride the flat clock without
+    // laddering (review F2). It goes into the gust clock's argument, never on top of it: added on top, a settling
+    // kick outran the gust's deepest lull and the strokes ran backwards (Codex, PR #10 P2; kickedGustTime, T27).
+    // Guarded, so with no input kt is uTime and A's clock runs verbatim (review F9).
+    if (uKickCount > 0) kt += touchKick(aSeg, uTime);
+    #endif
+    vGustTime = gustTime(kt, aGust);
     vGustLift = gustLift(uTime, aGust);
     #endif
     #ifdef TOUCH
-    // B: the touch terms as separate guarded statements after A's, so with no input A's run verbatim (review F9).
-    // The lift is per vertex (weighted by the ribbon's gust weight, A's derivation); the kick is one value per
-    // ribbon, from its centreline segment, so it can ride the flat clock without laddering (review F2).
+    // B: the lift as a separate guarded statement after A's (review F9), per vertex, weighted by the ribbon's gust
+    // weight (A's derivation).
     vTouchLift = 0.0;
     if (uSurgeCount > 0) vTouchLift = min(uTouchMaxLift, aGust.x * touchLift(aTouch, uTime));
-    if (uKickCount > 0) vGustTime += touchKick(aSeg, uTime);
     #endif
     vAcross = aAcross;
     vPhase = aPhase;

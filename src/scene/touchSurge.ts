@@ -1,3 +1,4 @@
+import { GUST, gustTime } from './skyAlive.ts'
 import { SPAN_H, SPAN_V } from './skyMapping.ts'
 import type { SourceRibbonVertex } from './streamlineGeometry.ts'
 
@@ -116,9 +117,13 @@ export function closingWindow(age: number, T = TOUCH_SURGE): number {
   return 1 - smoothstep(T.windowStart, T.windowEnd, age)
 }
 
-/** The forced fade of an evicted lift surge: 1 until `end − fadeOut`, exactly 0 at `end` and after. */
+/**
+ * The forced fade of an evicted lift surge: 1 until `end − fadeOut`, exactly 0 at `end` and after. Written on the
+ * time left, so its edges are 0 and fadeOut: at NO_END the shader's float32 `end − fadeOut` rounds to `end`, and
+ * GLSL leaves smoothstep undefined when its edges meet (Codex, PR #10 P2).
+ */
 export function endWindow(t: number, end: number, T = TOUCH_SURGE): number {
-  return 1 - smoothstep(end - T.fadeOut, end, t)
+  return smoothstep(0, T.fadeOut, end - t)
 }
 
 /** TS twin of the shader's lift at a vertex from one surge (uv in painting units, tangent unit in isotropic units). */
@@ -185,6 +190,24 @@ export function warpSum(segment: readonly [number, number, number, number], kick
   let warp = 0
   for (const kick of kicks) warp += kickTerms(segment, kick, t, T)
   return warp
+}
+
+/**
+ * TS twin of the shader's kicked clock at a ribbon: the kicks' warp goes into A's gust clock's argument, not on top
+ * of it. Added on top, a settling kick (−0.0665 s/s per tap at its steepest) outran the gust's deepest lull (tempo
+ * 1 − 0.95 at the shipped knob) and the strokes ran backwards (Codex, PR #10 P2). Composed, the tempo is
+ * G′(t + K) · (1 + K′): G′ > 0 while the gust's sum stays under 1, and 1 + K′ > 0.5 with four taps at the
+ * knob's maximum (T22b), so the clock never runs backwards at any knob.
+ */
+export function kickedGustTime(
+  t: number,
+  weight: number,
+  lag: number,
+  segment: readonly [number, number, number, number],
+  kicks: readonly Kick[],
+  amplitudes = GUST.amplitudes,
+): number {
+  return gustTime(t + warpSum(segment, kicks, t), weight, lag, amplitudes)
 }
 
 /** Drop lift surges past their window or their forced end. */
@@ -392,7 +415,7 @@ export const touchGlsl = /* glsl */ `
       float B = ba * ba + bb * bb > cut ? 0.0 : exp(-ba * ba) * exp(-bb * bb);
       if (S == 0.0 && B == 0.0) continue;
       float E = s.w * (1.0 - exp(-age / uTouchRise)) * exp(-age / uTouchTau) * touchWindow(age)
-        * (1.0 - smoothstep(uSurgeEnd[k] - uTouchFadeOut, uSurgeEnd[k], t));
+        * smoothstep(0.0, uTouchFadeOut, uSurgeEnd[k] - t);
       lift += E * (S + 0.5 * B);
     }
     return lift;
