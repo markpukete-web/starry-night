@@ -981,6 +981,9 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
   // rebuilds it (review F7). Same seed and streamline field as the light sky. Built in a worker: in the render it
   // froze the first switch for about 230 ms on an M5 Pro (Codex, PR #7). The light sky shows until it arrives.
   const [movingGeometry, setMovingGeometry] = useState<BufferGeometry | null>(null)
+  // A failed build or worker releases `awaitingMoving` below, so a page opened on the moving sky (the default since
+  // 2026-10-20) shows the painted-light strokes the log promises, not an empty sky (Codex, PR #12 P2).
+  const [movingFailed, setMovingFailed] = useState(false)
   useEffect(() => {
     if (!movingEver || !images) return
     const worker = new Worker(new URL('./movingSky.worker.ts', import.meta.url), { type: 'module' })
@@ -990,6 +993,7 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
       worker.terminate()
       if ('error' in event.data) {
         console.error('[sky] moving-stroke build failed; the sky stays painted light.', event.data.error)
+        setMovingFailed(true)
         return
       }
       built = arraysToGeometry(event.data.arrays)
@@ -998,7 +1002,10 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
       }
       setMovingGeometry(built)
     }
-    worker.onerror = (event) => console.error('[sky] moving-stroke worker failed; the sky stays painted light.', event.message)
+    worker.onerror = (event) => {
+      console.error('[sky] moving-stroke worker failed; the sky stays painted light.', event.message)
+      setMovingFailed(true)
+    }
     const request: MovingBuildRequest = {
       images,
       countPerUnit: tuned('count', 2000) * MOVING.countScale,
@@ -1030,7 +1037,7 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
   // Opened on ?sky=moving: until the worker's strokes land, draw no strokes rather than flash the light sky's for
   // about 0.3 s (Fable, plan-worker P2). After a click the light strokes stay until the swap, so nothing blanks.
   const [openedOnMoving] = useState(() => wanted === 'moving')
-  const awaitingMoving = openedOnMoving && wanted === 'moving' && !movingGeometry
+  const awaitingMoving = openedOnMoving && wanted === 'moving' && !movingGeometry && !movingFailed
 
   const ribbonMaterial = useMemo(
     () =>
