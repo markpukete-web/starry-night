@@ -9,32 +9,107 @@ below — never edited in place.
 > Its `Status` note was last brought up to date on 2026-10-16 and is no longer maintained. At session start,
 > read `tasks/lessons.md`.
 
-## Pickup — 2026-10-16 (Mac session): Codex's two late P2s fixed and gated, Mac GPU checks done, C next
+## Pickup — 2026-10-20 (late): C built and gated on `feat/arrival-c`; Mark's feel, Codex's code review, then the push
 
-**Current agent entry point:** this section, then the Mac section at the end of `tasks/2026-10-13-touch-b.md`
-(the fixes and their gate), then the late-night pickup below (C's brief). Read `tasks/lessons.md` from
+**Current agent entry point:** this section, then `tasks/2026-10-20-arrival-c.md` (C's record and gate) and
+`tasks/2026-10-20-arrival-c-plan.md` (the reviewed plan). Read `tasks/lessons.md` from "C (arrival)" down.
+
+**Where things are.**
+- Branch `feat/arrival-c` (local, from `docs/after-pr-11`): the plan, its revision on Codex's review, and three code
+  commits (`3e87d9a`, `55cd955`, `26cfe3d`), plus the record. Not pushed (Mark reviews first).
+- The gate is green through G8 (`tasks/2026-10-20-arrival-c.md`): 141 tests, the diorama route's flag-off variants
+  byte-identical to `main` on 18 frames, the end state byte-identical on 12 (re-run after the fixes), the guards
+  PASS, the skips, the long frame, the preference cycles and the frame rate checked by hand. Codex's code review
+  found three P1s and two P2s (F11–F15), fixed in `a44df55` and confirmed closed by a bounded re-review: MERGE.
+- Servers left running for Mark's look: the production build of the branch on `http://127.0.0.1:5180/` (the
+  preview URL is `?arrival=1`), `main`'s build on 5181 (worktree `scratch/arrival-c-2026-10-20/wt-main`), the dev
+  server on 5179. Pid files in `scratch/arrival-c-2026-10-20/`.
+- Mark's inside-the-painting idea is queued after C (the "Proposed to Mark" section below).
+
+- [ ] **Mark's feel on C** on the local preview, both skies, with and without `alive=1&touch=1`. The taste calls are
+  listed under "Open for Mark" in the record.
+- [x] **Codex's code review (G8)**: FIX, then MERGE on the re-review; the dispositions are in the record.
+- [x] **The default sky is moving strokes** (Mark, 2026-10-20, after "Looks good!" on C): `src/App.tsx`, `?sky=light`
+  for painted light. Proven: the new default byte-identical to `main`'s `?sky=moving` (2 frames), `?sky=light`
+  byte-identical to `main`'s default (4 frames), `check:reduced` PASS (`scratch/arrival-c-2026-10-20/sky-default/`).
+  Rides C's PR, outside C's flag. The phone's frame rate on the moving sky is still unmeasured.
+- [ ] **Pushed and PR opened** on Mark's "Looks good!"; the docs branch `docs/after-pr-11` is its base, so it rides up.
+  Read Codex's review from the timeline before the merge; the merge is Mark's word.
+- [ ] **The flag decision** (`alive`, `touch`, `arrival` on for every visitor), the DPR cap: Mark's, when he wants them.
+
+## Pickup — 2026-10-20: B closed on Mark's word; C (arrival) is next (superseded by the late pickup above)
+
+**Current agent entry point:** this section, then the 2026-10-16 pickup below, then the late-night pickup below
+that (C's brief). Read `tasks/lessons.md` from "B (touch)" down.
+
+**B is closed.** Mark, 2026-10-20: "skip the iphone test, I want to close current slice and move on to the next".
+B stands as merged in PR #11 (`5bbe243`): the kick follows the wind, painted light's tap light at × 1.8, the
+`surge` knob at 1. Retune passes used: 1 of 4. Nothing changed in the code.
+- The phone's frame rate is waived for closing B, not measured. The locked 30 fps on a mid-tier phone is still
+  unmeasured for `alive` and `touch` with both skies. It matters only when a flag goes on for visitors, so it
+  belongs to the flag decision. Mark's call there.
+- B's open choices stand as built: on touch a drag both orbits and trails, and a tap over the cypress or the
+  village surges the sky behind it. Each is one constant or one mask away if Mark wants it changed later.
+- Still open, unchanged: the flag decision, the DPR cap (Tunables 2 on desktop, code 1.5 at
+  `DioramaExperience.tsx:166`), the impasto light from A.
+- Branches tidied (Mark, 2026-10-20): `fix/touch-codex-findings` and `claude/confident-bohr-1y7p2u` deleted, local
+  and remote, both fully in `main`. Left: `main`, `record/2d-streamline-flow` (the 2D-era bookmark, kept on
+  purpose) and the local `docs/after-pr-11`.
+
+- [x] **B closed** (Mark, 2026-10-20). Phone frame rate waived.
+- [ ] **C, arrival:** behind its own flag, so it does not wait on the flag decision. Plan file first, fresh
+  review, then the build (the late-night pickup below).
+- [ ] **The flag decision**, the DPR cap: Mark's, when he wants them.
+
+### Proposed to Mark — inside the painting, after C (Mark, 2026-10-20)
+
+Mark, on Simon Lee's teaser (`~/Downloads/videos/Simon Lee Van Gor/`, the 82 s video, 1:04–1:12: a walk mode in
+Wheat Field with Cypresses, a small figure on the path, the camera behind it, the wheat swaying): "when I look into
+the painting I also imagine what it would look like inside the paints. I want to explore how the best we can do this
+in starry night painting." Queued after C. Not built. What it runs into, so the study starts honest:
+
+- **The sky is camera-locked** (`skyRoot.quaternion = camera.quaternion × homeInverse`). From inside the village,
+  turning the view would turn the sky with it. A walk needs a world-space sky, which the 2026-07 front-arc decision
+  gave up because the painting cannot supply the back of the dome (`dioramaContract.ts`, `frontArcOnlyForThisSlice`).
+- **Free-fly is locked out** and the orbit limits are a locked criterion. A walk or a dive is a camera outside
+  them. Mark can lift the lock for an authored path (a rail, no free-fly), which keeps the composition promise.
+- **Three readings to spike,** one afternoon each, captures to Mark: (1) a rail down into the village street,
+  looking up at the sky, the dome unlocked only while inside; (2) a dive into the sky's brushwork, the camera
+  passing between the ribbons of the great whorl (the strokes are 3D meshes on the dome, so this needs no new
+  world); (3) Simon's shape, a figure on the ground and the camera behind, which needs a world sky, ground and a
+  village at walking scale, the largest build by far. The study names what each costs against the painting.
+
+## Pickup — 2026-10-16 (Mac session, late): PR #11 merged; the flag decision, then C (superseded by the 2026-10-20 pickup above)
+
+**Then the agent entry point:** this section, then the Mac and painted-light sections at the end of
+`tasks/2026-10-13-touch-b.md`, then the late-night pickup below (C's brief). Read `tasks/lessons.md` from
 "The Mac session, 2026-10-16" down.
 
 **Where things are.**
-- `main` at `3f1f87c`, production the same, both flags off. Unchanged this session.
-- Branch `fix/touch-codex-findings`, local only, from `d0852d3` (the cloud's last pickup, which never reached
-  `main`). Commits: `bec5480` (both fixes, T27 and T28), `1ae95ee` (`capture-sky-frames.mjs --eval`), the records, and
-  `0fa7105` (painted light's tap light × 1.8, from Mark's first feel note: "in painted light, the cursor light is
-  weaker"; retune pass 1 of 4). Nothing pushed, per Mark's rule that work stays local until he has seen it.
-- Gate done: 131 tests, reviewer PASS (Fable, one P2 accepted and recorded), the Mac's owed GPU checks green
-  (default byte-identical to the build before A, alive to `main`, desktop frame rate above 60 with the touch
-  lists full). Detail in the B record.
-- Both Codex threads on PR #10 (comments 4258874501, 4258874517) are still unanswered. The replies go up with
-  the PR, naming the commit and the PR number, and the kick's feel change.
+- `main` at `5bbe243`: PR #11 merged 2026-10-16 14:27 UTC on Mark's word ("Yes, merge it"). Both flags stay off
+  by default, so visitors see no change. It carries both fixes for Codex's late P2s on PR #10 (`bec5480`), painted
+  light's tap light × 1.8 (`0fa7105`, Mark's first feel note), `capture-sky-frames.mjs --eval` (`1ae95ee`), and
+  Codex's one P2 on PR #11, fixed in `9b7115b` (the clock is pinned in the same evaluation as `--eval`).
+- Every Codex thread is answered: PR #10's two, PR #11's one. Codex re-reviewed the merged head `5e8367a` on its
+  own (trigger: new commits) and found nothing.
+- This record sits on the local branch `docs/after-pr-11` (not pushed). It goes up with the next code PR: start
+  the next code branch from it, or merge it in.
+- Session ended 2026-10-17 early (Brisbane) on Mark's "record where we at, I am wrapping it". Nothing running:
+  no dev or preview servers, no extra worktrees, Herdr panes `w4:p4` (Fable, reviewer) and `w4:p5` (Antigravity,
+  worker) idle. The ignored `scratch/mac-session-2026-10-16/` (335 MB) holds the night's frames, crops, briefs,
+  the worker's and reviewer's reports, and the measuring tools `lead/lift-measure.ts` and `lead/diffpix.ts`.
+  Clear the frames when space matters. Keep the reports until C starts.
+- Remote branches left for Mark to delete: `fix/touch-codex-findings` (merged) and `claude/confident-bohr-1y7p2u`
+  (its last commit `d0852d3` reached `main` through #11).
 
-- [ ] **Mark looks, then says push.** Then: push the branch and open the PR. About 3 minutes later, read the PR's
-  timeline for Codex's review, and post `@codex review` if there is no bot entry. Read the timeline again after any
-  merge (the 2026-10-13 miss). Answer both PR #10 threads with the new PR's number and `bec5480`.
-- [ ] **Mark's feel notes on B**, now on the fixed kick (its push follows the wind: strong in a gust, faint in a
-  lull). Desktop on the PR preview. The phone's frame rate on a real phone (`?perf=1&touch=1`, both skies).
-- [ ] **The flag decision** after the feel notes: `alive` and `touch` on for every visitor, or a choice.
+- [x] **Pushed and merged** (PR #11, `5bbe243`).
+- [ ] **Mark's feel notes on B** on the live site (`?touch=1`, both skies): the kick follows the wind, strong in a
+  gust and faint in a lull; painted light's tap light at × 1.8. Retune passes used: 1 of 4.
+- [ ] **The phone's frame rate** on a real phone (`?perf=1&touch=1`, both skies).
+- [ ] **The flag decision** after those: `alive` and `touch` on for every visitor, or a choice.
 - [ ] **The DPR cap:** Tunables says 2 on desktop, the code caps 1.5 (`DioramaExperience.tsx:166`). Mark's call.
 - [ ] **C, arrival:** unchanged, see the late-night pickup below. Plan file first, fresh review, then the build.
+  Recommended order (Lead, 2026-10-16): the flag decision first, because C opens into whichever sky visitors see.
 
 ## Pickup — 2026-10-13 (late night): A and B are both on `main` behind their flags; C (arrival) is first (superseded by the Mac session above)
 

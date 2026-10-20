@@ -140,6 +140,16 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   falloff cut at 3σ; hover amp 0.5 at ≥ 60 ms and ≥ 0.02 u, tap ≤ 300 ms and ≤ 8 px; star radius 0.04, moon 0.06;
   flare ×2.2 colour, ×1.5 scale, 0.12 s rise, 1.4 s fall. Knob `surge` 0–1.5, shipped 1 (`sky-tuning.json`
   `touchSurge`), untuned by Mark.
+- C, arrival, behind `?arrival=1` (implies nothing; 2026-10-20, `src/scene/arrival.ts`): hold 4 s (the scan on a dark
+  ground, Vincent's line from letter 777 beneath), the line fades over the last 1 s of the hold, the dissolve 1.5 s
+  from the hold (the ground over its first half, `groundShare` 0.5, then the scan, which grows to 1.12), the sky's
+  clock eased 0 → 1 over 3 s and the camera pushed from distance 5.55 to the home over 4 s, both from 0.75 s into
+  the dissolve (`lead`); done at 8.75 s. Skip (tap, click, Enter, Space, Escape) runs the clock at 8×, so the whole
+  arrival ends within 1.1 s; a frame counts at most 0.1 s (`maxDt`); the opening waits for the sky, the cypress and
+  the scan, at most 15 s (`readyTimeout`); the chrome fades in over 600 ms (`reveal`). Reduced motion: no layer, no
+  push, the line as a static caption until the first pointer or key. Untuned by Mark.
+- Default sky: moving strokes (Mark, 2026-10-20, after C's gate); `?sky=light` opens on painted light. Reduced motion
+  still forces the painted-light still.
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)

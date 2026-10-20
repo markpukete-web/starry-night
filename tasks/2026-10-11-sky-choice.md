@@ -134,3 +134,11 @@ already; whether that reads as a sticker is Mark's taste call. The authored star
    fragment. If a phone falls short, the cheap lever is that layer's geometry: eight small patches round the
    bodies instead of the full dome strip.
 4. ~~Push and PR.~~ Done: PR #7, merged `e80fdf7`, live.
+
+## The default flipped, 2026-10-20
+
+Mark, after C's gate: "switch the default painting when user join to be the moving strokes". `src/App.tsx` opens on
+moving strokes; `?sky=light` opens on painted light, so either sky can still be linked. Reduced motion still forces
+the painted-light still. The flip rides C's PR, outside C's flag: merging changes the sky every visitor sees. The
+phone's frame rate on the moving sky is still unmeasured (B's phone test was waived on 2026-10-20); the locked bar
+is 30 fps on a mid-tier phone.

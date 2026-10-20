@@ -104,12 +104,15 @@ export function BrushCypress({
   clock,
   alive = false,
   tuning = ALIVE_DEFAULTS,
+  ready: readyRef,
 }: {
   /** The one sky clock (second pass, A3): pinned, advanced, or 0 while paused. */
   clock?: RefObject<number>
   /** Make-it-alive A: the flame-like flicker up the strokes (cypressFlicker.ts). Off = today's tree, bit for bit. */
   alive?: boolean
   tuning?: AliveTuning
+  /** C (arrival): true once the tree has its geometry; the arrival waits for it. */
+  ready?: RefObject<boolean>
 } = {}) {
   const paintingData = useImageData('/reference/painting.jpg')
   const paintingTexture = useTexture('/reference/painting.jpg')
@@ -332,6 +335,10 @@ export function BrushCypress({
     ;(window as AliveFoliageWindow).__aliveFoliage = seam
   }, [alive, geometries])
 
+  // C: the arrival waits for the tree; its CPU image does not suspend, so the sky's own seam cannot cover it
+  useLayoutEffect(() => {
+    if (readyRef) readyRef.current = geometries !== null
+  }, [readyRef, geometries])
   useEffect(() => () => geometries?.solid.dispose(), [geometries])
   useEffect(() => () => geometries?.strokes.dispose(), [geometries])
   useEffect(() => () => cypressTexture.dispose(), [cypressTexture])

@@ -176,6 +176,14 @@ type Props = {
   touch?: boolean
   /** The store the scene's input hook writes; read into the uniforms each frame. */
   touchStore?: RefObject<TouchStore>
+  /**
+   * C (`?arrival=1`, tasks/2026-10-20-arrival-c-plan.md): the seconds to advance the clock this frame while the
+   * arrival runs (its rate times a bounded delta); null once the arrival is done, absent with the flag off: either
+   * way the clock takes the frame's `dt`.
+   */
+  arrivalStep?: RefObject<number | null>
+  /** C: true once the ribbons have a geometry to draw; the arrival waits for it (with the cypress and the scan). */
+  ready?: RefObject<boolean>
 }
 
 // The ALIVE define (make-it-alive A, the flag on) compiles the gust clock in; without it the shaders are main's:
@@ -820,7 +828,7 @@ function SourceOrbs({
 
 
 
-export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky = 'light', still = false, alive = false, tuning = ALIVE_DEFAULTS, clock: sharedClock, touch = false, touchStore }: Props) {
+export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky = 'light', still = false, alive = false, tuning = ALIVE_DEFAULTS, clock: sharedClock, touch = false, touchStore, arrivalStep, ready: readyRef }: Props) {
   const skyRoot = useRef<Group>(null)
   // the sky clock as this frame wrote it, for the halos' breath (A2) and the foreground (A3): pinned, advanced,
   // or 0 while paused. The scene's ref when given, else this one.
@@ -973,6 +981,9 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
   // rebuilds it (review F7). Same seed and streamline field as the light sky. Built in a worker: in the render it
   // froze the first switch for about 230 ms on an M5 Pro (Codex, PR #7). The light sky shows until it arrives.
   const [movingGeometry, setMovingGeometry] = useState<BufferGeometry | null>(null)
+  // A failed build or worker releases `awaitingMoving` below, so a page opened on the moving sky (the default since
+  // 2026-10-20) shows the painted-light strokes the log promises, not an empty sky (Codex, PR #12 P2).
+  const [movingFailed, setMovingFailed] = useState(false)
   useEffect(() => {
     if (!movingEver || !images) return
     const worker = new Worker(new URL('./movingSky.worker.ts', import.meta.url), { type: 'module' })
@@ -982,6 +993,7 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
       worker.terminate()
       if ('error' in event.data) {
         console.error('[sky] moving-stroke build failed; the sky stays painted light.', event.data.error)
+        setMovingFailed(true)
         return
       }
       built = arraysToGeometry(event.data.arrays)
@@ -990,7 +1002,10 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
       }
       setMovingGeometry(built)
     }
-    worker.onerror = (event) => console.error('[sky] moving-stroke worker failed; the sky stays painted light.', event.message)
+    worker.onerror = (event) => {
+      console.error('[sky] moving-stroke worker failed; the sky stays painted light.', event.message)
+      setMovingFailed(true)
+    }
     const request: MovingBuildRequest = {
       images,
       countPerUnit: tuned('count', 2000) * MOVING.countScale,
@@ -1022,7 +1037,7 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
   // Opened on ?sky=moving: until the worker's strokes land, draw no strokes rather than flash the light sky's for
   // about 0.3 s (Fable, plan-worker P2). After a click the light strokes stay until the swap, so nothing blanks.
   const [openedOnMoving] = useState(() => wanted === 'moving')
-  const awaitingMoving = openedOnMoving && wanted === 'moving' && !movingGeometry
+  const awaitingMoving = openedOnMoving && wanted === 'moving' && !movingGeometry && !movingFailed
 
   const ribbonMaterial = useMemo(
     () =>
@@ -1144,9 +1159,11 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
       movingMaterial.uniforms.uTime.value = pinned
       clock.current = pinned
     } else {
-      ribbonMaterial.uniforms.uTime.value += dt
+      // C: during the arrival the step is the rate times a bounded delta; otherwise the frame's own
+      const step = arrivalStep?.current ?? dt
+      ribbonMaterial.uniforms.uTime.value += step
       // both clocks run whichever sky is shown, so switching never jumps either one
-      movingMaterial.uniforms.uTime.value += dt
+      movingMaterial.uniforms.uTime.value += step
       clock.current = ribbonMaterial.uniforms.uTime.value
     }
     // B: the store into the uniforms, pruned first so nothing leaves a list with a value in it (review F1)
@@ -1198,6 +1215,11 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
 
   // One ribbon mesh; its geometry and material switch together. A swapped prop never unmounts the mesh.
   const ribbons = mode === 'moving' ? { geometry: movingGeometry, material: movingMaterial } : { geometry, material: ribbonMaterial }
+
+  // C: the ready seam, written after commit so the mesh below draws on the frame the arrival first reads it
+  useLayoutEffect(() => {
+    if (readyRef) readyRef.current = Boolean(ribbons.geometry) && !awaitingMoving
+  }, [readyRef, ribbons.geometry, awaitingMoving])
 
   return (
     <group ref={skyRoot}>

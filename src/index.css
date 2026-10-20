@@ -271,6 +271,98 @@ button {
   }
 }
 
+/* C (arrival, `?arrival=1`, tasks/2026-10-20-arrival-c-plan.md): the painting on a dark ground with Vincent's line,
+   then it dissolves into the diorama. The driver writes the ground's alpha, the scan's opacity and scale, the line's
+   opacity and the layer's visibility per frame; no CSS transition here, so a pinned capture is exact. */
+.arrival {
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  display: grid;
+  place-items: center;
+  background: rgba(6, 17, 42, 1);
+  pointer-events: none;
+}
+
+.arrival-painting {
+  margin: 0;
+  width: min(86vw, 78vh * 1.263);
+}
+
+.arrival-painting img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1600 / 1267;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+  transform-origin: center;
+  will-change: transform;
+  user-select: none;
+}
+
+.arrival figcaption,
+.arrival-caption {
+  margin: 22px auto 0;
+  max-width: 56ch;
+  color: rgba(244, 234, 211, 0.92);
+  font-family: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+  font-size: 17px;
+  font-style: italic;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.arrival-line {
+  margin: 0;
+}
+
+.arrival-cite {
+  margin: 8px 0 0;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 0.02em;
+  opacity: 0.7;
+}
+
+/* reduced motion: the line as a static caption over the still */
+.arrival-caption {
+  position: absolute;
+  right: 16px;
+  bottom: 84px;
+  left: 16px;
+  z-index: 9;
+  pointer-events: none;
+  text-shadow: 0 2px 16px rgba(4, 8, 20, 0.78);
+}
+
+/* the title and the dock arrive with the controls. Hidden by visibility, not opacity alone: an invisible link or
+   button would still take focus and clicks (`.visitor-title a` restores pointer events on itself; review F2). The
+   transition is scoped to a shell with the arrival, so the flag-off route's computed style is unchanged. */
+.diorama-shell.has-arrival .visitor-title,
+.diorama-shell.has-arrival .visitor-dock {
+  transition: opacity var(--arrival-reveal) ease;
+}
+
+.diorama-shell.is-arriving .visitor-title,
+.diorama-shell.is-arriving .visitor-dock {
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* after the reveal rule, or the same selectors at the same specificity would lose the cascade to it (code review F13) */
+@media (prefers-reduced-motion: reduce) {
+  .diorama-shell.has-arrival .visitor-title,
+  .diorama-shell.has-arrival .visitor-dock {
+    transition: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .arrival figcaption,
+  .arrival-caption {
+    font-size: 15px;
+  }
+}
+
 /* Mark's tuner for make-it-alive A (`?tune=1`): the dock's glass, sliders for the four knobs. */
 .alive-tuner {
   position: fixed;

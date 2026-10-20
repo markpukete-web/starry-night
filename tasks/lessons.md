@@ -2562,3 +2562,43 @@ after PR #8 merged (`246e817`, "Merge it then start the second pass").
   between them pruned the tap whenever the live clock was past its window (15.45 s after a 13 s settle, t0 5).
   One run survived by luck, so a single green proved nothing. A 200 ms pause between the calls made it fail every
   time, and pinning in the same evaluation fixed it (Codex, PR #11 P2). Widen a race on purpose to get a red.
+- **Codex also reviews new commits on an open PR.** After the P2 fix was pushed to #11, Codex re-reviewed the new
+  head by itself (trigger: "New commits") and posted only a 👍, which is easy to miss. I wrote in the merge note
+  that the last review covered the older commit, and had to correct it. Before writing which commit a review
+  covers, read the `codex-review-state` line in Codex's summary comment. It names the commit and the status.
+
+## C (arrival), 2026-10-20
+
+- **A plan with complete code can be executed before it is built.** Codex ran the plan's timeline and driver in
+  memory against three's real camera and found six P1s in a plan I believed complete (a caption that could never be
+  dismissed, hidden chrome still clickable, a 30 s frame delta, a seam that missed the cypress, a curtain a failed
+  asset would hold for ever, a skip 2× slower than claimed). Give a plan reviewer complete code and brief it to run
+  it.
+- **zsh does not split an unquoted variable.** `for combo in "desktop light"; set -- $combo` gave one word, and
+  `--viewport $vp` became `--viewport "desktop light"`, which the script read as desktop; `--sky=$sky` became
+  `sky=`. The frames had the right names and the wrong content. Before reading a sheet, check the frames JSON's
+  `url` and `identify` the PNG's size. Use `${=VAR}` in zsh, or a bash script file.
+- **At one speed, a dissolving picture reads as a frame.** The scan and its dark ground fading together left the
+  scan's edge as a hard rectangle over the diorama half-way through. The ground must go first (`groundShare`), so
+  the world appears around the painting before the painting melts into it.
+- **Neither headless Chromium nor a new tab in the Chrome MCP group hides a page.** `Page.setWebLifecycleState
+  frozen` kept rAF at 257 frames in 3 s; a covering tab left `visibilityState` visible and 120 fps running. To test
+  a long frame delta, block the page's main thread for N seconds (`while (performance.now() < end) {}`): the next
+  frame's `dt` is N, the same path a hidden tab takes.
+- **`montage` wants a font the Mac lacks.** Build contact sheets with `magick ( a b +append ) ( c d +append )
+  -append`.
+- **A driver's writes want refs named `*Ref`.** The React Compiler lint flags `.current` writes through an object
+  of refs ("cannot access refs during render"); naming each ref `xRef` and passing them as props is what it accepts,
+  with no disable comment.
+- **Tunables change logged** (CLAUDE.md): C's entry.
+- **A ref handed back in the same frame is handed back too early.** The driver (priority −2) nulled the sky's step
+  on the frame that ended the arrival, and the sky (priority 0) read null that same frame and took the raw `dt`:
+  a 30 s frame at the very end still jumped the sky (Codex, code review F12). A value another subscriber reads
+  later in the frame is released on the next frame, and the clock, not the driver, owns that rule so a test can
+  see it (A10).
+- **A later rule with the same selectors wins, media query or not.** The reduced-motion `transition: none` was
+  written before the reveal rule it was meant to override and lost (F13). Put an override after what it overrides,
+  and read the computed style once (`getComputedStyle(el).transitionDuration`).
+- **A conditional DOM layer must be keyed to the state that drives it.** `arrival && !still` mounted a fresh opaque
+  layer when reduced motion was toggled off after the end, with the driver already stopped (F11). Mount what a
+  driver animates only while the driver runs.

@@ -44,10 +44,11 @@ export default function App() {
   const reduced = usePrefersReducedMotion()
   const [visitorPaused, setVisitorPaused] = useState(false)
   const [showOriginal, setShowOriginal] = useState(false)
-  // The visitor's sky. `?sky=moving` opens on moving strokes, so either sky can be linked. Reduced
-  // motion hides the choice but keeps it, and it returns when the system setting is cleared.
+  // The visitor's sky: moving strokes by default (Mark, 2026-10-20: "switch the default painting when user join to
+  // be the moving strokes"); `?sky=light` opens on painted light, so either sky can be linked. Reduced motion
+  // hides the choice but keeps it, and it returns when the system setting is cleared.
   const [sky, setSky] = useState<SkyStyle>(() =>
-    typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('sky') === 'moving' ? 'moving' : 'light',
+    typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('sky') === 'light' ? 'light' : 'moving',
   )
   const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
   const mode = params.get('mode') ?? 'diorama'
@@ -58,6 +59,9 @@ export default function App() {
   // B, behind its own flag (tasks/2026-10-13-touch-b-plan.md); it rides A's variant, so it implies the flag
   const touch = params.get('touch') === '1'
   const alive = params.get('alive') === '1' || tune || touch
+  // C, the arrival, behind its own flag (tasks/2026-10-20-arrival-c-plan.md); it implies nothing, so it opens into
+  // whichever sky the other flags give
+  const arrival = params.get('arrival') === '1'
   // The shipped defaults for A's knobs live in sky-tuning.json (the tuner's "set as default" writes them);
   // a URL knob overrides them, and with the tuner open the last slider positions are remembered per browser.
   const [aliveTuning, setAliveTuning] = useState<AliveTuning>(() => {
@@ -108,7 +112,7 @@ export default function App() {
 
   if (mode === 'diorama') {
     return (
-      <DioramaExperience clean={clean} reduced={motionPaused} sky={sky} still={reduced} alive={alive} aliveTuning={aliveTuning} touch={touch}>
+      <DioramaExperience clean={clean} reduced={motionPaused} sky={sky} still={reduced} alive={alive} aliveTuning={aliveTuning} touch={touch} arrival={arrival}>
         {chrome}
       </DioramaExperience>
     )
