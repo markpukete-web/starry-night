@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { PerspectiveCamera } from 'three'
-import { ARRIVAL, ARRIVAL_END, ARRIVAL_START_INSIDE_ORBIT, ArrivalClock, arrivalCamera, arrivalFrame } from '../src/scene/arrival.ts'
+import { ARRIVAL, ARRIVAL_END, ARRIVAL_START_INSIDE_ORBIT, ArrivalClock, arrivalCamera, arrivalFrame, boundedDt } from '../src/scene/arrival.ts'
 import { DIORAMA_CAMERAS, DIORAMA_ORBIT } from '../src/scene/dioramaContract.ts'
 import { homeInverseQuaternion } from '../src/scene/dioramaSkyProjection.ts'
 
@@ -155,7 +155,6 @@ test('A8 the clock: waits for the scene, bounds a frame, skips within 1.1 s, ope
   let a = 0
   for (let t = 0; t <= ARRIVAL.readyTimeout + 0.2; t += 0.05) a = timedOut.tick({ dt: 0.05, ready: false, skipRequested: false })
   assert.ok(a > 0, 'the curtain never opened on its own')
-  // a pin sets a; past the end it latches
   const pinned = new ArrivalClock()
   assert.equal(pinned.tick({ dt: 1 / 60, ...live, pinned: 3.5 }), 3.5)
   assert.equal(pinned.tick({ dt: 1 / 60, ...live, pinned: 20 }), 20)
@@ -166,6 +165,40 @@ test('A8 the clock: waits for the scene, bounds a frame, skips within 1.1 s, ope
   while (!finished.done) finished.tick({ dt: 0.1, ...live })
   const end = finished.a
   for (let i = 0; i < 10; i++) assert.equal(finished.tick({ dt: 0.1, ...live }), end)
+})
+
+test('A10 the sky step: held, then the rate times the bounded delta, kept through the frame that ends it, then null', () => {
+  assert.equal(boundedDt(30), ARRIVAL.maxDt)
+  assert.equal(boundedDt(NaN), 0)
+  assert.equal(boundedDt(-1), 0)
+  const live = { ready: true, skipRequested: false }
+  const clock = new ArrivalClock()
+  // waiting for the scene: the sky holds
+  clock.tick({ dt: 1 / 60, ready: false, skipRequested: false })
+  assert.equal(clock.step, 0)
+  // the hold: rate 0, so step 0, up to the last tick before the lead
+  while (clock.a + 1 / 60 < ARRIVAL.hold + ARRIVAL.lead) clock.tick({ dt: 1 / 60, ...live })
+  assert.equal(clock.step, 0)
+  // live: the rate times the frame
+  while (clock.a < ARRIVAL.hold + ARRIVAL.lead + ARRIVAL.breathe) clock.tick({ dt: 1 / 60, ...live })
+  assert.ok(Math.abs((clock.step ?? 0) - 1 / 60) < 1e-12, `live step ${clock.step}`)
+  // a 30 s frame at a = 8.7 reaches the end: the sky gets the bounded 0.1, not the 30 (code review F12)
+  const terminal = new ArrivalClock()
+  while (terminal.a < 8.7 - 1e-9) terminal.tick({ dt: 0.1, ...live })
+  assert.ok(Math.abs(terminal.a - 8.7) < 1e-9)
+  terminal.tick({ dt: 30, ...live })
+  assert.equal(terminal.done, true)
+  assert.equal(terminal.step, ARRIVAL.maxDt)
+  // the frame after: handed back
+  terminal.tick({ dt: 1 / 60, ...live })
+  assert.equal(terminal.step, null)
+  // reduced motion: done on the first tick with no wait, the step the frame's own, then null
+  const reduced = new ArrivalClock()
+  reduced.tick({ dt: 1 / 60, ready: false, skipRequested: false, reduced: true })
+  assert.equal(reduced.done, true)
+  assert.ok(Math.abs((reduced.step ?? 0) - 1 / 60) < 1e-12)
+  reduced.tick({ dt: 1 / 60, ready: false, skipRequested: false, reduced: true })
+  assert.equal(reduced.step, null)
 })
 
 test('A9 orientation: along the whole path the camera-locked sky stays at identity', () => {

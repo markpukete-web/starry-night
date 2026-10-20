@@ -109,6 +109,11 @@ export function arrivalCamera(home: Home, progress: number): readonly [number, n
 export const ARRIVAL_START_INSIDE_ORBIT =
   ARRIVAL.startDistance > DIORAMA_ORBIT.minDistance && ARRIVAL.startDistance < DIORAMA_ORBIT.maxDistance
 
+/** The frame delta the arrival accepts: a hidden tab's 30 s becomes `maxDt`, a NaN becomes 0. */
+export function boundedDt(dt: number): number {
+  return Number.isFinite(dt) ? Math.min(Math.max(0, dt), ARRIVAL.maxDt) : 0
+}
+
 export type ArrivalInputs = {
   /** the frame's delta, seconds */
   dt: number
@@ -118,6 +123,8 @@ export type ArrivalInputs = {
   skipRequested: boolean
   /** a capture's pin: an absolute time, taken as is */
   pinned?: number
+  /** system reduced motion: the end state at once, no wait */
+  reduced?: boolean
 }
 
 /**
@@ -129,19 +136,32 @@ export class ArrivalClock {
   a = 0
   waited = 0
   done = false
-  tick({ dt, ready, skipRequested, pinned }: ArrivalInputs): number {
-    if (this.done) return this.a
+  /**
+   * The sky's advance this frame: the rate times the bounded delta while the arrival runs, including the frame that
+   * reaches the end; null from the frame after, when the sky takes its own `dt` again. Released a frame late on
+   * purpose: the sky reads it after the driver in the same frame, and a long frame at the very end would otherwise
+   * jump the sky by the whole gap (Codex, code review F12).
+   */
+  step: number | null = 0
+  tick({ dt, ready, skipRequested, pinned, reduced = false }: ArrivalInputs): number {
+    if (this.done) {
+      this.step = null
+      return this.a
+    }
+    const bounded = boundedDt(dt)
     if (typeof pinned === 'number' && Number.isFinite(pinned)) {
       this.a = pinned
     } else {
-      const step = Number.isFinite(dt) ? Math.min(Math.max(0, dt), ARRIVAL.maxDt) : 0
-      if (!ready && !skipRequested && this.waited < ARRIVAL.readyTimeout) {
-        this.waited += step
+      if (!reduced && !ready && !skipRequested && this.waited < ARRIVAL.readyTimeout) {
+        this.waited += bounded
+        this.step = 0
         return this.a
       }
-      this.a += step * (skipRequested ? ARRIVAL.skipSpeed : 1)
+      this.a += bounded * (skipRequested ? ARRIVAL.skipSpeed : 1)
     }
-    this.done = this.a >= ARRIVAL_END
+    const frame = arrivalFrame(this.a, reduced)
+    this.done = frame.done
+    this.step = frame.rate * bounded
     return this.a
   }
 }

@@ -266,9 +266,7 @@ button {
 
 @media (prefers-reduced-motion: reduce) {
   .visitor-control,
-  .visitor-control::after,
-  .diorama-shell.has-arrival .visitor-title,
-  .diorama-shell.has-arrival .visitor-dock {
+  .visitor-control::after {
     transition: none;
   }
 }
@@ -341,13 +339,21 @@ button {
    transition is scoped to a shell with the arrival, so the flag-off route's computed style is unchanged. */
 .diorama-shell.has-arrival .visitor-title,
 .diorama-shell.has-arrival .visitor-dock {
-  transition: opacity var(--arrival-reveal, 600ms) ease;
+  transition: opacity var(--arrival-reveal) ease;
 }
 
 .diorama-shell.is-arriving .visitor-title,
 .diorama-shell.is-arriving .visitor-dock {
   opacity: 0;
   visibility: hidden;
+}
+
+/* after the reveal rule, or the same selectors at the same specificity would lose the cascade to it (code review F13) */
+@media (prefers-reduced-motion: reduce) {
+  .diorama-shell.has-arrival .visitor-title,
+  .diorama-shell.has-arrival .visitor-dock {
+    transition: none;
+  }
 }
 
 @media (max-width: 640px) {

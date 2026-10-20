@@ -35,8 +35,15 @@ const times = opt('times', '0,0.5,3.7,11.2').split(',').map(Number)
 const viewportName = opt('viewport', 'desktop')
 const prefix = opt('prefix', viewportName)
 const evalBefore = opt('eval', null)
-const arrivalRaw = opt('arrival-times', null)
-const arrivalTimes = arrivalRaw ? arrivalRaw.split(',').map(Number) : null
+// presence and value apart: an empty `--arrival-times ''` (a shell variable that came out empty) must fail, not
+// silently run the sky-only path with the arrival unpinned (Codex, code review F15)
+const hasArrivalTimes = args.includes('--arrival-times')
+const arrivalRaw = hasArrivalTimes ? opt('arrival-times', '') : null
+if (hasArrivalTimes && (!arrivalRaw || arrivalRaw.startsWith('--'))) {
+  console.error('--arrival-times needs a value: one arrival time per --times entry')
+  process.exit(1)
+}
+const arrivalTimes = hasArrivalTimes ? arrivalRaw.split(',').map(Number) : null
 const screenshot = args.includes('--screenshot')
 if (arrivalTimes) {
   const bad =
@@ -196,15 +203,16 @@ async function main() {
       if (ran.exceptionDetails) throw new Error(`--eval threw: ${ran.exceptionDetails.exception?.description ?? ran.exceptionDetails.text}`)
       evalResult = ran.result.value ?? null
     }
-    const summary = { url, viewport, times, arrivalTimes, screenshot, evalBefore, evalResult, frames: [], errors: page.errors }
+    // the new fields only when their options are on, so the old path's JSON is the old JSON (code review F14)
+    const summary = { url, viewport, times, ...(arrivalTimes ? { arrivalTimes } : {}), ...(screenshot ? { screenshot } : {}), evalBefore, evalResult, frames: [], errors: page.errors }
     const firstMoving = times.find((t) => t > 0)
     for (let i = 0; i < times.length; i++) {
       const t = times[i]
       await page.send('Runtime.evaluate', { expression: pin(i) })
       const a = await readFrame(page)
-      // the self-check on the first frame and the first t > 0 only (a readback costs seconds under software
+      // the self-check on the first time and the first t > 0 only (a readback costs seconds under software
       // rendering): at t = 0 a foreground reading the clock one frame late would still show as pinned
-      if (i === 0 || t === firstMoving) {
+      if (t === times[0] || t === firstMoving) {
         const b = await readFrame(page)
         if (!a.equals(b)) throw new Error(`pinned clock self-check failed at t=${t}: two reads differ, so the page is not pinned`)
       }

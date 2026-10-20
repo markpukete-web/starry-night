@@ -7,6 +7,7 @@ import type { AliveTuning } from './skyAlive'
 import { emptyTouchStore, type TouchStore } from './touchSurge'
 import { useTouchInput } from './useTouchInput'
 import { ARRIVAL, ArrivalClock, arrivalCamera, arrivalFrame } from './arrival'
+// (ARRIVAL.reveal feeds the chrome's fade-in through a custom property; the clock owns every other constant)
 import {
   DIORAMA_CAMERAS,
   DIORAMA_ORBIT,
@@ -144,15 +145,18 @@ function ArrivalDriver({
   const [clock] = useState(() => new ArrivalClock())
   const finishedRef = useRef(false)
   useFrame((_, dt) => {
-    if (finishedRef.current) return
     const a = clock.tick({
       dt,
       ready: skyReadyRef.current && cypressReadyRef.current && scanReadyRef.current,
       skipRequested: skipRequestedRef.current,
       pinned: (window as ArrivalWindow).__arrivalTime,
+      reduced,
     })
+    // every frame, done included: the clock keeps the bounded step through the frame that ends the arrival and
+    // hands the sky its own `dt` back from the frame after (code review F12)
+    arrivalStepRef.current = clock.step
+    if (finishedRef.current) return
     const f = arrivalFrame(a, reduced)
-    arrivalStepRef.current = f.rate * Math.min(Math.max(0, dt), ARRIVAL.maxDt)
     camera.position.set(...arrivalCamera(home, f.push))
     camera.lookAt(home.target[0], home.target[1], home.target[2])
     const layer = layerRef.current
@@ -168,7 +172,6 @@ function ArrivalDriver({
     if (lineRef.current) lineRef.current.style.opacity = String(f.line)
     if (f.done) {
       finishedRef.current = true
-      arrivalStepRef.current = null
       onDone()
     }
   }, -2)
@@ -241,7 +244,7 @@ function Scene({
       {measurePerformance && <PerfProbe />}
       {arrival && <ArrivalDriver home={camera} reduced={still} onDone={onArrived} {...refs} />}
       <Suspense fallback={null}>
-        {debug !== 'flow' && <Diorama debug={debug === 'stage' ? 'stage' : 'final'} clock={skyClock} alive={alive} tuning={aliveTuning} ready={arrival ? refs.cypressReadyRef : undefined} />}
+        {debug !== 'flow' && <Diorama debug={debug === 'stage' ? 'stage' : 'final'} clock={skyClock} alive={alive} tuning={aliveTuning} cypressReady={arrival ? refs.cypressReadyRef : undefined} />}
         {debug !== 'stage' && (
           <PaintingFlowSky3D
             paused={reduced}
@@ -351,8 +354,10 @@ export function DioramaExperience({ clean = false, reduced = false, sky = 'light
           arrivalStepRef={arrivalStepRef}
         />
       </Canvas>
-      {arrival && !still && (
-        <div className="arrival" ref={layerRef} aria-hidden={arrived}>
+      {/* the layer lives exactly as long as the arrival: mounted later (a reduced-motion toggle after the end) it
+          would be a fresh opaque curtain with no driver to fade it (code review F11) */}
+      {arriving && !still && (
+        <div className="arrival" ref={layerRef}>
           <figure className="arrival-painting">
             <img
               ref={scanRef}
@@ -372,7 +377,7 @@ export function DioramaExperience({ clean = false, reduced = false, sky = 'light
           </figure>
         </div>
       )}
-      {captionShown && (
+      {captionShown && still && (
         <div className="arrival-caption">
           <VincentsLine />
         </div>
