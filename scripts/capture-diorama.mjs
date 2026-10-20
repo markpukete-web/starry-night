@@ -278,7 +278,9 @@ async function main() {
   const errors = []
   const captures = []
   // DIORAMA_CAPTURE_EXTRA appends debug params (e.g. '&hide=wash') for layer-bisection probes
-  const base = `${appUrl}?mode=diorama&clean=1${process.env.DIORAMA_CAPTURE_EXTRA || ''}`
+  // `arrival=0` last: the opening is on by default (2026-10-20) and these captures want the steady state; an
+  // `&arrival=1` in DIORAMA_CAPTURE_EXTRA comes first and wins, since the app reads the first value
+  const base = `${appUrl}?mode=diorama&clean=1${process.env.DIORAMA_CAPTURE_EXTRA || ''}&arrival=0`
   const desktop = { width: 1600, height: 900 }
   const mobile = { width: 390, height: 844, mobile: true }
 

@@ -150,6 +150,10 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   push, the line as a static caption until the first pointer or key. Untuned by Mark.
 - Default sky: moving strokes (Mark, 2026-10-20, after C's gate); `?sky=light` opens on painted light. Reduced motion
   still forces the painted-light still.
+- Flags on for every visitor (Mark, 2026-10-20, "go for your recommendation"): A (`alive`), B (`touch`) and C
+  (`arrival`) are the default. `?alive=0` turns A and B off, `?touch=0` B alone, `?arrival=0` the opening; `=1` still
+  works for links. The opening plays once per session on a plain visit (`sessionStorage`), always with `?arrival=1`.
+  `?perf=1` shows the frame rate on screen. The guard and capture scripts opt out of the opening (`arrival=0`).
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)

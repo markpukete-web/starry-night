@@ -109,6 +109,29 @@ export function arrivalCamera(home: Home, progress: number): readonly [number, n
 export const ARRIVAL_START_INSIDE_ORBIT =
   ARRIVAL.startDistance > DIORAMA_ORBIT.minDistance && ARRIVAL.startDistance < DIORAMA_ORBIT.maxDistance
 
+const ARRIVED_KEY = 'starry-night:arrived'
+
+/**
+ * Once per session: a plain visit plays the opening the first time only, so a reload or a return within the tab's
+ * life is not held 4 s again (Mark, 2026-10-20). Session storage can be unavailable (a private window, a blocked
+ * store); then every visit plays it, which is the safe side.
+ */
+export function arrivedThisSession(): boolean {
+  try {
+    return typeof window !== 'undefined' && window.sessionStorage.getItem(ARRIVED_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+export function rememberArrived(): void {
+  try {
+    window.sessionStorage.setItem(ARRIVED_KEY, '1')
+  } catch {
+    /* no store: the next visit plays the opening again */
+  }
+}
+
 /** The frame delta the arrival accepts: a hidden tab's 30 s becomes `maxDt`, a NaN becomes 0. */
 export function boundedDt(dt: number): number {
   return Number.isFinite(dt) ? Math.min(Math.max(0, dt), ARRIVAL.maxDt) : 0

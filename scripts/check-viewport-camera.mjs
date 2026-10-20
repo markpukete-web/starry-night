@@ -170,7 +170,9 @@ async function newPage(port, viewport, errors, { clean = true } = {}) {
     features: [{ name: 'prefers-reduced-motion', value: 'reduce' }],
   })
   await setViewport(page, viewport)
-  await page.send('Page.navigate', { url: `${appUrl}?mode=diorama${clean ? '&clean=1' : ''}` })
+  // `arrival=0`: the opening is on by default (2026-10-20) and this check wants the steady state; a base URL that
+  // carries `arrival=1` before the `?` wins, since the app reads the first value
+  await page.send('Page.navigate', { url: `${appUrl}?mode=diorama${clean ? '&clean=1' : ''}&arrival=0` })
   const start = Date.now()
   for (;;) {
     await sleep(500)

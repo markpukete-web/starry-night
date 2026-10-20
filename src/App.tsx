@@ -10,6 +10,7 @@ import type { SkyStyle } from './scene/PaintingFlowSky3D'
 import { ALIVE_DEFAULTS, ALIVE_KNOBS, clampAliveKnob, hasAliveKnobs, readAliveTuning, type AliveTuning } from './scene/skyAlive'
 import { tuned } from './scene/tuning'
 import { AliveTuner } from './AliveTuner'
+import { arrivedThisSession } from './scene/arrival'
 import { ReliefExperience } from './scene/ReliefExperience'
 import { VisitorChrome } from './VisitorChrome'
 
@@ -53,15 +54,17 @@ export default function App() {
   const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
   const mode = params.get('mode') ?? 'diorama'
   const clean = params.get('clean') === '1'
-  // make-it-alive A, behind a flag until Mark's gate (tasks/2026-10-13-alive-a-plan.md)
-  // `?tune=1` opens Mark's tuner and implies the flag
+  // `?tune=1` opens Mark's tuner for A's knobs
   const tune = params.get('tune') === '1'
-  // B, behind its own flag (tasks/2026-10-13-touch-b-plan.md); it rides A's variant, so it implies the flag
-  const touch = params.get('touch') === '1'
-  const alive = params.get('alive') === '1' || tune || touch
-  // C, the arrival, behind its own flag (tasks/2026-10-20-arrival-c-plan.md); it implies nothing, so it opens into
-  // whichever sky the other flags give
-  const arrival = params.get('arrival') === '1'
+  // Make-it-alive A (tasks/2026-10-13-alive-a-plan.md), B (touch, 2026-10-13-touch-b-plan.md) and C (the arrival,
+  // 2026-10-20-arrival-c-plan.md) are on for every visitor (Mark, 2026-10-20, after C's gate: "go for your
+  // recommendation"). The same keys opt out: `?alive=0` turns A and B off (B rides A's clock and shader variant),
+  // `?touch=0` B alone, `?arrival=0` the opening; `=1` still works for links. Reduced motion is unchanged.
+  const off = (name: string) => params.get(name) === '0'
+  const alive = !off('alive') || tune
+  const touch = alive && !off('touch')
+  // The opening plays once per session on a plain visit; `?arrival=1` always plays it, that being the link's point
+  const arrival = params.get('arrival') === '1' || (!off('arrival') && !arrivedThisSession())
   // The shipped defaults for A's knobs live in sky-tuning.json (the tuner's "set as default" writes them);
   // a URL knob overrides them, and with the tuner open the last slider positions are remembered per browser.
   const [aliveTuning, setAliveTuning] = useState<AliveTuning>(() => {

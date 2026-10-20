@@ -6,7 +6,7 @@ import { PaintingFlowSky3D, type SkyStyle } from './PaintingFlowSky3D'
 import type { AliveTuning } from './skyAlive'
 import { emptyTouchStore, type TouchStore } from './touchSurge'
 import { useTouchInput } from './useTouchInput'
-import { ARRIVAL, ArrivalClock, arrivalCamera, arrivalFrame } from './arrival'
+import { ARRIVAL, ArrivalClock, arrivalCamera, arrivalFrame, rememberArrived } from './arrival'
 // (ARRIVAL.reveal feeds the chrome's fade-in through a custom property; the clock owns every other constant)
 import {
   DIORAMA_CAMERAS,
@@ -98,6 +98,25 @@ function PerfProbe() {
     gl.info.reset()
   }, -1000)
   return null
+}
+
+/**
+ * `?perf=1` on screen: the frame rate over the probe's last 60 frames, so a phone can be read without a cable
+ * (the locked bar is 30 fps on a mid-tier phone). DOM, outside the canvas, so no capture sees it.
+ */
+function PerfReadout() {
+  const [text, setText] = useState('…')
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      const t = (window as PerfWindow).__perf?.t ?? []
+      const recent = t.slice(-60)
+      if (recent.length < 2) return
+      const fps = ((recent.length - 1) * 1000) / (recent[recent.length - 1] - recent[0])
+      setText(`${fps.toFixed(0)} fps · ${window.innerWidth}×${window.innerHeight} @${window.devicePixelRatio}`)
+    }, 500)
+    return () => window.clearInterval(id)
+  }, [])
+  return <div className="perf-readout">{text}</div>
 }
 
 /** Capture seam: a finite `window.__arrivalTime` pins the arrival clock (with `__skyTime` in the same evaluation). */
@@ -343,7 +362,10 @@ export function DioramaExperience({ clean = false, reduced = false, sky = 'light
           touch={touch}
           arrival={arrival}
           arriving={arriving}
-          onArrived={() => setArrived(true)}
+          onArrived={() => {
+            setArrived(true)
+            rememberArrived()
+          }}
           layerRef={layerRef}
           scanRef={scanRef}
           lineRef={lineRef}
@@ -382,6 +404,7 @@ export function DioramaExperience({ clean = false, reduced = false, sky = 'light
           <VincentsLine />
         </div>
       )}
+      {readPerfMode() && <PerfReadout />}
       {children}
     </main>
   )
