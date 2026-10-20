@@ -9,7 +9,41 @@ below — never edited in place.
 > Its `Status` note was last brought up to date on 2026-10-16 and is no longer maintained. At session start,
 > read `tasks/lessons.md`.
 
-## Pickup — 2026-10-20 (late night): everything on for every visitor; D (touch the land) proposed
+## Pickup — 2026-10-21: the land roadmap decided (E1 the cypress first); D1's plan reviewed and banked
+
+**Current agent entry point:** this section, then "Direction — the land" below (the roadmap, Mark's words, the
+order), then `tasks/2026-10-20-touch-land-d1-plan.md` (D1's plan and Codex's review, banked for later). Read
+`tasks/lessons.md` from "C (arrival)" down. The next task is **E1's plan file**: the cypress.
+
+**Where things are.**
+- `main` at `e6567e3`, production deployed 2026-10-20 13:45 UTC: moving strokes the default sky, A, B and C on for
+  every visitor (`?alive=0`, `?touch=0`, `?arrival=0` opt out), the opening once per session, `?perf=1` on screen.
+  Mark's iPhone: 60 fps with everything on. Three merged remote branches wait for Mark to delete: `feat/arrival-c`,
+  `fix/moving-first-paint`, `feat/flags-on`.
+- **The roadmap** (Mark, 2026-10-21, after the three-way comparison in `scratch/cypress-compare-2026-10-20/triptych.jpg`,
+  ours | the painting | Simon Lee's): E1 the cypress (lobes re-derived for the silhouette, the cladding rebuilt as
+  thick curling ribbons from its own flow field, tongues breaking the outline), E2 the land (the island's top in the
+  painting's ground strokes, stroked olive trees and bushes from the painting's masses), then D1 touch on the new
+  land. Each: plan file, the painting's crops beside ours, a fresh review, the build, captures at 1:1, Mark's eye.
+- **D1's plan** is written and reviewed (Codex, REVISE: seven P1s, three P2s, every finding recorded with its
+  disposition in the plan's Review section). Nothing of D1 is built. When D1 starts, the revision is its first task,
+  on E1's tree.
+- This record, the roadmap and D1's plan sit on the local branch `feat/touch-land` (docs only, not pushed; the name
+  is from before the roadmap). Start E1 from it (`git switch -c feat/cypress-e1 feat/touch-land`), so the docs ride
+  up with E1's PR. Nothing running: no servers, no worktrees, Herdr panes `w4:p4` (Codex) and `w4:p5` idle.
+- Open, none urgent: the DPR cap (Tunables 2, code 1.5: the Lead recommends 1.5 and a Tunables correction); C's
+  taste calls (the durations, French under the English, the title during the opening, a hint).
+
+- [ ] **E1, the cypress**: the plan file first (`tasks/<date>-cypress-e1-plan.md`), with 1:1 crops of the painting's
+  cypress beside ours (the triptych is the start), the lobe re-derivation and the streamline cladding; a fresh
+  review; then the build and the gate. Before writing it, read `tasks/2026-07-22-cypress-review-findings.md` (the
+  July gate and its traps), `src/scene/cypressLobes.ts`, `cypressLobeGeometry.ts`, `cypressLobeStrokes.ts`,
+  `BrushCypress.tsx`, `scripts/derive-cypress.ts` (the flow asset's derivation) and the sky's tracer
+  (`streamlineGeometry.ts`, `flowField.ts`).
+- [ ] **E2, the land**, after E1.
+- [ ] **D1, touch**, after E2: revise the plan per the review, rebase on the new tree, build.
+
+## Pickup — 2026-10-20 (late night): everything on for every visitor; D (touch the land) proposed (superseded by the 2026-10-21 pickup above)
 
 **Current agent entry point:** this section, then "Proposed to Mark" below (D, from Mark's grass-video idea, and the
 inside-the-painting readings), `tasks/2026-10-20-arrival-c.md` for C. Read `tasks/lessons.md` from "C (arrival)" down.

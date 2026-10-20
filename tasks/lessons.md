@@ -2602,3 +2602,22 @@ after PR #8 merged (`246e817`, "Merge it then start the second pass").
 - **A conditional DOM layer must be keyed to the state that drives it.** `arrival && !still` mounted a fresh opaque
   layer when reduced motion was toggled off after the end, with the driver already stopped (F11). Mount what a
   driver animates only while the driver runs.
+
+## D1 (touch the land), the plan, 2026-10-21
+
+- **A formula in a plan can be run before the code exists, and should be.** Codex executed D1's displacement and
+  found the direction flip across the touch point (zero below 1e-4, a unit vector above it, the falloff still 1):
+  a two-microunit move flipped a full-weight vertex by 0.14 units. A smooth vector field (`away / radius` times the
+  hat) has no such seam. Write the field as a vector from the start, not a direction times a scalar.
+- **An unqualified name costs a gain.** The plan's `knob` meant two things (B's surge gain, the land's bend gain),
+  and the bend was multiplied twice. Name every gain for what it scales.
+- **A new knob reaches four places, not three:** the tuning type, the tuner, the shipped JSON, and the writer's
+  allowlist in `vite.config.ts` (`TUNING_FIELDS`), which drops unknown keys and answers 200. Test the round trip.
+- **An interaction plan must list every event, including the ones that do nothing today.** A still press
+  (`pointerdown` with no move) and a hover that leaves the canvas (`pointerleave`) had no handler, so one never
+  started and the other never ended.
+- **The nearest hit among the meshes you ask is not the nearest visible surface.** Raycast every occluder in the
+  foreground and accept a land hit only when it is the nearest; 114 of 327 rays over the hedges hit a house first.
+- **The bar moved.** The cypress and the village passed their gates in July; next to the moving sky, and to Simon
+  Lee's village, they read as a cut-out and as boxes. A gate pass is for the piece as it stood; when the piece
+  around a part improves, the part comes up for review again.

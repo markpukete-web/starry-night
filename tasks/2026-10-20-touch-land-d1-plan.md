@@ -358,4 +358,42 @@ already covers that).
 
 ## Review
 
-Pending: Codex (`w4:p4`), brief at `scratch/touch-land-2026-10-20/review-brief.md`.
+Codex (`w4:p4`, read-only, 2026-10-21, `scratch/touch-land-2026-10-20/review-report.md`; it ran the plan's model in
+memory, raycast the real village geometry with the design camera, and drove three's real uniform setter and the
+tuning writer with stubs): **REVISE**. Each finding checked against the plan and the code; each holds. D1 is
+third in the land roadmap (`tasks/todo.md`, "Direction — the land"), after E1 the cypress and E2 the ground, so
+the revision below is the first task when D1 starts, on the new tree. Nothing of D1 is built.
+
+- F1 (P1) the field is discontinuous at the touch point: below 1e-4 the direction is zero, above it a unit vector
+  while the falloff is still 1, so a two-microunit move flips a full-weight vertex by 0.14 → a smooth vector field:
+  the push proportional to `away / radius · (1 − x²)²`, zero at the centre, in TS and GLSL alike; L3 sweeps across
+  the centre.
+- F2 (P1) a finger held still never begins a touch (only `onMove` and the tap did) → `onDown` raycasts and begins
+  the held touch; the gate holds a still press past the tap threshold.
+- F3 (P1) a hover that leaves the canvas without a non-land move stays bent for ever → `pointerleave` on the
+  connected element releases it; the gate exits straight onto an overlay.
+- F4 (P1) the nearest hit among the two land meshes can be a hedge behind a house (114 of 327 probe rays over the
+  foliage had a nearer house) → raycast every foreground mesh (the houses' solid, skin and paint, the island) and
+  accept the hit only when the nearest is land.
+- F5 (P1) hover → press overwrote the amplitude 0.6 → 1 in one frame → the entry's amplitude ramps to the new
+  target over `rise`, never replaced.
+- F6 (P1) "set as default" would silently drop `touchBend`: `vite.config.ts`'s `TUNING_FIELDS` allowlist
+  (`:9–19`) is not in the plan's file list → add the field; test the writer's round trip, not the client payload.
+- F7 (P2) the bend gain applied twice (the stored amplitude × knob and `uLandParams.y` × knob → bend²) → stored
+  amplitudes normalised, the gain once, in the material; the hook's `knob` named `surgeGain`, the land's `bendGain`.
+- F8 (P2) the raycast ran on every `pointermove`, before B's 60 ms gate → the hook keeps the latest pointer
+  position and hit-tests it once per frame in its own `useFrame`, releases stay immediate.
+- F9 (P2) the masking description was incomplete: a land tap consumes B's lift, kick and star flare, and masked
+  even at bend 0 → the policy stated whole; at bend 0 no masking, so B is exactly today's.
+- F10 (P1) admission against the raw list length refused a tap when four closed touches awaited the next prune
+  (the prune at −1 reads the previous clock) → admission against the touches live at the input's `now`, B's
+  `pushKick` pattern.
+- F11–F14 (P3) `heldIndex`, `bendWeight` against `bendGain`; a comment that restated `releaseHeld`; `1e-4` and the
+  capacity 4 repeated where `LAND_TOUCH` should be the one source (the array length derived from `maxTouches`);
+  B's gesture, admission and closing-window code reused rather than a second store abstraction.
+- Gate prerequisite: the arrival is on by default now, so D1's capture URLs carry `arrival=0` or pin the arrival
+  done before `__landInject` exists (the seams mount with the input, after the arrival).
+- Checked sound by the reviewer: `?touch=0` leaves no D1 injection or attribute (the flicker's injection stays,
+  since `alive` is on); the amplitude's continuity at the release and its exact closure; the vec4-array upload
+  (`Float32Array(16)` reaches `uniform4fv` as is); exactly one `<begin_vertex>` in `MeshBasicMaterial`; the
+  world-to-local offsets; the single prune owner publishes whole stores.
