@@ -34,7 +34,9 @@ down.
   to moving strokes"): opened on the moving sky, the wash (the painting's own sky) and the halos drew before the
   strokes landed. Fixed on `fix/moving-first-paint`: both wait with the strokes, so the sky is the gradient alone
   and then arrives whole. Proven with the worker delayed 3 s (the pending frame shows no painting) and aborted (the
-  painted-light fallback holds); after landing byte-identical to the merged build; `?sky=light` to `main`. PR open.
+  painted-light fallback holds); after landing byte-identical to the merged build; `?sky=light` to `main`. PR #13.
+  Codex's one P2 on it: a failed source image (the loader had no error path) would have left a bare gradient for
+  ever; fixed, the loader reports into the same latch, proven with the image aborted (the old fallback shows).
 - [ ] **The flag decision**: `alive`, `touch` and now `arrival` on for every visitor, or a choice. The phone's frame
   rate on the moving sky (now the default) is unmeasured; the locked bar is 30 fps on a mid-tier phone.
 - [ ] **The DPR cap** (Tunables 2, code 1.5): Mark's call.
