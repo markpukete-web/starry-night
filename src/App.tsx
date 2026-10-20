@@ -44,10 +44,11 @@ export default function App() {
   const reduced = usePrefersReducedMotion()
   const [visitorPaused, setVisitorPaused] = useState(false)
   const [showOriginal, setShowOriginal] = useState(false)
-  // The visitor's sky. `?sky=moving` opens on moving strokes, so either sky can be linked. Reduced
-  // motion hides the choice but keeps it, and it returns when the system setting is cleared.
+  // The visitor's sky: moving strokes by default (Mark, 2026-10-20: "switch the default painting when user join to
+  // be the moving strokes"); `?sky=light` opens on painted light, so either sky can be linked. Reduced motion
+  // hides the choice but keeps it, and it returns when the system setting is cleared.
   const [sky, setSky] = useState<SkyStyle>(() =>
-    typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('sky') === 'moving' ? 'moving' : 'light',
+    typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('sky') === 'light' ? 'light' : 'moving',
   )
   const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
   const mode = params.get('mode') ?? 'diorama'

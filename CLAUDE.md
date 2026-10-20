@@ -148,6 +148,8 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   arrival ends within 1.1 s; a frame counts at most 0.1 s (`maxDt`); the opening waits for the sky, the cypress and
   the scan, at most 15 s (`readyTimeout`); the chrome fades in over 600 ms (`reveal`). Reduced motion: no layer, no
   push, the line as a static caption until the first pointer or key. Untuned by Mark.
+- Default sky: moving strokes (Mark, 2026-10-20, after C's gate); `?sky=light` opens on painted light. Reduced motion
+  still forces the painted-light still.
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)

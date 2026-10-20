@@ -29,8 +29,13 @@ below — never edited in place.
 - [ ] **Mark's feel on C** on the local preview, both skies, with and without `alive=1&touch=1`. The taste calls are
   listed under "Open for Mark" in the record.
 - [x] **Codex's code review (G8)**: FIX, then MERGE on the re-review; the dispositions are in the record.
-- [ ] **Then push and open the PR**, on Mark's word; the docs branch `docs/after-pr-11` is its base, so it rides up.
-- [ ] **The flag decision**, the DPR cap: Mark's, when he wants them.
+- [x] **The default sky is moving strokes** (Mark, 2026-10-20, after "Looks good!" on C): `src/App.tsx`, `?sky=light`
+  for painted light. Proven: the new default byte-identical to `main`'s `?sky=moving` (2 frames), `?sky=light`
+  byte-identical to `main`'s default (4 frames), `check:reduced` PASS (`scratch/arrival-c-2026-10-20/sky-default/`).
+  Rides C's PR, outside C's flag. The phone's frame rate on the moving sky is still unmeasured.
+- [ ] **Pushed and PR opened** on Mark's "Looks good!"; the docs branch `docs/after-pr-11` is its base, so it rides up.
+  Read Codex's review from the timeline before the merge; the merge is Mark's word.
+- [ ] **The flag decision** (`alive`, `touch`, `arrival` on for every visitor), the DPR cap: Mark's, when he wants them.
 
 ## Pickup — 2026-10-20: B closed on Mark's word; C (arrival) is next (superseded by the late pickup above)
 
