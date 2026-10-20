@@ -71,7 +71,13 @@ down.
   Rides C's PR, outside C's flag. The phone's frame rate on the moving sky is still unmeasured.
 - [ ] **Pushed and PR opened** on Mark's "Looks good!"; the docs branch `docs/after-pr-11` is its base, so it rides up.
   Read Codex's review from the timeline before the merge; the merge is Mark's word.
-- [ ] **The flag decision** (`alive`, `touch`, `arrival` on for every visitor), the DPR cap: Mark's, when he wants them.
+- [x] **The flag decision** (Mark, 2026-10-20: "go for your recommendation"): `alive`, `touch` and `arrival` on for
+  every visitor, PR #14 (`feat/flags-on`), the opening once per session, `?perf=1` on screen. **The phone, measured
+  at last** on PR #14's preview, everything on: Mark's iPhone, 60 fps at 440 × 755 CSS, DPR 3 (the 1.5 cap applies),
+  twice the locked 30. Codex's one P2 on the PR (the viewport guard's URL built by appending `?`, losing a base's
+  own query) fixed and answered.
+- [ ] **The DPR cap** (Tunables 2, code 1.5): Mark's call; the Lead's recommendation is to keep 1.5 and correct
+  Tunables.
 
 ## Pickup — 2026-10-20: B closed on Mark's word; C (arrival) is next (superseded by the late pickup above)
 
