@@ -33,25 +33,39 @@ inside-the-painting readings), `tasks/2026-10-20-arrival-c.md` for C. Read `task
 - [ ] **The DPR cap** (Tunables 2, code 1.5): Mark's call; the Lead's recommendation is 1.5 and a Tunables correction.
 - [ ] **C's taste calls**, if any: the durations, French under the English, the title during the opening, a hint.
 
-### Proposed to Mark — D, touch the land (Lead, 2026-10-20, from the grass clip)
+### Direction — the land (Mark, 2026-10-21): E1 the cypress, E2 the ground and the trees, then D1 touch
 
-Jeroen's clip: instanced grass on a hill, one tree, three time-of-day presets, and a cursor that bends the blades
-away and lets them spring back (a vertex shader: wind plus a push from the pointer). The honest reading for this
-painting: the touch is the right idea, the grass is the wrong material. The Starry Night has no grass; its land is
-the village, the hills, the olive trees and bushes, and the cypress, all strokes. So:
+Mark, 2026-10-21, on the three-way comparison (`scratch/cypress-compare-2026-10-20/triptych.jpg`: ours, the
+painting, Simon Lee's): "we need to redo the cypress ... silhouette can be improved too"; on the village: Simon
+"not only made extra trees but also some grass as well, which makes the village more live and real than us. Ours
+just some blocks to be honest." The Lead's reading, agreed: the cypress's silhouette is right in kind (the row
+table) and wrong in degree (too thin through the middle, the left tongue too low, one straight spire for a tip),
+and its medium is wrong (the painting's pixels stretched over a volume with 48 thin ribbons on top: a cut-out, not
+strokes). The village is eight painted boxes and four hedge rows on bare grey rock; the painting's sits in rolling
+blue-green ground strokes between dark olive trees. Simon's tree is a good 3D conifer and not Van Gogh's flame; his
+lesson is volume from many small strokes and ground cover, not his tree.
 
-1. **D1, the strokes bend.** The cypress's flame ribbons and the village's foliage bend away from the pointer or
-   finger and spring back, Van Gogh's strokes as the grass. B's input hook already maps a pointer to a world point;
-   the cypress is already oriented ribbons with the flicker's clock. A radial push with a falloff and a recovery
-   envelope in the vertex shader, a knob in the tuner, gated like B. About a session.
-2. **D2, the trees.** Clumps of strokes grown from the painting's own olive and bush masses, placed where the
-   painting puts them and a little further back where it does not (fill, in the derived style; identity objects
-   stay authored). Start from `tasks/2026-10-05-village-foliage.md`. Touchable from the start.
-3. **Then the explorable question** (the three readings in the earlier proposal: a rail into the street, a dive
-   into the sky's brushwork, Simon's walk with a world sky), chosen on captures.
+The order, decided:
 
-Time-of-day presets were locked out until the pre-release gate; that gate has passed, so a dusk or a dawn is now a
-legitimate later slice. Not this one.
+1. **E1, the cypress.** Keep the lobe volume and the row table; re-derive the lobes with less simplification so
+   the main flame carries its width and the left tongue rises where the painting's does; rebuild the cladding from
+   streamlines traced in the cypress's own flow field (`public/reference/cypress-flow.png`, the sky's tracer and
+   ribbon packer) as thick, tapered, curling ribbons coloured from the painting with real relief; let the outer
+   ribbons overshoot the outline so the tongues break it; darken the solid to a shadow between strokes; keep back
+   strokes for the orbit. The flicker and D1's bend carry over as per-ribbon attributes. About two sessions.
+   Plan file first, the painting's crops beside ours, a fresh review, then the build; the gate compares crops at
+   1:1 and Mark's eye decides.
+2. **E2, the land.** The island's top painted in the painting's ground strokes instead of grey rock; stroked olive
+   trees and bushes grown from the painting's own masses (`tasks/2026-10-05-village-foliage.md` is the study),
+   placed where the painting puts them and filling behind in the same manner; the hills as the backdrop they are.
+   Two to three sessions. Same loop.
+3. **D1, touch the land**, on the new tree and the new ground: the strokes bend from the pointer and spring back.
+   Its plan (`tasks/2026-10-20-touch-land-d1-plan.md`, reviewed by Codex 2026-10-21) is banked and gets rebased
+   onto E1's tree; its model, store, hook and knob are independent of the cladding. One session.
+
+Then the explorable question (a rail into the street, a dive into the sky's brushwork, Simon's walk with a world
+sky), on captures, with real ground and trees to walk among. Time-of-day presets are now a legitimate later slice
+(the pre-release gate has passed). Not before E1–D1.
 
 ## Pickup — 2026-10-20 (night): PR #12 merged, C live behind its flag, moving strokes the default sky (superseded by the late-night pickup above)
 
