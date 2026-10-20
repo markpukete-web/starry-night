@@ -9,9 +9,30 @@ below — never edited in place.
 > Its `Status` note was last brought up to date on 2026-10-16 and is no longer maintained. At session start,
 > read `tasks/lessons.md`.
 
-## Pickup — 2026-10-16 (Mac session, late): PR #11 merged; the flag decision, then C
+## Pickup — 2026-10-20: B closed on Mark's word; C (arrival) is next
 
-**Current agent entry point:** this section, then the Mac and painted-light sections at the end of
+**Current agent entry point:** this section, then the 2026-10-16 pickup below, then the late-night pickup below
+that (C's brief). Read `tasks/lessons.md` from "B (touch)" down.
+
+**B is closed.** Mark, 2026-10-20: "skip the iphone test, I want to close current slice and move on to the next".
+B stands as merged in PR #11 (`5bbe243`): the kick follows the wind, painted light's tap light at × 1.8, the
+`surge` knob at 1. Retune passes used: 1 of 4. Nothing changed in the code.
+- The phone's frame rate is waived for closing B, not measured. The locked 30 fps on a mid-tier phone is still
+  unmeasured for `alive` and `touch` with both skies. It matters only when a flag goes on for visitors, so it
+  belongs to the flag decision. Mark's call there.
+- B's open choices stand as built: on touch a drag both orbits and trails, and a tap over the cypress or the
+  village surges the sky behind it. Each is one constant or one mask away if Mark wants it changed later.
+- Still open, unchanged: the flag decision, the DPR cap (Tunables 2 on desktop, code 1.5 at
+  `DioramaExperience.tsx:166`), the impasto light from A. The two merged remote branches still wait for Mark.
+
+- [x] **B closed** (Mark, 2026-10-20). Phone frame rate waived.
+- [ ] **C, arrival:** behind its own flag, so it does not wait on the flag decision. Plan file first, fresh
+  review, then the build (the late-night pickup below).
+- [ ] **The flag decision**, the DPR cap: Mark's, when he wants them.
+
+## Pickup — 2026-10-16 (Mac session, late): PR #11 merged; the flag decision, then C (superseded by the 2026-10-20 pickup above)
+
+**Then the agent entry point:** this section, then the Mac and painted-light sections at the end of
 `tasks/2026-10-13-touch-b.md`, then the late-night pickup below (C's brief). Read `tasks/lessons.md` from
 "The Mac session, 2026-10-16" down.
 
