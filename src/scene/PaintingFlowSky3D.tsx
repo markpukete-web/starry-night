@@ -1229,13 +1229,18 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
       </mesh>
       {/* SkyEdgeBackfill (the whisper wash) is deleted: the S4 side strips continue the real
           painting past the canvas edges and melt into the gradient via the side fade */}
-      {/* moving sky: the wash keeps only the scan's star and moon bodies, drawn OVER the opaque strokes */}
-      <mesh geometry={washGeometry} material={washMaterial} frustumCulled={false} renderOrder={mode === 'moving' ? 2.5 : -1} />
+      {/* moving sky: the wash keeps only the scan's star and moon bodies, drawn OVER the opaque strokes.
+          Opened on the moving sky, the wash and the halos wait with the strokes: drawn alone they are the painting's
+          own sky, and the moving strokes popping in over it read as "painted light for a second, then moving"
+          (Mark, live, 2026-10-20). Until the worker lands the sky is the gradient alone, then it arrives whole. */}
+      <mesh geometry={washGeometry} material={washMaterial} frustumCulled={false} renderOrder={mode === 'moving' ? 2.5 : -1} visible={!awaitingMoving} />
       <mesh geometry={bodiesGeometry} material={bodiesMaterial} frustumCulled={false} renderOrder={2.6} visible={mode === 'moving'} />
       {ribbons.geometry && !awaitingMoving && (
         <mesh geometry={ribbons.geometry} material={ribbons.material} frustumCulled={false} renderOrder={2} />
       )}
-      <SourceOrbs debug={debug} moonGlow={mode === 'moving' ? MOVING.moonGlow : undefined} clock={clock} alive={alive} breath={tuning.breath} touch={touch} touchStore={touchStore} />
+      <group visible={!awaitingMoving}>
+        <SourceOrbs debug={debug} moonGlow={mode === 'moving' ? MOVING.moonGlow : undefined} clock={clock} alive={alive} breath={tuning.breath} touch={touch} touchStore={touchStore} />
+      </group>
     </group>
   )
 }
