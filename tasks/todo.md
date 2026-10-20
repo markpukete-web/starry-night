@@ -9,7 +9,36 @@ below — never edited in place.
 > Its `Status` note was last brought up to date on 2026-10-16 and is no longer maintained. At session start,
 > read `tasks/lessons.md`.
 
-## Pickup — 2026-10-20 (late): C built and gated on `feat/arrival-c`; Mark's feel, Codex's code review, then the push
+## Pickup — 2026-10-20 (night): PR #12 merged, C live behind its flag, moving strokes the default sky
+
+**Current agent entry point:** this section, then `tasks/2026-10-20-arrival-c.md` (C's record, gate and reviews) and
+the "Proposed to Mark" section below (the inside-the-painting idea, next). Read `tasks/lessons.md` from "C (arrival)"
+down.
+
+**Where things are.**
+- `main` at `18fafe7`: PR #12 merged 2026-10-20 13:00 UTC on Mark's word ("merge it"). Mark saw C on the local
+  preview first ("Looks good!"). It carries C behind `?arrival=1`, moving strokes as the default sky (`?sky=light`
+  for painted light; Mark's call after C's gate), the painted-light fallback when the moving-sky worker fails
+  (Codex's one P2 on the PR, fixed in `cb6d23c`, answered), the capture tool's `--arrival-times` and `--screenshot`,
+  B's closure, the branch tidy-up and all of C's records. Codex re-reviewed the head `0cfa1e6` by itself and found
+  nothing. Every thread answered.
+- Codex reviewed C three times in the pane before the PR (plan REVISE F1–F10, code FIX F11–F15, re-review MERGE)
+  and once on GitHub. All dispositions are in the plan file and the record.
+- This record sits on the local branch `docs/after-pr-12` (not pushed; it rides the next code PR). Local
+  `docs/after-pr-11` and `feat/arrival-c` are merged; remote `feat/arrival-c` waits for Mark to delete.
+- Nothing running: the dev server and both previews stopped, the `main` worktree removed. The ignored
+  `scratch/arrival-c-2026-10-20/` holds the spike, the gate's frames and the three Codex reports.
+
+- [x] **PR #12 merged** (`18fafe7`).
+- [ ] **The flag decision**: `alive`, `touch` and now `arrival` on for every visitor, or a choice. The phone's frame
+  rate on the moving sky (now the default) is unmeasured; the locked bar is 30 fps on a mid-tier phone.
+- [ ] **The DPR cap** (Tunables 2, code 1.5): Mark's call.
+- [ ] **Inside the painting** (Mark's idea from Simon Lee's walk mode): the study and the three spikes, "Proposed to
+  Mark" below. Plan file first, fresh review, then the spikes.
+- [ ] **C's taste calls**, if Mark wants any: the durations, French under the English, the title during the
+  opening, a "tap to continue" hint, once per session.
+
+## Pickup — 2026-10-20 (late): C built and gated on `feat/arrival-c`; Mark's feel, Codex's code review, then the push (superseded by the night pickup above)
 
 **Current agent entry point:** this section, then `tasks/2026-10-20-arrival-c.md` (C's record and gate) and
 `tasks/2026-10-20-arrival-c-plan.md` (the reviewed plan). Read `tasks/lessons.md` from "C (arrival)" down.
