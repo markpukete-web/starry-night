@@ -58,6 +58,9 @@ export default function App() {
   // B, behind its own flag (tasks/2026-10-13-touch-b-plan.md); it rides A's variant, so it implies the flag
   const touch = params.get('touch') === '1'
   const alive = params.get('alive') === '1' || tune || touch
+  // C, the arrival, behind its own flag (tasks/2026-10-20-arrival-c-plan.md); it implies nothing, so it opens into
+  // whichever sky the other flags give
+  const arrival = params.get('arrival') === '1'
   // The shipped defaults for A's knobs live in sky-tuning.json (the tuner's "set as default" writes them);
   // a URL knob overrides them, and with the tuner open the last slider positions are remembered per browser.
   const [aliveTuning, setAliveTuning] = useState<AliveTuning>(() => {
@@ -108,7 +111,7 @@ export default function App() {
 
   if (mode === 'diorama') {
     return (
-      <DioramaExperience clean={clean} reduced={motionPaused} sky={sky} still={reduced} alive={alive} aliveTuning={aliveTuning} touch={touch}>
+      <DioramaExperience clean={clean} reduced={motionPaused} sky={sky} still={reduced} alive={alive} aliveTuning={aliveTuning} touch={touch} arrival={arrival}>
         {chrome}
       </DioramaExperience>
     )

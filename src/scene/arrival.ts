@@ -19,6 +19,12 @@ export const ARRIVAL = {
   dissolve: 1.5,
   /** the scan's scale at the end of the dissolve */
   grow: 1.12,
+  /**
+   * the share of the dissolve over which the dark ground goes, before the scan does: the sky appears around the
+   * painting first, then the painting melts into it. At equal speeds the scan's edge read as a hard frame over
+   * the diorama half-way through (gate G5, 2026-10-20)
+   */
+  groundShare: 0.5,
   /** the sky's rate and the push start this long after `hold`, when the live sky is half revealed */
   lead: 0.75,
   /** the sky clock's rate eases 0 → 1 */
@@ -41,8 +47,10 @@ export const ARRIVAL = {
 }
 
 export type ArrivalFrame = {
-  /** the layer's opacity (the ground and the scan together) */
+  /** the scan's opacity */
   overlay: number
+  /** the dark ground's opacity; gone before the scan is */
+  ground: number
   /** the scan's scale */
   scale: number
   /** the line's opacity */
@@ -64,11 +72,12 @@ export const ARRIVAL_END = ARRIVAL.hold + ARRIVAL.lead + ARRIVAL.push
 
 /** Every value of the arrival at time `a`; under reduced motion, the end state at any `a`. */
 export function arrivalFrame(a: number, reduced = false): ArrivalFrame {
-  if (reduced) return { overlay: 0, scale: 1, line: 1, rate: 1, push: 1, done: true }
-  const { hold, lineFade, dissolve, grow, lead, breathe, push } = ARRIVAL
+  if (reduced) return { overlay: 0, ground: 0, scale: 1, line: 1, rate: 1, push: 1, done: true }
+  const { hold, lineFade, dissolve, grow, groundShare, lead, breathe, push } = ARRIVAL
   const fade = smoothstep((a - hold) / dissolve)
   return {
     overlay: 1 - fade,
+    ground: 1 - smoothstep((a - hold) / (dissolve * groundShare)),
     scale: 1 + (grow - 1) * fade,
     line: 1 - smoothstep((a - (hold - lineFade)) / lineFade),
     rate: smoothstep((a - hold - lead) / breathe),

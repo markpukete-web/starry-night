@@ -23,6 +23,7 @@ function spherical(position: readonly number[], target: readonly number[]) {
 test('A1 at a = 0: the painting, the line, the sky held, the camera at the start pose on the home axis', () => {
   const f = arrivalFrame(0)
   assert.equal(f.overlay, 1)
+  assert.equal(f.ground, 1)
   assert.equal(f.line, 1)
   assert.equal(f.rate, 0)
   assert.equal(f.push, 0)
@@ -43,6 +44,7 @@ test('A2 at the end and beyond: the layer gone, the sky live, the camera the hom
   for (const a of [ARRIVAL_END, ARRIVAL_END + 1, 100]) {
     const f = arrivalFrame(a)
     assert.equal(f.overlay, 0)
+    assert.equal(f.ground, 0)
     assert.equal(f.rate, 1)
     assert.equal(f.push, 1)
     assert.equal(f.done, true)
@@ -59,6 +61,7 @@ test('A3 monotone: nothing runs backwards at any speed', () => {
   for (const a of GRID.slice(1)) {
     const f = arrivalFrame(a)
     assert.ok(f.overlay <= prev.overlay, `overlay rose at ${a}`)
+    assert.ok(f.ground <= prev.ground, `ground rose at ${a}`)
     assert.ok(f.line <= prev.line, `line rose at ${a}`)
     assert.ok(f.rate >= prev.rate, `rate fell at ${a}`)
     assert.ok(f.push >= prev.push, `push fell at ${a}`)
@@ -94,6 +97,10 @@ test('A5 order: the line is gone before the dissolve, the sky and the push wait 
   assert.equal(atLead.rate, 0)
   assert.equal(atLead.push, 0)
   assert.ok(atLead.overlay < 1, 'the dissolve has begun by the lead')
+  // the ground is gone while the scan still shows: the sky appears around the painting first
+  const midDissolve = arrivalFrame(ARRIVAL.hold + ARRIVAL.dissolve * ARRIVAL.groundShare)
+  assert.equal(midDissolve.ground, 0)
+  assert.ok(midDissolve.overlay > 0.3, `scan still showing at mid-dissolve: ${midDissolve.overlay}`)
 })
 
 test('A6 reduced motion: the end state at once', () => {
