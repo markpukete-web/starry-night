@@ -30,6 +30,11 @@ down.
   `scratch/arrival-c-2026-10-20/` holds the spike, the gate's frames and the three Codex reports.
 
 - [x] **PR #12 merged** (`18fafe7`).
+- [ ] **The first paint on the moving default** (Mark, live, 2026-10-20: "it reads painted light for a sec then move
+  to moving strokes"): opened on the moving sky, the wash (the painting's own sky) and the halos drew before the
+  strokes landed. Fixed on `fix/moving-first-paint`: both wait with the strokes, so the sky is the gradient alone
+  and then arrives whole. Proven with the worker delayed 3 s (the pending frame shows no painting) and aborted (the
+  painted-light fallback holds); after landing byte-identical to the merged build; `?sky=light` to `main`. PR open.
 - [ ] **The flag decision**: `alive`, `touch` and now `arrival` on for every visitor, or a choice. The phone's frame
   rate on the moving sky (now the default) is unmeasured; the locked bar is 30 fps on a mid-tier phone.
 - [ ] **The DPR cap** (Tunables 2, code 1.5): Mark's call.
