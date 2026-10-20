@@ -847,16 +847,21 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
   // The FILLED assets: the cypress cut-out replaced offline with the painting's own sky patches,
   // plus the S4 side strips continuing the painting past its L/R edges
   // (docs/decisions/0003-inpaint-extend.md). The 2D routes keep the unfilled originals.
-  const flowData = useImageData('/reference/signed-flow-filled.png')
-  const maskData = useImageData('/reference/sky-mask.png')
+  // A failed build, worker or source image releases `awaitingMoving` below, so a page opened on the moving sky (the
+  // default since 2026-10-20) shows what the painted-light route would show, not an empty sky (Codex, PR #12 and
+  // PR #13 P2s). Declared here because the loaders below report into it.
+  const [movingFailed, setMovingFailed] = useState(false)
+  const sourceFailed = () => setMovingFailed(true)
+  const flowData = useImageData('/reference/signed-flow-filled.png', sourceFailed)
+  const maskData = useImageData('/reference/sky-mask.png', sourceFailed)
   // The colour assets ship as lossless WebP (~40% under PNG on continuous-tone paint, pixels
   // byte-identical); the flow fields and mask stay PNG, where WebP is bigger. scripts/slim-
   // reference.ts owns that split — keep its WEBP_ASSETS list and these paths in step.
-  const paintingData = useImageData('/reference/painting-filled.webp')
-  const extendLeftData = useImageData('/reference/sky-extend-left.webp')
-  const extendRightData = useImageData('/reference/sky-extend-right.webp')
-  const extendFlowLeftData = useImageData('/reference/sky-extend-flow-left.png')
-  const extendFlowRightData = useImageData('/reference/sky-extend-flow-right.png')
+  const paintingData = useImageData('/reference/painting-filled.webp', sourceFailed)
+  const extendLeftData = useImageData('/reference/sky-extend-left.webp', sourceFailed)
+  const extendRightData = useImageData('/reference/sky-extend-right.webp', sourceFailed)
+  const extendFlowLeftData = useImageData('/reference/sky-extend-flow-left.png', sourceFailed)
+  const extendFlowRightData = useImageData('/reference/sky-extend-flow-right.png', sourceFailed)
   const [painting, mask, extendLeft, extendRight] = useTexture([
     '/reference/painting-filled.webp',
     '/reference/sky-mask.png',
@@ -981,9 +986,6 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
   // rebuilds it (review F7). Same seed and streamline field as the light sky. Built in a worker: in the render it
   // froze the first switch for about 230 ms on an M5 Pro (Codex, PR #7). The light sky shows until it arrives.
   const [movingGeometry, setMovingGeometry] = useState<BufferGeometry | null>(null)
-  // A failed build or worker releases `awaitingMoving` below, so a page opened on the moving sky (the default since
-  // 2026-10-20) shows the painted-light strokes the log promises, not an empty sky (Codex, PR #12 P2).
-  const [movingFailed, setMovingFailed] = useState(false)
   useEffect(() => {
     if (!movingEver || !images) return
     const worker = new Worker(new URL('./movingSky.worker.ts', import.meta.url), { type: 'module' })
