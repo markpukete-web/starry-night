@@ -2591,3 +2591,14 @@ after PR #8 merged (`246e817`, "Merge it then start the second pass").
   of refs ("cannot access refs during render"); naming each ref `xRef` and passing them as props is what it accepts,
   with no disable comment.
 - **Tunables change logged** (CLAUDE.md): C's entry.
+- **A ref handed back in the same frame is handed back too early.** The driver (priority −2) nulled the sky's step
+  on the frame that ended the arrival, and the sky (priority 0) read null that same frame and took the raw `dt`:
+  a 30 s frame at the very end still jumped the sky (Codex, code review F12). A value another subscriber reads
+  later in the frame is released on the next frame, and the clock, not the driver, owns that rule so a test can
+  see it (A10).
+- **A later rule with the same selectors wins, media query or not.** The reduced-motion `transition: none` was
+  written before the reveal rule it was meant to override and lost (F13). Put an override after what it overrides,
+  and read the computed style once (`getComputedStyle(el).transitionDuration`).
+- **A conditional DOM layer must be keyed to the state that drives it.** `arrival && !still` mounted a fresh opaque
+  layer when reduced motion was toggled off after the end, with the driver already stopped (F11). Mount what a
+  driver animates only while the driver runs.
