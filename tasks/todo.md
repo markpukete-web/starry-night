@@ -33,6 +33,24 @@ B stands as merged in PR #11 (`5bbe243`): the kick follows the wind, painted lig
   review, then the build (the late-night pickup below).
 - [ ] **The flag decision**, the DPR cap: Mark's, when he wants them.
 
+### Proposed to Mark — inside the painting, after C (Mark, 2026-10-20)
+
+Mark, on Simon Lee's teaser (`~/Downloads/videos/Simon Lee Van Gor/`, the 82 s video, 1:04–1:12: a walk mode in
+Wheat Field with Cypresses, a small figure on the path, the camera behind it, the wheat swaying): "when I look into
+the painting I also imagine what it would look like inside the paints. I want to explore how the best we can do this
+in starry night painting." Queued after C. Not built. What it runs into, so the study starts honest:
+
+- **The sky is camera-locked** (`skyRoot.quaternion = camera.quaternion × homeInverse`). From inside the village,
+  turning the view would turn the sky with it. A walk needs a world-space sky, which the 2026-07 front-arc decision
+  gave up because the painting cannot supply the back of the dome (`dioramaContract.ts`, `frontArcOnlyForThisSlice`).
+- **Free-fly is locked out** and the orbit limits are a locked criterion. A walk or a dive is a camera outside
+  them. Mark can lift the lock for an authored path (a rail, no free-fly), which keeps the composition promise.
+- **Three readings to spike,** one afternoon each, captures to Mark: (1) a rail down into the village street,
+  looking up at the sky, the dome unlocked only while inside; (2) a dive into the sky's brushwork, the camera
+  passing between the ribbons of the great whorl (the strokes are 3D meshes on the dome, so this needs no new
+  world); (3) Simon's shape, a figure on the ground and the camera behind, which needs a world sky, ground and a
+  village at walking scale, the largest build by far. The study names what each costs against the painting.
+
 ## Pickup — 2026-10-16 (Mac session, late): PR #11 merged; the flag decision, then C (superseded by the 2026-10-20 pickup above)
 
 **Then the agent entry point:** this section, then the Mac and painted-light sections at the end of
