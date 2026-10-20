@@ -23,7 +23,10 @@ B stands as merged in PR #11 (`5bbe243`): the kick follows the wind, painted lig
 - B's open choices stand as built: on touch a drag both orbits and trails, and a tap over the cypress or the
   village surges the sky behind it. Each is one constant or one mask away if Mark wants it changed later.
 - Still open, unchanged: the flag decision, the DPR cap (Tunables 2 on desktop, code 1.5 at
-  `DioramaExperience.tsx:166`), the impasto light from A. The two merged remote branches still wait for Mark.
+  `DioramaExperience.tsx:166`), the impasto light from A.
+- Branches tidied (Mark, 2026-10-20): `fix/touch-codex-findings` and `claude/confident-bohr-1y7p2u` deleted, local
+  and remote, both fully in `main`. Left: `main`, `record/2d-streamline-flow` (the 2D-era bookmark, kept on
+  purpose) and the local `docs/after-pr-11`.
 
 - [x] **B closed** (Mark, 2026-10-20). Phone frame rate waived.
 - [ ] **C, arrival:** behind its own flag, so it does not wait on the flag decision. Plan file first, fresh
