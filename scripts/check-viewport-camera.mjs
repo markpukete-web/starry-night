@@ -176,7 +176,9 @@ async function newPage(port, viewport, errors, { clean = true } = {}) {
   // `arrival` value of its own.
   const pageUrl = new URL(appUrl)
   pageUrl.searchParams.set('mode', 'diorama')
+  // the chrome checks need the chrome: a `clean=1` carried by the base must go on those pages (Codex, PR #14 P2)
   if (clean) pageUrl.searchParams.set('clean', '1')
+  else pageUrl.searchParams.delete('clean')
   if (!pageUrl.searchParams.has('arrival')) pageUrl.searchParams.set('arrival', '0')
   await page.send('Page.navigate', { url: pageUrl.toString() })
   const start = Date.now()
