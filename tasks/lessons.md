@@ -2566,3 +2566,28 @@ after PR #8 merged (`246e817`, "Merge it then start the second pass").
   head by itself (trigger: "New commits") and posted only a 👍, which is easy to miss. I wrote in the merge note
   that the last review covered the older commit, and had to correct it. Before writing which commit a review
   covers, read the `codex-review-state` line in Codex's summary comment. It names the commit and the status.
+
+## C (arrival), 2026-10-20
+
+- **A plan with complete code can be executed before it is built.** Codex ran the plan's timeline and driver in
+  memory against three's real camera and found six P1s in a plan I believed complete (a caption that could never be
+  dismissed, hidden chrome still clickable, a 30 s frame delta, a seam that missed the cypress, a curtain a failed
+  asset would hold for ever, a skip 2× slower than claimed). Give a plan reviewer complete code and brief it to run
+  it.
+- **zsh does not split an unquoted variable.** `for combo in "desktop light"; set -- $combo` gave one word, and
+  `--viewport $vp` became `--viewport "desktop light"`, which the script read as desktop; `--sky=$sky` became
+  `sky=`. The frames had the right names and the wrong content. Before reading a sheet, check the frames JSON's
+  `url` and `identify` the PNG's size. Use `${=VAR}` in zsh, or a bash script file.
+- **At one speed, a dissolving picture reads as a frame.** The scan and its dark ground fading together left the
+  scan's edge as a hard rectangle over the diorama half-way through. The ground must go first (`groundShare`), so
+  the world appears around the painting before the painting melts into it.
+- **Neither headless Chromium nor a new tab in the Chrome MCP group hides a page.** `Page.setWebLifecycleState
+  frozen` kept rAF at 257 frames in 3 s; a covering tab left `visibilityState` visible and 120 fps running. To test
+  a long frame delta, block the page's main thread for N seconds (`while (performance.now() < end) {}`): the next
+  frame's `dt` is N, the same path a hidden tab takes.
+- **`montage` wants a font the Mac lacks.** Build contact sheets with `magick ( a b +append ) ( c d +append )
+  -append`.
+- **A driver's writes want refs named `*Ref`.** The React Compiler lint flags `.current` writes through an object
+  of refs ("cannot access refs during render"); naming each ref `xRef` and passing them as props is what it accepts,
+  with no disable comment.
+- **Tunables change logged** (CLAUDE.md): C's entry.

@@ -9,7 +9,30 @@ below — never edited in place.
 > Its `Status` note was last brought up to date on 2026-10-16 and is no longer maintained. At session start,
 > read `tasks/lessons.md`.
 
-## Pickup — 2026-10-20: B closed on Mark's word; C (arrival) is next
+## Pickup — 2026-10-20 (late): C built and gated on `feat/arrival-c`; Mark's feel, Codex's code review, then the push
+
+**Current agent entry point:** this section, then `tasks/2026-10-20-arrival-c.md` (C's record and gate) and
+`tasks/2026-10-20-arrival-c-plan.md` (the reviewed plan). Read `tasks/lessons.md` from "C (arrival)" down.
+
+**Where things are.**
+- Branch `feat/arrival-c` (local, from `docs/after-pr-11`): the plan, its revision on Codex's review, and three code
+  commits (`3e87d9a`, `55cd955`, `26cfe3d`), plus the record. Not pushed (Mark reviews first).
+- The gate is green through G7 (`tasks/2026-10-20-arrival-c.md`): 140 tests, flag-off byte-identical to `main` on
+  18 frames, the end state byte-identical on 12, the guards PASS, the skips, the long frame and the frame rate all
+  checked. G8 (Codex's code review) was dispatched at the end of the session.
+- Servers left running for Mark's look: the production build of the branch on `http://127.0.0.1:5180/` (the
+  preview URL is `?arrival=1`), `main`'s build on 5181 (worktree `scratch/arrival-c-2026-10-20/wt-main`), the dev
+  server on 5179. Pid files in `scratch/arrival-c-2026-10-20/`.
+- Mark's inside-the-painting idea is queued after C (the "Proposed to Mark" section below).
+
+- [ ] **Mark's feel on C** on the local preview, both skies, with and without `alive=1&touch=1`. The taste calls are
+  listed under "Open for Mark" in the record.
+- [ ] **Codex's code review (G8)**: read `scratch/arrival-c-2026-10-20/code-review-report.md`, fix what holds,
+  answer the rest in the record.
+- [ ] **Then push and open the PR**, on Mark's word; the docs branch `docs/after-pr-11` is its base, so it rides up.
+- [ ] **The flag decision**, the DPR cap: Mark's, when he wants them.
+
+## Pickup — 2026-10-20: B closed on Mark's word; C (arrival) is next (superseded by the late pickup above)
 
 **Current agent entry point:** this section, then the 2026-10-16 pickup below, then the late-night pickup below
 that (C's brief). Read `tasks/lessons.md` from "B (touch)" down.
