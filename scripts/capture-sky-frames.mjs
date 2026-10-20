@@ -8,6 +8,10 @@
 // `--eval` runs in the page once it has settled, with the clock already pinned to the first time. A touch
 // injected with an explicit t0 (`window.__touchInject(0.62, 0.3, 1, 5, true)`) replays B's gate rows on any
 // machine. The frames JSON records what the code returned (`evalResult`).
+// C (arrival): `--arrival-times a,b,c`, one per `--times` entry, finite and non-decreasing, pins `window.__arrivalTime`
+// in the same evaluation as `__skyTime`, and the first pair is installed before navigation so the arrival cannot finish
+// during the settle. Files are then `<prefix>-t<time>-a<arrival>.png`. `--screenshot` reads the page (the arrival's
+// layer is DOM) instead of the canvas. With neither option the script runs exactly as before.
 // Env: CHROME_PATH, CHROME_FLAGS (--no-sandbox in a cloud session), CAPTURE_SETTLE_MS (about 10000 there).
 // Each frame is <outDir>/<prefix>-t<time>.png. The self-check: the pinned clock must be read back as finite, and
 // two reads at the same pinned time must be byte-identical, or the hook is not in the page (Codex F2, 2026-10-11).
@@ -31,6 +35,25 @@ const times = opt('times', '0,0.5,3.7,11.2').split(',').map(Number)
 const viewportName = opt('viewport', 'desktop')
 const prefix = opt('prefix', viewportName)
 const evalBefore = opt('eval', null)
+const arrivalRaw = opt('arrival-times', null)
+const arrivalTimes = arrivalRaw ? arrivalRaw.split(',').map(Number) : null
+const screenshot = args.includes('--screenshot')
+if (arrivalTimes) {
+  const bad =
+    arrivalTimes.length !== times.length
+      ? `--arrival-times has ${arrivalTimes.length} entries, --times has ${times.length}`
+      : arrivalTimes.some((a) => !Number.isFinite(a))
+        ? '--arrival-times must all be finite'
+        : arrivalTimes.some((a, i) => i > 0 && a < arrivalTimes[i - 1])
+          ? '--arrival-times must not decrease: the arrival latches once it is done'
+          : null
+  if (bad) {
+    console.error(bad)
+    process.exit(1)
+  }
+}
+/** Both pins in ONE expression: a frame between two evaluations could move the arrival on (PR #11 P2, the same race). */
+const pin = (i) => (arrivalTimes ? `window.__skyTime = ${times[i]}; window.__arrivalTime = ${arrivalTimes[i]};` : `window.__skyTime = ${times[i]};`)
 const viewport = viewportName === 'mobile' ? { width: 390, height: 844, mobile: true } : { width: 1600, height: 900, mobile: false }
 const chromePath =
   process.env.CHROME_PATH ||
@@ -117,6 +140,16 @@ class CdpPage {
 }
 
 async function readFrame(page) {
+  if (screenshot) {
+    // the same three-frame wait, then the page as composited (the arrival's layer is DOM, outside the canvas)
+    await page.send('Runtime.evaluate', {
+      expression: `new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(resolve))))`,
+      awaitPromise: true,
+    })
+    const shot = await page.send('Page.captureScreenshot', { format: 'png' })
+    if (typeof shot.data !== 'string') throw new Error(`bad screenshot: ${JSON.stringify(shot).slice(0, 200)}`)
+    return Buffer.from(shot.data, 'base64')
+  }
   const result = await page.send('Runtime.evaluate', {
     expression: `new Promise((resolve, reject) => {
       const c = document.querySelector('canvas')
@@ -143,6 +176,9 @@ async function main() {
     await page.connect()
     await page.send('Runtime.enable')
     await page.send('Emulation.setDeviceMetricsOverride', { width: viewport.width, height: viewport.height, deviceScaleFactor: 1, mobile: viewport.mobile })
+    if (arrivalTimes || screenshot) await page.send('Page.enable')
+    // the arrival is held at its first pair from the page's first frame, so the settle cannot run it to the end
+    if (arrivalTimes) await page.send('Page.addScriptToEvaluateOnNewDocument', { source: pin(0) })
     await page.send('Page.navigate', { url })
     const start = Date.now()
     for (;;) {
@@ -156,28 +192,33 @@ async function main() {
     if (evalBefore) {
       // pin the clock in the same evaluation, before the page code: an unpinned frame between the two would prune
       // an injected entry whose explicit t0 is older than the live clock's window (Codex, PR #11 P2)
-      const ran = await page.send('Runtime.evaluate', { expression: `window.__skyTime = ${times[0]};\n${evalBefore}`, returnByValue: true })
+      const ran = await page.send('Runtime.evaluate', { expression: `${pin(0)}\n${evalBefore}`, returnByValue: true })
       if (ran.exceptionDetails) throw new Error(`--eval threw: ${ran.exceptionDetails.exception?.description ?? ran.exceptionDetails.text}`)
       evalResult = ran.result.value ?? null
     }
-    const summary = { url, viewport, times, evalBefore, evalResult, frames: [], errors: page.errors }
+    const summary = { url, viewport, times, arrivalTimes, screenshot, evalBefore, evalResult, frames: [], errors: page.errors }
     const firstMoving = times.find((t) => t > 0)
-    for (const t of times) {
-      await page.send('Runtime.evaluate', { expression: `window.__skyTime = ${t}` })
+    for (let i = 0; i < times.length; i++) {
+      const t = times[i]
+      await page.send('Runtime.evaluate', { expression: pin(i) })
       const a = await readFrame(page)
       // the self-check on the first frame and the first t > 0 only (a readback costs seconds under software
       // rendering): at t = 0 a foreground reading the clock one frame late would still show as pinned
-      if (t === times[0] || t === firstMoving) {
+      if (i === 0 || t === firstMoving) {
         const b = await readFrame(page)
         if (!a.equals(b)) throw new Error(`pinned clock self-check failed at t=${t}: two reads differ, so the page is not pinned`)
       }
-      const file = join(outDir, `${prefix}-t${t}.png`)
+      const file = join(outDir, `${prefix}-t${t}${arrivalTimes ? `-a${arrivalTimes[i]}` : ''}.png`)
       writeFileSync(file, a)
-      summary.frames.push({ t, file, bytes: a.length })
-      console.log(`t=${t}  ${a.length} bytes  ${file}`)
+      summary.frames.push({ t, ...(arrivalTimes ? { a: arrivalTimes[i] } : {}), file, bytes: a.length })
+      console.log(`t=${t}${arrivalTimes ? ` a=${arrivalTimes[i]}` : ''}  ${a.length} bytes  ${file}`)
     }
     const readBack = await page.send('Runtime.evaluate', { expression: `window.__skyTime`, returnByValue: true })
     if (!Number.isFinite(readBack.result.value)) throw new Error('pinned clock not readable')
+    if (arrivalTimes) {
+      const arrivalBack = await page.send('Runtime.evaluate', { expression: `window.__arrivalTime`, returnByValue: true })
+      if (!Number.isFinite(arrivalBack.result.value)) throw new Error('pinned arrival clock not readable')
+    }
     page.close()
     writeFileSync(join(outDir, `${prefix}-frames.json`), JSON.stringify(summary, null, 2))
     if (page.errors.length) {
