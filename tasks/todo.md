@@ -17,9 +17,10 @@ below — never edited in place.
 **Where things are.**
 - Branch `feat/arrival-c` (local, from `docs/after-pr-11`): the plan, its revision on Codex's review, and three code
   commits (`3e87d9a`, `55cd955`, `26cfe3d`), plus the record. Not pushed (Mark reviews first).
-- The gate is green through G7 (`tasks/2026-10-20-arrival-c.md`): 140 tests, flag-off byte-identical to `main` on
-  18 frames, the end state byte-identical on 12, the guards PASS, the skips, the long frame and the frame rate all
-  checked. G8 (Codex's code review) was dispatched at the end of the session.
+- The gate is green through G8 (`tasks/2026-10-20-arrival-c.md`): 141 tests, the diorama route's flag-off variants
+  byte-identical to `main` on 18 frames, the end state byte-identical on 12 (re-run after the fixes), the guards
+  PASS, the skips, the long frame, the preference cycles and the frame rate checked by hand. Codex's code review
+  found three P1s and two P2s (F11–F15), fixed in `a44df55` and confirmed closed by a bounded re-review: MERGE.
 - Servers left running for Mark's look: the production build of the branch on `http://127.0.0.1:5180/` (the
   preview URL is `?arrival=1`), `main`'s build on 5181 (worktree `scratch/arrival-c-2026-10-20/wt-main`), the dev
   server on 5179. Pid files in `scratch/arrival-c-2026-10-20/`.
@@ -27,8 +28,7 @@ below — never edited in place.
 
 - [ ] **Mark's feel on C** on the local preview, both skies, with and without `alive=1&touch=1`. The taste calls are
   listed under "Open for Mark" in the record.
-- [ ] **Codex's code review (G8)**: read `scratch/arrival-c-2026-10-20/code-review-report.md`, fix what holds,
-  answer the rest in the record.
+- [x] **Codex's code review (G8)**: FIX, then MERGE on the re-review; the dispositions are in the record.
 - [ ] **Then push and open the PR**, on Mark's word; the docs branch `docs/after-pr-11` is its base, so it rides up.
 - [ ] **The flag decision**, the DPR cap: Mark's, when he wants them.
 
