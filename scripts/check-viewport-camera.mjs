@@ -170,7 +170,17 @@ async function newPage(port, viewport, errors, { clean = true } = {}) {
     features: [{ name: 'prefers-reduced-motion', value: 'reduce' }],
   })
   await setViewport(page, viewport)
-  await page.send('Page.navigate', { url: `${appUrl}?mode=diorama${clean ? '&clean=1' : ''}` })
+  // Built with URL, not by appending `?mode=…`: a base that carries a query of its own got a second `?`, and
+  // `arrival=0` read as "0?mode=diorama", so the opt-out was lost (Codex, PR #14 P2). The opening is on by
+  // default (2026-10-20) and this check wants the steady state, so it opts out unless the base URL carries an
+  // `arrival` value of its own.
+  const pageUrl = new URL(appUrl)
+  pageUrl.searchParams.set('mode', 'diorama')
+  // the chrome checks need the chrome: a `clean=1` carried by the base must go on those pages (Codex, PR #14 P2)
+  if (clean) pageUrl.searchParams.set('clean', '1')
+  else pageUrl.searchParams.delete('clean')
+  if (!pageUrl.searchParams.has('arrival')) pageUrl.searchParams.set('arrival', '0')
+  await page.send('Page.navigate', { url: pageUrl.toString() })
   const start = Date.now()
   for (;;) {
     await sleep(500)

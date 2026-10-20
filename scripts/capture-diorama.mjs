@@ -277,8 +277,16 @@ async function main() {
   const chrome = startChrome(port)
   const errors = []
   const captures = []
-  // DIORAMA_CAPTURE_EXTRA appends debug params (e.g. '&hide=wash') for layer-bisection probes
-  const base = `${appUrl}?mode=diorama&clean=1${process.env.DIORAMA_CAPTURE_EXTRA || ''}`
+  // Built with URL, not by appending `?mode=…`: a base with a query of its own got a second `?` and its values
+  // read wrong (Codex, PR #14 P2). DIORAMA_CAPTURE_EXTRA carries debug params (e.g. '&hide=wash') for
+  // layer-bisection probes, merged as pairs. The opening is on by default (2026-10-20) and these captures want the
+  // steady state, so `arrival=0` unless the base or EXTRA asked for an arrival value of its own.
+  const baseUrl = new URL(appUrl)
+  baseUrl.searchParams.set('mode', 'diorama')
+  baseUrl.searchParams.set('clean', '1')
+  for (const [key, value] of new URLSearchParams(process.env.DIORAMA_CAPTURE_EXTRA || '')) baseUrl.searchParams.set(key, value)
+  if (!baseUrl.searchParams.has('arrival')) baseUrl.searchParams.set('arrival', '0')
+  const base = baseUrl.toString()
   const desktop = { width: 1600, height: 900 }
   const mobile = { width: 390, height: 844, mobile: true }
 

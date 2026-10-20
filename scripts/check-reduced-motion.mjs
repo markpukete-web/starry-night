@@ -216,6 +216,9 @@ async function main() {
   const baseUrl = new URL(appUrl)
   baseUrl.searchParams.set('mode', 'diorama')
   baseUrl.searchParams.set('clean', '1')
+  // the opening is on by default (2026-10-20); this check measures the steady state, so it opts out unless the
+  // base URL asks for the arrival (then the control page needs CAPTURE_SETTLE_MS past the arrival's 8.75 s)
+  if (!baseUrl.searchParams.has('arrival')) baseUrl.searchParams.set('arrival', '0')
   const base = baseUrl.toString()
   console.log(`page query: ${baseUrl.search}`)
   try {
