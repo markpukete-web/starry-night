@@ -9,7 +9,51 @@ below — never edited in place.
 > Its `Status` note was last brought up to date on 2026-10-16 and is no longer maintained. At session start,
 > read `tasks/lessons.md`.
 
-## Pickup — 2026-10-20 (night): PR #12 merged, C live behind its flag, moving strokes the default sky
+## Pickup — 2026-10-20 (late night): everything on for every visitor; D (touch the land) proposed
+
+**Current agent entry point:** this section, then "Proposed to Mark" below (D, from Mark's grass-video idea, and the
+inside-the-painting readings), `tasks/2026-10-20-arrival-c.md` for C. Read `tasks/lessons.md` from "C (arrival)" down.
+
+**Where things are.**
+- `main` at `e6567e3`, production deployed 2026-10-20 13:45 UTC. Three PRs merged tonight on Mark's word: #12 (C
+  behind its flag, moving strokes the default), #13 (the moving default's first paint: the wash and the halos wait
+  with the strokes; a failed source image releases the wait), #14 (A, B and C on for every visitor, `?alive=0`,
+  `?touch=0`, `?arrival=0` to opt out; the opening once per session, `?arrival=1` always; `?perf=1` on screen; the
+  guard and capture scripts build their URLs with `URL` and opt out of the opening). Every Codex thread answered:
+  one P2 on #12, one on #13, three on #14 (all scripts), each fixed and verified.
+- **The phone, measured:** Mark's iPhone on #14's preview with everything on, 60 fps at 440 × 755 CSS, DPR 3 (the
+  1.5 cap applies). The locked bar is 30. The flag decision is closed.
+- Remote branches merged and waiting for Mark to delete: `feat/arrival-c`, `fix/moving-first-paint`, `feat/flags-on`.
+  This record sits on the local `docs/after-pr-14`; it rides the next code PR. Nothing running.
+- Mark's next direction (2026-10-20, with Jeroen van Welsenes' "touch grass" clip in `~/Downloads/videos/grass/`):
+  make the painting explorable like Simon Lee's, learn from his village, add grass or trees in the village that can
+  be touched through the screen. The Lead's reading and the proposed slice D are under "Proposed to Mark" below.
+
+- [ ] **D, touch the land** (proposed, below): Mark's word, then the plan file, a fresh review, the build.
+- [ ] **The DPR cap** (Tunables 2, code 1.5): Mark's call; the Lead's recommendation is 1.5 and a Tunables correction.
+- [ ] **C's taste calls**, if any: the durations, French under the English, the title during the opening, a hint.
+
+### Proposed to Mark — D, touch the land (Lead, 2026-10-20, from the grass clip)
+
+Jeroen's clip: instanced grass on a hill, one tree, three time-of-day presets, and a cursor that bends the blades
+away and lets them spring back (a vertex shader: wind plus a push from the pointer). The honest reading for this
+painting: the touch is the right idea, the grass is the wrong material. The Starry Night has no grass; its land is
+the village, the hills, the olive trees and bushes, and the cypress, all strokes. So:
+
+1. **D1, the strokes bend.** The cypress's flame ribbons and the village's foliage bend away from the pointer or
+   finger and spring back, Van Gogh's strokes as the grass. B's input hook already maps a pointer to a world point;
+   the cypress is already oriented ribbons with the flicker's clock. A radial push with a falloff and a recovery
+   envelope in the vertex shader, a knob in the tuner, gated like B. About a session.
+2. **D2, the trees.** Clumps of strokes grown from the painting's own olive and bush masses, placed where the
+   painting puts them and a little further back where it does not (fill, in the derived style; identity objects
+   stay authored). Start from `tasks/2026-10-05-village-foliage.md`. Touchable from the start.
+3. **Then the explorable question** (the three readings in the earlier proposal: a rail into the street, a dive
+   into the sky's brushwork, Simon's walk with a world sky), chosen on captures.
+
+Time-of-day presets were locked out until the pre-release gate; that gate has passed, so a dusk or a dawn is now a
+legitimate later slice. Not this one.
+
+## Pickup — 2026-10-20 (night): PR #12 merged, C live behind its flag, moving strokes the default sky (superseded by the late-night pickup above)
 
 **Current agent entry point:** this section, then `tasks/2026-10-20-arrival-c.md` (C's record, gate and reviews) and
 the "Proposed to Mark" section below (the inside-the-painting idea, next). Read `tasks/lessons.md` from "C (arrival)"
