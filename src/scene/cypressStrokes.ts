@@ -38,9 +38,15 @@ export const CYPRESS_RIBBON_CONFIG = {
   /** the tip's width as a share of the base's: the stroke draws out upward */
   taper: 0.45,
   reliefSpread: 0.035,
+  /**
+   * how a walk reads the field's sign: `up` takes the texel's direction as baked (the cypress's field is signed up
+   * at bake time); `continuous` flips a texel that opposes the walk's last step and stops at a two-step cycle (the
+   * land, E2: a horizontal lane's neighbouring texels decode to opposites and trapped the walk, Codex F9)
+   */
+  heading: 'up' as 'up' | 'continuous',
 } as const
 
-export type CypressRibbonConfig = { -readonly [K in keyof typeof CYPRESS_RIBBON_CONFIG]: number }
+export type CypressRibbonConfig = { -readonly [K in keyof typeof CYPRESS_RIBBON_CONFIG]: (typeof CYPRESS_RIBBON_CONFIG)[K] extends number ? number : 'up' | 'continuous' }
 
 export type CypressRibbonSample = {
   /** crop-normalised */
@@ -162,15 +168,32 @@ export function traceCypressRibbons(
   const widthDenominator = flow.width - 1
   const heightDenominator = flow.height - 1
   const stepPx = config.step * heightDenominator
+  const continuous = config.heading === 'continuous'
   const walk = (px: number, py: number, sign: 1 | -1, steps: number): CypressRibbonSample[] => {
     const out: CypressRibbonSample[] = []
     let x = px * widthDenominator
     let y = py * heightDenominator
     let outside = 0
+    let hx = 0
+    let hy = 0
+    let twoBackX = Number.NaN
+    let twoBackY = Number.NaN
     for (let k = 0; k < steps; k++) {
-      const [dx, dy] = direction(x / widthDenominator, y / heightDenominator)
-      x += sign * dx * stepPx
-      y += sign * dy * stepPx
+      let [dx, dy] = direction(x / widthDenominator, y / heightDenominator)
+      if (continuous && k > 0 && dx * hx + dy * hy < 0) {
+        dx = -dx
+        dy = -dy
+      }
+      hx = dx
+      hy = dy
+      const nextX = x + sign * dx * stepPx
+      const nextY = y + sign * dy * stepPx
+      // a two-step cycle: the walk is back within a quarter step of where it was two steps ago
+      if (continuous && Math.hypot(nextX - twoBackX, nextY - twoBackY) < stepPx * 0.25) break
+      twoBackX = x
+      twoBackY = y
+      x = nextX
+      y = nextY
       if (x < 0 || y < 0 || x > widthDenominator || y > heightDenominator) break
       const sample = { px: x / widthDenominator, py: y / heightDenominator, inside: inside(x / widthDenominator, y / heightDenominator) }
       if (!sample.inside && ++outside > config.overshootSteps) break

@@ -239,3 +239,61 @@ test('on the real field the flames are clad: samples inside the satellite runs, 
   // a frond's smoothed interval can reach a pixel into the main at its base, so the control allows a trace of the positive count
   for (const [id, n] of control.perFrond) assert.ok(n < real.perFrond.get(id)! * 0.02, `main-only mask: frond ${id} holds ${n} samples against ${real.perFrond.get(id)} with the flames`)
 })
+
+test('a continuous heading walks a lane whose texels alternate in sign, where the signed-up walk is trapped between two points (E2, Codex F9)', () => {
+  // a horizontal band whose columns alternate between the two encodings of the same undirected orientation
+  const flow: ImageData2D = { data: new Uint8ClampedArray(WIDTH * HEIGHT * 4), width: WIDTH, height: HEIGHT }
+  const painting: ImageData2D = { data: new Uint8ClampedArray(WIDTH * HEIGHT * 4), width: WIDTH, height: HEIGHT }
+  for (let y = 0; y < HEIGHT; y++) {
+    for (let x = 0; x < WIDTH; x++) {
+      const i = (y * WIDTH + x) * 4
+      const dx = x % 2 === 0 ? 1 : -1
+      flow.data[i] = Math.round(((dx + 1) / 2) * 255)
+      flow.data[i + 1] = Math.round(((0 + 1) / 2) * 255)
+      flow.data[i + 2] = y >= 90 && y <= 110 ? 200 : 0
+      flow.data[i + 3] = 255
+      painting.data[i + 3] = 255
+    }
+  }
+  const rows = { uv: [0, 0, 1, 1] as [number, number, number, number], width: WIDTH, height: HEIGHT, spans: [[0, 0, 1], [1, 0, 1]] as [number, number, number][], satellites: [] }
+  // steps of one texel, so every step lands on the opposite sign
+  const config = { ...FIXED, step: 1 / (HEIGHT - 1), minLength: 0.2, maxLength: 0.2, minHalfWidth: 0.01, maxHalfWidth: 0.01, overshootSteps: 0 }
+  const trapped = traceCypressRibbons(flow, painting, rows, 20, 5, { ...config, heading: 'up' })
+  const span = (ribbon: CypressRibbon) => Math.max(...ribbon.samples.map((s) => s.px)) - Math.min(...ribbon.samples.map((s) => s.px))
+  const trappedSpan = trapped.reduce((worst, r) => Math.max(worst, span(r)), 0)
+  assert.ok(trappedSpan < 3 / (WIDTH - 1), `the signed-up walk oscillates between two texels: span ${(trappedSpan * (WIDTH - 1)).toFixed(1)} px`)
+  const walked = traceCypressRibbons(flow, painting, rows, 20, 5, { ...config, heading: 'continuous' })
+  assert.ok(walked.length > 10)
+  for (const ribbon of walked) {
+    const px = ribbon.samples.map((s) => s.px)
+    for (let k = 1; k < px.length; k++) assert.ok(px[k] > px[k - 1] - 1e-9 || px[k] < px[k - 1] + 1e-9, 'the walk goes one way')
+    assert.ok(span(ribbon) * (WIDTH - 1) >= 8, `the continuous walk covers the lane: span ${(span(ribbon) * (WIDTH - 1)).toFixed(1)} px`)
+    const edges = ribbonEdges(ribbon, WIDTH, HEIGHT, 1)
+    for (let k = 0; k < edges.length; k++) assert.ok(Math.hypot((edges[k].left[0] - edges[k].right[0]) * (WIDTH - 1), (edges[k].left[1] - edges[k].right[1]) * (HEIGHT - 1)) > 1, 'no collapsed column')
+  }
+})
+
+test('a continuous walk stops at a two-step cycle instead of walking it for ever', () => {
+  // a field that sends every step back where it came from: the walk must end, not fill its length with one pair
+  const flow: ImageData2D = { data: new Uint8ClampedArray(WIDTH * HEIGHT * 4), width: WIDTH, height: HEIGHT }
+  const painting: ImageData2D = { data: new Uint8ClampedArray(WIDTH * HEIGHT * 4), width: WIDTH, height: HEIGHT }
+  for (let y = 0; y < HEIGHT; y++) {
+    for (let x = 0; x < WIDTH; x++) {
+      const i = (y * WIDTH + x) * 4
+      // a sink at x = 30: texels left of it point right, right of it point left (a direction field, not an orientation)
+      const dx = x < 30 ? 1 : -1
+      flow.data[i] = Math.round(((dx + 1) / 2) * 255)
+      flow.data[i + 1] = 128
+      flow.data[i + 2] = 200
+      flow.data[i + 3] = 255
+      painting.data[i + 3] = 255
+    }
+  }
+  const rows = { uv: [0, 0, 1, 1] as [number, number, number, number], width: WIDTH, height: HEIGHT, spans: [[0, 0, 1], [1, 0, 1]] as [number, number, number][], satellites: [] }
+  const config = { ...FIXED, step: 1 / (HEIGHT - 1), minLength: 0.3, maxLength: 0.3, minHalfWidth: 0.01, maxHalfWidth: 0.01, overshootSteps: 0, heading: 'continuous' as const }
+  for (const ribbon of traceCypressRibbons(flow, painting, rows, 30, 3, config)) {
+    const px = ribbon.samples.map((s) => Math.round(s.px * (WIDTH - 1)))
+    const distinct = new Set(px).size
+    assert.ok(ribbon.samples.length <= distinct + 4, `a walk of ${ribbon.samples.length} samples over ${distinct} texels: the cycle was not stopped`)
+  }
+})
