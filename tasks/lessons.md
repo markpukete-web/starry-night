@@ -2692,3 +2692,27 @@ after PR #8 merged (`246e817`, "Merge it then start the second pass").
 - **Retune within the cap, then stop.** Four passes moved the tree from a cut-out to broad dark strokes at the
   painting's values; the last open number is a texture dial, and that is Mark's call with the captures, not a
   fifth pass.
+
+## E1 (the cypress), the code review, 2026-10-21
+
+- **Two lifted edges do not lift the triangles between them.** A strip whose corners sit on a curved lobe has
+  interiors inside it; the chord across a quarter of a wide ribbon sagged 0.004 at the rim, where the ellipse's
+  curvature radius is 0.027. Lift every column, and test the emitted triangles' centroids, not the corners.
+- **A sample of the batch misses the batch's worst.** The clearance test's first fifty ribbons passed while two
+  ribbons in the full batches penetrated by 0.004. Probe whole batches, or every nth ribbon plus the ones a
+  reviewer named.
+- **A lift that depends on the lobe reintroduces the jump the lift was fixing.** Growing the lift toward the rim
+  fixed the crease and jumped 0.0076 at a lobe switch, because the two lobes' laterals differ at their crossing.
+  One value for every column; measure the minimum that clears and take a margin (0.008 clears, 0.010 ships).
+- **An expected area fitted to the thing under test is not expected.** The colour gate's expected area aligned to
+  the render's own component shrank with a recoloured tree and the control passed at 0.009 rejected. Take the
+  area from an input the render's colours cannot move: the crop box, the tree's known screen box.
+- **A "largest component" with no components is every pixel.** `best` left at 0 matched every unlabelled pixel, and
+  a crop with no tree came back all tree, exit 0. Every selection needs its empty case tested.
+- **A sandboxed `sips` is a different decoder.** The reviewer's fresh decode of `painting.jpg` had a different md5
+  from the canonical one and a seed four rows taller; outside the sandbox the bake reproduces byte for byte. Record
+  the decoded inputs' digests in the bake, and ask a reviewer how its decode was produced before chasing a
+  reproducibility defect.
+- **A test that recomputes the mechanism does not cover the runtime.** The crossing test computed both offsets
+  itself and would stay green if the drape went back to the normal offset. Drive the runtime function at the
+  established crossing and assert on what it emits.
