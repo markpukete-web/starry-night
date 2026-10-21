@@ -348,12 +348,14 @@ export function buildCypressLobePlan(
   rows: CypressLobeRows,
   options: CypressLobePlanOptions = {},
 ): CypressLobePlan {
-  const minTrackRows = options.minTrackRows ?? 28
+  // the row thresholds scale with the table's resolution: 28 rows and 4 px at the 662-row table, 66 and 9 at
+  // the 1578-row one (E1: the table is baked from the 3840 px scan)
+  const minTrackRows = options.minTrackRows ?? Math.round(0.042 * rows.height)
   const maxFronds = options.maxFronds ?? 5
   const maximumRimDistance = options.maxRimDistance ?? 3
   const chains = trackSatelliteRuns(rows, {
     maxRowGap: options.maxRowGap ?? 2,
-    horizontalTolerancePx: options.horizontalTolerancePx ?? 4,
+    horizontalTolerancePx: options.horizontalTolerancePx ?? Math.round(0.006 * rows.height),
   })
     .filter((chain) => chain.length >= minTrackRows)
     .filter((chain) => {

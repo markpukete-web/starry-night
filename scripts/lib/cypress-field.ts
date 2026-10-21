@@ -98,17 +98,130 @@ export function cypressMask(
   return { mask, spans }
 }
 
-/** Detached tree-coloured runs beside, but not overlapping, the primary cypress column. */
-export function satelliteRuns(painting: DecodedPNG, box: Box, spans: RowSpan[]): Run[] {
-  const minRun = Math.max(2, Math.floor(painting.width * MIN_RUN_FRACTION))
+/** The component's runs on a main span's row that do not overlap that span: the flames and tongues beside the column. */
+export function satelliteRuns(runs: Run[], spans: RowSpan[]): Run[] {
+  const byRow = new Map<number, RowSpan>()
+  for (const span of spans) byRow.set(span.y, span)
   const out: Run[] = []
-  for (const primary of spans) {
-    for (const run of rowRuns(painting, primary.y, box, minRun)) {
-      const overlaps = Math.min(run.x1, primary.x1) >= Math.max(run.x0, primary.x0)
-      if (!overlaps) out.push(run)
+  for (const run of runs) {
+    const primary = byRow.get(run.y)
+    if (!primary) continue
+    const overlaps = Math.min(run.x1, primary.x1) >= Math.max(run.x0, primary.x0)
+    if (!overlaps) out.push(run)
+  }
+  return out
+}
+
+/** A pixel box, x1 and y1 exclusive. */
+export type Domain = { x0: number; y0: number; x1: number; y1: number }
+
+function morph(source: Uint8Array, width: number, radius: number, domain: Domain, dilate: boolean): Uint8Array {
+  const out = new Uint8Array(source.length)
+  for (let y = domain.y0; y < domain.y1; y++) {
+    for (let x = domain.x0; x < domain.x1; x++) {
+      let value = dilate ? 0 : 1
+      outer: for (let dy = -radius; dy <= radius; dy++) {
+        for (let dx = -radius; dx <= radius; dx++) {
+          const sx = x + dx
+          const sy = y + dy
+          const inside = sx >= domain.x0 && sx < domain.x1 && sy >= domain.y0 && sy < domain.y1
+          // beyond the domain nothing grows in (dilation reads 0) and nothing eats the border (erosion reads 1):
+          // a closing must not strip the tree's base row off the domain's edge
+          const sample = inside ? source[sy * width + sx] : dilate ? 0 : 1
+          if (dilate && sample) { value = 1; break outer }
+          if (!dilate && !sample) { value = 0; break outer }
+        }
+      }
+      out[y * width + x] = value
     }
   }
   return out
+}
+
+/** Square-window dilation confined to the domain. */
+export function dilate(source: Uint8Array, width: number, radius: number, domain: Domain): Uint8Array {
+  return morph(source, width, radius, domain, true)
+}
+
+/** Square-window erosion confined to the domain. */
+export function erode(source: Uint8Array, width: number, radius: number, domain: Domain): Uint8Array {
+  return morph(source, width, radius, domain, false)
+}
+
+/**
+ * The 4-connected component of the treeish pixels inside `domain` that holds the seed spans' centres, then closed
+ * by `close` px. The flood runs on the raw treeish map and the closing comes after it: a closing before the flood
+ * bridged the spire to the star's halo beside it through single speckles (2026-10-21: 113 rows reached the
+ * domain's edge and the halo became a lobe), while a closing of the component only fills the gaps inside the tree.
+ * Nothing outside the domain is read or marked: the domain is the validated main column's box, so the terrain
+ * joined to the tree's base cannot be flooded into (E1, Codex F2: an unbounded flood reached 1.38 M px over the
+ * whole landscape).
+ */
+export function treeComponent(
+  scan: DecodedPNG,
+  domain: Domain,
+  seeds: RowSpan[],
+  close = 1,
+): { mask: Uint8Array; runs: Run[]; bounds: Domain; pixels: number } {
+  const { width, height } = scan
+  const box: Domain = {
+    x0: Math.max(0, domain.x0),
+    y0: Math.max(0, domain.y0),
+    x1: Math.min(width, domain.x1),
+    y1: Math.min(height, domain.y1),
+  }
+  const treeish = new Uint8Array(width * height)
+  for (let y = box.y0; y < box.y1; y++) {
+    for (let x = box.x0; x < box.x1; x++) {
+      const i = (y * width + x) * 4
+      treeish[y * width + x] = treeishColour(scan.rgba[i] / 255, scan.rgba[i + 1] / 255, scan.rgba[i + 2] / 255) ? 1 : 0
+    }
+  }
+  const flooded = new Uint8Array(width * height)
+  const stack: number[] = []
+  for (const span of seeds) {
+    const x = Math.round((span.x0 + span.x1) / 2)
+    if (span.y >= box.y0 && span.y < box.y1 && x >= box.x0 && x < box.x1 && treeish[span.y * width + x]) {
+      stack.push(span.y * width + x)
+    }
+  }
+  while (stack.length) {
+    const i = stack.pop()!
+    if (flooded[i] || !treeish[i]) continue
+    flooded[i] = 1
+    const x = i % width
+    const y = (i - x) / width
+    if (x > box.x0) stack.push(i - 1)
+    if (x < box.x1 - 1) stack.push(i + 1)
+    if (y > box.y0) stack.push(i - width)
+    if (y < box.y1 - 1) stack.push(i + width)
+  }
+  const mask = close > 0 ? erode(dilate(flooded, width, close, box), width, close, box) : flooded
+  let pixels = 0
+  const bounds: Domain = { x0: box.x1, y0: box.y1, x1: box.x0, y1: box.y0 }
+  for (let y = box.y0; y < box.y1; y++) {
+    for (let x = box.x0; x < box.x1; x++) {
+      if (!mask[y * width + x]) continue
+      pixels++
+      bounds.x0 = Math.min(bounds.x0, x)
+      bounds.x1 = Math.max(bounds.x1, x + 1)
+      bounds.y0 = Math.min(bounds.y0, y)
+      bounds.y1 = Math.max(bounds.y1, y + 1)
+    }
+  }
+  const runs: Run[] = []
+  for (let y = box.y0; y < box.y1; y++) {
+    let start = -1
+    for (let x = box.x0; x <= box.x1; x++) {
+      const on = x < box.x1 && mask[y * width + x] === 1
+      if (on && start < 0) start = x
+      if (!on && start >= 0) {
+        runs.push({ y, x0: start, x1: x - 1 })
+        start = -1
+      }
+    }
+  }
+  return { mask, runs, bounds, pixels }
 }
 
 /** Translate painting-global detached runs into the baked cypress crop's coordinate system. */
@@ -189,12 +302,17 @@ export function maskedBlur(
   return output
 }
 
-/** Structure tensor of the direction the paint runs in, not the perpendicular image gradient. */
+/**
+ * Structure tensor of the direction the paint runs in, not the perpendicular image gradient. `coherence` is the
+ * anisotropy weighted by gradient energy (the overlays' confidence); `anisotropy` is the tensor's magnitude over
+ * its trace alone, which says whether a texel has an orientation whatever its brightness (E1: on a dark tree the
+ * energy term averaged 0.25–0.4 and the blend pulled the field two thirds of the way to vertical).
+ */
 export function orientationField(
   luminance: Grid,
   mask: Uint8Array,
   sigma: number,
-): { cos2: Float64Array; sin2: Float64Array; coherence: Float64Array } {
+): { cos2: Float64Array; sin2: Float64Array; coherence: Float64Array; anisotropy: Float64Array } {
   const { width, height, data } = luminance
   if (mask.length !== width * height) throw new Error('cypress mask dimensions do not match field')
   const gradientX = new Float64Array(width * height)
@@ -230,6 +348,7 @@ export function orientationField(
   const cos2 = new Float64Array(width * height)
   const sin2 = new Float64Array(width * height)
   const coherence = new Float64Array(width * height)
+  const anisotropy = new Float64Array(width * height)
   let maxEnergy = 1e-12
   for (let i = 0; i < sxx.length; i++) {
     if (mask[i]) maxEnergy = Math.max(maxEnergy, sxx[i] + syy[i])
@@ -244,9 +363,10 @@ export function orientationField(
     if (!mask[i]) continue
     const trace = sxx[i] + syy[i]
     const orientationConfidence = trace > 1e-12 ? magnitude / trace : 0
+    anisotropy[i] = orientationConfidence
     coherence[i] = orientationConfidence * Math.min(1, trace / (0.15 * maxEnergy))
   }
-  return { cos2, sin2, coherence }
+  return { cos2, sin2, coherence, anisotropy }
 }
 
 /** Low-pass orientation in double-angle space, using tree pixels only. */
@@ -273,16 +393,24 @@ export function lowPassOrientation(
   return { cos2: outputCos2, sin2: outputSin2 }
 }
 
-/** Fall back to the tree's global vertical wherever the source field is weak. */
+/** The blend's gate: a texel keeps its orientation from this anisotropy up; below the lower edge it is vertical. */
+export const VERTICAL_GATE: readonly [number, number] = [0.05, 0.15]
+
+/**
+ * Fall back to the tree's global vertical only where the tensor has no orientation: the confidence is
+ * smoothstep(VERTICAL_GATE) of the anisotropy. (Weighted by the energy-normalised coherence, as before E1, the
+ * shipped field was 94% within 10° of vertical while the painting's strokes lean and curl.)
+ */
 export function blendToVertical(
   cos2: Float64Array,
   sin2: Float64Array,
-  coherence: Float64Array,
+  anisotropy: Float64Array,
 ): { cos2: Float64Array; sin2: Float64Array } {
   const outputCos2 = new Float64Array(cos2.length)
   const outputSin2 = new Float64Array(sin2.length)
   for (let i = 0; i < cos2.length; i++) {
-    const confidence = Math.min(1, Math.max(0, coherence[i]))
+    const t = Math.min(1, Math.max(0, (anisotropy[i] - VERTICAL_GATE[0]) / (VERTICAL_GATE[1] - VERTICAL_GATE[0])))
+    const confidence = t * t * (3 - 2 * t)
     let c = cos2[i] * confidence + VERTICAL_COS2 * (1 - confidence)
     let s = sin2[i] * confidence + VERTICAL_SIN2 * (1 - confidence)
     const magnitude = Math.hypot(c, s)

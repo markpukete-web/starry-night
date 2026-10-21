@@ -51,7 +51,14 @@ const STRUCTURAL_HALF_WIDTH = 0.0035
 const FILL_HALF_WIDTH = 0.0032
 const CYPRESS_COLOUR_LIFT = new Color().setRGB(1.14, 1.1, 1.06)
 
-const rowTable = rowTableJson as unknown as CypressLobeRows & { x0: number; y0: number }
+/** The row table's crop is `uv` of the painting (E1: the table is baked from the 3840 px scan, so no pixel origin). */
+const rowTable = rowTableJson as unknown as CypressLobeRows & { uv: [number, number, number, number] }
+
+/** A crop-normalised point as painting-normalised coordinates. */
+function paintingPoint(px: number, py: number): [number, number] {
+  const [u0, v0, u1, v1] = rowTable.uv
+  return [u0 + px * (u1 - u0), v0 + py * (v1 - v0)]
+}
 
 function isCypressTexel(texel: CypressTexel) {
   const luminance = 0.299 * texel.r + 0.587 * texel.g + 0.114 * texel.b
@@ -63,25 +70,14 @@ function sourceTexel(
   sample: Pick<CypressLobeStrokeSample, 'paintX' | 'sourceY' | 'heightFraction'>,
   main: CypressLobe,
 ): CypressTexel {
-  const sourceX = rowTable.x0 + sample.paintX * (rowTable.width - 1)
-  const sourceY = rowTable.y0 + sample.sourceY * (rowTable.height - 1)
-  const texel = sampleCypressImage(
-    painting,
-    sourceX / Math.max(1, painting.width - 1),
-    sourceY / Math.max(1, painting.height - 1),
-  )
+  const texel = sampleCypressImage(painting, ...paintingPoint(sample.paintX, sample.sourceY))
   if (isCypressTexel(texel)) return texel
 
   // Root bridges pass through rows where the source threshold has holes. Fall back to the main
   // cypress at the same height, never to blue sky; this is coloured underpaint, not invented bark.
   const mainSection = sampleCypressLobe(main, sample.heightFraction)
   if (!mainSection) return texel
-  const fallbackX = rowTable.x0 + mainSection.sourceCenter * (rowTable.width - 1)
-  return sampleCypressImage(
-    painting,
-    fallbackX / Math.max(1, painting.width - 1),
-    sourceY / Math.max(1, painting.height - 1),
-  )
+  return sampleCypressImage(painting, ...paintingPoint(mainSection.sourceCenter, sample.sourceY))
 }
 
 /** Dev seam for the gate: the foreground's alive attribute counts, read by the capture step (second pass, F11). */
@@ -145,12 +141,7 @@ export function BrushCypress({
     const compiled = buildCypressLobeSolid(plan, geometryOptions)
     const solidUvs: number[] = []
     for (let index = 0; index < compiled.sourceUvs.length; index += 2) {
-      const sourceX = rowTable.x0 + compiled.sourceUvs[index] * (rowTable.width - 1)
-      const sourceY = rowTable.y0 + compiled.sourceUvs[index + 1] * (rowTable.height - 1)
-      solidUvs.push(
-        sourceX / Math.max(1, paintingData.width - 1),
-        sourceY / Math.max(1, paintingData.height - 1),
-      )
+      solidUvs.push(...paintingPoint(compiled.sourceUvs[index], compiled.sourceUvs[index + 1]))
     }
 
     const solid = new BufferGeometry()

@@ -61,12 +61,14 @@ test('the real plan retains the strongest mid-height frond that the old top-thir
   const fronds = plan.lobes.filter((lobe) => lobe.kind === 'frond')
 
   assert.equal(fronds.length, 2)
+  // the left flame: 0.38–0.54 of the height on the 3840 px table (E1; it separates from the main column at 0.38
+  // there, 0.35 on the 1600 px table whose coarser rows merged later)
   assert.ok(
     fronds.some(
       (lobe) =>
-        lobe.sourceHeightRange[0] < 0.36 && lobe.sourceHeightRange[1] > 0.5,
+        lobe.sourceHeightRange[0] < 0.4 && lobe.sourceHeightRange[1] > 0.5,
     ),
-    'the 112-row mid-height source track must survive as geometry',
+    'the left flame\'s source track must survive as geometry',
   )
   assert.ok(
     fronds.every((lobe) => lobe.sourceMaxRimDistance <= 3),

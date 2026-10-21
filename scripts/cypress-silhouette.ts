@@ -195,7 +195,7 @@ const rgba = new Uint8Array(outW * ph * 4)
 for (let y = 0; y < ph; y++) {
   for (let x = 0; x < outW; x++) {
     const o = (y * outW + x) * 4
-    let v = 18
+    let v: number
     if (x < PW) v = paintMask.data[y * PW + x] ? 220 : 18
     else if (x < PW + 8) v = 120
     else if (x < 2 * PW + 8) v = aligned.data[y * PW + x - PW - 8] ? 220 : 18
