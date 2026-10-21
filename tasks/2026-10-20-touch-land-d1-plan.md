@@ -498,3 +498,36 @@ review at G9 checks them in code):
   in development throws on a missing one before enabling input; `__landBounds()` reports which it found.
 - R4 (P3) `strokeGlsl` lacks `uniforms` → the composition is `concatInjections('land-trees-bend', { uniforms: {},
   ...strokeGlsl }, bendInjection)`, the bend injection built with its own uniform objects and empty body fields.
+
+### The code review (G9)
+
+Codex (`w4:p4`, read-only, 2026-10-21 night, `scratch/touch-land-2026-10-20/code-review-report.md`, against
+`375d825`; it ran the hook's transpiled body with shims, the real design camera and the shipped cypress solid, the
+model, three r184's uniform upload, a GLSL twin, the supplied pinned frames and the gate's logs): **REVISE**, six
+P2s and two P3s. Each checked against the code; each holds. The dispositions, all in `9136dc4`:
+
+- F1 (P2) a rebind of the input effect (a rotation replaces `home`) starts a closure with no press in it, so the
+  old hold is never released → the cleanup releases the held touch at the clock and resets the pointer's state;
+  disabled, the frame loop resets it too.
+- F2 (P2) the up releases the hold but leaves the pending move, so the next frame rebuilds a hold from the
+  pre-release position → the up consumes the pending move; the hover resumes on the next real move (headed: no
+  hold after a same-frame tap until the pointer moves).
+- F3 (P2) a press held across the knob's zero came back as a full press when the knob was restored → the up
+  releases a hold whatever the gain, and at gain 0 the frame loop empties the land as when disabled.
+- F4 (P2) every down is a hold, so a short real tap released mid-ramp and a same-frame tap bent nothing, unlike
+  the seam's `pushTap` → a classified tap releases at `max(now, t0 + rise)`: the ramp finishes, the swing starts
+  from the target, the seam and the visitor share the transition (L9; headed: a same-frame tap releases at
+  t0 + 0.12 at amplitude 1).
+- F5 (P2) `test:sky` enumerated the files and never ran `land-touch.test.ts` → added; 178 pass.
+- F6 (P2) the stale over-land early return dropped the first sky hover after leaving the tree when the pointer
+  then stood still → gone; at an admitted hover step the land is asked on the current position, at most once per
+  `hoverMs`, and a move off the tree releases the hold and surges the sky in the same step (headed: one move off,
+  then still: released, one sky surge).
+- F7 (P3) the mesh cache kept a detached mesh pickable → no cache; six `getObjectByName` lookups per pick.
+- F8 (P3) the weight test passed a binary field → each mass built alone, every vertex's weight checked against
+  the clamped height over that mass's height, 10,000+ intermediate values.
+- Noted, not fixed: `__landBounds` projects the static boxes without frustum clipping (no visitor route to a
+  reversed camera); the G5 painted-light row was missing and is captured now (a hold on the cypress at t0 5: 0 px
+  at t0, 55,188 at +1 inside the cypress's box, the same box as the moving sky's).
+
+The confirmation read: `brief-confirmation.md`, bounded to the eight, one word at the end.

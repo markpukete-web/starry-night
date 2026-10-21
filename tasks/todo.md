@@ -6,10 +6,9 @@ D1 (touch the land) is built and gated on `feat/touch-land-d1`, local only, noth
 `tasks/2026-10-20-touch-land-d1.md` (the record: what was built, the deviations, the gate G1–G8) and the plan's
 rebase and read sections. Read `tasks/lessons.md` from "D1 (touch the land)".
 
-1. Codex's code review (G9): `scratch/touch-land-2026-10-20/brief-code-review.md` dispatched to `w4:p4` at about
-   22:05 Brisbane; the report lands at `scratch/touch-land-2026-10-20/code-review-report.md`. Answer every finding
-   against the code, batch the fixes, record the dispositions in the plan's Review section and the record's G9 row,
-   one bounded confirmation read if a P2 or above was fixed.
+1. Codex's code review (G9) answered: REVISE on `375d825` (F1–F6 P2, F7–F8 P3), all eight fixed in `9136dc4` with
+   headed regressions, 178 tests; the dispositions in the plan's Review section and the record's G9 row; the
+   confirmation read (`brief-confirmation.md`) dispatched. Close it: the record's G9 row and this line.
 2. Mark's taste gate on localhost (the dev server on 5179 serves the branch; `?tune=1` shows the `bend` slider on the
    touch route): a hover and a tap on the cypress, a drag across it, a hover on the bushes; the push, the dip, the
    swing. His phone `?perf=1` reading.

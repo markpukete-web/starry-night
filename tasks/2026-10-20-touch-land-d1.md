@@ -29,6 +29,10 @@ recommended: `landMasksSky` true, the ground still.
    it while disabled. Seams `__landState`, `__landInject`, `__landBounds`.
 4. `375d825` the land asked before the sky on each hover step (B's 60 ms gate), after the headed run showed the
    frame's test one step behind a move onto the tree.
+5. `9136dc4` Codex's code review answered (the plan's Review section, "The code review (G9)"): the hold released
+   on a rebind (F1), the pending move consumed on the up (F2), bend-to-zero clears the land (F3), a tap completes
+   its ramp (F4), the suite in `test:sky` (F5), the mask decided on the current position (F6), no mesh cache (F7),
+   the weight test checks the field (F8).
 
 ## Deviations from the plan, for the review
 
@@ -47,14 +51,14 @@ recommended: `landMasksSky` true, the ground still.
 | # | check | state |
 |---|---|---|
 | G1 | red first | L1–L6 failed on the missing module, then passed; the weight test failed on the missing field, then passed; L7 (the knob) and L8 (the picking) with their code |
-| G2 | `test:sky`, `tsc -b`, build, eslint | 169 pass, clean, built, clean at `375d825` |
-| G3 | `?touch=0` vs `main`'s build, pinned t 0 / 3.7 moving, 0 / 2.3 / 11.2 light | 0 differing pixels in every row (`capture-sky-frames.mjs` against a `main` worktree on port 5180) |
-| G4 | the default route, no input, vs `main` at the same times | 0 differing pixels in every row: the new programs draw today's frame exactly (better than B's row 7 residue) |
-| G5 | injected touches inside the land bounds | a hold at the cypress's mid-height (t0 5): 0 px at t0, then 49,683 / 55,171 / 55,188 px at +0.06 / +0.12 / +1, every one inside the cypress's bounds (box 170 × 580 at 375, 98 against the bounds 376–547 × 83–673, dilated 40). A tap: 0 at t0, 42,252 / 50,029 / 44,663 / 43,228 / 42,545 px at +0.02 / +0.3 / +0.6 / +1 / +2, 13,536 at +5 (the window closing), 0 at +5.5 (closed exactly, on a real frame). A hold on an orchard dome: 8,210 px at +1 inside the trees' bounds (box 176 × 147 at 957, 490). The sky outside the boxes untouched |
+| G2 | `test:sky`, `tsc -b`, build, eslint | 178 pass (the land-touch suite joined the command at F5), clean, built, clean at `9136dc4` |
+| G3 | `?touch=0` vs `main`'s build, pinned t 0 / 3.7 moving, 0 / 2.3 / 11.2 light | 0 differing pixels in every row (`capture-sky-frames.mjs` against a `main` worktree on port 5180); the moving t 3.7 row re-run at `9136dc4`: 0 |
+| G4 | the default route, no input, vs `main` at the same times | 0 differing pixels in every row: the new programs draw today's frame exactly (better than B's row 7 residue); the moving t 3.7 row re-run at `9136dc4`: 0 |
+| G5 | injected touches inside the land bounds | a hold at the cypress's mid-height (t0 5): 0 px at t0, then 49,683 / 55,171 / 55,188 px at +0.06 / +0.12 / +1, every one inside the cypress's bounds (box 170 × 580 at 375, 98 against the bounds 376–547 × 83–673, dilated 40). A tap: 0 at t0, 42,252 / 50,029 / 44,663 / 43,228 / 42,545 px at +0.02 / +0.3 / +0.6 / +1 / +2, 13,536 at +5 (the window closing), 0 at +5.5 (closed exactly, on a real frame). A hold on an orchard dome: 8,210 px at +1 inside the trees' bounds (box 176 × 147 at 957, 490). The painted-light sky, a hold on the cypress: 0 at t0, 55,188 at +1, the same box. The sky outside the boxes untouched |
 | G6 | by eye, 1:1 | `cypress-none-vs-hold-t6.png`: the tree leans away from the point, the tip furthest, the base still, the ribbons on the body. `tap-swing-strip.png`: the lean at the ramp's peak, the overshoot the other way at +0.5 s, settled by +2 s: a spring, not jelly. `orchard-none-vs-hold-t6.png`: the held dome's curls shift, subtle at 0.035 (Mark's eye) |
-| G7 | headed Playwright, the input path | a hover onto the tree begins a hold at 0.6 and no sky surge while sliding on the trunk; leaving releases it and the sky's hover resumes; the touch is pruned within the window; a press retargets 0.6 → 1 (F5) and the release swings it with the sky's surges and kicks unchanged (masked); a drag across the tree holds and follows; a tap on the sky still surges and kicks. Frame time with a continuous hover sweeping the tree 10.63 ms mean (p95 11.7) against 10.55 idle (p95 11.6), Playwright's Chromium unlocked from vsync |
+| G7 | headed Playwright, the input path | a hover onto the tree begins a hold at 0.6 and no sky surge while sliding on the trunk; leaving releases it and the sky's hover resumes; the touch is pruned within the window; a press retargets 0.6 → 1 (F5) and the release swings it with the sky's surges and kicks unchanged (masked); a drag across the tree holds and follows; a tap on the sky still surges and kicks. After the review's fixes: a same-frame tap releases at t0 + 0.12 at amplitude 1; no hold is rebuilt after the up until a real move; one move off the tree then still releases the hold and surges the sky once. Frame time with a continuous hover sweeping the tree 10.63 ms mean (p95 11.7) against 10.55 idle (p95 11.6), Playwright's Chromium unlocked from vsync |
 | G8 | `check:reduced`, `check:viewport` | PASS, PASS (`gate/check-reduced.log`, `check-viewport.log`) |
-| G9 | Codex code review | the brief `brief-code-review.md` written against `375d825` |
+| G9 | Codex code review | REVISE on `375d825` (F1–F6 P2, F7–F8 P3; `code-review-report.md`); all eight fixed in `9136dc4` (the plan's Review section); the confirmation read bounded to the eight (`brief-confirmation.md`) |
 
 ## Open
 
