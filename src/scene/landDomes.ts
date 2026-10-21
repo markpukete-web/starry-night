@@ -279,6 +279,9 @@ export type LandTrees = {
   seed: number[]
   /** per mass: the strips draped, front and back */
   counts: Record<string, { front: number; back: number }>
+  /** D1: per strip vertex and per dome vertex, the bend weight: its height above the terrain under it over the mass's height, in [0, 1] */
+  bend: number[]
+  solidBend: number[]
 }
 
 /** Every mass's domes and strips, as buffers. Deterministic in `seed`. */
@@ -288,6 +291,15 @@ export function buildLandTrees(flow: ImageData2D, painting: ImageData2D, baked: 
   const stroke: number[] = []
   const seeds: number[] = []
   const counts: LandTrees['counts'] = {}
+  const bend: number[] = []
+  const solidBend: number[] = []
+  // the bend weight of the vertices appended since `from`: height over the terrain under each, over the mass's height
+  const weigh = (arr: BrushArrays, from: number, into: number[], height: number) => {
+    for (let i = from; i < arr.positions.length; i += 3) {
+      const above = arr.positions[i + 1] - islandHeightAt(arr.positions[i], arr.positions[i + 2])
+      into.push(Math.min(1, Math.max(0, above / height)))
+    }
+  }
   const colour = new Color()
   masses.forEach((mass, index) => {
     const entry = baked.find((m) => m.id === mass.id)
@@ -296,7 +308,11 @@ export function buildLandTrees(flow: ImageData2D, painting: ImageData2D, baked: 
     const domes = domesOf(placed)
     const under = underpaintColour(painting, mass)
     colour.setRGB(under[0], under[1], under[2], SRGBColorSpace)
-    for (const dome of domes) pushDome(solid, dome, colour)
+    for (const dome of domes) {
+      const from = solid.positions.length
+      pushDome(solid, dome, colour)
+      weigh(solid, from, solidBend, placed.height)
+    }
     const { crop, rows, pixels } = massCrop(flow, entry)
     const config = massConfig(crop, massCount(pixels))
     counts[mass.id] = { front: 0, back: 0 }
@@ -308,7 +324,9 @@ export function buildLandTrees(flow: ImageData2D, painting: ImageData2D, baked: 
         const strip = drapeOnDomes(ribbon, columns, domes, placed, front)
         if (!strip) continue
         const tint = colour.setRGB(ribbon.colour[0], ribbon.colour[1], ribbon.colour[2], SRGBColorSpace).multiplyScalar(ribbon.relief).clone()
+        const from = strokes.positions.length
         pushDrapedRibbon(strokes, strip.steps, strip.steps.map(() => tint))
+        weigh(strokes, from, bend, placed.height)
         for (let k = 0; k < strip.steps.length; k++) {
           for (let j = 0; j < STRIP_COLUMNS; j++) {
             stroke.push(k / (strip.steps.length - 1), j / (STRIP_COLUMNS - 1))
@@ -319,5 +337,5 @@ export function buildLandTrees(flow: ImageData2D, painting: ImageData2D, baked: 
       }
     }
   })
-  return { solid, strokes, stroke, seed: seeds, counts }
+  return { solid, strokes, stroke, seed: seeds, counts, bend, solidBend }
 }
