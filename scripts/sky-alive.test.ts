@@ -139,12 +139,12 @@ test('T12 the live knobs: defaults when absent or unparseable, clamped to their 
   assert.ok(Math.abs(d.gust - GUST.amplitudes.reduce((a, b) => a + b, 0)) < 1e-12)
   const junk = readAliveTuning(new URLSearchParams('gust=abc&lift=&shimmer=NaN&breath=Infinity&flicker=x&glimmer='))
   assert.deepEqual(junk, ALIVE_DEFAULTS)
-  const high = readAliveTuning(new URLSearchParams('gust=5&lift=9&shimmer=2&breath=99&flicker=5&glimmer=7&surge=9'))
-  assert.deepEqual(high, { gust: 0.95, lift: 0.5, shimmer: 1, breath: 3, flicker: 1, glimmer: 1, surge: 1.5 })
-  const low = readAliveTuning(new URLSearchParams('gust=-1&lift=-1&shimmer=-1&breath=-1&flicker=-1&glimmer=-1&surge=-1'))
-  assert.deepEqual(low, { gust: 0, lift: 0, shimmer: 0, breath: 0, flicker: 0, glimmer: 0, surge: 0 })
+  const high = readAliveTuning(new URLSearchParams('gust=5&lift=9&shimmer=2&breath=99&flicker=5&glimmer=7&surge=9&bend=9'))
+  assert.deepEqual(high, { gust: 0.95, lift: 0.5, shimmer: 1, breath: 3, flicker: 1, glimmer: 1, surge: 1.5, bend: 1.5 })
+  const low = readAliveTuning(new URLSearchParams('gust=-1&lift=-1&shimmer=-1&breath=-1&flicker=-1&glimmer=-1&surge=-1&bend=-1'))
+  assert.deepEqual(low, { gust: 0, lift: 0, shimmer: 0, breath: 0, flicker: 0, glimmer: 0, surge: 0, bend: 0 })
   // the shipped defaults (sky-tuning.json's alive keys) are passed in; a URL knob still wins over them
-  const shipped = { gust: 0.95, lift: 0.3, shimmer: 1, breath: 2, flicker: 1, glimmer: 1, surge: 1 }
+  const shipped = { gust: 0.95, lift: 0.3, shimmer: 1, breath: 2, flicker: 1, glimmer: 1, surge: 1, bend: 1 }
   assert.deepEqual(readAliveTuning(new URLSearchParams(''), shipped), shipped)
   assert.deepEqual(readAliveTuning(new URLSearchParams('lift=0.1'), shipped), { ...shipped, lift: 0.1 })
   assert.equal(hasAliveKnobs(new URLSearchParams('alive=1&tune=1')), false)
@@ -447,9 +447,9 @@ test('T24 the surge knob reads, clamps and defaults like the others, and leaves 
   assert.deepEqual(gustUniformValues({ ...ALIVE_DEFAULTS, surge: 1.5 }), gustUniformValues(ALIVE_DEFAULTS))
 })
 
-test('T26 the tuner saves only the knobs it shows: no touchSurge off the touch route, every alive key either way', () => {
-  const tuning = { ...ALIVE_DEFAULTS, surge: 0.6, flicker: 0.4 }
-  const shown = ALIVE_KNOBS.filter((name) => name !== 'surge')
+test('T26 the tuner saves only the knobs it shows: no touchSurge or touchBend off the touch route, every alive key either way', () => {
+  const tuning = { ...ALIVE_DEFAULTS, surge: 0.6, flicker: 0.4, bend: 0.7 }
+  const shown = ALIVE_KNOBS.filter((name) => name !== 'surge' && name !== 'bend')
   const off = aliveSavePayload(tuning, shown)
   assert.deepEqual(off, {
     aliveGust: tuning.gust,
@@ -460,5 +460,6 @@ test('T26 the tuner saves only the knobs it shows: no touchSurge off the touch r
     aliveGlimmer: tuning.glimmer,
   })
   assert.equal('touchSurge' in off, false)
-  assert.deepEqual(aliveSavePayload(tuning, ALIVE_KNOBS), { ...off, touchSurge: 0.6 })
+  assert.equal('touchBend' in off, false)
+  assert.deepEqual(aliveSavePayload(tuning, ALIVE_KNOBS), { ...off, touchSurge: 0.6, touchBend: 0.7 })
 })

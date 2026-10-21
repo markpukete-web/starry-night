@@ -3,7 +3,10 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
+import { readFileSync } from 'node:fs'
+
 import { concatInjections, injectAliveSource } from '../src/scene/aliveMaterial.ts'
+import { ALIVE_DEFAULTS, ALIVE_KNOB_MAX, ALIVE_KNOBS, ALIVE_TUNING_KEYS, readAliveTuning } from '../src/scene/skyAlive.ts'
 import {
   beginHeld,
   bendInjection,
@@ -165,4 +168,20 @@ test('L6 the injection: the bend transform lands after <begin_vertex> once with 
   assert.throws(() => injectAliveSource('void main() {\n#include <common>\n#include <color_vertex>\n}', fragment, island), /exactly one/)
   assert.ok(island.uniforms.uLand && island.uniforms.uLandCount && island.uniforms.uLandParams, 'its own uniform objects')
   assert.notEqual(island.uniforms.uLand, cypress.uniforms.uLand, 'one set per injection')
+})
+
+test('L7 the knob: bend is a tuning knob with its shipped key in sky-tuning.json and in the writer\'s allowlist (Codex F6), ceiling 1.5, default 1', () => {
+  assert.equal(ALIVE_TUNING_KEYS.bend, 'touchBend')
+  assert.equal(ALIVE_DEFAULTS.bend, 1)
+  assert.equal(ALIVE_KNOB_MAX.bend, 1.5)
+  assert.ok((ALIVE_KNOBS as readonly string[]).includes('bend'))
+  const shipped = JSON.parse(readFileSync(new URL('../src/scene/sky-tuning.json', import.meta.url), 'utf8')) as Record<string, number>
+  assert.equal(shipped.touchBend, 1, 'shipped at 1')
+  // the writer's allowlist lives in vite.config.ts, which imports vite: checked as text, so a key the tuner saves is never silently dropped
+  const config = readFileSync(new URL('../vite.config.ts', import.meta.url), 'utf8')
+  const allowlist = config.slice(config.indexOf('TUNING_FIELDS = new Set(['), config.indexOf('])', config.indexOf('TUNING_FIELDS = new Set([')))
+  assert.ok(allowlist.includes("'touchBend'"), 'touchBend in the writer\'s allowlist')
+  const url = new URLSearchParams('bend=9')
+  assert.equal(readAliveTuning(url).bend, 1.5, 'clamped to the ceiling')
+  assert.equal(readAliveTuning(new URLSearchParams('bend=')).bend, 1, 'an empty knob is the default')
 })

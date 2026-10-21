@@ -159,14 +159,16 @@ export type AliveTuning = {
   glimmer: number
   /** B (touch): a multiplier on every surge's amplitude, 0–1.5 (touchSurge.ts) */
   surge: number
+  /** D1 (touch the land): the bend's gain, 0–1.5 (landTouch.ts); 0 is B exactly, no land touch and no masking */
+  bend: number
 }
 
 const GUST_SUM = GUST.amplitudes.reduce((a, b) => a + b, 0)
 /** The code's own defaults. The shipped defaults are `sky-tuning.json`'s alive* keys, read in App.tsx. */
-export const ALIVE_DEFAULTS: AliveTuning = { gust: GUST_SUM, lift: GUST.lift, shimmer: GUST.shimmerShare, breath: 1, flicker: 0.5, glimmer: 0.5, surge: 1 }
+export const ALIVE_DEFAULTS: AliveTuning = { gust: GUST_SUM, lift: GUST.lift, shimmer: GUST.shimmerShare, breath: 1, flicker: 0.5, glimmer: 0.5, surge: 1, bend: 1 }
 /** Every knob's ceiling (the floor is 0); the tuner's sliders and the URL clamp share it. */
-export const ALIVE_KNOB_MAX: AliveTuning = { gust: 0.95, lift: 0.5, shimmer: 1, breath: 3, flicker: 1, glimmer: 1, surge: 1.5 }
-export const ALIVE_KNOBS = ['gust', 'lift', 'shimmer', 'breath', 'flicker', 'glimmer', 'surge'] as const
+export const ALIVE_KNOB_MAX: AliveTuning = { gust: 0.95, lift: 0.5, shimmer: 1, breath: 3, flicker: 1, glimmer: 1, surge: 1.5, bend: 1.5 }
+export const ALIVE_KNOBS = ['gust', 'lift', 'shimmer', 'breath', 'flicker', 'glimmer', 'surge', 'bend'] as const
 
 /** Clamp one knob into its range; a non-finite value is the given default. */
 export function clampAliveKnob(name: keyof AliveTuning, value: number, fallback: number): number {
@@ -182,7 +184,7 @@ export function readAliveTuning(params: URLSearchParams, defaults: AliveTuning =
     const value = raw === null || raw.trim() === '' ? NaN : Number(raw)
     return clampAliveKnob(name, value, defaults[name])
   }
-  return { gust: read('gust'), lift: read('lift'), shimmer: read('shimmer'), breath: read('breath'), flicker: read('flicker'), glimmer: read('glimmer'), surge: read('surge') }
+  return { gust: read('gust'), lift: read('lift'), shimmer: read('shimmer'), breath: read('breath'), flicker: read('flicker'), glimmer: read('glimmer'), surge: read('surge'), bend: read('bend') }
 }
 
 /** True when the URL carries any knob, so a stored tuner state must not override it. */
@@ -199,6 +201,7 @@ export const ALIVE_TUNING_KEYS: Record<keyof AliveTuning, string> = {
   flicker: 'aliveFlicker',
   glimmer: 'aliveGlimmer',
   surge: 'touchSurge',
+  bend: 'touchBend',
 }
 
 /**

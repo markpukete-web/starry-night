@@ -25,6 +25,7 @@ const SHIPPED_ALIVE: AliveTuning = {
   flicker: clampAliveKnob('flicker', tuned('aliveFlicker', ALIVE_DEFAULTS.flicker), ALIVE_DEFAULTS.flicker),
   glimmer: clampAliveKnob('glimmer', tuned('aliveGlimmer', ALIVE_DEFAULTS.glimmer), ALIVE_DEFAULTS.glimmer),
   surge: clampAliveKnob('surge', tuned('touchSurge', ALIVE_DEFAULTS.surge), ALIVE_DEFAULTS.surge),
+  bend: clampAliveKnob('bend', tuned('touchBend', ALIVE_DEFAULTS.bend), ALIVE_DEFAULTS.bend),
 }
 
 /** prefers-reduced-motion: a dignified still painting, no churn (locked acceptance criterion). */
