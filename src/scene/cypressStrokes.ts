@@ -68,42 +68,6 @@ export function sampleCypressImage(image: ImageData2D, px: number, py: number): 
   }
 }
 
-/** The painting's own cypress pigments: dark, and not bluer than green (the gaps between strokes are blue-black). */
-function isTreePigment(r: number, g: number, b: number): boolean {
-  const luminance = 0.299 * r + 0.587 * g + 0.114 * b
-  return luminance < 118 && b < g + 18
-}
-
-/**
- * The pigment of the lane under a point: the brightest tree texel within one texel of it, or the texel itself
- * when none around it is tree. At 1600 px a texel averages 2.4 × 2.4 scan pixels, so the texel under a sample
- * mixes a lane with the dark gap beside it and the ribbons read grey-blue (flat gate, retune 1, 2026-10-21).
- */
-export function lanePigment(painting: ImageData2D, u: number, v: number): [number, number, number] {
-  const cx = Math.min(painting.width - 1, Math.max(0, Math.floor(u * painting.width)))
-  const cy = Math.min(painting.height - 1, Math.max(0, Math.floor(v * painting.height)))
-  let best: [number, number, number] | null = null
-  let bestLuminance = -1
-  for (let dy = -1; dy <= 1; dy++) {
-    for (let dx = -1; dx <= 1; dx++) {
-      const x = cx + dx
-      const y = cy + dy
-      if (x < 0 || y < 0 || x >= painting.width || y >= painting.height) continue
-      const i = (y * painting.width + x) * 4
-      const r = painting.data[i]
-      const g = painting.data[i + 1]
-      const b = painting.data[i + 2]
-      if (!isTreePigment(r, g, b)) continue
-      const luminance = 0.299 * r + 0.587 * g + 0.114 * b
-      if (luminance > bestLuminance) {
-        bestLuminance = luminance
-        best = [r / 255, g / 255, b / 255]
-      }
-    }
-  }
-  return best ?? sampleColour(painting, u, v)
-}
-
 /** A crop-normalised point as painting-normalised coordinates, through the row table's `uv` box. */
 export function paintingUV(rows: { uv: [number, number, number, number] }, px: number, py: number): [number, number] {
   return [rows.uv[0] + px * (rows.uv[2] - rows.uv[0]), rows.uv[1] + py * (rows.uv[3] - rows.uv[1])]
@@ -113,8 +77,10 @@ export function paintingUV(rows: { uv: [number, number, number, number] }, px: n
  * Streamlines in the cypress's own field, grown both ways from a seed inside the mask. Deterministic in `seed`.
  * The field is signed up (`signedUpDirection` in the bake), so one walk climbs and the other descends; a ribbon
  * is its seed with up to half its length each way, so no ribbon is clipped to a stub by the mask's top. One
- * colour per ribbon (the July 2026 review's "one pigment per ribbon" kept), at the middle sample, or at the seed
- * when the middle has overshot into sky.
+ * colour per ribbon (the July 2026 review's "one pigment per ribbon" kept): the texel under the middle sample, or
+ * under the seed when the middle has overshot into sky. (Retune 1 took the brightest tree texel within one texel
+ * instead, and the render came out 8–14 L lighter than the painting in every third, retune 2, 2026-10-21; the
+ * texel's own pigment mix already matches the painting's, green 50%, grey 38%, brown 9%.)
  */
 export function traceCypressRibbons(
   flow: ImageData2D,
@@ -177,7 +143,7 @@ export function traceCypressRibbons(
     if (samples.length < 4) continue
     const middle = samples[Math.floor(samples.length / 2)]
     const at = middle.inside ? middle : seedSample
-    const colour = lanePigment(painting, ...paintingUV(rows, at.px, at.py))
+    const colour = sampleColour(painting, ...paintingUV(rows, at.px, at.py))
     output.push({ samples, seedSample, colour, halfWidth, relief, seed: ribbonSeed })
   }
   return output

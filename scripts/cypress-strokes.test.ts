@@ -30,8 +30,7 @@ function fixtures(degrees = 0, top = 0, bottom = HEIGHT - 1) {
       flow.data[i + 1] = Math.round(((dy + 1) / 2) * 255)
       flow.data[i + 2] = x >= 20 && x <= 40 && y >= top && y <= bottom ? 200 : 0
       flow.data[i + 3] = 255
-      // the painting encodes its own position, so a sampled colour says where it was read; blue enough that no
-      // texel passes as a tree pigment, so the lane rule falls back to the texel under the sample
+      // the painting encodes its own position, so a sampled colour says where it was read
       painting.data[i] = Math.round((x / (WIDTH - 1)) * 255)
       painting.data[i + 1] = Math.round((y / (HEIGHT - 1)) * 255)
       painting.data[i + 2] = 200

@@ -25,7 +25,8 @@ import { ALIVE_DEFAULTS, type AliveTuning } from './skyAlive'
 
 const HEIGHT = 2.7
 const BASE = new Vector3(-1.5, 0.02, 0.72)
-const SOURCE_STROKE_LIFT = 1.08
+/** no lift on the pigment (retune 2: with 1.08 and the lane rule the render was 8–14 L lighter than the painting) */
+const SOURCE_STROKE_LIFT = 1
 const MOON_LIFT = 0.04
 /** the painting's darkest cypress colour (palette.json, L 9.6): the gaps between strokes */
 const CYPRESS_UNDERPAINT = new Color('#151c1b')

@@ -8,6 +8,11 @@ import type { AliveInjection } from './aliveMaterial.ts'
  * the rim, the dry tail. The sky's GLSL is not shared (it has byte-identity gates); the duplication is a named
  * follow-up. The functions are prefixed `cy` so a future shared chunk cannot collide.
  *
+ * Retune 2 (2026-10-21): on screen a cypress ribbon is about 4 px wide against the sky's 10 and more, so the sky's
+ * two bristle octaves (4.5 and 11 cycles across) and its dry tail became sub-pixel noise and the tree read as
+ * grey fur (local contrast 12.0 against the painting's 6.45). One coarse lane at a third of the contrast, the
+ * rake halved, the dry brush confined to the tip's last 15%.
+ *
  * The material sets `alphaToCoverage`, so the shaped alpha written here dithers the edge across the canvas's
  * MSAA samples; three leaves `OPAQUE` undefined under alpha-to-coverage and `diffuseColor.a` reaches the output.
  * Plain `.ts` imports only: `scripts/sky-alive.test.ts` applies this to three's real basic shader under node.
@@ -51,27 +56,27 @@ export const strokeGlsl: Omit<AliveInjection, 'key' | 'uniforms'> = {
     // a full base and a drawn-out tip: the painting's cypress strokes are flames; the flanks wobble instead of a ruled edge
     float r = pow(max(1.0 - pow(x, 2.5), 0.0), 0.4) * mix(1.0, 0.72, w) * (0.9 + 0.1 * cyNoise1(w * 9.0 + seed));
     float a = 1.0 - smoothstep(r - aa, r, y);
-    // bristle lanes run along the stroke: two octaves across it, seeded per stroke, drifting a little along it
+    // one coarse bristle lane along the stroke (the sky's fine octave is sub-pixel at this width), seeded per
+    // stroke, drifting a little along it
     vec2 lane1 = cyNoise1d(side * 4.5 + seed + w * 0.8);
-    vec2 lane2 = cyNoise1d(side * 11.0 + seed * 1.7 - w * 1.5);
-    float streak = 0.62 * lane1.x + 0.38 * lane2.x;
-    float streakSlope = 0.62 * 4.5 * lane1.y;
-    // dry brush toward the tip: the paint runs out and the thin lanes break first
-    if (streak < smoothstep(0.7, 1.0, w) * 0.7) discard;
+    float streak = lane1.x;
+    float streakSlope = 4.5 * lane1.y;
+    // dry brush at the tip only: the paint runs out over the last 15%
+    if (streak < smoothstep(0.85, 1.0, w) * 0.6) discard;
     if (a < 0.02) discard;
     // raised paint under one raking light from the upper left, the same for every stroke: a flank is lit by how
-    // far it slopes toward the light
+    // far it slopes toward the light; half the sky's rake
     float facing = dot(g / max(length(g), 1e-6), vec2(-0.6, 0.8));
     float lit = (side - 0.12 * streakSlope) * facing;
-    float rake = 1.0 + 0.5 * lit;
+    float rake = 1.0 + 0.25 * lit;
     float relief = (0.86 + 0.12 * (1.0 - y * y)) * rake;
-    float bristle = mix(0.8, 1.1, streak);
+    float bristle = mix(0.93, 1.03, streak);
     float rim = mix(0.72, 1.0, 1.0 - smoothstep(0.6, 0.95, y));
     vec3 col = diffuseColor.rgb * relief * bristle * rim;
-    // wet paint: a soft sheen where a flank turns most toward the light, at half the sky's (a dark tree takes a grey cast from 0.18)
-    col += pow(max(lit, 0.0), 3.0) * 0.09;
-    // the most loaded lanes carry a paler streak of the same paint, as in the painting's broken colour
-    col = mix(col, col * 1.15 + 0.03, smoothstep(0.75, 0.95, streak) * 0.4);
+    // wet paint: a soft sheen where a flank turns most toward the light, at a quarter of the sky's (a dark tree takes a grey cast)
+    col += pow(max(lit, 0.0), 3.0) * 0.045;
+    // the most loaded lanes carry a paler streak of the same paint, as in the painting's broken colour, gently
+    col = mix(col, col * 1.1 + 0.015, smoothstep(0.75, 0.95, streak) * 0.3);
     float lum = dot(col, vec3(0.299, 0.587, 0.114));
     diffuseColor.rgb = clamp(mix(vec3(lum), col, 1.3), 0.0, 1.05);
     diffuseColor.a *= a;
