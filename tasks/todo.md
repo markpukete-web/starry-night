@@ -1,6 +1,30 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-22 (small hours): D1 built and gated on `feat/touch-land-d1`, Codex's code review in flight; Mark's taste gate next (supersedes the pickup below)
+## Pickup — 2026-10-22 (morning): E3 (the cypress's medium) built and gated on `feat/cypress-medium`; D1 and E3 both wait on Mark's taste gate (supersedes the pickup below)
+
+Two branches, both local, nothing pushed, both reviewed by Codex to MERGE on their code (E3's confirmation read in
+flight when this was written: `scratch/cypress-e3-2026-10-22/confirmation-report.md`):
+
+- `feat/touch-land-d1` at `399a956`: D1, touch the land. The record `tasks/2026-10-20-touch-land-d1.md`. Served on
+  port 5179 from the main checkout (`~/Projects/starry-night`).
+- `feat/cypress-medium` (from D1's head): E3, the colour along the stroke and the cypress's relief. The record
+  `tasks/2026-10-22-cypress-e3.md`, the plan with two Codex reads folded. Served on port 5181 from a worktree in the
+  session's scratchpad (`git worktree list`); after the session, `git worktree prune` and start it again from any
+  checkout of the branch (`npx vite --host 127.0.0.1 --port 5181`).
+
+1. Mark's taste gate, on localhost: D1 on 5179 (hover, tap and drag on the cypress, hover the bushes; the `bend`
+   slider on `?tune=1`), E3 on 5181 (the cypress's bands at 1:1 beside the painting: `scratch/cypress-e3-2026-10-22/
+   e3-compare.png` is the painting, E3 and E1 at the render's scale; the orbit and mobile views in `views/`).
+2. On his word: push D1, PR, Codex's PR review, merge. Then rebase E3 onto `main` (it carries D1's commits now) and
+   the same for E3. One PR each.
+3. E3's open numbers: the paired contrast 3.4 against the painting's 11.1, reported as not met (the painting's
+   bristle marks and canvas weave at a scale the ribbons do not carry); the relief constants are a dial
+   (`CYPRESS_STROKE_BODY`). The perf row was measured under load (Codex's review running): re-run `capture-diorama.mjs
+   --perf` against 5181 on a quiet machine before the PR.
+4. Then the explorable question's three spikes (the walk; see the direction below), time-of-day presets after.
+5. Three dev servers may be running: 5179 (D1), 5180 (a `main` worktree for D1's byte-identity rows), 5181 (E3).
+
+## Pickup — 2026-10-22 (small hours): D1 built and gated on `feat/touch-land-d1`, Codex's code review closed MERGE; Mark's taste gate next (superseded by the pickup above)
 
 D1 (touch the land) is built and gated on `feat/touch-land-d1`, local only, nothing pushed. Read
 `tasks/2026-10-20-touch-land-d1.md` (the record: what was built, the deviations, the gate G1–G8) and the plan's
