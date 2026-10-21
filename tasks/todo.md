@@ -2,8 +2,8 @@
 
 ## Pickup — 2026-10-22 (morning): E3 (the cypress's medium) built and gated on `feat/cypress-medium`; D1 and E3 both wait on Mark's taste gate (supersedes the pickup below)
 
-Two branches, both local, nothing pushed, both reviewed by Codex to MERGE on their code (E3's confirmation read in
-flight when this was written: `scratch/cypress-e3-2026-10-22/confirmation-report.md`):
+Two branches, both local, nothing pushed, both reviewed by Codex to MERGE on their code (E3's confirmation read:
+`scratch/cypress-e3-2026-10-22/confirmation-report.md`, all nine closed):
 
 - `feat/touch-land-d1` at `399a956`: D1, touch the land. The record `tasks/2026-10-20-touch-land-d1.md`. Served on
   port 5179 from the main checkout (`~/Projects/starry-night`).
@@ -19,8 +19,7 @@ flight when this was written: `scratch/cypress-e3-2026-10-22/confirmation-report
    the same for E3. One PR each.
 3. E3's open numbers: the paired contrast 3.4 against the painting's 11.1, reported as not met (the painting's
    bristle marks and canvas weave at a scale the ribbons do not carry); the relief constants are a dial
-   (`CYPRESS_STROKE_BODY`). The perf row was measured under load (Codex's review running): re-run `capture-diorama.mjs
-   --perf` against 5181 on a quiet machine before the PR.
+   (`CYPRESS_STROKE_BODY`). Perf re-run quiet: 60 fps at the rig's vsync (p95 17.0), D1's numbers exactly.
 4. Then the explorable question's three spikes (the walk; see the direction below), time-of-day presets after.
 5. Three dev servers may be running: 5179 (D1), 5180 (a `main` worktree for D1's byte-identity rows), 5181 (E3).
 
