@@ -397,3 +397,82 @@ the revision below is the first task when D1 starts, on the new tree. Nothing of
   since `alive` is on); the amplitude's continuity at the release and its exact closure; the vec4-array upload
   (`Float32Array(16)` reaches `uniform4fv` as is); exactly one `<begin_vertex>` in `MeshBasicMaterial`; the
   world-to-local offsets; the single prune owner publishes whole stores.
+
+## Rebase onto E1 and E2 (2026-10-21, before the build)
+
+The plan above was written on 2026-10-20 against the old cypress (48 ribbons, `cypress-solid` the lobe volume) and
+the village's four foliage rows. E1 (PR #15) rebuilt the cypress as 450 front ribbons traced in its own field, and
+E2 (PR #16) retired the foliage rows for the ground strokes and the stroked domes. The design (D1.1, D1.4–D1.6) and
+Codex's fourteen findings stand; what changes is the targets and what they already carry. Mark, 2026-10-21: "Let's
+start D1, rebase the plan first."
+
+### What E1 and E2 already built for D1
+
+- **D1.2 is done.** `AliveInjection.vertexTransform` exists (`aliveMaterial.ts:29`, applied once after
+  `<begin_vertex>`), and `concatInjections` merges injections into one key. E1's stroke body (`strokeGlsl`) is
+  injected that way on the cypress's strokes and the land's strokes. The guard test in `scripts/sky-alive.test.ts`
+  covers the marker.
+- **The cypress carries its height already.** Both cypress geometries carry `aFlicker = [w, h]`, `h` the height
+  axis (0 base, 1 tip), whenever `alive` is on; D1 rides B's flag, which `alive=0` turns off with it, so `h` is
+  always present when the bend is. The bend reads `aFlicker.y`: no `aBend` on the cypress.
+- **The village's foliage rows are gone.** D1.3's `foliageRow` / `face()` work is void. The targets on the island are
+  E2's trees: `land-trees-strokes` (the domes' strips, `aStroke` [along, across] and `aSeed`) and
+  `land-trees-solid` (the domes). The ground (`land-ground`) does not bend: the painting's fields are laid paint,
+  not grass, and a ripple there is a different piece. Mark's call if he wants it.
+
+### The rebased D1.3 — the attribute and the materials
+
+- `buildLandTrees` emits `bend` per strip vertex and per dome vertex: the vertex's height above the terrain under
+  it over the mass's height, clamped to [0, 1] (`(y − islandHeightAt(x, z)) / placed.height`). A strip settled on
+  the dome–terrain contact has 0.005 / height; a crest point 1. The attribute is `aBend` (one float), set by
+  `strokeGeometry` and `plainGeometry` when given, so the ground's geometries never carry it.
+- The trees' strips get their own material, `treeMat`: E1's stroke body concatenated with the bend
+  (`concatInjections('land-trees-bend', strokeGlsl, bendGlsl)`), `uLandParams.y = foliagePush × bendGain`. The
+  ground keeps `landMat` unchanged, so its program and bytes are E2's: G4's no-input comparison has nothing to
+  explain on the ground. The domes' solid gets a `MeshBasicMaterial` with the bend alone (`land-trees-bend-solid`).
+- The cypress: both materials gain the bend through `concatInjections` with the flicker (`alive-flicker-bend-solid`,
+  `cypress-strokes-flicker-bend`), the GLSL reading `aFlicker.y` as the bend weight (a `#define`-free rename:
+  `bendGlsl` takes the weight expression as a parameter, `aBend` on the island, `aFlicker.y` on the cypress).
+- `BrushIsland` and `BrushCypress` take `touch?: { store: RefObject<LandStore>; bendGain: number }`; the frame loops
+  write `uLand` / `uLandCount` from `landUniformValues` with their group's offset (the island's group is at the
+  origin, the cypress's at `BASE`).
+
+### The rebased D1.4 — the raycast's targets (Codex F4, F8)
+
+- The land meshes a hit counts on: `cypress-solid` (E1's solid; the group `cypress`, the mesh named now) and
+  `land-trees-solid`. The strips and the ribbons are not raycast (thin, over the body).
+- The occluders raycast with them, so a hedge behind a house or the island's rim never wins: `village-solid`,
+  `village-skin`, `village-paint`, `land-ground`, and the island's solid (named `island-solid` now). The hit is land
+  only when the nearest intersection is on a land mesh.
+- The domes' solid is wound outward since `b3b2bc6` and front-side, so the nearest hit on a dome is its near shell.
+  The cypress's solid is `DoubleSide`; `[0]` takes the nearest, accepted as before.
+- The hit test runs once per frame on the latest pointer position in the hook's own `useFrame` (F8); releases on
+  `pointerup`, `pointercancel`, `pointerleave` (F3) and `visibilitychange` are immediate.
+
+### What the rebase does not change
+
+D1.1's model with F1 (the smooth field: the push proportional to `away / radius · (1 − x²)²`), F5 (the amplitude
+ramps to a new target over `rise`), F7 (the gain once, in the material), F10 (admission against the touches live at
+`now`); D1.5's knob (`bend`, key `touchBend`, `TUNING_FIELDS` in `vite.config.ts`, F6); D1.6's store ownership and
+the single prune at priority −1; the gate G1–G9, with G5's mask from `__landBounds()` now the cypress's and the
+trees' screen rects, and G6's eye on the domes' strips staying on their shells through a touch (the same field on
+the strip and the dome under it, as E1's lift keeps the ribbons on the lobes).
+
+### Constants to revisit on the new trees
+
+`foliagePush` 0.035 was set for hedge rows 0.13–0.25 tall; the domes are 0.13–0.30. It starts there; the knob and
+Mark's eye set it. `radius` 0.55 covers a dome row's neighbour (the orchard's domes are 0.35–0.47 apart): a touch
+on one dome stirs the next, which reads as a cluster, as the painting's clumps are.
+
+### Mark's two choices
+
+1. `landMasksSky` true: a hand on the tree moves the tree and no longer surges the sky behind it (recommended).
+2. The ground stays still (recommended); a ripple of the fields is a separate slice if wanted.
+
+### The order
+
+1. Codex reads this rebase against the current code (`scratch/touch-land-2026-10-20/brief-rebase-read.md`), bounded
+   to the delta: the attribute's definition, the material split, the raycast set, anything E1 or E2 changed that the
+   plan still assumes. One read.
+2. The build on `feat/touch-land-d1` from `main` (`7bd583e` plus the docs commit): the model and its tests red first
+   (D1.1 with F1/F5/F10), then the attribute and the materials, then the input, then the knob, then the gate.

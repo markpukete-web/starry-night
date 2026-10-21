@@ -18,7 +18,10 @@ the domes' second pass". Mark's word on the taste gate, 2026-10-21: "This looks 
    `row-front`'s leftmost dome is sparse (143 foliage px); `orchard-right` stands against the void at the island's
    right edge; the root's rim dabs at the home view; his phone's `?perf=1` reading.
 4. Then the explorable question (a rail into the street, a dive into the sky's brushwork, Simon's walk with a world
-   sky), three spikes on captures, see "Proposed to Mark — inside the painting". Time-of-day presets after that.
+   sky), three spikes on captures, see "Proposed to Mark — inside the painting". Mark, 2026-10-21, asked whether the
+   walk is still coming ("a 3D landing site like how Simon Lee does", "I meant the walk, explorable question"): it
+   is the next question after D1, not ruled out; the two locks (free-fly, the orbit limits) are his to lift for an
+   authored rail, and the camera-locked sky is the technical gap the spikes must cost. Time-of-day presets after that.
 5. Housekeeping: three decodes of `painting.jpg` (a shared loader); `--perf` as a bare argument once created a
    `--perf/` folder (deleted 2026-10-21), the capture script could reject it.
 6. The worker (Gemini, `w4:p5`) was at 99% of its 5-hour window at 20:20 Brisbane on 2026-10-21; Codex (`w4:p4`)
