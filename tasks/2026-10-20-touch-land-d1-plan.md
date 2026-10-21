@@ -530,4 +530,13 @@ P2s and two P3s. Each checked against the code; each holds. The dispositions, al
   reversed camera); the G5 painted-light row was missing and is captured now (a hold on the cypress at t0 5: 0 px
   at t0, 55,188 at +1 inside the cypress's box, the same box as the moving sky's).
 
-The confirmation read: `brief-confirmation.md`, bounded to the eight, one word at the end.
+The confirmation read (`confirmation-report.md`): F1–F8 CLOSED on the hook shims and the strengthened test (the
+binary field now fails at `row-front` vertex 0), the re-run G3/G4 rows at 0; one new P2 in the F6 fix:
+
+- F9 (P2) a masked land step returned without marking the hover, so a second move over the tree within 60 ms
+  skipped the throttled land block and fell through to a sky surge → `6fb8d8d`: the separate throttle is gone;
+  B's own hover gate (60 ms and a step of `hoverU`) governs the land step, marked on masked steps too, so a move
+  within the gate is not admitted and the frame's test takes it (headed: the confirmation's two-move sequence and a
+  40-move sweep on the trunk add no sky surge; one move off then still releases the hold and surges once).
+
+The second confirmation read: `brief-confirmation-2.md`, bounded to F9, the last for this review.

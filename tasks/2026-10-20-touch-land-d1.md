@@ -33,6 +33,8 @@ recommended: `landMasksSky` true, the ground still.
    on a rebind (F1), the pending move consumed on the up (F2), bend-to-zero clears the land (F3), a tap completes
    its ramp (F4), the suite in `test:sky` (F5), the mask decided on the current position (F6), no mesh cache (F7),
    the weight test checks the field (F8).
+6. `6fb8d8d` the confirmation read's F9: B's hover gate governs the land step, marked on masked steps, so a second
+   move over the tree within 60 ms cannot fall through to the sky.
 
 ## Deviations from the plan, for the review
 
@@ -58,7 +60,7 @@ recommended: `landMasksSky` true, the ground still.
 | G6 | by eye, 1:1 | `cypress-none-vs-hold-t6.png`: the tree leans away from the point, the tip furthest, the base still, the ribbons on the body. `tap-swing-strip.png`: the lean at the ramp's peak, the overshoot the other way at +0.5 s, settled by +2 s: a spring, not jelly. `orchard-none-vs-hold-t6.png`: the held dome's curls shift, subtle at 0.035 (Mark's eye) |
 | G7 | headed Playwright, the input path | a hover onto the tree begins a hold at 0.6 and no sky surge while sliding on the trunk; leaving releases it and the sky's hover resumes; the touch is pruned within the window; a press retargets 0.6 → 1 (F5) and the release swings it with the sky's surges and kicks unchanged (masked); a drag across the tree holds and follows; a tap on the sky still surges and kicks. After the review's fixes: a same-frame tap releases at t0 + 0.12 at amplitude 1; no hold is rebuilt after the up until a real move; one move off the tree then still releases the hold and surges the sky once. Frame time with a continuous hover sweeping the tree 10.63 ms mean (p95 11.7) against 10.55 idle (p95 11.6), Playwright's Chromium unlocked from vsync |
 | G8 | `check:reduced`, `check:viewport` | PASS, PASS (`gate/check-reduced.log`, `check-viewport.log`) |
-| G9 | Codex code review | REVISE on `375d825` (F1–F6 P2, F7–F8 P3; `code-review-report.md`); all eight fixed in `9136dc4` (the plan's Review section); the confirmation read bounded to the eight (`brief-confirmation.md`) |
+| G9 | Codex code review | REVISE on `375d825` (F1–F6 P2, F7–F8 P3; `code-review-report.md`); all eight fixed in `9136dc4`; the confirmation read: F1–F8 CLOSED, one new P2 (F9, the masked step's fall-through) fixed in `6fb8d8d` with headed regressions; the second, last confirmation read bounded to F9 (`brief-confirmation-2.md`) |
 
 ## Open
 
