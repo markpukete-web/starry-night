@@ -1,8 +1,10 @@
+import { Vector3 } from 'three'
 import {
   sampleCypressLobe,
   type CypressLobePlan,
   type CypressLobeSection,
 } from './cypressLobes.ts'
+import type { CypressRibbon } from './cypressStrokes.ts'
 
 export type CypressLobeSolidOptions = {
   bearing: number
@@ -53,20 +55,29 @@ const DEFAULTS: Omit<CypressLobeSolidOptions, 'bearing' | 'height' | 'sourceToWo
   depthRatio: 0.42,
 }
 
+function smoothstep(a: number, b: number, x: number): number {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)))
+  return t * t * (3 - 2 * t)
+}
+
+/**
+ * A point on a lobe section's ellipse at a lateral (−1..1 across the visible interval), or in the rim's plane
+ * beyond it (|lateral| up to 1.6: the tongues). The normal blends to the design camera's direction from a
+ * lateral of 0.7 to the rim, so a rim stroke faces the camera instead of turning edge on, and a tongue beyond
+ * the rim is a flat flap facing it (E1). The normal shades only; the strip's frame and offset do not come from it.
+ */
 export function mapCypressLobeSurface(
-  lobe: CypressLobePlan['lobes'][number],
+  section: CypressLobeSection,
   sample: CypressLobeSurfaceSample,
   options: CypressLobeSolidOptions,
   frontFacing: boolean,
 ): CypressLobeSurfacePoint {
-  const section = sampleCypressLobe(lobe, sample.heightFraction)
-  if (!section) throw new Error(`sample lies outside cypress lobe ${lobe.id}`)
   const screenX = [Math.sin(options.bearing), 0, -Math.cos(options.bearing)] as const
   const viewDirection = [Math.cos(options.bearing), 0, Math.sin(options.bearing)] as const
   const projected = (sample.sourceX - options.sourceAnchor) * options.sourceToWorld
   const widthRadius = Math.max(0.002, section.sourceHalfWidth * options.sourceToWorld)
   const depthRadius = Math.max(0.002, widthRadius * options.depthRatio)
-  const lateral = Math.min(0.999, Math.max(-0.999, sample.lateral))
+  const lateral = Math.min(1.6, Math.max(-1.6, sample.lateral))
   const depthUnit = Math.sqrt(Math.max(0, 1 - lateral * lateral))
   const facing = frontFacing ? 1 : -1
   const depth = depthUnit * depthRadius * facing
@@ -78,12 +89,175 @@ export function mapCypressLobeSurface(
   const normalAcross = lateral / widthRadius
   const normalDepth = (depthUnit * facing) / depthRadius
   const normalLength = Math.hypot(normalAcross, normalDepth) || 1
-  const normal = [
-    (screenX[0] * normalAcross + viewDirection[0] * normalDepth) / normalLength,
-    0,
-    (screenX[2] * normalAcross + viewDirection[2] * normalDepth) / normalLength,
-  ] as const
+  const k = smoothstep(0.7, 1, Math.abs(lateral))
+  const blendedX = ((screenX[0] * normalAcross + viewDirection[0] * normalDepth) / normalLength) * (1 - k) + viewDirection[0] * facing * k
+  const blendedZ = ((screenX[2] * normalAcross + viewDirection[2] * normalDepth) / normalLength) * (1 - k) + viewDirection[2] * facing * k
+  const blendedLength = Math.hypot(blendedX, blendedZ) || 1
+  const normal = [blendedX / blendedLength, 0, blendedZ / blendedLength] as const
   return { position, normal }
+}
+
+/** The compiled rings grouped by lobe, in height order: the surface the solid's triangles span. */
+export function ringsByLobe(solid: CypressLobeSolid): Map<string, CypressLobeRing[]> {
+  const out = new Map<string, CypressLobeRing[]>()
+  for (const ring of solid.rings) {
+    const rings = out.get(ring.lobeId)
+    if (rings) rings.push(ring)
+    else out.set(ring.lobeId, [ring])
+  }
+  return out
+}
+
+/**
+ * The section the compiled triangles interpolate at h: linear between the two rings that bracket it; null
+ * outside the lobe's rings. The lift samples this, not the per-row section: between rings the solid is the
+ * blend of its two ring ellipses, and a per-row section can be a notch narrower than that blend, which left a
+ * strip "beyond the analytic rim" 0.029 under a compiled triangle (Codex F4, confirmation read).
+ */
+export function compiledSectionAt(rings: CypressLobeRing[], heightFraction: number): CypressLobeSection | null {
+  if (rings.length === 0 || heightFraction < rings[0].heightFraction || heightFraction > rings[rings.length - 1].heightFraction) return null
+  let low = 0
+  let high = rings.length - 1
+  while (high - low > 1) {
+    const middle = (low + high) >> 1
+    if (rings[middle].heightFraction <= heightFraction) low = middle
+    else high = middle
+  }
+  const a = rings[low].source
+  const b = rings[high].source
+  const span = rings[high].heightFraction - rings[low].heightFraction
+  const t = span > 1e-9 ? (heightFraction - rings[low].heightFraction) / span : 0
+  return {
+    heightFraction,
+    sourceCenter: a.sourceCenter + (b.sourceCenter - a.sourceCenter) * t,
+    sourceHalfWidth: a.sourceHalfWidth + (b.sourceHalfWidth - a.sourceHalfWidth) * t,
+    paintCenter: a.paintCenter + (b.paintCenter - a.paintCenter) * t,
+    paintHalfWidth: a.paintHalfWidth + (b.paintHalfWidth - a.paintHalfWidth) * t,
+  }
+}
+
+export type CypressLift = CypressLobeSurfacePoint & { lobeId: string; lateral: number }
+
+/**
+ * The frontmost compiled lobe surface under a crop point, or the nearest rim's plane within `maxOvershoot`
+ * laterals beyond every lobe (the tongues), or null further out. A 2D path crossing from a frond into the main
+ * takes the union's front surface, whose depth is continuous where the lobes overlap.
+ */
+export function liftToLobes(
+  rings: Map<string, CypressLobeRing[]>,
+  px: number,
+  heightFraction: number,
+  options: CypressLobeSolidOptions,
+  frontFacing: boolean,
+  maxOvershoot = 0.6,
+  /** beyond `maxOvershoot`, place the point at that lateral in the rim's plane instead of returning null (a strip's edge) */
+  clampOvershoot = false,
+): CypressLift | null {
+  const viewDirection = [Math.cos(options.bearing), 0, Math.sin(options.bearing)] as const
+  const facing = frontFacing ? 1 : -1
+  let best: CypressLift | null = null
+  let bestDepth = -Infinity
+  let nearest: { lobeId: string; section: CypressLobeSection; lateral: number } | null = null
+  let nearestOver = Infinity
+  for (const [lobeId, lobeRings] of rings) {
+    const section = compiledSectionAt(lobeRings, heightFraction)
+    if (!section) continue
+    const lateral = (px - section.sourceCenter) / Math.max(1e-6, section.sourceHalfWidth)
+    if (Math.abs(lateral) <= 1) {
+      const point = mapCypressLobeSurface(section, { heightFraction, lateral, sourceX: px }, options, frontFacing)
+      const depth = facing * (point.position[0] * viewDirection[0] + point.position[2] * viewDirection[2])
+      if (depth > bestDepth) {
+        bestDepth = depth
+        best = { ...point, lobeId, lateral }
+      }
+    } else if (Math.abs(lateral) - 1 < nearestOver) {
+      nearestOver = Math.abs(lateral) - 1
+      nearest = { lobeId, section, lateral }
+    }
+  }
+  if (best) return best
+  if (!nearest) return null
+  if (nearestOver > maxOvershoot) {
+    if (!clampOvershoot) return null
+    const sign = nearest.lateral < 0 ? -1 : 1
+    const lateral = sign * (1 + maxOvershoot)
+    const sourceX = nearest.section.sourceCenter + lateral * nearest.section.sourceHalfWidth
+    const point = mapCypressLobeSurface(nearest.section, { heightFraction, lateral, sourceX }, options, frontFacing)
+    return { ...point, lobeId: nearest.lobeId, lateral }
+  }
+  const point = mapCypressLobeSurface(nearest.section, { heightFraction, lateral: nearest.lateral, sourceX: px }, options, frontFacing)
+  return { ...point, lobeId: nearest.lobeId, lateral: nearest.lateral }
+}
+
+/**
+ * Points across a strip, each lifted on its own, and the strip's lift toward the camera in world units. A lobe's
+ * ellipse curves tightly at the rim of the wide lower sections (the curvature radius there is about 0.027 world
+ * units for a depth radius of 0.064), so a chord across a quarter of a 0.09-wide ribbon sagged 0.0043 under the
+ * surface with five columns and a 0.004 lift (Codex, code review F1, confirmation read), and where the ellipse
+ * meets the rim plane a triangle spanning the crease cuts under the ellipse's steep end, which columns cannot
+ * fix. Seven columns and one uniform lift: the worst centroid over both batches (every sixth ribbon and the two
+ * the reviewer named) sat 0.0015 behind the solid at a 0.006 lift, cleared by 0.0005 at 0.008 and by 0.0025 at
+ * 0.010 (2026-10-21). The lift is one value for every column: a lift that grew with the column's lateral jumped
+ * 0.0076 where the lift switches lobes. 0.010 is two pixels at the design camera.
+ */
+export const STRIP_COLUMNS = 7
+export const RIBBON_LIFT = 0.01
+export type DrapedRibbon = {
+  /** per kept sample, the strip's points across its width, left to right, lifted and offset */
+  steps: Vector3[][]
+  /** per kept sample: its height, the centre's |lateral| and lobe */
+  kept: { h: number; lateral: number; lobeId: string }[]
+}
+
+/**
+ * A ribbon's strip on the lobes' union: every column point lifted on its own per sample (the middle column is the
+ * centre), offset toward the camera along the view direction (continuous where the lift switches lobes; an
+ * offset along the normal jumped 0.0026 there, Codex F5). The seed anchors the kept run: a sample that misses the
+ * lift below the seed restarts the run, one above it ends it, the seed itself failing means no run (code review
+ * F6), so a strip is never joined across a gap. The outer columns are clamped at the overshoot limit rather than
+ * failing, so a wide ribbon at the rim narrows; the centre decides. The lift is one value for every column: a lift
+ * that grew with the column's lateral jumped 0.0076 where the lift switches lobes, since the two lobes' laterals
+ * differ at their crossing. Null when fewer than three samples survive.
+ */
+export function drapeRibbon(
+  ribbon: CypressRibbon,
+  columns: [number, number][][],
+  rings: Map<string, CypressLobeRing[]>,
+  options: CypressLobeSolidOptions,
+  frontFacing: boolean,
+  offset: number,
+): DrapedRibbon | null {
+  const view = new Vector3(Math.cos(options.bearing), 0, Math.sin(options.bearing))
+  const facing = frontFacing ? 1 : -1
+  const seedIndex = ribbon.samples.indexOf(ribbon.seedSample)
+  const steps: Vector3[][] = []
+  const kept: DrapedRibbon['kept'] = []
+  const count = columns[0]?.length ?? 0
+  const middle = (count - 1) / 2
+  for (let k = 0; k < ribbon.samples.length; k++) {
+    const h = 1 - ribbon.samples[k].py
+    const centre = liftToLobes(rings, ribbon.samples[k].px, h, options, frontFacing)
+    const points: Vector3[] = []
+    if (centre) {
+      for (let j = 0; j < count; j++) {
+        const lift = j === middle ? centre : liftToLobes(rings, columns[k][j][0], 1 - columns[k][j][1], options, frontFacing, 0.6, true)
+        if (!lift) break
+        points.push(new Vector3(...lift.position).addScaledVector(view, facing * offset))
+      }
+    }
+    if (!centre || points.length !== count) {
+      if (k === seedIndex) return null
+      if (k < seedIndex) {
+        steps.length = 0
+        kept.length = 0
+        continue
+      }
+      break
+    }
+    steps.push(points)
+    kept.push({ h, lateral: Math.abs(centre.lateral), lobeId: centre.lobeId })
+  }
+  return kept.length >= 3 ? { steps, kept } : null
 }
 
 /**

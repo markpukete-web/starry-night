@@ -9,7 +9,135 @@ below — never edited in place.
 > Its `Status` note was last brought up to date on 2026-10-16 and is no longer maintained. At session start,
 > read `tasks/lessons.md`.
 
-## Pickup — 2026-10-20 (night): PR #12 merged, C live behind its flag, moving strokes the default sky
+## Pickup — 2026-10-21 (evening): E1 built and gated on `feat/cypress-e1`; Mark's taste gate next
+
+**Current agent entry point:** this section, then `tasks/2026-10-21-cypress-e1.md` (the record and the gate), then
+the plan `tasks/2026-10-21-cypress-e1-plan.md` (Codex's reads and every disposition). Read `tasks/lessons.md` from
+"E1 (the cypress), the plan" down.
+
+**Where things are.**
+- `feat/cypress-e1` (pushed, PR #15) from `feat/touch-land`: the derivation at 3840 (`2b4c966`), the lobes
+  (`465b68c`), the ribbons and gates (`ebee43f`), the flicker band (`0adcf25`), four retunes (`066c88d`,
+  `0c341a8`, `3ae5005`), the docs. 142 tests, type-check and lint clean. The retune cap is reached.
+- The gate: every locked criterion passes; the silhouette IoU 0.822 against `main`'s 0.787; the colour ΔE 0.9 /
+  1.4 / 3.2; the build 34 ms; both guards PASS. One of the plan's own bars is under: the fine texture (local
+  contrast 1.06 against the painting's 6.45) after the stipple's removal. Mark's eye decides between retune 4
+  (broad, gentle strokes) and more bristle contrast.
+- Captures for Mark: `scratch/cypress-e1-2026-10-21/e1-compare.jpg` (the painting | E1 | before),
+  `r4-tree.png`, `r4-body-1to1.png`, `r4-orbit-tree.png`, `output/playwright/e1-r4-2026-10-21/`.
+- Codex's code review (G12): REVISE with ten findings, then eight closed and one opened, then MERGE on the
+  full batches; every disposition in the record. The strokes are seven columns across at a 0.010 lift, opaque
+  with an alpha test; the gates measure against an expected area the render cannot move. The flow-failure
+  capture (G11b) passes.
+- Nothing running once the panes report. Herdr `w4:p4` (Codex) and `w4:p5` (Gemini) idle. The dev server
+  Mark was given (`http://10.100.125.107:5179/`) serves the working tree while it runs.
+
+- [ ] **Mark's taste gate** on the captures and on `?perf=1` on his iPhone (the frame rate and the build time).
+  Mark, 2026-10-21 evening, on the first comparison: "Looks closer".
+- [ ] **B's surges at a close orbit** (Mark, 2026-10-21 evening, a screenshot of the right-hand sky): the hover
+  lifts read as pale fog patches along the strokes at that angle and zoom; confirmed as B by their fade. Mark's
+  call on the `surge` knob (shipped 1) or on the lift's look; not E1's.
+- [x] Pushed and PR #15 opened on Mark's word (2026-10-21 evening, "push it and open the PR"); `@codex review`
+  requested once; the review completed on `dc3ef9f` with no findings (the summary's state `has_any_findings:
+  false`, one bot entry in the timeline). The later commits on the PR are docs only.
+- [ ] **Merge** is Mark's call (it deploys to production).
+- [ ] **E2, the land**, after E1 merges.
+- [ ] **D1, touch**, after E2: revise the plan per its review (the vertex transform and the draped vertex order
+  are in place), rebase on the new tree, build.
+
+## Pickup — 2026-10-21 (morning): the land roadmap decided (E1 the cypress first); D1's plan reviewed and banked (superseded by the evening pickup above)
+
+**Current agent entry point:** this section, then "Direction — the land" below (the roadmap, Mark's words, the
+order), then `tasks/2026-10-20-touch-land-d1-plan.md` (D1's plan and Codex's review, banked for later). Read
+`tasks/lessons.md` from "C (arrival)" down. The next task is **E1's plan file**: the cypress.
+
+**Where things are.**
+- `main` at `e6567e3`, production deployed 2026-10-20 13:45 UTC: moving strokes the default sky, A, B and C on for
+  every visitor (`?alive=0`, `?touch=0`, `?arrival=0` opt out), the opening once per session, `?perf=1` on screen.
+  Mark's iPhone: 60 fps with everything on. Three merged remote branches wait for Mark to delete: `feat/arrival-c`,
+  `fix/moving-first-paint`, `feat/flags-on`.
+- **The roadmap** (Mark, 2026-10-21, after the three-way comparison in `scratch/cypress-compare-2026-10-20/triptych.jpg`,
+  ours | the painting | Simon Lee's): E1 the cypress (lobes re-derived for the silhouette, the cladding rebuilt as
+  thick curling ribbons from its own flow field, tongues breaking the outline), E2 the land (the island's top in the
+  painting's ground strokes, stroked olive trees and bushes from the painting's masses), then D1 touch on the new
+  land. Each: plan file, the painting's crops beside ours, a fresh review, the build, captures at 1:1, Mark's eye.
+- **D1's plan** is written and reviewed (Codex, REVISE: seven P1s, three P2s, every finding recorded with its
+  disposition in the plan's Review section). Nothing of D1 is built. When D1 starts, the revision is its first task,
+  on E1's tree.
+- This record, the roadmap and D1's plan sit on the local branch `feat/touch-land` (docs only, not pushed; the name
+  is from before the roadmap). Start E1 from it (`git switch -c feat/cypress-e1 feat/touch-land`), so the docs ride
+  up with E1's PR. Nothing running: no servers, no worktrees, Herdr panes `w4:p4` (Codex) and `w4:p5` idle.
+- Open, none urgent: the DPR cap (Tunables 2, code 1.5: the Lead recommends 1.5 and a Tunables correction); C's
+  taste calls (the durations, French under the English, the title during the opening, a hint).
+
+- [ ] **E1, the cypress**: the plan file first (`tasks/<date>-cypress-e1-plan.md`), with 1:1 crops of the painting's
+  cypress beside ours (the triptych is the start), the lobe re-derivation and the streamline cladding; a fresh
+  review; then the build and the gate. Before writing it, read `tasks/2026-07-22-cypress-review-findings.md` (the
+  July gate and its traps), `src/scene/cypressLobes.ts`, `cypressLobeGeometry.ts`, `cypressLobeStrokes.ts`,
+  `BrushCypress.tsx`, `scripts/derive-cypress.ts` (the flow asset's derivation) and the sky's tracer
+  (`streamlineGeometry.ts`, `flowField.ts`).
+- [ ] **E2, the land**, after E1.
+- [ ] **D1, touch**, after E2: revise the plan per the review, rebase on the new tree, build.
+
+## Pickup — 2026-10-20 (late night): everything on for every visitor; D (touch the land) proposed (superseded by the 2026-10-21 pickup above)
+
+**Current agent entry point:** this section, then "Proposed to Mark" below (D, from Mark's grass-video idea, and the
+inside-the-painting readings), `tasks/2026-10-20-arrival-c.md` for C. Read `tasks/lessons.md` from "C (arrival)" down.
+
+**Where things are.**
+- `main` at `e6567e3`, production deployed 2026-10-20 13:45 UTC. Three PRs merged tonight on Mark's word: #12 (C
+  behind its flag, moving strokes the default), #13 (the moving default's first paint: the wash and the halos wait
+  with the strokes; a failed source image releases the wait), #14 (A, B and C on for every visitor, `?alive=0`,
+  `?touch=0`, `?arrival=0` to opt out; the opening once per session, `?arrival=1` always; `?perf=1` on screen; the
+  guard and capture scripts build their URLs with `URL` and opt out of the opening). Every Codex thread answered:
+  one P2 on #12, one on #13, three on #14 (all scripts), each fixed and verified.
+- **The phone, measured:** Mark's iPhone on #14's preview with everything on, 60 fps at 440 × 755 CSS, DPR 3 (the
+  1.5 cap applies). The locked bar is 30. The flag decision is closed.
+- Remote branches merged and waiting for Mark to delete: `feat/arrival-c`, `fix/moving-first-paint`, `feat/flags-on`.
+  This record sits on the local `docs/after-pr-14`; it rides the next code PR. Nothing running.
+- Mark's next direction (2026-10-20, with Jeroen van Welsenes' "touch grass" clip in `~/Downloads/videos/grass/`):
+  make the painting explorable like Simon Lee's, learn from his village, add grass or trees in the village that can
+  be touched through the screen. The Lead's reading and the proposed slice D are under "Proposed to Mark" below.
+
+- [ ] **D, touch the land** (proposed, below): Mark's word, then the plan file, a fresh review, the build.
+- [ ] **The DPR cap** (Tunables 2, code 1.5): Mark's call; the Lead's recommendation is 1.5 and a Tunables correction.
+- [ ] **C's taste calls**, if any: the durations, French under the English, the title during the opening, a hint.
+
+### Direction — the land (Mark, 2026-10-21): E1 the cypress, E2 the ground and the trees, then D1 touch
+
+Mark, 2026-10-21, on the three-way comparison (`scratch/cypress-compare-2026-10-20/triptych.jpg`: ours, the
+painting, Simon Lee's): "we need to redo the cypress ... silhouette can be improved too"; on the village: Simon
+"not only made extra trees but also some grass as well, which makes the village more live and real than us. Ours
+just some blocks to be honest." The Lead's reading, agreed: the cypress's silhouette is right in kind (the row
+table) and wrong in degree (too thin through the middle, the left tongue too low, one straight spire for a tip),
+and its medium is wrong (the painting's pixels stretched over a volume with 48 thin ribbons on top: a cut-out, not
+strokes). The village is eight painted boxes and four hedge rows on bare grey rock; the painting's sits in rolling
+blue-green ground strokes between dark olive trees. Simon's tree is a good 3D conifer and not Van Gogh's flame; his
+lesson is volume from many small strokes and ground cover, not his tree.
+
+The order, decided:
+
+1. **E1, the cypress.** Keep the lobe volume and the row table; re-derive the lobes with less simplification so
+   the main flame carries its width and the left tongue rises where the painting's does; rebuild the cladding from
+   streamlines traced in the cypress's own flow field (`public/reference/cypress-flow.png`, the sky's tracer and
+   ribbon packer) as thick, tapered, curling ribbons coloured from the painting with real relief; let the outer
+   ribbons overshoot the outline so the tongues break it; darken the solid to a shadow between strokes; keep back
+   strokes for the orbit. The flicker and D1's bend carry over as per-ribbon attributes. About two sessions.
+   Plan file first, the painting's crops beside ours, a fresh review, then the build; the gate compares crops at
+   1:1 and Mark's eye decides.
+2. **E2, the land.** The island's top painted in the painting's ground strokes instead of grey rock; stroked olive
+   trees and bushes grown from the painting's own masses (`tasks/2026-10-05-village-foliage.md` is the study),
+   placed where the painting puts them and filling behind in the same manner; the hills as the backdrop they are.
+   Two to three sessions. Same loop.
+3. **D1, touch the land**, on the new tree and the new ground: the strokes bend from the pointer and spring back.
+   Its plan (`tasks/2026-10-20-touch-land-d1-plan.md`, reviewed by Codex 2026-10-21) is banked and gets rebased
+   onto E1's tree; its model, store, hook and knob are independent of the cladding. One session.
+
+Then the explorable question (a rail into the street, a dive into the sky's brushwork, Simon's walk with a world
+sky), on captures, with real ground and trees to walk among. Time-of-day presets are now a legitimate later slice
+(the pre-release gate has passed). Not before E1–D1.
+
+## Pickup — 2026-10-20 (night): PR #12 merged, C live behind its flag, moving strokes the default sky (superseded by the late-night pickup above)
 
 **Current agent entry point:** this section, then `tasks/2026-10-20-arrival-c.md` (C's record, gate and reviews) and
 the "Proposed to Mark" section below (the inside-the-painting idea, next). Read `tasks/lessons.md` from "C (arrival)"

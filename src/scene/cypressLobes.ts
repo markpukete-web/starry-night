@@ -41,6 +41,9 @@ export type CypressLobePlanOptions = {
 
 type TaggedRun = { y: number; x0: number; x1: number; id: number }
 
+/** tree heights a frond's root sits below its chain's base, inside the main column: the volume closes there */
+const ROOT_DEPTH = 0.05
+
 function smoothSourceSections(
   sections: CypressLobeSection[],
   radius: number,
@@ -204,14 +207,9 @@ function mainLobe(rows: CypressLobeRows): CypressLobe {
       }
     })
     .sort((a, b) => a.heightFraction - b.heightFraction)
-  const sections = smoothSourceSections(raw, 6).map((section) => ({
-    ...section,
-    sourceHalfWidth:
-      section.sourceHalfWidth *
-      (section.heightFraction > 0.9
-        ? Math.max(0.05, Math.pow((1 - section.heightFraction) / 0.1, 0.65))
-        : 1),
-  }))
+  // the spans' own widths, lightly smoothed (3 rows of 1578). No taper above 0.9: the painting's tip is a hooked
+  // club 36 px wide at 0.95 of the height (1600 px units), and the old taper made a 22 px needle of it (E1).
+  const sections = smoothSourceSections(raw, 3)
   return {
     id: 'main',
     kind: 'main',
@@ -262,39 +260,38 @@ function frondLobe(
         paintHalfWidth: sourceHalfWidth,
       }
     })
-    .reverse(), 2)
+    .reverse(), 3)
+  // The frond is the painting's runs and nothing more (E1): the old flame envelope (a half-width of at least 0.1
+  // crop widths, 35 px of 176) put a wedge 13–18 px outside the painting between 0.30 and 0.45 of the height,
+  // and the old root at height 0 ran that wedge down the whole trunk. The root sits just below the chain's base,
+  // inside the main column, and the tip is the chain's own top run drawn to a point.
   const sourceBase = source[0]
   const sourceTip = source[source.length - 1]
-  const sourceSpan = sourceTip.heightFraction - sourceBase.heightFraction
-  const peakWidth = Math.max(
-    0.1,
-    Math.max(...source.map((section) => section.sourceHalfWidth)) * 1.8,
-    sourceSpan * 0.8,
-  )
   const primaryAtBase = rowSpanAt(1 - sourceBase.heightFraction, rows)
   const side =
     sourceBase.sourceCenter < (primaryAtBase.left + primaryAtBase.right) / 2
       ? 'left'
       : 'right'
-  const sign = side === 'left' ? -1 : 1
-  const rootHeight = 0
+  const rootHeight = Math.max(0, sourceBase.heightFraction - ROOT_DEPTH)
   const primaryAtRoot = rowSpanAt(1 - rootHeight, rows)
   const primaryCentre = (primaryAtRoot.left + primaryAtRoot.right) / 2
-  const primaryHalfWidth = (primaryAtRoot.right - primaryAtRoot.left) / 2
-  // These source tips detach from the main silhouette only after rising out of the lower mass.
-  // Root them near their own column and bend toward the main by a bounded amount; an unconstrained
-  // interpolation creates diagonal branches, which the painting does not contain.
-  const maximumRootShift = sourceBase.heightFraction * 0.35
-  const rootShift = Math.min(
-    maximumRootShift,
-    Math.max(-maximumRootShift, primaryCentre - sourceBase.sourceCenter),
-  )
+  const primaryHalfWidth = Math.max(0.0035, (primaryAtRoot.right - primaryAtRoot.left) / 2)
+  // the root is the chain's base moved the least that puts its interval inside the main column's, so the short
+  // bridge closes the volume inside the main and never grows a diagonal branch out of it (a root at the main's
+  // centre drew the bridge as a diagonal tail across the main's rim in the flat gate, 2026-10-21)
+  const rootCentre =
+    primaryHalfWidth > sourceBase.sourceHalfWidth
+      ? Math.min(
+          primaryAtRoot.right - sourceBase.sourceHalfWidth,
+          Math.max(primaryAtRoot.left + sourceBase.sourceHalfWidth, sourceBase.sourceCenter),
+        )
+      : primaryCentre
   const root: CypressLobeSection = {
     heightFraction: rootHeight,
-    sourceCenter: sourceBase.sourceCenter + rootShift,
-    sourceHalfWidth: Math.max(sourceBase.sourceHalfWidth * 1.15, primaryHalfWidth * 0.2, peakWidth * 0.55),
+    sourceCenter: rootCentre,
+    sourceHalfWidth: sourceBase.sourceHalfWidth,
     paintCenter: primaryCentre,
-    paintHalfWidth: Math.max(0.0035, primaryHalfWidth),
+    paintHalfWidth: primaryHalfWidth,
   }
   const bridge: CypressLobeSection[] = []
   const bridgeSteps = 4
@@ -306,34 +303,19 @@ function frondLobe(
     bridge.push({
       heightFraction,
       sourceCenter: root.sourceCenter + (sourceBase.sourceCenter - root.sourceCenter) * t,
-      sourceHalfWidth:
-        root.sourceHalfWidth +
-        (Math.max(sourceBase.sourceHalfWidth, root.sourceHalfWidth * 0.7) - root.sourceHalfWidth) * t,
+      sourceHalfWidth: sourceBase.sourceHalfWidth,
       paintCenter: (primary.left + primary.right) / 2,
       paintHalfWidth: Math.max(0.0035, (primary.right - primary.left) / 2),
     })
   }
-  const tipExtension = Math.max(0.018, (sourceTip.heightFraction - sourceBase.heightFraction) * 0.14)
   const tip: CypressLobeSection = {
-    heightFraction: Math.min(0.995, sourceTip.heightFraction + tipExtension),
-    sourceCenter: sourceTip.sourceCenter + sign * Math.min(0.018, tipExtension * 0.15),
-    sourceHalfWidth: 0.0035,
+    heightFraction: Math.min(0.999, sourceTip.heightFraction + 1e-4),
+    sourceCenter: sourceTip.sourceCenter,
+    sourceHalfWidth: Math.max(0.0035, sourceTip.sourceHalfWidth * 0.5),
     paintCenter: sourceTip.paintCenter,
-    paintHalfWidth: Math.max(0.0035, sourceTip.paintHalfWidth * 0.35),
+    paintHalfWidth: Math.max(0.0035, sourceTip.paintHalfWidth * 0.5),
   }
-  const sections = [root, ...bridge, ...source, tip]
-    .sort((a, b) => a.heightFraction - b.heightFraction)
-    .map((section) => {
-      if (section === tip) return section
-      const progress =
-        (section.heightFraction - root.heightFraction) /
-        Math.max(1e-6, tip.heightFraction - root.heightFraction)
-      const flameEnvelope =
-        peakWidth *
-        (0.55 * (1 - progress) +
-          0.75 * Math.pow(Math.max(0, Math.sin(Math.PI * progress)), 0.65))
-      return { ...section, sourceHalfWidth: Math.max(section.sourceHalfWidth, flameEnvelope) }
-    })
+  const sections = [root, ...bridge, ...source, tip].sort((a, b) => a.heightFraction - b.heightFraction)
   return {
     id: `frond-${index + 1}`,
     kind: 'frond',
@@ -348,12 +330,14 @@ export function buildCypressLobePlan(
   rows: CypressLobeRows,
   options: CypressLobePlanOptions = {},
 ): CypressLobePlan {
-  const minTrackRows = options.minTrackRows ?? 28
+  // the row thresholds scale with the table's resolution: 28 rows and 4 px at the 662-row table, 66 and 9 at
+  // the 1578-row one (E1: the table is baked from the 3840 px scan)
+  const minTrackRows = options.minTrackRows ?? Math.round(0.042 * rows.height)
   const maxFronds = options.maxFronds ?? 5
   const maximumRimDistance = options.maxRimDistance ?? 3
   const chains = trackSatelliteRuns(rows, {
     maxRowGap: options.maxRowGap ?? 2,
-    horizontalTolerancePx: options.horizontalTolerancePx ?? 4,
+    horizontalTolerancePx: options.horizontalTolerancePx ?? Math.round(0.006 * rows.height),
   })
     .filter((chain) => chain.length >= minTrackRows)
     .filter((chain) => {

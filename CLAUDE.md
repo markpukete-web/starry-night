@@ -154,6 +154,22 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   (`arrival`) are the default. `?alive=0` turns A and B off, `?touch=0` B alone, `?arrival=0` the opening; `=1` still
   works for links. The opening plays once per session on a plain visit (`sessionStorage`), always with `?arrival=1`.
   `?perf=1` shows the frame rate on screen. The guard and capture scripts opt out of the opening (`arrival=0`).
+- E1, the cypress (2026-10-21, `tasks/2026-10-21-cypress-e1-plan.md`, the record `tasks/2026-10-21-cypress-e1.md`): the
+  table and field baked from the 3840 px scan (`scripts/derive-cypress.ts`: the seed at 1600, the whole-tree component
+  flooded raw inside the seed's box then closed by 1 px, tensor σ 6, low-pass σ 5, the blend to vertical gated on
+  anisotropy 0.05–0.15). Ribbons (`src/scene/cypressStrokes.ts`, after four retunes): 450 front, back share 0.25,
+  lengths 0.07–0.30 of the crop's height log-uniform (× 1.5 above 0.6, seeds there weighted 1.8×), step 0.0019,
+  half-widths 0.03–0.06 crop widths capped at 0.45 of the seed's run (the painting's strokes are 30–60 px bands of
+  453; at the 8–14 px lane width the tree read as fur), overshoot 4 steps, taper 0.45, relief spread 0.035, one
+  pigment per ribbon: the mean of the tree texels across its width at the middle sample. The lift: the compiled rings'
+  interpolation, the overshoot to 0.6 laterals, the edges clamped there, the ribbons 0.004 toward the camera. The
+  underpaint `#151c1b`. The flicker's tongue band 0.72–0.93 (the ribbons' 75th and 95th percentiles of mean |lateral|;
+  was 0.4–0.75). Each strip is lifted in five columns across its width (code review F1). The stroke body
+  (`cypressStrokeShader.ts`) is the moving sky's, static, opaque with alphaTest 0.5 (order-independent edges, code
+  review F2), one bristle lane 4.5 cycles across at mix(0.86, 1.08), rake 0.35, rim mix(0.8, 1), sheen 0.06, the dry
+  brush over the tip's last quarter. Gate numbers after the review's fixes: IoU 0.817 (main 0.787), ΔE 1.0 / 1.2 /
+  3.0, the expected area 96% covered, local contrast 0.93 (the painting 6.45; the bar 4–7.5 is open to Mark's eye),
+  build 70 ms.
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)

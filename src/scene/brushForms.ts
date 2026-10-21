@@ -160,3 +160,32 @@ export function pushBrushRibbon(
     arr.indices.push(a, b, c, b, d, c)
   }
 }
+
+/**
+ * Append a strip from points already on the surface (E1's draped cypress ribbons): `steps[i]` holds the strip's
+ * points across its width at step i, left to right, all steps the same count; two triangles per step per column
+ * pair, the colours as supplied per step. Nothing is built from a normal here, and with several columns the
+ * strip follows the surface across its width (Codex, code review F1).
+ */
+export function pushDrapedRibbon(arr: BrushArrays, steps: Vector3[][], colors: Color[]): void {
+  if (steps.length < 2 || colors.length !== steps.length) return
+  const columns = steps[0].length
+  if (columns < 2 || steps.some((step) => step.length !== columns)) return
+  const base = arr.positions.length / 3
+  for (let i = 0; i < steps.length; i++) {
+    const colour = colors[i]
+    for (const point of steps[i]) {
+      arr.positions.push(point.x, point.y, point.z)
+      arr.colors.push(colour.r, colour.g, colour.b)
+    }
+  }
+  for (let i = 0; i < steps.length - 1; i++) {
+    for (let j = 0; j < columns - 1; j++) {
+      const a = base + i * columns + j
+      const b = a + 1
+      const c = a + columns
+      const d = c + 1
+      arr.indices.push(a, b, c, b, d, c)
+    }
+  }
+}

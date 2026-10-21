@@ -1,26 +1,36 @@
 /*
- * Displayed cypress colour gate using regional Lab distributions.
+ * Displayed cypress colour gate using regional Lab distributions (E1, G7).
  *
- * This is deliberately NOT described as a registered per-pixel comparison: the source crop is
- * wrapped onto a displaced 3D solid, so screen pixels do not have a cheap one-to-one inverse. We
- * compare mean Lab and channel spread over tree-masked top/middle/base regions and report ΔE76
- * between their means. Run after the deterministic design capture.
+ * Each side is masked by one rule, its own treeish component (scripts/lib/silhouette.ts): the painting's at 1600
+ * px around the row table's crop, the render's in the design-camera crop. Each tree's regions are thirds of its
+ * own height. No projection and no stencil (the old gate mapped the source crop onto a fixed rectangle, which
+ * misregistered once the crop held the flames: Codex F9). A region with fewer than MIN_PIXELS on either side, or
+ * a non-finite mean, fails the gate (the old gate passed with no tree at all: NaN ≥ 10 is false, Codex F8).
+ * The expected tree area is the painting's mask scaled into the crop box (the tree's known screen box at the
+ * design camera, an input the render's colours cannot move), and the share of it the render's treeish component
+ * does not cover is bounded: a wrongly coloured stroke leaves the treeish selection and would otherwise vanish from
+ * the means (code review F4: 77% of the tree painted cyan still passed; and an expected area fitted to the render's
+ * own component shrank with the corruption). Two negative controls are part of G7: a sky-only crop of the same
+ * capture must exit 1, and so must a capture whose tree is mostly recoloured.
+ *
+ *   node scripts/check-cypress-colour.ts <capture.png> [cropX cropY cropW cropH]
  */
 
+import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
-import { treeishColour } from './lib/fill-region.ts'
 import { decodePNG } from './lib/png.ts'
+import { expectedInCrop, extent, treeComponent, type Mask } from './lib/silhouette.ts'
 
 const ROOT = resolve(import.meta.dirname, '..')
-const capturePath = resolve(
-  ROOT,
-  process.argv[2] ?? 'output/playwright/cypress-pass2-retune3-2026-07-22/desktop-centre.png',
-)
-const sourcePath = resolve(ROOT, 'reference/derived/cypress-skin-source.png')
-const source = decodePNG(readFileSync(sourcePath))
-const capture = decodePNG(readFileSync(capturePath))
+const args = process.argv.slice(2)
+const capturePath = resolve(ROOT, args[0] ?? 'output/playwright/e1-measure-2026-10-21/desktop-centre.png')
+const [CX, CY, CW, CH] = args.length >= 5 ? args.slice(1, 5).map(Number) : [330, 80, 220, 578]
+const MIN_PIXELS = 1000
+const MAX_DELTA_E = 10
+/** the share of the expected tree area (the painting's mask scaled into the crop box) that the render's treeish component does not cover; the perspective's residual is about 0.2 */
+const MAX_REJECTED = 0.4
 
 type Lab = { l: number; a: number; b: number }
 type Region = 'base' | 'middle' | 'top'
@@ -36,8 +46,7 @@ function srgbToLab(red: number, green: number, blue: number): Lab {
   const x = (0.4124564 * r + 0.3575761 * g + 0.1804375 * b) / 0.95047
   const y = 0.2126729 * r + 0.7151522 * g + 0.072175 * b
   const z = (0.0193339 * r + 0.119192 * g + 0.9503041 * b) / 1.08883
-  const f = (value: number) =>
-    value > 216 / 24389 ? Math.cbrt(value) : (24389 / 27) * value / 116 + 16 / 116
+  const f = (value: number) => (value > 216 / 24389 ? Math.cbrt(value) : ((24389 / 27) * value) / 116 + 16 / 116)
   const fx = f(x)
   const fy = f(y)
   const fz = f(z)
@@ -48,91 +57,78 @@ function regionAt(heightFraction: number): Region {
   return heightFraction >= 2 / 3 ? 'top' : heightFraction >= 1 / 3 ? 'middle' : 'base'
 }
 
-const sourceRegions: Record<Region, Lab[]> = { base: [], middle: [], top: [] }
-for (let y = 0; y < source.height; y++) {
-  for (let x = 0; x < source.width; x++) {
-    const index = (y * source.width + x) * 4
-    if (source.rgba[index + 3] === 0) continue
-    sourceRegions[regionAt(1 - y / (source.height - 1))].push(
-      srgbToLab(source.rgba[index], source.rgba[index + 1], source.rgba[index + 2]),
-    )
-  }
-}
-
-// Deterministic 1600x900 design-camera bounds. The source-projected front is registered to this
-// crop, so its alpha is a conservative silhouette stencil; the chroma gate then rejects any
-// residual edge sky. A rectangle plus chroma alone is not sufficient because the authored
-// no-post cobalt is dark enough to satisfy `treeishColour` around the narrow upper flame.
-const renderedRegions: Record<Region, Lab[]> = { base: [], middle: [], top: [] }
-const bounds = { left: 400, right: 548, top: 96, bottom: 670 }
-// Stencil pixels the chroma gate rejects: a bright stroke leaves the tree family and drops out of the means, so a
-// lit frame (make-it-alive A's flicker) can under-report; the share is printed so a gate can bound its change.
-let stencil = 0
-let rejected = 0
-for (let y = bounds.top; y <= bounds.bottom; y++) {
-  for (let x = bounds.left; x <= bounds.right; x++) {
-    const sourceX = Math.min(
-      source.width - 1,
-      Math.max(0, Math.round(((x - bounds.left) / (bounds.right - bounds.left)) * (source.width - 1))),
-    )
-    const sourceY = Math.min(
-      source.height - 1,
-      Math.max(0, Math.round(((y - bounds.top) / (bounds.bottom - bounds.top)) * (source.height - 1))),
-    )
-    if (source.rgba[(sourceY * source.width + sourceX) * 4 + 3] === 0) continue
-    stencil++
-    const index = (y * capture.width + x) * 4
-    const red = capture.rgba[index]
-    const green = capture.rgba[index + 1]
-    const blue = capture.rgba[index + 2]
-    if (!treeishColour(red / 255, green / 255, blue / 255)) {
-      rejected++
-      continue
+/** The Lab values of a tree's pixels by region of its own height. */
+function regionsOf(rgba: Uint8Array, imageWidth: number, x0: number, y0: number, mask: Mask): Record<Region, Lab[]> {
+  const out: Record<Region, Lab[]> = { base: [], middle: [], top: [] }
+  const { top, height } = extent(mask)
+  if (height <= 0) return out
+  for (let y = 0; y < mask.height; y++) {
+    for (let x = 0; x < mask.width; x++) {
+      if (!mask.data[y * mask.width + x]) continue
+      const i = ((y + y0) * imageWidth + x + x0) * 4
+      out[regionAt(1 - (y - top) / Math.max(1, height - 1))].push(srgbToLab(rgba[i], rgba[i + 1], rgba[i + 2]))
     }
-    const heightFraction = (bounds.bottom - y) / (bounds.bottom - bounds.top)
-    renderedRegions[regionAt(heightFraction)].push(srgbToLab(red, green, blue))
   }
+  return out
 }
 
 function summary(values: Lab[]) {
-  const mean = values.reduce(
-    (sum, value) => ({ l: sum.l + value.l, a: sum.a + value.a, b: sum.b + value.b }),
-    { l: 0, a: 0, b: 0 },
-  )
-  mean.l /= values.length
-  mean.a /= values.length
-  mean.b /= values.length
+  const n = values.length
+  const mean = values.reduce((sum, value) => ({ l: sum.l + value.l, a: sum.a + value.a, b: sum.b + value.b }), { l: 0, a: 0, b: 0 })
+  mean.l /= n
+  mean.a /= n
+  mean.b /= n
   const spread = values.reduce(
-    (sum, value) => ({
-      l: sum.l + Math.pow(value.l - mean.l, 2),
-      a: sum.a + Math.pow(value.a - mean.a, 2),
-      b: sum.b + Math.pow(value.b - mean.b, 2),
-    }),
+    (sum, value) => ({ l: sum.l + (value.l - mean.l) ** 2, a: sum.a + (value.a - mean.a) ** 2, b: sum.b + (value.b - mean.b) ** 2 }),
     { l: 0, a: 0, b: 0 },
   )
-  spread.l = Math.sqrt(spread.l / values.length)
-  spread.a = Math.sqrt(spread.a / values.length)
-  spread.b = Math.sqrt(spread.b / values.length)
-  return { count: values.length, mean, spread }
+  return { count: n, mean, spread: { l: Math.sqrt(spread.l / n), a: Math.sqrt(spread.a / n), b: Math.sqrt(spread.b / n) } }
 }
 
-const deltaE = (one: Lab, two: Lab) =>
-  Math.hypot(one.l - two.l, one.a - two.a, one.b - two.b)
+// the painting's tree at 1600 around the row table's crop
+const rows = JSON.parse(readFileSync(resolve(ROOT, 'public/reference/cypress-rows.json'), 'utf8')) as { uv: number[] }
+const work = resolve(ROOT, 'reference/derived/cypress-colour-painting.png')
+execFileSync('sips', ['-s', 'format', 'png', resolve(ROOT, 'public/reference/painting.jpg'), '--out', work], { stdio: 'ignore' })
+const painting = decodePNG(readFileSync(work))
+const px0 = Math.max(0, Math.round(rows.uv[0] * painting.width) - 40)
+const py0 = Math.round(rows.uv[1] * painting.height)
+const pw = Math.min(painting.width - px0, Math.round((rows.uv[2] - rows.uv[0]) * painting.width) + 80)
+const ph = Math.round((rows.uv[3] - rows.uv[1]) * painting.height)
+const paintMask = treeComponent(painting.rgba, painting.width, px0, py0, pw, ph, 1)
+const sourceRegions = regionsOf(painting.rgba, painting.width, px0, py0, paintMask)
+
+// the render's tree in the capture's crop, and the area where the painting says it should be
+const capture = decodePNG(readFileSync(capturePath))
+const renderMask = treeComponent(capture.rgba, capture.width, CX, CY, CW, CH, 1)
+const renderedRegions = regionsOf(capture.rgba, capture.width, CX, CY, renderMask)
+const renderPixels = extent(renderMask).pixels
+const expected = expectedInCrop(paintMask, CW, CH)
+let expectedPixels = 0
+let covered = 0
+for (let i = 0; i < expected.data.length; i++) {
+  if (!expected.data[i]) continue
+  expectedPixels++
+  covered += renderMask.data[i]
+}
+const rejectedShare = expectedPixels ? 1 - covered / expectedPixels : 1
+
+const deltaE = (one: Lab, two: Lab) => Math.hypot(one.l - two.l, one.a - two.a, one.b - two.b)
 let failed = false
 for (const region of ['base', 'middle', 'top'] as const) {
-  const sourceSummary = summary(sourceRegions[region])
-  const renderedSummary = summary(renderedRegions[region])
+  const source = sourceRegions[region]
+  const rendered = renderedRegions[region]
+  if (source.length < MIN_PIXELS || rendered.length < MIN_PIXELS) {
+    console.log(JSON.stringify({ region, failed: 'too few pixels', source: source.length, rendered: rendered.length, minimum: MIN_PIXELS }))
+    failed = true
+    continue
+  }
+  const sourceSummary = summary(source)
+  const renderedSummary = summary(rendered)
   const difference = deltaE(sourceSummary.mean, renderedSummary.mean)
-  console.log(
-    JSON.stringify({
-      region,
-      deltaEMean: Number(difference.toFixed(2)),
-      source: sourceSummary,
-      rendered: renderedSummary,
-    }),
-  )
-  if (difference >= 10) failed = true
+  const finite = [sourceSummary.mean, renderedSummary.mean].every((mean) => Number.isFinite(mean.l) && Number.isFinite(mean.a) && Number.isFinite(mean.b)) && Number.isFinite(difference)
+  console.log(JSON.stringify({ region, deltaEMean: Number(difference.toFixed(2)), source: sourceSummary, rendered: renderedSummary }))
+  if (!finite || difference >= MAX_DELTA_E) failed = true
 }
-console.log(JSON.stringify({ stencil, rejected, rejectedShare: Number((rejected / Math.max(1, stencil)).toFixed(4)) }))
-console.log('comparison=regional Lab distribution (not registered per-pixel ΔE)')
+if (rejectedShare > MAX_REJECTED) failed = true
+console.log(JSON.stringify({ renderTreePixels: renderPixels, rejectedShare: Number(rejectedShare.toFixed(4)), maxRejected: MAX_REJECTED, comparison: 'regional Lab distribution by thirds of each tree\'s own height, one treeish rule on both sides, the rejected share against the painting\'s mask scaled into the crop box (not registered per-pixel ΔE)' }))
 if (failed) process.exitCode = 1

@@ -2602,3 +2602,117 @@ after PR #8 merged (`246e817`, "Merge it then start the second pass").
 - **A conditional DOM layer must be keyed to the state that drives it.** `arrival && !still` mounted a fresh opaque
   layer when reduced motion was toggled off after the end, with the driver already stopped (F11). Mount what a
   driver animates only while the driver runs.
+
+## D1 (touch the land), the plan, 2026-10-21
+
+- **A formula in a plan can be run before the code exists, and should be.** Codex executed D1's displacement and
+  found the direction flip across the touch point (zero below 1e-4, a unit vector above it, the falloff still 1):
+  a two-microunit move flipped a full-weight vertex by 0.14 units. A smooth vector field (`away / radius` times the
+  hat) has no such seam. Write the field as a vector from the start, not a direction times a scalar.
+- **An unqualified name costs a gain.** The plan's `knob` meant two things (B's surge gain, the land's bend gain),
+  and the bend was multiplied twice. Name every gain for what it scales.
+- **A new knob reaches four places, not three:** the tuning type, the tuner, the shipped JSON, and the writer's
+  allowlist in `vite.config.ts` (`TUNING_FIELDS`), which drops unknown keys and answers 200. Test the round trip.
+- **An interaction plan must list every event, including the ones that do nothing today.** A still press
+  (`pointerdown` with no move) and a hover that leaves the canvas (`pointerleave`) had no handler, so one never
+  started and the other never ended.
+- **The nearest hit among the meshes you ask is not the nearest visible surface.** Raycast every occluder in the
+  foreground and accept a land hit only when it is the nearest; 114 of 327 rays over the hedges hit a house first.
+- **The bar moved.** The cypress and the village passed their gates in July; next to the moving sky, and to Simon
+  Lee's village, they read as a cut-out and as boxes. A gate pass is for the piece as it stood; when the piece
+  around a part improves, the part comes up for review again.
+
+## E1 (the cypress), the plan, 2026-10-21
+
+- **A direction decided on a triptych with unmatched scales names defects the measurement does not find.** The
+  2026-10-20 reading ("too thin through the middle, the left tongue too low, one straight spire") came from three
+  panels at different scales. Measured against the painting's treeish component at 21 heights, the lobe plan's
+  widths match within 13 px, the left frond's tip is at 0.541 against the painting's 0.53, and the render at the
+  design camera is 20–65 px *wider* than the painting through 0.15–0.40. One claim survived: the tip is a needle
+  (22 px) where the painting has a club (36 px). Before naming a silhouette defect, run the width table in 2D (the
+  plan against the painting) and in render space (the thresholded capture, scaled to the painting's crop height).
+- **A derived flow field can be vertical by construction.** The shipped cypress field has 94% of its weight within
+  10° of vertical: `blendToVertical` weighted by an energy-normalised coherence (mean 0.25–0.4 on a dark tree)
+  pulls two thirds of the way to vertical everywhere. The low-passed field at 3840 has 50% beyond 15°, and its
+  ticks follow the strokes at 1:1. Histogram a field's angles before tracing anything in it, and gate a fallback
+  on the tensor's anisotropy, not on brightness.
+- **The 1600 px mask held the main column only.** The left flame was a satellite chain, never masked, so it had no
+  tensor and the vertical fallback. The closed treeish component at 3840 covers the whole tree and no sky.
+- **A render's treeish component bridges to dark sky strokes and the island.** Cut the crop at the tree's base, open
+  by 1 px before the flood, and compare the trunk's run; the first table was 60–90 px wide with the island in it.
+- **`status` is a read-only variable in zsh.** A monitor loop assigning it dies at once with "read-only variable".
+
+## E1 (the cypress), the build, 2026-10-21
+
+- **A closing before a flood bridges through single speckles.** Closed first, the treeish map joined the spire to
+  the star's halo beside it through one-pixel speckles: 113 rows reached the domain's edge and the halo became a
+  third frond. Flood the raw map, then close the component: the closing fills gaps inside the tree and cannot
+  reach what the flood never touched.
+- **A morphology confined to a domain must decide what lies beyond it.** With "outside reads 0" the erosion ate
+  the tree's base row off the domain's edge, and a test caught it. Dilation reads 0 beyond the domain, erosion
+  reads 1.
+- **A sparse seed scaled into a finer grid has gaps on every row it skips.** Classified against the seed's own
+  rows (every 2.4th), the satellites fell on those rows only and no chain survived `maxRowGap` 2 (Codex F13).
+  Interpolate the seed onto every row first.
+- **A frond rooted at the main's centre draws a diagonal tail.** The root belongs the least distance into the
+  main's interval that closes the volume, not at its centre; the flat lobe gate showed the tail at once.
+- **The lift must sample the surface the triangles span.** Between the solid's rings the compiled surface is the
+  blend of two ring ellipses; a per-row section can be a notch narrower, and a strip "beyond the analytic rim"
+  sat 0.029 under a compiled triangle (Codex F4). Interpolating the compiled rings put every strip vertex on or
+  in front of the solid; the raycast test proves it across the width.
+- **The first stroke count was a quarter short.** 520 front ribbons (the plan's estimate) left the underpaint
+  showing where the painting is solid paint; the flat gate showed it before any 3D work, and 1,400 with extra
+  seeds in the spire read as the painting's density. Judge coverage in 2D first.
+- **The grey is Van Gogh's.** The ribbons read grey-blue beside the painting's crop, but their pigment classes
+  measured green 50%, grey 38%, brown 9%, blue 3% against the painting's own cypress texels at 51/36/11/2. The
+  difference was the flat gate's flat colour against the painting's relief, not the sampling. Measure a colour
+  claim against the source's own distribution before changing the rule.
+- **A "treeish" fixture by accident.** A position-encoding test painting (R and G gradients, B 40) passed the
+  tree-pigment test over most of its area, so a lane-pigment rule picked a neighbour and the colour test failed
+  for the wrong reason. A fixture that must not be tree needs blue in it.
+- **`discard` in a comment is a discard to `indexOf`.** A shader-order test matched the word in the body's own
+  comment; match the statement, `discard;`.
+- **The React Compiler lint refuses a clock read in a memo.** `performance.now()` in `useMemo` is "impure during
+  render"; the timing seam carries a scoped disable with its reason, as the uniform writes already do.
+
+## E1 (the cypress), the retunes, 2026-10-21
+
+- **A lane is not a stroke.** At 1:1 the painting's cypress showed bands 8–14 px wide and I built the ribbons at
+  that width; two retunes later the tree still read as fur. The bands are bristle lanes inside strokes 30–60 px
+  wide. When measuring a stroke's width from a scan, find the band of one colour, not the finest visible line.
+- **One texel's pigment is one lane's.** Adjacent ribbons jumped in value where the painting's strokes agree; the
+  mean of the tree texels across the ribbon's own width gives the stroke's colour, and the colour gate went from
+  ΔE 11 / 8 / 14 to 0.9 / 1.4 / 3.2 over the retunes with no other colour change.
+- **Alpha-to-coverage stipples a thin stroke.** On ribbons 10–20 px wide the MSAA dither of every edge read as
+  pale dots along the strokes at 1:1 and lifted the local-contrast metric to 7.6; blended edges with depth written
+  took it to 1.06. The same metric fails on both sides: fur and stipple above the bar, smooth paint below it. Read
+  the crop before trusting which side a number is on.
+- **The sky's shader constants are for the sky's stroke width.** Its fine bristle octave (11 cycles across) aliases
+  below about 20 px on screen; the cypress keeps one lane.
+- **Retune within the cap, then stop.** Four passes moved the tree from a cut-out to broad dark strokes at the
+  painting's values; the last open number is a texture dial, and that is Mark's call with the captures, not a
+  fifth pass.
+
+## E1 (the cypress), the code review, 2026-10-21
+
+- **Two lifted edges do not lift the triangles between them.** A strip whose corners sit on a curved lobe has
+  interiors inside it; the chord across a quarter of a wide ribbon sagged 0.004 at the rim, where the ellipse's
+  curvature radius is 0.027. Lift every column, and test the emitted triangles' centroids, not the corners.
+- **A sample of the batch misses the batch's worst.** The clearance test's first fifty ribbons passed while two
+  ribbons in the full batches penetrated by 0.004. Probe whole batches, or every nth ribbon plus the ones a
+  reviewer named.
+- **A lift that depends on the lobe reintroduces the jump the lift was fixing.** Growing the lift toward the rim
+  fixed the crease and jumped 0.0076 at a lobe switch, because the two lobes' laterals differ at their crossing.
+  One value for every column; measure the minimum that clears and take a margin (0.008 clears, 0.010 ships).
+- **An expected area fitted to the thing under test is not expected.** The colour gate's expected area aligned to
+  the render's own component shrank with a recoloured tree and the control passed at 0.009 rejected. Take the
+  area from an input the render's colours cannot move: the crop box, the tree's known screen box.
+- **A "largest component" with no components is every pixel.** `best` left at 0 matched every unlabelled pixel, and
+  a crop with no tree came back all tree, exit 0. Every selection needs its empty case tested.
+- **A sandboxed `sips` is a different decoder.** The reviewer's fresh decode of `painting.jpg` had a different md5
+  from the canonical one and a seed four rows taller; outside the sandbox the bake reproduces byte for byte. Record
+  the decoded inputs' digests in the bake, and ask a reviewer how its decode was produced before chasing a
+  reproducibility defect.
+- **A test that recomputes the mechanism does not cover the runtime.** The crossing test computed both offsets
+  itself and would stay green if the drape went back to the normal offset. Drive the runtime function at the
+  established crossing and assert on what it emits.

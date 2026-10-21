@@ -18,14 +18,17 @@ const OUTPUT = resolve(ROOT, 'reference/derived/cypress-lobe-gate.png')
 const painting = decodePNG(readFileSync(resolve(ROOT, 'reference/derived/cypress-work.png')))
 const rows = JSON.parse(
   readFileSync(resolve(ROOT, 'public/reference/cypress-rows.json'), 'utf8'),
-) as CypressLobeRows & { x0: number; y0: number }
+) as CypressLobeRows & { uv: [number, number, number, number] }
 const plan = buildCypressLobePlan(rows)
+// the crop's origin in the work image (the 3840 scan since E1): the table carries painting-normalised `uv`
+const originX = Math.round(rows.uv[0] * painting.width)
+const originY = Math.round(rows.uv[1] * painting.height)
 
 const allSections = plan.lobes.flatMap((lobe) => lobe.sections)
 const cropLeft = Math.max(
   0,
   Math.floor(
-    rows.x0 +
+    originX +
       Math.min(...allSections.map((section) => section.sourceCenter - section.sourceHalfWidth)) *
         (rows.width - 1),
   ) - 8,
@@ -33,13 +36,13 @@ const cropLeft = Math.max(
 const cropRight = Math.min(
   painting.width - 1,
   Math.ceil(
-    rows.x0 +
+    originX +
       Math.max(...allSections.map((section) => section.sourceCenter + section.sourceHalfWidth)) *
         (rows.width - 1),
   ) + 8,
 )
-const cropTop = rows.y0
-const cropBottom = Math.min(painting.height - 1, rows.y0 + rows.height - 1)
+const cropTop = originY
+const cropBottom = Math.min(painting.height - 1, originY + rows.height - 1)
 const panelWidth = cropRight - cropLeft + 1
 const panelHeight = cropBottom - cropTop + 1
 const gutter = 8
@@ -74,8 +77,8 @@ for (let y = 0; y < panelHeight; y++) {
       output[destination + 2] = 18
       const sourceX = cropLeft + x - panelWidth - gutter
       for (const interval of intervals) {
-        const left = rows.x0 + interval.left * (rows.width - 1)
-        const right = rows.x0 + interval.right * (rows.width - 1)
+        const left = originX + interval.left * (rows.width - 1)
+        const right = originX + interval.right * (rows.width - 1)
         if (sourceX < left || sourceX > right) continue
         const rgb = colours[interval.lobeId] ?? [90, 90, 90]
         output[destination] = rgb[0]

@@ -44,7 +44,7 @@ const DIR = resolve(import.meta.dirname, '../public/reference');
  * WebP is BIGGER for them; measure before adding to this list, don't assume.
  * Paths are referenced from src/scene/PaintingFlowSky3D.tsx — keep the two in step.
  */
-const WEBP_ASSETS = ['painting-filled', 'sky-extend-left', 'sky-extend-right', 'cypress-skin'];
+const WEBP_ASSETS = ['painting-filled', 'sky-extend-left', 'sky-extend-right'];
 
 function haveWebpTools(): boolean {
   try {
