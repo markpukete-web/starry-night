@@ -1,6 +1,32 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-21 evening (supersedes the pickup below)
+## Pickup — 2026-10-21 (night): E2 gated on `feat/land-e2`, Codex's code review in flight; Mark's taste gate next (supersedes the pickup below)
+
+E2 (the land) is built and gated on `feat/land-e2`, local only, nothing pushed. Read `tasks/2026-10-21-land-e2.md`
+(the record: the retune table, the measured tables, the gate G1–G11, the deviations, what is open). Read
+`tasks/lessons.md` from "E2 (the land), the domes' second pass".
+
+1. Done tonight: capture 4's one defect (a dome's bare top against the sky) traced to two frames for one surface
+   (the domes on the terrain under their own centres, the strips from the mass centre's base) and fixed in one line,
+   `dd260b0`, red test first. Capture 5 looked at and measured: the disc gone, the colour gate PASS, 60 fps at the
+   rig's vsync, `check:reduced` and `check:viewport` PASS, G9 measured at 0 differing pixels on a land-only crop.
+   Record `98cd73e`. The domes' retune cap is reached (the height cap, the frame): any further dome change is
+   Mark's call.
+2. Codex's code review (G11): `scratch/land-e2-2026-10-21/brief-code-review.md` dispatched to `w4:p4` at 20:22; the
+   report lands at `scratch/land-e2-2026-10-21/code-review-report.md`. Answer every finding against the code, fix
+   P0–P2 in one batch, record each disposition in the plan's Review section and the record, then one confirmation
+   read bounded to the findings.
+3. Mark's taste gate on captures, in this order: `scratch/land-e2-2026-10-21/c5-land.png` (the island at the home
+   view), `c4-vs-c5-dome-2x.png` (the fix), `c5-orchard-1to1.png`, `c5-bushes-1to1.png`, `c5-front-row-1to1.png`,
+   `c5-lookdown-50.png`, `c5-orbit-50.png`, `c5-mobile-70.png`. His phone `?perf=1` reading stays open.
+4. Push and PR on his word (`push-only-after-mark-reviews`), then the Codex PR review, then D1 (touch the land,
+   `tasks/2026-10-20-touch-land-d1-plan.md`).
+5. Open, from the record: `row-left` and `bushes` overlap in x at the same z; `row-front`'s leftmost dome is sparse
+   (143 foliage px); the root's rim dabs at the home view (pre-existing); three decodes of `painting.jpg`.
+6. The worker (Gemini, `w4:p5`) was at 99.3% of its 5-hour window at 20:20 Brisbane; it resets about 01:15. Route
+   mechanical work elsewhere until then (`scout` or `builder`, see `agent-workflow`).
+
+## Pickup — 2026-10-21 evening (superseded by the night pickup above)
 
 E2 (the land) is built on `feat/land-e2`, local only, nothing pushed. Read `tasks/2026-10-21-land-e2.md` (the record,
 with the gate table and what is open) and the plan's Review section. The worker was running `brief-capture-4.md`
