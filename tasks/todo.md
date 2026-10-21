@@ -1,6 +1,6 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-21 (night): E2 gated on `feat/land-e2`, Codex's code review in flight; Mark's taste gate next (supersedes the pickup below)
+## Pickup — 2026-10-21 (night): E2 gated on `feat/land-e2`, Codex's code review closed MERGE; Mark's taste gate next (supersedes the pickup below)
 
 E2 (the land) is built and gated on `feat/land-e2`, local only, nothing pushed. Read `tasks/2026-10-21-land-e2.md`
 (the record: the retune table, the measured tables, the gate G1–G11, the deviations, what is open). Read
@@ -12,13 +12,17 @@ E2 (the land) is built and gated on `feat/land-e2`, local only, nothing pushed. 
    rig's vsync, `check:reduced` and `check:viewport` PASS, G9 measured at 0 differing pixels on a land-only crop.
    Record `98cd73e`. The domes' retune cap is reached (the height cap, the frame): any further dome change is
    Mark's call.
-2. Codex's code review (G11): `scratch/land-e2-2026-10-21/brief-code-review.md` dispatched to `w4:p4` at 20:22; the
-   report lands at `scratch/land-e2-2026-10-21/code-review-report.md`. Answer every finding against the code, fix
-   P0–P2 in one batch, record each disposition in the plan's Review section and the record, then one confirmation
-   read bounded to the findings.
-3. Mark's taste gate on captures, in this order: `scratch/land-e2-2026-10-21/c5-land.png` (the island at the home
-   view), `c4-vs-c5-dome-2x.png` (the fix), `c5-orchard-1to1.png`, `c5-bushes-1to1.png`, `c5-front-row-1to1.png`,
-   `c5-lookdown-50.png`, `c5-orbit-50.png`, `c5-mobile-70.png`. His phone `?perf=1` reading stays open.
+2. Codex's code review (G11) closed: REVISE on `dd260b0` (F1–F4 P2, F5–F6 P3), the fixes in `b3b2bc6` (the domes
+   wound outward: the far shell had rendered since capture 3; the clamped strip points settled on the dome–terrain
+   contact; the painting's load failure releases the land latch; the heading test's tautology; the unreachable cycle
+   guard removed), F4 (the flat gate without the masses' strips) deferred with evidence, the confirmation read
+   MERGE (`scratch/land-e2-2026-10-21/confirmation-report.md`), its F6 note taken in the next commit. Capture 6
+   after the fixes reads as capture 5 and passes the colour gate. The dispositions: the plan's Review section,
+   "The code review (G11)"; the record's G11 row.
+3. Mark's taste gate on captures, in this order: `scratch/land-e2-2026-10-21/c6-land.png` (the island at the home
+   view), `c4-vs-c5-dome-2x.png` (the dome fix), `c5-vs-c6-dome-2x.png` (the review's winding fix), `c6-orchard-1to1.png`,
+   `c6-bushes-1to1.png`, `c6-front-row-1to1.png`, `c6-lookdown-50.png`, `c6-orbit-50.png`, `c6-mobile-70.png`. His
+   phone `?perf=1` reading stays open.
 4. Push and PR on his word (`push-only-after-mark-reviews`), then the Codex PR review, then D1 (touch the land,
    `tasks/2026-10-20-touch-land-d1-plan.md`).
 5. Open, from the record: `row-left` and `bushes` overlap in x at the same z; `row-front`'s leftmost dome is sparse
