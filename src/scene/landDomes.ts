@@ -199,6 +199,7 @@ export function massCount(pixels: number): number {
 export function massConfig(crop: ImageData2D, count: number): CypressRibbonConfig {
   return {
     ...CYPRESS_RIBBON_CONFIG,
+    perSampleColours: false,
     frontCount: count,
     backShare: 0.4,
     spireSeedWeight: 1,

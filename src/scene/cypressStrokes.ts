@@ -43,6 +43,8 @@ export const CYPRESS_RIBBON_CONFIG = {
    * 18 px span, a third to a half of a band); 0 keeps each sample's own texel
    */
   colourSmoothing: 3,
+  /** E3: whether the tracer computes the per-sample colours at all; the land's callers read `colour` only (Codex E3 code review F5) */
+  perSampleColours: true,
   /**
    * how a walk reads the field's sign: `up` takes the texel's direction as baked (the cypress's field is signed up
    * at bake time); `continuous` flips a texel that opposes the walk's last step and stops at a two-step cycle (the
@@ -51,7 +53,9 @@ export const CYPRESS_RIBBON_CONFIG = {
   heading: 'up' as 'up' | 'continuous',
 } as const
 
-export type CypressRibbonConfig = { -readonly [K in keyof typeof CYPRESS_RIBBON_CONFIG]: (typeof CYPRESS_RIBBON_CONFIG)[K] extends number ? number : 'up' | 'continuous' }
+export type CypressRibbonConfig = {
+  -readonly [K in keyof typeof CYPRESS_RIBBON_CONFIG]: (typeof CYPRESS_RIBBON_CONFIG)[K] extends number ? number : (typeof CYPRESS_RIBBON_CONFIG)[K] extends boolean ? boolean : 'up' | 'continuous'
+}
 
 export type CypressRibbonSample = {
   /** crop-normalised */
@@ -168,7 +172,8 @@ const toSrgb = (c: number) => (c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.
  * sample. Each sample takes the accepted texel under it; a sample over an unaccepted texel (the overshoot into
  * sky) takes the nearest accepted sample's along the ribbon, before the smoothing; the smoothing is a box of
  * ±`smoothing` samples in linear RGB, back to sRGB for the attribute. A ribbon with no accepted sample takes
- * `fallback` throughout (the legacy per-ribbon colour). One colour per ribbon averaged a brown band with a green
+ * `fallback` throughout (the legacy per-ribbon colour); at a tie between two accepted samples the earlier one wins.
+ * One colour per ribbon averaged a brown band with a green
  * one where the traced path crosses them (328 of 450 ribbons do): the ribbons' colours spread 9 L against the
  * painting's tree's 18.5.
  */
@@ -284,7 +289,7 @@ export function traceCypressRibbons(
     const middle = samples[Math.floor(samples.length / 2)]
     const at = middle.inside ? middle : seedSample
     const colour = bandPigment(painting, ...paintingUV(rows, at.px, at.py), halfWidth * (rows.uv[2] - rows.uv[0]), accept)
-    const colours = sampleColours(painting, rows, samples, accept, colour, config.colourSmoothing)
+    const colours = config.perSampleColours ? sampleColours(painting, rows, samples, accept, colour, config.colourSmoothing) : []
     output.push({ samples, seedSample, colour, colours, halfWidth, relief, seed: ribbonSeed })
   }
   return output

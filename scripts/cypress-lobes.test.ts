@@ -546,3 +546,31 @@ test('E3: the drape names the kept run\'s first sample, and stepColours lines th
     }
   }
 })
+
+test('E3: on the shipped batches every draped ribbon\'s step colours are exactly its kept run\'s, in count and position (code review F7)', () => {
+  const { rows, flow, options, rings } = realAssets()
+  // a position-encoding painting, so every sample's colour names its own texel
+  const W = 64
+  const painting: ImageData2D = { data: new Uint8ClampedArray(W * W * 4), width: W, height: W }
+  for (let y = 0; y < W; y++) for (let x = 0; x < W; x++) { const i = (y * W + x) * 4; painting.data[i] = Math.round((x / (W - 1)) * 60); painting.data[i + 1] = 40 + Math.round((y / (W - 1)) * 60); painting.data[i + 2] = 20; painting.data[i + 3] = 255 }
+  let survivors = 0
+  let steps = 0
+  for (const [frontFacing, seed] of [[true, 0xc1f3a11], [false, 0xbacc51de]] as const) {
+    const count = frontFacing ? CYPRESS_RIBBON_CONFIG.frontCount : Math.round(CYPRESS_RIBBON_CONFIG.frontCount * CYPRESS_RIBBON_CONFIG.backShare)
+    for (const ribbon of traceCypressRibbons(flow, painting, rows, count, seed, { ...CYPRESS_RIBBON_CONFIG, colourSmoothing: 0 })) {
+      const draped = drapeRibbon(ribbon, ribbonColumns(ribbon, flow.width, flow.height, CYPRESS_RIBBON_CONFIG.taper, 7), rings, options, frontFacing, 0.004)
+      if (!draped) continue
+      survivors++
+      const colours = stepColours(ribbon, draped)
+      assert.equal(colours.length, draped.kept.length)
+      assert.ok(draped.firstSample + draped.kept.length <= ribbon.samples.length)
+      for (let i = 0; i < colours.length; i++) {
+        const sample = ribbon.samples[draped.firstSample + i]
+        assert.equal(Math.abs(1 - sample.py - draped.kept[i].h) < 1e-12, true, 'the step\'s height is the sample\'s')
+        assert.deepEqual(colours[i], ribbon.colours[draped.firstSample + i])
+        steps++
+      }
+    }
+  }
+  assert.ok(survivors > 500 && steps > 20000, `${survivors} survivors, ${steps} steps checked`)
+})

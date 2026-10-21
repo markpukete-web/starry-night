@@ -15,6 +15,7 @@ import type { ImageData2D } from './useImageData.ts'
  */
 export const LAND_RIBBON_CONFIG: CypressRibbonConfig = {
   ...CYPRESS_RIBBON_CONFIG,
+  perSampleColours: false,
   /** 1,000 covered the top once over and the dark solid showed through everywhere (capture 2); 2,000 at the
    * widths below cover it about three times, as the painting's layered strokes do */
   frontCount: 2000,

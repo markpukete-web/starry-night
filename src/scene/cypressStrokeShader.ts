@@ -29,24 +29,26 @@ export type StrokeBody = {
   laneHigh: number
   /** the raking light's strength on a flank that slopes toward it */
   rake: number
-  /** a second, coarser lane across the stroke: its cycles across and its share of the first lane's swing (0 off) */
+  /** a second, coarser lane across the stroke: its cycles across the stroke's full width (on vStroke.y, 0–1) and its share of the first lane's swing (0 off) */
   coarseCycles: number
   coarseShare: number
   /** the lane's edge: the smoothstep's two ends on the lane noise, so the bristles read as two tones with a hard edge (null: the noise as it is) */
   laneEdge: [number, number] | null
+  /** the chroma boost on the lit colour (1 none); E1's 1.3 compensated the one-colour mean's desaturation, which E3's per-sample colours no longer have */
+  saturation: number
 }
-export const STROKE_BODY_DEFAULTS: StrokeBody = { laneLow: 0.86, laneHigh: 1.08, rake: 0.35, coarseCycles: 2.2, coarseShare: 0, laneEdge: null }
+export const STROKE_BODY_DEFAULTS: StrokeBody = { laneLow: 0.86, laneHigh: 1.08, rake: 0.35, coarseCycles: 2.2, coarseShare: 0, laneEdge: null, saturation: 1.3 }
 /**
  * the cypress's (E3.3): pass 2 a stronger lane and rake (the paired contrast 3.2 → 3.3, too soft to register at the
  * ribbons' on-screen width); pass 3 the lane sharpened to two tones with the coarse lane at a third, coherent along
  * the stroke rather than a stipple
  */
-export const CYPRESS_STROKE_BODY: StrokeBody = { laneLow: 0.78, laneHigh: 1.14, rake: 0.5, coarseCycles: 2.2, coarseShare: 0.33, laneEdge: [0.3, 0.7] }
+export const CYPRESS_STROKE_BODY: StrokeBody = { laneLow: 0.78, laneHigh: 1.14, rake: 0.5, coarseCycles: 2.2, coarseShare: 0.33, laneEdge: [0.3, 0.7], saturation: 1.1 }
 
 const f = (n: number) => (Number.isInteger(n) ? `${n}.0` : `${n}`)
 
 export function strokeGlslWith(body: StrokeBody = STROKE_BODY_DEFAULTS): Omit<AliveInjection, 'key' | 'uniforms'> {
-  const coarse = body.coarseShare > 0 ? `\n    vec2 lane2 = cyNoise1d(side * ${f(body.coarseCycles)} + seed * 0.7 + w * 0.5);\n    streak = mix(streak, lane2.x, ${f(body.coarseShare)});` : ''
+  const coarse = body.coarseShare > 0 ? `\n    vec2 lane2 = cyNoise1d(vStroke.y * ${f(body.coarseCycles)} + seed * 0.7 + w * 0.5);\n    streak = mix(streak, lane2.x, ${f(body.coarseShare)});` : ''
   return {
   vertexHead: /* glsl */ `
   attribute vec2 aStroke;
@@ -108,7 +110,7 @@ export function strokeGlslWith(body: StrokeBody = STROKE_BODY_DEFAULTS): Omit<Al
     // the most loaded lanes carry a paler streak of the same paint, as in the painting's broken colour, gently
     col = mix(col, col * 1.1 + 0.015, smoothstep(0.75, 0.95, streak) * 0.3);
     float lum = dot(col, vec3(0.299, 0.587, 0.114));
-    diffuseColor.rgb = clamp(mix(vec3(lum), col, 1.3), 0.0, 1.05);
+    diffuseColor.rgb = clamp(mix(vec3(lum), col, ${f(body.saturation)}), 0.0, 1.05);
     diffuseColor.a *= a;
   }`,
   }

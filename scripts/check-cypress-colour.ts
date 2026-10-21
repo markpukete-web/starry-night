@@ -24,7 +24,8 @@ import { decodePNG } from './lib/png.ts'
 import { expectedInCrop, extent, treeComponent, type Mask } from './lib/silhouette.ts'
 
 const ROOT = resolve(import.meta.dirname, '..')
-const args = process.argv.slice(2)
+const control = (process.argv.slice(2).find((a) => a.startsWith('--control=')) ?? '').slice('--control='.length)
+const args = process.argv.slice(2).filter((a) => !a.startsWith('--'))
 const capturePath = resolve(ROOT, args[0] ?? 'output/playwright/e1-measure-2026-10-21/desktop-centre.png')
 const [CX, CY, CW, CH] = args.length >= 5 ? args.slice(1, 5).map(Number) : [330, 80, 220, 578]
 const MIN_PIXELS = 1000
@@ -100,6 +101,23 @@ const sourceRegions = regionsOf(painting.rgba, painting.width, px0, py0, paintMa
 // the render's tree in the capture's crop, and the area where the painting says it should be
 const capture = decodePNG(readFileSync(capturePath))
 const renderMask = treeComponent(capture.rgba, capture.width, CX, CY, CW, CH, 1)
+// `--control=grey`: the selected tree's pixels made neutral with their luminance contrast stretched, the selection kept;
+// the chromatic check must fail it (the plan's F4, the code review's F2: luminance bounds alone passed this)
+if (control === 'grey') {
+  const lum = (i: number) => 0.299 * capture.rgba[i] + 0.587 * capture.rgba[i + 1] + 0.114 * capture.rgba[i + 2]
+  let sum = 0
+  let n = 0
+  for (let y = 0; y < renderMask.height; y++) for (let x = 0; x < renderMask.width; x++) if (renderMask.data[y * renderMask.width + x]) { sum += lum(((y + CY) * capture.width + x + CX) * 4); n++ }
+  const mean = n ? sum / n : 0
+  for (let y = 0; y < renderMask.height; y++) for (let x = 0; x < renderMask.width; x++) {
+    if (!renderMask.data[y * renderMask.width + x]) continue
+    const i = ((y + CY) * capture.width + x + CX) * 4
+    const g = Math.max(0, Math.min(255, Math.round(mean + (lum(i) - mean) * 1.6)))
+    capture.rgba[i] = g
+    capture.rgba[i + 1] = g
+    capture.rgba[i + 2] = g
+  }
+}
 const renderedRegions = regionsOf(capture.rgba, capture.width, CX, CY, renderMask)
 const renderPixels = extent(renderMask).pixels
 const expected = expectedInCrop(paintMask, CW, CH)
@@ -137,15 +155,42 @@ if (rejectedShare > MAX_REJECTED) failed = true
 const MIN_SPREAD = 15
 const MIN_LIGHT = 0.09
 const LIGHT_L = 25
-const pooled = (regions: Record<Region, Lab[]>) => [...regions.base, ...regions.middle, ...regions.top].map((v) => v.l).sort((a, b) => a - b)
-const luminance = (ls: number[]) => {
+/** the chromatic check (plan F4): the browns and ochres (Lab b above this) and the greens (a below this), each share within this of the painting's */
+const WARM_B = 8
+const GREEN_A = -4
+const MAX_SHARE_GAP = 0.06
+const pooled = (regions: Record<Region, Lab[]>) => [...regions.base, ...regions.middle, ...regions.top]
+const stats = (labs: Lab[]) => {
+  const ls = labs.map((v) => v.l).sort((a, b) => a - b)
   const q = (p: number) => ls[Math.floor(p * (ls.length - 1))]
-  return { count: ls.length, p10: Number(q(0.1).toFixed(1)), p50: Number(q(0.5).toFixed(1)), p90: Number(q(0.9).toFixed(1)), spread: Number((q(0.9) - q(0.1)).toFixed(1)), light: Number((ls.filter((l) => l > LIGHT_L).length / ls.length).toFixed(3)) }
+  return {
+    count: ls.length,
+    p10: q(0.1),
+    p50: q(0.5),
+    p90: q(0.9),
+    spread: q(0.9) - q(0.1),
+    light: ls.filter((l) => l > LIGHT_L).length / ls.length,
+    warm: labs.filter((v) => v.b > WARM_B).length / labs.length,
+    green: labs.filter((v) => v.a < GREEN_A).length / labs.length,
+  }
 }
-const sourceL = luminance(pooled(sourceRegions))
-const renderedL = luminance(pooled(renderedRegions))
-const bandsPass = renderedL.spread >= MIN_SPREAD && renderedL.light >= MIN_LIGHT
-console.log(JSON.stringify({ luminance: { source: sourceL, rendered: renderedL }, bounds: { minSpread: MIN_SPREAD, minLight: MIN_LIGHT, lightAbove: LIGHT_L }, bands: bandsPass ? 'PASS' : 'FAIL' }))
-if (!bandsPass) failed = true
+const shown = (s: ReturnType<typeof stats>) => ({ count: s.count, p10: Number(s.p10.toFixed(1)), p50: Number(s.p50.toFixed(1)), p90: Number(s.p90.toFixed(1)), spread: Number(s.spread.toFixed(1)), light: Number(s.light.toFixed(3)), warm: Number(s.warm.toFixed(3)), green: Number(s.green.toFixed(3)) })
+const sourcePool = pooled(sourceRegions)
+const renderedPool = pooled(renderedRegions)
+if (sourcePool.length < MIN_PIXELS || renderedPool.length < MIN_PIXELS) {
+  // an empty or near-empty tree: the structured failure, not a crash (code review F6)
+  console.log(JSON.stringify({ bands: 'FAIL', failed: 'too few pixels for the bands', source: sourcePool.length, rendered: renderedPool.length, minimum: MIN_PIXELS }))
+  failed = true
+} else {
+  const sourceS = stats(sourcePool)
+  const renderedS = stats(renderedPool)
+  // the bounds on the raw statistics; the JSON rounds for display only (code review F9)
+  const bandsPass = renderedS.spread >= MIN_SPREAD && renderedS.light >= MIN_LIGHT
+  const warmGap = Math.abs(renderedS.warm - sourceS.warm)
+  const greenGap = Math.abs(renderedS.green - sourceS.green)
+  const chromaPass = warmGap <= MAX_SHARE_GAP && greenGap <= MAX_SHARE_GAP
+  console.log(JSON.stringify({ luminance: { source: shown(sourceS), rendered: shown(renderedS) }, bounds: { minSpread: MIN_SPREAD, minLight: MIN_LIGHT, lightAbove: LIGHT_L, warmAbove: WARM_B, greenBelow: GREEN_A, maxShareGap: MAX_SHARE_GAP }, gaps: { warm: Number(warmGap.toFixed(3)), green: Number(greenGap.toFixed(3)) }, bands: bandsPass ? 'PASS' : 'FAIL', chroma: chromaPass ? 'PASS' : 'FAIL' }))
+  if (!bandsPass || !chromaPass) failed = true
+}
 console.log(JSON.stringify({ renderTreePixels: renderPixels, rejectedShare: Number(rejectedShare.toFixed(4)), maxRejected: MAX_REJECTED, comparison: 'regional Lab distribution by thirds of each tree\'s own height, one treeish rule on both sides, the rejected share against the painting\'s mask scaled into the crop box (not registered per-pixel ΔE)' }))
 if (failed) process.exitCode = 1

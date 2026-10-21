@@ -41,7 +41,9 @@ for (let i = 0; i < width * height; i++) {
 }
 
 // E3: the per-sample colours (E3.1) are the default; `--flat` paints the legacy one colour per ribbon as the control, which
-// must visibly differ (Codex E3 plan read F3). `--out <path>` writes elsewhere than reference/derived.
+// must visibly differ (Codex E3 plan read F3). `--out <path>` writes elsewhere than reference/derived. This is the
+// tracer's view: every traced ribbon with its per-sample colours, before the drape keeps a run and trims the rest;
+// the emitted geometry's colours are checked against the kept run in scripts/cypress-lobes.test.ts (code review F7).
 const FLAT = process.argv.includes('--flat')
 const colour = new Color()
 function displayed(ribbon: CypressRibbon, rgb: readonly [number, number, number] = ribbon.colour): [number, number, number] {
