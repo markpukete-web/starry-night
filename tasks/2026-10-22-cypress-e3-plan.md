@@ -92,7 +92,7 @@ Retune cap: 4 passes across E3.1–E3.3. Mark's taste gate on the captures and o
 ## Risks
 
 - **A texture-mapped look.** Per-sample colour with no smoothing is the painting's pixels along a path, the cut-out
-  E1 replaced. The smoothing over a third of a band and the ribbon's own relief, rim and lanes keep it a stroke;
+  E1 replaced. The smoothing over a third of a band and the ribbon's own relief, rim and lanes keep it a stroke.
   the eye at 1:1 (G7) decides the smoothing length.
 - **Fur again.** More lane contrast on 10–20 px ribbons can stipple. one step at a time, the contrast number and
   the crop.

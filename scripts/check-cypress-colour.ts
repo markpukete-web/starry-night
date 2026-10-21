@@ -130,5 +130,22 @@ for (const region of ['base', 'middle', 'top'] as const) {
   if (!finite || difference >= MAX_DELTA_E) failed = true
 }
 if (rejectedShare > MAX_REJECTED) failed = true
+
+// E3 (the cypress's medium): the luminance spread and the light share of each tree, all regions pooled. E1's
+// regional means matched the painting at ΔE 1–3 while the extremes were gone (the ribbons' colours spread 9 L
+// against the painting's 28, 2% light against 19%): a flat olive beside the painting's brown-and-green bands.
+const MIN_SPREAD = 15
+const MIN_LIGHT = 0.06
+const LIGHT_L = 25
+const pooled = (regions: Record<Region, Lab[]>) => [...regions.base, ...regions.middle, ...regions.top].map((v) => v.l).sort((a, b) => a - b)
+const luminance = (ls: number[]) => {
+  const q = (p: number) => ls[Math.floor(p * (ls.length - 1))]
+  return { count: ls.length, p10: Number(q(0.1).toFixed(1)), p50: Number(q(0.5).toFixed(1)), p90: Number(q(0.9).toFixed(1)), spread: Number((q(0.9) - q(0.1)).toFixed(1)), light: Number((ls.filter((l) => l > LIGHT_L).length / ls.length).toFixed(3)) }
+}
+const sourceL = luminance(pooled(sourceRegions))
+const renderedL = luminance(pooled(renderedRegions))
+const bandsPass = renderedL.spread >= MIN_SPREAD && renderedL.light >= MIN_LIGHT
+console.log(JSON.stringify({ luminance: { source: sourceL, rendered: renderedL }, bounds: { minSpread: MIN_SPREAD, minLight: MIN_LIGHT, lightAbove: LIGHT_L }, bands: bandsPass ? 'PASS' : 'FAIL' }))
+if (!bandsPass) failed = true
 console.log(JSON.stringify({ renderTreePixels: renderPixels, rejectedShare: Number(rejectedShare.toFixed(4)), maxRejected: MAX_REJECTED, comparison: 'regional Lab distribution by thirds of each tree\'s own height, one treeish rule on both sides, the rejected share against the painting\'s mask scaled into the crop box (not registered per-pixel ΔE)' }))
 if (failed) process.exitCode = 1
