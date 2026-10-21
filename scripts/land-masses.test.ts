@@ -3,10 +3,10 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
-import { Vector3 } from 'three'
+import { Color, Vector3 } from 'three'
 
 import { islandHeightAt } from '../src/scene/islandShape.ts'
-import { buildLandTrees, CONTACT, DOME_HEIGHT_CAP, DOME_LIFT, domesOf, drapeOnDomes, liftToDomes, placeMass, RIM_REACH, type BakedMass } from '../src/scene/landDomes.ts'
+import { buildLandTrees, CONTACT, DOME_HEIGHT_CAP, DOME_LIFT, domesOf, drapeOnDomes, liftToDomes, placeMass, pushDome, RIM_REACH, type BakedMass } from '../src/scene/landDomes.ts'
 import { ribbonColumns, type CypressRibbon } from '../src/scene/cypressStrokes.ts'
 import { STRIP_COLUMNS } from '../src/scene/cypressLobeGeometry.ts'
 import { LAND_MASSES } from '../src/scene/landMasses.ts'
@@ -118,5 +118,44 @@ test('a strip point at the crop\'s top over every dome\'s centre lands on that d
       const top = dome.centre.y + dome.ry
       assert.ok(Math.abs(hit.position.y - top) < 1e-6, `${mass.id} dome ${i}: the top point at ${hit.position.y.toFixed(3)}, the dome's top at ${top.toFixed(3)}`)
     })
+  }
+})
+
+test('pushDome winds every triangle outward, so a front-side material shows the near shell (Codex E2 F1)', () => {
+  const arr = { positions: [] as number[], colors: [] as number[], indices: [] as number[] }
+  const dome = { centre: new Vector3(0.3, 0.5, -0.2), rx: 0.2, ry: 0.15, rz: 0.075 }
+  pushDome(arr, dome, new Color(0.1, 0.2, 0.3))
+  let tested = 0
+  for (let i = 0; i < arr.indices.length; i += 3) {
+    const p = (k: number) => new Vector3().fromArray(arr.positions, arr.indices[i + k] * 3)
+    const [a, b, c] = [p(0), p(1), p(2)]
+    const normal = new Vector3().subVectors(b, a).cross(new Vector3().subVectors(c, a))
+    if (normal.length() < 1e-9) continue
+    const outward = new Vector3().addVectors(a, b).add(c).divideScalar(3).sub(dome.centre)
+    assert.ok(normal.dot(outward) > 0, `triangle ${i / 3} winds inward`)
+    tested++
+  }
+  assert.ok(tested >= 60, `${tested} triangles tested`)
+})
+
+test('no emitted strip vertex lies inside its own mass\'s domes after the contact clamp (Codex E2 F2)', () => {
+  const flowPng = decodePNG(readFileSync(new URL('../public/reference/land-flow.png', import.meta.url)))
+  const flow: ImageData2D = { data: new Uint8ClampedArray(flowPng.rgba), width: flowPng.width, height: flowPng.height }
+  const baked = JSON.parse(readFileSync(new URL('../public/reference/land-masses.json', import.meta.url), 'utf8')) as BakedMass[]
+  const painting: ImageData2D = { data: new Uint8ClampedArray([58, 92, 96, 255]), width: 1, height: 1 }
+  for (const mass of LAND_MASSES) {
+    const trees = buildLandTrees(flow, painting, baked, 0x7ee5, [mass])
+    const domes = domesOf(placeMass(mass))
+    const p = trees.strokes.positions
+    let buried = 0
+    let worst = Infinity
+    for (let i = 0; i < p.length; i += 3) {
+      for (const d of domes) {
+        const value = ((p[i] - d.centre.x) / d.rx) ** 2 + ((p[i + 1] - d.centre.y) / d.ry) ** 2 + ((p[i + 2] - d.centre.z) / d.rz) ** 2
+        worst = Math.min(worst, value)
+        if (value < 1 - 1e-9) buried++
+      }
+    }
+    assert.equal(buried, 0, `${mass.id}: ${buried} vertices inside a dome (the deepest at ${worst.toFixed(4)} of the ellipsoid)`)
   }
 })

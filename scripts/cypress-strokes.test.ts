@@ -266,15 +266,17 @@ test('a continuous heading walks a lane whose texels alternate in sign, where th
   assert.ok(walked.length > 10)
   for (const ribbon of walked) {
     const px = ribbon.samples.map((s) => s.px)
-    for (let k = 1; k < px.length; k++) assert.ok(px[k] > px[k - 1] - 1e-9 || px[k] < px[k - 1] + 1e-9, 'the walk goes one way')
+    const dir = Math.sign(px[1] - px[0])
+    assert.ok(dir !== 0, 'the first step moves')
+    for (let k = 1; k < px.length; k++) assert.ok((px[k] - px[k - 1]) * dir > -1e-9, `the walk turns back at step ${k}`)
     assert.ok(span(ribbon) * (WIDTH - 1) >= 8, `the continuous walk covers the lane: span ${(span(ribbon) * (WIDTH - 1)).toFixed(1)} px`)
     const edges = ribbonEdges(ribbon, WIDTH, HEIGHT, 1)
     for (let k = 0; k < edges.length; k++) assert.ok(Math.hypot((edges[k].left[0] - edges[k].right[0]) * (WIDTH - 1), (edges[k].left[1] - edges[k].right[1]) * (HEIGHT - 1)) > 1, 'no collapsed column')
   }
 })
 
-test('a continuous walk stops at a two-step cycle instead of walking it for ever', () => {
-  // a field that sends every step back where it came from: the walk must end, not fill its length with one pair
+test('a continuous walk passes through a sink by its sign continuity instead of cycling on it (the two-step guard was unreachable and removed, Codex E2 F6)', () => {
+  // a field that sends every step back where it came from: the heading keeps its sign, so the walk crosses the sink
   const flow: ImageData2D = { data: new Uint8ClampedArray(WIDTH * HEIGHT * 4), width: WIDTH, height: HEIGHT }
   const painting: ImageData2D = { data: new Uint8ClampedArray(WIDTH * HEIGHT * 4), width: WIDTH, height: HEIGHT }
   for (let y = 0; y < HEIGHT; y++) {
@@ -294,6 +296,6 @@ test('a continuous walk stops at a two-step cycle instead of walking it for ever
   for (const ribbon of traceCypressRibbons(flow, painting, rows, 30, 3, config)) {
     const px = ribbon.samples.map((s) => Math.round(s.px * (WIDTH - 1)))
     const distinct = new Set(px).size
-    assert.ok(ribbon.samples.length <= distinct + 4, `a walk of ${ribbon.samples.length} samples over ${distinct} texels: the cycle was not stopped`)
+    assert.ok(ribbon.samples.length <= distinct + 4, `a walk of ${ribbon.samples.length} samples over ${distinct} texels: the walk cycled`)
   }
 })

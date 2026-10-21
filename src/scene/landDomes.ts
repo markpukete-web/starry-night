@@ -63,7 +63,11 @@ export type DomeLift = { position: Vector3; lateral: number; dome: Dome }
 export function liftToDomes(domes: Dome[], mass: Placed, s: number, t: number, front: boolean): DomeLift | null {
   const x = mass.x - mass.width / 2 + s * mass.width
   const y = islandHeightAt(x, mass.z) + (1 - t) * mass.height
-  const facing = front ? 1 : -1
+  return liftAt(domes, x, y, front ? 1 : -1)
+}
+
+/** The lift at a world point on the mass's plane, facing +z (front) or -z (back). */
+function liftAt(domes: Dome[], x: number, y: number, facing: 1 | -1): DomeLift | null {
   let best: DomeLift | null = null
   let bestDepth = -Infinity
   let nearest: { dome: Dome; r: number } | null = null
@@ -82,6 +86,36 @@ export function liftToDomes(domes: Dome[], mass: Placed, s: number, t: number, f
   if (best) return best
   if (!nearest || nearest.r - 1 > RIM_REACH) return null
   return { position: new Vector3(x, y, nearest.dome.centre.z), lateral: nearest.r, dome: nearest.dome }
+}
+
+/**
+ * The lifted point at the lowest height above `yLow` that clears the terrain's contact floor: raising a point moves
+ * it where the dome is deeper and the terrain under that z differs in turn, so the height is found by bisection.
+ * Beyond the union's reach the point rides the mass's plane at `planeZ` (outside every dome, as the plain clamp
+ * left it). The upper bound sits above every dome and above the plane's floor, so it clears by construction;
+ * every candidate is verified against both constraints.
+ */
+function settleOnTerrain(domes: Dome[], x: number, yLow: number, facing: 1 | -1, lift: number, planeZ: number): Vector3 | null {
+  const clears = (y: number): Vector3 | null => {
+    const hit = liftAt(domes, x, y, facing)
+    const p = hit ? hit.position : new Vector3(x, y, planeZ)
+    p.z += facing * lift
+    return p.y >= islandHeightAt(p.x, p.z) + CONTACT ? p : null
+  }
+  let hi = Math.max(yLow, islandHeightAt(x, planeZ + facing * lift) + CONTACT)
+  for (const d of domes) hi = Math.max(hi, d.centre.y + d.ry)
+  let best = clears(hi)
+  if (!best) return null
+  let lo = yLow
+  for (let i = 0; i < 30; i++) {
+    const mid = (lo + hi) / 2
+    const p = clears(mid)
+    if (p) {
+      hi = mid
+      best = p
+    } else lo = mid
+  }
+  return best
 }
 
 export type DrapedStrip = { steps: Vector3[][] }
@@ -103,7 +137,13 @@ export function drapeOnDomes(ribbon: CypressRibbon, columns: [number, number][][
       if (!hit) break
       const point = hit.position
       point.z += facing * lift
-      point.y = Math.max(point.y, islandHeightAt(point.x, point.z) + CONTACT)
+      if (point.y < islandHeightAt(point.x, point.z) + CONTACT) {
+        // the contact clamp: raised in y alone, a rim point kept the rim's shallow z and sat 0.033 inside the solid
+        // (Codex E2 F2); settle it where the union's surface meets the terrain's floor instead
+        const settled = settleOnTerrain(domes, point.x, point.y, facing, lift, mass.z)
+        if (!settled) break
+        point.copy(settled)
+      }
       points.push(point)
     }
     if (points.length !== count || count === 0) {
@@ -203,7 +243,8 @@ export function underpaintColour(painting: ImageData2D, mass: LandMass): [number
   return [r / n / 255, g / n / 255, b / n / 255]
 }
 
-/** An ellipsoid's closed surface, 8 around by 6 up, appended as a solid. */
+/** An ellipsoid's closed surface, 8 around by 6 up, wound outward (a front-side material shows the near shell; it was
+ * wound inward and the far shell showed, Codex E2 F1), appended as a solid. */
 export function pushDome(arr: BrushArrays, dome: Dome, colour: Color, around = 8, up = 6): void {
   const base = arr.positions.length / 3
   for (let j = 0; j <= up; j++) {
@@ -225,7 +266,7 @@ export function pushDome(arr: BrushArrays, dome: Dome, colour: Color, around = 8
       const b = a + 1
       const c = a + cols
       const d = c + 1
-      arr.indices.push(a, c, b, b, c, d)
+      arr.indices.push(a, b, c, b, d, c)
     }
   }
 }

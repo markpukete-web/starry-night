@@ -47,8 +47,8 @@ export function BrushIsland({ ready: readyRef }: { /** C (arrival): true once th
     return { solid: plainGeometry(built.solid), strokes: plainGeometry(built.strokes) }
   }, [])
 
-  const paintingData = useImageData('/reference/painting.jpg')
   const [failed, setFailed] = useState(false)
+  const paintingData = useImageData('/reference/painting.jpg', () => setFailed(true))
   const flowData = useImageData('/reference/land-flow.png', () => setFailed(true))
   const [baked, setBaked] = useState<BakedMass[] | null>(null)
   useEffect(() => {

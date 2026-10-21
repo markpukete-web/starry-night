@@ -182,8 +182,6 @@ export function traceCypressRibbons(
     let outside = 0
     let hx = 0
     let hy = 0
-    let twoBackX = Number.NaN
-    let twoBackY = Number.NaN
     for (let k = 0; k < steps; k++) {
       let [dx, dy] = direction(x / widthDenominator, y / heightDenominator)
       if (continuous && k > 0 && dx * hx + dy * hy < 0) {
@@ -194,10 +192,6 @@ export function traceCypressRibbons(
       hy = dy
       const nextX = x + sign * dx * stepPx
       const nextY = y + sign * dy * stepPx
-      // a two-step cycle: the walk is back within a quarter step of where it was two steps ago
-      if (continuous && Math.hypot(nextX - twoBackX, nextY - twoBackY) < stepPx * 0.25) break
-      twoBackX = x
-      twoBackY = y
       x = nextX
       y = nextY
       if (x < 0 || y < 0 || x > widthDenominator || y > heightDenominator) break
