@@ -293,9 +293,13 @@ test('a continuous walk passes through a sink by its sign continuity instead of 
   }
   const rows = { uv: [0, 0, 1, 1] as [number, number, number, number], width: WIDTH, height: HEIGHT, spans: [[0, 0, 1], [1, 0, 1]] as [number, number, number][], satellites: [] }
   const config = { ...FIXED, step: 1 / (HEIGHT - 1), minLength: 0.3, maxLength: 0.3, minHalfWidth: 0.01, maxHalfWidth: 0.01, overshootSteps: 0, heading: 'continuous' as const }
-  for (const ribbon of traceCypressRibbons(flow, painting, rows, 30, 3, config)) {
+  const walks = traceCypressRibbons(flow, painting, rows, 30, 3, config)
+  assert.ok(walks.length >= 20, `${walks.length} walks`)
+  for (const ribbon of walks) {
     const px = ribbon.samples.map((s) => Math.round(s.px * (WIDTH - 1)))
     const distinct = new Set(px).size
     assert.ok(ribbon.samples.length <= distinct + 4, `a walk of ${ribbon.samples.length} samples over ${distinct} texels: the walk cycled`)
+    // the crossing itself (Codex's confirmation read, F6): samples on both sides of the sink
+    assert.ok(px.some((x) => x < 30) && px.some((x) => x > 30), `a walk from ${Math.min(...px)} to ${Math.max(...px)} never crosses the sink`)
   }
 })
