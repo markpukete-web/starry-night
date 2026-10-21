@@ -2746,3 +2746,21 @@ after PR #8 merged (`246e817`, "Merge it then start the second pass").
   source's own u, continues the fields and the hills in their own style; the same v would have read sky.
 - **Keep out of `src/` while the worker captures.** The capture reads the dev server off the working tree, so an
   edit mid-run lands in the frames. New files nothing imports are safe; wiring waits for the report.
+
+## E2 (the land), the domes' second pass, 2026-10-21 (evening)
+
+- **Two frames for one surface drift apart on a slope.** The domes stood on the terrain under their own centres while
+  the strips' source frame rose from the mass centre's base; orchard-upper's left dome stood 0.74 heights above the
+  frame, so its strips covered its lower quarter and its top was a bare disc against the sky (capture 4). The planned
+  fix (more strips, a flatter `rz`, a lighter underpaint) would not have reached the top. Before choosing a fix for
+  bare paint, count the coverage per region of the thing that is bare: a 24 × 24 grid over each dome's ellipse by
+  third took a minute and named the cause (0.78 / 0.06 / 0.00). The fix was one line: the frame from the terrain
+  under the point's own x, as the domes stand.
+- **A probe with the tests' stub painting cannot speak for the runtime.** The 1 × 1 stub admits every texel, so the
+  ribbons run past the painting's foliage and the coverage numbers are not the capture's. Decode the real painting
+  for any coverage or colour claim; the stub is for geometry.
+- **A coverage probe over an x-range reads a neighbour's strips.** `row-left` and `bushes` overlap in x at the same z,
+  so the probe's 12,071 vertices on `row-left` were the bushes'. Filter by mass, or read the number as the pair's.
+- **A "land-only" crop must be checked against the diff image.** The first G9 crop at the hump's crest held the sky's
+  haze and a dome's edge against it and differed on 35% of its pixels; the diff image showed the land's own pixels
+  grey. The crop under the crest (300 × 60 at 600, 600) differed on none.

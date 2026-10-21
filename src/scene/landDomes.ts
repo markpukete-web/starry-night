@@ -30,11 +30,11 @@ export const CONTACT = 0.005
 /** beyond every dome, the nearest rim's plane carries a strip to this many radii out */
 export const RIM_REACH = 0.6
 
-export type Placed = LandMass & { height: number; base: number }
+export type Placed = LandMass & { height: number }
 export type Dome = { centre: Vector3; rx: number; ry: number; rz: number }
 
 export function placeMass(mass: LandMass): Placed {
-  return { ...mass, height: Math.min(DOME_HEIGHT_CAP, (mass.box[3] - mass.box[1]) * HOUSE_SCALE), base: islandHeightAt(mass.x, mass.z) }
+  return { ...mass, height: Math.min(DOME_HEIGHT_CAP, (mass.box[3] - mass.box[1]) * HOUSE_SCALE) }
 }
 
 /** The mass's domes: evenly along the base, each with its lowest point on the terrain under its own centre. */
@@ -54,13 +54,15 @@ export function domesOf(mass: Placed): Dome[] {
 export type DomeLift = { position: Vector3; lateral: number; dome: Dome }
 
 /**
- * A source point (s across the box, t down it) on the domes' union: x along the base, y up the mass's height; the
- * deepest dome containing (x, y) wins, else the nearest rim's plane within RIM_REACH radii, else null. The
- * position is continuous across dome boundaries (a maximum of continuous depths).
+ * A source point (s across the box, t down it) on the domes' union: x along the base, y up the mass's height from
+ * the terrain under x, as the domes stand (from the mass centre's base alone, a dome on a slope stood 0.74 heights
+ * above the strips' frame and its top was bare, capture 4); the deepest dome containing (x, y) wins, else the nearest
+ * rim's plane within RIM_REACH radii, else null. The position is continuous across dome boundaries (a maximum of
+ * continuous depths).
  */
 export function liftToDomes(domes: Dome[], mass: Placed, s: number, t: number, front: boolean): DomeLift | null {
   const x = mass.x - mass.width / 2 + s * mass.width
-  const y = mass.base + (1 - t) * mass.height
+  const y = islandHeightAt(x, mass.z) + (1 - t) * mass.height
   const facing = front ? 1 : -1
   let best: DomeLift | null = null
   let bestDepth = -Infinity

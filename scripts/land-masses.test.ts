@@ -78,7 +78,7 @@ test('beyond every dome the nearest rim\'s plane carries the point to 0.6 of a r
   // above the apex of the first dome: outside every ellipse
   const first = domes[0]
   const sApex = (first.centre.x - (rowBack.x - rowBack.width / 2)) / rowBack.width
-  const tOf = (y: number) => 1 - (y - rowBack.base) / rowBack.height
+  const tOf = (y: number) => 1 - (y - (first.centre.y - first.ry)) / rowBack.height
   const near = liftToDomes(domes, rowBack, sApex, tOf(first.centre.y + first.ry * 1.3), true)
   assert.ok(near && near.lateral > 1 && Math.abs(near.position.z - first.centre.z) < 1e-9, 'on the rim plane')
   const far = liftToDomes(domes, rowBack, sApex, tOf(first.centre.y + first.ry * (1 + RIM_REACH + 0.05)), true)
@@ -105,4 +105,18 @@ test('the shipped masses build: no emitted point below the contact height, every
   assert.ok(lowest >= CONTACT - 1e-9, `the lowest emitted point ${lowest.toFixed(4)} above the ground`)
   assert.equal(trees.stroke.length, (p.length / 3) * 2)
   assert.ok(trees.solid.indices.length > 0 && trees.solid.indices.every((i) => i < trees.solid.positions.length / 3))
+})
+
+test('a strip point at the crop\'s top over every dome\'s centre lands on that dome\'s top, whatever the terrain under the row', () => {
+  // capture 4: orchard-upper's left dome stood 0.74 heights above the mass's base and its top was bare
+  for (const mass of LAND_MASSES) {
+    const placed = placeMass(mass)
+    const domes = domesOf(placed)
+    domes.forEach((dome, i) => {
+      const hit = liftToDomes(domes, placed, (i + 0.5) / domes.length, 0, true)
+      assert.ok(hit, `${mass.id} dome ${i}: no lift at the top`)
+      const top = dome.centre.y + dome.ry
+      assert.ok(Math.abs(hit.position.y - top) < 1e-6, `${mass.id} dome ${i}: the top point at ${hit.position.y.toFixed(3)}, the dome's top at ${top.toFixed(3)}`)
+    })
+  }
 })
