@@ -9,7 +9,35 @@ below — never edited in place.
 > Its `Status` note was last brought up to date on 2026-10-16 and is no longer maintained. At session start,
 > read `tasks/lessons.md`.
 
-## Pickup — 2026-10-21 (evening): E1 built and gated on `feat/cypress-e1`; Mark's taste gate next
+## Pickup — 2026-10-21 (night): PR #15 merged, E1 live on `main`; E2 (the land) is next
+
+**Current agent entry point:** this section, then "Direction — the land" below (the roadmap: E2 then D1), then
+`tasks/2026-10-21-cypress-e1.md` (E1's record, for the gates and tools E2 reuses). Read `tasks/lessons.md` from
+"E1 (the cypress), the plan" down.
+
+**Where things are.**
+- `main` at `b54fd68` (PR #15, merged 2026-10-21 03:27 UTC on Mark's word, "Can you merge for me"), Vercel
+  deploying production from it. Codex's PR review passed on `dc3ef9f` with no findings; the later commits were
+  the record and a test-file lint fix CI caught (`eslint .`, which the local `eslint src scripts` had not covered:
+  run `npm run lint` before pushing). The remote branch `feat/cypress-e1` waits for Mark to delete, with
+  `feat/arrival-c`, `fix/moving-first-paint`, `feat/flags-on`.
+- E1 shipped: the cypress as streamline ribbons at the painting's stroke width on the lobe volumes, the whole-tree
+  mask and field from the 3840 scan, the sky's stroke body opaque with an alpha test, the gates in `scripts/`
+  (`cypress-silhouette.ts`, `check-cypress-colour.ts`, `flat-cypress-gate.ts`, `lib/silhouette.ts`). The numbers:
+  silhouette IoU 0.817 (was 0.787), ΔE 1.05 / 1.22 / 3.05, the build 95 ms, the Mac at the cap.
+- This record sits on the local `docs/after-pr-15`; it rides the next code PR. Nothing running: the dev server
+  stopped; Herdr `w4:p4` (Codex) and `w4:p5` (Gemini) idle.
+- Open, Mark's: the bristle texture (local contrast 0.93 against the painting's 6.45; a dial after the retune
+  cap), his iPhone's `?perf=1` on production (the frame rate and the tree's build time), B's surges reading as
+  fog at a close orbit (the `surge` knob), the DPR cap (Tunables 2, code 1.5), C's taste calls.
+
+- [ ] **E2, the land**: the plan file first (`tasks/<date>-land-e2-plan.md`), the painting's crops beside ours
+  (the island's top, the olive trees, the bushes; `tasks/2026-10-05-village-foliage.md` is the study), the
+  derivation reusing `treeComponent` and the field pipeline, a fresh Codex review, the build, the gate at 1:1.
+- [ ] **D1, touch**, after E2: revise the plan per its review (the vertex transform, the concatenation and the
+  draped vertex order are in place), rebase on the new tree, build.
+
+## Pickup — 2026-10-21 (evening): E1 built and gated on `feat/cypress-e1`; Mark's taste gate next (superseded by the night pickup above)
 
 **Current agent entry point:** this section, then `tasks/2026-10-21-cypress-e1.md` (the record and the gate), then
 the plan `tasks/2026-10-21-cypress-e1-plan.md` (Codex's reads and every disposition). Read `tasks/lessons.md` from
