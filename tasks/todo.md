@@ -38,7 +38,9 @@ the plan `tasks/2026-10-21-cypress-e1-plan.md` (Codex's reads and every disposit
   lifts read as pale fog patches along the strokes at that angle and zoom; confirmed as B by their fade. Mark's
   call on the `surge` knob (shipped 1) or on the lift's look; not E1's.
 - [x] Pushed and PR #15 opened on Mark's word (2026-10-21 evening, "push it and open the PR"); `@codex review`
-  requested once. Read the review before merging (the timeline first), answer every thread, at most two re-requests.
+  requested once; the review completed on `dc3ef9f` with no findings (the summary's state `has_any_findings:
+  false`, one bot entry in the timeline). The later commits on the PR are docs only.
+- [ ] **Merge** is Mark's call (it deploys to production).
 - [ ] **E2, the land**, after E1 merges.
 - [ ] **D1, touch**, after E2: revise the plan per its review (the vertex transform and the draped vertex order
   are in place), rebase on the new tree, build.
