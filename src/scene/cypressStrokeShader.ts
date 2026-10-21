@@ -13,8 +13,9 @@ import type { AliveInjection } from './aliveMaterial.ts'
  * grey fur (local contrast 12.0 against the painting's 6.45). One coarse lane at a third of the contrast, the
  * rake halved, the dry brush confined to the tip's last 15%.
  *
- * The material sets `alphaToCoverage`, so the shaped alpha written here dithers the edge across the canvas's
- * MSAA samples; three leaves `OPAQUE` undefined under alpha-to-coverage and `diffuseColor.a` reaches the output.
+ * The material is transparent with depth written, so the shaped alpha written here blends the edge (retune 4:
+ * alpha-to-coverage dithered every edge to a stipple); three leaves `OPAQUE` undefined for a transparent
+ * material and `diffuseColor.a` reaches the output.
  * Plain `.ts` imports only: `scripts/sky-alive.test.ts` applies this to three's real basic shader under node.
  */
 export const strokeGlsl: Omit<AliveInjection, 'key' | 'uniforms'> = {
@@ -56,12 +57,11 @@ export const strokeGlsl: Omit<AliveInjection, 'key' | 'uniforms'> = {
     // a full base and a drawn-out tip: the painting's cypress strokes are flames; the flanks wobble instead of a ruled edge
     float r = pow(max(1.0 - pow(x, 2.5), 0.0), 0.4) * mix(1.0, 0.72, w) * (0.9 + 0.1 * cyNoise1(w * 9.0 + seed));
     float a = 1.0 - smoothstep(r - aa, r, y);
-    // bristle lanes along the stroke, the coarse octave leading (retune 3: a ribbon is 10–20 px on screen, the
-    // painting's stroke width, so the lanes resolve again), seeded per stroke, drifting a little along it
+    // one bristle lane along the stroke, seeded per stroke, drifting a little along it (retune 4: at 10–20 px on
+    // screen the sky's fine octave, 11 cycles across, still aliased to a stipple)
     vec2 lane1 = cyNoise1d(side * 4.5 + seed + w * 0.8);
-    vec2 lane2 = cyNoise1d(side * 11.0 + seed * 1.7 - w * 1.5);
-    float streak = 0.75 * lane1.x + 0.25 * lane2.x;
-    float streakSlope = 0.75 * 4.5 * lane1.y;
+    float streak = lane1.x;
+    float streakSlope = 4.5 * lane1.y;
     // dry brush at the tip: the paint runs out over the last quarter
     if (streak < smoothstep(0.75, 1.0, w) * 0.6) discard;
     if (a < 0.02) discard;

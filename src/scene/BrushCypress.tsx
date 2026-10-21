@@ -205,8 +205,10 @@ export function BrushCypress({
     return material
   }, [alive, solidUniforms])
   const strokeMaterial = useMemo(() => {
-    // alpha-to-coverage dithers the stroke's shaped edge across the canvas's MSAA samples, no sorting needed
-    const material = new MeshBasicMaterial({ vertexColors: true, toneMapped: false, side: DoubleSide, alphaToCoverage: true })
+    // the stroke's shaped edge blends (retune 4: alpha-to-coverage dithered every edge across the MSAA samples and
+    // the tree stippled at 1:1); depth is written, so a ribbon's soft edge over one behind it blends and one behind
+    // a ribbon already drawn is rejected by the depth test, in one mesh with no sorting
+    const material = new MeshBasicMaterial({ vertexColors: true, toneMapped: false, side: DoubleSide, transparent: true, depthWrite: true })
     const body = { uniforms: {}, ...strokeGlsl }
     injectAlive(material, alive ? concatInjections('cypress-strokes-flicker', body, { uniforms: strokeUniforms, ...flickerGlsl }) : concatInjections('cypress-strokes', body))
     return material
