@@ -13,9 +13,10 @@ import type { AliveInjection } from './aliveMaterial.ts'
  * grey fur (local contrast 12.0 against the painting's 6.45). One coarse lane at a third of the contrast, the
  * rake halved, the dry brush confined to the tip's last 15%.
  *
- * The material is transparent with depth written, so the shaped alpha written here blends the edge (retune 4:
- * alpha-to-coverage dithered every edge to a stipple); three leaves `OPAQUE` undefined for a transparent
- * material and `diffuseColor.a` reaches the output.
+ * The material is opaque with `alphaTest` 0.5, so the shaped alpha written here is a hard cut at the rounded head
+ * and tail (three's `<alphatest_fragment>` runs after this injection) and the flanks are the geometry's edges,
+ * order-independent in one unsorted mesh (code review F2; a transparent material with depth written lost the
+ * stroke behind a soft edge drawn first, alpha-to-coverage dithered every edge).
  * Plain `.ts` imports only: `scripts/sky-alive.test.ts` applies this to three's real basic shader under node.
  */
 export const strokeGlsl: Omit<AliveInjection, 'key' | 'uniforms'> = {

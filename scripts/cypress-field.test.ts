@@ -242,7 +242,9 @@ test('the shipped row table records a whole-tree component at the scan\'s resolu
     spans: [number, number, number][]
     satellites: { y: number; x0: number; x1: number }[]
     component: { bounds: { x0: number; y0: number; x1: number; y1: number }; pixels: number; rows: number }
+    source: { painting: string; scan: string; decoder: string }
   }
+  assert.ok(/^[0-9a-f]{32}$/.test(rows.source.painting) && /^[0-9a-f]{32}$/.test(rows.source.scan), 'the bake records its decoded inputs')
   assert.equal(rows.uv.length, 4)
   assert.ok(rows.uv[0] < rows.uv[2] && rows.uv[1] < rows.uv[3])
   assert.ok(rows.height >= 1500, `the table is at the scan's resolution: ${rows.height} rows`)

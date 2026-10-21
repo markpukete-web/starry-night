@@ -16,7 +16,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 import { decodePNG, encodePNG } from './lib/png.ts'
-import { extent, runsOf, treeComponent, trunkRun, type Mask } from './lib/silhouette.ts'
+import { alignRender, extent, runsOf, treeComponent, trunkRun } from './lib/silhouette.ts'
 
 const ROOT = resolve(import.meta.dirname, '..')
 const args = process.argv.slice(2)
@@ -46,38 +46,9 @@ const renderExtent = extent(renderMask)
 const scale = paintExtent.height / renderExtent.height
 console.log(`painting tree ${paintExtent.height} px tall (crop ${PW}x${ph} at ${PX0},${py0}); render tree ${renderExtent.height} px tall (crop ${CW}x${CH} at ${CX},${CY}), scale ${scale.toFixed(3)}`)
 
-// the render's mask resampled to the painting's frame: scaled by `scale`, the tops aligned, and the x offset that
-// gives the best IoU within ±30 px of the base-centre alignment (the base centre alone shifted the whole tree
-// when a wedge at the base went, 2026-10-21)
-function resample(shift: number): Mask {
-  const out: Mask = { data: new Uint8Array(PW * ph), width: PW, height: ph }
-  for (let y = 0; y < ph; y++) {
-    for (let x = 0; x < PW; x++) {
-      const ry = Math.round(renderExtent.top + (y - paintExtent.top) / scale)
-      const rx = Math.round(renderExtent.baseCentre + (x - shift - paintExtent.baseCentre) / scale)
-      if (ry < 0 || ry >= CH || rx < 0 || rx >= CW) continue
-      out.data[y * PW + x] = renderMask.data[ry * CW + rx]
-    }
-  }
-  return out
-}
-function iouOf(mask: Mask): number {
-  let inter = 0
-  let union = 0
-  for (let i = 0; i < mask.data.length; i++) {
-    inter += paintMask.data[i] & mask.data[i]
-    union += paintMask.data[i] | mask.data[i]
-  }
-  return union ? inter / union : 0
-}
-let aligned = resample(0)
-let iou = iouOf(aligned)
-let bestShift = 0
-for (let shift = -30; shift <= 30; shift++) {
-  const candidate = resample(shift)
-  const value = iouOf(candidate)
-  if (value > iou) { iou = value; aligned = candidate; bestShift = shift }
-}
+// the render's mask in the painting's frame at the best x offset (scripts/lib/silhouette.ts)
+const alignment = alignRender(paintMask, renderMask)
+const { aligned, iou, shift: bestShift } = alignment
 
 // the width table: the trunk run per height on each side
 const lines: string[] = ['h      painting trunk (px, extent)   | render trunk (px, aligned extent)   diff']

@@ -4,7 +4,7 @@ import {
   type CypressLobePlan,
   type CypressLobeSection,
 } from './cypressLobes.ts'
-import type { CypressRibbon, RibbonEdges } from './cypressStrokes.ts'
+import type { CypressRibbon } from './cypressStrokes.ts'
 
 export type CypressLobeSolidOptions = {
   bearing: number
@@ -190,22 +190,23 @@ export function liftToLobes(
 }
 
 export type DrapedRibbon = {
-  left: Vector3[]
-  right: Vector3[]
+  /** per kept sample, the strip's points across its width, left to right, lifted and offset */
+  steps: Vector3[][]
   /** per kept sample: its height, the centre's |lateral| and lobe */
   kept: { h: number; lateral: number; lobeId: string }[]
 }
 
 /**
- * A ribbon's strip on the lobes' union: both edges and the centre lifted on their own per sample, offset toward
- * the camera along the view direction (continuous where the lift switches lobes; an offset along the normal
- * jumped 0.0026 there, Codex F5). The seed anchors the kept run: a sample that misses the lift below the seed
- * restarts the run, one above it ends it, so a strip is never joined across a gap. Null when fewer than three
- * samples survive.
+ * A ribbon's strip on the lobes' union: every column point lifted on its own per sample (the middle column is the
+ * centre), offset toward the camera along the view direction (continuous where the lift switches lobes; an
+ * offset along the normal jumped 0.0026 there, Codex F5). The seed anchors the kept run: a sample that misses the
+ * lift below the seed restarts the run, one above it ends it, the seed itself failing means no run (code review
+ * F6), so a strip is never joined across a gap. The outer columns are clamped at the overshoot limit rather than
+ * failing, so a wide ribbon at the rim narrows; the centre decides. Null when fewer than three samples survive.
  */
 export function drapeRibbon(
   ribbon: CypressRibbon,
-  edges: RibbonEdges,
+  columns: [number, number][][],
   rings: Map<string, CypressLobeRing[]>,
   options: CypressLobeSolidOptions,
   frontFacing: boolean,
@@ -214,29 +215,34 @@ export function drapeRibbon(
   const view = new Vector3(Math.cos(options.bearing), 0, Math.sin(options.bearing))
   const facing = frontFacing ? 1 : -1
   const seedIndex = ribbon.samples.indexOf(ribbon.seedSample)
-  const left: Vector3[] = []
-  const right: Vector3[] = []
+  const steps: Vector3[][] = []
   const kept: DrapedRibbon['kept'] = []
+  const count = columns[0]?.length ?? 0
+  const middle = (count - 1) / 2
   for (let k = 0; k < ribbon.samples.length; k++) {
     const h = 1 - ribbon.samples[k].py
-    // the edges are clamped at the overshoot limit so a wide ribbon at the rim narrows rather than ends; the centre decides
-    const l = liftToLobes(rings, edges[k].left[0], 1 - edges[k].left[1], options, frontFacing, 0.6, true)
-    const r = liftToLobes(rings, edges[k].right[0], 1 - edges[k].right[1], options, frontFacing, 0.6, true)
-    const c = liftToLobes(rings, ribbon.samples[k].px, h, options, frontFacing)
-    if (!l || !r || !c) {
+    const centre = liftToLobes(rings, ribbon.samples[k].px, h, options, frontFacing)
+    const points: Vector3[] = []
+    if (centre) {
+      for (let j = 0; j < count; j++) {
+        const lift = j === middle ? centre : liftToLobes(rings, columns[k][j][0], 1 - columns[k][j][1], options, frontFacing, 0.6, true)
+        if (!lift) break
+        points.push(new Vector3(...lift.position).addScaledVector(view, facing * offset))
+      }
+    }
+    if (!centre || points.length !== count) {
+      if (k === seedIndex) return null
       if (k < seedIndex) {
-        left.length = 0
-        right.length = 0
+        steps.length = 0
         kept.length = 0
         continue
       }
       break
     }
-    left.push(new Vector3(...l.position).addScaledVector(view, facing * offset))
-    right.push(new Vector3(...r.position).addScaledVector(view, facing * offset))
-    kept.push({ h, lateral: Math.abs(c.lateral), lobeId: c.lobeId })
+    steps.push(points)
+    kept.push({ h, lateral: Math.abs(centre.lateral), lobeId: centre.lobeId })
   }
-  return kept.length >= 3 ? { left, right, kept } : null
+  return kept.length >= 3 ? { steps, kept } : null
 }
 
 /**

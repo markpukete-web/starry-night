@@ -92,14 +92,17 @@ export function paintingUV(rows: { uv: [number, number, number, number] }, px: n
  */
 export type RibbonRows = RowTable & { uv: [number, number, number, number]; satellites?: { y: number; x0: number; x1: number }[] }
 
-/** The half-width, in crop widths, of the run under a crop point: a satellite run on its row, else the main span. */
-function runHalfWidthAt(rows: RibbonRows, px: number, py: number): number {
+/**
+ * The half-width, in crop widths, of the run under a crop point: a satellite run on its row, else the main span.
+ * The point is the rounded texel the mask reads (`sampleCypressImage`), compared inclusively with the run's
+ * integer endpoints (Codex, code review F5: the unrounded coordinate missed a satellite's endpoint texel and the
+ * seed took the main span's cap, three times in the shipped batch).
+ */
+export function runHalfWidthAt(rows: RibbonRows, px: number, py: number): number {
   const y = Math.round(py * (rows.height - 1))
+  const x = Math.round(px * (rows.width - 1))
   for (const run of rows.satellites ?? []) {
-    if (run.y !== y) continue
-    const left = run.x0 / Math.max(1, rows.width - 1)
-    const right = run.x1 / Math.max(1, rows.width - 1)
-    if (px >= left && px <= right) return Math.max(0.0035, (right - left) / 2)
+    if (run.y === y && x >= run.x0 && x <= run.x1) return Math.max(0.0035, (run.x1 - run.x0 + 1) / 2 / Math.max(1, rows.width - 1))
   }
   const span = rowSpanAt(py, rows)
   return Math.max(0.0035, (span.right - span.left) / 2)
@@ -234,5 +237,23 @@ export function ribbonEdges(ribbon: CypressRibbon, width: number, height: number
       left: [(sx(p) + nx * w) / (width - 1), (sy(p) + ny * w) / (height - 1)],
       right: [(sx(p) - nx * w) / (width - 1), (sy(p) - ny * w) / (height - 1)],
     }
+  })
+}
+
+/**
+ * The strip's points across its width per sample, `columns` of them from the left edge to the right (the middle
+ * one is the sample itself), in crop-normalised units. Each is lifted on its own, so the triangles between them
+ * follow the lobe's curve instead of cutting through it (Codex, code review F1: a flat strip between two lifted
+ * edges put a triangle's centroid 0.016 world units inside the solid).
+ */
+export function ribbonColumns(ribbon: CypressRibbon, width: number, height: number, taper: number, columns: number): [number, number][][] {
+  const edges = ribbonEdges(ribbon, width, height, taper)
+  return edges.map(({ left, right }) => {
+    const out: [number, number][] = []
+    for (let j = 0; j < columns; j++) {
+      const t = columns > 1 ? j / (columns - 1) : 0.5
+      out.push([left[0] + (right[0] - left[0]) * t, left[1] + (right[1] - left[1]) * t])
+    }
+    return out
   })
 }

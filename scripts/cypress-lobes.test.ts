@@ -18,10 +18,11 @@ import {
   type CypressLobeSolidOptions,
 } from '../src/scene/cypressLobeGeometry.ts'
 import { rowSpanAt } from '../src/scene/cypressMapping.ts'
-import { ribbonEdges, traceCypressRibbons, CYPRESS_RIBBON_CONFIG } from '../src/scene/cypressStrokes.ts'
+import { ribbonColumns, traceCypressRibbons, CYPRESS_RIBBON_CONFIG, type CypressRibbon } from '../src/scene/cypressStrokes.ts'
+import { makeBrushArrays, pushDrapedRibbon } from '../src/scene/brushForms.ts'
 import type { ImageData2D } from '../src/scene/useImageData.ts'
 import { decodePNG } from './lib/png.ts'
-import { BufferAttribute, BufferGeometry, DoubleSide, Mesh, MeshBasicMaterial, Raycaster, Vector3 } from 'three'
+import { BufferAttribute, BufferGeometry, Color, DoubleSide, Mesh, MeshBasicMaterial, Raycaster, Vector3 } from 'three'
 
 function fixtureRows(): CypressLobeRows {
   const satellites = []
@@ -353,25 +354,62 @@ function realAssets() {
   return { rows, flow, plan, options, solid, rings: ringsByLobe(solid) }
 }
 
-test('the lift is continuous across the real plan\'s frond-to-main switch (the offset is along the view, not a switching normal)', () => {
+test('at a frond-to-main surface crossing the view offset does not jump and the old offset along the switching normal does', () => {
   const { plan, options, rings } = realAssets()
   const frond = plan.lobes.find((lobe) => lobe.kind === 'frond' && lobe.side === 'left')!
-  for (const h of [0.35, 0.38]) {
+  const view = [Math.cos(options.bearing), 0, Math.sin(options.bearing)] as const
+  const distance = (p: readonly number[], q: readonly number[]) => Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2])
+  let crossings = 0
+  for (const h of [0.33, 0.35, 0.37, 0.39, 0.41, 0.44]) {
     const interval = lobeIntervalsAt({ ...plan, lobes: [frond] }, h)[0]
-    assert.ok(interval, `the left frond spans ${h}`)
-    let previous: readonly [number, number, number] | null = null
-    let worst = 0
-    for (let px = interval.right - 0.01; px <= interval.right + 0.01; px += 1e-4) {
+    if (!interval) continue
+    // the first lobe switch within the frond's reach, then the crossing bisected to 1e-12
+    let previous = ''
+    let switchAt: number | null = null
+    for (let px = interval.left - 0.05; px <= interval.right + 0.05; px += 1e-3) {
       const lift = liftToLobes(rings, px, h, options, true)
-      assert.ok(lift, `a lift at ${px.toFixed(4)}`)
-      if (previous) worst = Math.max(worst, Math.hypot(lift.position[0] - previous[0], lift.position[1] - previous[1], lift.position[2] - previous[2]))
-      previous = lift.position
+      if (!lift) continue
+      if (previous && lift.lobeId !== previous) { switchAt = px; break }
+      previous = lift.lobeId
     }
-    assert.ok(worst < 0.002, `the largest step across the switch at ${h} is ${worst.toFixed(5)}`)
+    if (switchAt === null) continue
+    let a = switchAt - 1e-3
+    let b = switchAt
+    const lobeA = liftToLobes(rings, a, h, options, true)!.lobeId
+    const lobeB = liftToLobes(rings, b, h, options, true)!.lobeId
+    for (let i = 0; i < 40; i++) {
+      const m = (a + b) / 2
+      if (liftToLobes(rings, m, h, options, true)!.lobeId === lobeA) a = m
+      else b = m
+    }
+    const onA = liftToLobes(new Map([[lobeA, rings.get(lobeA)!]]), a, h, options, true)!
+    const onB = liftToLobes(new Map([[lobeB, rings.get(lobeB)!]]), a, h, options, true)!
+    // only a crossing of two surfaces counts: beyond both rims the lift is the rim plane either way and the normals agree
+    if (Math.abs(onA.lateral) > 1 || Math.abs(onB.lateral) > 1) continue
+    crossings++
+    const newJump = distance(onA.position.map((v, i) => v + view[i] * 0.004), onB.position.map((v, i) => v + view[i] * 0.004))
+    const oldJump = distance(onA.position.map((v, i) => v + onA.normal[i] * 0.004), onB.position.map((v, i) => v + onB.normal[i] * 0.004))
+    assert.ok(newJump < 1e-6, `the view offset jumps ${newJump.toExponential(2)} at the crossing at ${h}`)
+    assert.ok(oldJump > 1e-3, `the control: the normal offset jumps ${oldJump.toExponential(2)} at the crossing at ${h}`)
   }
+  assert.ok(crossings >= 1, 'at least one surface crossing of the left frond and the main on the shipped plan')
 })
 
-test('a draped strip clears the compiled solid across its whole width: no vertex behind a triangle, the overshoot\'s misses allowed', () => {
+function stripTriangles(draped: { steps: Vector3[][]; kept: unknown[] }) {
+  const arr = makeBrushArrays()
+  pushDrapedRibbon(arr, draped.steps, draped.kept.map(() => new Color(1, 1, 1)))
+  const points: Vector3[] = []
+  for (let i = 0; i < arr.indices.length; i += 3) {
+    const corner = (n: number) => new Vector3(arr.positions[arr.indices[i + n] * 3], arr.positions[arr.indices[i + n] * 3 + 1], arr.positions[arr.indices[i + n] * 3 + 2])
+    const a = corner(0)
+    const b = corner(1)
+    const c = corner(2)
+    points.push(a, b, c, a.clone().add(b).add(c).multiplyScalar(1 / 3))
+  }
+  return points
+}
+
+test('a draped strip clears the compiled solid across its whole width, vertices and triangle centroids, and a flat two-column strip does not', () => {
   const { rows, flow, options, solid, rings } = realAssets()
   const geometry = new BufferGeometry()
   geometry.setAttribute('position', new BufferAttribute(new Float32Array(solid.positions), 3))
@@ -380,28 +418,63 @@ test('a draped strip clears the compiled solid across its whole width: no vertex
   mesh.updateMatrixWorld()
   const view = new Vector3(...viewOf(options))
   const painting: ImageData2D = { data: new Uint8ClampedArray([40, 60, 30, 255]), width: 1, height: 1 }
-  const ribbons = traceCypressRibbons(flow, painting, rows, 24, 0xc1f3a11).slice(0, 20)
+  const ribbons = traceCypressRibbons(flow, painting, rows, 60, 0xc1f3a11).slice(0, 50)
   const raycaster = new Raycaster()
-  let checked = 0
-  let misses = 0
-  let worst = -Infinity
-  for (const frontFacing of [true, false]) {
-    const facing = frontFacing ? 1 : -1
-    for (const ribbon of ribbons) {
-      const draped = drapeRibbon(ribbon, ribbonEdges(ribbon, flow.width, flow.height, CYPRESS_RIBBON_CONFIG.taper), rings, options, frontFacing, 0.004)
-      if (!draped) continue
-      for (const vertex of [...draped.left, ...draped.right]) {
-        // from far on the vertex's own side of the tree, toward it and on through the solid
-        const origin = vertex.clone().addScaledVector(view, facing * 10)
-        raycaster.set(origin, view.clone().multiplyScalar(-facing))
-        const hit = raycaster.intersectObject(mesh, false)[0]
-        checked++
-        if (!hit) { misses++; continue }
-        worst = Math.max(worst, 10 - hit.distance) // positive: the solid is in front of the vertex
+  const probe = (columns: number) => {
+    let checked = 0
+    let misses = 0
+    let worst = -Infinity
+    for (const frontFacing of [true, false]) {
+      const facing = frontFacing ? 1 : -1
+      for (const ribbon of ribbons) {
+        const draped = drapeRibbon(ribbon, ribbonColumns(ribbon, flow.width, flow.height, CYPRESS_RIBBON_CONFIG.taper, columns), rings, options, frontFacing, 0.004)
+        if (!draped) continue
+        for (const point of stripTriangles(draped)) {
+          const origin = point.clone().addScaledVector(view, facing * 10)
+          raycaster.set(origin, view.clone().multiplyScalar(-facing))
+          const hit = raycaster.intersectObject(mesh, false)[0]
+          checked++
+          if (!hit) { misses++; continue }
+          worst = Math.max(worst, 10 - hit.distance) // positive: the solid is in front of the point
+        }
       }
     }
+    return { checked, misses, worst }
   }
-  assert.ok(checked > 2000, `${checked} vertices checked`)
-  assert.ok(worst <= 1e-4, `a strip vertex sits ${worst.toFixed(5)} behind the solid`)
-  assert.ok(misses < checked * 0.4, `${misses} of ${checked} rays miss the solid (tongues beyond the rim)`)
+  const five = probe(5)
+  assert.ok(five.checked > 4000, `${five.checked} points checked`)
+  assert.ok(five.worst <= 1e-4, `a strip point sits ${five.worst.toFixed(5)} behind the solid with five columns`)
+  assert.ok(five.misses < five.checked * 0.4, `${five.misses} of ${five.checked} rays miss the solid (tongues beyond the rim)`)
+  // the control: a flat strip between two lifted edges has triangle interiors inside the curved lobe
+  const two = probe(2)
+  assert.ok(two.worst > 0.003, `the control: a two-column strip's worst point is ${two.worst.toFixed(5)} behind the solid`)
+})
+
+test('drapeRibbon: a seed that fails the lift yields no run, a sample failing above the seed ends it, one failing below restarts it', () => {
+  const { flow, options, rings } = realAssets()
+  const main = rings.get('main')!
+  const top = main[main.length - 1].heightFraction
+  const section = compiledSectionAt(main, top - 0.02)!
+  const sample = (h: number, px: number) => ({ px, py: 1 - h, inside: true })
+  // a seed above the rings' top: no lift for the seed, no run, although the samples below it would lift
+  const seedless: CypressRibbon = {
+    samples: [sample(top - 0.03, section.sourceCenter), sample(top - 0.015, section.sourceCenter), sample(top + 0.01, section.sourceCenter), sample(top + 0.02, section.sourceCenter)],
+    seedSample: null as unknown as CypressRibbon['seedSample'],
+    colour: [0, 0, 0],
+    halfWidth: 0.01,
+    relief: 1,
+    seed: 1,
+  }
+  seedless.seedSample = seedless.samples[2]
+  assert.equal(drapeRibbon(seedless, ribbonColumns(seedless, flow.width, flow.height, 1, 5), rings, options, true, 0.004), null)
+  // a seed inside, samples above it running out: the run ends at the last lift
+  const ending: CypressRibbon = { ...seedless, samples: [sample(top - 0.04, section.sourceCenter), sample(top - 0.03, section.sourceCenter), sample(top - 0.02, section.sourceCenter), sample(top + 0.01, section.sourceCenter), sample(top + 0.02, section.sourceCenter)], seedSample: null as unknown as CypressRibbon['seedSample'] }
+  ending.seedSample = ending.samples[1]
+  const endingRun = drapeRibbon(ending, ribbonColumns(ending, flow.width, flow.height, 1, 5), rings, options, true, 0.004)
+  assert.ok(endingRun && endingRun.kept.length === 3, 'three samples kept, the seed among them')
+  // a sample failing below the seed restarts the run at the seed
+  const restarting: CypressRibbon = { ...seedless, samples: [sample(top + 0.02, section.sourceCenter), sample(top - 0.04, section.sourceCenter), sample(top - 0.03, section.sourceCenter), sample(top - 0.02, section.sourceCenter)], seedSample: null as unknown as CypressRibbon['seedSample'] }
+  restarting.seedSample = restarting.samples[2]
+  const restarted = drapeRibbon(restarting, ribbonColumns(restarting, flow.width, flow.height, 1, 5), rings, options, true, 0.004)
+  assert.ok(restarted && restarted.kept.length === 3 && Math.abs(restarted.kept[0].h - (top - 0.04)) < 1e-9, 'the run restarts at the first lift after the failure and holds the seed')
 })

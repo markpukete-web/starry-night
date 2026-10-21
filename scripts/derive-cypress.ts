@@ -13,6 +13,7 @@
  */
 
 import { execFileSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -56,8 +57,18 @@ const GUARD = { minSeedRows: 600, minHeightShare: 0.95, minPixels: 250_000, maxP
 mkdirSync(REVIEW_DIR, { recursive: true })
 execFileSync('sips', ['-s', 'format', 'png', resolve(ROOT, 'public/reference/painting.jpg'), '--out', WORK_1600], { stdio: 'ignore' })
 execFileSync('sips', ['-s', 'format', 'png', resolve(ROOT, 'reference/starry-night-source.jpg'), '--out', WORK], { stdio: 'ignore' })
-const painting = decodePNG(readFileSync(WORK_1600))
-const scan = decodePNG(readFileSync(WORK))
+const paintingBytes = readFileSync(WORK_1600)
+const scanBytes = readFileSync(WORK)
+const painting = decodePNG(paintingBytes)
+const scan = decodePNG(scanBytes)
+// the decoded inputs' digests ride in the table: a JPEG decoder is not part of the repository (`sips` is the
+// existing path, deterministic on this Mac, three decodes one md5 on 2026-10-21), so a change in it shows here
+// rather than as a silent shift of the bake (Codex, code review F8)
+const source = {
+  painting: createHash('md5').update(paintingBytes).digest('hex'),
+  scan: createHash('md5').update(scanBytes).digest('hex'),
+  decoder: 'sips -s format png (macOS)',
+}
 const scale = scan.width / painting.width
 if (Math.abs(scan.height / painting.height - scale) > 0.01) {
   throw new Error(`the scan (${scan.width}x${scan.height}) and painting.jpg (${painting.width}x${painting.height}) have different aspects`)
@@ -207,6 +218,7 @@ const rowTable = {
       ] as [number, number, number],
   ),
   satellites: toCropLocalRuns(satellites, cropLocal),
+  source,
   component: {
     bounds: {
       x0: component.bounds.x0 - cropX0,

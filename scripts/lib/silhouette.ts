@@ -30,7 +30,11 @@ function morph(src: Mask, radius: number, dilate: boolean): Mask {
   return { data: out, width: w, height: h }
 }
 
-/** Treeish pixels of a crop, opened by `open` px, then the component holding the column with the most tree. */
+/**
+ * Treeish pixels of a crop, opened by `open` px, then the LARGEST 4-connected component among those crossing the
+ * column with the most tree (Codex, code review F3: seeding every pixel of the column returned the union of every
+ * component on it, and two fragments above the tree moved its top by 18 rows).
+ */
 export function treeComponent(rgba: Uint8Array | Uint8ClampedArray, imageWidth: number, x0: number, y0: number, w: number, h: number, open: number): Mask {
   const tree = new Uint8Array(w * h)
   for (let y = 0; y < h; y++) {
@@ -47,20 +51,32 @@ export function treeComponent(rgba: Uint8Array | Uint8ClampedArray, imageWidth: 
     for (let y = 0; y < h; y++) count += opened.data[y * w + x]
     if (count > bestCount) { bestCount = count; bestX = x }
   }
-  const comp = new Uint8Array(w * h)
-  const stack: number[] = []
-  for (let y = 0; y < h; y++) if (opened.data[y * w + bestX]) stack.push(y * w + bestX)
-  while (stack.length) {
-    const i = stack.pop()!
-    if (comp[i] || !opened.data[i]) continue
-    comp[i] = 1
-    const x = i % w
-    const y = (i - x) / w
-    if (x > 0) stack.push(i - 1)
-    if (x < w - 1) stack.push(i + 1)
-    if (y > 0) stack.push(i - w)
-    if (y < h - 1) stack.push(i + w)
+  const labels = new Int32Array(w * h)
+  let best = 0
+  let bestSize = 0
+  let label = 0
+  for (let seedY = 0; seedY < h; seedY++) {
+    const seed = seedY * w + bestX
+    if (!opened.data[seed] || labels[seed]) continue
+    label++
+    let size = 0
+    const stack = [seed]
+    while (stack.length) {
+      const i = stack.pop()!
+      if (labels[i] || !opened.data[i]) continue
+      labels[i] = label
+      size++
+      const x = i % w
+      const y = (i - x) / w
+      if (x > 0) stack.push(i - 1)
+      if (x < w - 1) stack.push(i + 1)
+      if (y > 0) stack.push(i - w)
+      if (y < h - 1) stack.push(i + w)
+    }
+    if (size > bestSize) { bestSize = size; best = label }
   }
+  const comp = new Uint8Array(w * h)
+  for (let i = 0; i < comp.length; i++) comp[i] = labels[i] === best ? 1 : 0
   return { data: comp, width: w, height: h }
 }
 
@@ -105,4 +121,63 @@ export function extent(mask: Mask) {
     count++
   }
   return { top, bottom, height, pixels, baseCentre: count ? sum / count : nearX }
+}
+
+/**
+ * The render's mask in the painting's frame: scaled by the two trees' heights, the tops aligned, at the x shift
+ * within ±30 px of the base-centre alignment that gives the best IoU (the base centre alone shifted the whole
+ * tree when a wedge at the base went, 2026-10-21). Returns the aligned mask, the IoU, the shift and the scale.
+ */
+export function alignRender(paintMask: Mask, renderMask: Mask) {
+  const paint = extent(paintMask)
+  const render = extent(renderMask)
+  const scale = paint.height / Math.max(1, render.height)
+  const resample = (shift: number): Mask => {
+    const out: Mask = { data: new Uint8Array(paintMask.width * paintMask.height), width: paintMask.width, height: paintMask.height }
+    for (let y = 0; y < paintMask.height; y++) {
+      for (let x = 0; x < paintMask.width; x++) {
+        const ry = Math.round(render.top + (y - paint.top) / scale)
+        const rx = Math.round(render.baseCentre + (x - shift - paint.baseCentre) / scale)
+        if (ry < 0 || ry >= renderMask.height || rx < 0 || rx >= renderMask.width) continue
+        out.data[y * paintMask.width + x] = renderMask.data[ry * renderMask.width + rx]
+      }
+    }
+    return out
+  }
+  const iouOf = (mask: Mask) => {
+    let inter = 0
+    let union = 0
+    for (let i = 0; i < mask.data.length; i++) {
+      inter += paintMask.data[i] & mask.data[i]
+      union += paintMask.data[i] | mask.data[i]
+    }
+    return union ? inter / union : 0
+  }
+  let aligned = resample(0)
+  let iou = iouOf(aligned)
+  let bestShift = 0
+  for (let shift = -30; shift <= 30; shift++) {
+    const candidate = resample(shift)
+    const value = iouOf(candidate)
+    if (value > iou) { iou = value; aligned = candidate; bestShift = shift }
+  }
+  return { aligned, iou, shift: bestShift, scale, paint, render }
+}
+
+/**
+ * The painting's mask carried into the render's frame by `alignRender`'s transform: the area where the tree is
+ * expected in the capture, independent of the capture's colours (code review F4).
+ */
+export function expectedInRender(paintMask: Mask, renderMask: Mask, alignment: ReturnType<typeof alignRender>): Mask {
+  const { paint, render, scale, shift } = alignment
+  const out: Mask = { data: new Uint8Array(renderMask.width * renderMask.height), width: renderMask.width, height: renderMask.height }
+  for (let ry = 0; ry < renderMask.height; ry++) {
+    for (let rx = 0; rx < renderMask.width; rx++) {
+      const y = Math.round(paint.top + (ry - render.top) * scale)
+      const x = Math.round(paint.baseCentre + shift + (rx - render.baseCentre) * scale)
+      if (x < 0 || y < 0 || x >= paintMask.width || y >= paintMask.height) continue
+      out.data[ry * renderMask.width + rx] = paintMask.data[y * paintMask.width + x]
+    }
+  }
+  return out
 }

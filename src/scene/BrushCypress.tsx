@@ -6,7 +6,7 @@ import rowTableJson from '../../public/reference/cypress-rows.json'
 import { makeBrushArrays, moonShade, pushDrapedRibbon } from './brushForms'
 import { buildCypressLobeSolid, drapeRibbon, liftToLobes, ringsByLobe, type CypressLobeSolidOptions } from './cypressLobeGeometry'
 import { buildCypressLobePlan, sampleCypressLobe, type CypressLobeRows } from './cypressLobes'
-import { CYPRESS_RIBBON_CONFIG, ribbonEdges, traceCypressRibbons } from './cypressStrokes'
+import { CYPRESS_RIBBON_CONFIG, ribbonColumns, traceCypressRibbons } from './cypressStrokes'
 import { cypressViewBearing } from './cypressMapping'
 import { DIORAMA_CAMERAS } from './dioramaContract'
 import { useImageData } from './useImageData'
@@ -32,6 +32,8 @@ const MOON_LIFT = 0.04
 const CYPRESS_UNDERPAINT = new Color('#151c1b')
 /** world units the ribbons sit toward the camera from the solid */
 const RIBBON_LIFT = 0.004
+/** points across a strip, each lifted on its own, so the strip follows the lobe's curve (code review F1) */
+const STRIP_COLUMNS = 5
 
 /** The row table's crop is `uv` of the painting (E1: the table is baked from the 3840 px scan, so no pixel origin). */
 const rowTable = rowTableJson as unknown as CypressLobeRows & { uv: [number, number, number, number] }
@@ -134,8 +136,8 @@ export function BrushCypress({
       const back = traceCypressRibbons(flowData, paintingData, rowTable, Math.round(CYPRESS_RIBBON_CONFIG.frontCount * CYPRESS_RIBBON_CONFIG.backShare), 0xbacc51de)
       for (const [frontFacing, ribbons] of [[true, front], [false, back]] as const) {
         for (const ribbon of ribbons) {
-          const edges = ribbonEdges(ribbon, flowData.width, flowData.height, CYPRESS_RIBBON_CONFIG.taper)
-          const draped = drapeRibbon(ribbon, edges, rings, geometryOptions, frontFacing, RIBBON_LIFT)
+          const columns = ribbonColumns(ribbon, flowData.width, flowData.height, CYPRESS_RIBBON_CONFIG.taper, STRIP_COLUMNS)
+          const draped = drapeRibbon(ribbon, columns, rings, geometryOptions, frontFacing, RIBBON_LIFT)
           if (!draped) continue
           const seedLift = liftToLobes(rings, ribbon.seedSample.px, 1 - ribbon.seedSample.py, geometryOptions, frontFacing)
           const shade = seedLift ? 1 + MOON_LIFT * moonShade(normal.set(...seedLift.normal)) : 1
@@ -145,16 +147,16 @@ export function BrushCypress({
             .multiplyScalar(ribbon.relief * SOURCE_STROKE_LIFT * shade)
             .clone()
           const before = arrays.positions.length / 3
-          pushDrapedRibbon(arrays, draped.left, draped.right, draped.kept.map(() => colour))
+          pushDrapedRibbon(arrays, draped.steps, draped.kept.map(() => colour))
           const pushed = arrays.positions.length / 3 - before
-          if (pushed !== draped.kept.length * 2) throw new Error('cypress ribbon pushed an unexpected vertex count')
+          if (pushed !== draped.kept.length * STRIP_COLUMNS) throw new Error('cypress ribbon pushed an unexpected vertex count')
           const lobe = draped.kept[Math.floor(draped.kept.length / 2)].lobeId
           const flicker = ribbonFlicker(draped.kept, lobeRange.get(lobe) ?? [0, 1], !frontFacing)
           for (let k = 0; k < draped.kept.length; k++) {
             const len = k / (draped.kept.length - 1)
-            // the draped strip packs left then right per step
-            for (const across of [0, 1]) {
-              strokeAttr.push(len, across)
+            // the draped strip packs its columns left to right per step
+            for (let j = 0; j < STRIP_COLUMNS; j++) {
+              strokeAttr.push(len, j / (STRIP_COLUMNS - 1))
               seedAttr.push(ribbon.seed)
               if (alive) pushFlicker(strokeFlicker, flicker[k][0], flicker[k][1])
             }
@@ -205,10 +207,11 @@ export function BrushCypress({
     return material
   }, [alive, solidUniforms])
   const strokeMaterial = useMemo(() => {
-    // the stroke's shaped edge blends (retune 4: alpha-to-coverage dithered every edge across the MSAA samples and
-    // the tree stippled at 1:1); depth is written, so a ribbon's soft edge over one behind it blends and one behind
-    // a ribbon already drawn is rejected by the depth test, in one mesh with no sorting
-    const material = new MeshBasicMaterial({ vertexColors: true, toneMapped: false, side: DoubleSide, transparent: true, depthWrite: true })
+    // opaque, with the shaped alpha as a hard test: the flanks are the geometry's own edges (the canvas's MSAA
+    // smooths them) and the rounded head and tail are cut at half alpha. Order-independent in one unsorted mesh
+    // (Codex, code review F2: a transparent material with depth written lost the stroke behind a soft edge drawn
+    // first; alpha-to-coverage, retune 3, dithered every edge to a stipple at 1:1)
+    const material = new MeshBasicMaterial({ vertexColors: true, toneMapped: false, side: DoubleSide, alphaTest: 0.5 })
     const body = { uniforms: {}, ...strokeGlsl }
     injectAlive(material, alive ? concatInjections('cypress-strokes-flicker', body, { uniforms: strokeUniforms, ...flickerGlsl }) : concatInjections('cypress-strokes', body))
     return material

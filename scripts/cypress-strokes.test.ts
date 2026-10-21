@@ -7,6 +7,7 @@ import test from 'node:test'
 import {
   CYPRESS_RIBBON_CONFIG,
   ribbonEdges,
+  runHalfWidthAt,
   traceCypressRibbons,
   type CypressRibbon,
 } from '../src/scene/cypressStrokes.ts'
@@ -84,20 +85,45 @@ test('a ribbon grows both ways from its seed, has the fixed sample count away fr
   assert.ok(interior >= 40, `${interior} interior ribbons`)
 })
 
-test('every sample is inside the mask except at most overshootSteps at either end, and the ends are the only overshoot', () => {
+test('a walk keeps at most overshootSteps outside samples on each side of the seed, at the mask\'s ends or across a hole it bridges', () => {
   const { flow, painting, rows } = fixtures(0, 30, 170)
   const ribbons = traceCypressRibbons(flow, painting, rows, 120, 11, FIXED)
   let overshooting = 0
   for (const ribbon of ribbons) {
-    let leading = 0
-    while (leading < ribbon.samples.length && !ribbon.samples[leading].inside) leading++
-    let trailing = 0
-    while (trailing < ribbon.samples.length && !ribbon.samples[ribbon.samples.length - 1 - trailing].inside) trailing++
-    assert.ok(leading <= FIXED.overshootSteps && trailing <= FIXED.overshootSteps, `overshoot ${leading}/${trailing}`)
-    for (let k = leading; k < ribbon.samples.length - trailing; k++) assert.ok(ribbon.samples[k].inside, 'no gap inside a ribbon')
-    if (leading + trailing > 0) overshooting++
+    const seed = ribbon.samples.indexOf(ribbon.seedSample)
+    const below = ribbon.samples.slice(0, seed).filter((s) => !s.inside).length
+    const above = ribbon.samples.slice(seed + 1).filter((s) => !s.inside).length
+    assert.ok(below <= FIXED.overshootSteps && above <= FIXED.overshootSteps, `outside samples ${below} below, ${above} above the seed`)
+    if (below + above > 0) overshooting++
   }
   assert.ok(overshooting > 0, 'ribbons seeded near the mask\'s ends do overshoot it')
+  // a one-row hole across the band (the fixture's step is 0.38 px, so the hole is about three steps): a walk
+  // bridges it (the hole's samples are outside) and goes on, within the same bound
+  const holed = fixtures(0, 0, HEIGHT - 1)
+  for (let x = 0; x < WIDTH; x++) holed.flow.data[(100 * WIDTH + x) * 4 + 2] = 0
+  let bridged = 0
+  for (const ribbon of traceCypressRibbons(holed.flow, holed.painting, holed.rows, 200, 13, FIXED)) {
+    const seed = ribbon.samples.indexOf(ribbon.seedSample)
+    const outside = ribbon.samples.map((s, k) => (s.inside ? -1 : k)).filter((k) => k >= 0)
+    const below = outside.filter((k) => k < seed).length
+    const above = outside.filter((k) => k > seed).length
+    assert.ok(below <= FIXED.overshootSteps && above <= FIXED.overshootSteps)
+    const first = outside[0]
+    const last = outside[outside.length - 1]
+    if (outside.length && first > 0 && last < ribbon.samples.length - 1 && ribbon.samples[first - 1].inside && ribbon.samples[last + 1].inside) bridged++
+  }
+  assert.ok(bridged > 0, 'some ribbons cross the hole and continue')
+})
+
+test('runHalfWidthAt reads the run under the rounded texel the mask reads, inclusively, satellites first', () => {
+  const rows = { uv: [0, 0, 1, 1] as [number, number, number, number], width: 101, height: 11, spans: [[0, 0.4, 0.6], [1, 0.4, 0.6]] as [number, number, number][], satellites: [{ y: 5, x0: 34, x1: 52 }, { y: 7, x0: 80, x1: 80 }] }
+  // x 33.9 rounds to texel 34, the satellite's endpoint: the satellite's half-width, not the main span's
+  assert.ok(Math.abs(runHalfWidthAt(rows, 33.9 / 100, 0.5) - (52 - 34 + 1) / 2 / 100) < 1e-12)
+  assert.ok(Math.abs(runHalfWidthAt(rows, 52.4 / 100, 0.5) - (52 - 34 + 1) / 2 / 100) < 1e-12)
+  // a one-pixel satellite is matched by its texel
+  assert.ok(Math.abs(runHalfWidthAt(rows, 80.3 / 100, 0.7) - Math.max(0.0035, 1 / 2 / 100)) < 1e-12)
+  // beside the satellite, the main span
+  assert.ok(Math.abs(runHalfWidthAt(rows, 60 / 100, 0.5) - 0.1) < 1e-12)
 })
 
 test('a 30° field bends the ribbon by 30°, and a vertical one keeps it vertical', () => {

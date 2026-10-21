@@ -10,7 +10,7 @@ import { resolve } from 'node:path'
 
 import { Color, SRGBColorSpace } from 'three'
 
-import { CYPRESS_RIBBON_CONFIG, traceCypressRibbons, type CypressRibbon } from '../src/scene/cypressStrokes.ts'
+import { CYPRESS_RIBBON_CONFIG, traceCypressRibbons, type CypressRibbon, type RibbonRows } from '../src/scene/cypressStrokes.ts'
 import type { ImageData2D } from '../src/scene/useImageData.ts'
 import { decodePNG, encodePNG } from './lib/png.ts'
 
@@ -23,7 +23,7 @@ const UNDERPAINT = [21, 28, 27] as const
 const skin = decodePNG(readFileSync(resolve(ROOT, 'reference/derived/cypress-skin-source.png')))
 const flowPng = decodePNG(readFileSync(resolve(ROOT, 'public/reference/cypress-flow.png')))
 const paintingPng = decodePNG(readFileSync(resolve(ROOT, 'reference/derived/cypress-work-1600.png')))
-const rows = JSON.parse(readFileSync(resolve(ROOT, 'public/reference/cypress-rows.json'), 'utf8')) as { uv: [number, number, number, number] }
+const rows = JSON.parse(readFileSync(resolve(ROOT, 'public/reference/cypress-rows.json'), 'utf8')) as RibbonRows
 const imageData = (image: typeof skin): ImageData2D => ({ data: new Uint8ClampedArray(image.rgba), width: image.width, height: image.height })
 
 const flow = imageData(flowPng)
