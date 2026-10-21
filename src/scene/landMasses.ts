@@ -1,7 +1,10 @@
+import { BACK_ROW, FRONT_ROW, LEFT_ROW, RIGHT_ROW, stationBox } from './villageStations.ts'
+
 /**
  * The painting's foliage masses, authored (E2, tasks/2026-10-21-land-e2-plan.md E2.1): a box in painting pixels
  * (1600 × 1267) the mass's paint and curls are read from, and a placement in world. The four rows keep the F2
- * placements (villageGeometry's `ROWS`: the base's centre `x0 + xw / 2`, its width `xw`, its `z0`); the rest were
+ * placements (villageGeometry's `ROWS`: the base's centre `x0 + xw / 2`, its width `xw`, its `z0`) and take their
+ * boxes from their stations (confirmation read F15); the rest were
  * traced by eye from the 1:1 crops of the 3840 scan and placed inside the coast (every base probed with a
  * positive margin at both ends, 2026-10-21). Discovery by colour alone merged the hills, fields, roofs and walls
  * into one mass and found no bushes (Codex, E2 plan review F1); the derive validates each box's class share.
@@ -19,10 +22,11 @@ export type LandMass = {
 }
 
 export const LAND_MASSES: readonly LandMass[] = [
-  { id: 'row-front', class: 'teal', box: [742, 1000, 829, 1140], x: -0.35, z: 0.94, width: 0.44 },
-  { id: 'row-back', class: 'teal', box: [1004, 963, 1212, 1017], x: 0.42, z: 0.22, width: 1.2 },
-  { id: 'row-right', class: 'teal', box: [1182, 1118, 1279, 1170], x: 1.49, z: 0.5, width: 0.35 },
-  { id: 'row-left', class: 'teal', box: [685, 1088, 745, 1130], x: -1.22, z: 0.95, width: 0.27 },
+  // the rows' boxes are their stations' (villageStations.ts): the x range, the highest crest to the lowest base
+  { id: 'row-front', class: 'teal', box: stationBox(FRONT_ROW), x: -0.35, z: 0.94, width: 0.44 },
+  { id: 'row-back', class: 'teal', box: stationBox(BACK_ROW), x: 0.42, z: 0.22, width: 1.2 },
+  { id: 'row-right', class: 'teal', box: stationBox(RIGHT_ROW), x: 1.49, z: 0.5, width: 0.35 },
+  { id: 'row-left', class: 'teal', box: stationBox(LEFT_ROW), x: -1.22, z: 0.95, width: 0.27 },
   { id: 'olive-church', class: 'teal', box: [896, 1008, 936, 1103], x: 0.2, z: 0.15, width: 0.25 },
   { id: 'olive-right', class: 'teal', box: [1092, 970, 1170, 1016], x: 0.7, z: 0.05, width: 0.35 },
   { id: 'orchard-upper', class: 'teal', box: [1158, 892, 1596, 1044], x: 1.35, z: -0.3, width: 0.7 },

@@ -6,6 +6,7 @@ import test from 'node:test'
 import { coastR, islandHeightAt, RZ } from '../src/scene/islandShape.ts'
 import { flowToPainting, LAND_MAP, paintingUvAt, worldAt } from '../src/scene/landMapping.ts'
 import { LAND_MASSES } from '../src/scene/landMasses.ts'
+import { BACK_ROW, FRONT_ROW, LEFT_ROW, RIGHT_ROW, stationBox } from '../src/scene/villageStations.ts'
 
 test('the map is centred on the church\'s nave, round-trips, and is monotone and continuous in z', () => {
   const [u, v] = paintingUvAt(-0.036, 0.37)
@@ -28,9 +29,13 @@ test('the map is centred on the church\'s nave, round-trips, and is monotone and
   assert.ok(Math.abs(paintingUvAt(0, RZ)[1] - 1) < 1e-9 && Math.abs(paintingUvAt(0, -RZ)[1] - 0.6) < 1e-9)
 })
 
-test('the scales are the stated ones: 4.1 per u, 5.0 per v on the apron and 8.9 on the hills', () => {
+test('the scales are the stated ones: 4.75 per u (the right coast under the painting\'s right edge), 5.0 per v on the apron and 8.9 on the hills', () => {
   const { apron, hills } = LAND_MAP
-  assert.ok(Math.abs(LAND_MAP.worldPerU - 4.1) < 1e-9)
+  assert.ok(Math.abs(LAND_MAP.worldPerU - 4.75) < 1e-9)
+  const [rightCoast] = paintingUvAt(coastR(0), 0)
+  assert.ok(Math.abs(rightCoast - 1) < 0.01, `the right coast at u ${rightCoast.toFixed(3)}`)
+  const [leftCoast] = paintingUvAt(-coastR(Math.PI), 0)
+  assert.ok(leftCoast > 0.05 && leftCoast < 0.26, `the left coast at u ${leftCoast.toFixed(3)}, under the cypress column`)
   const apronPerV = (apron.zFront - apron.zBack) / (apron.vFront - apron.vBack)
   const hillsPerV = (apron.zBack - hills.zBack) / (apron.vBack - hills.vBack)
   assert.ok(Math.abs(apronPerV - 5.0) < 0.01, `apron ${apronPerV.toFixed(2)} per v`)
@@ -52,4 +57,17 @@ test('every authored mass stands inside the coast with a positive margin at both
   const ids = new Set(LAND_MASSES.map((m) => m.id))
   for (const id of ['row-front', 'row-back', 'row-right', 'row-left', 'bushes']) assert.ok(ids.has(id), id)
   assert.ok(LAND_MASSES.filter((m) => m.id.startsWith('orchard')).length >= 2)
+})
+
+test('the rows\' boxes are their stations\' x range and crest-to-base range', () => {
+  const rows: [string, readonly (readonly number[])[]][] = [['row-front', FRONT_ROW], ['row-back', BACK_ROW], ['row-right', RIGHT_ROW], ['row-left', LEFT_ROW]]
+  for (const [id, stations] of rows) {
+    const mass = LAND_MASSES.find((m) => m.id === id)!
+    assert.deepEqual([...mass.box], stationBox(stations), id)
+    for (const [x, crest, base] of stations) {
+      assert.ok(x >= mass.box[0] && x <= mass.box[2] && crest >= mass.box[1] && base <= mass.box[3], `${id}'s station at ${x} inside its box`)
+    }
+  }
+  assert.deepEqual(stationBox(FRONT_ROW), [742, 1107, 829, 1142])
+  assert.deepEqual(stationBox(BACK_ROW), [1004, 954, 1212, 1017])
 })

@@ -3,15 +3,17 @@ import { RZ } from './islandShape.ts'
 /**
  * The painting's land band on the island's top (E2, tasks/2026-10-21-land-e2-plan.md E2.2): the apron in front of
  * the village's back row carries the fields, the humps behind carry the hills, x across the island is u centred
- * on the church's nave (world x −0.036 under the painting's u 0.56, villageGeometry.ts) at 4.1 world units per
- * unit of u, the island's x span over the painting's width. The ground is fill, so this map is its own: the rows
+ * on the church's nave (world x −0.036 under the painting's u 0.56, villageGeometry.ts) at 4.75 world units per
+ * unit of u, which puts the painting's right edge on the right coast (x 2.05 ↔ u 0.999; at 4.1, the island's
+ * span over the painting's width, the rim beyond x 1.77 had no texel under it) and the left coast at u 0.136,
+ * inside the cypress column, whose texels take the ground's fill (landStrokes.ts). The ground is fill, so this map is its own: the rows
  * and the masses keep their authored placements (landMasses.ts), whose own scales differ (Codex, E2 plan review
  * F2). The home camera's rays cannot give this map: through the dome the island's top lands on the hills only.
  */
 export const LAND_MAP = {
   u0: 0.56,
   x0: -0.036,
-  worldPerU: 4.1,
+  worldPerU: 4.75,
   /** z from the front rim to the village's back row ↔ v from the painting's bottom to the fields' top */
   apron: { zFront: RZ, zBack: 0.25, vFront: 1.0, vBack: 0.78 },
   /** the humps ↔ the hills; the stretch along z is 8.9 world units per v against the apron's 5.0, the slope's */

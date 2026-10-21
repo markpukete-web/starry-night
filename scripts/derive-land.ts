@@ -4,10 +4,13 @@
  * From the 3840 scan's decode (E1's `reference/derived/cypress-work.png`, made here if missing) take the band
  * v ∈ [0.58, 1.0] at a quarter of the resolution (960 × 320, box-filtered). The structure tensor at σ 1.5, the
  * low-pass σ 1.5, the blend to HORIZONTAL where the tensor has no orientation (the ground's strokes lie along the
- * ground). The flow's B channel is the island's support, not the band: a texel whose painting uv maps through
- * `worldAt` inside the coast shrunk by 3% carries the anisotropy at 32 levels (never 0), every other texel 0, so
- * the tracer seeds only where a strip can stand (Codex, plan review F6). The field is baked undirected (the
- * double-angle resolved to dx ≥ 0): the land's walks carry a continuous heading (F9).
+ * ground) over the whole band, the cypress column included (the bushes' box lies under it and the masses read
+ * the tensor there; the ground's walks take a horizontal fill over the column at run time, landStrokes.ts). The
+ * flow's B channel is the island's support, not the band: a texel whose painting uv maps through `worldAt`
+ * inside the coast shrunk by 3% carries the anisotropy at 32 levels (never 0), every other texel 0, so the
+ * ground tracer seeds only where a strip can stand (Codex, plan review F6; the masses mask B by their own runs).
+ * The field is baked undirected (the double-angle resolved to dx ≥ 0): the land's walks carry a continuous
+ * heading (F9).
  *
  * The masses are authored (`src/scene/landMasses.ts`); the derive validates each box's foliage share (teal or
  * olive, ≥ 0.35), confirms its dominant hue is the authored class, and writes its foliage pixel runs at the flow's
@@ -41,6 +44,8 @@ const LOW_PASS_SIGMA = 1.5
 /** the coast shrunk by the widest ribbon's reach, so a strip seeded at the mask's edge still stands */
 const SUPPORT = 0.97
 const MIN_SHARE = 0.35
+/** the painting's cypress stands here; the ground's walks take a horizontal fill under it (landStrokes.ts) */
+const CYPRESS_COLUMN = { u: 0.26, v: 0.95 }
 const PAINTING = { width: 1600, height: 1267 }
 
 mkdirSync(REVIEW_DIR, { recursive: true })
@@ -79,16 +84,16 @@ for (let y = 0; y < height; y++) {
   }
 }
 
-// 2. the band mask (the cypress column out) and the island's support
-const bandMask = new Uint8Array(width * height)
+// 2. the band mask (the whole band) and the island's support; the cypress column, hatched in the overlay
+const bandMask = new Uint8Array(width * height).fill(1)
 const support = new Uint8Array(width * height)
+const column = new Uint8Array(width * height)
 let supported = 0
 for (let y = 0; y < height; y++) {
   for (let x = 0; x < width; x++) {
     const o = y * width + x
     const [u, v] = flowToPainting(x / (width - 1), y / (height - 1))
-    if (u < 0.26 && v < 0.95) continue
-    bandMask[o] = 1
+    if (u < CYPRESS_COLUMN.u && v < CYPRESS_COLUMN.v) column[o] = 1
     const [wx, wz] = worldAt(u, v)
     if (Math.hypot(wx, wz) <= coastR(Math.atan2(wz, wx)) * SUPPORT) {
       support[o] = 1
@@ -179,6 +184,12 @@ for (let i = 0; i < width * height; i++) {
     fieldOverlay[i * 4] = Math.round(fieldOverlay[i * 4] * 0.4)
     fieldOverlay[i * 4 + 1] = Math.round(fieldOverlay[i * 4 + 1] * 0.4)
     fieldOverlay[i * 4 + 2] = Math.round(fieldOverlay[i * 4 + 2] * 0.4)
+  }
+  // the cypress column hatched in magenta every sixth diagonal: the ground's fill, the masses' own tensor
+  if (column[i] && ((i % width) + Math.floor(i / width)) % 6 === 0) {
+    fieldOverlay[i * 4] = 220
+    fieldOverlay[i * 4 + 1] = 40
+    fieldOverlay[i * 4 + 2] = 200
   }
 }
 for (let y = 4; y < height; y += 8) {

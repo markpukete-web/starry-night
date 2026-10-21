@@ -61,15 +61,21 @@ test('the shipped land assets: every authored mass validated, the flow\'s mask i
   const flow = decodePNG(flowBytes)
   assert.equal(flow.width, 960)
   const b = (px: number, py: number) => flow.rgba[(Math.round(py * (flow.height - 1)) * flow.width + Math.round(px * (flow.width - 1))) * 4 + 2]
-  // the cypress column, and ten points whose world lies outside the coast: no support
-  assert.equal(b(0.1, 0.5), 0, 'the cypress column')
+  // the cypress column carries the tensor (the masses read it there): support by the coast alone
+  {
+    const [u, v] = flowToPainting(0.2, 0.5)
+    const [x, z] = worldAt(u, v)
+    assert.ok(u < 0.26 && v < 0.95 && Math.hypot(x, z) <= coastR(Math.atan2(z, x)) * 0.97, `(${x.toFixed(2)}, ${z.toFixed(2)}) under the column, on the island`)
+    assert.ok(b(0.2, 0.5) >= 8, 'the column on the island is supported')
+  }
+  assert.equal(b(0.02, 0.5), 0, 'the painting\'s left edge hangs off the island')
   let outside = 0
   let inside = 0
   for (let k = 0; k < 400; k++) {
-    const px = (k % 20) / 19
-    const py = Math.floor(k / 20) / 19
+    // the texel's own centre, as the bake maps it (a probe between texels sat on the margin at 4.75 per u)
+    const px = Math.round(((k % 20) / 19) * (flow.width - 1)) / (flow.width - 1)
+    const py = Math.round((Math.floor(k / 20) / 19) * (flow.height - 1)) / (flow.height - 1)
     const [u, v] = flowToPainting(px, py)
-    if (u < 0.26 && v < 0.95) continue
     const [x, z] = worldAt(u, v)
     const supported = Math.hypot(x, z) <= coastR(Math.atan2(z, x)) * 0.97
     if (supported) { inside++; assert.ok(b(px, py) >= 8, `support at (${px.toFixed(2)}, ${py.toFixed(2)})`) } else { outside++; assert.equal(b(px, py), 0, `no support at (${px.toFixed(2)}, ${py.toFixed(2)})`) }
