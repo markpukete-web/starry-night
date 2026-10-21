@@ -1,4 +1,4 @@
-# D1 — touch the land: the record and the gate, 2026-10-21 (gated; Mark's taste gate next)
+# D1 — touch the land: the record and the gate, 2026-10-21 (merged: PR #17, `8a87ae5`)
 
 The plan: `tasks/2026-10-20-touch-land-d1-plan.md` (Codex's first read, fourteen findings folded; the rebase onto
 E1 and E2 and Codex's read of it, R1–R4 folded). Built on `feat/touch-land-d1` from `main` (`7bd583e` plus the
@@ -35,6 +35,12 @@ recommended: `landMasksSky` true, the ground still.
    the weight test checks the field (F8).
 6. `6fb8d8d` the confirmation read's F9: B's hover gate governs the land step, marked on masked steps, so a second
    move over the tree within 60 ms cannot fall through to the sky.
+7. Mark, 2026-10-22: "Push and merge D1, then rebase E3 and do the same." PR #17 opened as a draft and marked
+   ready. CI green. Codex's PR review on `399a956`: one P2, the window-level up and cancel acted on any pointer, so a
+   second finger lifting released the first finger's hold. `8f95fd6`: the admitted pointer's id is recorded at the
+   primary down and other pointers' moves, ups and cancels are ignored while a press is down. Verified headed with
+   synthetic pointer events (the hold survives the second finger's lift, the primary's move follows, its own lift
+   releases). A P2 fix, no re-request, answered in the thread. Merged `8a87ae5`.
 
 ## Deviations from the plan, for the review
 

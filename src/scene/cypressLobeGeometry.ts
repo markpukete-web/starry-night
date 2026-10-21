@@ -207,6 +207,8 @@ export type DrapedRibbon = {
   steps: Vector3[][]
   /** per kept sample: its height, the centre's |lateral| and lobe */
   kept: { h: number; lateral: number; lobeId: string }[]
+  /** the index in the ribbon's samples of `kept[0]`: the kept run is contiguous from here (E3, Codex F2) */
+  firstSample: number
 }
 
 /**
@@ -232,6 +234,7 @@ export function drapeRibbon(
   const seedIndex = ribbon.samples.indexOf(ribbon.seedSample)
   const steps: Vector3[][] = []
   const kept: DrapedRibbon['kept'] = []
+  let firstSample = 0
   const count = columns[0]?.length ?? 0
   const middle = (count - 1) / 2
   for (let k = 0; k < ribbon.samples.length; k++) {
@@ -254,10 +257,16 @@ export function drapeRibbon(
       }
       break
     }
+    if (kept.length === 0) firstSample = k
     steps.push(points)
     kept.push({ h, lateral: Math.abs(centre.lateral), lobeId: centre.lobeId })
   }
-  return kept.length >= 3 ? { steps, kept } : null
+  return kept.length >= 3 ? { steps, kept, firstSample } : null
+}
+
+/** E3: the per-sample colours of the kept run, one per step, in the drape's order. */
+export function stepColours(ribbon: CypressRibbon, draped: DrapedRibbon): [number, number, number][] {
+  return ribbon.colours.slice(draped.firstSample, draped.firstSample + draped.kept.length)
 }
 
 /**

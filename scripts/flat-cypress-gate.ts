@@ -15,7 +15,8 @@ import type { ImageData2D } from '../src/scene/useImageData.ts'
 import { decodePNG, encodePNG } from './lib/png.ts'
 
 const ROOT = resolve(import.meta.dirname, '..')
-const OUTPUT = resolve(ROOT, 'reference/derived/cypress-flat-gate.png')
+const outIndex = process.argv.indexOf('--out')
+const OUTPUT = outIndex >= 0 ? resolve(process.argv[outIndex + 1]) : resolve(ROOT, 'reference/derived/cypress-flat-gate.png')
 const SEED = 0xc1f3a11
 /** the underpaint's sRGB bytes (#151c1b) */
 const UNDERPAINT = [21, 28, 27] as const
@@ -39,9 +40,14 @@ for (let i = 0; i < width * height; i++) {
   canvas[i * 4 + 3] = 255
 }
 
+// E3: the per-sample colours (E3.1) are the default; `--flat` paints the legacy one colour per ribbon as the control, which
+// must visibly differ (Codex E3 plan read F3). `--out <path>` writes elsewhere than reference/derived. This is the
+// tracer's view: every traced ribbon with its per-sample colours, before the drape keeps a run and trims the rest;
+// the emitted geometry's colours are checked against the kept run in scripts/cypress-lobes.test.ts (code review F7).
+const FLAT = process.argv.includes('--flat')
 const colour = new Color()
-function displayed(ribbon: CypressRibbon): [number, number, number] {
-  colour.setRGB(ribbon.colour[0], ribbon.colour[1], ribbon.colour[2], SRGBColorSpace).multiplyScalar(ribbon.relief).convertLinearToSRGB()
+function displayed(ribbon: CypressRibbon, rgb: readonly [number, number, number] = ribbon.colour): [number, number, number] {
+  colour.setRGB(rgb[0], rgb[1], rgb[2], SRGBColorSpace).multiplyScalar(ribbon.relief).convertLinearToSRGB()
   return [
     Math.round(Math.min(1, Math.max(0, colour.r)) * 255),
     Math.round(Math.min(1, Math.max(0, colour.g)) * 255),
@@ -76,12 +82,13 @@ function segment(ax: number, ay: number, bx: number, by: number, widthA: number,
 let totalSamples = 0
 for (const ribbon of ribbons) {
   totalSamples += ribbon.samples.length
-  const rgb = displayed(ribbon)
+  const flat = displayed(ribbon)
   const last = ribbon.samples.length - 1
   const halfPx = ribbon.halfWidth * (width - 1)
   for (let index = 0; index < last; index++) {
     const a = ribbon.samples[index]
     const b = ribbon.samples[index + 1]
+    const rgb = FLAT ? flat : displayed(ribbon, ribbon.colours[index])
     segment(
       a.px * (width - 1),
       a.py * (height - 1),

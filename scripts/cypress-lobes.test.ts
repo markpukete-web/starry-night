@@ -12,6 +12,7 @@ import {
   buildCypressLobeSolid,
   compiledSectionAt,
   drapeRibbon,
+  stepColours,
   liftToLobes,
   mapCypressLobeSurface,
   RIBBON_LIFT,
@@ -492,6 +493,7 @@ test('drapeRibbon: a seed that fails the lift yields no run, a sample failing ab
     samples: [sample(top - 0.03, section.sourceCenter), sample(top - 0.015, section.sourceCenter), sample(top + 0.01, section.sourceCenter), sample(top + 0.02, section.sourceCenter)],
     seedSample: null as unknown as CypressRibbon['seedSample'],
     colour: [0, 0, 0],
+    colours: [],
     halfWidth: 0.01,
     relief: 1,
     seed: 1,
@@ -508,4 +510,67 @@ test('drapeRibbon: a seed that fails the lift yields no run, a sample failing ab
   restarting.seedSample = restarting.samples[2]
   const restarted = drapeRibbon(restarting, ribbonColumns(restarting, flow.width, flow.height, 1, 5), rings, options, true, 0.004)
   assert.ok(restarted && restarted.kept.length === 3 && Math.abs(restarted.kept[0].h - (top - 0.04)) < 1e-9, 'the run restarts at the first lift after the failure and holds the seed')
+})
+
+test('E3: the drape names the kept run\'s first sample, and stepColours lines the per-sample colours up with the steps through a prefix reset and a suffix trim (Codex E3 F2)', () => {
+  const { flow, options, rings } = realAssets()
+  const main = rings.get('main')!
+  const top = main[main.length - 1].heightFraction
+  const section = compiledSectionAt(main, top - 0.02)!
+  const sample = (h: number, px: number) => ({ px, py: 1 - h, inside: true })
+  const distinct = (n: number): [number, number, number][] => Array.from({ length: n }, (_, k) => [(k + 1) / 10, (k + 1) / 20, (k + 1) / 30])
+  // a prefix of two samples above the rings' top fails and resets the run, the seed and two more lift, two more above fail (a suffix trim)
+  const ribbon: CypressRibbon = {
+    samples: [sample(top + 0.02, section.sourceCenter), sample(top + 0.01, section.sourceCenter), sample(top - 0.05, section.sourceCenter), sample(top - 0.04, section.sourceCenter), sample(top - 0.03, section.sourceCenter), sample(top + 0.01, section.sourceCenter), sample(top + 0.02, section.sourceCenter)],
+    seedSample: null as unknown as CypressRibbon['seedSample'],
+    colour: [0, 0, 0],
+    colours: distinct(7),
+    halfWidth: 0.01,
+    relief: 1,
+    seed: 1,
+  }
+  ribbon.seedSample = ribbon.samples[3]
+  const draped = drapeRibbon(ribbon, ribbonColumns(ribbon, flow.width, flow.height, 1, 5), rings, options, true, 0.004)!
+  assert.ok(draped, 'a run')
+  assert.equal(draped.firstSample, 2, 'the run starts after the failed prefix')
+  assert.equal(draped.kept.length, 3, 'the seed and its two neighbours, the suffix trimmed')
+  assert.deepEqual(stepColours(ribbon, draped), ribbon.colours.slice(2, 5), 'the colours of exactly the kept samples, in order')
+  // the emitted vertices carry them per step
+  const arrays = makeBrushArrays()
+  pushDrapedRibbon(arrays, draped.steps, stepColours(ribbon, draped).map(([r, g, b]) => new Color(r, g, b)))
+  const columns = draped.steps[0].length
+  for (let step = 0; step < 3; step++) {
+    for (let j = 0; j < columns; j++) {
+      const v = (step * columns + j) * 3
+      assert.ok(Math.abs(arrays.colors[v] - ribbon.colours[2 + step][0]) < 1e-6, `step ${step} column ${j} carries sample ${2 + step}'s colour`)
+    }
+  }
+})
+
+test('E3: on the shipped batches every draped ribbon\'s step colours are exactly its kept run\'s, in count and position (code review F7)', () => {
+  const { rows, flow, options, rings } = realAssets()
+  // a position-encoding painting, so every sample's colour names its own texel
+  const W = 64
+  const painting: ImageData2D = { data: new Uint8ClampedArray(W * W * 4), width: W, height: W }
+  for (let y = 0; y < W; y++) for (let x = 0; x < W; x++) { const i = (y * W + x) * 4; painting.data[i] = Math.round((x / (W - 1)) * 60); painting.data[i + 1] = 40 + Math.round((y / (W - 1)) * 60); painting.data[i + 2] = 20; painting.data[i + 3] = 255 }
+  let survivors = 0
+  let steps = 0
+  for (const [frontFacing, seed] of [[true, 0xc1f3a11], [false, 0xbacc51de]] as const) {
+    const count = frontFacing ? CYPRESS_RIBBON_CONFIG.frontCount : Math.round(CYPRESS_RIBBON_CONFIG.frontCount * CYPRESS_RIBBON_CONFIG.backShare)
+    for (const ribbon of traceCypressRibbons(flow, painting, rows, count, seed, { ...CYPRESS_RIBBON_CONFIG, colourSmoothing: 0 })) {
+      const draped = drapeRibbon(ribbon, ribbonColumns(ribbon, flow.width, flow.height, CYPRESS_RIBBON_CONFIG.taper, 7), rings, options, frontFacing, 0.004)
+      if (!draped) continue
+      survivors++
+      const colours = stepColours(ribbon, draped)
+      assert.equal(colours.length, draped.kept.length)
+      assert.ok(draped.firstSample + draped.kept.length <= ribbon.samples.length)
+      for (let i = 0; i < colours.length; i++) {
+        const sample = ribbon.samples[draped.firstSample + i]
+        assert.equal(Math.abs(1 - sample.py - draped.kept[i].h) < 1e-12, true, 'the step\'s height is the sample\'s')
+        assert.deepEqual(colours[i], ribbon.colours[draped.firstSample + i])
+        steps++
+      }
+    }
+  }
+  assert.ok(survivors > 500 && steps > 20000, `${survivors} survivors, ${steps} steps checked`)
 })

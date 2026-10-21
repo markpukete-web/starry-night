@@ -1,6 +1,24 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-22 (small hours): D1 built and gated on `feat/touch-land-d1`, Codex's code review in flight; Mark's taste gate next (supersedes the pickup below)
+## Pickup — 2026-10-22 (morning): D1 merged (PR #17); E3 rebased onto main and in its PR (supersedes the pickup below)
+
+Mark, 2026-10-22: "Push and merge D1, then rebase E3 and do the same." D1 is on `main` at `8a87ae5` (PR #17, one
+Codex P2 on multi-touch fixed in `8f95fd6`). E3 (`feat/cypress-medium`, the record `tasks/2026-10-22-cypress-e3.md`)
+is rebased onto that main, verified at the rebased head, and in its PR. The main checkout serves `main` on 5179; the
+E3 worktree in the session's scratchpad serves the branch on 5181 (`git worktree list`; after the session,
+`git worktree prune`).
+
+1. E3's PR: read Codex's review, answer every thread, merge on green. Then production carries D1 and E3.
+2. Mark's taste gate on production or localhost: the touch (hover, tap, drag on the cypress; the bushes; the `bend`
+   slider on `?tune=1`) and the cypress's medium (`scratch/cypress-e3-2026-10-22/e3-compare.png`: the painting, E3
+   and E1 at the render's scale). His phone's `?perf=1` reading.
+3. E3's open numbers: the paired contrast 3.4 against the painting's 11.1, reported as not met (the painting's
+   bristle marks and canvas weave at a scale the ribbons do not carry); the relief constants are a dial
+   (`CYPRESS_STROKE_BODY`). Perf re-run quiet: 60 fps at the rig's vsync (p95 17.0), D1's numbers exactly.
+4. Then the explorable question's three spikes (the walk; see the direction below), time-of-day presets after.
+5. Two dev servers may be running: 5179 (main) and 5181 (E3's worktree). The `main` worktree on 5180 was removed.
+
+## Pickup — 2026-10-22 (small hours): D1 built and gated on `feat/touch-land-d1`, Codex's code review closed MERGE; Mark's taste gate next (superseded by the pickup above)
 
 D1 (touch the land) is built and gated on `feat/touch-land-d1`, local only, nothing pushed. Read
 `tasks/2026-10-20-touch-land-d1.md` (the record: what was built, the deviations, the gate G1–G8) and the plan's
