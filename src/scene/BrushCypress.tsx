@@ -4,7 +4,7 @@ import { BufferAttribute, BufferGeometry, Color, DoubleSide, MeshBasicMaterial, 
 
 import rowTableJson from '../../public/reference/cypress-rows.json'
 import { makeBrushArrays, moonShade, pushDrapedRibbon } from './brushForms'
-import { buildCypressLobeSolid, drapeRibbon, liftToLobes, RIBBON_LIFT, ringsByLobe, STRIP_COLUMNS, type CypressLobeSolidOptions } from './cypressLobeGeometry'
+import { buildCypressLobeSolid, drapeRibbon, liftToLobes, RIBBON_LIFT, ringsByLobe, stepColours, STRIP_COLUMNS, type CypressLobeSolidOptions } from './cypressLobeGeometry'
 import { buildCypressLobePlan, sampleCypressLobe, type CypressLobeRows } from './cypressLobes'
 import { CYPRESS_RIBBON_CONFIG, ribbonColumns, traceCypressRibbons } from './cypressStrokes'
 import { cypressViewBearing } from './cypressMapping'
@@ -142,13 +142,14 @@ export function BrushCypress({
           if (!draped) continue
           const seedLift = liftToLobes(rings, ribbon.seedSample.px, 1 - ribbon.seedSample.py, geometryOptions, frontFacing)
           const shade = seedLift ? 1 + MOON_LIFT * moonShade(normal.set(...seedLift.normal)) : 1
-          // one source pigment per ribbon: the middle sample's, with the moon's shade from the seed's normal
-          const colour = strokeColour
-            .setRGB(ribbon.colour[0], ribbon.colour[1], ribbon.colour[2], SRGBColorSpace)
-            .multiplyScalar(ribbon.relief * SOURCE_STROKE_LIFT * shade)
-            .clone()
+          // E3: the source pigment along the stroke, one per kept step (the texel under each sample, sky samples
+          // filled, smoothed over a third of a band), with the moon's shade from the seed's normal; one colour per
+          // ribbon averaged a brown band with a green one where the path crosses them
+          const gain = ribbon.relief * SOURCE_STROKE_LIFT * shade
+          const colours = stepColours(ribbon, draped).map(([r, g, b]) => strokeColour.setRGB(r, g, b, SRGBColorSpace).multiplyScalar(gain).clone())
+          if (colours.length !== draped.kept.length) throw new Error('cypress ribbon colours out of step with its kept run')
           const before = arrays.positions.length / 3
-          pushDrapedRibbon(arrays, draped.steps, draped.kept.map(() => colour))
+          pushDrapedRibbon(arrays, draped.steps, colours)
           const pushed = arrays.positions.length / 3 - before
           if (pushed !== draped.kept.length * STRIP_COLUMNS) throw new Error('cypress ribbon pushed an unexpected vertex count')
           const lobe = draped.kept[Math.floor(draped.kept.length / 2)].lobeId

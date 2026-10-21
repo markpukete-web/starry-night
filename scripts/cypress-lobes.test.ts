@@ -12,6 +12,7 @@ import {
   buildCypressLobeSolid,
   compiledSectionAt,
   drapeRibbon,
+  stepColours,
   liftToLobes,
   mapCypressLobeSurface,
   RIBBON_LIFT,
@@ -492,6 +493,7 @@ test('drapeRibbon: a seed that fails the lift yields no run, a sample failing ab
     samples: [sample(top - 0.03, section.sourceCenter), sample(top - 0.015, section.sourceCenter), sample(top + 0.01, section.sourceCenter), sample(top + 0.02, section.sourceCenter)],
     seedSample: null as unknown as CypressRibbon['seedSample'],
     colour: [0, 0, 0],
+    colours: [],
     halfWidth: 0.01,
     relief: 1,
     seed: 1,
@@ -508,4 +510,39 @@ test('drapeRibbon: a seed that fails the lift yields no run, a sample failing ab
   restarting.seedSample = restarting.samples[2]
   const restarted = drapeRibbon(restarting, ribbonColumns(restarting, flow.width, flow.height, 1, 5), rings, options, true, 0.004)
   assert.ok(restarted && restarted.kept.length === 3 && Math.abs(restarted.kept[0].h - (top - 0.04)) < 1e-9, 'the run restarts at the first lift after the failure and holds the seed')
+})
+
+test('E3: the drape names the kept run\'s first sample, and stepColours lines the per-sample colours up with the steps through a prefix reset and a suffix trim (Codex E3 F2)', () => {
+  const { flow, options, rings } = realAssets()
+  const main = rings.get('main')!
+  const top = main[main.length - 1].heightFraction
+  const section = compiledSectionAt(main, top - 0.02)!
+  const sample = (h: number, px: number) => ({ px, py: 1 - h, inside: true })
+  const distinct = (n: number): [number, number, number][] => Array.from({ length: n }, (_, k) => [(k + 1) / 10, (k + 1) / 20, (k + 1) / 30])
+  // a prefix of two samples above the rings' top fails and resets the run, the seed and two more lift, two more above fail (a suffix trim)
+  const ribbon: CypressRibbon = {
+    samples: [sample(top + 0.02, section.sourceCenter), sample(top + 0.01, section.sourceCenter), sample(top - 0.05, section.sourceCenter), sample(top - 0.04, section.sourceCenter), sample(top - 0.03, section.sourceCenter), sample(top + 0.01, section.sourceCenter), sample(top + 0.02, section.sourceCenter)],
+    seedSample: null as unknown as CypressRibbon['seedSample'],
+    colour: [0, 0, 0],
+    colours: distinct(7),
+    halfWidth: 0.01,
+    relief: 1,
+    seed: 1,
+  }
+  ribbon.seedSample = ribbon.samples[3]
+  const draped = drapeRibbon(ribbon, ribbonColumns(ribbon, flow.width, flow.height, 1, 5), rings, options, true, 0.004)!
+  assert.ok(draped, 'a run')
+  assert.equal(draped.firstSample, 2, 'the run starts after the failed prefix')
+  assert.equal(draped.kept.length, 3, 'the seed and its two neighbours, the suffix trimmed')
+  assert.deepEqual(stepColours(ribbon, draped), ribbon.colours.slice(2, 5), 'the colours of exactly the kept samples, in order')
+  // the emitted vertices carry them per step
+  const arrays = makeBrushArrays()
+  pushDrapedRibbon(arrays, draped.steps, stepColours(ribbon, draped).map(([r, g, b]) => new Color(r, g, b)))
+  const columns = draped.steps[0].length
+  for (let step = 0; step < 3; step++) {
+    for (let j = 0; j < columns; j++) {
+      const v = (step * columns + j) * 3
+      assert.ok(Math.abs(arrays.colors[v] - ribbon.colours[2 + step][0]) < 1e-6, `step ${step} column ${j} carries sample ${2 + step}'s colour`)
+    }
+  }
 })

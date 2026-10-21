@@ -39,6 +39,11 @@ export const CYPRESS_RIBBON_CONFIG = {
   taper: 0.45,
   reliefSpread: 0.035,
   /**
+   * E3: the colour along the stroke is smoothed over ±this many samples (±9 scan px at the cypress's step, an
+   * 18 px span, a third to a half of a band); 0 keeps each sample's own texel
+   */
+  colourSmoothing: 3,
+  /**
    * how a walk reads the field's sign: `up` takes the texel's direction as baked (the cypress's field is signed up
    * at bake time); `continuous` flips a texel that opposes the walk's last step and stops at a two-step cycle (the
    * land, E2: a horizontal lane's neighbouring texels decode to opposites and trapped the walk, Codex F9)
@@ -59,8 +64,10 @@ export type CypressRibbon = {
   samples: CypressRibbonSample[]
   /** the seed's sample object (an element of `samples`): the kept run's anchor in the lift */
   seedSample: CypressRibbonSample
-  /** source sRGB 0..1 at the middle sample, or the seed's when the middle is a tongue over sky */
+  /** source sRGB 0..1 at the middle sample, or the seed's when the middle is a tongue over sky (one colour per ribbon: the land's) */
   colour: [number, number, number]
+  /** E3: source sRGB 0..1 per sample, the texel under each, sky samples filled from the nearest accepted along the ribbon, smoothed (sampleColours) */
+  colours: [number, number, number][]
   /** crop widths */
   halfWidth: number
   relief: number
@@ -153,6 +160,53 @@ export function bandPigment(painting: ImageData2D, u: number, v: number, halfWid
   return n ? [r / n / 255, g / n / 255, b / n / 255] : sampleColour(painting, u, v)
 }
 
+const toLinear = (c: number) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)
+const toSrgb = (c: number) => (c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055)
+
+/**
+ * E3 (tasks/2026-10-22-cypress-e3-plan.md, E3.1, Codex F7): the colour along a ribbon, one sRGB triple (0..1) per
+ * sample. Each sample takes the accepted texel under it; a sample over an unaccepted texel (the overshoot into
+ * sky) takes the nearest accepted sample's along the ribbon, before the smoothing; the smoothing is a box of
+ * ±`smoothing` samples in linear RGB, back to sRGB for the attribute. A ribbon with no accepted sample takes
+ * `fallback` throughout (the legacy per-ribbon colour). One colour per ribbon averaged a brown band with a green
+ * one where the traced path crosses them (328 of 450 ribbons do): the ribbons' colours spread 9 L against the
+ * painting's tree's 18.5.
+ */
+export function sampleColours(painting: ImageData2D, rows: { uv: [number, number, number, number] }, samples: readonly CypressRibbonSample[], accept: TexelAccept, fallback: [number, number, number], smoothing: number): [number, number, number][] {
+  const raw: ([number, number, number] | null)[] = samples.map((s) => {
+    const [u, v] = paintingUV(rows, s.px, s.py)
+    const x = Math.min(painting.width - 1, Math.max(0, Math.floor(u * painting.width)))
+    const y = Math.min(painting.height - 1, Math.max(0, Math.floor(v * painting.height)))
+    const i = (y * painting.width + x) * 4
+    const [r, g, b] = [painting.data[i], painting.data[i + 1], painting.data[i + 2]]
+    return accept(r, g, b) ? [r / 255, g / 255, b / 255] : null
+  })
+  const accepted: number[] = []
+  raw.forEach((c, k) => { if (c) accepted.push(k) })
+  if (!accepted.length) return samples.map(() => fallback)
+  const filled = raw.map((c, k) => {
+    if (c) return c
+    let best = accepted[0]
+    for (const a of accepted) if (Math.abs(a - k) < Math.abs(best - k)) best = a
+    return raw[best] as [number, number, number]
+  })
+  if (smoothing <= 0) return filled
+  const linear = filled.map((c) => c.map(toLinear) as [number, number, number])
+  return linear.map((_, k) => {
+    let r = 0
+    let g = 0
+    let b = 0
+    let n = 0
+    for (let j = Math.max(0, k - smoothing); j <= Math.min(linear.length - 1, k + smoothing); j++) {
+      r += linear[j][0]
+      g += linear[j][1]
+      b += linear[j][2]
+      n++
+    }
+    return [toSrgb(r / n), toSrgb(g / n), toSrgb(b / n)]
+  })
+}
+
 export function traceCypressRibbons(
   flow: ImageData2D,
   painting: ImageData2D,
@@ -230,7 +284,8 @@ export function traceCypressRibbons(
     const middle = samples[Math.floor(samples.length / 2)]
     const at = middle.inside ? middle : seedSample
     const colour = bandPigment(painting, ...paintingUV(rows, at.px, at.py), halfWidth * (rows.uv[2] - rows.uv[0]), accept)
-    output.push({ samples, seedSample, colour, halfWidth, relief, seed: ribbonSeed })
+    const colours = sampleColours(painting, rows, samples, accept, colour, config.colourSmoothing)
+    output.push({ samples, seedSample, colour, colours, halfWidth, relief, seed: ribbonSeed })
   }
   return output
 }
