@@ -162,6 +162,17 @@ export function useTouchInput({
       if (!point) return
       const now: HoverMark = { ms: event.timeStamp, u: point[0], v: point[1] }
       if (!hoverDue(lastHover, now)) return
+      // D1: once per hover step (B's 60 ms gate), the land is asked before the sky, so a move onto the tree never
+      // surges the sky behind it on the way in (the headed gate caught one escaping before the frame's test)
+      if (landActive() && landStore) {
+        const hit = landPoint(event.clientX, event.clientY)
+        p.overLand = hit !== null
+        if (hit) {
+          p.dirty = false
+          landStore.current = followHeld(landStore.current, hit, p.down ? 1 : LAND_TOUCH.hoverAmp, clock.current)
+          if (LAND_TOUCH.landMasksSky) return
+        }
+      }
       lastHover = now
       push(point[0], point[1], TOUCH_SURGE.hoverAmp * knobRef.current, clock.current, false)
     }
