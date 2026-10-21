@@ -6,11 +6,12 @@
  * own height. No projection and no stencil (the old gate mapped the source crop onto a fixed rectangle, which
  * misregistered once the crop held the flames: Codex F9). A region with fewer than MIN_PIXELS on either side, or
  * a non-finite mean, fails the gate (the old gate passed with no tree at all: NaN ≥ 10 is false, Codex F8).
- * The expected tree area is the painting's mask aligned into the capture (the silhouette gate's transform), and
- * the share of it the render's treeish component does not cover is bounded: a wrongly coloured stroke leaves the
- * treeish selection and would otherwise vanish from the means (code review F4: 77% of the tree painted cyan still
- * passed). Two negative controls are part of G7: a sky-only crop of the same capture must exit 1, and so must a
- * capture whose tree is mostly recoloured.
+ * The expected tree area is the painting's mask scaled into the crop box (the tree's known screen box at the
+ * design camera, an input the render's colours cannot move), and the share of it the render's treeish component
+ * does not cover is bounded: a wrongly coloured stroke leaves the treeish selection and would otherwise vanish from
+ * the means (code review F4: 77% of the tree painted cyan still passed; and an expected area fitted to the render's
+ * own component shrank with the corruption). Two negative controls are part of G7: a sky-only crop of the same
+ * capture must exit 1, and so must a capture whose tree is mostly recoloured.
  *
  *   node scripts/check-cypress-colour.ts <capture.png> [cropX cropY cropW cropH]
  */
@@ -20,7 +21,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 import { decodePNG } from './lib/png.ts'
-import { alignRender, expectedInRender, extent, treeComponent, type Mask } from './lib/silhouette.ts'
+import { expectedInCrop, extent, treeComponent, type Mask } from './lib/silhouette.ts'
 
 const ROOT = resolve(import.meta.dirname, '..')
 const args = process.argv.slice(2)
@@ -28,8 +29,8 @@ const capturePath = resolve(ROOT, args[0] ?? 'output/playwright/e1-measure-2026-
 const [CX, CY, CW, CH] = args.length >= 5 ? args.slice(1, 5).map(Number) : [330, 80, 220, 578]
 const MIN_PIXELS = 1000
 const MAX_DELTA_E = 10
-/** the share of the expected tree area (the painting's mask aligned into the capture) that the render's treeish component does not cover */
-const MAX_REJECTED = 0.35
+/** the share of the expected tree area (the painting's mask scaled into the crop box) that the render's treeish component does not cover; the perspective's residual is about 0.2 */
+const MAX_REJECTED = 0.4
 
 type Lab = { l: number; a: number; b: number }
 type Region = 'base' | 'middle' | 'top'
@@ -101,18 +102,15 @@ const capture = decodePNG(readFileSync(capturePath))
 const renderMask = treeComponent(capture.rgba, capture.width, CX, CY, CW, CH, 1)
 const renderedRegions = regionsOf(capture.rgba, capture.width, CX, CY, renderMask)
 const renderPixels = extent(renderMask).pixels
-let rejectedShare = 1
-if (renderPixels > 0) {
-  const expected = expectedInRender(paintMask, renderMask, alignRender(paintMask, renderMask))
-  let expectedPixels = 0
-  let covered = 0
-  for (let i = 0; i < expected.data.length; i++) {
-    if (!expected.data[i]) continue
-    expectedPixels++
-    covered += renderMask.data[i]
-  }
-  rejectedShare = expectedPixels ? 1 - covered / expectedPixels : 1
+const expected = expectedInCrop(paintMask, CW, CH)
+let expectedPixels = 0
+let covered = 0
+for (let i = 0; i < expected.data.length; i++) {
+  if (!expected.data[i]) continue
+  expectedPixels++
+  covered += renderMask.data[i]
 }
+const rejectedShare = expectedPixels ? 1 - covered / expectedPixels : 1
 
 const deltaE = (one: Lab, two: Lab) => Math.hypot(one.l - two.l, one.a - two.a, one.b - two.b)
 let failed = false
@@ -132,5 +130,5 @@ for (const region of ['base', 'middle', 'top'] as const) {
   if (!finite || difference >= MAX_DELTA_E) failed = true
 }
 if (rejectedShare > MAX_REJECTED) failed = true
-console.log(JSON.stringify({ renderTreePixels: renderPixels, rejectedShare: Number(rejectedShare.toFixed(4)), maxRejected: MAX_REJECTED, comparison: 'regional Lab distribution by thirds of each tree\'s own height, one treeish rule on both sides, the rejected share against the painting\'s mask aligned into the capture (not registered per-pixel ΔE)' }))
+console.log(JSON.stringify({ renderTreePixels: renderPixels, rejectedShare: Number(rejectedShare.toFixed(4)), maxRejected: MAX_REJECTED, comparison: 'regional Lab distribution by thirds of each tree\'s own height, one treeish rule on both sides, the rejected share against the painting\'s mask scaled into the crop box (not registered per-pixel ΔE)' }))
 if (failed) process.exitCode = 1

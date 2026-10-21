@@ -164,10 +164,12 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   pigment per ribbon: the mean of the tree texels across its width at the middle sample. The lift: the compiled rings'
   interpolation, the overshoot to 0.6 laterals, the edges clamped there, the ribbons 0.004 toward the camera. The
   underpaint `#151c1b`. The flicker's tongue band 0.72–0.93 (the ribbons' 75th and 95th percentiles of mean |lateral|;
-  was 0.4–0.75). The stroke body (`cypressStrokeShader.ts`) is the moving sky's, static, blended edges (transparent,
-  depth written), one bristle lane 4.5 cycles across at mix(0.86, 1.08), rake 0.35, rim mix(0.8, 1), sheen 0.06, the
-  dry brush over the tip's last quarter. Gate numbers at retune 4: IoU 0.822 (main 0.787), ΔE 0.9 / 1.4 / 3.2, local
-  contrast 1.06 (the painting 6.45; the bar 4–7.5 is open to Mark's eye), build 34 ms.
+  was 0.4–0.75). Each strip is lifted in five columns across its width (code review F1). The stroke body
+  (`cypressStrokeShader.ts`) is the moving sky's, static, opaque with alphaTest 0.5 (order-independent edges, code
+  review F2), one bristle lane 4.5 cycles across at mix(0.86, 1.08), rake 0.35, rim mix(0.8, 1), sheen 0.06, the dry
+  brush over the tip's last quarter. Gate numbers after the review's fixes: IoU 0.817 (main 0.787), ΔE 1.0 / 1.2 /
+  3.0, the expected area 96% covered, local contrast 0.93 (the painting 6.45; the bar 4–7.5 is open to Mark's eye),
+  build 70 ms.
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)

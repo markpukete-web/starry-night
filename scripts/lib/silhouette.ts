@@ -165,18 +165,35 @@ export function alignRender(paintMask: Mask, renderMask: Mask) {
 }
 
 /**
- * The painting's mask carried into the render's frame by `alignRender`'s transform: the area where the tree is
- * expected in the capture, independent of the capture's colours (code review F4).
+ * The painting's mask scaled into a crop box by its own bounding box: the box's full height, centred across its
+ * width. The box is the tree's known screen box at the design camera (the gates' crop argument), so the expected
+ * area depends on nothing the render's colours can move (code review F4; an expected area fitted to the render's
+ * own component shrank with it when two thirds of the tree were recoloured, and the control passed).
  */
-export function expectedInRender(paintMask: Mask, renderMask: Mask, alignment: ReturnType<typeof alignRender>): Mask {
-  const { paint, render, scale, shift } = alignment
-  const out: Mask = { data: new Uint8Array(renderMask.width * renderMask.height), width: renderMask.width, height: renderMask.height }
-  for (let ry = 0; ry < renderMask.height; ry++) {
-    for (let rx = 0; rx < renderMask.width; rx++) {
-      const y = Math.round(paint.top + (ry - render.top) * scale)
-      const x = Math.round(paint.baseCentre + shift + (rx - render.baseCentre) * scale)
+export function expectedInCrop(paintMask: Mask, cropWidth: number, cropHeight: number): Mask {
+  let left = paintMask.width
+  let right = -1
+  let top = paintMask.height
+  let bottom = -1
+  for (let y = 0; y < paintMask.height; y++) {
+    for (let x = 0; x < paintMask.width; x++) {
+      if (!paintMask.data[y * paintMask.width + x]) continue
+      if (x < left) left = x
+      if (x > right) right = x
+      if (y < top) top = y
+      if (y > bottom) bottom = y
+    }
+  }
+  const out: Mask = { data: new Uint8Array(cropWidth * cropHeight), width: cropWidth, height: cropHeight }
+  if (bottom < 0) return out
+  const scale = (bottom - top + 1) / cropHeight
+  const paintCentre = (left + right) / 2
+  for (let ry = 0; ry < cropHeight; ry++) {
+    for (let rx = 0; rx < cropWidth; rx++) {
+      const y = Math.round(top + ry * scale)
+      const x = Math.round(paintCentre + (rx - cropWidth / 2) * scale)
       if (x < 0 || y < 0 || x >= paintMask.width || y >= paintMask.height) continue
-      out.data[ry * renderMask.width + rx] = paintMask.data[y * paintMask.width + x]
+      out.data[ry * cropWidth + rx] = paintMask.data[y * paintMask.width + x]
     }
   }
   return out
