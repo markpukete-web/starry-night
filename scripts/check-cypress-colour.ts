@@ -133,9 +133,9 @@ if (rejectedShare > MAX_REJECTED) failed = true
 
 // E3 (the cypress's medium): the luminance spread and the light share of each tree, all regions pooled. E1's
 // regional means matched the painting at ΔE 1–3 while the extremes were gone (the ribbons' colours spread 9 L
-// against the painting's 28, 2% light against 19%): a flat olive beside the painting's brown-and-green bands.
+// against the painting's tree's 18.5, 7% light against 10.6%): a flat olive beside the painting's brown-and-green bands.
 const MIN_SPREAD = 15
-const MIN_LIGHT = 0.06
+const MIN_LIGHT = 0.09
 const LIGHT_L = 25
 const pooled = (regions: Record<Region, Lab[]>) => [...regions.base, ...regions.middle, ...regions.top].map((v) => v.l).sort((a, b) => a - b)
 const luminance = (ls: number[]) => {
