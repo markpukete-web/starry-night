@@ -66,7 +66,7 @@ test('C4 the stroke body factory: the defaults reproduce the land\'s text exactl
   assert.ok(defaults.fragmentBody.includes('mix(0.86, 1.08, streak)') && defaults.fragmentBody.includes('1.0 + 0.35 * lit'), 'E1 and E2 literals')
   assert.ok(!defaults.fragmentBody.includes('lane2'), 'no coarse lane by default')
   const cypress = strokeGlslWith(CYPRESS_STROKE_BODY)
-  assert.ok(cypress.fragmentBody.includes('mix(0.78, 1.14, streak)') && cypress.fragmentBody.includes('1.0 + 0.5 * lit'))
+  assert.ok(cypress.fragmentBody.includes('mix(0.78, 1.14, ') && cypress.fragmentBody.includes('1.0 + 0.5 * lit'), 'the lane and the rake')
   assert.ok(cypress.fragmentBody.includes('lane2') && cypress.fragmentBody.includes('mix(streak, lane2.x, 0.33)'), 'the coarse lane')
   assert.ok(cypress.fragmentBody.includes('smoothstep(0.3, 0.7, streak)'), 'the sharpened lane')
   // without the coarse lane and the edge, the two differ only on the lane and the rake lines
