@@ -16,7 +16,7 @@ the plan `tasks/2026-10-21-cypress-e1-plan.md` (Codex's reads and every disposit
 "E1 (the cypress), the plan" down.
 
 **Where things are.**
-- `feat/cypress-e1` (local, not pushed) from `feat/touch-land`: the derivation at 3840 (`2b4c966`), the lobes
+- `feat/cypress-e1` (pushed, PR #15) from `feat/touch-land`: the derivation at 3840 (`2b4c966`), the lobes
   (`465b68c`), the ribbons and gates (`ebee43f`), the flicker band (`0adcf25`), four retunes (`066c88d`,
   `0c341a8`, `3ae5005`), the docs. 142 tests, type-check and lint clean. The retune cap is reached.
 - The gate: every locked criterion passes; the silhouette IoU 0.822 against `main`'s 0.787; the colour ΔE 0.9 /
@@ -37,7 +37,8 @@ the plan `tasks/2026-10-21-cypress-e1-plan.md` (Codex's reads and every disposit
 - [ ] **B's surges at a close orbit** (Mark, 2026-10-21 evening, a screenshot of the right-hand sky): the hover
   lifts read as pale fog patches along the strokes at that angle and zoom; confirmed as B by their fade. Mark's
   call on the `surge` knob (shipped 1) or on the lift's look; not E1's.
-- [ ] After Mark: push, the PR, Codex's PR review (`@codex review` once, at most two re-requests).
+- [x] Pushed and PR #15 opened on Mark's word (2026-10-21 evening, "push it and open the PR"); `@codex review`
+  requested once. Read the review before merging (the timeline first), answer every thread, at most two re-requests.
 - [ ] **E2, the land**, after E1 merges.
 - [ ] **D1, touch**, after E2: revise the plan per its review (the vertex transform and the draped vertex order
   are in place), rebase on the new tree, build.
