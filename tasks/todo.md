@@ -1,6 +1,30 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-21 (night): E2 gated on `feat/land-e2`, Codex's code review closed MERGE; Mark's taste gate next (supersedes the pickup below)
+## Pickup — 2026-10-21 (late night): PR #16 merged, E2 live on `main`; D1 (touch the land) is next
+
+E2 (the land) is on `main` at `7bd583e` and live at starrynight.markma.dev. The record is `tasks/2026-10-21-land-e2.md`
+(the gate table, Codex's two reviews and the PR review, what is open). Read `tasks/lessons.md` from "E2 (the land),
+the domes' second pass". Mark's word on the taste gate, 2026-10-21: "This looks total upgrade!"
+
+1. **D1, touch the land** (`tasks/2026-10-20-touch-land-d1-plan.md`, reviewed by Codex 2026-10-21, banked). First the
+   rebase: the plan targets the village's four foliage rows (`village-foliage`), which E2 retired for the stroked
+   domes (`land-trees-strokes`, `land-trees-solid`) and the ground (`land-ground`), and the cypress it targets is
+   E1's (`cypressStrokes.ts`, per-ribbon attributes). Its model, store, hook and knob are independent of the
+   cladding, so the rebase retargets the bend's attribute and the meshes, then a fresh Codex read of the delta
+   before the build. One session. Mark's one choice in it: `landMasksSky` (a hand on the tree moves the tree and no
+   longer surges the sky behind it; the Lead recommends true).
+2. Before the next land retune, not before D1: the flat gate's masses panel (Codex E2 F4, deferred with evidence).
+3. Open taste items from E2, Mark's calls when he next looks: `row-left` and `bushes` overlap in x at the same z;
+   `row-front`'s leftmost dome is sparse (143 foliage px); `orchard-right` stands against the void at the island's
+   right edge; the root's rim dabs at the home view; his phone's `?perf=1` reading.
+4. Then the explorable question (a rail into the street, a dive into the sky's brushwork, Simon's walk with a world
+   sky), three spikes on captures, see "Proposed to Mark — inside the painting". Time-of-day presets after that.
+5. Housekeeping: three decodes of `painting.jpg` (a shared loader); `--perf` as a bare argument once created a
+   `--perf/` folder (deleted 2026-10-21), the capture script could reject it.
+6. The worker (Gemini, `w4:p5`) was at 99% of its 5-hour window at 20:20 Brisbane on 2026-10-21; Codex (`w4:p4`)
+   had 91% left. The dev server was left running on 5179 for Mark's review.
+
+## Pickup — 2026-10-21 (night): E2 gated on `feat/land-e2`, Codex's code review closed MERGE; Mark's taste gate next (superseded by the late-night pickup above)
 
 E2 (the land) is built and gated on `feat/land-e2`, local only, nothing pushed. Read `tasks/2026-10-21-land-e2.md`
 (the record: the retune table, the measured tables, the gate G1–G11, the deviations, what is open). Read
