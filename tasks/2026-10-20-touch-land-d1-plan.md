@@ -397,3 +397,150 @@ the revision below is the first task when D1 starts, on the new tree. Nothing of
   since `alive` is on); the amplitude's continuity at the release and its exact closure; the vec4-array upload
   (`Float32Array(16)` reaches `uniform4fv` as is); exactly one `<begin_vertex>` in `MeshBasicMaterial`; the
   world-to-local offsets; the single prune owner publishes whole stores.
+
+## Rebase onto E1 and E2 (2026-10-21, before the build)
+
+The plan above was written on 2026-10-20 against the old cypress (48 ribbons, `cypress-solid` the lobe volume) and
+the village's four foliage rows. E1 (PR #15) rebuilt the cypress as 450 front ribbons traced in its own field, and
+E2 (PR #16) retired the foliage rows for the ground strokes and the stroked domes. The design (D1.1, D1.4–D1.6) and
+Codex's fourteen findings stand; what changes is the targets and what they already carry. Mark, 2026-10-21: "Let's
+start D1, rebase the plan first."
+
+### What E1 and E2 already built for D1
+
+- **D1.2 is done.** `AliveInjection.vertexTransform` exists (`aliveMaterial.ts:29`, applied once after
+  `<begin_vertex>`), and `concatInjections` merges injections into one key. E1's stroke body (`strokeGlsl`) is
+  injected that way on the cypress's strokes and the land's strokes. The guard test in `scripts/sky-alive.test.ts`
+  covers the marker.
+- **The cypress carries its height already.** Both cypress geometries carry `aFlicker = [w, h]`, `h` the height
+  axis (0 base, 1 tip), whenever `alive` is on; D1 rides B's flag, which `alive=0` turns off with it, so `h` is
+  always present when the bend is. The bend reads `aFlicker.y`: no `aBend` on the cypress.
+- **The village's foliage rows are gone.** D1.3's `foliageRow` / `face()` work is void. The targets on the island are
+  E2's trees: `land-trees-strokes` (the domes' strips, `aStroke` [along, across] and `aSeed`) and
+  `land-trees-solid` (the domes). The ground (`land-ground`) does not bend: the painting's fields are laid paint,
+  not grass, and a ripple there is a different piece. Mark's call if he wants it.
+
+### The rebased D1.3 — the attribute and the materials
+
+- `buildLandTrees` emits `bend` per strip vertex and per dome vertex: the vertex's height above the terrain under
+  it over the mass's height, clamped to [0, 1] (`(y − islandHeightAt(x, z)) / placed.height`). A strip settled on
+  the dome–terrain contact has 0.005 / height; a crest point 1. The attribute is `aBend` (one float), set by
+  `strokeGeometry` and `plainGeometry` when given, so the ground's geometries never carry it.
+- The trees' strips get their own material, `treeMat`: E1's stroke body concatenated with the bend
+  (`concatInjections('land-trees-bend', strokeGlsl, bendGlsl)`), `uLandParams.y = foliagePush × bendGain`. The
+  ground keeps `landMat` unchanged, so its program and bytes are E2's: G4's no-input comparison has nothing to
+  explain on the ground. The domes' solid gets a `MeshBasicMaterial` with the bend alone (`land-trees-bend-solid`).
+- The cypress: both materials gain the bend through `concatInjections` with the flicker (`alive-flicker-bend-solid`,
+  `cypress-strokes-flicker-bend`), the GLSL reading `aFlicker.y` as the bend weight (a `#define`-free rename:
+  `bendGlsl` takes the weight expression as a parameter, `aBend` on the island, `aFlicker.y` on the cypress).
+- `BrushIsland` and `BrushCypress` take `touch?: { store: RefObject<LandStore>; bendGain: number }`; the frame loops
+  write `uLand` / `uLandCount` from `landUniformValues` with their group's offset (the island's group is at the
+  origin, the cypress's at `BASE`).
+
+### The rebased D1.4 — the raycast's targets (Codex F4, F8)
+
+- The land meshes a hit counts on: `cypress-solid` (E1's solid; the group `cypress`, the mesh named now) and
+  `land-trees-solid`. The strips and the ribbons are not raycast (thin, over the body).
+- The occluders raycast with them, so a hedge behind a house or the island's rim never wins: `village-solid`,
+  `village-skin`, `village-paint`, `land-ground`, and the island's solid (named `island-solid` now). The hit is land
+  only when the nearest intersection is on a land mesh.
+- The domes' solid is wound outward since `b3b2bc6` and front-side, so the nearest hit on a dome is its near shell.
+  The cypress's solid is `DoubleSide`; `[0]` takes the nearest, accepted as before.
+- The hit test runs once per frame on the latest pointer position in the hook's own `useFrame` (F8); releases on
+  `pointerup`, `pointercancel`, `pointerleave` (F3) and `visibilitychange` are immediate.
+
+### What the rebase does not change
+
+D1.1's model with F1 (the smooth field: the push proportional to `away / radius · (1 − x²)²`), F5 (the amplitude
+ramps to a new target over `rise`), F7 (the gain once, in the material), F10 (admission against the touches live at
+`now`); D1.5's knob (`bend`, key `touchBend`, `TUNING_FIELDS` in `vite.config.ts`, F6); D1.6's store ownership and
+the single prune at priority −1; the gate G1–G9, with G5's mask from `__landBounds()` now the cypress's and the
+trees' screen rects, and G6's eye on the domes' strips staying on their shells through a touch (the same field on
+the strip and the dome under it, as E1's lift keeps the ribbons on the lobes).
+
+### Constants to revisit on the new trees
+
+`foliagePush` 0.035 was set for hedge rows 0.13–0.25 tall; the domes are 0.13–0.30. It starts there; the knob and
+Mark's eye set it. `radius` 0.55 covers a dome row's neighbour (the orchard's domes are 0.35–0.47 apart): a touch
+on one dome stirs the next, which reads as a cluster, as the painting's clumps are.
+
+### Mark's two choices
+
+1. `landMasksSky` true: a hand on the tree moves the tree and no longer surges the sky behind it (recommended).
+2. The ground stays still (recommended); a ripple of the fields is a separate slice if wanted.
+
+### The order
+
+1. Codex reads this rebase against the current code (`scratch/touch-land-2026-10-20/brief-rebase-read.md`), bounded
+   to the delta: the attribute's definition, the material split, the raycast set, anything E1 or E2 changed that the
+   plan still assumes. One read.
+2. The build on `feat/touch-land-d1` from `main` (`7bd583e` plus the docs commit): the model and its tests red first
+   (D1.1 with F1/F5/F10), then the attribute and the materials, then the input, then the knob, then the gate.
+
+### Codex's read of the rebase (2026-10-21, `scratch/touch-land-2026-10-20/rebase-read-report.md`): REVISE, R1–R2 P2, R3–R4 P3
+
+Each checked against the code; each holds. The dispositions, folded into the build (no second read: the code
+review at G9 checks them in code):
+
+- R1 (P2) the cypress ribbons' `aFlicker.y` is the step's centre height repeated across the seven columns, so it is
+  not the solid's `1 − sourceV` at the same place (268,944 of 315,875 strip vertices differ, up to 0.012) → the
+  cypress's bend weight is the vertex's own local height, `clamp(transformed.y / HEIGHT, 0, 1)`, evaluated in the
+  vertex shader on both materials: the same field on the ribbon and the solid by construction, no attribute. The
+  bend GLSL takes the weight expression as its parameter; the island passes `aBend`, the cypress the expression.
+  `aFlicker` is untouched.
+- R2 (P2) the ground ribbons in the nearest-hit set reject a bush through fragments the stroke shader discards (a
+  design-camera ray to `row-right` hits a ground triangle whose across coordinate is beyond the rounded stroke's
+  radius) → the occluders are opaque bodies only: `island-solid`, `village-solid`, `village-skin`, `village-paint`;
+  the ground's and the trees' strips are never raycast; the island's solid is the ground's proxy, 0.02 under the
+  strokes. The reported ray is a regression test's.
+- R3 (P3) `cypress`, `cypress-solid`, `island-solid` are not assigned today → the build assigns them (the cypress
+  group and its solid mesh, the island's solid mesh); the hook resolves every target and occluder by name once, and
+  in development throws on a missing one before enabling input; `__landBounds()` reports which it found.
+- R4 (P3) `strokeGlsl` lacks `uniforms` → the composition is `concatInjections('land-trees-bend', { uniforms: {},
+  ...strokeGlsl }, bendInjection)`, the bend injection built with its own uniform objects and empty body fields.
+
+### The code review (G9)
+
+Codex (`w4:p4`, read-only, 2026-10-21 night, `scratch/touch-land-2026-10-20/code-review-report.md`, against
+`375d825`; it ran the hook's transpiled body with shims, the real design camera and the shipped cypress solid, the
+model, three r184's uniform upload, a GLSL twin, the supplied pinned frames and the gate's logs): **REVISE**, six
+P2s and two P3s. Each checked against the code; each holds. The dispositions, all in `9136dc4`:
+
+- F1 (P2) a rebind of the input effect (a rotation replaces `home`) starts a closure with no press in it, so the
+  old hold is never released → the cleanup releases the held touch at the clock and resets the pointer's state;
+  disabled, the frame loop resets it too.
+- F2 (P2) the up releases the hold but leaves the pending move, so the next frame rebuilds a hold from the
+  pre-release position → the up consumes the pending move; the hover resumes on the next real move (headed: no
+  hold after a same-frame tap until the pointer moves).
+- F3 (P2) a press held across the knob's zero came back as a full press when the knob was restored → the up
+  releases a hold whatever the gain, and at gain 0 the frame loop empties the land as when disabled.
+- F4 (P2) every down is a hold, so a short real tap released mid-ramp and a same-frame tap bent nothing, unlike
+  the seam's `pushTap` → a classified tap releases at `max(now, t0 + rise)`: the ramp finishes, the swing starts
+  from the target, the seam and the visitor share the transition (L9; headed: a same-frame tap releases at
+  t0 + 0.12 at amplitude 1).
+- F5 (P2) `test:sky` enumerated the files and never ran `land-touch.test.ts` → added; 178 pass.
+- F6 (P2) the stale over-land early return dropped the first sky hover after leaving the tree when the pointer
+  then stood still → gone; at an admitted hover step the land is asked on the current position, at most once per
+  `hoverMs`, and a move off the tree releases the hold and surges the sky in the same step (headed: one move off,
+  then still: released, one sky surge).
+- F7 (P3) the mesh cache kept a detached mesh pickable → no cache; six `getObjectByName` lookups per pick.
+- F8 (P3) the weight test passed a binary field → each mass built alone, every vertex's weight checked against
+  the clamped height over that mass's height, 10,000+ intermediate values.
+- Noted, not fixed: `__landBounds` projects the static boxes without frustum clipping (no visitor route to a
+  reversed camera); the G5 painted-light row was missing and is captured now (a hold on the cypress at t0 5: 0 px
+  at t0, 55,188 at +1 inside the cypress's box, the same box as the moving sky's).
+
+The confirmation read (`confirmation-report.md`): F1–F8 CLOSED on the hook shims and the strengthened test (the
+binary field now fails at `row-front` vertex 0), the re-run G3/G4 rows at 0; one new P2 in the F6 fix:
+
+- F9 (P2) a masked land step returned without marking the hover, so a second move over the tree within 60 ms
+  skipped the throttled land block and fell through to a sky surge → `6fb8d8d`: the separate throttle is gone;
+  B's own hover gate (60 ms and a step of `hoverU`) governs the land step, marked on masked steps too, so a move
+  within the gate is not admitted and the frame's test takes it (headed: the confirmation's two-move sequence and a
+  40-move sweep on the trunk add no sky surge; one move off then still releases the hold and surges once).
+
+The second confirmation read (`confirmation-report-2.md`): **MERGE**. F9 CLOSED on the shim (the two-move sequence
+holds with zero sky surges; the F6 sequence releases with exactly one); B's sky-only path identical before and after
+under eight snapshots, with active land, absent land and gain zero. One consequence noted as intended: a masked
+land step consumes B's hover gate, so a sole sky move within 60 ms of it waits for the next admitted step while the
+frame's test releases the hold.

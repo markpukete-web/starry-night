@@ -159,3 +159,48 @@ test('no emitted strip vertex lies inside its own mass\'s domes after the contac
     assert.equal(buried, 0, `${mass.id}: ${buried} vertices inside a dome (the deepest at ${worst.toFixed(4)} of the ellipsoid)`)
   }
 })
+
+test('D1: every tree vertex carries a bend weight, its height above the terrain under it over the mass\'s height, in [0, 1]: a contact point near 0, a crest 1', () => {
+  const flowPng = decodePNG(readFileSync(new URL('../public/reference/land-flow.png', import.meta.url)))
+  const flow: ImageData2D = { data: new Uint8ClampedArray(flowPng.rgba), width: flowPng.width, height: flowPng.height }
+  const baked = JSON.parse(readFileSync(new URL('../public/reference/land-masses.json', import.meta.url), 'utf8')) as BakedMass[]
+  const painting: ImageData2D = { data: new Uint8ClampedArray([58, 92, 96, 255]), width: 1, height: 1 }
+  const trees = buildLandTrees(flow, painting, baked)
+  // the field itself, per vertex against its own mass's height (a binary field passed the extrema checks, Codex D1
+  // review F8): each mass built alone, every weight the clamped height over the terrain over that mass's height
+  let checked = 0
+  let intermediate = 0
+  for (const mass of LAND_MASSES) {
+    const alone = buildLandTrees(flow, painting, baked, 0x7ee5, [mass])
+    const height = placeMass(mass).height
+    for (const [weights, positions] of [[alone.bend, alone.strokes.positions], [alone.solidBend, alone.solid.positions]] as const) {
+      for (let i = 0; i < weights.length; i++) {
+        const above = positions[i * 3 + 1] - islandHeightAt(positions[i * 3], positions[i * 3 + 2])
+        const expected = Math.min(1, Math.max(0, above / height))
+        assert.ok(Math.abs(weights[i] - expected) < 1e-9, `${mass.id}: weight ${weights[i]} at vertex ${i}, expected ${expected.toFixed(4)}`)
+        checked++
+        if (expected > 0.1 && expected < 0.9) intermediate++
+      }
+    }
+  }
+  assert.ok(checked > 50000 && intermediate > 10000, `${checked} weights checked, ${intermediate} intermediate`)
+  assert.equal(trees.bend.length, trees.strokes.positions.length / 3, 'one weight per strip vertex')
+  assert.equal(trees.solidBend.length, trees.solid.positions.length / 3, 'one weight per dome vertex')
+  for (const [name, weights, positions] of [['strips', trees.bend, trees.strokes.positions], ['domes', trees.solidBend, trees.solid.positions]] as const) {
+    let lowest = Infinity
+    let highest = -Infinity
+    for (let i = 0; i < weights.length; i++) {
+      const w = weights[i]
+      assert.ok(Number.isFinite(w) && w >= 0 && w <= 1, `${name}: weight ${w} at vertex ${i}`)
+      lowest = Math.min(lowest, w)
+      highest = Math.max(highest, w)
+      // the weight is the vertex's own height over the terrain under it, over its mass's height: check it against the position
+      // a strip never goes under the terrain (the contact policy); a dome on a slope is buried on its uphill side, weight 0 there
+      const y = positions[i * 3 + 1] - islandHeightAt(positions[i * 3], positions[i * 3 + 2])
+      if (name === 'strips') assert.ok(y >= -1e-9, `${name}: a vertex under the terrain at ${i}`)
+      if (y <= 0) assert.equal(w, 0, `${name}: a buried vertex weighs 0`)
+    }
+    assert.ok(lowest <= 0.05, `${name}: the lowest weight ${lowest.toFixed(3)} (a contact point)`)
+    assert.ok(highest >= 0.95, `${name}: the highest weight ${highest.toFixed(3)} (a crest)`)
+  }
+})

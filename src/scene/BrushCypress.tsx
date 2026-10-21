@@ -13,6 +13,7 @@ import { useImageData } from './useImageData'
 import { concatInjections, injectAlive } from './aliveMaterial'
 import { flickerGlsl, flickerUniformValues, flickerWeight, lobeHeight, pushFlicker, ribbonFlicker } from './cypressFlicker'
 import { strokeGlsl } from './cypressStrokeShader'
+import { bendInjection, LAND_TOUCH, landUniformValues, type LandStore } from './landTouch'
 import { ALIVE_DEFAULTS, type AliveTuning } from './skyAlive'
 
 /**
@@ -55,6 +56,7 @@ export function BrushCypress({
   alive = false,
   tuning = ALIVE_DEFAULTS,
   ready: readyRef,
+  touch,
 }: {
   /** The one sky clock (second pass, A3): pinned, advanced, or 0 while paused. */
   clock?: RefObject<number>
@@ -63,7 +65,10 @@ export function BrushCypress({
   tuning?: AliveTuning
   /** C (arrival): true once the tree has its geometry; the arrival waits for it. */
   ready?: RefObject<boolean>
+  /** D1 (touch the land): the store the input hook writes, the sky clock it stamps, the bend knob. Absent, the tree is E1's, bit for bit. */
+  touch?: { store: RefObject<LandStore>; clock: RefObject<number>; bendGain: number }
 } = {}) {
+  const bend = touch !== undefined
   const paintingData = useImageData('/reference/painting.jpg')
   // the flow field's failure path (Codex F11): the tree still draws its underpaint, and the arrival goes on
   const [flowFailed, setFlowFailed] = useState(false)
@@ -197,11 +202,18 @@ export function BrushCypress({
   // underpaint, the strokes carry the sky's stroke body; with `alive` the flicker multiplies after it
   const solidUniforms = useMemo(() => flickerUniforms(true), [])
   const strokeUniforms = useMemo(() => flickerUniforms(false), [])
+  // D1: the bend's weight is the vertex's own local height, the same field on the ribbons and the solid by construction
+  // (the rebase's R1: the ribbons' aFlicker.y is the step's centre height, not each column's)
+  const solidBend = useMemo(() => bendInjection({ weight: `clamp(transformed.y / ${HEIGHT.toFixed(1)}, 0.0, 1.0)` }), [])
+  const strokeBend = useMemo(() => bendInjection({ weight: `clamp(transformed.y / ${HEIGHT.toFixed(1)}, 0.0, 1.0)` }), [])
   const solidMaterial = useMemo(() => {
     const material = new MeshBasicMaterial({ color: CYPRESS_UNDERPAINT, toneMapped: false, side: DoubleSide })
-    if (alive) injectAlive(material, { key: 'alive-flicker-solid', uniforms: solidUniforms, ...flickerGlsl })
+    const flicker = { uniforms: solidUniforms, ...flickerGlsl }
+    if (alive && bend) injectAlive(material, concatInjections('alive-flicker-bend-solid', flicker, solidBend))
+    else if (alive) injectAlive(material, { key: 'alive-flicker-solid', ...flicker })
+    else if (bend) injectAlive(material, concatInjections('bend-solid', solidBend))
     return material
-  }, [alive, solidUniforms])
+  }, [alive, bend, solidUniforms, solidBend])
   const strokeMaterial = useMemo(() => {
     // opaque, with the shaped alpha as a hard test: the flanks are the geometry's own edges (the canvas's MSAA
     // smooths them) and the rounded head and tail are cut at half alpha. Order-independent in one unsorted mesh
@@ -209,9 +221,11 @@ export function BrushCypress({
     // first; alpha-to-coverage, retune 3, dithered every edge to a stipple at 1:1)
     const material = new MeshBasicMaterial({ vertexColors: true, toneMapped: false, side: DoubleSide, alphaTest: 0.5 })
     const body = { uniforms: {}, ...strokeGlsl }
-    injectAlive(material, alive ? concatInjections('cypress-strokes-flicker', body, { uniforms: strokeUniforms, ...flickerGlsl }) : concatInjections('cypress-strokes', body))
+    const flicker = { uniforms: strokeUniforms, ...flickerGlsl }
+    const parts = [body, ...(alive ? [flicker] : []), ...(bend ? [strokeBend] : [])]
+    injectAlive(material, concatInjections(`cypress-strokes${alive ? '-flicker' : ''}${bend ? '-bend' : ''}`, ...parts))
     return material
-  }, [alive, strokeUniforms])
+  }, [alive, bend, strokeUniforms, strokeBend])
 
   // the knob, through the uniforms: a slider never rebuilds the tree
   useLayoutEffect(() => {
@@ -222,13 +236,33 @@ export function BrushCypress({
     /* eslint-enable react-hooks/immutability */
   }, [alive, solidUniforms, strokeUniforms, tuning])
 
+  // D1's knob, through the uniforms
+  useLayoutEffect(() => {
+    if (!touch) return
+    /* eslint-disable react-hooks/immutability -- intentional R3F uniform writes */
+    ;(solidBend.uniforms.uLandParams.value as Float32Array)[1] = LAND_TOUCH.push * touch.bendGain
+    ;(strokeBend.uniforms.uLandParams.value as Float32Array)[1] = LAND_TOUCH.push * touch.bendGain
+    /* eslint-enable react-hooks/immutability */
+  }, [touch, solidBend, strokeBend])
+
   // the sky clock as the sky's frame loop last wrote it (one frame behind, like the halos); 0 off or paused
-  /* eslint-disable react-hooks/immutability -- R3F render-loop writes: the time uniform */
+  /* eslint-disable react-hooks/immutability -- R3F render-loop writes: the time uniform, the touch list */
   useFrame(() => {
-    if (!alive) return
-    const t = clock?.current ?? 0
-    solidUniforms.uTime.value = t
-    strokeUniforms.uTime.value = t
+    if (alive) {
+      const t = clock?.current ?? 0
+      solidUniforms.uTime.value = t
+      strokeUniforms.uTime.value = t
+    }
+    if (touch) {
+      // the touches in the tree's frame: the group sits at BASE
+      const { entries, count } = landUniformValues(touch.store.current, touch.clock.current, [BASE.x, BASE.y, BASE.z])
+      for (const injection of [solidBend, strokeBend]) {
+        const list = injection.uniforms.uLand.value as Float32Array
+        list.fill(0)
+        list.set(entries)
+        injection.uniforms.uLandCount.value = count
+      }
+    }
   })
   /* eslint-enable react-hooks/immutability */
 
@@ -251,9 +285,9 @@ export function BrushCypress({
 
   if (!geometries) return null
   return (
-    <group position={BASE}>
-      <mesh geometry={geometries.solid} material={solidMaterial} renderOrder={2} />
-      <mesh geometry={geometries.strokes} material={strokeMaterial} renderOrder={3} />
+    <group position={BASE} name="cypress">
+      <mesh name="cypress-solid" geometry={geometries.solid} material={solidMaterial} renderOrder={2} />
+      <mesh name="cypress-strokes" geometry={geometries.strokes} material={strokeMaterial} renderOrder={3} />
     </group>
   )
 }

@@ -6,6 +6,7 @@ import { PaintingFlowSky3D, type SkyStyle } from './PaintingFlowSky3D'
 import type { AliveTuning } from './skyAlive'
 import { emptyTouchStore, type TouchStore } from './touchSurge'
 import { useTouchInput } from './useTouchInput'
+import { emptyLandStore, type LandStore } from './landTouch'
 import { ARRIVAL, ArrivalClock, arrivalCamera, arrivalFrame, rememberArrived } from './arrival'
 // (ARRIVAL.reveal feeds the chrome's fade-in through a custom property; the clock owns every other constant)
 import {
@@ -238,8 +239,12 @@ function Scene({
   const skyClock = useRef(0)
   // B: the touch store the input hook writes and the sky reads; off while paused (the sky clears it too)
   const touchStore = useRef<TouchStore>(emptyTouchStore())
+  // D1: the land-touch store the hook writes and prunes; the cypress and the trees read it
+  const landStore = useRef<LandStore>(emptyLandStore())
+  const bendGain = aliveTuning?.bend ?? 1
   // C: no touch until the arrival is done; a tap during it is the skip
-  useTouchInput({ enabled: touch && !reduced && !arriving, store: touchStore, clock: skyClock, home: camera, knob: aliveTuning?.surge ?? 1 })
+  useTouchInput({ enabled: touch && !reduced && !arriving, store: touchStore, clock: skyClock, home: camera, knob: aliveTuning?.surge ?? 1, land: touch ? { store: landStore, bendGain } : undefined })
+  const landTouch = useMemo(() => (touch ? { store: landStore, clock: skyClock, bendGain } : undefined), [touch, bendGain])
 
   return (
     <>
@@ -266,7 +271,7 @@ function Scene({
       {measurePerformance && <PerfProbe />}
       {arrival && <ArrivalDriver home={camera} reduced={still} onDone={onArrived} {...refs} />}
       <Suspense fallback={null}>
-        {debug !== 'flow' && <Diorama debug={debug === 'stage' ? 'stage' : 'final'} clock={skyClock} alive={alive} tuning={aliveTuning} cypressReady={arrival ? refs.cypressReadyRef : undefined} landReady={arrival ? refs.landReadyRef : undefined} />}
+        {debug !== 'flow' && <Diorama debug={debug === 'stage' ? 'stage' : 'final'} clock={skyClock} alive={alive} tuning={aliveTuning} cypressReady={arrival ? refs.cypressReadyRef : undefined} landReady={arrival ? refs.landReadyRef : undefined} touch={landTouch} />}
         {debug !== 'stage' && (
           <PaintingFlowSky3D
             paused={reduced}

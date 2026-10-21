@@ -9,7 +9,7 @@ import { saveDefaults } from './scene/tuning'
  * aliased out of production. On the dev server "set as default" writes the values to sky-tuning.json (the
  * shipped defaults) through the same `/__set-tuning` writer; elsewhere "copy" puts them on the clipboard.
  */
-const STEP: AliveTuning = { gust: 0.01, lift: 0.01, shimmer: 0.05, breath: 0.1, flicker: 0.05, glimmer: 0.05, surge: 0.05 }
+const STEP: AliveTuning = { gust: 0.01, lift: 0.01, shimmer: 0.05, breath: 0.1, flicker: 0.05, glimmer: 0.05, surge: 0.05, bend: 0.05 }
 const LABEL: Record<keyof AliveTuning, string> = {
   gust: 'gust (tempo surge)',
   lift: 'lift (brightness on a surge)',
@@ -18,6 +18,7 @@ const LABEL: Record<keyof AliveTuning, string> = {
   flicker: 'flicker (cypress flame)',
   glimmer: 'glimmer (village windows)',
   surge: 'surge (touch, B)',
+  bend: 'bend (touch on the land, D1)',
 }
 
 export function AliveTuner({
@@ -33,7 +34,7 @@ export function AliveTuner({
   touch?: boolean
 }) {
   const [status, setStatus] = useState('')
-  const knobs = touch ? ALIVE_KNOBS : ALIVE_KNOBS.filter((name) => name !== 'surge')
+  const knobs = touch ? ALIVE_KNOBS : ALIVE_KNOBS.filter((name) => name !== 'surge' && name !== 'bend')
 
   const summary = knobs.map((name) => `${name}=${tuning[name]}`).join(' ')
   const shareUrl = () => {

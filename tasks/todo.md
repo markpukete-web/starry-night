@@ -1,6 +1,51 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-21 (night): E2 gated on `feat/land-e2`, Codex's code review closed MERGE; Mark's taste gate next (supersedes the pickup below)
+## Pickup — 2026-10-22 (small hours): D1 built and gated on `feat/touch-land-d1`, Codex's code review in flight; Mark's taste gate next (supersedes the pickup below)
+
+D1 (touch the land) is built and gated on `feat/touch-land-d1`, local only, nothing pushed. Read
+`tasks/2026-10-20-touch-land-d1.md` (the record: what was built, the deviations, the gate G1–G8) and the plan's
+rebase and read sections. Read `tasks/lessons.md` from "D1 (touch the land)".
+
+1. Codex's code review (G9) answered: REVISE on `375d825` (F1–F6 P2, F7–F8 P3), all eight fixed in `9136dc4` with
+   headed regressions, 178 tests; the dispositions in the plan's Review section and the record's G9 row; the
+   confirmation read closed F1–F8 and found F9 (the masked step's fall-through), fixed in `6fb8d8d`; the second,
+   last confirmation read: MERGE. G9 closed. The head is `6fb8d8d` plus docs.
+2. Mark's taste gate on localhost (the dev server on 5179 serves the branch; `?tune=1` shows the `bend` slider on the
+   touch route): a hover and a tap on the cypress, a drag across it, a hover on the bushes; the push, the dip, the
+   swing. His phone `?perf=1` reading.
+3. Push and PR on his word, the Codex PR review, merge. Then the explorable question's three spikes (see the
+   direction below), time-of-day presets after.
+4. Two dev servers were left running: the branch on 5179 and a `main` worktree on 5180 (the session scratchpad's
+   `main-wt`, for G3/G4's byte-identity rows). `git worktree prune` after removing it.
+
+## Pickup — 2026-10-21 (late night): PR #16 merged, E2 live on `main`; D1 (touch the land) is next (superseded by the pickup above)
+
+E2 (the land) is on `main` at `7bd583e` and live at starrynight.markma.dev. The record is `tasks/2026-10-21-land-e2.md`
+(the gate table, Codex's two reviews and the PR review, what is open). Read `tasks/lessons.md` from "E2 (the land),
+the domes' second pass". Mark's word on the taste gate, 2026-10-21: "This looks total upgrade!"
+
+1. **D1, touch the land** (`tasks/2026-10-20-touch-land-d1-plan.md`, reviewed by Codex 2026-10-21, banked). First the
+   rebase: the plan targets the village's four foliage rows (`village-foliage`), which E2 retired for the stroked
+   domes (`land-trees-strokes`, `land-trees-solid`) and the ground (`land-ground`), and the cypress it targets is
+   E1's (`cypressStrokes.ts`, per-ribbon attributes). Its model, store, hook and knob are independent of the
+   cladding, so the rebase retargets the bend's attribute and the meshes, then a fresh Codex read of the delta
+   before the build. One session. Mark's one choice in it: `landMasksSky` (a hand on the tree moves the tree and no
+   longer surges the sky behind it; the Lead recommends true).
+2. Before the next land retune, not before D1: the flat gate's masses panel (Codex E2 F4, deferred with evidence).
+3. Open taste items from E2, Mark's calls when he next looks: `row-left` and `bushes` overlap in x at the same z;
+   `row-front`'s leftmost dome is sparse (143 foliage px); `orchard-right` stands against the void at the island's
+   right edge; the root's rim dabs at the home view; his phone's `?perf=1` reading.
+4. Then the explorable question (a rail into the street, a dive into the sky's brushwork, Simon's walk with a world
+   sky), three spikes on captures, see "Proposed to Mark — inside the painting". Mark, 2026-10-21, asked whether the
+   walk is still coming ("a 3D landing site like how Simon Lee does", "I meant the walk, explorable question"): it
+   is the next question after D1, not ruled out; the two locks (free-fly, the orbit limits) are his to lift for an
+   authored rail, and the camera-locked sky is the technical gap the spikes must cost. Time-of-day presets after that.
+5. Housekeeping: three decodes of `painting.jpg` (a shared loader); `--perf` as a bare argument once created a
+   `--perf/` folder (deleted 2026-10-21), the capture script could reject it.
+6. The worker (Gemini, `w4:p5`) was at 99% of its 5-hour window at 20:20 Brisbane on 2026-10-21; Codex (`w4:p4`)
+   had 91% left. The dev server was left running on 5179 for Mark's review.
+
+## Pickup — 2026-10-21 (night): E2 gated on `feat/land-e2`, Codex's code review closed MERGE; Mark's taste gate next (superseded by the late-night pickup above)
 
 E2 (the land) is built and gated on `feat/land-e2`, local only, nothing pushed. Read `tasks/2026-10-21-land-e2.md`
 (the record: the retune table, the measured tables, the gate G1–G11, the deviations, what is open). Read

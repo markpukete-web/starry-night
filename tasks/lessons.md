@@ -2786,3 +2786,22 @@ after PR #8 merged (`246e817`, "Merge it then start the second pass").
 - **A guard a reviewer can prove unreachable is dead code with a misleading test.** The two-step cycle guard could not
   fire under the sign continuity (two steps end at least √2 steps from two back), and its test stayed green with the
   guard removed (Codex E2 F6). Removing it is the fix; the test is renamed to what it proves.
+
+## D1 (touch the land), the build and the gate, 2026-10-21
+
+- **A dev server started by hand binds `localhost`, which is `::1` here, so a tool that dials `127.0.0.1` is
+  refused.** The pinned-frame capture failed with "no canvas" against both servers while Playwright and curl on
+  `localhost` worked; a patched copy of the tool printed Chrome's "127.0.0.1 refused to connect" page. Start Vite
+  with `--host 127.0.0.1` when a script will reach it; `localhost` in a browser still resolves to it.
+- **A pinned sky clock freezes every ramp that reads it.** With `__skyTime` pinned, a hover's amplitude stays at its
+  t0 value of zero, so a headed test cannot compare pixels before and after a real hover at one pinned time. Read
+  the stores for the input path and take the pixels from injected touches at pinned times with an explicit t0.
+- **Differing pixels count area, not magnitude.** A 7% push moved 42,000 pixels and a full push 55,000: every
+  sub-pixel shift changes an alpha-cut edge and a bristle lane. Use the count for "where", the crop for "how much".
+- **A reviewer's "same field" finding can be met by removing data, not adding it.** R1 asked for a per-vertex height
+  on the cypress to match the solid; evaluating the vertex's own local position in the shader gave the same field
+  on both materials with no attribute at all.
+- **The frame's hit test is one move behind the pointer.** A move onto the tree surged the sky before the next
+  frame flipped the mask; asking the land once per hover step, inside B's 60 ms gate, closed it at a bounded cost.
+- **Lint the brief before the dispatch, not after.** Two briefs went out with semicolon chains because the dispatch
+  ran in the same command as the lint. Lint first, read the count, then send.
