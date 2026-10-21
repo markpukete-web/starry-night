@@ -1,0 +1,104 @@
+# E3 — the cypress's medium: the bands, the lights and the relief. Plan, 2026-10-22
+
+Mark, 2026-10-21, after D1 was gated: "Do you think the cypress still have room to improve?" and, on the Lead's
+read, "Go for your recommendations for the cypress." E1 (PR #15) moved the tree from a cut-out to a stroked body
+with the silhouette and the regional colour means close to the painting (IoU 0.817, ΔE 1.0 / 1.2 / 3.0). This pass
+is the medium: what the strokes carry, not where they go. The lobes, the row table, the tracer's field and the
+ribbon lengths are untouched. Built on `feat/cypress-medium` from D1's head (`399a956`, so D1's bend rides along; the
+bend weight is the vertex's own height and does not care how many ribbons there are), in a worktree served on
+port 5181 so Mark's localhost on 5179 keeps D1 for his gate. Lead Claude (`w4:p1`), reviewer Codex (`w4:p4`).
+
+## What the painting's cypress is, measured tonight (`scratch/cypress-e1-2026-10-21/painting-mid-1to1.png`, the 3840 scan)
+
+- **Long bands, not short strokes.** The body is vertical bands 30–60 px wide at the scan that run 150 px to the
+  whole crop (520 px) tall, bending with the flame. The Lead's first recommendation (shorter strokes) was wrong
+  and is withdrawn: E1's ribbon lengths (0.07–0.30 of the crop height, 110–480 px) already match the body. The
+  short curling strokes are at the tongues' tips only.
+- **Light against dark, band by band.** Brown and ochre bands sit beside near-black greens with hard edges. The
+  tree texels at 1600 px (`TREE_TEXEL` inside the row crop, 60,842 of them): L p10 7.2, p50 14.4, p90 35.1, a
+  spread of 28; 18.7% are light (L > 25).
+- **Fine bristle lines inside each band**, and lit edges. By the July recipe (a 3 × 3 standard deviation of the
+  grey image) the body measures 11.1 at the render's scale (0.371 of the scan) on a 100 × 120 window, 20.1 at the
+  scan's.
+
+## What ours is (`scratch/touch-land-2026-10-20/gate/none2/none-t5.3.png`, D1's head)
+
+- The 450 front ribbons' colours: L p10 11.3, p50 15.0, p90 20.1, a spread of 9; 2.2% light. The rendered tree's
+  pixels: spread 11.8, 7.1% light (the shader's rim and sheen add some). The regional means match the painting's
+  (ΔE 1–3) while the extremes are gone: the flat gate (`reference/derived/cypress-flat-gate.png`) shows one dark
+  olive beside the painting's brown-and-green.
+- The local contrast 1.07 by the same recipe and window (the painting 11.1).
+- **Why the means flatten.** `bandPigment` takes one colour per ribbon, the mean of the tree texels in a window at
+  the middle sample. A median in the same window gives the same spread (8.4): the loss is not mean against median.
+  Along each ribbon the texels under its samples spread 18 (p90 25, 10% light), and 328 of 450 ribbons cross
+  bands along their length (their own p90 − p10 above 12): the traced path drifts across the bands as they bend,
+  and one colour per ribbon averages a brown band with a green one.
+- **Why the lights are under-sampled.** Under the ribbons' samples 10% of texels are light against the painting's
+  18.7%: the lightest texels sit on the flanks and at the tongues' edges, where the overshoot is cut and the seeds
+  are not weighted.
+
+## Design
+
+### E3.1 — colour along the stroke (`cypressStrokes.ts`, `BrushCypress.tsx`)
+
+Each ribbon carries the painting's colour at each sample, smoothed along the ribbon over ±3 samples (9 px at the
+scan, a third of a band's width), in place of one mean per ribbon: `traceCypressRibbons` adds `colours` per sample
+(the accepted texel under the sample, a sample over sky taking the nearest accepted along the ribbon; the
+tracer's `colour` stays for the land and the tests). `BrushCypress` passes the kept run's colours per step to
+`pushDrapedRibbon` (which takes a colour per step today and receives one tint repeated), each × the ribbon's
+relief. Simulated on the shipped ribbons: spread 15.2 (from 9), 7.6% light (from 2.2%); the regional means move
+by under 1 L. A ribbon that crosses from a brown band into a green one shows it, as the painting's dragged strokes
+do.
+
+### E3.2 — the lights (`cypressStrokes.ts`, `BrushCypress.tsx`)
+
+A second trace of short ribbons seeded on light texels: `lightSeeds` 120 front ribbons, seeds accepted only where
+the painting's texel is light (L > 25) and inside the mask, lengths 0.05–0.12 of the crop height, half-widths
+0.02–0.04, lifted 0.002 above the body's ribbons, coloured as E3.1 and traced in the same field. They are the
+painting's ochre flicks and lit flanks where they are. Expected: the light share under the ribbons from 10% toward
+15%, the rendered light share from 7% toward 14%. The count and the threshold are the retune's knobs.
+
+### E3.3 — the relief (`cypressStrokeShader.ts`)
+
+The bristle lane's contrast from mix(0.86, 1.08) toward mix(0.78, 1.14) and the rake from 0.35 toward 0.5, one
+step at a time, with a second, coarser lane (2.2 cycles across) at a third of the first's amplitude so the lanes
+read as the painting's bristle lines rather than a stipple. The contrast number is the dial: the bar 3–8 at the
+render's scale and window (the painting 11.1); the eye at 1:1 decides fur against paint, as E1's retunes learnt.
+
+### E3.4 — the gates (`scripts/check-cypress-colour.ts` extended)
+
+The colour gate prints, beside the regional ΔE, the rendered tree's L percentiles and light share against the
+painting's, and bounds them: spread (p90 − p10) ≥ 15 and light share ≥ 6%, ΔE ≤ 10 as before. The silhouette gate
+runs unchanged (the lights are inside the mask). The local-contrast recipe is scripted (`scripts/cypress-contrast.sh`,
+the July window at the render's scale) with the bar 3–8.
+
+## Gate
+
+| # | check | pass when |
+|---|---|---|
+| G1 | red first | the tracer's `colours` test (per-sample, smoothed, sky samples filled) and the light-seed test (every seed light and inside) fail before the code |
+| G2 | `test:sky`, `tsc -b`, build, eslint | green |
+| G3 | the flat gate | the ribbons beside the painting read as brown-and-green bands, the lights where the painting has them |
+| G4 | the colour gate | ΔE ≤ 10 per region; spread ≥ 15; light ≥ 6%; the two controls exit 1 |
+| G5 | the silhouette gate | IoU within 0.01 of E1's 0.817 |
+| G6 | the contrast recipe | 3–8 at the render's scale |
+| G7 | 1:1 crops beside the painting at the render's scale (`mid-pair`), desktop, mobile, orbit | named; fur, stipple or a cut-out is a fail |
+| G8 | D1 unchanged | an injected hold bends the tree (the diff inside the cypress's box); `?touch=0` against D1's build differs only inside the cypress's box |
+| G9 | `check:reduced`, `check:viewport`, perf | PASS, PASS; p95 within 1 ms of D1's |
+| G10 | Codex code review, then the record | no P0 or P1 open |
+
+Retune cap: 4 passes across E3.1–E3.3. Mark's taste gate on the captures and on localhost (5181) after.
+
+## Risks
+
+- **A texture-mapped look.** Per-sample colour with no smoothing is the painting's pixels along a path, the cut-out
+  E1 replaced. The smoothing over a third of a band and the ribbon's own relief, rim and lanes keep it a stroke;
+  the eye at 1:1 (G7) decides the smoothing length.
+- **Fur again.** More lane contrast on 10–20 px ribbons can stipple; one step at a time, the contrast number and
+  the crop.
+- **The lights as confetti.** Short light ribbons scattered where the painting has band edges; they follow the
+  field and sit on the light texels, and G3's flat gate shows them before any 3D work.
+
+## Review
+
+(Codex's read of this plan, then the dispositions.)
