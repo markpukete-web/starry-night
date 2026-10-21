@@ -26,6 +26,8 @@ export type AliveInjection = {
   fragmentHead: string
   /** Fragment main, after `<color_fragment>`: multiply `diffuseColor.rgb`. */
   fragmentBody: string
+  /** Vertex main, after `<begin_vertex>`: a displacement of `transformed` (D1's bend). Optional. */
+  vertexTransform?: string
 }
 
 /** Replace exactly one occurrence of a chunk marker, or throw: a three upgrade that renames a chunk must not silently drop the effect. */
@@ -41,6 +43,7 @@ export function replaceOnce(source: string, marker: string, replacement: string)
 export function injectAliveSource(vertexShader: string, fragmentShader: string, injection: AliveInjection): { vertexShader: string; fragmentShader: string } {
   let vertex = replaceOnce(vertexShader, '#include <common>', `#include <common>\n${injection.vertexHead}`)
   vertex = replaceOnce(vertex, '#include <color_vertex>', `#include <color_vertex>\n${injection.vertexBody}`)
+  if (injection.vertexTransform) vertex = replaceOnce(vertex, '#include <begin_vertex>', `#include <begin_vertex>\n${injection.vertexTransform}`)
   let fragment = replaceOnce(fragmentShader, '#include <common>', `#include <common>\n${injection.fragmentHead}`)
   fragment = replaceOnce(fragment, '#include <color_fragment>', `#include <color_fragment>\n${injection.fragmentBody}`)
   return { vertexShader: vertex, fragmentShader: fragment }
@@ -62,5 +65,23 @@ export function injectAlive(material: Material, injection: AliveInjection): void
       if (import.meta.env?.DEV) throw error
       console.warn('[alive] shader injection skipped', error)
     }
+  }
+}
+
+/**
+ * One injection from several: heads, bodies and transforms joined in order, uniforms merged; `key` names the
+ * program. E1's cypress strokes take the stroke body first and the flicker after it, so the flicker multiplies
+ * the lit colour; D1's bend joins as a third part with its transform.
+ */
+export function concatInjections(key: string, ...parts: Omit<AliveInjection, 'key'>[]): AliveInjection {
+  const transforms = parts.map((part) => part.vertexTransform).filter((transform): transform is string => Boolean(transform))
+  return {
+    key,
+    uniforms: Object.assign({}, ...parts.map((part) => part.uniforms)),
+    vertexHead: parts.map((part) => part.vertexHead).join('\n'),
+    vertexBody: parts.map((part) => part.vertexBody).join('\n'),
+    fragmentHead: parts.map((part) => part.fragmentHead).join('\n'),
+    fragmentBody: parts.map((part) => part.fragmentBody).join('\n'),
+    ...(transforms.length ? { vertexTransform: transforms.join('\n') } : {}),
   }
 }

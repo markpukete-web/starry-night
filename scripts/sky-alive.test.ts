@@ -7,10 +7,11 @@ import { buildSourceStreamlineRibbons } from '../src/scene/streamlineGeometry.ts
 import type { ImageData2D } from '../src/scene/useImageData.ts'
 import type { SourceRibbonVertex } from '../src/scene/streamlineGeometry.ts'
 import { readFileSync } from 'node:fs'
-import { injectAliveSource, replaceOnce } from '../src/scene/aliveMaterial.ts'
-import { CYPRESS_FLICKER, flickerEnv, flickerF, flickerFactor, flickerMeanBound, flickerUniformValues, flickerWeight, lobeHeight, pushFlicker } from '../src/scene/cypressFlicker.ts'
+import { concatInjections, injectAliveSource, replaceOnce } from '../src/scene/aliveMaterial.ts'
+import { CYPRESS_FLICKER, flickerEnv, flickerF, flickerFactor, flickerMeanBound, flickerUniformValues, flickerWeight, lobeHeight, ribbonFlicker } from '../src/scene/cypressFlicker.ts'
+import { strokeGlsl } from '../src/scene/cypressStrokeShader.ts'
+import { ShaderLib } from 'three'
 import { buildCypressLobePlan, type CypressLobeRows } from '../src/scene/cypressLobes.ts'
-import { CYPRESS_LOBE_STROKE_CONFIG, generateCypressLobeStrokes } from '../src/scene/cypressLobeStrokes.ts'
 import { glowFactor, glowMeanBound, glowOmega, glowPeriods, MARK_STEPS, markVertexCount, packGlow, WINDOW_GLOW } from '../src/scene/villageGlow.ts'
 import { Vector3 } from 'three'
 import { homeInverseQuaternion, skyPointFromRay, uvFromSkyDirection, uvToDioramaSkyPosition } from '../src/scene/dioramaSkyProjection.ts'
@@ -196,7 +197,6 @@ test('T14 the flicker weight: the tips and the outer tongues carry it, the core 
   }
   // the real tree: a frond's top vertex reaches the tip weight on its OWN lobe range, where the absolute height never would
   const plan = buildCypressLobePlan(cypressRows)
-  const strokes = generateCypressLobeStrokes(plan, { ...CYPRESS_LOBE_STROKE_CONFIG, seed: 0xc1f3a11 })
   const lobeRange = new Map(plan.lobes.map((lobe) => [lobe.id, [lobe.sections[0].heightFraction, lobe.sections[lobe.sections.length - 1].heightFraction] as const]))
   const frond = plan.lobes.find((lobe) => lobe.id !== plan.lobes[0].id)
   assert.ok(frond, 'the shipped row table has a frond')
@@ -204,22 +204,20 @@ test('T14 the flicker weight: the tips and the outer tongues carry it, the core 
   assert.ok(frondEnd < 0.9, `the frond ends at ${frondEnd} of the tree, below the tip band`)
   assert.equal(flickerWeight(lobeHeight(frondEnd, frondStart, frondEnd), 0), 1, "a frond's own tip weighs 1")
   assert.ok(flickerWeight(lobeHeight(frondEnd, 0, 1), 0) < 1, 'on the absolute height it would not')
-  // the packing: two vertices per sample, in order, and a weight for every vertex
-  const out: number[] = []
-  let vertices = 0
-  for (const stroke of strokes) {
-    const [start, end] = lobeRange.get(stroke.lobeId)!
-    const lateral = Math.abs(stroke.samples.reduce((sum, sample) => sum + sample.lateral, 0) / stroke.samples.length)
-    for (const sample of stroke.samples) {
-      const w = flickerWeight(lobeHeight(sample.heightFraction, start, end), lateral)
-      pushFlicker(out, w, sample.heightFraction)
-      pushFlicker(out, w, sample.heightFraction)
-      vertices += 2
-    }
-  }
-  assert.equal(out.length, vertices * 2)
-  const weights = out.filter((_, i) => i % 2 === 0)
-  assert.ok(weights.some((w) => w === floor) && weights.some((w) => w === 1), 'the real strokes span the floor and the full weight')
+  // the packing on the ribbon path (E1): one weight per kept sample from the ribbon's mean |lateral| and the
+  // sample's height within its lobe; the tip run weighs 1 at its top, a tongue run weighs 1 throughout, the back halves it
+  const tipRun = ribbonFlicker([{ h: 0.5, lateral: 0.1 }, { h: 0.8, lateral: 0.1 }, { h: 1, lateral: 0.1 }], [0, 1], false)
+  assert.equal(tipRun.length, 3)
+  assert.equal(tipRun[0][0], floor)
+  assert.equal(tipRun[2][0], 1)
+  assert.deepEqual(tipRun.map(([, h]) => h), [0.5, 0.8, 1])
+  const tongue = ribbonFlicker([{ h: 0.1, lateral: 0.9 }, { h: 0.2, lateral: 0.9 }], [0, 1], false)
+  assert.ok(tongue.every(([w]) => w === 1))
+  const backTongue = ribbonFlicker([{ h: 0.1, lateral: 0.9 }], [0, 1], true)
+  assert.ok(Math.abs(backTongue[0][0] - (floor + (1 - floor) * CYPRESS_FLICKER.backLick)) < 1e-12)
+  // the frond's own range: its top sample weighs 1 although its absolute height is low
+  const frondRun = ribbonFlicker([{ h: frondEnd, lateral: 0 }], [frondStart, frondEnd], false)
+  assert.equal(frondRun[0][0], 1)
 })
 
 test('T15 the flicker wave: exactly 0 at t = 0, bounded by 1, mean within the analytic bound, and it climbs at ω/k', () => {
@@ -327,6 +325,29 @@ test('T19 the shader injection replaces each chunk marker exactly once and throw
   assert.throws(() => replaceOnce('a b', 'c', 'x'), /exactly one/)
   assert.throws(() => replaceOnce('c c', 'c', 'x'), /exactly one/)
   assert.throws(() => injectAliveSource(vertex, fragment.replace('#include <color_fragment>', ''), injection), /color_fragment/)
+})
+
+test('T19b concatInjections joins in order, merges uniforms, carries a vertex transform, and the stroke + flicker + bend injection lands once on three\'s real basic shader', () => {
+  const stroke = { uniforms: { uA: { value: 1 } }, ...strokeGlsl }
+  const flicker = { uniforms: { uB: { value: 2 } }, vertexHead: 'FLV', vertexBody: 'FLB', fragmentHead: 'FLF', fragmentBody: 'FLX' }
+  const bend = { uniforms: { uC: { value: 3 } }, vertexHead: 'attribute float aBend;', vertexBody: '', fragmentHead: '', fragmentBody: '', vertexTransform: 'transformed += vec3(aBend);' }
+  const two = concatInjections('k2', stroke, flicker)
+  assert.equal(two.key, 'k2')
+  assert.deepEqual(Object.keys(two.uniforms), ['uA', 'uB'])
+  assert.ok(two.fragmentBody.indexOf('discard') < two.fragmentBody.indexOf('FLX'), 'the stroke body precedes the flicker')
+  assert.equal(two.vertexTransform, undefined, 'no transform without a part that has one')
+  const three = concatInjections('k3', stroke, flicker, bend)
+  assert.equal(three.vertexTransform, 'transformed += vec3(aBend);')
+  const out = injectAliveSource(ShaderLib.basic.vertexShader, ShaderLib.basic.fragmentShader, three)
+  assert.equal(out.vertexShader.split('#include <begin_vertex>').length, 2, 'one begin_vertex')
+  assert.ok(out.vertexShader.includes('#include <begin_vertex>\ntransformed += vec3(aBend);'), 'the transform follows begin_vertex')
+  for (const name of ['aStroke', 'aSeed', 'aBend', 'FLV']) assert.ok(out.vertexShader.includes(name), name)
+  assert.ok(out.fragmentShader.includes('dFdx') && out.fragmentShader.indexOf('dFdx') < out.fragmentShader.indexOf('discard;'), 'the derivatives come before the first discard statement')
+  assert.ok(out.fragmentShader.indexOf('FLX') > out.fragmentShader.indexOf('discard;'))
+  assert.ok(out.fragmentShader.indexOf('FLX') < out.fragmentShader.indexOf('<opaque_fragment>'))
+  const withoutTransform = injectAliveSource(ShaderLib.basic.vertexShader, ShaderLib.basic.fragmentShader, two)
+  assert.ok(!withoutTransform.vertexShader.includes('aBend'))
+  assert.equal(withoutTransform.vertexShader.split('#include <begin_vertex>').length, 2)
 })
 
 // ---- B, touch (tasks/2026-10-13-touch-b-plan.md): the mapping, the packing, the knob

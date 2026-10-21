@@ -160,3 +160,22 @@ export function pushBrushRibbon(
     arr.indices.push(a, b, c, b, d, c)
   }
 }
+
+/**
+ * Append a strip from two edge polylines already on the surface (E1's draped cypress ribbons): left[i], right[i]
+ * per step, two triangles per step, the colours as supplied. Nothing is built from a normal here, so a strip
+ * whose edges were lifted on their own stays on the surface across its whole width.
+ */
+export function pushDrapedRibbon(arr: BrushArrays, left: Vector3[], right: Vector3[], colors: Color[]): void {
+  if (left.length < 2 || right.length !== left.length || colors.length !== left.length) return
+  const base = arr.positions.length / 3
+  for (let i = 0; i < left.length; i++) {
+    arr.positions.push(left[i].x, left[i].y, left[i].z, right[i].x, right[i].y, right[i].z)
+    const colour = colors[i]
+    arr.colors.push(colour.r, colour.g, colour.b, colour.r, colour.g, colour.b)
+  }
+  for (let i = 0; i < left.length - 1; i++) {
+    const a = base + i * 2
+    arr.indices.push(a, a + 1, a + 2, a + 1, a + 3, a + 2)
+  }
+}

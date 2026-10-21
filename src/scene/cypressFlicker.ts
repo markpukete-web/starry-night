@@ -112,6 +112,15 @@ export function flickerUniformValues(tuning: Pick<AliveTuning, 'flicker'>, solid
   }
 }
 
+/**
+ * The flicker's [w, h] per kept sample of a draped ribbon (E1): the ribbon's mean |lateral| over its kept samples
+ * is the tongue term, each sample's height within its lobe's range the tip term.
+ */
+export function ribbonFlicker(kept: readonly { h: number; lateral: number }[], range: readonly [number, number], back: boolean): [number, number][] {
+  const lateral = kept.length ? kept.reduce((sum, sample) => sum + sample.lateral, 0) / kept.length : 0
+  return kept.map((sample) => [flickerWeight(lobeHeight(sample.h, range[0], range[1]), lateral, back), sample.h])
+}
+
 /** Append one vertex's [w, h] pair to the attribute array. */
 export function pushFlicker(out: number[], w: number, h: number): void {
   out.push(w, h)

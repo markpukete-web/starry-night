@@ -1,87 +1,42 @@
-import { useEffect, useLayoutEffect, useMemo, type RefObject } from 'react'
-import { useTexture } from '@react-three/drei'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState, type RefObject } from 'react'
 import { useFrame } from '@react-three/fiber'
-import {
-  BufferAttribute,
-  BufferGeometry,
-  Color,
-  DoubleSide,
-  MeshBasicMaterial,
-  SRGBColorSpace,
-  Vector3,
-} from 'three'
+import { BufferAttribute, BufferGeometry, Color, DoubleSide, MeshBasicMaterial, SRGBColorSpace, Vector3 } from 'three'
 
 import rowTableJson from '../../public/reference/cypress-rows.json'
-import { makeBrushArrays, moonShade, pushBrushRibbon } from './brushForms'
-import {
-  buildCypressLobeSolid,
-  mapCypressLobeSurface,
-  type CypressLobeSolidOptions,
-} from './cypressLobeGeometry'
-import {
-  buildCypressLobePlan,
-  sampleCypressLobe,
-  type CypressLobe,
-  type CypressLobeRows,
-} from './cypressLobes'
-import {
-  CYPRESS_LOBE_STROKE_CONFIG,
-  generateCypressLobeStrokes,
-  type CypressLobeStrokeSample,
-} from './cypressLobeStrokes'
+import { makeBrushArrays, moonShade, pushDrapedRibbon } from './brushForms'
+import { buildCypressLobeSolid, drapeRibbon, liftToLobes, ringsByLobe, type CypressLobeSolidOptions } from './cypressLobeGeometry'
+import { buildCypressLobePlan, sampleCypressLobe, type CypressLobeRows } from './cypressLobes'
+import { CYPRESS_RIBBON_CONFIG, ribbonEdges, traceCypressRibbons } from './cypressStrokes'
 import { cypressViewBearing } from './cypressMapping'
-import { sampleCypressImage, type CypressTexel } from './cypressStrokes'
 import { DIORAMA_CAMERAS } from './dioramaContract'
-import { useImageData, type ImageData2D } from './useImageData'
-import { injectAlive } from './aliveMaterial'
-import { flickerGlsl, flickerUniformValues, flickerWeight, lobeHeight, pushFlicker } from './cypressFlicker'
+import { useImageData } from './useImageData'
+import { concatInjections, injectAlive } from './aliveMaterial'
+import { flickerGlsl, flickerUniformValues, flickerWeight, lobeHeight, pushFlicker, ribbonFlicker } from './cypressFlicker'
+import { strokeGlsl } from './cypressStrokeShader'
 import { ALIVE_DEFAULTS, type AliveTuning } from './skyAlive'
 
 /**
- * Source-derived compound cypress. The painting's persistent row runs own the topology: one main
- * continuation plus a few connected side flames. Every lobe is a closed shallow 3D volume and all
- * lobes batch into one underpaint mesh and one multi-scale ribbon mesh.
+ * Source-derived compound cypress (E1, tasks/2026-10-21-cypress-e1-plan.md). The painting's persistent row runs
+ * own the topology: one main column plus the flames beside it, each a closed shallow volume, batched into one
+ * underpaint solid. The cladding is Van Gogh's strokes: streamlines traced in the cypress's own orientation
+ * field, draped on the lobes' union as thick tapered ribbons, lit by the moving sky's stroke body, over a dark
+ * underpaint that reads as the painting's separations between strokes.
  */
 
 const HEIGHT = 2.7
 const BASE = new Vector3(-1.5, 0.02, 0.72)
 const SOURCE_STROKE_LIFT = 1.08
 const MOON_LIFT = 0.04
-const STRUCTURAL_HALF_WIDTH = 0.0035
-const FILL_HALF_WIDTH = 0.0032
-const CYPRESS_COLOUR_LIFT = new Color().setRGB(1.14, 1.1, 1.06)
+/** the painting's darkest cypress colour (palette.json, L 9.6): the gaps between strokes */
+const CYPRESS_UNDERPAINT = new Color('#151c1b')
+/** world units the ribbons sit toward the camera from the solid */
+const RIBBON_LIFT = 0.004
 
 /** The row table's crop is `uv` of the painting (E1: the table is baked from the 3840 px scan, so no pixel origin). */
 const rowTable = rowTableJson as unknown as CypressLobeRows & { uv: [number, number, number, number] }
 
-/** A crop-normalised point as painting-normalised coordinates. */
-function paintingPoint(px: number, py: number): [number, number] {
-  const [u0, v0, u1, v1] = rowTable.uv
-  return [u0 + px * (u1 - u0), v0 + py * (v1 - v0)]
-}
-
-function isCypressTexel(texel: CypressTexel) {
-  const luminance = 0.299 * texel.r + 0.587 * texel.g + 0.114 * texel.b
-  return luminance < 118 && texel.b < texel.g + 18
-}
-
-function sourceTexel(
-  painting: ImageData2D,
-  sample: Pick<CypressLobeStrokeSample, 'paintX' | 'sourceY' | 'heightFraction'>,
-  main: CypressLobe,
-): CypressTexel {
-  const texel = sampleCypressImage(painting, ...paintingPoint(sample.paintX, sample.sourceY))
-  if (isCypressTexel(texel)) return texel
-
-  // Root bridges pass through rows where the source threshold has holes. Fall back to the main
-  // cypress at the same height, never to blue sky; this is coloured underpaint, not invented bark.
-  const mainSection = sampleCypressLobe(main, sample.heightFraction)
-  if (!mainSection) return texel
-  return sampleCypressImage(painting, ...paintingPoint(mainSection.sourceCenter, sample.sourceY))
-}
-
 /** Dev seam for the gate: the foreground's alive attribute counts, read by the capture step (second pass, F11). */
-type AliveFoliageWindow = Window & { __aliveFoliage?: { flickerVertices?: number; glowMarks?: number; glowVertices?: number } }
+type AliveFoliageWindow = Window & { __aliveFoliage?: { flickerVertices?: number; glowMarks?: number; glowVertices?: number }; __cypressBuildMs?: number }
 
 /** The flicker's uniforms for one material; the frame loop writes uTime, the layout effect uFlicker. */
 function flickerUniforms(solid: boolean) {
@@ -104,24 +59,26 @@ export function BrushCypress({
 }: {
   /** The one sky clock (second pass, A3): pinned, advanced, or 0 while paused. */
   clock?: RefObject<number>
-  /** Make-it-alive A: the flame-like flicker up the strokes (cypressFlicker.ts). Off = today's tree, bit for bit. */
+  /** Make-it-alive A: the flame-like flicker up the strokes (cypressFlicker.ts). */
   alive?: boolean
   tuning?: AliveTuning
   /** C (arrival): true once the tree has its geometry; the arrival waits for it. */
   ready?: RefObject<boolean>
 } = {}) {
   const paintingData = useImageData('/reference/painting.jpg')
-  const paintingTexture = useTexture('/reference/painting.jpg')
-  const cypressTexture = useMemo(() => {
-    const texture = paintingTexture.clone()
-    texture.colorSpace = SRGBColorSpace
-    texture.flipY = false
-    texture.needsUpdate = true
-    return texture
-  }, [paintingTexture])
+  // the flow field's failure path (Codex F11): the tree still draws its underpaint, and the arrival goes on
+  const [flowFailed, setFlowFailed] = useState(false)
+  const onFlowError = useCallback(() => {
+    console.error('[cypress] the flow field failed to load; the tree draws its underpaint only')
+    setFlowFailed(true)
+  }, [])
+  const flowData = useImageData('/reference/cypress-flow.png', onFlowError)
 
   const geometries = useMemo(() => {
-    if (!paintingData) return null
+    if (!paintingData || (!flowData && !flowFailed)) return null
+    // the build's duration is a gate seam (G9); the memo is deterministic in its inputs, the clock read is the one impurity
+    // eslint-disable-next-line react-hooks/purity -- a timing seam for the gate
+    const started = performance.now()
     const plan = buildCypressLobePlan(rowTable)
     const main = plan.lobes[0]
     const bearing = cypressViewBearing(DIORAMA_CAMERAS.design.position, [BASE.x, BASE.y, BASE.z])
@@ -129,8 +86,7 @@ export function BrushCypress({
     const geometryOptions: CypressLobeSolidOptions = {
       bearing,
       height: HEIGHT,
-      // Preserve the baked crop's pixel aspect. The previous viewport-scale constant squeezed the
-      // tree about 30% horizontally, turning source fronds into gothic needles.
+      // the baked crop's pixel aspect, so one crop width is HEIGHT × width / height world units
       sourceToWorld: (HEIGHT * rowTable.width) / rowTable.height,
       sourceAnchor: anchor,
       radialSegments: 12,
@@ -139,17 +95,9 @@ export function BrushCypress({
       depthRatio: 0.42,
     }
     const compiled = buildCypressLobeSolid(plan, geometryOptions)
-    const solidUvs: number[] = []
-    for (let index = 0; index < compiled.sourceUvs.length; index += 2) {
-      solidUvs.push(...paintingPoint(compiled.sourceUvs[index], compiled.sourceUvs[index + 1]))
-    }
 
     const solid = new BufferGeometry()
-    solid.setAttribute(
-      'position',
-      new BufferAttribute(new Float32Array(compiled.positions), 3),
-    )
-    solid.setAttribute('uv', new BufferAttribute(new Float32Array(solidUvs), 2))
+    solid.setAttribute('position', new BufferAttribute(new Float32Array(compiled.positions), 3))
     if (alive) {
       // the flicker's [w, h] per vertex: h is the stroke axis (the solid's source v is 1 − heightFraction), the
       // weight the tip term on the vertex's height within its own lobe; the body has no tongues (lateral 0)
@@ -162,105 +110,67 @@ export function BrushCypress({
           pushFlicker(solidFlicker, flickerWeight(lobeHeight(h, start, end), 0), h)
         }
       }
-      if (solidFlicker.length !== compiled.positions.length / 3 * 2) throw new Error('cypress solid flicker attribute out of step with its vertices')
+      if (solidFlicker.length !== (compiled.positions.length / 3) * 2) throw new Error('cypress solid flicker attribute out of step with its vertices')
       solid.setAttribute('aFlicker', new BufferAttribute(new Float32Array(solidFlicker), 2))
     }
     solid.setIndex(compiled.indices)
     solid.computeVertexNormals()
     solid.computeBoundingSphere()
 
-    const front = generateCypressLobeStrokes(plan, {
-      ...CYPRESS_LOBE_STROKE_CONFIG,
-      seed: 0xc1f3a11,
-    })
-    const back = generateCypressLobeStrokes(plan, {
-      ...CYPRESS_LOBE_STROKE_CONFIG,
-      structuralCount: Math.round(
-        CYPRESS_LOBE_STROKE_CONFIG.structuralCount * CYPRESS_LOBE_STROKE_CONFIG.backDensity,
-      ),
-      fillCount: Math.round(
-        CYPRESS_LOBE_STROKE_CONFIG.fillCount * CYPRESS_LOBE_STROKE_CONFIG.backDensity,
-      ),
-      seed: 0xbacc51de,
-    })
-    const lobeById = new Map(plan.lobes.map((lobe) => [lobe.id, lobe]))
+    // the ribbons: traced in the crop, draped on the compiled lobes
+    const rings = ringsByLobe(compiled)
+    const lobeRange = new Map(plan.lobes.map((lobe) => [lobe.id, [lobe.sections[0].heightFraction, lobe.sections[lobe.sections.length - 1].heightFraction] as const]))
     const arrays = makeBrushArrays()
-    // the flicker's [w, h] per stroke vertex, packed by the vertex count before and after each ribbon push, since
-    // a push can return without pushing (review F10)
+    const strokeAttr: number[] = []
+    const seedAttr: number[] = []
     const strokeFlicker: number[] = []
-    const point = new Vector3()
-    const normal = new Vector3()
     const strokeColour = new Color()
-    for (const [frontFacing, strokes] of [
-      [true, front],
-      [false, back],
-    ] as const) {
-      for (const stroke of strokes) {
-        const lobe = lobeById.get(stroke.lobeId)
-        if (!lobe) continue
-        const points: Vector3[] = []
-        const normals: Vector3[] = []
-        const colours: Color[] = []
-        const texels: CypressTexel[] = []
-        for (const sample of stroke.samples) {
-          const surface = mapCypressLobeSurface(lobe, sample, geometryOptions, frontFacing)
-          normal.set(...surface.normal)
-          point
-            .set(...surface.position)
-            .addScaledVector(normal, stroke.scale === 'structural' ? 0.004 : 0.003)
-          points.push(point.clone())
-          normals.push(normal.clone())
-          texels.push(sourceTexel(paintingData, sample, main))
-        }
-        // One source pigment per ribbon. Averaging the whole path collapses umber/green families
-        // into a dark sheet; sampling every vertex creates tiled bark. The centre texel keeps each
-        // mark coherent while deterministic seeding varies pigment between neighbouring marks.
-        const pigment = texels[Math.floor(texels.length / 2)]
-        for (const surfaceNormal of normals) {
-          strokeColour
-            .setRGB(pigment.r / 255, pigment.g / 255, pigment.b / 255, SRGBColorSpace)
-            .multiplyScalar(
-              stroke.relief * SOURCE_STROKE_LIFT * (1 + MOON_LIFT * moonShade(surfaceNormal)),
-            )
-          colours.push(strokeColour.clone())
-        }
-        if (points.length >= 3) {
+    const normal = new Vector3()
+    let frontCount = 0
+    let backCount = 0
+    if (flowData) {
+      const front = traceCypressRibbons(flowData, paintingData, rowTable, CYPRESS_RIBBON_CONFIG.frontCount, 0xc1f3a11)
+      const back = traceCypressRibbons(flowData, paintingData, rowTable, Math.round(CYPRESS_RIBBON_CONFIG.frontCount * CYPRESS_RIBBON_CONFIG.backShare), 0xbacc51de)
+      for (const [frontFacing, ribbons] of [[true, front], [false, back]] as const) {
+        for (const ribbon of ribbons) {
+          const edges = ribbonEdges(ribbon, flowData.width, flowData.height, CYPRESS_RIBBON_CONFIG.taper)
+          const draped = drapeRibbon(ribbon, edges, rings, geometryOptions, frontFacing, RIBBON_LIFT)
+          if (!draped) continue
+          const seedLift = liftToLobes(rings, ribbon.seedSample.px, 1 - ribbon.seedSample.py, geometryOptions, frontFacing)
+          const shade = seedLift ? 1 + MOON_LIFT * moonShade(normal.set(...seedLift.normal)) : 1
+          // one source pigment per ribbon: the middle sample's, with the moon's shade from the seed's normal
+          const colour = strokeColour
+            .setRGB(ribbon.colour[0], ribbon.colour[1], ribbon.colour[2], SRGBColorSpace)
+            .multiplyScalar(ribbon.relief * SOURCE_STROKE_LIFT * shade)
+            .clone()
           const before = arrays.positions.length / 3
-          pushBrushRibbon(
-            arrays,
-            points,
-            normals,
-            colours,
-            stroke.scale === 'structural' ? STRUCTURAL_HALF_WIDTH : FILL_HALF_WIDTH,
-            stroke.scale === 'structural' ? 0.9 : 0.92,
-          )
-          if (alive) {
-            const pushed = arrays.positions.length / 3 - before
-            if (pushed !== 0 && pushed !== points.length * 2) throw new Error('cypress ribbon pushed an unexpected vertex count')
-            if (pushed > 0) {
-              const lateral = Math.abs(stroke.samples.reduce((sum, sample) => sum + sample.lateral, 0) / stroke.samples.length)
-              const lobeStart = lobe.sections[0].heightFraction
-              const lobeEnd = lobe.sections[lobe.sections.length - 1].heightFraction
-              // the ribbon packs two vertices (left, right) per sample, in sample order
-              for (const sample of stroke.samples) {
-                const w = flickerWeight(lobeHeight(sample.heightFraction, lobeStart, lobeEnd), lateral, !frontFacing)
-                pushFlicker(strokeFlicker, w, sample.heightFraction)
-                pushFlicker(strokeFlicker, w, sample.heightFraction)
-              }
+          pushDrapedRibbon(arrays, draped.left, draped.right, draped.kept.map(() => colour))
+          const pushed = arrays.positions.length / 3 - before
+          if (pushed !== draped.kept.length * 2) throw new Error('cypress ribbon pushed an unexpected vertex count')
+          const lobe = draped.kept[Math.floor(draped.kept.length / 2)].lobeId
+          const flicker = ribbonFlicker(draped.kept, lobeRange.get(lobe) ?? [0, 1], !frontFacing)
+          for (let k = 0; k < draped.kept.length; k++) {
+            const len = k / (draped.kept.length - 1)
+            // the draped strip packs left then right per step
+            for (const across of [0, 1]) {
+              strokeAttr.push(len, across)
+              seedAttr.push(ribbon.seed)
+              if (alive) pushFlicker(strokeFlicker, flicker[k][0], flicker[k][1])
             }
           }
+          if (frontFacing) frontCount++
+          else backCount++
         }
       }
     }
 
     const strokes = new BufferGeometry()
-    strokes.setAttribute(
-      'position',
-      new BufferAttribute(new Float32Array(arrays.positions), 3),
-    )
+    strokes.setAttribute('position', new BufferAttribute(new Float32Array(arrays.positions), 3))
     strokes.setAttribute('color', new BufferAttribute(new Float32Array(arrays.colors), 3))
+    strokes.setAttribute('aStroke', new BufferAttribute(new Float32Array(strokeAttr), 2))
+    strokes.setAttribute('aSeed', new BufferAttribute(new Float32Array(seedAttr), 1))
     if (alive) {
-      if (strokeFlicker.length !== arrays.positions.length / 3 * 2) throw new Error('cypress stroke flicker attribute out of step with its vertices')
+      if (strokeFlicker.length !== (arrays.positions.length / 3) * 2) throw new Error('cypress stroke flicker attribute out of step with its vertices')
       strokes.setAttribute('aFlicker', new BufferAttribute(new Float32Array(strokeFlicker), 2))
     }
     strokes.setIndex(arrays.indices)
@@ -268,34 +178,36 @@ export function BrushCypress({
     strokes.computeBoundingSphere()
     strokes.userData = {
       lobes: plan.lobes.length,
-      frontStrokes: front.length,
-      backStrokes: back.length,
+      frontStrokes: frontCount,
+      backStrokes: backCount,
       solidVertices: compiled.positions.length / 3,
       solidTriangles: compiled.indices.length / 3,
       strokeVertices: arrays.positions.length / 3,
       strokeTriangles: arrays.indices.length / 3,
     }
 
+    /* eslint-disable react-hooks/purity, react-hooks/immutability -- the timing seam, written once per build */
+    const buildMs = performance.now() - started
+    ;(window as AliveFoliageWindow).__cypressBuildMs = buildMs
+    /* eslint-enable react-hooks/purity, react-hooks/immutability */
+    if (import.meta.env.DEV) console.info(`[cypress] built in ${buildMs.toFixed(0)} ms: ${frontCount} front and ${backCount} back ribbons, ${arrays.indices.length / 3} triangles`)
     return { solid, strokes }
-  }, [alive, paintingData])
+  }, [alive, paintingData, flowData, flowFailed])
 
-  // With the flag on, the same materials take the flicker through onBeforeCompile (aliveMaterial.ts): three's
-  // stock program with a multiply after the vertex-colour chunk. Off, they are untouched, today's bytes.
+  // the materials: three's stock MeshBasicMaterial with injections (aliveMaterial.ts). The solid is the flat
+  // underpaint, the strokes carry the sky's stroke body; with `alive` the flicker multiplies after it
   const solidUniforms = useMemo(() => flickerUniforms(true), [])
   const strokeUniforms = useMemo(() => flickerUniforms(false), [])
   const solidMaterial = useMemo(() => {
-    const material = new MeshBasicMaterial({
-      color: CYPRESS_COLOUR_LIFT,
-      map: cypressTexture,
-      toneMapped: false,
-      side: DoubleSide,
-    })
+    const material = new MeshBasicMaterial({ color: CYPRESS_UNDERPAINT, toneMapped: false, side: DoubleSide })
     if (alive) injectAlive(material, { key: 'alive-flicker-solid', uniforms: solidUniforms, ...flickerGlsl })
     return material
-  }, [alive, cypressTexture, solidUniforms])
+  }, [alive, solidUniforms])
   const strokeMaterial = useMemo(() => {
-    const material = new MeshBasicMaterial({ vertexColors: true, toneMapped: false, side: DoubleSide })
-    if (alive) injectAlive(material, { key: 'alive-flicker-strokes', uniforms: strokeUniforms, ...flickerGlsl })
+    // alpha-to-coverage dithers the stroke's shaped edge across the canvas's MSAA samples, no sorting needed
+    const material = new MeshBasicMaterial({ vertexColors: true, toneMapped: false, side: DoubleSide, alphaToCoverage: true })
+    const body = { uniforms: {}, ...strokeGlsl }
+    injectAlive(material, alive ? concatInjections('cypress-strokes-flicker', body, { uniforms: strokeUniforms, ...flickerGlsl }) : concatInjections('cypress-strokes', body))
     return material
   }, [alive, strokeUniforms])
 
@@ -326,13 +238,12 @@ export function BrushCypress({
     ;(window as AliveFoliageWindow).__aliveFoliage = seam
   }, [alive, geometries])
 
-  // C: the arrival waits for the tree; its CPU image does not suspend, so the sky's own seam cannot cover it
+  // C: the arrival waits for the tree; its CPU images do not suspend, so the sky's own seam cannot cover it
   useLayoutEffect(() => {
     if (readyRef) readyRef.current = geometries !== null
   }, [readyRef, geometries])
   useEffect(() => () => geometries?.solid.dispose(), [geometries])
   useEffect(() => () => geometries?.strokes.dispose(), [geometries])
-  useEffect(() => () => cypressTexture.dispose(), [cypressTexture])
   useEffect(() => () => solidMaterial.dispose(), [solidMaterial])
   useEffect(() => () => strokeMaterial.dispose(), [strokeMaterial])
 

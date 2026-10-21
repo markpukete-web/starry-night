@@ -15,8 +15,8 @@ import { execFileSync } from 'node:child_process'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
-import { treeishColour } from './lib/fill-region.ts'
 import { decodePNG, encodePNG } from './lib/png.ts'
+import { extent, runsOf, treeComponent, trunkRun, type Mask } from './lib/silhouette.ts'
 
 const ROOT = resolve(import.meta.dirname, '..')
 const args = process.argv.slice(2)
@@ -24,105 +24,6 @@ const capturePath = resolve(ROOT, args[0] ?? 'output/playwright/e1-measure-2026-
 const [CX, CY, CW, CH] = args.length >= 5 ? args.slice(1, 5).map(Number) : [330, 80, 220, 578]
 const outPrefix = resolve(ROOT, args[5] ?? 'reference/derived/cypress-silhouette')
 mkdirSync(resolve(outPrefix, '..'), { recursive: true })
-
-type Mask = { data: Uint8Array; width: number; height: number }
-
-function morph(src: Mask, r: number, dilate: boolean): Mask {
-  const { width: w, height: h } = src
-  const out = new Uint8Array(w * h)
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      let v = dilate ? 0 : 1
-      outer: for (let dy = -r; dy <= r; dy++) {
-        for (let dx = -r; dx <= r; dx++) {
-          const xx = x + dx
-          const yy = y + dy
-          const s = xx < 0 || yy < 0 || xx >= w || yy >= h ? 0 : src.data[yy * w + xx]
-          if (dilate && s) { v = 1; break outer }
-          if (!dilate && !s) { v = 0; break outer }
-        }
-      }
-      out[y * w + x] = v
-    }
-  }
-  return { data: out, width: w, height: h }
-}
-
-/** Treeish pixels of a crop, opened by `open` px, then the component holding the column with the most tree. */
-function treeComponent(rgba: Uint8Array, imageWidth: number, x0: number, y0: number, w: number, h: number, open: number): Mask {
-  const tree = new Uint8Array(w * h)
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const i = ((y + y0) * imageWidth + x + x0) * 4
-      tree[y * w + x] = treeishColour(rgba[i] / 255, rgba[i + 1] / 255, rgba[i + 2] / 255) ? 1 : 0
-    }
-  }
-  const opened = open > 0 ? morph(morph({ data: tree, width: w, height: h }, open, false), open, true) : { data: tree, width: w, height: h }
-  let bestX = 0
-  let bestCount = 0
-  for (let x = 0; x < w; x++) {
-    let count = 0
-    for (let y = 0; y < h; y++) count += opened.data[y * w + x]
-    if (count > bestCount) { bestCount = count; bestX = x }
-  }
-  const comp = new Uint8Array(w * h)
-  const stack: number[] = []
-  for (let y = 0; y < h; y++) if (opened.data[y * w + bestX]) stack.push(y * w + bestX)
-  while (stack.length) {
-    const i = stack.pop()!
-    if (comp[i] || !opened.data[i]) continue
-    comp[i] = 1
-    const x = i % w
-    const y = (i - x) / w
-    if (x > 0) stack.push(i - 1)
-    if (x < w - 1) stack.push(i + 1)
-    if (y > 0) stack.push(i - w)
-    if (y < h - 1) stack.push(i + w)
-  }
-  return { data: comp, width: w, height: h }
-}
-
-/** The runs on a row, and the trunk run: the one nearest `nearX` (the previous row's trunk centre). */
-function runsOf(mask: Mask, y: number): [number, number][] {
-  const runs: [number, number][] = []
-  let start = -1
-  for (let x = 0; x <= mask.width; x++) {
-    const on = x < mask.width && mask.data[y * mask.width + x] === 1
-    if (on && start < 0) start = x
-    if (!on && start >= 0) { runs.push([start, x - 1]); start = -1 }
-  }
-  return runs
-}
-function trunkRun(runs: [number, number][], nearX: number): [number, number] | null {
-  let best: [number, number] | null = null
-  let bestDistance = Infinity
-  for (const run of runs) {
-    const centre = (run[0] + run[1]) / 2
-    const distance = nearX < run[0] ? run[0] - nearX : nearX > run[1] ? nearX - run[1] : 0
-    if (distance < bestDistance || (distance === bestDistance && best && run[1] - run[0] > best[1] - best[0])) { bestDistance = distance; best = run }
-    void centre
-  }
-  return best
-}
-
-/** The vertical extent of a mask, and its trunk's base centre (the mean trunk-run centre over the lowest 10%). */
-function extent(mask: Mask) {
-  let top = mask.height
-  let bottom = -1
-  for (let y = 0; y < mask.height; y++) for (let x = 0; x < mask.width; x++) if (mask.data[y * mask.width + x]) { if (y < top) top = y; if (y > bottom) bottom = y }
-  const height = bottom - top + 1
-  let sum = 0
-  let count = 0
-  let nearX = mask.width / 2
-  for (let y = bottom; y > bottom - height * 0.1; y--) {
-    const run = trunkRun(runsOf(mask, y), nearX)
-    if (!run) continue
-    nearX = (run[0] + run[1]) / 2
-    sum += nearX
-    count++
-  }
-  return { top, bottom, height, baseCentre: count ? sum / count : nearX }
-}
 
 // the painting's mask around the row table's crop
 const rows = JSON.parse(readFileSync(resolve(ROOT, 'public/reference/cypress-rows.json'), 'utf8')) as { uv?: number[]; x0?: number; y0?: number; width: number; height: number }
@@ -145,25 +46,38 @@ const renderExtent = extent(renderMask)
 const scale = paintExtent.height / renderExtent.height
 console.log(`painting tree ${paintExtent.height} px tall (crop ${PW}x${ph} at ${PX0},${py0}); render tree ${renderExtent.height} px tall (crop ${CW}x${CH} at ${CX},${CY}), scale ${scale.toFixed(3)}`)
 
-// the render's mask resampled to the painting's frame: scaled by `scale`, the base centres aligned, the tops aligned
-const aligned: Mask = { data: new Uint8Array(PW * ph), width: PW, height: ph }
-for (let y = 0; y < ph; y++) {
-  for (let x = 0; x < PW; x++) {
-    const ry = Math.round(renderExtent.top + (y - paintExtent.top) / scale)
-    const rx = Math.round(renderExtent.baseCentre + (x - paintExtent.baseCentre) / scale)
-    if (ry < 0 || ry >= CH || rx < 0 || rx >= CW) continue
-    aligned.data[y * PW + x] = renderMask.data[ry * CW + rx]
+// the render's mask resampled to the painting's frame: scaled by `scale`, the tops aligned, and the x offset that
+// gives the best IoU within ±30 px of the base-centre alignment (the base centre alone shifted the whole tree
+// when a wedge at the base went, 2026-10-21)
+function resample(shift: number): Mask {
+  const out: Mask = { data: new Uint8Array(PW * ph), width: PW, height: ph }
+  for (let y = 0; y < ph; y++) {
+    for (let x = 0; x < PW; x++) {
+      const ry = Math.round(renderExtent.top + (y - paintExtent.top) / scale)
+      const rx = Math.round(renderExtent.baseCentre + (x - shift - paintExtent.baseCentre) / scale)
+      if (ry < 0 || ry >= CH || rx < 0 || rx >= CW) continue
+      out.data[y * PW + x] = renderMask.data[ry * CW + rx]
+    }
   }
+  return out
 }
-let inter = 0
-let union = 0
-for (let i = 0; i < aligned.data.length; i++) {
-  const a = paintMask.data[i]
-  const b = aligned.data[i]
-  inter += a & b
-  union += a | b
+function iouOf(mask: Mask): number {
+  let inter = 0
+  let union = 0
+  for (let i = 0; i < mask.data.length; i++) {
+    inter += paintMask.data[i] & mask.data[i]
+    union += paintMask.data[i] | mask.data[i]
+  }
+  return union ? inter / union : 0
 }
-const iou = union ? inter / union : 0
+let aligned = resample(0)
+let iou = iouOf(aligned)
+let bestShift = 0
+for (let shift = -30; shift <= 30; shift++) {
+  const candidate = resample(shift)
+  const value = iouOf(candidate)
+  if (value > iou) { iou = value; aligned = candidate; bestShift = shift }
+}
 
 // the width table: the trunk run per height on each side
 const lines: string[] = ['h      painting trunk (px, extent)   | render trunk (px, aligned extent)   diff']
@@ -185,7 +99,7 @@ for (let k = 1; k < 20; k++) {
   if (k === 19) tipRatio = rwid / pwid
   lines.push(`${h.toFixed(2)}   ${String(pwid).padStart(4)}  ${p ? `${p[0]}-${p[1]}` : 'none'}`.padEnd(36) + ` | ${String(rwid).padStart(4)}  ${r ? `${r[0]}-${r[1]}` : 'none'}`.padEnd(36) + `  ${Number.isNaN(diff) ? '' : diff}`)
 }
-lines.push(`IoU ${iou.toFixed(3)}; worst trunk-width difference from 0.05 to 0.95: ${worst} px; tip width at 0.95: ${tipRatio.toFixed(2)} of the painting's`)
+lines.push(`IoU ${iou.toFixed(3)} at an x shift of ${bestShift} px from the base-centre alignment; worst trunk-width difference from 0.05 to 0.95: ${worst} px; tip width at 0.95: ${tipRatio.toFixed(2)} of the painting's`)
 console.log(lines.join('\n'))
 writeFileSync(`${outPrefix}-table.txt`, lines.join('\n') + '\n')
 

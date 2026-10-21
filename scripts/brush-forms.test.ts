@@ -7,6 +7,7 @@ import {
   MOON_DIR,
   pushBrush,
   pushBrushRibbon,
+  pushDrapedRibbon,
   vnoise,
 } from '../src/scene/brushForms.ts'
 
@@ -126,4 +127,22 @@ test('pushBrushRibbon tapers width toward the far end', () => {
   const first = Math.abs(arr.positions[0])
   const last = Math.abs(arr.positions[arr.positions.length - 3])
   assert.ok(last < first * 0.5, `far end must be narrower: ${last} vs ${first}`)
+})
+
+test('pushDrapedRibbon takes its two edges as given: left then right per step, two triangles per step, nothing for a degenerate input', () => {
+  const arr = makeBrushArrays()
+  const left = [new Vector3(0, 0, 0), new Vector3(0, 1, 0), new Vector3(0.1, 2, 0)]
+  const right = [new Vector3(0.2, 0, 0), new Vector3(0.2, 1, 0), new Vector3(0.3, 2, 0)]
+  const colours = [new Color(0.1, 0.2, 0.3), new Color(0.4, 0.5, 0.6), new Color(0.7, 0.8, 0.9)]
+  pushDrapedRibbon(arr, left, right, colours)
+  assert.equal(arr.positions.length, 18)
+  assert.deepEqual(arr.positions.slice(0, 6), [0, 0, 0, 0.2, 0, 0])
+  assert.deepEqual(arr.positions.slice(12, 18), [0.1, 2, 0, 0.3, 2, 0])
+  assert.deepEqual(arr.colors.slice(0, 6), [0.1, 0.2, 0.3, 0.1, 0.2, 0.3])
+  assert.equal(arr.indices.length, 12)
+  assert.deepEqual(arr.indices.slice(0, 6), [0, 1, 2, 1, 3, 2])
+  const empty = makeBrushArrays()
+  pushDrapedRibbon(empty, left.slice(0, 1), right.slice(0, 1), colours.slice(0, 1))
+  pushDrapedRibbon(empty, left, right.slice(0, 2), colours)
+  assert.equal(empty.positions.length, 0)
 })
