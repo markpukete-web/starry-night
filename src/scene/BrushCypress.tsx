@@ -4,7 +4,7 @@ import { BufferAttribute, BufferGeometry, Color, DoubleSide, MeshBasicMaterial, 
 
 import rowTableJson from '../../public/reference/cypress-rows.json'
 import { makeBrushArrays, moonShade, pushDrapedRibbon } from './brushForms'
-import { buildCypressLobeSolid, drapeRibbon, liftToLobes, ringsByLobe, type CypressLobeSolidOptions } from './cypressLobeGeometry'
+import { buildCypressLobeSolid, drapeRibbon, liftToLobes, RIBBON_LIFT, ringsByLobe, STRIP_COLUMNS, type CypressLobeSolidOptions } from './cypressLobeGeometry'
 import { buildCypressLobePlan, sampleCypressLobe, type CypressLobeRows } from './cypressLobes'
 import { CYPRESS_RIBBON_CONFIG, ribbonColumns, traceCypressRibbons } from './cypressStrokes'
 import { cypressViewBearing } from './cypressMapping'
@@ -30,10 +30,6 @@ const SOURCE_STROKE_LIFT = 1
 const MOON_LIFT = 0.04
 /** the painting's darkest cypress colour (palette.json, L 9.6): the gaps between strokes */
 const CYPRESS_UNDERPAINT = new Color('#151c1b')
-/** world units the ribbons sit toward the camera from the solid */
-const RIBBON_LIFT = 0.004
-/** points across a strip, each lifted on its own, so the strip follows the lobe's curve (code review F1) */
-const STRIP_COLUMNS = 5
 
 /** The row table's crop is `uv` of the painting (E1: the table is baked from the 3840 px scan, so no pixel origin). */
 const rowTable = rowTableJson as unknown as CypressLobeRows & { uv: [number, number, number, number] }

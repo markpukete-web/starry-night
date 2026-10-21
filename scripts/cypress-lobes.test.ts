@@ -14,7 +14,9 @@ import {
   drapeRibbon,
   liftToLobes,
   mapCypressLobeSurface,
+  RIBBON_LIFT,
   ringsByLobe,
+  STRIP_COLUMNS,
   type CypressLobeSolidOptions,
 } from '../src/scene/cypressLobeGeometry.ts'
 import { rowSpanAt } from '../src/scene/cypressMapping.ts'
@@ -335,6 +337,16 @@ test('liftToLobes: on the ellipse inside, the frontmost under two lobes, the rim
   assert.ok(depthOf(under.position, FIXTURE_OPTIONS) >= Math.max(depthOf(mainPoint.position, FIXTURE_OPTIONS), depthOf(frondPoint.position, FIXTURE_OPTIONS)) - 1e-9, 'the union\'s front surface')
 })
 
+test('treeComponent returns an empty mask for a crop with no tree, not a full one (code review F11)', async () => {
+  const { treeComponent: component } = await import('./lib/silhouette.ts')
+  const w = 30
+  const h = 60
+  const rgba = new Uint8Array(w * h * 4)
+  for (let i = 0; i < w * h; i++) { rgba[i * 4] = 70; rgba[i * 4 + 1] = 90; rgba[i * 4 + 2] = 180; rgba[i * 4 + 3] = 255 }
+  const mask = component(rgba, w, 0, 0, w, h, 1)
+  assert.equal(mask.data.reduce((sum, v) => sum + v, 0), 0)
+})
+
 function realAssets() {
   const rows = JSON.parse(readFileSync(new URL('../public/reference/cypress-rows.json', import.meta.url), 'utf8')) as CypressLobeRows & { uv: [number, number, number, number] }
   const flowPng = decodePNG(readFileSync(new URL('../public/reference/cypress-flow.png', import.meta.url)))
@@ -387,29 +399,44 @@ test('at a frond-to-main surface crossing the view offset does not jump and the 
     // only a crossing of two surfaces counts: beyond both rims the lift is the rim plane either way and the normals agree
     if (Math.abs(onA.lateral) > 1 || Math.abs(onB.lateral) > 1) continue
     crossings++
-    const newJump = distance(onA.position.map((v, i) => v + view[i] * 0.004), onB.position.map((v, i) => v + view[i] * 0.004))
-    const oldJump = distance(onA.position.map((v, i) => v + onA.normal[i] * 0.004), onB.position.map((v, i) => v + onB.normal[i] * 0.004))
-    assert.ok(newJump < 1e-6, `the view offset jumps ${newJump.toExponential(2)} at the crossing at ${h}`)
+    // the runtime path: a ribbon whose samples straddle the crossing, draped by `drapeRibbon` itself; its emitted
+    // centre column must not step more than the samples' own spacing across the switch
+    const epsilon = 2e-5
+    const straddle: CypressRibbon = {
+      samples: [-2, -1, 0, 1, 2].map((k) => ({ px: a + k * epsilon, py: 1 - h, inside: true })),
+      seedSample: null as unknown as CypressRibbon['seedSample'],
+      colour: [0, 0, 0],
+      halfWidth: 0.004,
+      relief: 1,
+      seed: 1,
+    }
+    straddle.seedSample = straddle.samples[2]
+    const draped = drapeRibbon(straddle, ribbonColumns(straddle, 1000, 1000, 1, STRIP_COLUMNS), rings, options, true, RIBBON_LIFT)
+    assert.ok(draped && draped.kept.length === 5, 'the straddling ribbon drapes whole')
+    const centre = (STRIP_COLUMNS - 1) / 2
+    let worstEmitted = 0
+    for (let k = 1; k < draped.steps.length; k++) worstEmitted = Math.max(worstEmitted, draped.steps[k][centre].distanceTo(draped.steps[k - 1][centre]))
+    assert.ok(worstEmitted < epsilon * options.sourceToWorld * 2 + 1e-6, `the drape's emitted centre steps ${worstEmitted.toExponential(2)} across the crossing at ${h}`)
+    // the control, computed as the old runtime did: the same two surfaces offset along their own normals jump
+    const oldJump = distance(onA.position.map((v, i) => v + onA.normal[i] * RIBBON_LIFT), onB.position.map((v, i) => v + onB.normal[i] * RIBBON_LIFT))
     assert.ok(oldJump > 1e-3, `the control: the normal offset jumps ${oldJump.toExponential(2)} at the crossing at ${h}`)
   }
   assert.ok(crossings >= 1, 'at least one surface crossing of the left frond and the main on the shipped plan')
 })
 
+/** The emitted triangles' centroids (the corners sit on the lifted surface by construction; the interiors are the question). */
 function stripTriangles(draped: { steps: Vector3[][]; kept: unknown[] }) {
   const arr = makeBrushArrays()
   pushDrapedRibbon(arr, draped.steps, draped.kept.map(() => new Color(1, 1, 1)))
   const points: Vector3[] = []
   for (let i = 0; i < arr.indices.length; i += 3) {
     const corner = (n: number) => new Vector3(arr.positions[arr.indices[i + n] * 3], arr.positions[arr.indices[i + n] * 3 + 1], arr.positions[arr.indices[i + n] * 3 + 2])
-    const a = corner(0)
-    const b = corner(1)
-    const c = corner(2)
-    points.push(a, b, c, a.clone().add(b).add(c).multiplyScalar(1 / 3))
+    points.push(corner(0).add(corner(1)).add(corner(2)).multiplyScalar(1 / 3))
   }
   return points
 }
 
-test('a draped strip clears the compiled solid across its whole width, vertices and triangle centroids, and a flat two-column strip does not', () => {
+test('a draped strip clears the compiled solid across its whole width on both batches, vertices and triangle centroids, and a flat two-column strip does not', () => {
   const { rows, flow, options, solid, rings } = realAssets()
   const geometry = new BufferGeometry()
   geometry.setAttribute('position', new BufferAttribute(new Float32Array(solid.positions), 3))
@@ -418,16 +445,19 @@ test('a draped strip clears the compiled solid across its whole width, vertices 
   mesh.updateMatrixWorld()
   const view = new Vector3(...viewOf(options))
   const painting: ImageData2D = { data: new Uint8ClampedArray([40, 60, 30, 255]), width: 1, height: 1 }
-  const ribbons = traceCypressRibbons(flow, painting, rows, 60, 0xc1f3a11).slice(0, 50)
+  const front = traceCypressRibbons(flow, painting, rows, CYPRESS_RIBBON_CONFIG.frontCount, 0xc1f3a11)
+  const back = traceCypressRibbons(flow, painting, rows, Math.round(CYPRESS_RIBBON_CONFIG.frontCount * CYPRESS_RIBBON_CONFIG.backShare), 0xbacc51de)
+  // every sixth ribbon of each batch, plus the two the confirmation read named as the worst (front 244, back 66)
+  const pick = (batch: CypressRibbon[], named: number) => batch.filter((_, i) => i % 6 === 0 || i === named)
   const raycaster = new Raycaster()
-  const probe = (columns: number) => {
+  const probe = (columns: number, lift: number) => {
     let checked = 0
     let misses = 0
     let worst = -Infinity
-    for (const frontFacing of [true, false]) {
+    for (const [frontFacing, ribbons] of [[true, pick(front, 244)], [false, pick(back, 66)]] as const) {
       const facing = frontFacing ? 1 : -1
       for (const ribbon of ribbons) {
-        const draped = drapeRibbon(ribbon, ribbonColumns(ribbon, flow.width, flow.height, CYPRESS_RIBBON_CONFIG.taper, columns), rings, options, frontFacing, 0.004)
+        const draped = drapeRibbon(ribbon, ribbonColumns(ribbon, flow.width, flow.height, CYPRESS_RIBBON_CONFIG.taper, columns), rings, options, frontFacing, lift)
         if (!draped) continue
         for (const point of stripTriangles(draped)) {
           const origin = point.clone().addScaledVector(view, facing * 10)
@@ -441,12 +471,14 @@ test('a draped strip clears the compiled solid across its whole width, vertices 
     }
     return { checked, misses, worst }
   }
-  const five = probe(5)
-  assert.ok(five.checked > 4000, `${five.checked} points checked`)
-  assert.ok(five.worst <= 1e-4, `a strip point sits ${five.worst.toFixed(5)} behind the solid with five columns`)
-  assert.ok(five.misses < five.checked * 0.4, `${five.misses} of ${five.checked} rays miss the solid (tongues beyond the rim)`)
+  // the bar: half a pixel at the design camera (the tree's 2.7 world units span 578 px there, 0.0047 per px)
+  const halfPixel = 0.0023
+  const runtime = probe(STRIP_COLUMNS, RIBBON_LIFT)
+  assert.ok(runtime.checked > 30000, `${runtime.checked} centroids checked`)
+  assert.ok(runtime.worst <= halfPixel, `a triangle centroid sits ${runtime.worst.toFixed(5)} behind the solid with ${STRIP_COLUMNS} columns and the rim lift`)
+  assert.ok(runtime.misses < runtime.checked * 0.4, `${runtime.misses} of ${runtime.checked} rays miss the solid (tongues beyond the rim)`)
   // the control: a flat strip between two lifted edges has triangle interiors inside the curved lobe
-  const two = probe(2)
+  const two = probe(2, RIBBON_LIFT)
   assert.ok(two.worst > 0.003, `the control: a two-column strip's worst point is ${two.worst.toFixed(5)} behind the solid`)
 })
 

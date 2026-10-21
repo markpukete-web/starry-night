@@ -52,7 +52,9 @@ export function treeComponent(rgba: Uint8Array | Uint8ClampedArray, imageWidth: 
     if (count > bestCount) { bestCount = count; bestX = x }
   }
   const labels = new Int32Array(w * h)
-  let best = 0
+  // no component labelled means an empty mask: with `best` left at 0 every unlabelled pixel matched it and a crop
+  // with no tree at all came back as all tree (Codex, code review F11)
+  let best = -1
   let bestSize = 0
   let label = 0
   for (let seedY = 0; seedY < h; seedY++) {

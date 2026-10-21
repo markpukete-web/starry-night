@@ -189,6 +189,19 @@ export function liftToLobes(
   return { ...point, lobeId: nearest.lobeId, lateral: nearest.lateral }
 }
 
+/**
+ * Points across a strip, each lifted on its own, and the strip's lift toward the camera in world units. A lobe's
+ * ellipse curves tightly at the rim of the wide lower sections (the curvature radius there is about 0.027 world
+ * units for a depth radius of 0.064), so a chord across a quarter of a 0.09-wide ribbon sagged 0.0043 under the
+ * surface with five columns and a 0.004 lift (Codex, code review F1, confirmation read), and where the ellipse
+ * meets the rim plane a triangle spanning the crease cuts under the ellipse's steep end, which columns cannot
+ * fix. Seven columns and one uniform lift: the worst centroid over both batches (every sixth ribbon and the two
+ * the reviewer named) sat 0.0015 behind the solid at a 0.006 lift, cleared by 0.0005 at 0.008 and by 0.0025 at
+ * 0.010 (2026-10-21). The lift is one value for every column: a lift that grew with the column's lateral jumped
+ * 0.0076 where the lift switches lobes. 0.010 is two pixels at the design camera.
+ */
+export const STRIP_COLUMNS = 7
+export const RIBBON_LIFT = 0.01
 export type DrapedRibbon = {
   /** per kept sample, the strip's points across its width, left to right, lifted and offset */
   steps: Vector3[][]
@@ -202,7 +215,9 @@ export type DrapedRibbon = {
  * offset along the normal jumped 0.0026 there, Codex F5). The seed anchors the kept run: a sample that misses the
  * lift below the seed restarts the run, one above it ends it, the seed itself failing means no run (code review
  * F6), so a strip is never joined across a gap. The outer columns are clamped at the overshoot limit rather than
- * failing, so a wide ribbon at the rim narrows; the centre decides. Null when fewer than three samples survive.
+ * failing, so a wide ribbon at the rim narrows; the centre decides. The lift is one value for every column: a lift
+ * that grew with the column's lateral jumped 0.0076 where the lift switches lobes, since the two lobes' laterals
+ * differ at their crossing. Null when fewer than three samples survive.
  */
 export function drapeRibbon(
   ribbon: CypressRibbon,
