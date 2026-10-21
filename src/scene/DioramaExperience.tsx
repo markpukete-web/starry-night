@@ -129,6 +129,8 @@ type ArrivalRefs = {
   lineRef: RefObject<HTMLElement | null>
   skyReadyRef: RefObject<boolean>
   cypressReadyRef: RefObject<boolean>
+  /** E2: the ground's strokes, which wait on the land's flow */
+  landReadyRef: RefObject<boolean>
   /** the scan has loaded, or failed: either way the opening goes on */
   scanReadyRef: RefObject<boolean>
   /** a tap, click or key has asked to move on */
@@ -152,6 +154,7 @@ function ArrivalDriver({
   lineRef,
   skyReadyRef,
   cypressReadyRef,
+  landReadyRef,
   scanReadyRef,
   skipRequestedRef,
   arrivalStepRef,
@@ -166,7 +169,7 @@ function ArrivalDriver({
   useFrame((_, dt) => {
     const a = clock.tick({
       dt,
-      ready: skyReadyRef.current && cypressReadyRef.current && scanReadyRef.current,
+      ready: skyReadyRef.current && cypressReadyRef.current && landReadyRef.current && scanReadyRef.current,
       skipRequested: skipRequestedRef.current,
       pinned: (window as ArrivalWindow).__arrivalTime,
       reduced,
@@ -263,7 +266,7 @@ function Scene({
       {measurePerformance && <PerfProbe />}
       {arrival && <ArrivalDriver home={camera} reduced={still} onDone={onArrived} {...refs} />}
       <Suspense fallback={null}>
-        {debug !== 'flow' && <Diorama debug={debug === 'stage' ? 'stage' : 'final'} clock={skyClock} alive={alive} tuning={aliveTuning} cypressReady={arrival ? refs.cypressReadyRef : undefined} />}
+        {debug !== 'flow' && <Diorama debug={debug === 'stage' ? 'stage' : 'final'} clock={skyClock} alive={alive} tuning={aliveTuning} cypressReady={arrival ? refs.cypressReadyRef : undefined} landReady={arrival ? refs.landReadyRef : undefined} />}
         {debug !== 'stage' && (
           <PaintingFlowSky3D
             paused={reduced}
@@ -315,6 +318,7 @@ export function DioramaExperience({ clean = false, reduced = false, sky = 'light
   const lineRef = useRef<HTMLElement>(null)
   const skyReadyRef = useRef(false)
   const cypressReadyRef = useRef(false)
+  const landReadyRef = useRef(false)
   const scanReadyRef = useRef(false)
   const skipRequestedRef = useRef(false)
   const arrivalStepRef = useRef<number | null>(null)
@@ -371,6 +375,7 @@ export function DioramaExperience({ clean = false, reduced = false, sky = 'light
           lineRef={lineRef}
           skyReadyRef={skyReadyRef}
           cypressReadyRef={cypressReadyRef}
+          landReadyRef={landReadyRef}
           scanReadyRef={scanReadyRef}
           skipRequestedRef={skipRequestedRef}
           arrivalStepRef={arrivalStepRef}

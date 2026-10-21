@@ -1,5 +1,55 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-10-21 (night): E2 gated on `feat/land-e2`, Codex's code review closed MERGE; Mark's taste gate next (supersedes the pickup below)
+
+E2 (the land) is built and gated on `feat/land-e2`, local only, nothing pushed. Read `tasks/2026-10-21-land-e2.md`
+(the record: the retune table, the measured tables, the gate G1–G11, the deviations, what is open). Read
+`tasks/lessons.md` from "E2 (the land), the domes' second pass".
+
+1. Done tonight: capture 4's one defect (a dome's bare top against the sky) traced to two frames for one surface
+   (the domes on the terrain under their own centres, the strips from the mass centre's base) and fixed in one line,
+   `dd260b0`, red test first. Capture 5 looked at and measured: the disc gone, the colour gate PASS, 60 fps at the
+   rig's vsync, `check:reduced` and `check:viewport` PASS, G9 measured at 0 differing pixels on a land-only crop.
+   Record `98cd73e`. The domes' retune cap is reached (the height cap, the frame): any further dome change is
+   Mark's call.
+2. Codex's code review (G11) closed: REVISE on `dd260b0` (F1–F4 P2, F5–F6 P3), the fixes in `b3b2bc6` (the domes
+   wound outward: the far shell had rendered since capture 3; the clamped strip points settled on the dome–terrain
+   contact; the painting's load failure releases the land latch; the heading test's tautology; the unreachable cycle
+   guard removed), F4 (the flat gate without the masses' strips) deferred with evidence, the confirmation read
+   MERGE (`scratch/land-e2-2026-10-21/confirmation-report.md`), its F6 note taken in the next commit. Capture 6
+   after the fixes reads as capture 5 and passes the colour gate. The dispositions: the plan's Review section,
+   "The code review (G11)"; the record's G11 row.
+3. Mark's taste gate on captures, in this order: `scratch/land-e2-2026-10-21/c6-land.png` (the island at the home
+   view), `c4-vs-c5-dome-2x.png` (the dome fix), `c5-vs-c6-dome-2x.png` (the review's winding fix), `c6-orchard-1to1.png`,
+   `c6-bushes-1to1.png`, `c6-front-row-1to1.png`, `c6-lookdown-50.png`, `c6-orbit-50.png`, `c6-mobile-70.png`. His
+   phone `?perf=1` reading stays open.
+4. Push and PR on his word (`push-only-after-mark-reviews`), then the Codex PR review, then D1 (touch the land,
+   `tasks/2026-10-20-touch-land-d1-plan.md`).
+5. Open, from the record: `row-left` and `bushes` overlap in x at the same z; `row-front`'s leftmost dome is sparse
+   (143 foliage px); the root's rim dabs at the home view (pre-existing); three decodes of `painting.jpg`.
+6. The worker (Gemini, `w4:p5`) was at 99.3% of its 5-hour window at 20:20 Brisbane; it resets about 01:15. Route
+   mechanical work elsewhere until then (`scout` or `builder`, see `agent-workflow`).
+
+## Pickup — 2026-10-21 evening (superseded by the night pickup above)
+
+E2 (the land) is built on `feat/land-e2`, local only, nothing pushed. Read `tasks/2026-10-21-land-e2.md` (the record,
+with the gate table and what is open) and the plan's Review section. The worker was running `brief-capture-4.md`
+(the capture, `alive=0`, perf, `check:reduced`, `check:viewport`) when the day session closed; its report is
+`scratch/land-e2-2026-10-21/capture-4-report.md` if it landed.
+
+1. Capture 4 is looked at and measured (the record's tables): the colour gate passes, 60 fps at vsync, both checks
+   pass. One defect open: a dome's dark underpaint shows against the sky where its top and back carry no strips
+   (`scratch/land-e2-2026-10-21/c4-orchard-1to1.png`). The domes' second pass: the underpaint as the mass's median
+   foliage colour and more strips on the back and top (or a flatter `rz`), a capture through the worker
+   (`brief-capture-4.md` as the model), the colour gate again. Then the `alive=0` diff on a land-only crop.
+2. `npm run build`, `npm run lint` (the whole tree, as CI), `npm run test:sky`.
+3. Commit any fix, then write Codex's code-review brief (model: `scratch/cypress-e1-2026-10-21/brief-code-review.md`),
+   dispatch to `w4:p4`, answer the findings, record them in the plan's Review section and the record.
+4. Mark's taste gate on captures (the home, the look-down, the orbit, the mobile), then push and PR on his word.
+5. Retune cap: the ground used three passes (1: the map and the fill, 2: the low-pass, 3: count and width); the
+   domes one (the height cap). One pass each remains before stopping to ask.
+
+
 Durable cross-session plan. `tasks/lessons.md` holds the memory; this holds the intent.
 Locked sections in CLAUDE.md are Mark's. Proposed changes to them go under "Proposed to Mark"
 below — never edited in place.
@@ -9,7 +59,35 @@ below — never edited in place.
 > Its `Status` note was last brought up to date on 2026-10-16 and is no longer maintained. At session start,
 > read `tasks/lessons.md`.
 
-## Pickup — 2026-10-21 (evening): E1 built and gated on `feat/cypress-e1`; Mark's taste gate next
+## Pickup — 2026-10-21 (night): PR #15 merged, E1 live on `main`; E2 (the land) is next
+
+**Current agent entry point:** this section, then "Direction — the land" below (the roadmap: E2 then D1), then
+`tasks/2026-10-21-cypress-e1.md` (E1's record, for the gates and tools E2 reuses). Read `tasks/lessons.md` from
+"E1 (the cypress), the plan" down.
+
+**Where things are.**
+- `main` at `b54fd68` (PR #15, merged 2026-10-21 03:27 UTC on Mark's word, "Can you merge for me"), Vercel
+  deploying production from it. Codex's PR review passed on `dc3ef9f` with no findings; the later commits were
+  the record and a test-file lint fix CI caught (`eslint .`, which the local `eslint src scripts` had not covered:
+  run `npm run lint` before pushing). The remote branch `feat/cypress-e1` waits for Mark to delete, with
+  `feat/arrival-c`, `fix/moving-first-paint`, `feat/flags-on`.
+- E1 shipped: the cypress as streamline ribbons at the painting's stroke width on the lobe volumes, the whole-tree
+  mask and field from the 3840 scan, the sky's stroke body opaque with an alpha test, the gates in `scripts/`
+  (`cypress-silhouette.ts`, `check-cypress-colour.ts`, `flat-cypress-gate.ts`, `lib/silhouette.ts`). The numbers:
+  silhouette IoU 0.817 (was 0.787), ΔE 1.05 / 1.22 / 3.05, the build 95 ms, the Mac at the cap.
+- This record sits on the local `docs/after-pr-15`; it rides the next code PR. Nothing running: the dev server
+  stopped; Herdr `w4:p4` (Codex) and `w4:p5` (Gemini) idle.
+- Open, Mark's: the bristle texture (local contrast 0.93 against the painting's 6.45; a dial after the retune
+  cap), his iPhone's `?perf=1` on production (the frame rate and the tree's build time), B's surges reading as
+  fog at a close orbit (the `surge` knob), the DPR cap (Tunables 2, code 1.5), C's taste calls.
+
+- [ ] **E2, the land**: the plan file first (`tasks/<date>-land-e2-plan.md`), the painting's crops beside ours
+  (the island's top, the olive trees, the bushes; `tasks/2026-10-05-village-foliage.md` is the study), the
+  derivation reusing `treeComponent` and the field pipeline, a fresh Codex review, the build, the gate at 1:1.
+- [ ] **D1, touch**, after E2: revise the plan per its review (the vertex transform, the concatenation and the
+  draped vertex order are in place), rebase on the new tree, build.
+
+## Pickup — 2026-10-21 (evening): E1 built and gated on `feat/cypress-e1`; Mark's taste gate next (superseded by the night pickup above)
 
 **Current agent entry point:** this section, then `tasks/2026-10-21-cypress-e1.md` (the record and the gate), then
 the plan `tasks/2026-10-21-cypress-e1-plan.md` (Codex's reads and every disposition). Read `tasks/lessons.md` from

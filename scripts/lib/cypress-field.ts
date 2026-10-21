@@ -393,33 +393,38 @@ export function lowPassOrientation(
   return { cos2: outputCos2, sin2: outputSin2 }
 }
 
-/** The blend's gate: a texel keeps its orientation from this anisotropy up; below the lower edge it is vertical. */
+/** The blend's gate: a texel keeps its orientation from this anisotropy up; below the lower edge it is the fallback. */
 export const VERTICAL_GATE: readonly [number, number] = [0.05, 0.15]
+/** The fallback orientations as double-angles: vertical (the cypress's trunk) and horizontal (the land's ground, E2). */
+export const VERTICAL: readonly [number, number] = [VERTICAL_COS2, VERTICAL_SIN2]
+export const HORIZONTAL: readonly [number, number] = [1, 0]
 
 /**
- * Fall back to the tree's global vertical only where the tensor has no orientation: the confidence is
- * smoothstep(VERTICAL_GATE) of the anisotropy. (Weighted by the energy-normalised coherence, as before E1, the
- * shipped field was 94% within 10° of vertical while the painting's strokes lean and curl.)
+ * Fall back to a global orientation only where the tensor has none: the confidence is smoothstep(VERTICAL_GATE)
+ * of the anisotropy. The fallback is the cypress's vertical unless given (the land passes HORIZONTAL). (Weighted
+ * by the energy-normalised coherence, as before E1, the shipped field was 94% within 10° of vertical while the
+ * painting's strokes lean and curl.)
  */
 export function blendToVertical(
   cos2: Float64Array,
   sin2: Float64Array,
   anisotropy: Float64Array,
+  fallback: readonly [number, number] = VERTICAL,
 ): { cos2: Float64Array; sin2: Float64Array } {
   const outputCos2 = new Float64Array(cos2.length)
   const outputSin2 = new Float64Array(sin2.length)
   for (let i = 0; i < cos2.length; i++) {
     const t = Math.min(1, Math.max(0, (anisotropy[i] - VERTICAL_GATE[0]) / (VERTICAL_GATE[1] - VERTICAL_GATE[0])))
     const confidence = t * t * (3 - 2 * t)
-    let c = cos2[i] * confidence + VERTICAL_COS2 * (1 - confidence)
-    let s = sin2[i] * confidence + VERTICAL_SIN2 * (1 - confidence)
+    let c = cos2[i] * confidence + fallback[0] * (1 - confidence)
+    let s = sin2[i] * confidence + fallback[1] * (1 - confidence)
     const magnitude = Math.hypot(c, s)
     if (magnitude > 1e-12) {
       c /= magnitude
       s /= magnitude
     } else {
-      c = VERTICAL_COS2
-      s = VERTICAL_SIN2
+      c = fallback[0]
+      s = fallback[1]
     }
     outputCos2[i] = c
     outputSin2[i] = s

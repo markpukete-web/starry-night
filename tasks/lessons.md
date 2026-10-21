@@ -2716,3 +2716,73 @@ after PR #8 merged (`246e817`, "Merge it then start the second pass").
 - **A test that recomputes the mechanism does not cover the runtime.** The crossing test computed both offsets
   itself and would stay green if the drape went back to the normal offset. Drive the runtime function at the
   established crossing and assert on what it emits.
+
+## E2 (the land), the plan and the build, 2026-10-21
+
+- **A flat gate finds what the 3D capture hides.** The first 3D capture read as "thin strokes on a dark slab".
+  Drawing the traced ribbons flat beside the painting's band showed four defects in one look: the sky's swirls
+  on the island's back (a flat crest), the cypress's brown paint seeding ground strokes (the column too narrow),
+  the houses' white and yellow on the apron (walls seeding), and a fill that read as planks (one pigment per
+  row). Draw the strokes flat in the painting's frame before draping, every retune.
+- **Check a uv-anchored map at both ends.** Anchoring the church's nave at 4.1 world per u put the right coast at
+  u 1.07: the rim beyond x 1.77 had no painting under it. 4.75 puts the painting's right edge on the coast.
+- **Stroke width in scan pixels is not stroke width on screen.** At the home camera the island shows the painting
+  at 0.6 of its pixel size, and the fields' 15–31 scan-pixel strokes drew as 2–4 px lines. Measure the width on
+  the capture at 1:1, then set the fraction; and the hills' strokes are the painting's broad ones, not the fields'.
+- **One nominal coverage leaves a third bare.** 1,000 strokes covered the top once over and the dark solid showed
+  through everywhere; the painting's layered strokes need about three. Count the coverage per region before
+  the capture: a script over the drape gives it in seconds.
+- **A colour rule cannot tell a pale wall from a lit hill slope.** Both are pale blue-grey. The village's
+  footprint in the painting is authored data, like the masses' boxes; exclude it from the ground's support.
+- **A multiply on a three `Color` is linear light.** `hills × 0.55` reads as 0.76 in sRGB (L 36), lighter than a
+  quarter of the strokes; 0.3 linear is 0.58 in sRGB (L 28). Say which space a factor lives in.
+- **A cluster's box is not a crown's height.** The orchard's 152 px box gave domes two houses tall, which read as
+  balls; the bushes' 160 px a mound. Cap a dome at a house's eave and let the curls compress onto it.
+- **Two scales, one asset.** The masses' curls want a σ 1.5 low-pass, the fields' straight strokes σ 3.5; pick per
+  texel by the masses' dilated runs and bake one field. The support rides in B with the anisotropy; the masses
+  set their own B from their runs, so the ground's admission starves no mass.
+- **The column's fill is a translated copy, aligned to the crest.** Under the cypress the painting has no ground.
+  Reading the band past the tree's right edge, at the same depth between the fields' top and the crest at the
+  source's own u, continues the fields and the hills in their own style; the same v would have read sky.
+- **Keep out of `src/` while the worker captures.** The capture reads the dev server off the working tree, so an
+  edit mid-run lands in the frames. New files nothing imports are safe; wiring waits for the report.
+
+## E2 (the land), the domes' second pass, 2026-10-21 (evening)
+
+- **Two frames for one surface drift apart on a slope.** The domes stood on the terrain under their own centres while
+  the strips' source frame rose from the mass centre's base; orchard-upper's left dome stood 0.74 heights above the
+  frame, so its strips covered its lower quarter and its top was a bare disc against the sky (capture 4). The planned
+  fix (more strips, a flatter `rz`, a lighter underpaint) would not have reached the top. Before choosing a fix for
+  bare paint, count the coverage per region of the thing that is bare: a 24 × 24 grid over each dome's ellipse by
+  third took a minute and named the cause (0.78 / 0.06 / 0.00). The fix was one line: the frame from the terrain
+  under the point's own x, as the domes stand.
+- **A probe with the tests' stub painting cannot speak for the runtime.** The 1 × 1 stub admits every texel, so the
+  ribbons run past the painting's foliage and the coverage numbers are not the capture's. Decode the real painting
+  for any coverage or colour claim; the stub is for geometry.
+- **A coverage probe over an x-range reads a neighbour's strips.** `row-left` and `bushes` overlap in x at the same z,
+  so the probe's 12,071 vertices on `row-left` were the bushes'. Filter by mass, or read the number as the pair's.
+- **A "land-only" crop must be checked against the diff image.** The first G9 crop at the hump's crest held the sky's
+  haze and a dome's edge against it and differed on 35% of its pixels; the diff image showed the land's own pixels
+  grey. The crop under the crest (300 × 60 at 600, 600) differed on none.
+
+## E2 (the land), Codex's code review, 2026-10-21 (night)
+
+- **A solid's winding is only tested against the material's side.** `pushDome` wound every triangle inward and the
+  domes' material culls back faces, so for three captures the far shell rendered and the back strips showed through
+  the dome; nobody saw it, because the look still read as curls over a dark body. The index-bounds test passed.
+  Assert every triangle's normal against the centroid's outward vector, and raycast from outside with the runtime
+  material's side (Codex E2 F1).
+- **A clamp that moves one coordinate breaks the constraint that set the others.** The contact clamp raised a lifted
+  point in y and kept the rim's shallow z, which put it 0.033 inside the solid; the terrain test was green because
+  it asserted terrain clearance only. Where two surfaces constrain a point, settle it on their contact (a
+  bisection on the height, every candidate verified against both), and test both constraints on the emitted
+  vertices (Codex E2 F2). Trimming the points instead cut one mass's back strips from 8 to 1; the mass's plane
+  beyond the union's reach is the surface the plain clamp had been using, and keeping it kept every strip.
+- **The third fetch is the one without the callback.** The painting's `useImageData` had no failure callback where
+  the flow's and the masses' had, so a failed decode never released the ready latch (Codex E2 F3). When several
+  loads feed one latch, list them and check each has the same failure path.
+- **`a > b − ε || a < b + ε` is true for every a and b.** The one-way assertion in the heading test was a tautology
+  (Codex E2 F5). An assertion about direction needs the direction decided once, then every step's sign.
+- **A guard a reviewer can prove unreachable is dead code with a misleading test.** The two-step cycle guard could not
+  fire under the sign continuity (two steps end at least √2 steps from two back), and its test stayed green with the
+  guard removed (Codex E2 F6). Removing it is the fix; the test is renamed to what it proves.

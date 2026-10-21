@@ -38,9 +38,15 @@ export const CYPRESS_RIBBON_CONFIG = {
   /** the tip's width as a share of the base's: the stroke draws out upward */
   taper: 0.45,
   reliefSpread: 0.035,
+  /**
+   * how a walk reads the field's sign: `up` takes the texel's direction as baked (the cypress's field is signed up
+   * at bake time); `continuous` flips a texel that opposes the walk's last step and stops at a two-step cycle (the
+   * land, E2: a horizontal lane's neighbouring texels decode to opposites and trapped the walk, Codex F9)
+   */
+  heading: 'up' as 'up' | 'continuous',
 } as const
 
-export type CypressRibbonConfig = { -readonly [K in keyof typeof CYPRESS_RIBBON_CONFIG]: number }
+export type CypressRibbonConfig = { -readonly [K in keyof typeof CYPRESS_RIBBON_CONFIG]: (typeof CYPRESS_RIBBON_CONFIG)[K] extends number ? number : 'up' | 'continuous' }
 
 export type CypressRibbonSample = {
   /** crop-normalised */
@@ -108,13 +114,19 @@ export function runHalfWidthAt(rows: RibbonRows, px: number, py: number): number
   return Math.max(0.0035, (span.right - span.left) / 2)
 }
 
+/** Which texels a band's pigment averages: the cypress takes its tree texels (the sky and the moonlit edge out) */
+export type TexelAccept = (r: number, g: number, b: number) => boolean
+export const TREE_TEXEL: TexelAccept = (r, g, b) => 0.299 * r + 0.587 * g + 0.114 * b < 118 && b < g + 18
+export const EVERY_TEXEL: TexelAccept = () => true
+
 /**
- * A stroke's pigment: the mean of the tree texels in the window a ribbon covers at its middle sample (± its
- * half-width across, ± one texel along), or the texel under the sample when none in the window is tree. One texel
- * is one bristle lane's worth and neighbouring ribbons jumped in value where the painting's strokes agree (retune
- * 3); a wide ribbon takes its band's colour.
+ * A stroke's pigment: the mean of the accepted texels in the window a ribbon covers at its middle sample (± its
+ * half-width across, ± one texel along), or the texel under the sample when none in the window is accepted. One
+ * texel is one bristle lane's worth and neighbouring ribbons jumped in value where the painting's strokes agree
+ * (retune 3); a wide ribbon takes its band's colour. The cypress accepts tree texels; the land (E2) every texel,
+ * since the hills are the blue the tree's filter rejects.
  */
-export function bandPigment(painting: ImageData2D, u: number, v: number, halfWidthU: number): [number, number, number] {
+export function bandPigment(painting: ImageData2D, u: number, v: number, halfWidthU: number, accept: TexelAccept = TREE_TEXEL): [number, number, number] {
   const cx = Math.min(painting.width - 1, Math.max(0, Math.floor(u * painting.width)))
   const cy = Math.min(painting.height - 1, Math.max(0, Math.floor(v * painting.height)))
   const radius = Math.max(1, Math.round(halfWidthU * painting.width))
@@ -131,8 +143,7 @@ export function bandPigment(painting: ImageData2D, u: number, v: number, halfWid
       const red = painting.data[i]
       const green = painting.data[i + 1]
       const blue = painting.data[i + 2]
-      const luminance = 0.299 * red + 0.587 * green + 0.114 * blue
-      if (luminance >= 118 || blue >= green + 18) continue
+      if (!accept(red, green, blue)) continue
       r += red
       g += green
       b += blue
@@ -149,6 +160,7 @@ export function traceCypressRibbons(
   count: number,
   seed: number,
   config: CypressRibbonConfig = CYPRESS_RIBBON_CONFIG,
+  accept: TexelAccept = TREE_TEXEL,
 ): CypressRibbon[] {
   const random = mulberry32(seed)
   const inside = (px: number, py: number) => sampleCypressImage(flow, px, py).b > 0
@@ -162,15 +174,26 @@ export function traceCypressRibbons(
   const widthDenominator = flow.width - 1
   const heightDenominator = flow.height - 1
   const stepPx = config.step * heightDenominator
+  const continuous = config.heading === 'continuous'
   const walk = (px: number, py: number, sign: 1 | -1, steps: number): CypressRibbonSample[] => {
     const out: CypressRibbonSample[] = []
     let x = px * widthDenominator
     let y = py * heightDenominator
     let outside = 0
+    let hx = 0
+    let hy = 0
     for (let k = 0; k < steps; k++) {
-      const [dx, dy] = direction(x / widthDenominator, y / heightDenominator)
-      x += sign * dx * stepPx
-      y += sign * dy * stepPx
+      let [dx, dy] = direction(x / widthDenominator, y / heightDenominator)
+      if (continuous && k > 0 && dx * hx + dy * hy < 0) {
+        dx = -dx
+        dy = -dy
+      }
+      hx = dx
+      hy = dy
+      const nextX = x + sign * dx * stepPx
+      const nextY = y + sign * dy * stepPx
+      x = nextX
+      y = nextY
       if (x < 0 || y < 0 || x > widthDenominator || y > heightDenominator) break
       const sample = { px: x / widthDenominator, py: y / heightDenominator, inside: inside(x / widthDenominator, y / heightDenominator) }
       if (!sample.inside && ++outside > config.overshootSteps) break
@@ -206,7 +229,7 @@ export function traceCypressRibbons(
     if (samples.length < 4) continue
     const middle = samples[Math.floor(samples.length / 2)]
     const at = middle.inside ? middle : seedSample
-    const colour = bandPigment(painting, ...paintingUV(rows, at.px, at.py), halfWidth * (rows.uv[2] - rows.uv[0]))
+    const colour = bandPigment(painting, ...paintingUV(rows, at.px, at.py), halfWidth * (rows.uv[2] - rows.uv[0]), accept)
     output.push({ samples, seedSample, colour, halfWidth, relief, seed: ribbonSeed })
   }
   return output

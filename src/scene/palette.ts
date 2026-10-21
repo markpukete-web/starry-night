@@ -10,7 +10,7 @@
 //   • A few foreground surfaces apply a DOCUMENTED scalar/lerp lift to their swatch (at the use site
 //     in Diorama.tsx) so the dark forms read in the night lighting — provenance kept (swatch × logged
 //     factor, fit to preserve the prior hand-tuned look), per the 2026-06-15 palette-provenance pass.
-import palette from '../../public/reference/palette.json'
+import palette from '../../public/reference/palette.json' with { type: 'json' }
 
 type Swatch = { hex: string; srgb: number[]; lab: number[]; weight: number }
 const region = (name: string): Swatch[] => (palette.regions as Record<string, { colours: Swatch[] }>)[name].colours
