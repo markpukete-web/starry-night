@@ -476,3 +476,25 @@ on one dome stirs the next, which reads as a cluster, as the painting's clumps a
    plan still assumes. One read.
 2. The build on `feat/touch-land-d1` from `main` (`7bd583e` plus the docs commit): the model and its tests red first
    (D1.1 with F1/F5/F10), then the attribute and the materials, then the input, then the knob, then the gate.
+
+### Codex's read of the rebase (2026-10-21, `scratch/touch-land-2026-10-20/rebase-read-report.md`): REVISE, R1–R2 P2, R3–R4 P3
+
+Each checked against the code; each holds. The dispositions, folded into the build (no second read: the code
+review at G9 checks them in code):
+
+- R1 (P2) the cypress ribbons' `aFlicker.y` is the step's centre height repeated across the seven columns, so it is
+  not the solid's `1 − sourceV` at the same place (268,944 of 315,875 strip vertices differ, up to 0.012) → the
+  cypress's bend weight is the vertex's own local height, `clamp(transformed.y / HEIGHT, 0, 1)`, evaluated in the
+  vertex shader on both materials: the same field on the ribbon and the solid by construction, no attribute. The
+  bend GLSL takes the weight expression as its parameter; the island passes `aBend`, the cypress the expression.
+  `aFlicker` is untouched.
+- R2 (P2) the ground ribbons in the nearest-hit set reject a bush through fragments the stroke shader discards (a
+  design-camera ray to `row-right` hits a ground triangle whose across coordinate is beyond the rounded stroke's
+  radius) → the occluders are opaque bodies only: `island-solid`, `village-solid`, `village-skin`, `village-paint`;
+  the ground's and the trees' strips are never raycast; the island's solid is the ground's proxy, 0.02 under the
+  strokes. The reported ray is a regression test's.
+- R3 (P3) `cypress`, `cypress-solid`, `island-solid` are not assigned today → the build assigns them (the cypress
+  group and its solid mesh, the island's solid mesh); the hook resolves every target and occluder by name once, and
+  in development throws on a missing one before enabling input; `__landBounds()` reports which it found.
+- R4 (P3) `strokeGlsl` lacks `uniforms` → the composition is `concatInjections('land-trees-bend', { uniforms: {},
+  ...strokeGlsl }, bendInjection)`, the bend injection built with its own uniform objects and empty body fields.
