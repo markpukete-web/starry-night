@@ -166,6 +166,24 @@ test('D1: every tree vertex carries a bend weight, its height above the terrain 
   const baked = JSON.parse(readFileSync(new URL('../public/reference/land-masses.json', import.meta.url), 'utf8')) as BakedMass[]
   const painting: ImageData2D = { data: new Uint8ClampedArray([58, 92, 96, 255]), width: 1, height: 1 }
   const trees = buildLandTrees(flow, painting, baked)
+  // the field itself, per vertex against its own mass's height (a binary field passed the extrema checks, Codex D1
+  // review F8): each mass built alone, every weight the clamped height over the terrain over that mass's height
+  let checked = 0
+  let intermediate = 0
+  for (const mass of LAND_MASSES) {
+    const alone = buildLandTrees(flow, painting, baked, 0x7ee5, [mass])
+    const height = placeMass(mass).height
+    for (const [weights, positions] of [[alone.bend, alone.strokes.positions], [alone.solidBend, alone.solid.positions]] as const) {
+      for (let i = 0; i < weights.length; i++) {
+        const above = positions[i * 3 + 1] - islandHeightAt(positions[i * 3], positions[i * 3 + 2])
+        const expected = Math.min(1, Math.max(0, above / height))
+        assert.ok(Math.abs(weights[i] - expected) < 1e-9, `${mass.id}: weight ${weights[i]} at vertex ${i}, expected ${expected.toFixed(4)}`)
+        checked++
+        if (expected > 0.1 && expected < 0.9) intermediate++
+      }
+    }
+  }
+  assert.ok(checked > 50000 && intermediate > 10000, `${checked} weights checked, ${intermediate} intermediate`)
   assert.equal(trees.bend.length, trees.strokes.positions.length / 3, 'one weight per strip vertex')
   assert.equal(trees.solidBend.length, trees.solid.positions.length / 3, 'one weight per dome vertex')
   for (const [name, weights, positions] of [['strips', trees.bend, trees.strokes.positions], ['domes', trees.solidBend, trees.solid.positions]] as const) {

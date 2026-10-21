@@ -200,3 +200,19 @@ test('L8 picking: the nearest body must be land; a nearer occluder, a nearer any
   assert.deepEqual(LAND_MESHES, ['cypress-solid', 'land-trees-solid'])
   assert.ok(!(LAND_OCCLUDERS as readonly string[]).includes('land-ground'), 'the ground ribbons are not an occluder (R2)')
 })
+
+test('L9 a tap completes its ramp before the swing: a hold begun at 0 and released as a tap at 0.02 releases at 0 + rise and swings from 1; a drag releases at once (Codex D1 review F4)', () => {
+  const held = beginHeld(emptyLandStore(), [0, 0, 0], 1, 0)
+  const tapped = releaseHeld(held, 0.02, true)
+  assert.equal(tapped.touches[0].release, T.rise)
+  assert.equal(landAmplitude(tapped.touches[0], T.rise), 1, 'full amplitude at the release')
+  assert.ok(Math.abs(landAmplitude(tapped.touches[0], T.rise + 1e-9) - 1) < 1e-6, 'the swing starts from 1')
+  const lateTap = releaseHeld(beginHeld(emptyLandStore(), [0, 0, 0], 1, 0), 0.5, true)
+  assert.equal(lateTap.touches[0].release, 0.5, 'a tap after the ramp releases at once')
+  const dragged = releaseHeld(held, 0.02)
+  assert.equal(dragged.touches[0].release, 0.02, 'a drag releases at once')
+  // a down and an up in one frame (now = t0): still a full tap
+  const sameFrame = releaseHeld(beginHeld(emptyLandStore(), [0, 0, 0], 1, 3), 3, true)
+  assert.equal(sameFrame.touches[0].release, 3 + T.rise)
+  assert.equal(landAmplitude(sameFrame.touches[0], 3 + T.rise), 1)
+})

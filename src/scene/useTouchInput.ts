@@ -116,17 +116,11 @@ export function useTouchInput({
       s.last = { u, v }
     }
 
-    // D1: the land's bodies and their occluders, by name, looked up when needed (they mount after their loads)
+    // D1: the land's bodies and their occluders, by name, looked up at each pick (they mount after their loads, and a
+    // cached mesh would stay pickable after leaving the scene, Codex D1 review F7; six lookups in a small scene)
     const raycaster = new Raycaster()
     const ndc2 = new Vector2()
-    const found = new Map<string, Object3D>()
-    const byName = (name: string): Object3D | undefined => {
-      const cached = found.get(name)
-      if (cached) return cached
-      const object = scene.getObjectByName(name)
-      if (object) found.set(name, object)
-      return object
-    }
+    const byName = (name: string): Object3D | undefined => scene.getObjectByName(name)
     const landActive = () => landStore !== undefined && bendRef.current > 0
     /** The world point under a client position when the nearest opaque body there is land, else null. */
     const landPoint = (clientX: number, clientY: number): [number, number, number] | null => {
@@ -146,6 +140,7 @@ export function useTouchInput({
       p.overLand = false
       p.dirty = false
     }
+    let lastLandMs = -Infinity
 
     let down: PointerSample | null = null
     let lastHover: HoverMark | null = null
@@ -156,22 +151,22 @@ export function useTouchInput({
       p.y = event.clientY
       p.finger = event.pointerType === 'touch'
       p.dirty = true
-      // D1: over land as of the last frame's test, the move is the land's (landMasksSky), not the sky's
-      if (p.overLand && LAND_TOUCH.landMasksSky && landActive()) return
       const point = skyPoint(event.clientX, event.clientY)
       if (!point) return
       const now: HoverMark = { ms: event.timeStamp, u: point[0], v: point[1] }
       if (!hoverDue(lastHover, now)) return
-      // D1: once per hover step (B's 60 ms gate), the land is asked before the sky, so a move onto the tree never
-      // surges the sky behind it on the way in (the headed gate caught one escaping before the frame's test)
-      if (landActive() && landStore) {
+      // D1: at an admitted hover step the land is asked first, on the current position (a stale flag dropped the
+      // first sky hover after leaving the tree, Codex D1 review F6), at most once per hoverMs; between steps the
+      // frame's test takes the dirty pointer. Over land the step is the land's (landMasksSky), not the sky's
+      if (landActive() && landStore && event.timeStamp - lastLandMs >= TOUCH_SURGE.hoverMs) {
+        lastLandMs = event.timeStamp
         const hit = landPoint(event.clientX, event.clientY)
         p.overLand = hit !== null
+        p.dirty = false
         if (hit) {
-          p.dirty = false
           landStore.current = followHeld(landStore.current, hit, p.down ? 1 : LAND_TOUCH.hoverAmp, clock.current)
           if (LAND_TOUCH.landMasksSky) return
-        }
+        } else if (landStore.current.heldIndex >= 0) landStore.current = releaseHeld(landStore.current, clock.current)
       }
       lastHover = now
       push(point[0], point[1], TOUCH_SURGE.hoverAmp * knobRef.current, clock.current, false)
@@ -194,15 +189,27 @@ export function useTouchInput({
       const start = down
       down = null
       const gesture = classifyGesture(start, { x: event.clientX, y: event.clientY, ms: event.timeStamp })
-      // D1: any up releases a held land touch (its swing); a tap on land is that release, and masks the sky's tap
-      if (landActive() && landStore) {
-        const point = gesture === 'tap' ? landPoint(event.clientX, event.clientY) : null
-        if (landStore.current.heldIndex >= 0) landStore.current = releaseHeld(landStore.current, clock.current)
-        else if (point) landStore.current = pushTap(landStore.current, point, 1, clock.current)
+      // D1: any up releases a held land touch whatever the gain (a hold begun at gain 1 and lifted at gain 0 stayed
+      // held, Codex D1 review F3); a tap lets its ramp finish first (F4); the pending move is consumed, so the next
+      // frame cannot rebuild the hold from the pre-release position (F2): the hover resumes on the next real move
+      let onLand = false
+      if (landStore) {
+        const tap = gesture === 'tap'
+        if (landStore.current.heldIndex >= 0) {
+          landStore.current = releaseHeld(landStore.current, clock.current, tap)
+          onLand = true
+        } else if (tap && landActive()) {
+          const point = landPoint(event.clientX, event.clientY)
+          if (point) {
+            landStore.current = pushTap(landStore.current, point, 1, clock.current)
+            onLand = true
+          }
+        }
         p.overLand = false
-        if (point && LAND_TOUCH.landMasksSky) return
+        p.dirty = false
       }
       if (gesture !== 'tap') return
+      if (onLand && LAND_TOUCH.landMasksSky && landActive()) return
       const point = skyPoint(event.clientX, event.clientY)
       if (point) push(point[0], point[1], knobRef.current, clock.current, true)
     }
@@ -265,6 +272,11 @@ export function useTouchInput({
       window.removeEventListener('pointerup', onUp)
       window.removeEventListener('pointercancel', onCancel)
       document.removeEventListener('visibilitychange', onCancel)
+      // a rebind (a rotation replaces `home`) starts a new closure with no press in it: the hold is released here
+      // and the pointer's state reset, or the old touch stayed held for ever (Codex D1 review F1)
+      releaseLand()
+      p.down = false
+      p.finger = false
       landPointRef.current = null
       delete w.__touchState
       delete w.__touchInject
@@ -280,14 +292,18 @@ export function useTouchInput({
   /* eslint-disable react-hooks/immutability -- R3F render-loop writes: the land store */
   useFrame(() => {
     if (!landStore) return
-    if (!enabled) {
+    const p = pointer.current
+    if (!enabled || bendRef.current <= 0) {
+      // off, or the knob at zero: no land touch stands (a press held across the knob's zero came back as a full
+      // press when it was restored, Codex D1 review F3), and the pointer's land state goes with it (F1)
       if (landStore.current.touches.length) landStore.current = emptyLandStore()
+      p.overLand = false
+      p.dirty = false
+      if (!enabled) p.down = false
       return
     }
     const now = clock.current
     landStore.current = pruneLand(landStore.current, now)
-    if (bendRef.current <= 0) return
-    const p = pointer.current
     if (!p.dirty) return
     p.dirty = false
     if (p.finger && !p.down) return

@@ -127,10 +127,14 @@ export function pruneLand(store: LandStore, now: number, T = LAND_TOUCH): LandSt
   return { touches: keep, heldIndex }
 }
 
-/** Release the held touch at `now` (its swing begins from the amplitude it has). */
-export function releaseHeld(store: LandStore, now: number): LandStore {
+/**
+ * Release the held touch at `now` (its swing begins from the amplitude it has). A tap (`completeRamp`) lets the
+ * ramp finish first, so a short press still bends fully and swings from its target, as the seam's tap does
+ * (Codex D1 review F4: a down and an up in one frame left a touch at amplitude zero for ever).
+ */
+export function releaseHeld(store: LandStore, now: number, completeRamp = false, T = LAND_TOUCH): LandStore {
   if (store.heldIndex < 0) return store
-  const touches = store.touches.map((k, i) => (i === store.heldIndex ? { ...k, release: now } : k))
+  const touches = store.touches.map((k, i) => (i === store.heldIndex ? { ...k, release: completeRamp ? Math.max(now, k.t0 + T.rise) : now } : k))
   return { touches, heldIndex: -1 }
 }
 
