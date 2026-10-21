@@ -32,10 +32,16 @@ export type StrokeBody = {
   /** a second, coarser lane across the stroke: its cycles across and its share of the first lane's swing (0 off) */
   coarseCycles: number
   coarseShare: number
+  /** the lane's edge: the smoothstep's two ends on the lane noise, so the bristles read as two tones with a hard edge (null: the noise as it is) */
+  laneEdge: [number, number] | null
 }
-export const STROKE_BODY_DEFAULTS: StrokeBody = { laneLow: 0.86, laneHigh: 1.08, rake: 0.35, coarseCycles: 2.2, coarseShare: 0 }
-/** the cypress's (E3.3 pass 2): a stronger lane and rake toward the painting's bristle lines */
-export const CYPRESS_STROKE_BODY: StrokeBody = { laneLow: 0.78, laneHigh: 1.14, rake: 0.5, coarseCycles: 2.2, coarseShare: 0 }
+export const STROKE_BODY_DEFAULTS: StrokeBody = { laneLow: 0.86, laneHigh: 1.08, rake: 0.35, coarseCycles: 2.2, coarseShare: 0, laneEdge: null }
+/**
+ * the cypress's (E3.3): pass 2 a stronger lane and rake (the paired contrast 3.2 → 3.3, too soft to register at the
+ * ribbons' on-screen width); pass 3 the lane sharpened to two tones with the coarse lane at a third, coherent along
+ * the stroke rather than a stipple
+ */
+export const CYPRESS_STROKE_BODY: StrokeBody = { laneLow: 0.78, laneHigh: 1.14, rake: 0.5, coarseCycles: 2.2, coarseShare: 0.33, laneEdge: [0.3, 0.7] }
 
 const f = (n: number) => (Number.isInteger(n) ? `${n}.0` : `${n}`)
 
@@ -94,7 +100,7 @@ export function strokeGlslWith(body: StrokeBody = STROKE_BODY_DEFAULTS): Omit<Al
     float lit = (side - 0.12 * streakSlope) * facing;
     float rake = 1.0 + ${f(body.rake)} * lit;
     float relief = (0.86 + 0.12 * (1.0 - y * y)) * rake;
-    float bristle = mix(${f(body.laneLow)}, ${f(body.laneHigh)}, streak);
+    float bristle = mix(${f(body.laneLow)}, ${f(body.laneHigh)}, ${body.laneEdge ? `smoothstep(${f(body.laneEdge[0])}, ${f(body.laneEdge[1])}, streak)` : 'streak'});
     float rim = mix(0.8, 1.0, 1.0 - smoothstep(0.6, 0.95, y));
     vec3 col = diffuseColor.rgb * relief * bristle * rim;
     // wet paint: a soft sheen where a flank turns most toward the light, at a quarter of the sky's (a dark tree takes a grey cast)

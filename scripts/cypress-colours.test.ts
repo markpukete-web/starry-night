@@ -67,11 +67,12 @@ test('C4 the stroke body factory: the defaults reproduce the land\'s text exactl
   assert.ok(!defaults.fragmentBody.includes('lane2'), 'no coarse lane by default')
   const cypress = strokeGlslWith(CYPRESS_STROKE_BODY)
   assert.ok(cypress.fragmentBody.includes('mix(0.78, 1.14, streak)') && cypress.fragmentBody.includes('1.0 + 0.5 * lit'))
-  const coarse = strokeGlslWith({ ...CYPRESS_STROKE_BODY, coarseShare: 0.33 })
-  assert.ok(coarse.fragmentBody.includes('lane2') && coarse.fragmentBody.includes('mix(streak, lane2.x, 0.33)'))
-  // the two differ only on those lines
+  assert.ok(cypress.fragmentBody.includes('lane2') && cypress.fragmentBody.includes('mix(streak, lane2.x, 0.33)'), 'the coarse lane')
+  assert.ok(cypress.fragmentBody.includes('smoothstep(0.3, 0.7, streak)'), 'the sharpened lane')
+  // without the coarse lane and the edge, the two differ only on the lane and the rake lines
+  const plain = strokeGlslWith({ ...CYPRESS_STROKE_BODY, coarseShare: 0, laneEdge: null })
   const a = defaults.fragmentBody.split('\n')
-  const b = cypress.fragmentBody.split('\n')
+  const b = plain.fragmentBody.split('\n')
   assert.equal(a.length, b.length)
   const differing = a.filter((line, i) => line !== b[i])
   assert.equal(differing.length, 2, `two lines differ: ${differing.join(' | ')}`)
