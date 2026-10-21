@@ -186,6 +186,12 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   after the release, 4 live touches, hover amplitude 0.6, a hand on the land masks the sky's surge behind it; the bend
   weight is the vertex's local height over 2.7 on the cypress and its height over the terrain over the mass's height on
   the trees; the ground does not bend. Knob `bend` 0–1.5, shipped 1 (`sky-tuning.json` `touchBend`), untuned by Mark.
+- E3, the cypress's medium (2026-10-22, `src/scene/cypressStrokes.ts` `sampleColours`, `cypressStrokeShader.ts`
+  `CYPRESS_STROKE_BODY`): the colour along the stroke, one source pigment per kept step (the texel under each sample,
+  sky samples filled from the nearest accepted, a box of ±3 samples in linear RGB); the cypress's stroke body lane
+  mix 0.78–1.14 sharpened by smoothstep 0.3–0.7, rake 0.5, a coarse lane at 2.2 cycles and a third; the land's body
+  keeps E1's text. Gate: spread 16.9 (the painting 18.5), light 13.5% (10.6%), paired contrast 3.4 (11.1, the bar 5–10
+  not met). Untuned by Mark.
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)
