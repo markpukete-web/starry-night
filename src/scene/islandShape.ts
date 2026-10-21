@@ -1,4 +1,4 @@
-import { smooth, vnoise } from './brushForms'
+import { smooth, vnoise } from './brushForms.ts'
 
 /**
  * The floating island's plan-view shape and top-surface height. Shared by `BrushIsland` (which
