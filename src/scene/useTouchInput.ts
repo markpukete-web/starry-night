@@ -140,7 +140,6 @@ export function useTouchInput({
       p.overLand = false
       p.dirty = false
     }
-    let lastLandMs = -Infinity
 
     let down: PointerSample | null = null
     let lastHover: HoverMark | null = null
@@ -155,11 +154,13 @@ export function useTouchInput({
       if (!point) return
       const now: HoverMark = { ms: event.timeStamp, u: point[0], v: point[1] }
       if (!hoverDue(lastHover, now)) return
-      // D1: at an admitted hover step the land is asked first, on the current position (a stale flag dropped the
-      // first sky hover after leaving the tree, Codex D1 review F6), at most once per hoverMs; between steps the
-      // frame's test takes the dirty pointer. Over land the step is the land's (landMasksSky), not the sky's
-      if (landActive() && landStore && event.timeStamp - lastLandMs >= TOUCH_SURGE.hoverMs) {
-        lastLandMs = event.timeStamp
+      // D1: at an admitted hover step (B's own gate: 60 ms and a step of hoverU, marked on land steps too, so a
+      // second move over the tree within the gate is not admitted and cannot fall through to the sky, Codex D1
+      // confirmation read) the land is asked first, on the current position (a stale flag dropped the first sky
+      // hover after leaving the tree, review F6). Between admitted steps the frame's test takes the dirty pointer.
+      // Over land the step is the land's (landMasksSky), not the sky's
+      lastHover = now
+      if (landActive() && landStore) {
         const hit = landPoint(event.clientX, event.clientY)
         p.overLand = hit !== null
         p.dirty = false
@@ -168,7 +169,6 @@ export function useTouchInput({
           if (LAND_TOUCH.landMasksSky) return
         } else if (landStore.current.heldIndex >= 0) landStore.current = releaseHeld(landStore.current, clock.current)
       }
-      lastHover = now
       push(point[0], point[1], TOUCH_SURGE.hoverAmp * knobRef.current, clock.current, false)
     }
     const onDown = (event: PointerEvent) => {
