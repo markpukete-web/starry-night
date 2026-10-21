@@ -1,6 +1,34 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-22 (morning): D1 merged (PR #17); E3 rebased onto main and in its PR (supersedes the pickup below)
+## Pickup — 2026-10-22 (close of the session): D1 and E3 are on `main` and live; the next session starts here
+
+`main` is at `441860b` (PR #18, E3) on top of `8a87ae5` (PR #17, D1), both merged 2026-10-22 and deployed to
+starrynight.markma.dev. Mark closed the session: "merge it once the review reads clean. Then well record where we
+are so that we can pickup easily next session, I am wrapping up"; he merged #18 himself while Codex's PR review was
+still running. Read `tasks/lessons.md` from "D1 (touch the land)" and "E3 (the cypress's medium)" first.
+
+1. **First thing next session:** Codex's review of PR #18 (`gh api repos/markpukete-web/starry-night/pulls/18/comments`,
+   and the timeline for a pass with no findings). Answer every thread. A P0–P2 gets a follow-up PR from `main`; a P3 an
+   answer in the thread. PR #17's one finding (multi-touch) was fixed and answered before its merge.
+2. **Mark's taste on production**, both slices: the touch (hover, tap and drag on the cypress; hover the bushes;
+   `?tune=1` shows the `bend` slider) and the cypress's medium (`scratch/cypress-e3-2026-10-22/e3-compare.png` is the
+   painting, E3 and E1 at the render's scale, if the scratch survives; otherwise the record's numbers). His phone's
+   `?perf=1` reading stays open for both.
+3. **Then the explorable question**: three spikes on captures (a rail into the village street, a dive between the
+   ribbons of the great whorl, Simon's walk with a world sky), one afternoon each, Mark picks; see "Direction — the land"
+   and "Proposed to Mark — inside the painting" below. Time-of-day presets after that.
+4. **Open taste items, not blockers:** E3's relief constants (`CYPRESS_STROKE_BODY`: the paired contrast 3.4 against the
+   painting's 11.1, the cap reached); E2's `row-left`/`bushes` overlap, the sparse front-left dome, `orchard-right`
+   against the void, the root's rim dabs; D1's hold toggling along the cypress's silhouette edge (by design).
+5. **Tooling to keep:** a branch under review is served from its own worktree on its own port (E3 on 5181 while D1 held
+   5179 for Mark), Vite started with `--host 127.0.0.1` so the capture tools can dial it; `capture-sky-frames.mjs`
+   with `--eval` and pins for injected touches; `check-cypress-colour.ts` with its luminance and chromatic bounds and
+   `--control=grey`; `cypress-contrast.sh`. Both dev servers were stopped and both worktrees removed at the close.
+6. **Housekeeping:** three decodes of `painting.jpg` (a shared loader); the flat land gate's masses panel (Codex E2 F4)
+   before the next land retune; `test:sky` enumerates files, so a new suite must be added to it in the same commit
+   (missed twice).
+
+## Pickup — 2026-10-22 (morning): D1 merged (PR #17); E3 rebased onto main and in its PR (superseded by the close pickup above)
 
 Mark, 2026-10-22: "Push and merge D1, then rebase E3 and do the same." D1 is on `main` at `8a87ae5` (PR #17, one
 Codex P2 on multi-touch fixed in `8f95fd6`). E3 (`feat/cypress-medium`, the record `tasks/2026-10-22-cypress-e3.md`)
