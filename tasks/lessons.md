@@ -2674,3 +2674,21 @@ after PR #8 merged (`246e817`, "Merge it then start the second pass").
   comment; match the statement, `discard;`.
 - **The React Compiler lint refuses a clock read in a memo.** `performance.now()` in `useMemo` is "impure during
   render"; the timing seam carries a scoped disable with its reason, as the uniform writes already do.
+
+## E1 (the cypress), the retunes, 2026-10-21
+
+- **A lane is not a stroke.** At 1:1 the painting's cypress showed bands 8–14 px wide and I built the ribbons at
+  that width; two retunes later the tree still read as fur. The bands are bristle lanes inside strokes 30–60 px
+  wide. When measuring a stroke's width from a scan, find the band of one colour, not the finest visible line.
+- **One texel's pigment is one lane's.** Adjacent ribbons jumped in value where the painting's strokes agree; the
+  mean of the tree texels across the ribbon's own width gives the stroke's colour, and the colour gate went from
+  ΔE 11 / 8 / 14 to 0.9 / 1.4 / 3.2 over the retunes with no other colour change.
+- **Alpha-to-coverage stipples a thin stroke.** On ribbons 10–20 px wide the MSAA dither of every edge read as
+  pale dots along the strokes at 1:1 and lifted the local-contrast metric to 7.6; blended edges with depth written
+  took it to 1.06. The same metric fails on both sides: fur and stipple above the bar, smooth paint below it. Read
+  the crop before trusting which side a number is on.
+- **The sky's shader constants are for the sky's stroke width.** Its fine bristle octave (11 cycles across) aliases
+  below about 20 px on screen; the cypress keeps one lane.
+- **Retune within the cap, then stop.** Four passes moved the tree from a cut-out to broad dark strokes at the
+  painting's values; the last open number is a texture dial, and that is Mark's call with the captures, not a
+  fifth pass.

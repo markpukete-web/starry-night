@@ -9,7 +9,32 @@ below — never edited in place.
 > Its `Status` note was last brought up to date on 2026-10-16 and is no longer maintained. At session start,
 > read `tasks/lessons.md`.
 
-## Pickup — 2026-10-21: the land roadmap decided (E1 the cypress first); D1's plan reviewed and banked
+## Pickup — 2026-10-21 (evening): E1 built and gated on `feat/cypress-e1`; Mark's taste gate next
+
+**Current agent entry point:** this section, then `tasks/2026-10-21-cypress-e1.md` (the record and the gate), then
+the plan `tasks/2026-10-21-cypress-e1-plan.md` (Codex's reads and every disposition). Read `tasks/lessons.md` from
+"E1 (the cypress), the plan" down.
+
+**Where things are.**
+- `feat/cypress-e1` (local, not pushed) from `feat/touch-land`: the derivation at 3840 (`2b4c966`), the lobes
+  (`465b68c`), the ribbons and gates (`ebee43f`), the flicker band (`0adcf25`), four retunes (`066c88d`,
+  `0c341a8`, `3ae5005`), the docs. 142 tests, type-check and lint clean. The retune cap is reached.
+- The gate: every locked criterion passes; the silhouette IoU 0.822 against `main`'s 0.787; the colour ΔE 0.9 /
+  1.4 / 3.2; the build 34 ms; both guards PASS. One of the plan's own bars is under: the fine texture (local
+  contrast 1.06 against the painting's 6.45) after the stipple's removal. Mark's eye decides between retune 4
+  (broad, gentle strokes) and more bristle contrast.
+- Captures for Mark: `scratch/cypress-e1-2026-10-21/e1-compare.jpg` (the painting | E1 | before),
+  `r4-tree.png`, `r4-body-1to1.png`, `r4-orbit-tree.png`, `output/playwright/e1-r4-2026-10-21/`.
+- Codex's code review (G12) and the flow-failure capture (G11b): see the record for their state.
+- Nothing running once the panes report. Herdr `w4:p4` (Codex) and `w4:p5` (Gemini) idle.
+
+- [ ] **Mark's taste gate** on the captures and on `?perf=1` on his iPhone (the frame rate and the build time).
+- [ ] After Mark: answer any code-review findings, push, the PR, Codex's PR review.
+- [ ] **E2, the land**, after E1 merges.
+- [ ] **D1, touch**, after E2: revise the plan per its review (the vertex transform and the draped vertex order
+  are in place), rebase on the new tree, build.
+
+## Pickup — 2026-10-21 (morning): the land roadmap decided (E1 the cypress first); D1's plan reviewed and banked (superseded by the evening pickup above)
 
 **Current agent entry point:** this section, then "Direction — the land" below (the roadmap, Mark's words, the
 order), then `tasks/2026-10-20-touch-land-d1-plan.md` (D1's plan and Codex's review, banked for later). Read
