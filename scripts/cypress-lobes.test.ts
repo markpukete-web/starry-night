@@ -13,6 +13,7 @@ import {
   mapCypressLobeSurface,
 } from '../src/scene/cypressLobeGeometry.ts'
 import { generateCypressLobeStrokes } from '../src/scene/cypressLobeStrokes.ts'
+import { rowSpanAt } from '../src/scene/cypressMapping.ts'
 
 function fixtureRows(): CypressLobeRows {
   const satellites = []
@@ -53,7 +54,7 @@ test('persistent detached paint becomes a connected frond instead of an upper-ri
   )
 })
 
-test('the real plan retains the strongest mid-height frond that the old top-third filter deleted', () => {
+test('the real plan: two fronds where the painting has them, the painting\'s own extent, the tip\'s club', () => {
   const rows = JSON.parse(
     readFileSync(new URL('../public/reference/cypress-rows.json', import.meta.url), 'utf8'),
   ) as CypressLobeRows
@@ -74,16 +75,48 @@ test('the real plan retains the strongest mid-height frond that the old top-thir
     fronds.every((lobe) => lobe.sourceMaxRimDistance <= 3),
     'distant dark sky strokes must not become cypress geometry',
   )
-  assert.ok(
-    fronds.every(
-      (lobe) => Math.max(...lobe.sections.map((section) => section.sourceHalfWidth)) >= 0.1,
-    ),
-    'major source fronds need a flame envelope, not needle-width run geometry',
-  )
+
+  // the painting's own extent per row: the main span and the satellite runs on it; the plan's union of lobe
+  // intervals may not stray beyond it (E1: the old flame envelope put a wedge 13–18 px outside the painting)
+  const denominator = Math.max(1, rows.width - 1)
+  const satellitesByRow = new Map<number, { x0: number; x1: number }[]>()
+  for (const run of rows.satellites) {
+    const row = satellitesByRow.get(run.y)
+    if (row) row.push(run)
+    else satellitesByRow.set(run.y, [run])
+  }
+  let worst = 0
+  for (let k = 1; k < 40; k++) {
+    const h = k / 40
+    const y = Math.round((1 - h) * (rows.height - 1))
+    const span = rows.spans.find(([py]) => Math.round(py * (rows.height - 1)) === y)
+    if (!span) continue
+    let left = span[1]
+    let right = span[2]
+    for (const run of satellitesByRow.get(y) ?? []) {
+      left = Math.min(left, run.x0 / denominator)
+      right = Math.max(right, run.x1 / denominator)
+    }
+    const intervals = lobeIntervalsAt(plan, h)
+    const planLeft = Math.min(...intervals.map((interval) => interval.left))
+    const planRight = Math.max(...intervals.map((interval) => interval.right))
+    worst = Math.max(worst, left - planLeft, planRight - right)
+  }
+  assert.ok(worst <= 0.025, `the plan strays ${worst.toFixed(4)} crop widths beyond the painting's extent`)
+
+  // the tip is the spans' own club: no factor narrows the main above 0.9 (the old taper made a 22 px needle of a
+  // 36 px club; the source's own top row is narrow, so the bar is the spans, not a ratio)
   const main = plan.lobes[0]
-  const nearTip = lobeIntervalsAt({ ...plan, lobes: [main] }, 0.95)[0]
-  const tip = lobeIntervalsAt({ ...plan, lobes: [main] }, 1)[0]
-  assert.ok(tip.right - tip.left < (nearTip.right - nearTip.left) * 0.35)
+  for (const h of [0.9, 0.93, 0.96, 0.99]) {
+    const section = sampleCypressLobe(main, h)
+    assert.ok(section)
+    const { left, right } = rowSpanAt(1 - h, rows)
+    const sourceHalf = Math.max(0.0035, (right - left) / 2)
+    assert.ok(
+      Math.abs(section.sourceHalfWidth - sourceHalf) <= 0.15 * sourceHalf + 0.002,
+      `at ${h} the main is ${section.sourceHalfWidth.toFixed(4)} half-wide against the spans' ${sourceHalf.toFixed(4)}`,
+    )
+  }
 })
 
 test('closed lobe rings project to their source intervals from the design bearing', () => {
@@ -169,27 +202,26 @@ test('closed lobe rings project to their source intervals from the design bearin
   }
 })
 
-test('frond geometry can broaden without sampling the surrounding blue sky', () => {
+test('a frond\'s paint domain is its source domain: no envelope beyond the painting\'s runs', () => {
   const plan = buildCypressLobePlan(fixtureRows(), {
     minTrackRows: 8,
     maxFronds: 3,
   })
   const frond = plan.lobes.find((lobe) => lobe.kind === 'frond')
   assert.ok(frond)
-  const sourceHeight = 1 - 34 / 99
-  const section = frond.sections.reduce((closest, candidate) =>
-    Math.abs(candidate.heightFraction - sourceHeight) <
-    Math.abs(closest.heightFraction - sourceHeight)
-      ? candidate
-      : closest,
-  )
-
-  assert.ok(
-    section.sourceHalfWidth > section.paintHalfWidth,
-    'the lobe envelope may be broad, but its texture domain must remain on source paint',
-  )
-  assert.ok(section.paintCenter - section.paintHalfWidth >= 75 / 99)
-  assert.ok(section.paintCenter + section.paintHalfWidth <= 83 / 99)
+  const runHalfWidth = (82 - 76 + 1) / 2 / 99
+  const chainBase = 1 - 48 / 99
+  for (const section of frond.sections) {
+    if (section.heightFraction < chainBase - 1e-9) continue
+    assert.ok(
+      Math.abs(section.paintHalfWidth - section.sourceHalfWidth) < 1e-9 &&
+        Math.abs(section.paintCenter - section.sourceCenter) < 1e-9,
+      `above the bridge the paint domain equals the source domain at ${section.heightFraction.toFixed(3)}`,
+    )
+    assert.ok(section.sourceHalfWidth <= runHalfWidth + 0.0035, `no envelope: ${section.sourceHalfWidth.toFixed(4)} half-wide against the runs' ${runHalfWidth.toFixed(4)}`)
+    assert.ok(section.paintCenter - section.paintHalfWidth >= 75 / 99 - 1e-9)
+    assert.ok(section.paintCenter + section.paintHalfWidth <= 83 / 99 + 1e-9)
+  }
 })
 
 test('multi-scale source strokes stay inside their owning lobe and paint every frond', () => {
