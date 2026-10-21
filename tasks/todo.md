@@ -25,11 +25,16 @@ the plan `tasks/2026-10-21-cypress-e1-plan.md` (Codex's reads and every disposit
   (broad, gentle strokes) and more bristle contrast.
 - Captures for Mark: `scratch/cypress-e1-2026-10-21/e1-compare.jpg` (the painting | E1 | before),
   `r4-tree.png`, `r4-body-1to1.png`, `r4-orbit-tree.png`, `output/playwright/e1-r4-2026-10-21/`.
-- Codex's code review (G12) and the flow-failure capture (G11b): see the record for their state.
-- Nothing running once the panes report. Herdr `w4:p4` (Codex) and `w4:p5` (Gemini) idle.
+- Codex's code review (G12): REVISE with ten findings, then eight closed and one opened, then MERGE on the
+  full batches; every disposition in the record. The strokes are seven columns across at a 0.010 lift, opaque
+  with an alpha test; the gates measure against an expected area the render cannot move. The flow-failure
+  capture (G11b) passes.
+- Nothing running once the panes report. Herdr `w4:p4` (Codex) and `w4:p5` (Gemini) idle. The dev server
+  Mark was given (`http://10.100.125.107:5179/`) serves the working tree while it runs.
 
 - [ ] **Mark's taste gate** on the captures and on `?perf=1` on his iPhone (the frame rate and the build time).
-- [ ] After Mark: answer any code-review findings, push, the PR, Codex's PR review.
+  Mark, 2026-10-21 evening, on the first comparison: "Looks closer".
+- [ ] After Mark: push, the PR, Codex's PR review (`@codex review` once, at most two re-requests).
 - [ ] **E2, the land**, after E1 merges.
 - [ ] **D1, touch**, after E2: revise the plan per its review (the vertex transform and the draped vertex order
   are in place), rebase on the new tree, build.
