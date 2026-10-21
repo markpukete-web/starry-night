@@ -229,3 +229,19 @@ export function bendInjection({ weight, attribute }: { weight: string; attribute
   transformed += landBend(transformed, ${weight});`,
   }
 }
+
+/**
+ * The picking policy (Codex F4, the rebase's R2): the pointer's ray is cast at the land's opaque bodies (the
+ * cypress's solid, the trees' domes) together with the opaque occluders in front of them (the island's solid, the
+ * village's three meshes); the hit counts only when the nearest body is land. The strips and the ground's ribbons
+ * are never in the set: their alpha-cut fragments would block a bush through paint the shader discards.
+ */
+export function landPick(hits: readonly { object: unknown; point: { x: number; y: number; z: number } }[], land: readonly unknown[]): [number, number, number] | null {
+  const first = hits[0]
+  if (!first || !land.includes(first.object)) return null
+  return [first.point.x, first.point.y, first.point.z]
+}
+
+/** The meshes a land touch lands on, and the opaque bodies that occlude them, by the names the components give. */
+export const LAND_MESHES = ['cypress-solid', 'land-trees-solid'] as const
+export const LAND_OCCLUDERS = ['island-solid', 'village-solid', 'village-skin', 'village-paint'] as const

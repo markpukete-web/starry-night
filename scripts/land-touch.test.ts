@@ -13,11 +13,14 @@ import {
   closing,
   followHeld,
   isLive,
+  LAND_MESHES,
+  LAND_OCCLUDERS,
   LAND_TOUCH,
   landAmplitude,
   landDisplacement,
   landFalloff,
   landLateral,
+  landPick,
   landUniformValues,
   NO_RELEASE,
   emptyLandStore,
@@ -184,4 +187,16 @@ test('L7 the knob: bend is a tuning knob with its shipped key in sky-tuning.json
   const url = new URLSearchParams('bend=9')
   assert.equal(readAliveTuning(url).bend, 1.5, 'clamped to the ceiling')
   assert.equal(readAliveTuning(new URLSearchParams('bend=')).bend, 1, 'an empty knob is the default')
+})
+
+test('L8 picking: the nearest body must be land; a nearer occluder, a nearer anything, or no hit is null (Codex F4, R2)', () => {
+  const tree = { id: 'tree' }
+  const house = { id: 'house' }
+  const at = (object: unknown, z: number) => ({ object, point: { x: 1, y: 0.2, z } })
+  assert.deepEqual(landPick([at(tree, 0.5), at(house, 0.6)], [tree]), [1, 0.2, 0.5])
+  assert.equal(landPick([at(house, 0.4), at(tree, 0.5)], [tree]), null)
+  assert.equal(landPick([], [tree]), null)
+  assert.equal(landPick([at({ id: 'ground' }, 0.3)], [tree]), null, 'a body outside both sets never counts as land')
+  assert.deepEqual(LAND_MESHES, ['cypress-solid', 'land-trees-solid'])
+  assert.ok(!(LAND_OCCLUDERS as readonly string[]).includes('land-ground'), 'the ground ribbons are not an occluder (R2)')
 })
