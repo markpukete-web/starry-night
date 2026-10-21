@@ -2621,3 +2621,23 @@ after PR #8 merged (`246e817`, "Merge it then start the second pass").
 - **The bar moved.** The cypress and the village passed their gates in July; next to the moving sky, and to Simon
   Lee's village, they read as a cut-out and as boxes. A gate pass is for the piece as it stood; when the piece
   around a part improves, the part comes up for review again.
+
+## E1 (the cypress), the plan, 2026-10-21
+
+- **A direction decided on a triptych with unmatched scales names defects the measurement does not find.** The
+  2026-10-20 reading ("too thin through the middle, the left tongue too low, one straight spire") came from three
+  panels at different scales. Measured against the painting's treeish component at 21 heights, the lobe plan's
+  widths match within 13 px, the left frond's tip is at 0.541 against the painting's 0.53, and the render at the
+  design camera is 20–65 px *wider* than the painting through 0.15–0.40. One claim survived: the tip is a needle
+  (22 px) where the painting has a club (36 px). Before naming a silhouette defect, run the width table in 2D (the
+  plan against the painting) and in render space (the thresholded capture, scaled to the painting's crop height).
+- **A derived flow field can be vertical by construction.** The shipped cypress field has 94% of its weight within
+  10° of vertical: `blendToVertical` weighted by an energy-normalised coherence (mean 0.25–0.4 on a dark tree)
+  pulls two thirds of the way to vertical everywhere. The low-passed field at 3840 has 50% beyond 15°, and its
+  ticks follow the strokes at 1:1. Histogram a field's angles before tracing anything in it, and gate a fallback
+  on the tensor's anisotropy, not on brightness.
+- **The 1600 px mask held the main column only.** The left flame was a satellite chain, never masked, so it had no
+  tensor and the vertical fallback. The closed treeish component at 3840 covers the whole tree and no sky.
+- **A render's treeish component bridges to dark sky strokes and the island.** Cut the crop at the tree's base, open
+  by 1 px before the flood, and compare the trunk's run; the first table was 60–90 px wide with the island in it.
+- **`status` is a read-only variable in zsh.** A monitor loop assigning it dies at once with "read-only variable".
