@@ -8,7 +8,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import test from 'node:test'
 
 import { blendToVertical, HORIZONTAL, signedUpDirection, VERTICAL } from './lib/cypress-field.ts'
-import { landClass } from './lib/land-field.ts'
+import { landClass } from '../src/scene/landClass.ts'
 import { decodePNG } from './lib/png.ts'
 
 function angleOf(cos2: number, sin2: number): number {
@@ -65,7 +65,8 @@ test('the shipped land assets: every authored mass validated, the flow\'s mask i
   {
     const [u, v] = flowToPainting(0.2, 0.5)
     const [x, z] = worldAt(u, v)
-    assert.ok(u < 0.26 && v < 0.95 && Math.hypot(x, z) <= coastR(Math.atan2(z, x)) * 0.97, `(${x.toFixed(2)}, ${z.toFixed(2)}) under the column, on the island`)
+    const { columnShift } = await import('../src/scene/landStrokes.ts')
+    assert.ok(columnShift(u, v) !== null && Math.hypot(x, z) <= coastR(Math.atan2(z, x)) * 0.97, `(${x.toFixed(2)}, ${z.toFixed(2)}) under the column, on the island`)
     assert.ok(b(0.2, 0.5) >= 8, 'the column on the island is supported')
   }
   assert.equal(b(0.02, 0.5), 0, 'the painting\'s left edge hangs off the island')
@@ -77,10 +78,27 @@ test('the shipped land assets: every authored mass validated, the flow\'s mask i
     const py = Math.round((Math.floor(k / 20) / 19) * (flow.height - 1)) / (flow.height - 1)
     const [u, v] = flowToPainting(px, py)
     const [x, z] = worldAt(u, v)
+    // off the island: never supported; on it: supported unless the texel is a wall, a roof or a window
     const supported = Math.hypot(x, z) <= coastR(Math.atan2(z, x)) * 0.97
-    if (supported) { inside++; assert.ok(b(px, py) >= 8, `support at (${px.toFixed(2)}, ${py.toFixed(2)})`) } else { outside++; assert.equal(b(px, py), 0, `no support at (${px.toFixed(2)}, ${py.toFixed(2)})`) }
+    if (supported) { inside++ } else { outside++; assert.equal(b(px, py), 0, `no support at (${px.toFixed(2)}, ${py.toFixed(2)})`) }
   }
   assert.ok(inside >= 10 && outside >= 10, `${inside} inside, ${outside} outside`)
+  // the support on the island: most of it, and none on the church's white wall (u 0.56, v 0.80 maps onto the apron)
+  let on = 0
+  let total = 0
+  for (let y = 0; y < flow.height; y += 3) for (let x = 0; x < flow.width; x += 3) {
+    const [u, v] = flowToPainting(x / (flow.width - 1), y / (flow.height - 1))
+    const [wx, wz] = worldAt(u, v)
+    if (Math.hypot(wx, wz) > coastR(Math.atan2(wz, wx)) * 0.97) continue
+    total++
+    if (flow.rgba[(y * flow.width + x) * 4 + 2] > 0) on++
+  }
+  assert.ok(on / total > 0.75 && on / total < 0.98, `${((100 * on) / total).toFixed(0)}% of the island's texels support a stroke`)
+  // the village's footprint seeds nothing: the church's plaster (villagePatches churchPlaster), the striped roof
+  assert.equal(b(0.556, (0.865 - 0.58) / 0.42), 0, 'the church\'s plaster seeds no ground stroke')
+  assert.equal(b(0.655, (0.955 - 0.58) / 0.42), 0, 'the striped roof seeds no ground stroke')
+  const { VILLAGE_FOOTPRINT } = await import('../src/scene/landMasses.ts')
+  for (const [x0, y0, x1, y1] of VILLAGE_FOOTPRINT) assert.ok(x1 > x0 && y1 > y0 && y0 >= 0.58 * 1267 && y1 <= 1267, `the footprint ${x0},${y0} in the band`)
   // the hills' rows (v < 0.78, u > 0.3) lean 40–60° from vertical
   const bins = new Float64Array(9)
   for (let y = 0; y < flow.height; y++) {

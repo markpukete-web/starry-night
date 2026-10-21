@@ -20,8 +20,9 @@ await bundle.write({ file, format: 'es' })
 await bundle.close()
 const { buildVillage } = await import(pathToFileURL(file).href)
 const meshes = buildVillage(), repeat = buildVillage(), output = {}
-const GEOMETRIES = ['solid', 'skin', 'paint', 'foliage']
-const CLOSED = ['foliage']
+const GEOMETRIES = ['solid', 'skin', 'paint']
+/** no village geometry is a closed volume since E2 took the foliage rows (the solid is guarded by BANKED) */
+const CLOSED = []
 /** the solid's banked edge facts on `main` at b54fd68: a change that opens it fails here */
 const BANKED = { solid: { degenerate: 240, open: 732 } }
 
@@ -102,8 +103,7 @@ for (const name of GEOMETRIES) {
   output[name] = {
     positions: Array.from(g.attributes.position.array), colours: Array.from(g.attributes.color.array),
     indices: Array.from(g.index.array), uv: g.attributes.uv ? Array.from(g.attributes.uv.array) : null,
-    texture: name === 'skin' ? { path: 'public/reference/village-atlas.webp', flipY: true }
-      : name === 'foliage' ? { path: 'public/reference/painting.jpg', flipY: false } : null,
+    texture: name === 'skin' ? { path: 'public/reference/village-atlas.webp', flipY: true } : null,
     bounds: { min: g.boundingBox.min.toArray(), max: g.boundingBox.max.toArray() },
   }
   console.log(`${name}: ${count} vertices, ${g.index.count / 3} triangles; finite, bounded, deterministic`)

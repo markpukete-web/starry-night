@@ -1,5 +1,23 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-10-21 evening (supersedes the pickup below)
+
+E2 (the land) is built on `feat/land-e2`, local only, nothing pushed. Read `tasks/2026-10-21-land-e2.md` (the record,
+with the gate table and what is open) and the plan's Review section. The worker was running `brief-capture-4.md`
+(the capture, `alive=0`, perf, `check:reduced`, `check:viewport`) when the day session closed; its report is
+`scratch/land-e2-2026-10-21/capture-4-report.md` if it landed.
+
+1. Look at capture 4's crops (`c4-*.png`, the orchard and bushes at 1:1 after the dome cap), run
+   `node scripts/check-land-colour.ts output/playwright/e2-capture-4-2026-10-21`, read `perf-4.log`, the two
+   check logs and the `alive=0` capture (diff the island region against the default).
+2. `npm run build`, `npm run lint` (the whole tree, as CI), `npm run test:sky`.
+3. Commit any fix, then write Codex's code-review brief (model: `scratch/cypress-e1-2026-10-21/brief-code-review.md`),
+   dispatch to `w4:p4`, answer the findings, record them in the plan's Review section and the record.
+4. Mark's taste gate on captures (the home, the look-down, the orbit, the mobile), then push and PR on his word.
+5. Retune cap: the ground used three passes (1: the map and the fill, 2: the low-pass, 3: count and width); the
+   domes one (the height cap). One pass each remains before stopping to ask.
+
+
 Durable cross-session plan. `tasks/lessons.md` holds the memory; this holds the intent.
 Locked sections in CLAUDE.md are Mark's. Proposed changes to them go under "Proposed to Mark"
 below — never edited in place.

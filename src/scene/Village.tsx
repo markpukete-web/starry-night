@@ -10,7 +10,7 @@ import { glowGlsl, glowUniformValues } from './villageGlow'
 /** Dev seam for the gate: the foreground's alive attribute counts, read by the capture step (second pass, F11). */
 type AliveFoliageWindow = Window & { __aliveFoliage?: { flickerVertices?: number; glowMarks?: number; glowVertices?: number } }
 
-/** The village, church and foliage rows, painted with patches of the source painting (villageGeometry). */
+/** The village and church, painted with patches of the source painting (villageGeometry); the foliage rows are the land's masses since E2. */
 export function Village({
   clock,
   alive = false,
@@ -24,7 +24,6 @@ export function Village({
 } = {}) {
   const meshes = useMemo(() => buildVillage({ glow: alive }), [alive])
   const source = useTexture('/reference/village-atlas.webp')
-  const foliageSource = useTexture('/reference/painting.jpg')
   const gl = useThree(state => state.gl)
   const texture = useMemo(() => {
     const copy = source.clone()
@@ -33,13 +32,6 @@ export function Village({
     copy.needsUpdate = true
     return copy
   }, [source, gl])
-  const foliageTexture = useMemo(() => {
-    const copy = foliageSource.clone()
-    copy.colorSpace = SRGBColorSpace
-    copy.flipY = false
-    copy.needsUpdate = true
-    return copy
-  }, [foliageSource])
   const material = useMemo(() => new MeshBasicMaterial({ vertexColors: true, toneMapped: false, side: DoubleSide }), [])
   // With the flag on the paint mesh gets its OWN material carrying the glimmer (today it shares `material` with the
   // solid, review F4); off, the two keep sharing the stock one, today's bytes.
@@ -54,18 +46,15 @@ export function Village({
     return paint
   }, [alive, glowUniforms])
   const skinMaterial = useMemo(() => new MeshBasicMaterial({ map: texture, vertexColors: true, toneMapped: false, side: DoubleSide }), [texture])
-  const foliageMaterial = useMemo(() => new MeshBasicMaterial({ map: foliageTexture, vertexColors: true, toneMapped: false, side: DoubleSide }), [foliageTexture])
   useEffect(() => () => {
     meshes.solid.dispose()
     meshes.paint.dispose()
     meshes.skin.dispose()
-    meshes.foliage.dispose()
   }, [meshes])
   useEffect(() => () => material.dispose(), [material])
   useEffect(() => () => paintMaterial?.dispose(), [paintMaterial])
   useEffect(() => () => skinMaterial.dispose(), [skinMaterial])
   useEffect(() => () => texture.dispose(), [texture])
-  useEffect(() => () => foliageMaterial.dispose(), [foliageMaterial])
 
   // the knob, through the uniform: a slider never rebuilds the village
   useLayoutEffect(() => {
@@ -100,7 +89,6 @@ export function Village({
       <mesh name="village-solid" geometry={meshes.solid} material={material} renderOrder={2} />
       <mesh name="village-skin" geometry={meshes.skin} material={skinMaterial} renderOrder={3} />
       <mesh name="village-paint" geometry={meshes.paint} material={paintMaterial ?? material} renderOrder={4} />
-      <mesh name="village-foliage" geometry={meshes.foliage} material={foliageMaterial} renderOrder={3} />
     </group>
   )
 }

@@ -170,6 +170,16 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   brush over the tip's last quarter. Gate numbers after the review's fixes: IoU 0.817 (main 0.787), ΔE 1.0 / 1.2 /
   3.0, the expected area 96% covered, local contrast 0.93 (the painting 6.45; the bar 4–7.5 is open to Mark's eye),
   build 70 ms.
+- E2, the land (2026-10-21, `src/scene/landStrokes.ts`, `landDomes.ts`, `landMapping.ts`, `landMasses.ts`): the ground
+  2,000 ribbons in the band's field (960 × 319 at a quarter of the 3840 scan, tensor σ 1.5, low-pass σ 1.5 on the
+  masses' curls and σ 3.5 elsewhere), lengths 0.1–0.3 of the band's height, step 4 px, half-widths 0.003–0.006 of the
+  width laid out in world at 4.75 per u (the hills' × 1.7), taper 0.7, three columns, lift 0.02 along the normal,
+  coverage about 2.7× on the apron and 6.5× on the hills, the top's solid hills × 0.3 (linear). The map: u 0.56 ↔
+  x −0.036, 4.75 world per u (the right coast under the painting's right edge), the apron v 1.0–0.78 over z 1.35–0.25,
+  the hills from 0.78 to the crest at that u over z 0.25 to −1.35; the cypress column filled from the band past the
+  tree. The masses: ten authored boxes, domes capped at 0.3 high (a house's eave), rx 0.75 of the spacing, rz half the
+  smaller radius, lift 0.012 along the facing axis, contact 0.005, strips `clamp(pixels / 40, 24, 180)` per mass
+  (0.4 of them on the back), half-widths 0.04–0.08 of the box, overshoot 3, taper 0.5. Untuned by Mark.
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)

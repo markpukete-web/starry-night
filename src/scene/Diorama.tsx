@@ -17,6 +17,7 @@ export function Diorama({
   alive = false,
   tuning,
   cypressReady,
+  landReady,
 }: {
   debug?: 'final' | 'stage'
   /** The one sky clock (make-it-alive A, second pass): the cypress flicker and the window glimmer read it. */
@@ -27,11 +28,13 @@ export function Diorama({
   tuning?: AliveTuning
   /** C (arrival): the cypress's ready seam, the one foreground piece that loads outside the Suspense boundary. */
   cypressReady?: RefObject<boolean>
+  /** C (arrival), E2: the ground's ready seam; its strokes wait on the land's flow and the painting. */
+  landReady?: RefObject<boolean>
 }) {
   void debug // stage and final show the same forms; stage differs only by omitting the sky stack
   return (
     <group>
-      <BrushIsland />
+      <BrushIsland ready={landReady} />
       {/* the village: church, houses and foliage rows painted from the source, at the hills' foot */}
       <Village clock={clock} alive={alive} tuning={tuning} />
       {/* cypress, front-left — the dark flame, the vertical counterweight to the sky */}

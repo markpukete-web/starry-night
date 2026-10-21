@@ -114,13 +114,19 @@ export function runHalfWidthAt(rows: RibbonRows, px: number, py: number): number
   return Math.max(0.0035, (span.right - span.left) / 2)
 }
 
+/** Which texels a band's pigment averages: the cypress takes its tree texels (the sky and the moonlit edge out) */
+export type TexelAccept = (r: number, g: number, b: number) => boolean
+export const TREE_TEXEL: TexelAccept = (r, g, b) => 0.299 * r + 0.587 * g + 0.114 * b < 118 && b < g + 18
+export const EVERY_TEXEL: TexelAccept = () => true
+
 /**
- * A stroke's pigment: the mean of the tree texels in the window a ribbon covers at its middle sample (± its
- * half-width across, ± one texel along), or the texel under the sample when none in the window is tree. One texel
- * is one bristle lane's worth and neighbouring ribbons jumped in value where the painting's strokes agree (retune
- * 3); a wide ribbon takes its band's colour.
+ * A stroke's pigment: the mean of the accepted texels in the window a ribbon covers at its middle sample (± its
+ * half-width across, ± one texel along), or the texel under the sample when none in the window is accepted. One
+ * texel is one bristle lane's worth and neighbouring ribbons jumped in value where the painting's strokes agree
+ * (retune 3); a wide ribbon takes its band's colour. The cypress accepts tree texels; the land (E2) every texel,
+ * since the hills are the blue the tree's filter rejects.
  */
-export function bandPigment(painting: ImageData2D, u: number, v: number, halfWidthU: number): [number, number, number] {
+export function bandPigment(painting: ImageData2D, u: number, v: number, halfWidthU: number, accept: TexelAccept = TREE_TEXEL): [number, number, number] {
   const cx = Math.min(painting.width - 1, Math.max(0, Math.floor(u * painting.width)))
   const cy = Math.min(painting.height - 1, Math.max(0, Math.floor(v * painting.height)))
   const radius = Math.max(1, Math.round(halfWidthU * painting.width))
@@ -137,8 +143,7 @@ export function bandPigment(painting: ImageData2D, u: number, v: number, halfWid
       const red = painting.data[i]
       const green = painting.data[i + 1]
       const blue = painting.data[i + 2]
-      const luminance = 0.299 * red + 0.587 * green + 0.114 * blue
-      if (luminance >= 118 || blue >= green + 18) continue
+      if (!accept(red, green, blue)) continue
       r += red
       g += green
       b += blue
@@ -155,6 +160,7 @@ export function traceCypressRibbons(
   count: number,
   seed: number,
   config: CypressRibbonConfig = CYPRESS_RIBBON_CONFIG,
+  accept: TexelAccept = TREE_TEXEL,
 ): CypressRibbon[] {
   const random = mulberry32(seed)
   const inside = (px: number, py: number) => sampleCypressImage(flow, px, py).b > 0
@@ -229,7 +235,7 @@ export function traceCypressRibbons(
     if (samples.length < 4) continue
     const middle = samples[Math.floor(samples.length / 2)]
     const at = middle.inside ? middle : seedSample
-    const colour = bandPigment(painting, ...paintingUV(rows, at.px, at.py), halfWidth * (rows.uv[2] - rows.uv[0]))
+    const colour = bandPigment(painting, ...paintingUV(rows, at.px, at.py), halfWidth * (rows.uv[2] - rows.uv[0]), accept)
     output.push({ samples, seedSample, colour, halfWidth, relief, seed: ribbonSeed })
   }
   return output

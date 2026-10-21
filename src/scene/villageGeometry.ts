@@ -5,11 +5,10 @@ import { PALETTE } from './palette'
 import atlas from './village-atlas.json'
 import { MARK_STEPS, markVertexCount, packGlow, type LitRange } from './villageGlow'
 import { VILLAGE_PATCHES, type VillagePatchName } from './villagePatches'
-import { BACK_ROW, FRONT_ROW, LEFT_ROW, RIGHT_ROW } from './villageStations'
 
 // The church and four neighbours are authored as one knot. Axes and relative heights come
 // from painting.jpg's full lower village, not the old crop ending halfway through the town.
-// Three context houses and four foliage rows complete the village in the same medium.
+// Three context houses complete the village in the same medium; the foliage rows are the land's masses (E2).
 // Developed as a DEV study (tasks/2026-10-05-village-*.md, 2026-10-06-village-context.md).
 type Face = readonly [Vector3, Vector3, Vector3, Vector3]
 type Pigment = 'wall' | 'pale' | 'roof' | 'sienna' | 'striped'
@@ -265,86 +264,25 @@ function church(solid: BrushArrays, skin: SkinArrays, paint: PaintArrays): void 
   }
 }
 
-// Source span (sx0, sw) maps to world x0 + xw·u; the front face bows forward by `bow`.
-// FRONT keeps F1's literal, non-isotropic values and back-face UVs so its buffers stay exact.
-type Row = {
-  stations: number[][]; sx0: number; sw: number; x0: number; xw: number; z0: number; bow: number
-  scale: number; maxHeight: number; legacyFrontUV?: boolean
-}
-const ROWS: Row[] = [
-  { stations: FRONT_ROW, sx0: 742, sw: 87, x0: -0.57, xw: 0.44, z0: 0.94, bow: 0.015,
-    scale: 0.0038, maxHeight: 0.1292, legacyFrontUV: true },
-  { stations: BACK_ROW, sx0: 1004, sw: 208, x0: -0.18, xw: 1.2, z0: 0.22, bow: 0.02,
-    scale: 1.2 / 208, maxHeight: 44 * (1.2 / 208) },
-  { stations: RIGHT_ROW, sx0: 1182, sw: 97, x0: 1.32, xw: 97 * 0.0036, z0: 0.5, bow: 0.015,
-    scale: 0.0036, maxHeight: 52 * 0.0036 },
-  { stations: LEFT_ROW, sx0: 685, sw: 60, x0: -1.36, xw: 60 * 0.0045, z0: 0.95, bow: 0.015,
-    scale: 0.0045, maxHeight: 42 * 0.0045 },
-]
-
-function foliageRow(foliage: SkinArrays, row: Row): void {
-  const { scale, maxHeight } = row
-  const face = (vertices: Vector3[], pixels: number[][], shade: number) => {
-    polygon(foliage, vertices, new Color(shade, shade, shade))
-    // Match Cypress: pixel indices, flipY=false; no second V inversion.
-    for (const [x, y] of pixels) foliage.uv.push(x / 1599, y / 1266)
-  }
-  const stations = row.stations.map(([sx, crest, base]) => {
-    const u = (sx - row.sx0) / row.sw
-    const x = row.x0 + row.xw * u
-    const z = row.z0 + row.bow * Math.sin(Math.PI * u)
-    const ground = islandHeightAt(x, z), h = (base - crest) * scale, depth = h / maxHeight * 0.10
-    const topZ = z - h * Math.tan(Math.PI / 12), backGround = islandHeightAt(x, z - depth)
-    return {
-      sx, crest, base, u, h, depth,
-      bf: new Vector3(x, ground - 0.018, z),
-      tf: new Vector3(x, ground + h, topZ),
-      bb: new Vector3(x, backGround - 0.018, z - depth),
-      tb: new Vector3(x, Math.max(backGround - 0.016, ground + h - 0.008), topZ - depth),
-    }
-  })
-  const backUV = (s: typeof stations[number], top: boolean) =>
-    row.legacyFrontUV ? [681 + 59 * s.u, 1140 - (top ? s.h / 0.1292 * 32 : 0)]
-      : [s.sx, s.crest + (s.base - s.crest) * (top ? 0.30 : 0.95)]
-  const [topFrom, topTo] = row.legacyFrontUV ? [0.25, 0.75] : [0.30, 0.70]
-  for (let i = 0; i < stations.length - 1; i++) {
-    const a = stations[i], b = stations[i + 1]
-    face([a.bf, b.bf, b.tf, a.tf],
-      [[a.sx, a.base], [b.sx, b.base], [b.sx, b.crest], [a.sx, a.crest]], 1)
-    // Short, separately sampled top strip; the front image never wraps over the crest.
-    const topUV = (s: typeof a, t: number) => [s.sx, s.crest + (s.base - s.crest) * t]
-    face([a.tf, b.tf, b.tb, a.tb], [topUV(a, topFrom), topUV(b, topFrom), topUV(b, topTo), topUV(a, topTo)], 0.88)
-    face([b.bb, a.bb, a.tb, b.tb], [backUV(b, false), backUV(a, false), backUV(a, true), backUV(b, true)], 0.75)
-    face([a.bb, b.bb, b.bf, a.bf], [topUV(a, 0.6), topUV(b, 0.6), topUV(b, 0.8), topUV(a, 0.8)], 0.7)
-  }
-  const endUV = (s: typeof stations[number]) => {
-    const right = 760 + 18 * s.depth / 0.10, top = 1140 - 26 * s.h / maxHeight
-    return [[760, 1140], [760, top], [right, top], [right, 1140]]
-  }
-  const left = stations[0], right = stations[stations.length - 1]
-  face([left.bf, left.tf, left.tb, left.bb], endUV(left), 0.82)
-  const rightUV = endUV(right)
-  face([right.bf, right.bb, right.tb, right.tf], [rightUV[0], rightUV[3], rightUV[2], rightUV[1]], 0.82)
-}
+// The four foliage rows that stood here (ROWS, foliageRow: the painting's teal curls on bowed slabs) went in E2
+// (2026-10-21): the land's masses (landMasses.ts, landDomes.ts) stand in their places as stroked domes, from the
+// same stations (villageStations.ts).
 
 /**
- * The village's four meshes. With `glow` (make-it-alive A, second pass, the flag on) the paint mesh carries
+ * The village's three meshes. With `glow` (make-it-alive A, second pass, the flag on) the paint mesh carries
  * `aGlow` = [weight, ω₁, ω₂] on the lit window marks (villageGlow.ts); off, the geometry is today's, bit for bit.
  */
 export function buildVillage({ glow = false }: { glow?: boolean } = {}) {
   const solid = makeBrushArrays()
   const paint: PaintArrays = { ...makeBrushArrays(), lit: [] }
   const skin: SkinArrays = { ...makeBrushArrays(), uv: [] }
-  const foliage: SkinArrays = { ...makeBrushArrays(), uv: [] }
   NEIGHBOURS.forEach(b => building(solid, skin, paint, b))
   church(solid, skin, paint)
   CONTEXT.forEach(b => building(solid, skin, paint, b))
-  ROWS.forEach(row => foliageRow(foliage, row))
   return {
     solid: geometry(solid),
     paint: geometry(paint, glow ? packGlow(paint.positions.length / 3, paint.lit) : undefined),
     skin: geometry(skin),
-    foliage: geometry(foliage),
     /** the lit window marks, for the gate's seam */
     litMarks: paint.lit.length,
   }

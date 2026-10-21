@@ -2,20 +2,20 @@ import { Color, Vector3 } from 'three'
 import { mulberry32 } from './brush.ts'
 import { PALETTE } from './palette.ts'
 import { makeBrushArrays, moonShade, pushBrush, smooth, vnoise, type BrushArrays } from './brushForms.ts'
-import { coastR, RIDGE, topY } from './islandShape.ts'
+import { coastR, topY } from './islandShape.ts'
 
 /**
  * The floating landmass's geometry, pure (E2 moved it out of `BrushIsland.tsx` so the root's cladding can be
- * hashed under node and kept byte for byte when the top's cladding changes): a real closed, rooted solid whose
- * rolling top is clad in horizontal contour brushstrokes, dissolving to dark earth down the root. Footprint and
- * height maths live in ./islandShape. Plain `.ts` imports only.
+ * hashed under node and kept byte for byte when the top's cladding changes): a real closed, rooted solid, its top
+ * the dark ground under the painting's own strokes (landStrokes.ts), dissolving to dark earth down the root.
+ * Footprint and height maths live in ./islandShape. Plain `.ts` imports only.
  */
 
 const ROOT_DEPTH = 2.2 // how far the root plunges below the rim
 const SEG = 120 // segments around
 const RT = 16 // rings centre → coast
 const RS = 12 // rings coast → root tip
-const STROKES = 7200
+const STROKES = 7200 // the top's former dab count: the root's stream still skips their draws
 const ROOT_STROKES = 2800
 
 /** A point on the root surface (coast rim k=0 → keel k=1) — shared by the solid rings and the
@@ -34,7 +34,7 @@ function rootPoint(ang: number, k: number, out: Vector3): Vector3 {
 
 export type IslandArrays = {
   solid: { positions: number[]; colors: number[]; indices: number[] }
-  /** the top's contour dabs then the root's, one array; `rootStart` is the root's first vertex */
+  /** the root's dabs (the top's went in E2); `rootStart` is the root's first vertex, 0 since */
   strokes: BrushArrays
   rootStart: number
 }
@@ -46,9 +46,10 @@ export function buildIsland(): IslandArrays {
     // Darker ground than the July values (top 1.88, #284260/#477594, crest 2.72): the 2026-10-05
     // village study lowered them so the pale church and houses separate from the hill, and Mark
     // approved the village on these values (R5, F2, C1 — tasks/2026-10-06-village-context.md).
-    const topBase = new Color(PALETTE.hills).multiplyScalar(1.15)
-    const hillDark = new Color(PALETTE.hills)
-    const hillMid = new Color(PALETTE.house).lerp(new Color(PALETTE.steeple), 0.25)
+    // E2: the top is the dark ground the strokes' gaps show: hills × 0.3 in linear light (≈ 0.58 in sRGB, L 28,
+    // under the darkest strokes' L 23–30; at 0.55 the gaps sat at L 36, lighter than a quarter of the strokes,
+    // and the apron flattened, capture 1). The dabs' 1.15 read as bare clay.
+    const topBase = new Color(PALETTE.hills).multiplyScalar(0.3)
     const hillLit = new Color(PALETTE.hillsCrest).multiplyScalar(1.3)
 
     // --- closed rooted solid (dark base) ---
@@ -106,57 +107,16 @@ export function buildIsland(): IslandArrays {
     for (let j = 0; j < SEG; j++) sIdx.push(keel, lastRing + j, lastRing + j + 1)
 
 
-    // --- contour brushstroke cladding over the top surface ---
+    // --- the top: no dabs since E2 (the ground strokes, landStrokes.ts, clad it from the painting's own field).
+    // The root's random stream is advanced past the top's 7,200 dabs, six draws each, so its every choice is the
+    // one main built at b54fd68 (the hash in scripts/island-geometry.test.ts; Codex, E2 plan review F14).
     const rng = mulberry32(0x15_1a_9d)
+    for (let s = 0; s < STROKES * 6; s++) rng()
     const arr = makeBrushArrays()
     const p = new Vector3()
     const nrm = new Vector3()
     const tangent = new Vector3()
-    const up = new Vector3(0, 1, 0)
     const strokeCol = new Color()
-    const groundGreen = new Color(PALETTE.cypressGreen).multiplyScalar(1.2)
-    const eps = 0.05
-    for (let s = 0; s < STROKES; s++) {
-      // rejection-sample a point inside the coastline
-      const ang = rng() * Math.PI * 2
-      const rad = Math.sqrt(rng()) * coastR(ang) * 0.985
-      const x = Math.cos(ang) * rad
-      const z = Math.sin(ang) * rad
-      const y = topY(x, z) * smooth(1, 0.55, rad / coastR(ang))
-      // surface normal from finite differences of the (flattened) top height
-      const flatten = smooth(1, 0.55, rad / coastR(ang))
-      const yE = topY(x + eps, z) * flatten
-      const yN = topY(x, z + eps) * flatten
-      nrm.set(-(yE - y) / eps, 1, -(yN - y) / eps).normalize()
-      tangent.crossVectors(nrm, up) // horizontal contour direction
-      if (tangent.lengthSq() < 1e-5) tangent.set(1, 0, 0)
-      // a little coherent waviness along the contour
-      tangent.addScaledVector(up, (vnoise(x * 2 + 3, z * 2 + 7) - 0.5) * 0.15)
-
-      const t = y / RIDGE
-      const front = smooth(0.2, 1.3, z) // +z is the near foreground
-      const lit = moonShade(nrm)
-      strokeCol
-        .copy(hillDark)
-        .lerp(hillMid, smooth(0.08, 0.55, t))
-        .lerp(hillLit, smooth(0.45, 0.95, t) * (0.4 + 0.6 * lit))
-        .lerp(groundGreen, front * 0.6)
-      // Van Gogh's surfaces read because ADJACENT strokes contrast hard in value — without this
-      // strong per-stroke kick the field averages into smooth clay. But the full ±50% spread
-      // reads as salt-and-pepper mottle at composition distance; ±35% keeps the brushwork read
-      // while letting the contours knit (top trimmed to 1.27: the brightest kicks caught bloom
-      // and sparkled in the look-down — Mark's 2026-07-14 gate feedback). Sparse, gentler crest
-      // flecks — 10% was confetti; and flecks belong to MOONLIT faces, not shadowed ground,
-      // where they read as white scratches.
-      const val = 0.71 + 0.62 * rng()
-      strokeCol.multiplyScalar(val)
-      if (rng() < 0.045 * (0.25 + 0.75 * lit)) strokeCol.lerp(hillLit, 0.32) // moonlit impasto fleck
-
-      p.set(x, y, z).addScaledVector(nrm, 0.025)
-      const halfLen = 0.135 + 0.09 * rng() // longer marks knit into contour lines, not grain
-      const halfWid = 0.02 + 0.014 * rng()
-      pushBrush(arr, p, tangent, nrm, halfLen, halfWid, strokeCol)
-    }
 
     const rootStart = arr.positions.length / 3
     // --- root cladding: the underside was the one smooth unpainted surface (a grey-cone tell).

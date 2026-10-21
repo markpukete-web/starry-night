@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import { coastR, islandHeightAt, RZ } from '../src/scene/islandShape.ts'
-import { flowToPainting, LAND_MAP, paintingUvAt, worldAt } from '../src/scene/landMapping.ts'
+import { crestAt, flowToPainting, HILL_CREST, LAND_MAP, paintingUvAt, worldAt } from '../src/scene/landMapping.ts'
 import { LAND_MASSES } from '../src/scene/landMasses.ts'
 import { BACK_ROW, FRONT_ROW, LEFT_ROW, RIGHT_ROW, stationBox } from '../src/scene/villageStations.ts'
 
@@ -26,10 +26,11 @@ test('the map is centred on the church\'s nave, round-trips, and is monotone and
   const before = paintingUvAt(0, LAND_MAP.apron.zBack + 1e-6)[1]
   const after = paintingUvAt(0, LAND_MAP.apron.zBack - 1e-6)[1]
   assert.ok(Math.abs(before - after) < 1e-4, 'continuous where the apron meets the hills')
-  assert.ok(Math.abs(paintingUvAt(0, RZ)[1] - 1) < 1e-9 && Math.abs(paintingUvAt(0, -RZ)[1] - 0.6) < 1e-9)
+  const [uBack, vBack] = paintingUvAt(0, -RZ)
+  assert.ok(Math.abs(paintingUvAt(0, RZ)[1] - 1) < 1e-9 && Math.abs(vBack - crestAt(uBack)) < 1e-9, 'the back rim is the crest')
 })
 
-test('the scales are the stated ones: 4.75 per u (the right coast under the painting\'s right edge), 5.0 per v on the apron and 8.9 on the hills', () => {
+test('the scales are the stated ones: 4.75 per u (the right coast under the painting\'s right edge), 5.0 per v on the apron, the hills\' per u to the crest', () => {
   const { apron, hills } = LAND_MAP
   assert.ok(Math.abs(LAND_MAP.worldPerU - 4.75) < 1e-9)
   const [rightCoast] = paintingUvAt(coastR(0), 0)
@@ -37,9 +38,16 @@ test('the scales are the stated ones: 4.75 per u (the right coast under the pain
   const [leftCoast] = paintingUvAt(-coastR(Math.PI), 0)
   assert.ok(leftCoast > 0.05 && leftCoast < 0.26, `the left coast at u ${leftCoast.toFixed(3)}, under the cypress column`)
   const apronPerV = (apron.zFront - apron.zBack) / (apron.vFront - apron.vBack)
-  const hillsPerV = (apron.zBack - hills.zBack) / (apron.vBack - hills.vBack)
   assert.ok(Math.abs(apronPerV - 5.0) < 0.01, `apron ${apronPerV.toFixed(2)} per v`)
-  assert.ok(Math.abs(hillsPerV - 8.89) < 0.01, `hills ${hillsPerV.toFixed(2)} per v`)
+  // the hills' stretch per u: from the fields' top to the crest at that u
+  for (const [u, low, high] of [[0.95, 7.9, 8.1], [0.6, 9.3, 9.5], [0.45, 17.5, 18]] as const) {
+    const hillsPerV = (apron.zBack - hills.zBack) / (apron.vBack - crestAt(u))
+    assert.ok(hillsPerV > low && hillsPerV < high, `hills ${hillsPerV.toFixed(2)} per v at u ${u}`)
+  }
+  for (const [u, v] of HILL_CREST) assert.ok(v >= LAND_MAP.bandV0 && v < apron.vBack - 0.05 && u >= 0 && u <= 1, `the crest at u ${u} inside the band`)
+  // the sky above the crest maps off the island's back
+  const [, zSky] = worldAt(0.5, crestAt(0.5) - 0.02)
+  assert.ok(zSky < -RZ, `the sky at z ${zSky.toFixed(2)}`)
   assert.deepEqual(flowToPainting(0.5, 0), [0.5, LAND_MAP.bandV0])
   assert.deepEqual(flowToPainting(0.5, 1), [0.5, 1])
 })

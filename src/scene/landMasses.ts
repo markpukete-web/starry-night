@@ -35,3 +35,20 @@ export const LAND_MASSES: readonly LandMass[] = [
   { id: 'orchard-right', class: 'yellowGreen', box: [1400, 940, 1596, 1030], x: 1.7, z: -0.1, width: 0.5 },
   { id: 'bushes', class: 'yellowGreen', box: [20, 1090, 330, 1250], x: -1.3, z: 0.95, width: 0.5 },
 ]
+
+/**
+ * The painting's village, as boxes in painting pixels (1600 × 1267) traced by eye 2026-10-21: the left houses,
+ * the church with its spire, the houses right of it, the big front house, the right village, the front-left
+ * wall. The ground's support excludes them, so no wall, roof or window seeds a ground stroke (the striped roof's
+ * sienna and the lit windows' yellow walked onto the apron in flat gates 2 and 3; a colour rule could not tell
+ * a pale wall from a lit hill slope). In world the holes fall where the village stands; the dark top shows there.
+ */
+export const VILLAGE_FOOTPRINT: readonly (readonly [number, number, number, number])[] = [
+  [640, 1000, 760, 1100],
+  [796, 980, 922, 1112],
+  [896, 815, 922, 1000],
+  [936, 1040, 1165, 1112],
+  [940, 1165, 1125, 1240],
+  [1160, 1058, 1368, 1152],
+  [748, 1168, 848, 1212],
+]
