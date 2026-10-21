@@ -140,3 +140,32 @@ and one P3. Each checked. each holds. The dispositions, folded into the build:
   16.2, 9.2% light before the shader.
 
 The build goes on these dispositions. the code review (G10) checks them in code. No second plan read.
+
+### The code review (G10)
+
+Codex (`w4:p4`, read-only, 2026-10-22, `scratch/cypress-e3-2026-10-22/code-review-report.md`, against `515c281`. it
+ran the suites, two mutants of the sampler, a factory mutant, independent sampler checks, byte comparisons of the
+default shader fields with `399a956`, the flat gate's two modes, the colour gate on a neutral-grey control and an
+empty one, and the drape's correspondence over the real batches): **REVISE**, three P2s and six P3s. Each checked
+against the code. Each holds. The dispositions, in one commit:
+
+- F1 (P2) `test:sky` omitted `cypress-colours.test.ts`, the second time this slip was made in two slices → added.
+  183 pass. The lesson is recorded.
+- F2 (P2) the chromatic check and the grey control were deferred, so a neutral-grey tree passed G4 → built: the
+  warm share (Lab b > 8) and the green share (a < −4) of the rendered tree against the painting's, each within 6
+  points. `--control=grey` must exit 1 and does. The check found the render greener than the painting (37.1%
+  against 30.3%): E1's 1.3 chroma boost had compensated the one-colour mean's desaturation. Pass 4 takes the
+  cypress's body to 1.1 through the factory.
+- F3 (P2) the fixtures let a first-accepted fill and an sRGB average pass → C1 fills across brown | sky | green
+  with a tie, rejected endpoints and one accepted sample. C2 asserts the exact linear mean at the edge and at
+  clipped windows. Both mutants fail now, run and restored.
+- F4 (P3) C4 compared the factory with itself → E1's four fields pinned by hash from `399a956`.
+- F5 (P3) the land computed per-sample colours it never reads (+12% tracing time) → opt-in `perSampleColours`.
+  The land's configs set it off.
+- F6 (P3) an empty tree crashed the summary → a structured failure, exit 1.
+- F7 (P3) the flat gate does not draw the kept run → labelled as the tracer's view. A test over the shipped
+  batches checks every draped ribbon's step colours against its kept run.
+- F8 (P3) the coarse lane's cycles were per unit of `side`, twice the documented scale → on `vStroke.y` (0–1).
+- F9 (P3) the bounds compared rounded summaries → the raw statistics, rounded for display only.
+
+The confirmation read: `brief-confirmation.md`, bounded to the nine and pass 4.

@@ -2805,3 +2805,29 @@ after PR #8 merged (`246e817`, "Merge it then start the second pass").
   frame flipped the mask; asking the land once per hover step, inside B's 60 ms gate, closed it at a bounded cost.
 - **Lint the brief before the dispatch, not after.** Two briefs went out with semicolon chains because the dispatch
   ran in the same command as the lint. Lint first, read the count, then send.
+
+## E3 (the cypress's medium), 2026-10-22
+
+- **Measure on the thing's own mask before naming a number.** The painting's tree measured over the whole crop
+  rectangle read a luminance spread of 28 and 19% light; on the tree's own component it is 18.5 and 10.6%. The
+  rectangle held the bushes at the tree's foot. Codex found the mismatch the same hour; the plan was corrected
+  before its read landed, and the light-seed step it had justified became a reserve nobody needed.
+- **The first recommendation was wrong at 1:1.** "Shorter strokes" came from memory of the painting; the 1:1 crop
+  showed long vertical bands, which E1's lengths already matched. The difference was the colour along each band
+  and the light-dark alternation. Look at the crop before recommending.
+- **One colour per ribbon averages the bands it crosses.** 328 of 450 ribbons cross a brown band and a green one
+  along their length; the per-ribbon mean, and a median in the same window, both flattened the spread to 9 against
+  the painting's 18.5. The colour along the stroke, per kept step, brought it to 17.
+- **A chroma boost tuned for a desaturated input oversaturates a faithful one.** E1's ×1.3 compensated the mean's
+  flattening; with per-sample colours the tree came out greener than the painting (37% against 30% green-classed
+  pixels). The chromatic check Codex insisted on found it; the bound itself was not the point, the control was.
+- **The same slip twice: a new test file left out of `test:sky`.** D1's F5 and E3's F1. The command enumerates
+  files, so a new suite runs only when added. Add the file in the same commit that creates it, and read the test
+  count against the expected one before quoting it.
+- **A metric the painting's canvas drives is not a stroke metric.** The 3 × 3 contrast at the render's scale reads
+  11 on the painting and 2.5 to 3.4 on ours through four relief passes that moved it 0.9 in all; the painting's
+  number is its bristle marks and the weave. The bands were judged by the gate's distributions and the crops; the
+  relief stays a dial.
+- **A shared shader needs a factory, not an edit.** The stroke body serves the cypress and the land; the cypress's
+  new constants went through a factory whose defaults reproduce E1's text, pinned by hash, so the land's program
+  did not move.
