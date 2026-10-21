@@ -369,7 +369,6 @@ function realAssets() {
 test('at a frond-to-main surface crossing the view offset does not jump and the old offset along the switching normal does', () => {
   const { plan, options, rings } = realAssets()
   const frond = plan.lobes.find((lobe) => lobe.kind === 'frond' && lobe.side === 'left')!
-  const view = [Math.cos(options.bearing), 0, Math.sin(options.bearing)] as const
   const distance = (p: readonly number[], q: readonly number[]) => Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2])
   let crossings = 0
   for (const h of [0.33, 0.35, 0.37, 0.39, 0.41, 0.44]) {
