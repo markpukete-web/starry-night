@@ -36,11 +36,12 @@ export const CYPRESS_FLICKER = {
   /** tip weight: smoothstep over the vertex's height within its OWN lobe (so a frond's tip lights like the main flame's) */
   tip: [0.55, 0.9],
   /**
-   * tongue weight: smoothstep over the stroke's mean |lateral| across its lobe. The shipped strokes' quantiles are
-   * 25% 0.21 / 50% 0.43 / 75% 0.58 / 95% 0.83 (session probe, 2026-10-13), so this reads 0.5 at the 75th and 1 at
-   * the 95th: the outer quarter of strokes carry the tongues.
+   * tongue weight: smoothstep over the ribbon's mean |lateral| across its lobe. E1's draped ribbons measure 25%
+   * 0.32 / 50% 0.51 / 75% 0.72 / 95% 0.93 (2026-10-21, 1,396 front ribbons), so this reads 0.5 at the 75th and 1
+   * at the 95th: the outer quarter of ribbons carry the tongues. (The 48 sinuous strokes before E1 measured
+   * 0.21 / 0.43 / 0.58 / 0.83 and the band was 0.4–0.75.)
    */
-  lick: [0.4, 0.75],
+  lick: [0.72, 0.93],
   /** back strokes take this share of the tongue weight: the far side, a flame's near tongues read first */
   backLick: 0.5,
   /** the underpaint solid takes this share of the knob: the body follows faintly, so the strokes are not a decal */

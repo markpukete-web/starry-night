@@ -182,12 +182,12 @@ test('T14 the flicker weight: the tips and the outer tongues carry it, the core 
   assert.equal(flickerWeight(0.5, 0.3), floor, 'a core vertex of a core stroke keeps the floor')
   assert.ok(flickerWeight(0.725, 0.3) > floor && flickerWeight(0.725, 0.3) < 1, 'inside the tip band')
   assert.equal(flickerWeight(0.95, 0.3), 1, 'a tip vertex takes the full weight')
-  assert.equal(flickerWeight(0.2, 0.8), 1, 'an outer tongue takes the full weight at any height')
-  assert.ok(flickerWeight(0.2, 0.575) > floor && flickerWeight(0.2, 0.575) < 1, 'inside the tongue band')
+  assert.equal(flickerWeight(0.2, 0.95), 1, 'an outer tongue takes the full weight at any height')
+  assert.ok(flickerWeight(0.2, 0.825) > floor && flickerWeight(0.2, 0.825) < 1, 'inside the tongue band')
   // the tongue term exists (dropping it makes these equal: the mutation proof)
-  assert.ok(flickerWeight(0, 0.9) > flickerWeight(0, 0))
+  assert.ok(flickerWeight(0, 0.95) > flickerWeight(0, 0))
   // back strokes: half the tongue term
-  assert.ok(Math.abs(flickerWeight(0, 0.9, true) - (floor + (1 - floor) * CYPRESS_FLICKER.backLick)) < 1e-12)
+  assert.ok(Math.abs(flickerWeight(0, 0.95, true) - (floor + (1 - floor) * CYPRESS_FLICKER.backLick)) < 1e-12)
   // monotone in the vertex's height
   let previous = 0
   for (let h = 0; h <= 1; h += 0.05) {
@@ -211,9 +211,9 @@ test('T14 the flicker weight: the tips and the outer tongues carry it, the core 
   assert.equal(tipRun[0][0], floor)
   assert.equal(tipRun[2][0], 1)
   assert.deepEqual(tipRun.map(([, h]) => h), [0.5, 0.8, 1])
-  const tongue = ribbonFlicker([{ h: 0.1, lateral: 0.9 }, { h: 0.2, lateral: 0.9 }], [0, 1], false)
+  const tongue = ribbonFlicker([{ h: 0.1, lateral: 0.95 }, { h: 0.2, lateral: 0.95 }], [0, 1], false)
   assert.ok(tongue.every(([w]) => w === 1))
-  const backTongue = ribbonFlicker([{ h: 0.1, lateral: 0.9 }], [0, 1], true)
+  const backTongue = ribbonFlicker([{ h: 0.1, lateral: 0.95 }], [0, 1], true)
   assert.ok(Math.abs(backTongue[0][0] - (floor + (1 - floor) * CYPRESS_FLICKER.backLick)) < 1e-12)
   // the frond's own range: its top sample weighs 1 although its absolute height is low
   const frondRun = ribbonFlicker([{ h: frondEnd, lateral: 0 }], [frondStart, frondEnd], false)
