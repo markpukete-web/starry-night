@@ -34,6 +34,9 @@ the plan `tasks/2026-10-21-cypress-e1-plan.md` (Codex's reads and every disposit
 
 - [ ] **Mark's taste gate** on the captures and on `?perf=1` on his iPhone (the frame rate and the build time).
   Mark, 2026-10-21 evening, on the first comparison: "Looks closer".
+- [ ] **B's surges at a close orbit** (Mark, 2026-10-21 evening, a screenshot of the right-hand sky): the hover
+  lifts read as pale fog patches along the strokes at that angle and zoom; confirmed as B by their fade. Mark's
+  call on the `surge` knob (shipped 1) or on the lift's look; not E1's.
 - [ ] After Mark: push, the PR, Codex's PR review (`@codex review` once, at most two re-requests).
 - [ ] **E2, the land**, after E1 merges.
 - [ ] **D1, touch**, after E2: revise the plan per its review (the vertex transform and the draped vertex order
