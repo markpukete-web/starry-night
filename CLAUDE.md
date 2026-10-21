@@ -180,6 +180,12 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   tree. The masses: ten authored boxes, domes capped at 0.3 high (a house's eave), rx 0.75 of the spacing, rz half the
   smaller radius, lift 0.012 along the facing axis, contact 0.005, strips `clamp(pixels / 40, 24, 180)` per mass
   (0.4 of them on the back), half-widths 0.04–0.08 of the box, overshoot 3, taper 0.5. Untuned by Mark.
+- D1, touch the land (2026-10-21, `src/scene/landTouch.ts`, rides B's flag; `?touch=0` turns both off): radius 0.55 world
+  units, push 0.14 on the cypress and 0.035 on the trees and bushes (a full-weight vertex where the lateral field peaks,
+  at 0.447 of the radius), dip 0.35 of the push, rise 0.12 s, swing τ 0.9 s and period 1.3 s, closed between 4 and 5 s
+  after the release, 4 live touches, hover amplitude 0.6, a hand on the land masks the sky's surge behind it; the bend
+  weight is the vertex's local height over 2.7 on the cypress and its height over the terrain over the mass's height on
+  the trees; the ground does not bend. Knob `bend` 0–1.5, shipped 1 (`sky-tuning.json` `touchBend`), untuned by Mark.
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)
