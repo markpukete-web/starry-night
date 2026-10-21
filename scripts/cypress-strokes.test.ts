@@ -37,11 +37,19 @@ function fixtures(degrees = 0, top = 0, bottom = HEIGHT - 1) {
       painting.data[i + 3] = 255
     }
   }
-  return { flow, painting, rows: { uv: [0, 0, 1, 1] as [number, number, number, number] } }
+  // the row table: the band is the main span on every row, no satellites
+  const rows = {
+    uv: [0, 0, 1, 1] as [number, number, number, number],
+    width: WIDTH,
+    height: HEIGHT,
+    spans: [[0, 20 / (WIDTH - 1), 40 / (WIDTH - 1)], [1, 20 / (WIDTH - 1), 40 / (WIDTH - 1)]] as [number, number, number][],
+    satellites: [],
+  }
+  return { flow, painting, rows }
 }
 
-/** One fixed length, no spire: an interior ribbon has exactly 2 · round(length / step / 2) + 1 samples. */
-const FIXED = { ...CYPRESS_RIBBON_CONFIG, minLength: 0.1, maxLength: 0.1, spireHeight: 2 }
+/** One fixed length, no spire, widths that fit the fixture's band: an interior ribbon has exactly 2 · round(length / step / 2) + 1 samples. */
+const FIXED = { ...CYPRESS_RIBBON_CONFIG, minLength: 0.1, maxLength: 0.1, spireHeight: 2, minHalfWidth: 0.02, maxHalfWidth: 0.04 }
 const FIXED_SAMPLES = 2 * Math.round(FIXED.minLength / FIXED.step / 2) + 1
 
 function seedIndex(ribbon: CypressRibbon): number {
@@ -57,9 +65,11 @@ test('the tracer is deterministic in its seed and returns ribbons for a full mas
   assert.notDeepEqual(a, traceCypressRibbons(flow, painting, rows, 60, 8, FIXED))
 })
 
-test('a ribbon grows both ways from its seed and has the fixed sample count away from the mask\'s ends', () => {
+test('a ribbon grows both ways from its seed, has the fixed sample count away from the mask\'s ends, and its width fits its run', () => {
   const { flow, painting, rows } = fixtures()
   const ribbons = traceCypressRibbons(flow, painting, rows, 80, 3, FIXED)
+  const bandHalf = 10 / (WIDTH - 1)
+  for (const ribbon of ribbons) assert.ok(ribbon.halfWidth <= FIXED.widthCap * bandHalf + 1e-9, `a ribbon ${ribbon.halfWidth.toFixed(4)} half-wide in a band ${bandHalf.toFixed(4)} half-wide`)
   const margin = (FIXED_SAMPLES * FIXED.step) / 2 + 2 * FIXED.step
   let interior = 0
   for (const ribbon of ribbons) {
@@ -107,14 +117,20 @@ test('a 30° field bends the ribbon by 30°, and a vertical one keeps it vertica
   }
 })
 
-test('the colour is the painting at the middle sample, or at the seed when the middle has overshot', () => {
+test('the colour is the painting at the middle sample (the band\'s mean where the texels are tree), or at the seed when the middle has overshot', () => {
   const { flow, painting, rows } = fixtures(0, 30, 170)
+  // the fixture painting is not tree (blue 200), so the band rule falls back to the texel under the sample
   for (const ribbon of traceCypressRibbons(flow, painting, rows, 80, 9, FIXED)) {
     const middle = ribbon.samples[Math.floor(ribbon.samples.length / 2)]
     const at = middle.inside ? middle : ribbon.seedSample
     assert.ok(Math.abs(ribbon.colour[0] - at.px) < 2 / 255 + 1 / (WIDTH - 1), 'red encodes px')
     assert.ok(Math.abs(ribbon.colour[1] - at.py) < 2 / 255 + 1 / (HEIGHT - 1), 'green encodes py')
   }
+  // a tree-coloured band: the mean of its window, symmetric about the sample, so a flat band gives its own colour
+  const green: ImageData2D = { data: new Uint8ClampedArray(WIDTH * HEIGHT * 4), width: WIDTH, height: HEIGHT }
+  for (let i = 0; i < WIDTH * HEIGHT; i++) { green.data[i * 4] = 40; green.data[i * 4 + 1] = 60; green.data[i * 4 + 2] = 30; green.data[i * 4 + 3] = 255 }
+  const ribbon = traceCypressRibbons(flow, green, rows, 5, 9, FIXED)[0]
+  assert.ok(Math.abs(ribbon.colour[0] - 40 / 255) < 1e-9 && Math.abs(ribbon.colour[1] - 60 / 255) < 1e-9)
 })
 
 test('ribbonEdges offsets the path by the tapered half-width along its 2D normal', () => {

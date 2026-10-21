@@ -1,4 +1,5 @@
 import { mulberry32, sampleColour } from './brush.ts'
+import { rowSpanAt, type RowTable } from './cypressMapping.ts'
 import type { ImageData2D } from './useImageData.ts'
 
 /**
@@ -8,9 +9,11 @@ import type { ImageData2D } from './useImageData.ts'
  * resolution can change without a retune.
  */
 export const CYPRESS_RIBBON_CONFIG = {
-  /** front ribbons; the back takes `backShare` of the count. 520 left the underpaint showing between the strokes
-   * where the painting is solid paint (flat gate, retune 1, 2026-10-21) */
-  frontCount: 1400,
+  /**
+   * front ribbons; the back takes `backShare` of the count. 520 at the lane width left the underpaint showing where
+   * the painting is solid paint (retune 1); at the stroke width 450 cover the same (retune 3, 2026-10-21)
+   */
+  frontCount: 450,
   backShare: 0.25,
   /** seeds above `spireHeight` are accepted this many times more often than below: the spire is a sliver of the
    * mask's area and took three strands for the painting's six to eight packed lanes (retune 1) */
@@ -22,9 +25,14 @@ export const CYPRESS_RIBBON_CONFIG = {
   spireLengthScale: 1.5,
   /** the integration step, a fraction of the crop's height: 3 px at 1578 rows */
   step: 0.0019,
-  /** half-widths in crop widths: the painting's lanes are 8–14 px of 453 */
-  minHalfWidth: 0.009,
-  maxHalfWidth: 0.016,
+  /**
+   * half-widths in crop widths. The painting's strokes are broad bands 30–60 px wide of 453, with bristle lanes
+   * 8–14 px wide inside them; retune 1 and 2 built the ribbons at the lane width and the tree read as fur (retune 3)
+   */
+  minHalfWidth: 0.03,
+  maxHalfWidth: 0.06,
+  /** a ribbon is at most this share of the half-width of the run its seed sits in, so the spire's strokes fit the spire */
+  widthCap: 0.45,
   /** steps a ribbon may run past the mask at either end: the tongues breaking the outline */
   overshootSteps: 4,
   /** the tip's width as a share of the base's: the stroke draws out upward */
@@ -82,10 +90,59 @@ export function paintingUV(rows: { uv: [number, number, number, number] }, px: n
  * instead, and the render came out 8–14 L lighter than the painting in every third, retune 2, 2026-10-21; the
  * texel's own pigment mix already matches the painting's, green 50%, grey 38%, brown 9%.)
  */
+export type RibbonRows = RowTable & { uv: [number, number, number, number]; satellites?: { y: number; x0: number; x1: number }[] }
+
+/** The half-width, in crop widths, of the run under a crop point: a satellite run on its row, else the main span. */
+function runHalfWidthAt(rows: RibbonRows, px: number, py: number): number {
+  const y = Math.round(py * (rows.height - 1))
+  for (const run of rows.satellites ?? []) {
+    if (run.y !== y) continue
+    const left = run.x0 / Math.max(1, rows.width - 1)
+    const right = run.x1 / Math.max(1, rows.width - 1)
+    if (px >= left && px <= right) return Math.max(0.0035, (right - left) / 2)
+  }
+  const span = rowSpanAt(py, rows)
+  return Math.max(0.0035, (span.right - span.left) / 2)
+}
+
+/**
+ * A stroke's pigment: the mean of the tree texels in the window a ribbon covers at its middle sample (± its
+ * half-width across, ± one texel along), or the texel under the sample when none in the window is tree. One texel
+ * is one bristle lane's worth and neighbouring ribbons jumped in value where the painting's strokes agree (retune
+ * 3); a wide ribbon takes its band's colour.
+ */
+export function bandPigment(painting: ImageData2D, u: number, v: number, halfWidthU: number): [number, number, number] {
+  const cx = Math.min(painting.width - 1, Math.max(0, Math.floor(u * painting.width)))
+  const cy = Math.min(painting.height - 1, Math.max(0, Math.floor(v * painting.height)))
+  const radius = Math.max(1, Math.round(halfWidthU * painting.width))
+  let r = 0
+  let g = 0
+  let b = 0
+  let n = 0
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -radius; dx <= radius; dx++) {
+      const x = cx + dx
+      const y = cy + dy
+      if (x < 0 || y < 0 || x >= painting.width || y >= painting.height) continue
+      const i = (y * painting.width + x) * 4
+      const red = painting.data[i]
+      const green = painting.data[i + 1]
+      const blue = painting.data[i + 2]
+      const luminance = 0.299 * red + 0.587 * green + 0.114 * blue
+      if (luminance >= 118 || blue >= green + 18) continue
+      r += red
+      g += green
+      b += blue
+      n++
+    }
+  }
+  return n ? [r / n / 255, g / n / 255, b / n / 255] : sampleColour(painting, u, v)
+}
+
 export function traceCypressRibbons(
   flow: ImageData2D,
   painting: ImageData2D,
-  rows: { uv: [number, number, number, number] },
+  rows: RibbonRows,
   count: number,
   seed: number,
   config: CypressRibbonConfig = CYPRESS_RIBBON_CONFIG,
@@ -133,7 +190,10 @@ export function traceCypressRibbons(
     const spire = 1 - sy > config.spireHeight ? config.spireLengthScale : 1
     const length = Math.exp(Math.log(config.minLength) + random() * (Math.log(config.maxLength) - Math.log(config.minLength))) * spire
     const half = Math.max(2, Math.round(length / config.step / 2))
-    const halfWidth = config.minHalfWidth + random() * (config.maxHalfWidth - config.minHalfWidth)
+    const halfWidth = Math.min(
+      config.minHalfWidth + random() * (config.maxHalfWidth - config.minHalfWidth),
+      config.widthCap * runHalfWidthAt(rows, sx, sy),
+    )
     const relief = 1 - config.reliefSpread + random() * config.reliefSpread * 2
     const ribbonSeed = random() * 1000
     const up = walk(sx, sy, 1, half)
@@ -143,7 +203,7 @@ export function traceCypressRibbons(
     if (samples.length < 4) continue
     const middle = samples[Math.floor(samples.length / 2)]
     const at = middle.inside ? middle : seedSample
-    const colour = sampleColour(painting, ...paintingUV(rows, at.px, at.py))
+    const colour = bandPigment(painting, ...paintingUV(rows, at.px, at.py), halfWidth * (rows.uv[2] - rows.uv[0]))
     output.push({ samples, seedSample, colour, halfWidth, relief, seed: ribbonSeed })
   }
   return output

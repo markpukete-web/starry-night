@@ -150,6 +150,8 @@ export function liftToLobes(
   options: CypressLobeSolidOptions,
   frontFacing: boolean,
   maxOvershoot = 0.6,
+  /** beyond `maxOvershoot`, place the point at that lateral in the rim's plane instead of returning null (a strip's edge) */
+  clampOvershoot = false,
 ): CypressLift | null {
   const viewDirection = [Math.cos(options.bearing), 0, Math.sin(options.bearing)] as const
   const facing = frontFacing ? 1 : -1
@@ -174,7 +176,15 @@ export function liftToLobes(
     }
   }
   if (best) return best
-  if (!nearest || nearestOver > maxOvershoot) return null
+  if (!nearest) return null
+  if (nearestOver > maxOvershoot) {
+    if (!clampOvershoot) return null
+    const sign = nearest.lateral < 0 ? -1 : 1
+    const lateral = sign * (1 + maxOvershoot)
+    const sourceX = nearest.section.sourceCenter + lateral * nearest.section.sourceHalfWidth
+    const point = mapCypressLobeSurface(nearest.section, { heightFraction, lateral, sourceX }, options, frontFacing)
+    return { ...point, lobeId: nearest.lobeId, lateral }
+  }
   const point = mapCypressLobeSurface(nearest.section, { heightFraction, lateral: nearest.lateral, sourceX: px }, options, frontFacing)
   return { ...point, lobeId: nearest.lobeId, lateral: nearest.lateral }
 }
@@ -209,8 +219,9 @@ export function drapeRibbon(
   const kept: DrapedRibbon['kept'] = []
   for (let k = 0; k < ribbon.samples.length; k++) {
     const h = 1 - ribbon.samples[k].py
-    const l = liftToLobes(rings, edges[k].left[0], 1 - edges[k].left[1], options, frontFacing)
-    const r = liftToLobes(rings, edges[k].right[0], 1 - edges[k].right[1], options, frontFacing)
+    // the edges are clamped at the overshoot limit so a wide ribbon at the rim narrows rather than ends; the centre decides
+    const l = liftToLobes(rings, edges[k].left[0], 1 - edges[k].left[1], options, frontFacing, 0.6, true)
+    const r = liftToLobes(rings, edges[k].right[0], 1 - edges[k].right[1], options, frontFacing, 0.6, true)
     const c = liftToLobes(rings, ribbon.samples[k].px, h, options, frontFacing)
     if (!l || !r || !c) {
       if (k < seedIndex) {
