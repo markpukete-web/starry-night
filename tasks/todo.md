@@ -1,6 +1,24 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-21 (late night): PR #16 merged, E2 live on `main`; D1 (touch the land) is next
+## Pickup — 2026-10-22 (small hours): D1 built and gated on `feat/touch-land-d1`, Codex's code review in flight; Mark's taste gate next (supersedes the pickup below)
+
+D1 (touch the land) is built and gated on `feat/touch-land-d1`, local only, nothing pushed. Read
+`tasks/2026-10-20-touch-land-d1.md` (the record: what was built, the deviations, the gate G1–G8) and the plan's
+rebase and read sections. Read `tasks/lessons.md` from "D1 (touch the land)".
+
+1. Codex's code review (G9): `scratch/touch-land-2026-10-20/brief-code-review.md` dispatched to `w4:p4` at about
+   22:05 Brisbane; the report lands at `scratch/touch-land-2026-10-20/code-review-report.md`. Answer every finding
+   against the code, batch the fixes, record the dispositions in the plan's Review section and the record's G9 row,
+   one bounded confirmation read if a P2 or above was fixed.
+2. Mark's taste gate on localhost (the dev server on 5179 serves the branch; `?tune=1` shows the `bend` slider on the
+   touch route): a hover and a tap on the cypress, a drag across it, a hover on the bushes; the push, the dip, the
+   swing. His phone `?perf=1` reading.
+3. Push and PR on his word, the Codex PR review, merge. Then the explorable question's three spikes (see the
+   direction below), time-of-day presets after.
+4. Two dev servers were left running: the branch on 5179 and a `main` worktree on 5180 (the session scratchpad's
+   `main-wt`, for G3/G4's byte-identity rows). `git worktree prune` after removing it.
+
+## Pickup — 2026-10-21 (late night): PR #16 merged, E2 live on `main`; D1 (touch the land) is next (superseded by the pickup above)
 
 E2 (the land) is on `main` at `7bd583e` and live at starrynight.markma.dev. The record is `tasks/2026-10-21-land-e2.md`
 (the gate table, Codex's two reviews and the PR review, what is open). Read `tasks/lessons.md` from "E2 (the land),
