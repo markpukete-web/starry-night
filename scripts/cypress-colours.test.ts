@@ -57,3 +57,22 @@ test('C2 the smoothing: a box of ±k samples in linear RGB blends only at a band
   const down = sampleColours(painting, rows, vertical(0.25), TREE_TEXEL, legacy, 3)
   for (let k = 17; k < 23; k++) assert.ok(Math.abs(down[k][2] - 30 / 255) < 1e-9, `no sky blue leaks into the band at ${k}`)
 })
+
+test('C4 the stroke body factory: the defaults reproduce the land\'s text exactly, and the cypress\'s constants change only the lane, the rake and the coarse lane', async () => {
+  const { strokeGlsl, strokeGlslWith, STROKE_BODY_DEFAULTS, CYPRESS_STROKE_BODY } = await import('../src/scene/cypressStrokeShader.ts')
+  const defaults = strokeGlslWith(STROKE_BODY_DEFAULTS)
+  assert.equal(defaults.fragmentBody, strokeGlsl.fragmentBody)
+  assert.equal(defaults.fragmentHead, strokeGlsl.fragmentHead)
+  assert.ok(defaults.fragmentBody.includes('mix(0.86, 1.08, streak)') && defaults.fragmentBody.includes('1.0 + 0.35 * lit'), 'E1 and E2 literals')
+  assert.ok(!defaults.fragmentBody.includes('lane2'), 'no coarse lane by default')
+  const cypress = strokeGlslWith(CYPRESS_STROKE_BODY)
+  assert.ok(cypress.fragmentBody.includes('mix(0.78, 1.14, streak)') && cypress.fragmentBody.includes('1.0 + 0.5 * lit'))
+  const coarse = strokeGlslWith({ ...CYPRESS_STROKE_BODY, coarseShare: 0.33 })
+  assert.ok(coarse.fragmentBody.includes('lane2') && coarse.fragmentBody.includes('mix(streak, lane2.x, 0.33)'))
+  // the two differ only on those lines
+  const a = defaults.fragmentBody.split('\n')
+  const b = cypress.fragmentBody.split('\n')
+  assert.equal(a.length, b.length)
+  const differing = a.filter((line, i) => line !== b[i])
+  assert.equal(differing.length, 2, `two lines differ: ${differing.join(' | ')}`)
+})

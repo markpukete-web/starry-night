@@ -19,7 +19,29 @@ import type { AliveInjection } from './aliveMaterial.ts'
  * stroke behind a soft edge drawn first, alpha-to-coverage dithered every edge).
  * Plain `.ts` imports only: `scripts/sky-alive.test.ts` applies this to three's real basic shader under node.
  */
-export const strokeGlsl: Omit<AliveInjection, 'key' | 'uniforms'> = {
+/**
+ * E3 (the cypress's medium, E3.3): the body's relief constants. The land's strips take the defaults, which are
+ * E1's and E2's literals, so their program text is unchanged; the cypress sets its own (CYPRESS_STROKE_BODY).
+ */
+export type StrokeBody = {
+  /** the bristle lane's dark and light, mixed by the lane noise */
+  laneLow: number
+  laneHigh: number
+  /** the raking light's strength on a flank that slopes toward it */
+  rake: number
+  /** a second, coarser lane across the stroke: its cycles across and its share of the first lane's swing (0 off) */
+  coarseCycles: number
+  coarseShare: number
+}
+export const STROKE_BODY_DEFAULTS: StrokeBody = { laneLow: 0.86, laneHigh: 1.08, rake: 0.35, coarseCycles: 2.2, coarseShare: 0 }
+/** the cypress's (E3.3 pass 2): a stronger lane and rake toward the painting's bristle lines */
+export const CYPRESS_STROKE_BODY: StrokeBody = { laneLow: 0.78, laneHigh: 1.14, rake: 0.5, coarseCycles: 2.2, coarseShare: 0 }
+
+const f = (n: number) => (Number.isInteger(n) ? `${n}.0` : `${n}`)
+
+export function strokeGlslWith(body: StrokeBody = STROKE_BODY_DEFAULTS): Omit<AliveInjection, 'key' | 'uniforms'> {
+  const coarse = body.coarseShare > 0 ? `\n    vec2 lane2 = cyNoise1d(side * ${f(body.coarseCycles)} + seed * 0.7 + w * 0.5);\n    streak = mix(streak, lane2.x, ${f(body.coarseShare)});` : ''
+  return {
   vertexHead: /* glsl */ `
   attribute vec2 aStroke;
   attribute float aSeed;
@@ -61,7 +83,7 @@ export const strokeGlsl: Omit<AliveInjection, 'key' | 'uniforms'> = {
     // one bristle lane along the stroke, seeded per stroke, drifting a little along it (retune 4: at 10–20 px on
     // screen the sky's fine octave, 11 cycles across, still aliased to a stipple)
     vec2 lane1 = cyNoise1d(side * 4.5 + seed + w * 0.8);
-    float streak = lane1.x;
+    float streak = lane1.x;${coarse}
     float streakSlope = 4.5 * lane1.y;
     // dry brush at the tip: the paint runs out over the last quarter
     if (streak < smoothstep(0.75, 1.0, w) * 0.6) discard;
@@ -70,9 +92,9 @@ export const strokeGlsl: Omit<AliveInjection, 'key' | 'uniforms'> = {
     // far it slopes toward the light
     float facing = dot(g / max(length(g), 1e-6), vec2(-0.6, 0.8));
     float lit = (side - 0.12 * streakSlope) * facing;
-    float rake = 1.0 + 0.35 * lit;
+    float rake = 1.0 + ${f(body.rake)} * lit;
     float relief = (0.86 + 0.12 * (1.0 - y * y)) * rake;
-    float bristle = mix(0.86, 1.08, streak);
+    float bristle = mix(${f(body.laneLow)}, ${f(body.laneHigh)}, streak);
     float rim = mix(0.8, 1.0, 1.0 - smoothstep(0.6, 0.95, y));
     vec3 col = diffuseColor.rgb * relief * bristle * rim;
     // wet paint: a soft sheen where a flank turns most toward the light, at a quarter of the sky's (a dark tree takes a grey cast)
@@ -83,4 +105,8 @@ export const strokeGlsl: Omit<AliveInjection, 'key' | 'uniforms'> = {
     diffuseColor.rgb = clamp(mix(vec3(lum), col, 1.3), 0.0, 1.05);
     diffuseColor.a *= a;
   }`,
+  }
 }
+
+/** the land's body: the defaults, E1's and E2's text */
+export const strokeGlsl: Omit<AliveInjection, 'key' | 'uniforms'> = strokeGlslWith()

@@ -12,7 +12,7 @@ import { DIORAMA_CAMERAS } from './dioramaContract'
 import { useImageData } from './useImageData'
 import { concatInjections, injectAlive } from './aliveMaterial'
 import { flickerGlsl, flickerUniformValues, flickerWeight, lobeHeight, pushFlicker, ribbonFlicker } from './cypressFlicker'
-import { strokeGlsl } from './cypressStrokeShader'
+import { CYPRESS_STROKE_BODY, strokeGlslWith } from './cypressStrokeShader'
 import { bendInjection, LAND_TOUCH, landUniformValues, type LandStore } from './landTouch'
 import { ALIVE_DEFAULTS, type AliveTuning } from './skyAlive'
 
@@ -221,7 +221,8 @@ export function BrushCypress({
     // (Codex, code review F2: a transparent material with depth written lost the stroke behind a soft edge drawn
     // first; alpha-to-coverage, retune 3, dithered every edge to a stipple at 1:1)
     const material = new MeshBasicMaterial({ vertexColors: true, toneMapped: false, side: DoubleSide, alphaTest: 0.5 })
-    const body = { uniforms: {}, ...strokeGlsl }
+    // E3.3: the cypress's own relief constants; the land keeps the body's defaults
+    const body = { uniforms: {}, ...strokeGlslWith(CYPRESS_STROKE_BODY) }
     const flicker = { uniforms: strokeUniforms, ...flickerGlsl }
     const parts = [body, ...(alive ? [flicker] : []), ...(bend ? [strokeBend] : [])]
     injectAlive(material, concatInjections(`cypress-strokes${alive ? '-flicker' : ''}${bend ? '-bend' : ''}`, ...parts))
