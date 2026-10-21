@@ -142,8 +142,13 @@ export function useTouchInput({
     }
 
     let down: PointerSample | null = null
+    // the admitted pointer: while a press is down, moves, ups and cancels from any other pointer are not its
+    // (a second finger lifting released the first finger's hold and dropped its later moves, Codex PR #17 P2)
+    let activeId: number | null = null
+    const foreign = (event: PointerEvent) => down !== null && event.pointerId !== activeId
     let lastHover: HoverMark | null = null
     const onMove = (event: PointerEvent) => {
+      if (foreign(event)) return
       // a finger trails only while it is down; the mouse trails as it hovers and as it drags
       if (event.pointerType === 'touch' && !down) return
       p.x = event.clientX
@@ -172,7 +177,8 @@ export function useTouchInput({
       push(point[0], point[1], TOUCH_SURGE.hoverAmp * knobRef.current, clock.current, false)
     }
     const onDown = (event: PointerEvent) => {
-      if (!event.isPrimary) return
+      if (!event.isPrimary || down) return
+      activeId = event.pointerId
       down = { x: event.clientX, y: event.clientY, ms: event.timeStamp }
       p.x = event.clientX
       p.y = event.clientY
@@ -184,8 +190,10 @@ export function useTouchInput({
       if (point && landStore) landStore.current = followHeld(landStore.current, point, 1, clock.current)
     }
     const onUp = (event: PointerEvent) => {
+      if (foreign(event)) return
       p.down = false
       if (!down) return
+      activeId = null
       const start = down
       down = null
       const gesture = classifyGesture(start, { x: event.clientX, y: event.clientY, ms: event.timeStamp })
@@ -213,8 +221,10 @@ export function useTouchInput({
       const point = skyPoint(event.clientX, event.clientY)
       if (point) push(point[0], point[1], knobRef.current, clock.current, true)
     }
-    const onCancel = () => {
+    const onCancel = (event?: Event) => {
+      if (event instanceof PointerEvent && foreign(event)) return
       down = null
+      activeId = null
       p.down = false
       releaseLand()
     }
