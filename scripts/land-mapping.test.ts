@@ -1,0 +1,55 @@
+/** The ground's plan-view map (E2.2) and the authored masses' placements (E2.1). */
+
+import assert from 'node:assert/strict'
+import test from 'node:test'
+
+import { coastR, islandHeightAt, RZ } from '../src/scene/islandShape.ts'
+import { flowToPainting, LAND_MAP, paintingUvAt, worldAt } from '../src/scene/landMapping.ts'
+import { LAND_MASSES } from '../src/scene/landMasses.ts'
+
+test('the map is centred on the church\'s nave, round-trips, and is monotone and continuous in z', () => {
+  const [u, v] = paintingUvAt(-0.036, 0.37)
+  assert.ok(Math.abs(u - 0.56) < 0.005, `the nave at u ${u.toFixed(3)}`)
+  assert.ok(v > 0.78 && v < 1, `the nave on the apron at v ${v.toFixed(3)}`)
+  for (const [x, z] of [[-1.9, 1.2], [0, 0], [1.8, -1.2], [0.5, 0.25], [-1.2, -0.9]]) {
+    const [uu, vv] = paintingUvAt(x, z)
+    const [xx, zz] = worldAt(uu, vv)
+    assert.ok(Math.abs(xx - x) < 1e-9 && Math.abs(zz - z) < 1e-9, `round trip at (${x}, ${z})`)
+  }
+  let previous = Infinity
+  for (let z = RZ; z >= -RZ; z -= 0.05) {
+    const [, v] = paintingUvAt(0, z)
+    assert.ok(v <= previous + 1e-12, 'v falls toward the back')
+    previous = v
+  }
+  const before = paintingUvAt(0, LAND_MAP.apron.zBack + 1e-6)[1]
+  const after = paintingUvAt(0, LAND_MAP.apron.zBack - 1e-6)[1]
+  assert.ok(Math.abs(before - after) < 1e-4, 'continuous where the apron meets the hills')
+  assert.ok(Math.abs(paintingUvAt(0, RZ)[1] - 1) < 1e-9 && Math.abs(paintingUvAt(0, -RZ)[1] - 0.6) < 1e-9)
+})
+
+test('the scales are the stated ones: 4.1 per u, 5.0 per v on the apron and 8.9 on the hills', () => {
+  const { apron, hills } = LAND_MAP
+  assert.ok(Math.abs(LAND_MAP.worldPerU - 4.1) < 1e-9)
+  const apronPerV = (apron.zFront - apron.zBack) / (apron.vFront - apron.vBack)
+  const hillsPerV = (apron.zBack - hills.zBack) / (apron.vBack - hills.vBack)
+  assert.ok(Math.abs(apronPerV - 5.0) < 0.01, `apron ${apronPerV.toFixed(2)} per v`)
+  assert.ok(Math.abs(hillsPerV - 8.89) < 0.01, `hills ${hillsPerV.toFixed(2)} per v`)
+  assert.deepEqual(flowToPainting(0.5, 0), [0.5, LAND_MAP.bandV0])
+  assert.deepEqual(flowToPainting(0.5, 1), [0.5, 1])
+})
+
+test('every authored mass stands inside the coast with a positive margin at both ends of its base, on the ground', () => {
+  for (const mass of LAND_MASSES) {
+    for (const x of [mass.x - mass.width / 2, mass.x + mass.width / 2]) {
+      const margin = coastR(Math.atan2(mass.z, x)) - Math.hypot(x, mass.z)
+      assert.ok(margin > 0.02, `${mass.id}: the base's end at x ${x.toFixed(2)} is ${margin.toFixed(3)} inside the coast`)
+    }
+    assert.ok(islandHeightAt(mass.x, mass.z) >= 0, `${mass.id} has ground under it`)
+    assert.ok(mass.box[2] > mass.box[0] && mass.box[3] > mass.box[1], `${mass.id}'s box is ordered`)
+    assert.ok(mass.box[1] >= 0.58 * 1267 - 1, `${mass.id}'s box lies in the land band`)
+  }
+  const ids = new Set(LAND_MASSES.map((m) => m.id))
+  for (const id of ['row-front', 'row-back', 'row-right', 'row-left', 'bushes']) assert.ok(ids.has(id), id)
+  assert.ok(LAND_MASSES.filter((m) => m.id.startsWith('orchard')).length >= 2)
+})
