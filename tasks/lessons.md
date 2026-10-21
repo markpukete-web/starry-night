@@ -2641,3 +2641,36 @@ after PR #8 merged (`246e817`, "Merge it then start the second pass").
 - **A render's treeish component bridges to dark sky strokes and the island.** Cut the crop at the tree's base, open
   by 1 px before the flood, and compare the trunk's run; the first table was 60–90 px wide with the island in it.
 - **`status` is a read-only variable in zsh.** A monitor loop assigning it dies at once with "read-only variable".
+
+## E1 (the cypress), the build, 2026-10-21
+
+- **A closing before a flood bridges through single speckles.** Closed first, the treeish map joined the spire to
+  the star's halo beside it through one-pixel speckles: 113 rows reached the domain's edge and the halo became a
+  third frond. Flood the raw map, then close the component: the closing fills gaps inside the tree and cannot
+  reach what the flood never touched.
+- **A morphology confined to a domain must decide what lies beyond it.** With "outside reads 0" the erosion ate
+  the tree's base row off the domain's edge, and a test caught it. Dilation reads 0 beyond the domain, erosion
+  reads 1.
+- **A sparse seed scaled into a finer grid has gaps on every row it skips.** Classified against the seed's own
+  rows (every 2.4th), the satellites fell on those rows only and no chain survived `maxRowGap` 2 (Codex F13).
+  Interpolate the seed onto every row first.
+- **A frond rooted at the main's centre draws a diagonal tail.** The root belongs the least distance into the
+  main's interval that closes the volume, not at its centre; the flat lobe gate showed the tail at once.
+- **The lift must sample the surface the triangles span.** Between the solid's rings the compiled surface is the
+  blend of two ring ellipses; a per-row section can be a notch narrower, and a strip "beyond the analytic rim"
+  sat 0.029 under a compiled triangle (Codex F4). Interpolating the compiled rings put every strip vertex on or
+  in front of the solid; the raycast test proves it across the width.
+- **The first stroke count was a quarter short.** 520 front ribbons (the plan's estimate) left the underpaint
+  showing where the painting is solid paint; the flat gate showed it before any 3D work, and 1,400 with extra
+  seeds in the spire read as the painting's density. Judge coverage in 2D first.
+- **The grey is Van Gogh's.** The ribbons read grey-blue beside the painting's crop, but their pigment classes
+  measured green 50%, grey 38%, brown 9%, blue 3% against the painting's own cypress texels at 51/36/11/2. The
+  difference was the flat gate's flat colour against the painting's relief, not the sampling. Measure a colour
+  claim against the source's own distribution before changing the rule.
+- **A "treeish" fixture by accident.** A position-encoding test painting (R and G gradients, B 40) passed the
+  tree-pigment test over most of its area, so a lane-pigment rule picked a neighbour and the colour test failed
+  for the wrong reason. A fixture that must not be tree needs blue in it.
+- **`discard` in a comment is a discard to `indexOf`.** A shader-order test matched the word in the body's own
+  comment; match the statement, `discard;`.
+- **The React Compiler lint refuses a clock read in a memo.** `performance.now()` in `useMemo` is "impure during
+  render"; the timing seam carries a scoped disable with its reason, as the uniform writes already do.
