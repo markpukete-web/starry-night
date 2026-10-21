@@ -105,10 +105,10 @@ Retune cap: 4 passes across E3.1 and E3.3, E3.2 drawn from the reserve if needed
 
 (Codex's read of this plan, then the dispositions.)
 
-Codex (`w4:p4`, read-only, 2026-10-22, `scratch/cypress-e3-2026-10-22/plan-read-report.md`, against `c13e631`; it
+Codex (`w4:p4`, read-only, 2026-10-22, `scratch/cypress-e3-2026-10-22/plan-read-report.md`, against `c13e631`. it
 reran `measure-bands.ts`, probed the mask populations, the drape's resets at both seeds, an RGB smoothing, a
 seed-only light-ribbon prototype, a neutral-grey gate control and paired contrast windows): **REVISE**, six P2s
-and one P3. Each checked; each holds. The dispositions, folded into the build:
+and one P3. Each checked. each holds. The dispositions, folded into the build:
 
 - F1 (P2) the 18.7% and the 10% measure different areas, so no seed deficit is shown → found and corrected on the
   branch before the read landed (`cc40e92`): the painting's tree measured on its own component (spread 18.5,
@@ -116,27 +116,27 @@ and one P3. Each checked; each holds. The dispositions, folded into the build:
   lights outside the mask (half the crop's light texels, the flanks' rim strokes) are the silhouette's and out of
   this pass.
 - F2 (P2) the drape returns no source index, and 36–39 of 450 ribbons lose a prefix, so indexing the colours by
-  step shifts the pigment → `drapeRibbon` returns `firstSample` (the index of `kept[0]` in the samples); a pure
+  step shifts the pigment → `drapeRibbon` returns `firstSample` (the index of `kept[0]` in the samples). a pure
   `stepColours(ribbon, draped)` slices the per-sample colours for the kept run, used by the builder and the flat
-  gate; the test drapes a ribbon with distinct colours per sample through a forced prefix reset and a suffix
+  gate. the test drapes a ribbon with distinct colours per sample through a forced prefix reset and a suffix
   trim and asserts the emitted colours. The land's `colour` path stays.
 - F3 (P2) the flat gate paints `ribbon.colour` only → it draws `stepColours` and, if the reserve is drawn, the light
-  batch; `--flat` paints the legacy colour as the control and must visibly differ.
+  batch. `--flat` paints the legacy colour as the control and must visibly differ.
 - F4 (P2) the luminance bounds pass a neutral-grey contrast-stretched tree → the gate adds the chromatic check:
   the warm share (Lab b > 8, the browns and ochres) and the green share (a < −4) of the rendered tree against the
   painting's, each within 6 points, with `--control=grey` (the tree's pixels neutral, its contrast stretched),
-  which must exit 1; the bounds are measured on the painting's component before they are set.
-- F5 (P2) the contrast recipe mixed windows and scales (11.1 on one window, 1.07 on another; the paired render
+  which must exit 1. the bounds are measured on the painting's component before they are set.
+- F5 (P2) the contrast recipe mixed windows and scales (11.1 on one window, 1.07 on another. the paired render
   window reads 2.5) → one paired recipe: the painting's mid crop at the render's scale (`painting-mid-render-scale.png`)
   and the render's crop at the same place and size, the same `100x120+40+35` window, the same grey 3 × 3 standard
-  deviation; both baselines from that exact command in the record (the painting 11.1, E1 2.5); the bar 5–10 on
+  deviation. both baselines from that exact command in the record (the painting 11.1, E1 2.5). the bar 5–10 on
   that window, with the eye's veto on fur and stipple (E1 retunes 2–4).
 - F6 (P2) G8 cannot see a light batch that does not bend → if the reserve is drawn, the lights join the body's
   geometry and material (one mesh, the same weight and uniforms), and G8 holds over a light ribbon's box.
-- F7 (P3) the simulation's colour rule was unspecified → specified: the accepted texel's sRGB per sample; unaccepted
-  samples filled from the nearest accepted along the ribbon before the smoothing; the smoothing a box of ±3
+- F7 (P3) the simulation's colour rule was unspecified → specified: the accepted texel's sRGB per sample. unaccepted
+  samples filled from the nearest accepted along the ribbon before the smoothing. the smoothing a box of ±3
   samples (±9 scan px, an 18 px span, a third to a half of a band) in linear RGB, back to sRGB for the attribute;
   a ribbon with no accepted sample takes the legacy `colour`. Codex's RGB simulation of the same rule: spread
   16.2, 9.2% light before the shader.
 
-The build goes on these dispositions; the code review (G10) checks them in code. No second plan read.
+The build goes on these dispositions. the code review (G10) checks them in code. No second plan read.
