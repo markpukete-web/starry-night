@@ -10,6 +10,11 @@
       content="Vincent van Gogh's The Starry Night, made movable — an interactive 3D diorama where the sky churns the way he painted it."
     />
     <link rel="canonical" href="https://starrynight.markma.dev/" />
+    <!-- the land's three assets start at parse time instead of at the island's mount (Codex, PR #16 P2): on a visit
+         without the opening the island drew bare for the load; low priority keeps the bundle first -->
+    <link rel="preload" as="image" href="/reference/painting.jpg" fetchpriority="low" />
+    <link rel="preload" as="image" href="/reference/land-flow.png" fetchpriority="low" />
+    <link rel="preload" as="fetch" href="/reference/land-masses.json" crossorigin fetchpriority="low" />
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
