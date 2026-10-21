@@ -2764,3 +2764,25 @@ after PR #8 merged (`246e817`, "Merge it then start the second pass").
 - **A "land-only" crop must be checked against the diff image.** The first G9 crop at the hump's crest held the sky's
   haze and a dome's edge against it and differed on 35% of its pixels; the diff image showed the land's own pixels
   grey. The crop under the crest (300 × 60 at 600, 600) differed on none.
+
+## E2 (the land), Codex's code review, 2026-10-21 (night)
+
+- **A solid's winding is only tested against the material's side.** `pushDome` wound every triangle inward and the
+  domes' material culls back faces, so for three captures the far shell rendered and the back strips showed through
+  the dome; nobody saw it, because the look still read as curls over a dark body. The index-bounds test passed.
+  Assert every triangle's normal against the centroid's outward vector, and raycast from outside with the runtime
+  material's side (Codex E2 F1).
+- **A clamp that moves one coordinate breaks the constraint that set the others.** The contact clamp raised a lifted
+  point in y and kept the rim's shallow z, which put it 0.033 inside the solid; the terrain test was green because
+  it asserted terrain clearance only. Where two surfaces constrain a point, settle it on their contact (a
+  bisection on the height, every candidate verified against both), and test both constraints on the emitted
+  vertices (Codex E2 F2). Trimming the points instead cut one mass's back strips from 8 to 1; the mass's plane
+  beyond the union's reach is the surface the plain clamp had been using, and keeping it kept every strip.
+- **The third fetch is the one without the callback.** The painting's `useImageData` had no failure callback where
+  the flow's and the masses' had, so a failed decode never released the ready latch (Codex E2 F3). When several
+  loads feed one latch, list them and check each has the same failure path.
+- **`a > b − ε || a < b + ε` is true for every a and b.** The one-way assertion in the heading test was a tautology
+  (Codex E2 F5). An assertion about direction needs the direction decided once, then every step's sign.
+- **A guard a reviewer can prove unreachable is dead code with a misleading test.** The two-step cycle guard could not
+  fire under the sign continuity (two steps end at least √2 steps from two back), and its test stayed green with the
+  guard removed (Codex E2 F6). Removing it is the fix; the test is renamed to what it proves.
