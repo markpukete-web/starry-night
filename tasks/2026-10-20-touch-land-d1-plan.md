@@ -539,4 +539,8 @@ binary field now fails at `row-front` vertex 0), the re-run G3/G4 rows at 0; one
   within the gate is not admitted and the frame's test takes it (headed: the confirmation's two-move sequence and a
   40-move sweep on the trunk add no sky surge; one move off then still releases the hold and surges once).
 
-The second confirmation read: `brief-confirmation-2.md`, bounded to F9, the last for this review.
+The second confirmation read (`confirmation-report-2.md`): **MERGE**. F9 CLOSED on the shim (the two-move sequence
+holds with zero sky surges; the F6 sequence releases with exactly one); B's sky-only path identical before and after
+under eight snapshots, with active land, absent land and gain zero. One consequence noted as intended: a masked
+land step consumes B's hover gate, so a sole sky move within 60 ms of it waits for the next admitted step while the
+frame's test releases the hold.

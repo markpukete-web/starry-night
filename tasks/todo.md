@@ -9,7 +9,7 @@ rebase and read sections. Read `tasks/lessons.md` from "D1 (touch the land)".
 1. Codex's code review (G9) answered: REVISE on `375d825` (F1–F6 P2, F7–F8 P3), all eight fixed in `9136dc4` with
    headed regressions, 178 tests; the dispositions in the plan's Review section and the record's G9 row; the
    confirmation read closed F1–F8 and found F9 (the masked step's fall-through), fixed in `6fb8d8d`; the second,
-   last confirmation read (`brief-confirmation-2.md`) dispatched. Close it: the record's G9 row and this line.
+   last confirmation read: MERGE. G9 closed. The head is `6fb8d8d` plus docs.
 2. Mark's taste gate on localhost (the dev server on 5179 serves the branch; `?tune=1` shows the `bend` slider on the
    touch route): a hover and a tap on the cypress, a drag across it, a hover on the bushes; the push, the dip, the
    swing. His phone `?perf=1` reading.
