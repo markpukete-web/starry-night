@@ -181,9 +181,20 @@ export function treeComponent(scan: DecodedPNG, domain: Domain, seeds: RowSpan[]
 ```
 
 `dilate` and `erode` are square-window passes over a `Uint8Array` confined to the domain (the scratch
-`field-variants.ts` has the unconfined form, `morph`). `satelliteRuns(runs, spans)` becomes pure: the component's
-runs on a span's row that do not overlap that span (the signature loses `painting` and `box`; the one caller is
-the derive script, the spans in scan pixels). The crop is the domain; `cropMask` is the component inside it.
+`field-variants.ts` has the unconfined form, `morph`); beyond the domain a dilation reads 0 and an erosion reads
+1, so the closing cannot strip the tree's base row off the domain's edge. **The flood runs on the raw treeish
+map and the closing comes after it:** built with the closing first, single speckles bridged the spire to the
+star's halo beside it (113 rows reached the domain's right edge and the halo became a third frond); closing the
+component instead fills only the gaps inside the tree (317,307 px, 422 wide, no edge contact).
+
+**The main column on every scan row (Codex F13):** the scaled seed has a span on every 2.4th row, so the derive
+interpolates it onto each row of the domain (`seedSpanAt`) and takes, per row, the component's run with the most
+overlap as that row's main span (1578 rows). `satelliteRuns(runs, spans)` becomes pure: the component's runs on
+a main span's row that do not overlap it (the signature loses `painting` and `box`; the one caller is the derive
+script). Classified against the sparse scaled seed instead, the satellites fell on every 2.4th row and no chain
+survived `maxRowGap` 2 (Codex's counterexample: one main lobe, zero fronds). With the per-row main the real
+table yields two fronds (left 0.382–0.541, right 0.275–0.341), and the real-table lobe test is the regression
+for the whole path. The crop is the domain; `cropMask` is the component inside it.
 
 **The derive script guards before it writes anything:** the component's height ≥ 0.95 × the domain's, its width
 ≤ the domain's, 250,000 ≤ `pixels` ≤ 450,000 (the scratch run: 352,568 px over 1589 rows), the seed's chain ≥ 600
@@ -240,11 +251,14 @@ vertical; the shipped `cypress-rows.json`'s `component` is within the guard's ra
   the new shapes, 0.4966 against a `< 0.35` tip bound, equal widths against a `>` envelope bound):
   - "persistent detached paint becomes a connected frond": the frond's widest half-width ≤ the runs' half-width +
     0.0035 (no envelope) replaces nothing; the containment assertions stay.
-  - "the real plan retains the strongest mid-height frond": fronds ≥ 2; a frond spanning 0.33–0.53 (the left
-    flame); at 41 heights the plan's union extent within 0.02 crop widths of the union of `spans` and
-    `satellites` on that row (the painting's own extent, so the envelope's wedge cannot return); the tip's width
-    at 1.0 ≥ 0.8 × the width at 0.95 (a club; the old `< 0.35` asserted the needle). The "needs a flame envelope
-    ≥ 0.1" assertion goes.
+  - "the real plan retains the strongest mid-height frond": fronds ≥ 2; a frond spanning below 0.40 and above
+    0.50 (the left flame, 0.38–0.54 on the 3840 px table; it separates from the main at 0.38 there); at 41
+    heights the plan's union extent within 0.02 crop widths of the union of `spans` and `satellites` on that
+    row (the painting's own extent, so the envelope's wedge cannot return); **the tip against the spans
+    themselves** (Codex F7, confirmation read: the painting's own top row is narrow, so "width at 1.0 ≥ 0.8 ×
+    width at 0.95" asserts a shape the source does not have, 0.4966 measured): at h 0.90, 0.93, 0.96 and 0.99
+    the main's half-width within 15% of `rowSpanAt`'s on that row, so no factor narrows the club. The old
+    `< 0.35` assertion (the needle) and the "needs a flame envelope ≥ 0.1" assertion go.
   - "frond geometry can broaden without sampling the surrounding blue sky": deleted; its replacement asserts
     `paintHalfWidth === sourceHalfWidth` and `paintCenter === sourceCenter` on every frond section above the
     bridge (the paint domain is the source domain now).
@@ -398,40 +412,69 @@ on, and a tongue beyond the rim is a flat flap in the rim's plane:
   const normal = normalised(blended)
 ```
 
+**The lift samples the surface the triangles span, not the per-row ellipse** (Codex F4, confirmation read: the
+solid's 96 rings interpolate linearly between ring heights, while the per-row section can be a notch narrower
+than that blend; a strip edge "beyond the analytic rim" then lay 0.029 world units under a compiled triangle).
+`buildCypressLobeSolid` already returns its `rings` with each ring's `source` section; the lift takes
+`ringsByLobe` (the compiled rings grouped by `lobeId`) and evaluates, at height h, the section linearly
+interpolated between the two rings that bracket h (`compiledSectionAt`): the same centre and radii the
+triangles between those rings interpolate. On that ellipse a point at any angle lies on or outside the
+12-gon's chords, so a strip on it is never behind the compiled surface; the 0.004 offset toward the camera is on
+top of that. `mapCypressLobeSurface` takes a section rather than sampling the lobe itself.
+
 A 2D path can cross from a frond into the main; mapped per lobe it would jump in depth at the boundary. The
 lift takes the union's front surface:
 
 ```ts
 export type CypressLift = CypressLobeSurfacePoint & { lobeId: string; lateral: number }
 
-/** The frontmost lobe surface under a crop point, or the nearest rim's plane within `maxOvershoot` laterals beyond every lobe. */
-export function liftToLobes(plan: CypressLobePlan, px: number, heightFraction: number, options: CypressLobeSolidOptions, frontFacing: boolean, maxOvershoot = 0.6): CypressLift | null {
+/** The section the compiled triangles interpolate at h: linear between the two rings that bracket it; null outside the lobe's rings. */
+export function compiledSectionAt(rings: CypressLobeRing[], heightFraction: number): CypressLobeSection | null {
+  if (rings.length === 0 || heightFraction < rings[0].heightFraction || heightFraction > rings[rings.length - 1].heightFraction) return null
+  let low = 0, high = rings.length - 1
+  while (high - low > 1) { const middle = (low + high) >> 1; if (rings[middle].heightFraction <= heightFraction) low = middle; else high = middle }
+  const a = rings[low].source, b = rings[high].source
+  const span = rings[high].heightFraction - rings[low].heightFraction
+  const t = span > 1e-9 ? (heightFraction - rings[low].heightFraction) / span : 0
+  return {
+    heightFraction,
+    sourceCenter: a.sourceCenter + (b.sourceCenter - a.sourceCenter) * t,
+    sourceHalfWidth: a.sourceHalfWidth + (b.sourceHalfWidth - a.sourceHalfWidth) * t,
+    paintCenter: a.paintCenter + (b.paintCenter - a.paintCenter) * t,
+    paintHalfWidth: a.paintHalfWidth + (b.paintHalfWidth - a.paintHalfWidth) * t,
+  }
+}
+
+/** The frontmost compiled lobe surface under a crop point, or the nearest rim's plane within `maxOvershoot` laterals beyond every lobe. */
+export function liftToLobes(ringsByLobe: Map<string, CypressLobeRing[]>, px: number, heightFraction: number, options: CypressLobeSolidOptions, frontFacing: boolean, maxOvershoot = 0.6): CypressLift | null {
   const viewDirection = [Math.cos(options.bearing), 0, Math.sin(options.bearing)] as const
   const facing = frontFacing ? 1 : -1
   let best: CypressLift | null = null
   let bestDepth = -Infinity
-  let nearest: { lobe: CypressLobe; lateral: number } | null = null
+  let nearest: { lobeId: string; section: CypressLobeSection; lateral: number } | null = null
   let nearestOver = Infinity
-  for (const interval of lobeIntervalsAt(plan, heightFraction)) {
-    const lobe = plan.lobes.find((l) => l.id === interval.lobeId)!
-    const centre = (interval.left + interval.right) / 2
-    const half = Math.max(1e-6, (interval.right - interval.left) / 2)
-    const lateral = (px - centre) / half
+  for (const [lobeId, rings] of ringsByLobe) {
+    const section = compiledSectionAt(rings, heightFraction)
+    if (!section) continue
+    const lateral = (px - section.sourceCenter) / Math.max(1e-6, section.sourceHalfWidth)
     if (Math.abs(lateral) <= 1) {
-      const point = mapCypressLobeSurface(lobe, { heightFraction, lateral, sourceX: px }, options, frontFacing)
+      const point = mapCypressLobeSurface(section, { heightFraction, lateral, sourceX: px }, options, frontFacing)
       const depth = facing * (point.position[0] * viewDirection[0] + point.position[2] * viewDirection[2])
-      if (depth > bestDepth) { bestDepth = depth; best = { ...point, lobeId: lobe.id, lateral } }
+      if (depth > bestDepth) { bestDepth = depth; best = { ...point, lobeId, lateral } }
     } else if (Math.abs(lateral) - 1 < nearestOver) {
       nearestOver = Math.abs(lateral) - 1
-      nearest = { lobe, lateral }
+      nearest = { lobeId, section, lateral }
     }
   }
   if (best) return best
   if (!nearest || nearestOver > maxOvershoot) return null
-  const point = mapCypressLobeSurface(nearest.lobe, { heightFraction, lateral: nearest.lateral, sourceX: px }, options, frontFacing)
-  return { ...point, lobeId: nearest.lobe.id, lateral: nearest.lateral }
+  const point = mapCypressLobeSurface(nearest.section, { heightFraction, lateral: nearest.lateral, sourceX: px }, options, frontFacing)
+  return { ...point, lobeId: nearest.lobeId, lateral: nearest.lateral }
 }
 ```
+
+`mapCypressLobeSurface(section, sample, options, frontFacing)` takes the section (the existing callers pass
+`sampleCypressLobe(lobe, h)`); `ringsByLobe` is built once in the memo from `compiled.rings`.
 
 The normal is for the moon's shade only (a 4% term): the strip's frame and its offset do not come from it (E1.5),
 so a lobe switch's normal jump (37.8° at h 0.35 on the real plan, Codex F5) cannot move a vertex.
@@ -821,5 +864,20 @@ the derivatives before the discards, `OPAQUE` undefined under alpha-to-coverage 
 `gl_FragColor`); the B-channel mask against the canvas's premultiplication and `sampleCypressImage`; the `uv`
 readers; the deletions' readers.
 
-The revision goes back for a bounded confirmation read (the twelve dispositions, BUILD or the ones still open),
-in parallel with the first commit's build, which stops on an open P1.
+**The confirmation read** (Codex, `review-report-2.md`, against `928cf45`, the revised `treeComponent`, lift and
+edges run on a fresh scan decode and the real compiled solid): F1, F2, F3, F5, F6, F8–F12 **CLOSED** (the
+component 346,565 px within every guard; the largest edge step across the lobe switch 0.00033, under the 0.0005
+bar). Three open, each checked and taken:
+
+- F4 (P2) OPEN: lifting the edges analytically left a strip vertex 0.029 behind the compiled solid where a
+  per-row section is a notch narrower than the two rings' blend → the lift samples the compiled rings'
+  interpolation (`compiledSectionAt`), the same surface the triangles span (E1.4); the raycast clearance test
+  allows the overshoot's misses, as Codex's run did.
+- F7 (P2) OPEN: the replacement tip assertion (width at 1.0 ≥ 0.8 × at 0.95) contradicts the source's own
+  narrow top row (0.4966) → the tip is asserted against `rowSpanAt` at four heights (E1.2).
+- F13 (P2) new: satellites classified against the sparse scaled seed broke every chain (one lobe, no fronds)
+  → the derive interpolates the seed's main span onto every scan row before classifying (E1.1); it was built
+  that way in commit 1 (two fronds on the real table), and the plan's text now says so.
+
+Two bounded reads is the round limit for a plan. The three dispositions are folded in above and the build goes
+on; Codex's next read is the code review (G12), the better instrument for them.
