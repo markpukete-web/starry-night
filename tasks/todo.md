@@ -7,9 +7,11 @@ with the gate table and what is open) and the plan's Review section. The worker 
 (the capture, `alive=0`, perf, `check:reduced`, `check:viewport`) when the day session closed; its report is
 `scratch/land-e2-2026-10-21/capture-4-report.md` if it landed.
 
-1. Look at capture 4's crops (`c4-*.png`, the orchard and bushes at 1:1 after the dome cap), run
-   `node scripts/check-land-colour.ts output/playwright/e2-capture-4-2026-10-21`, read `perf-4.log`, the two
-   check logs and the `alive=0` capture (diff the island region against the default).
+1. Capture 4 is looked at and measured (the record's tables): the colour gate passes, 60 fps at vsync, both checks
+   pass. One defect open: a dome's dark underpaint shows against the sky where its top and back carry no strips
+   (`scratch/land-e2-2026-10-21/c4-orchard-1to1.png`). The domes' second pass: the underpaint as the mass's median
+   foliage colour and more strips on the back and top (or a flatter `rz`), a capture through the worker
+   (`brief-capture-4.md` as the model), the colour gate again. Then the `alive=0` diff on a land-only crop.
 2. `npm run build`, `npm run lint` (the whole tree, as CI), `npm run test:sky`.
 3. Commit any fix, then write Codex's code-review brief (model: `scratch/cypress-e1-2026-10-21/brief-code-review.md`),
    dispatch to `w4:p4`, answer the findings, record them in the plan's Review section and the record.
