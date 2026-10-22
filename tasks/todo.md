@@ -1,6 +1,24 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-22 (close of the session): D1 and E3 are on `main` and live; the next session starts here
+## Pickup — 2026-10-22 (evening): E4 (the cypress's paint) in build on the worker as an experiment; the Lead gates
+
+Mark, 2026-10-22 evening: "Can you refine our tree?", the tree "feel like a jelly" (the still look), the spike's
+treatment 3 picked, then "I want to test if Gemini 4 Argon is capable of doing visual work. Can you task it and gated
+yourself?" and "Take the lead, let me know when's ready." The plan `tasks/2026-10-22-cypress-e4-plan.md` (on `main`,
+`6bb58e5`) carries Codex's read (F1–F14) and the worker's buildability read (B1–B7), both folded. The worker
+(Antigravity, Gemini 4 Argon, `w4:p5`) builds `feat/cypress-paint-e4` in a worktree in the session's scratchpad,
+served on 5181, from `scratch/cypress-e4-2026-10-22/brief-build.md`. The Lead's checkout serves `main` on 5179.
+
+1. The worker's report: `scratch/cypress-e4-2026-10-22/build-report.md`, the evidence under `p1/`–`p4/`.
+2. Codex's code review from `brief-code-review.md` (drafted), the worker's fixes, the confirmation read.
+3. The Lead's gate (the plan's G11: the suite re-run, every capture opened, the mutants, the record
+   `tasks/2026-10-22-cypress-e4.md`), then Mark's taste gate on the captures and on 5181. Push and PR on his word.
+4. The spikes question (the dive, the rail, Simon's walk) stays open: Mark has not picked. The costing is in the
+   session's chat only; the three readings are under "Proposed to Mark — inside the painting".
+5. Housekeeping unchanged from the close pickup below: the `painting.jpg` decodes, the flat land gate's masses
+   panel, `test:sky`'s file list.
+
+## Pickup — 2026-10-22 (close of the session): D1 and E3 are on `main` and live; superseded by the evening pickup above
 
 `main` is at `441860b` (PR #18, E3) on top of `8a87ae5` (PR #17, D1), both merged 2026-10-22 and deployed to
 starrynight.markma.dev. Mark closed the session: "merge it once the review reads clean. Then well record where we
