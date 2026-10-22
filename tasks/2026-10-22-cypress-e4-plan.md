@@ -40,122 +40,234 @@ side, not a weaker shadow.
 
 ### E4.1 — the paint through the factory (`cypressStrokeShader.ts`)
 
-`StrokeBody` gains the treatment's fields, each with a default that reproduces E1's text exactly, so the land's
-four fields keep their hashes (`cypress-colours.test.ts` C4). The cypress's `CYPRESS_STROKE_BODY` takes the spike's
-treatment-3 values as pass 1. The fields, with the spike's values:
+`StrokeBody` gains the treatment's fields. Each default reproduces E1's text byte for byte, so the land's four fields
+keep C4's hashes (the fragment body `48240ba5268eba4d` among them. The hashes are not repinned). Where E1's text is
+an expression, the field selects the expression, and a number replaces it (Codex F1). Where a field is off, its
+text is omitted entirely, not emitted as a neutral term. The fields, their defaults and the cypress's pass-1 values:
 
-| field | E1 (the land, default) | the cypress, pass 1 | what it does |
+| field | default (the land, E1's text) | the cypress, pass 1 | what it does |
 |---|---|---|---|
-| `tube` | the E1 term `(0.86 + 0.12 * (1.0 - y * y))` | flat `0.95` | the rounded shading across the stroke, off |
-| `rim` | `mix(0.8, 1.0, 1.0 - smoothstep(0.6, 0.95, y))` | `1.0` | the darkened edge, off |
-| `sheen` | 0.06 | 0 | the wet highlight, off |
-| `laneCycles` | 4.5 | 5.0 | bristle lanes across the stroke |
-| `loadDrift` | 0 | 0.15 | the two-tone threshold drifts with a slow noise along the stroke |
-| `fray` | 0 | 0.16 | the flank radius × (1 − fray + fray × noise at 40 cycles along) |
-| `gaps` | off | y > 0.7 and streak < 0.3 discarded | the outer bristles skip |
-| `dryFrom` | 0.75 | 0.55 | where the paint starts to run out along the stroke |
-| `ridgeSide`, `ridgeSlope` | 1.0, 0.12 | 0.15, 0.5 | the lit term's weights: across the stroke, and the lane's slope |
-| `rake` | 0.35 | 0.8 | the raking light's strength |
+| `tube: 'rounded' \| number` | `'rounded'`: `(0.86 + 0.12 * (1.0 - y * y))` verbatim | `0.95` | the rounded shading across the stroke, off |
+| `rim: 'shaded' \| number` | `'shaded'`: `mix(0.8, 1.0, 1.0 - smoothstep(0.6, 0.95, y))` verbatim | `1.0` | the darkened edge, off |
+| `sheen: number` | `0.06`, the line verbatim with its whitespace | `0`: the line omitted | the wet highlight |
+| `laneCycles: number` | `4.5` | `5.0` | bristle lanes across the stroke |
+| `laneEdge` (exists) | `null` | `[0.42, 0.58]` (E3 `[0.3, 0.7]`. the spike's interval, Codex F2) | the two-tone threshold |
+| `loadDrift: number` | `0`: no `load` declaration | `0.15` | the threshold's endpoints shift by `loadDrift * load`, `load` a slow noise along the stroke − 0.5 |
+| `fray: number` | `0`: no factor | `0.16` | the flank radius × `(1 − fray + fray × noise at 40 cycles along)` |
+| `gaps: { band, below } \| null` | `null`: no discard | `{ band: 0.7, below: 0.3 }` | discard where `y > band * r` (the shaped radius, Codex F4) and `streak < below` |
+| `dryFrom: number` | `0.75` | `0.55` | where the paint starts to run out along the stroke |
+| `ridgeSide: number` | `1`: emits `side` verbatim | `0.15` | the lit term's across-stroke weight |
+| `ridgeSlope: number` | `0.12` | `0.5` | the lit term's lane-slope weight |
+| `rake` (exists) | `0.35` | `0.8` | the raking light's strength |
+| `rakeClamp: [lo, hi] \| null` | `null`: no clamp | `[0.4, 1.6]` | the rake factor clamped, so a shadow side never goes black (Codex F6) |
 
-The GLSL for each is in `spike.patch`. The builder may name the fields differently, but each must be one field,
-documented, with the default reproducing E1's text byte for byte. The `?paint=` URL switch of the spike is not
-built. The land's body (`strokeGlsl`) is `strokeGlslWith()` as today.
+The spike's GLSL is in `spike.patch`, with two corrections: the gap band is measured on the shaped radius `r` (the
+spike measured it on the strip's half-width, where the alpha test had already rejected most of the band), and the
+rake factor is clamped. The builder may name the fields differently, but each is one field, documented, and each
+mutation in C5 (below) isolates it. The `?paint=` URL switch of the spike is not built. The land's body
+(`strokeGlsl`) is `strokeGlslWith()` as today.
 
-### E4.2 — the colour along the stroke, sharper (`cypressStrokes.ts`, `BrushCypress.tsx`)
+What a gap shows (Codex F3): the ribbon mesh is opaque and writes depth over the closed solid underpaint
+(`#151c1b`). A discarded fragment shows the nearer surviving ribbon behind it, or the solid. Sky shows only at the
+outline, where no ribbon or solid covers the ray. A hole on a back face cannot punch through a front face. The
+expected read of the body crop is dark seams and overlapping paint, not a perforated tree.
 
-The cypress's colour smoothing goes from ±3 samples to ±1. The land's tracers set `perSampleColours: false` and
-never read the smoothing, so a change to `CYPRESS_RIBBON_CONFIG.colourSmoothing` cannot reach the land. The
-spike mutated the shared object from a URL parameter. The slice sets the constant.
+### E4.2 — the colour along the stroke, sharper (`cypressStrokes.ts`), in its own pass
+
+The cypress's colour smoothing goes from ±3 samples to ±1 (`CYPRESS_RIBBON_CONFIG.colourSmoothing`). The land's
+tracers set `perSampleColours: false` and never read the smoothing. Codex's re-run of the production sampler (F5):
+at seed `0xc1f3a11`, ±1 gives spread 17.6 and light 10.3% against ±3's 16.3 and 9.3%, before draping and shading.
+It cannot say whether the cut-out returns at 1:1, so the change is isolated: pass 1 is E4.1 alone at ±3, pass 2
+adds ±1 with the same treatment and time, and the cut-out read of the pair decides. ±1 stays only if the read
+supports it.
 
 ### E4.3 — the tests, red first (`scripts/cypress-colours.test.ts`)
 
-- **C5** the factory's defaults still hash to E1's four fields (C4's pins), and the cypress's fragment body contains
-  the fray, the gaps, the ridge weights and the drift, and does not contain the sheen line. Written before E4.1,
-  red on the missing fields.
-- **C4** is read and updated: its last assertion says the cypress's constants change only the lane, the rake and the
-  coarse lane. That is no longer true. The assertion is replaced, not deleted.
-- **C6** `CYPRESS_RIBBON_CONFIG.colourSmoothing` is 1, and the land's two configs (`landStrokes.ts`, `landDomes.ts`)
-  keep `perSampleColours: false`. Red before E4.2.
-- The test file is already in `test:sky`. Read the count after: 183 before this slice, plus the tests added.
+- **C4** keeps its four E1 hashes unchanged. Its last assertion (the cypress's constants change only the lane, the
+  rake and the coarse lane) is replaced by C5's per-field checks.
+- **C5** the factory, per field: for each new field, `strokeGlslWith({ ...STROKE_BODY_DEFAULTS, <field>: <on> })`
+  differs from the defaults' text, and turning that one field back to its default restores the hash. The cypress's
+  body (`strokeGlslWith(CYPRESS_STROKE_BODY)`) contains the fray factor, the gap discard, the ridge weights, the
+  drift and the clamp, and does not contain the sheen line. The composed shader (three's basic shader with the
+  injection applied, as `sky-alive.test.ts` does under node) contains the same. A source read of `BrushCypress.tsx`
+  finds `strokeGlslWith(CYPRESS_STROKE_BODY)` installed on the stroke material (Codex F9). Red before E4.1.
+- **C6** through `traceCypressRibbons` on a fixture whose ±1 and ±3 outputs differ (a two-band image under a
+  straight field), using the config's `colourSmoothing`, so a tracer that hardcodes 3 fails. The land's two configs
+  (`landStrokes.ts`, `landDomes.ts`) keep `perSampleColours: false`, and a land trace returns no per-sample colours.
+  Red before E4.2.
+- The mutants the Lead runs at the gate (G11), one at a time, each restored before the next: the sheen line
+  restored in the cypress's body. each of fray, gaps, drift, ridges and the clamp disabled alone. the lane interval
+  reverted to `[0.3, 0.7]`. the installed injection switched to the defaults. the config's smoothing restored to 3.
+  the tracer forced to 3 despite the config. the land's per-sample path enabled. Each must turn its check red.
 
-### E4.4 — the visual loop (the worker, up to 4 passes)
+### E4.4 — the visual loop (the worker, 4 passes in all)
 
-Each pass: build, capture the home view at t = 5 against the worktree's own server, cut the same crops as the
-spike, put them beside the painting and E3, look, write down what reads wrong against the painting in plain
-words, change the constants, repeat. The crops, from a 1600 × 900 frame:
+Pass 1 is E4.1 at ±3. Pass 2 is E4.2 (±1) on pass 1's constants. Passes 3 and 4 are the retunes. Each pass:
+build, capture, cut the crops, put them beside the painting and E3, look, write the read, run the gates.
+
+**The frames.** Two captures per pass against the worktree's server:
 
 ```
-magick <frame> -crop 420x900+200+0 +repage <tree>.png
-magick <tree>.png -crop 200x280+150+400 +repage -filter Point -resize 200% <body2x>.png
+node scripts/capture-sky-frames.mjs <pass>/frames --url 'http://127.0.0.1:5181/?mode=diorama&clean=1&arrival=0' --times 5 --prefix pass
+DIORAMA_CAPTURE_URL=http://127.0.0.1:5181/ DIORAMA_CAPTURE_EXTRA='arrival=0' node scripts/capture-diorama.mjs <pass>/views
 ```
 
-The painting's two panels are `scratch/cypress-paint-spike-2026-10-22/`'s method: the tree column is
-`scratch/cypress-e3-2026-10-22/e3-compare.png` cropped `330x900+0+0`, the body `200x280+40+430` of that column at
-2×. E3's panels are the same crops of `scratch/cypress-e3-2026-10-22/p5/p5-t5.png`. The composite joins the panels
-with `+append`, labelled. What the worker is judging, in this order: jelly (smooth, glossy, rounded), fur (grey
-noise at 1:1), stipple (a dithered edge), a cut-out (the painting's pixels on a shape), then the darkness against
-E3 and the painting.
+The first gives `pass-t5.png` (1600 × 900, the clock pinned at 5). The second gives `desktop-centre.png` (1600 × 900,
+the design camera, the clock free) and the other views. The colour, silhouette and contrast gates and the
+registered pair run on `desktop-centre.png`, as E3's did (Codex F12, F13).
 
-The pass table in the worker's report: the pass, the constants changed, the colour gate's numbers, the paired
-contrast, the IoU, and the worker's read of the crops in one or two sentences. "I could not tell" is an acceptable
-read.
+**The context montage** (the spike's method, for the eye, not for statistics): from `pass-t5.png`, the tree column
+`420x900+200+0` and the body `200x280+150+400` at 2×, beside the same crops of E3's `p5/p5-t5.png` and the
+painting's panels from `paint-spike-body-2x.png`. The painting's panel there is at about 1.6× the render's scale
+(Codex F10). It stays as context only.
+
+**The registered pair** (Codex F10): a small gate tool, `scripts/cypress-registered-pair.ts <desktop-centre.png>
+<outPrefix>`, built in step 1 with the tests. It reuses `scripts/lib/silhouette.ts` exactly as `cypress-silhouette.ts`
+does (the painting's mask from the row table's crop of `reference/derived/cypress-work-1600.png`, the render's mask
+from the gate's box `330 80 220 578`, `alignRender` for the scale and the shift). It cuts one body window from each
+image in that image's own pixels: the rows from 34% to 60% of the tree's extent from its top, the columns the central
+80% of the trunk run (`trunkRun`) at the band's middle row. It writes `<outPrefix>-painting.png`,
+`<outPrefix>-render.png` (the render's window resized to the painting window's height, nearest neighbour) and
+`<outPrefix>-pair-3x.png` (both at 3×, side by side), and prints the two windows' frame coordinates. The Lead
+validated the band by hand on E3's view tonight (`scratch/cypress-e4-2026-10-22/reg-pair-e3-3x.png`): a fixed
+rectangle put the render's window half on sky, so the columns must come from the trunk run, not from the box.
+E3's pair comes from the same tool on `scratch/cypress-e3-2026-10-22/views/desktop-centre.png`, once, in pass 1.
+
+**The diagnostics on the registered windows** (Codex F6, F11. numbers to report, no threshold): the 3 × 3 standard
+deviation of grey (the contrast script's recipe on the window), the residual after a σ = 2 blur, and the black share:
+
+```
+magick <win>.png -colorspace Gray -statistic StandardDeviation 3x3 -format "%[fx:mean*255]\n" info:
+magick <win>.png -colorspace LAB -channel R -separate +channel \( +clone -blur 0x2 \) -compose difference -composite -format "%[fx:standard_deviation*100]\n" info:
+magick <win>.png -colorspace LAB -channel R -separate +channel -threshold 3% -format "%[fx:1-mean]\n" info:
+```
+
+On `<outPrefix>-painting.png` and `<outPrefix>-render.png`: the painting's, E3's and each pass's, in the pass table.
+
+**The on/off pairs** (Codex F7, pass 1 only): for each of fray, gaps, ridges (both weights and the clamp) and drift,
+one capture of `pass-t5.png` with that field alone at its default, and `node scripts/compare-frames.mjs
+<on> <off> <diff.png> --crop 200,0,420,900` for the count and the difference image. A mechanism whose pair
+differs on under 1% of the column's pixels is reported as doing nothing visible. The read says what each one
+changes, in a sentence.
+
+**The read**, per pass, in `read.md`: what reads wrong against the painting, in plain words, in this order: jelly
+(smooth, glossy, rounded), fur (grey noise at 1:1), stipple (a dithered edge), a cut-out (the painting's pixels on a
+shape), the darkness against E3. For pass 2, the cut-out read of the ±1/±3 pair on its own line. "I could not tell"
+is an acceptable read.
 
 ### E4.5 — the gates (the worker runs them per pass and saves the raw output. The Lead re-runs them at the gate)
 
-All against the worktree's server on port 5181, never 5179 (the Lead's checkout):
+All on the worktree's server on port 5181, never 5179 (the Lead's checkout):
 
-- `DIORAMA_CAPTURE_URL=http://127.0.0.1:5181/ DIORAMA_CAPTURE_EXTRA='arrival=0' node scripts/capture-diorama.mjs <outDir>`
-  gives `desktop-centre.png` and `perf-summary.json`.
-- `node scripts/check-cypress-colour.ts <desktop-centre.png>`: ΔE per third ≤ 10, spread ≥ 15, light ≥ 9%, warm and
-  green within 6 points of the painting's, rejected ≤ 0.4. `--control=grey` must exit 1.
-- `node scripts/cypress-silhouette.ts <desktop-centre.png> 330 80 220 578 <prefix>`: the IoU.
-- `scripts/cypress-contrast.sh <desktop-centre.png>`: the paired contrast on the pinned window (E3 3.4, the
-  painting 11.1, the bar 5–10).
+- `node scripts/check-cypress-colour.ts <pass>/views/desktop-centre.png`: ΔE per third ≤ 10, spread ≥ 15, light
+  ≥ 9%, warm and green within 6 points of the painting's, rejected ≤ 0.4. `--control=grey` must exit 1. Its L
+  percentiles are reported per pass against E3's (the same tool on E3's `views/desktop-centre.png`, in pass 1): the
+  p50 within 1.5 L of E3's (Codex F6. ΔE per third did not see the spike's darkening. its p50 fell about 0.9).
+- `node scripts/cypress-silhouette.ts <pass>/views/desktop-centre.png 330 80 220 578 <pass>/sil`: the IoU, and
+  the masks image opened for detached fragments (Codex F7).
+- `sh scripts/cypress-contrast.sh <pass>/views/desktop-centre.png > <pass>/contrast.log 2>&1 || true`: the number
+  is reported. its 3–8 verdict is not a gate for E4 (Codex F13: its exit is non-blocking here. E3's 3.4 was on
+  `views/desktop-centre.png`. re-run there in pass 1 for the like-for-like baseline).
 - `npm run -s test:sky`, `npx tsc -b`, `npm run -s build`, `npx eslint .`.
 - `npm run -s check:reduced` and `npm run -s check:viewport` (read each script's header for how it takes the port).
-- D1 unchanged: E3's G8 method, `scratch/cypress-e3-2026-10-22/g8/` and the record's G8 row: an injected hold
-  through `capture-sky-frames.mjs --eval`, the differing pixels inside the cypress's box at t0 and t0 + 1.
+- Perf: `DIORAMA_CAPTURE_URL=http://127.0.0.1:5181/ DIORAMA_CAPTURE_EXTRA='arrival=0' node scripts/capture-diorama.mjs <pass>/perf --perf`
+  gives `perf-summary.json`. the clock unpinned (Codex F12).
+- D1 unchanged (Codex F8): held and unheld frames at the same times, E3's G8 method:
+  `--times 5,6 --eval 'window.__landInject(-1.5, 1.4, 0.72, 1, 5, true); "ok"'` for the held pair and the same
+  times without `--eval` for the unheld pair, then `compare-frames.mjs` held against unheld at t = 5 (expected about
+  0 px) and at t = 6 (expected about 55,000 px, inside the cypress's box `170x580+375+98`). The Lead's gate adds the
+  mutation: the stroke material's `strokeBend` removed (the solid's kept) must drop the t = 6 difference on the
+  ribbons' crop.
 
 ## Gate
 
 | # | check | pass when |
 |---|---|---|
 | G1 | red first | C5 and C6 fail before E4.1 and E4.2 |
-| G2 | `test:sky`, `tsc -b`, build, eslint | green. the count is 183 plus the added tests |
-| G3 | the land unchanged | C4's four hashes hold. the land's configs untouched (`git diff main -- src/scene/landStrokes.ts src/scene/landDomes.ts` empty) |
-| G4 | the colour gate | PASS, both controls exit 1 |
-| G5 | the silhouette gate | IoU ≥ 0.82 (E3 0.840. the fray and the gaps shave the mask) |
-| G6 | the paired contrast | reported. the bar 5–10 is a target, not a blocker (E3's lesson: the painting's 11.1 is its canvas) |
-| G7 | the crops | the body at 2× and the tree at 1:1 beside the painting and E3, each pass: no jelly, no fur, no stipple, no cut-out. The worker's read and the Lead's |
-| G8 | D1 unchanged | the injected hold bends the tree inside the cypress's box as E3's G8 (0 px at t0, about 55,000 at +1) |
+| G2 | `test:sky`, `tsc -b`, build, eslint | green. the count is 183 plus the added tests, read from the log |
+| G3 | the land unchanged | C4's four hashes hold unchanged. `git diff main -- src/scene/landStrokes.ts src/scene/landDomes.ts` empty |
+| G4 | the colour gate | PASS, both controls exit 1. the p50 L within 1.5 of E3's by the same tool |
+| G5 | the silhouette gate | IoU ≥ 0.82 (E3 0.840 by the gate. Codex's read-only run of the spike's treatment 3 gave 0.837). no detached fragment in the masks image |
+| G6 | the paired contrast and the diagnostics | reported per pass, E3's and the painting's beside. no threshold |
+| G7 | the crops | the context montage and the registered pair, each pass: no jelly, no fur, no stipple, no cut-out. The worker's read and the Lead's. The on/off pairs name what each mechanism changes |
+| G8 | D1 unchanged | held against unheld: about 0 px at t = 5, about 55,000 inside the cypress's box at t = 6 |
 | G9 | `check:reduced`, `check:viewport`, perf | PASS, PASS. desktop p95 within 1 ms of E3's 17.0 |
 | G10 | Codex code review | no P0 or P1 open |
-| G11 | the Lead's gate | the suite re-run by the Lead. every capture opened. the mutation of C5 (the sheen line restored) goes red. the record `tasks/2026-10-22-cypress-e4.md` |
+| G11 | the Lead's gate | the suite re-run by the Lead. every capture opened. the mutants of E4.3 run one at a time, each red. the stroke-bend mutation of E4.5. the record `tasks/2026-10-22-cypress-e4.md` |
 
-Retune cap: 4 passes. The cap reached with G4, G5 or G7 failing: stop and report. Mark's taste gate on the captures
-and on localhost (5181) after the Lead's gate.
+Retune cap: 4 passes in all (pass 1 the relief at ±3, pass 2 the smoothing at ±1, passes 3 and 4 the retunes). The
+cap reached with G4, G5 or G7 failing: stop and report. Mark's taste gate on the captures and on localhost (5181)
+after the Lead's gate.
 
 ## Risks
 
-- **The darkness.** The ridge's shadow sides pull the body's mean down. G4's ΔE per third measures it. The retune
-  is a lighter lit side (`rake`'s lit term clamped and lifted), not a weaker shadow.
+- **The darkness.** The ridge's shadow sides pull the body's L down (the spike's treatment 3: about −0.9 on the
+  fixed E3 mask, Codex F6). The clamp `[0.4, 1.6]` stops black. G4's p50 bound measures the rest. The retune is the
+  clamp's ceiling and the lit weights, not a weaker shadow.
 - **A serrated edge.** The gaps are a hard `discard` on an opaque material. At 1:1 the frayed flank could read as a
-  saw. The crop decides. The retune is the gap threshold (0.3 → 0.2) or the flank band (0.7 → 0.8).
-- **The gate's component fragments.** The colour and silhouette gates take the treeish component. Gaps could split
-  it. `rejected` and the IoU show it. The retune is the same as the serrated edge's.
+  saw. The crop decides. The retune is `below` (0.3 → 0.2) or `band` (0.7 → 0.8 of the shaped radius).
+- **The gate's component fragments.** The colour and silhouette gates open the mask by 1 px and keep one component
+  (`scripts/lib/silhouette.ts`). Gaps could split it or drop thin paint. `rejected`, the IoU and the masks image
+  show it. The retune is the same as the serrated edge's. The thresholds are not lowered to rescue a result.
 - **Fur.** Any lane frequency above 5 cycles across, or a second fine octave, is E1's fur. Not a retune direction.
 - **The worker's judgement is the experiment.** Its read of each pass is in its report. The Lead reads every crop
   at the gate and says in the record where the two reads differ.
+- **What E4 does not do** (Codex F14): the painting's body has pale ochre and green tracks beside dark ones within
+  one stroke's width, interrupted deposits, and the canvas's grain. A ribbon carries one colour across its width per
+  step, and the lanes only modulate it. E4 defers adjacent pigment tracks and canvas grain. G7 tests the chosen
+  treatment's surface within that limit. A later slice may colour the strip's five columns separately.
 
 ## Roles, the worktree and the ports
 
-- The worker builds on `feat/cypress-paint-e4` from `main`'s head (the commit that carries this plan), in its own worktree
-  (`git worktree add <scratchpad>/e4-wt -b feat/cypress-paint-e4 main`, then `npm ci` there), served on port 5181
-  with `npx vite --host 127.0.0.1 --port 5181 --strictPort`. It commits on that branch. It does not push.
+- The worker builds on `feat/cypress-paint-e4` from `main`'s head (the commit that carries this plan), in its own
+  worktree (`git worktree add <scratchpad>/e4-wt -b feat/cypress-paint-e4 main`, then `npm ci` there), served on
+  port 5181 with `npx vite --host 127.0.0.1 --port 5181 --strictPort`. It commits on that branch. It does not push.
 - The Lead's checkout serves 5179. The Lead does not edit source during the build.
-- The reviewer reads this plan (the correctness leg). The worker reads it for buildability (the second leg) before
-  building. The Lead folds both into the dispositions below before the build starts.
+- The reviewer read this plan (the correctness leg). The worker read it for buildability (the second leg). The
+  dispositions below are part of the plan.
+- The worker's model: Mark ran the buildability read on Gemini 3.8 ("not a real build") and switches the pane to
+  Gemini 4 Argon for the build, which is the experiment.
 
 ## Review
 
-(Codex's read of this plan, the worker's buildability read, then the dispositions.)
+### Codex's plan read (`w4:p4`, read-only, 2026-10-22, `scratch/cypress-e4-2026-10-22/plan-read-report.md`, against `d72fffa`)
+
+Codex ran the sampler at both seeds, the colour gate and the silhouette alignment on the spike's four frames, a UV
+coverage model of the gap band, a dimming control, and the contrast pipeline: **REVISE**, eleven P2s and three P3s.
+Each checked against the code. Each holds, with one correction to F13. The dispositions, folded into the design
+above:
+
+- F1 (P2) numeric fields cannot reproduce E1's expressions, and neutral terms change the pinned text → expression
+  selection (`tube: 'rounded' | number`, `rim: 'shaded' | number`), `side` emitted verbatim at `ridgeSide: 1`, the
+  sheen line verbatim at 0.06 and omitted at 0, fray, drift and gaps omitted when off. The four hashes stay.
+- F2 (P2) treatment 3 also changed the lane interval to `[0.42, 0.58]` → `laneEdge: [0.42, 0.58]` for pass 1, the
+  drift shifting those endpoints. Both are C5 mutants.
+- F3 (P2) what a gap exposes → stated in E4.1. The on/off pair for gaps is read at an overlapping body stroke and
+  at an outline stroke.
+- F4 (P2) the gap band on the strip's half-width barely reaches surviving pixels (0–0.15% of coverage in Codex's UV
+  model) → the band on the shaped radius `r`. The on/off pair measures its contribution on screen.
+- F5 (P2) ±1 unisolated from the relief → pass 1 at ±3, pass 2 at ±1, the cut-out read of the pair decides.
+- F6 (P2) ΔE does not see the darkening. the rake unbounded can go black → `rakeClamp` `[0.4, 1.6]`. the p50 L
+  bound against E3 by the same tool. the black share on the registered window reported.
+- F7 (P2) the component gates cannot see broken paint → the masks image read for fragments. the on/off pairs per
+  mechanism with `compare-frames.mjs`. the thresholds not lowered.
+- F8 (P2) a 55,000 px box difference cannot say the new paint bends → held against unheld at the same times, and
+  the stroke-bend mutation at the Lead's gate.
+- F9 (P2) C5 and C6 would certify declarations → per-field isolation, the composed shader, the installed injection
+  read from the source, C6 through the tracer on a fixture, the mutant list in E4.3.
+- F10 (P2) the spike's painting panel is at 1.6× the render's scale → the registered pair on the gate's box and the
+  row table's crop at the same height. the montage stays as context.
+- F11 (P3) no scalar for jelly → the blur residual and the black share as diagnostics, no threshold. The profile
+  measure across ribbons is not built (P3. the crop read covers roundedness).
+- F12 (P2) the capture command never wrote `perf-summary.json` and never pinned the clock → three commands: the
+  pinned frame, the views, the perf run.
+- F13 (P3) the contrast script exits 1 outside 3–8, and its pipeline gave 1.74 on E3 → non-blocking in the loop.
+  The 1.74 was measured on the 1600 × 900 pinned sky frame, and E3's 3.4 on `views/desktop-centre.png` (the design
+  camera, the same size, a different composition). Not comparable. The baseline is re-run on E3's view in pass 1.
+- F14 (P3) the painting's adjacent pigment tracks and canvas grain are beyond the lanes → deferred, stated in Risks.
+
+### The worker's buildability read (`w4:p5`, 2026-10-22, `scratch/cypress-e4-2026-10-22/buildability-report.md`)
+
+(pending)
+
+The build goes on these dispositions. The code review (G10) checks them in code. No second plan read.
