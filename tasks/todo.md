@@ -1,6 +1,32 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-22 (evening): E4 (the cypress's paint) in build on the worker as an experiment; the Lead gates
+## Pickup — 2026-10-23 (small hours): E4 (the cypress's paint) merged and live (PR #19, `949e4b9`); Mark's live review next
+
+Mark closed the session on 2026-10-22: "Take the lead, once Gemini's done, you gated. Then push and merged. I will
+review live tomorrow." Done. `main` is at `949e4b9`, deployed. The record is `tasks/2026-10-22-cypress-e4.md` (the
+passes, the gate G1–G11, the experiment's findings, the PR). The plan with every disposition is
+`tasks/2026-10-22-cypress-e4-plan.md`. Read `tasks/lessons.md` from "E4 (the cypress's paint)".
+
+1. **Mark's taste gate on production**, the tree's still look: the body at 2× in
+   `scratch/cypress-e4-2026-10-22/p2/montage-body-2x.png` (the painting, E3, pass 1, pass 2) and the 1:1 tree in
+   `p2/montage-tree.png`, then the live site. The question he asked: does it still feel like a jelly? His phone's
+   `?perf=1` reading stays open.
+2. **Codex's PR review of #19 completed with no findings** (the thumbs-up on `8d006ad`). Nothing to answer. PR #18's
+   review (E3) never completed and stays closed on Mark's word; if it ever posts, answer it then.
+3. **The experiment's verdict is Mark's.** The record's "The experiment" section: Gemini 4 Argon's code matched the
+   plan in every field, its visual reads matched the Lead's on every crop, its tests were not vacuous under eleven
+   configuration mutants, and Codex's review found a test gap (emission mutants) and a crop defect it then fixed in
+   three commits. Its build report invented constants and numbers. 47 minutes for the build and two passes.
+4. **Open from E4:** the gaps field does nothing visible (0.25% of the column): keep as a dial or remove. The
+   registered pair after F2 is a strip too narrow for the eye (a per-row mask would widen it). The painting's
+   adjacent pigment tracks within a stroke and its canvas grain are deferred.
+5. **The explorable question** stays open: Mark has not picked a spike (the dive, the rail, Simon's walk). The
+   Lead's costing is in the 2026-10-22 chat only; the readings are under "Proposed to Mark — inside the painting".
+6. **Housekeeping:** the worker's worktree and the Lead's gate worktree removed, the servers on 5179, 5181 and 5182
+   stopped, the local branch deleted (the remote `feat/cypress-paint-e4` is Mark's to delete). The earlier items
+   (the `painting.jpg` decodes, the flat land gate's masses panel, `test:sky`'s file list) are unchanged.
+
+## Pickup — 2026-10-22 (evening): E4 (the cypress's paint) in build on the worker as an experiment; the Lead gates (superseded by the pickup above)
 
 Mark, 2026-10-22 evening: "Can you refine our tree?", the tree "feel like a jelly" (the still look), the spike's
 treatment 3 picked, then "I want to test if Gemini 4 Argon is capable of doing visual work. Can you task it and gated
