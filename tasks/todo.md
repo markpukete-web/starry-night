@@ -7,9 +7,11 @@ starrynight.markma.dev. Mark closed the session: "merge it once the review reads
 are so that we can pickup easily next session, I am wrapping up"; he merged #18 himself while Codex's PR review was
 still running. Read `tasks/lessons.md` from "D1 (touch the land)" and "E3 (the cypress's medium)" first.
 
-1. **First thing next session:** Codex's review of PR #18 (`gh api repos/markpukete-web/starry-night/pulls/18/comments`,
-   and the timeline for a pass with no findings). Answer every thread. A P0–P2 gets a follow-up PR from `main`; a P3 an
-   answer in the thread. PR #17's one finding (multi-touch) was fixed and answered before its merge.
+1. **Done 2026-10-22 (evening): Codex's review of PR #18 closed unreviewed.** The review Mark merged over never
+   completed (30 hours at "running"). A `@codex review` on the merged PR restarted it on `441860b` (re-request 1 of 2)
+   and it was still running with no finding 18 minutes later. Closed on Mark's word ("if it doesn't, let's move on").
+   E3 on `main` carries the G10 code review and no PR review. If Codex posts later, answer each thread then: a P0–P2
+   gets a follow-up PR from `main`, a P3 an answer in the thread. The record: `tasks/2026-10-22-cypress-e3.md`, Open.
 2. **Mark's taste on production**, both slices: the touch (hover, tap and drag on the cypress; hover the bushes;
    `?tune=1` shows the `bend` slider) and the cypress's medium (`scratch/cypress-e3-2026-10-22/e3-compare.png` is the
    painting, E3 and E1 at the render's scale, if the scratch survives; otherwise the record's numbers). His phone's
