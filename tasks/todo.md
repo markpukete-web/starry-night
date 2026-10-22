@@ -1,6 +1,54 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-22 (morning): D1 merged (PR #17); E3 rebased onto main and in its PR (supersedes the pickup below)
+## Pickup — 2026-10-22 (evening): E4 (the cypress's paint) in build on the worker as an experiment; the Lead gates
+
+Mark, 2026-10-22 evening: "Can you refine our tree?", the tree "feel like a jelly" (the still look), the spike's
+treatment 3 picked, then "I want to test if Gemini 4 Argon is capable of doing visual work. Can you task it and gated
+yourself?" and "Take the lead, let me know when's ready." The plan `tasks/2026-10-22-cypress-e4-plan.md` (on `main`,
+`6bb58e5`) carries Codex's read (F1–F14) and the worker's buildability read (B1–B7), both folded. The worker
+(Antigravity, Gemini 4 Argon, `w4:p5`) builds `feat/cypress-paint-e4` in a worktree in the session's scratchpad,
+served on 5181, from `scratch/cypress-e4-2026-10-22/brief-build.md`. The Lead's checkout serves `main` on 5179.
+
+1. The worker's report: `scratch/cypress-e4-2026-10-22/build-report.md`, the evidence under `p1/`–`p4/`.
+2. Codex's code review from `brief-code-review.md` (drafted), the worker's fixes, the confirmation read.
+3. The Lead's gate (the plan's G11: the suite re-run, every capture opened, the mutants, the record
+   `tasks/2026-10-22-cypress-e4.md`), then Mark's taste gate on the captures and on 5181. Push and PR on his word.
+4. The spikes question (the dive, the rail, Simon's walk) stays open: Mark has not picked. The costing is in the
+   session's chat only; the three readings are under "Proposed to Mark — inside the painting".
+5. Housekeeping unchanged from the close pickup below: the `painting.jpg` decodes, the flat land gate's masses
+   panel, `test:sky`'s file list.
+
+## Pickup — 2026-10-22 (close of the session): D1 and E3 are on `main` and live; superseded by the evening pickup above
+
+`main` is at `441860b` (PR #18, E3) on top of `8a87ae5` (PR #17, D1), both merged 2026-10-22 and deployed to
+starrynight.markma.dev. Mark closed the session: "merge it once the review reads clean. Then well record where we
+are so that we can pickup easily next session, I am wrapping up"; he merged #18 himself while Codex's PR review was
+still running. Read `tasks/lessons.md` from "D1 (touch the land)" and "E3 (the cypress's medium)" first.
+
+1. **Done 2026-10-22 (evening): Codex's review of PR #18 closed unreviewed.** The review Mark merged over never
+   completed (30 hours at "running"). A `@codex review` on the merged PR restarted it on `441860b` (re-request 1 of 2)
+   and it was still running with no finding 18 minutes later. Closed on Mark's word ("if it doesn't, let's move on").
+   E3 on `main` carries the G10 code review and no PR review. If Codex posts later, answer each thread then: a P0–P2
+   gets a follow-up PR from `main`, a P3 an answer in the thread. The record: `tasks/2026-10-22-cypress-e3.md`, Open.
+2. **Mark's taste on production**, both slices: the touch (hover, tap and drag on the cypress; hover the bushes;
+   `?tune=1` shows the `bend` slider) and the cypress's medium (`scratch/cypress-e3-2026-10-22/e3-compare.png` is the
+   painting, E3 and E1 at the render's scale, if the scratch survives; otherwise the record's numbers). His phone's
+   `?perf=1` reading stays open for both.
+3. **Then the explorable question**: three spikes on captures (a rail into the village street, a dive between the
+   ribbons of the great whorl, Simon's walk with a world sky), one afternoon each, Mark picks; see "Direction — the land"
+   and "Proposed to Mark — inside the painting" below. Time-of-day presets after that.
+4. **Open taste items, not blockers:** E3's relief constants (`CYPRESS_STROKE_BODY`: the paired contrast 3.4 against the
+   painting's 11.1, the cap reached); E2's `row-left`/`bushes` overlap, the sparse front-left dome, `orchard-right`
+   against the void, the root's rim dabs; D1's hold toggling along the cypress's silhouette edge (by design).
+5. **Tooling to keep:** a branch under review is served from its own worktree on its own port (E3 on 5181 while D1 held
+   5179 for Mark), Vite started with `--host 127.0.0.1` so the capture tools can dial it; `capture-sky-frames.mjs`
+   with `--eval` and pins for injected touches; `check-cypress-colour.ts` with its luminance and chromatic bounds and
+   `--control=grey`; `cypress-contrast.sh`. Both dev servers were stopped and both worktrees removed at the close.
+6. **Housekeeping:** three decodes of `painting.jpg` (a shared loader); the flat land gate's masses panel (Codex E2 F4)
+   before the next land retune; `test:sky` enumerates files, so a new suite must be added to it in the same commit
+   (missed twice).
+
+## Pickup — 2026-10-22 (morning): D1 merged (PR #17); E3 rebased onto main and in its PR (superseded by the close pickup above)
 
 Mark, 2026-10-22: "Push and merge D1, then rebase E3 and do the same." D1 is on `main` at `8a87ae5` (PR #17, one
 Codex P2 on multi-touch fixed in `8f95fd6`). E3 (`feat/cypress-medium`, the record `tasks/2026-10-22-cypress-e3.md`)

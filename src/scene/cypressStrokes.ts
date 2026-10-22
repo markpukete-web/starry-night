@@ -39,10 +39,10 @@ export const CYPRESS_RIBBON_CONFIG = {
   taper: 0.45,
   reliefSpread: 0.035,
   /**
-   * E3: the colour along the stroke is smoothed over ±this many samples (±9 scan px at the cypress's step, an
-   * 18 px span, a third to a half of a band); 0 keeps each sample's own texel
+   * E3/E4.2: the colour along the stroke is smoothed over ±this many samples (±1 sample in E4.2 for sharper
+   * along-stroke pigment bands without losing continuity; ±3 in E3); 0 keeps each sample's own texel
    */
-  colourSmoothing: 3,
+  colourSmoothing: 1,
   /** E3: whether the tracer computes the per-sample colours at all; the land's callers read `colour` only (Codex E3 code review F5) */
   perSampleColours: true,
   /**

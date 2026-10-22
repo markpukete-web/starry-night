@@ -196,6 +196,17 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   contrast 3.4 (the painting 11.1, the bar 5–10 not met: its bristle marks and canvas weave). The retune cap is
   reached (passes 1, 2, 3 and 5; 4 was F8's coordinate fix): any further change to the medium is Mark's call.
   Untuned by Mark.
+- E4, the cypress's paint (2026-10-22, `src/scene/cypressStrokeShader.ts` `CYPRESS_STROKE_BODY`, built by the worker
+  on Gemini 4 Argon as Mark's experiment, the Lead gating; the record `tasks/2026-10-22-cypress-e4.md`): the still look
+  read as jelly (Mark: smooth, glossy, rounded), so the cypress's body is dry, broken and ridged. The factory's new
+  fields, each defaulting to E1's text byte for byte for the land: tube flat 0.95 (E1 the rounded term), rim 1.0 (E1
+  shaded), sheen 0 (E1 0.06, the line omitted), lanes 5.0 cycles across (E1 4.5), lane edge [0.42, 0.58] (E3 [0.3, 0.7])
+  drifting by 0.15 × a slow noise along the stroke, fray 0.16 at 40 cycles along, gaps on the outer 30% of the shaped
+  radius where the lane noise is under 0.3 (0.25% of the column's pixels: a dial that does nothing visible), the dry
+  brush from 0.55 of the stroke (E1 0.75), the lit term side × 0.15 − 0.5 × the lane slope (E1 side − 0.12 × slope),
+  rake 0.8 clamped [0.4, 1.6] (E3 0.5, unclamped). The colour along the stroke smoothed over ±1 sample (E3 ±3). Gate at
+  pass 2: ΔE 1.41 / 0.49 / 0.91, spread 18.1, light 11.6%, L p50 15.0 (E3 15.4), IoU 0.844, the registered trunk
+  window's 3 × 3 std 7.33 (the painting 9.05, E3 5.04), 60 fps (p95 17.4 ms). Two passes of the four used. Untuned by Mark.
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)
