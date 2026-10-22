@@ -291,3 +291,30 @@ flanks is the gaps and the fray seen at 2× nearest-neighbour, which the on/off 
 are F14's deferred pigment tracks.
 
 The build goes on these dispositions. The code review (G10) checks them in code. No second plan read.
+
+### The code review (G10)
+
+Codex (`w4:p4`, read-only, 2026-10-22, `scratch/cypress-e4-2026-10-22/code-review-report.md`, against `7a33e5b`. it
+ran the suite, fourteen configuration mutants with restoration, five emission mutants, the factory's fields against
+E1's hashes, the colour gate read-only on the three views, the registered pairs and the black share, the on/off
+counts and the held-minus-unheld counts): **REVISE**, three P2s and one P3. Each checked. Each holds. The
+dispositions:
+
+- F1 (P2) C5's substring checks pass with the gap discard or the fray factor commented out. the clamp bounds and
+  the gap band are not asserted. per-field isolation only checks "text differs" → C5 on comment-stripped text, the
+  exact executable statements asserted, the changed lines counted per field, the five emission mutants run red
+  (the worker, `brief-fix.md`, Fix 1). The Lead's eleven configuration mutants (`lead-mutants.md`) had all gone
+  red: they removed fields through the constants, which C5 did see. The emission mutants are the gap it did not.
+- F2 (P2) the registered pair's rectangle takes the trunk run at the band's middle row, and the trunk narrows above
+  it: 12.6% of the E4 rectangle is off the component, so the registered diagnostics mix sky. The Lead had seen the
+  corner and called it acceptable by eye → the columns from the intersection of the trunk runs over the band's
+  rows, the coverage printed and bounded at 0.95, a self-check on a narrowing mask (C7), the diagnostics re-run on
+  all four windows, the reads revisited (Fix 2).
+- F3 (P2) the worker's build report misstates the constants, the tool's method, the baseline's body, several
+  numbers and paths → answered by the record, which reads the code and the logs. Two numbers the record had copied
+  from the report (the off-tree control's pixel count, the t = 6 count) are corrected there. The report stays as
+  the experiment's artefact with its errors named. Not rewritten.
+- F4 (P3) `loadDrift` alone emits an unused `float load` when `laneEdge` is null → the declaration only with a
+  lane edge. C5's drift case on a fixture with a lane edge (Fix 3).
+
+The confirmation read: `brief-confirmation.md`, bounded to the four.

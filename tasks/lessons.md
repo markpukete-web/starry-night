@@ -2831,3 +2831,34 @@ after PR #8 merged (`246e817`, "Merge it then start the second pass").
 - **A shared shader needs a factory, not an edit.** The stroke body serves the cypress and the land; the cypress's
   new constants went through a factory whose defaults reproduce E1's text, pinned by hash, so the land's program
   did not move.
+
+## E4 (the cypress's paint), the worker as the builder, 2026-10-22
+
+- **A spike with a URL switch answers a taste question in twenty minutes.** "It feels like a jelly" became three
+  shader treatments behind `?paint=`, captured and put beside the painting at 2×, and Mark picked one. The
+  smoothing that mattered was not the gloss (treatment 1 changed little) but the edges and the gradients. The spike
+  was thrown away and its patch kept as the plan's source.
+- **A plan's "gate command" must be run before it is written down.** The capture command in the first plan never
+  wrote the perf file, the gap band was measured on a width the alpha test had already cut, and the two checks
+  defaulted to the Lead's port. Codex found the first two, the worker's buildability read the third. A command
+  copied from memory is a claim.
+- **Isolate a second mechanism into its own pass.** The smoothing change rode with the relief in the first plan, so
+  a cut-out could not have been blamed on either. Pass 1 at ±3 and pass 2 at ±1, same treatment, same clock, made
+  the read of the pair the decision.
+- **A composite "at the render's scale" is not registered until the two trees are the same height.** The spike's
+  painting panel was 1.6× the render's tree. The registered pair now comes from the silhouette alignment and the
+  trunk run, not from a rectangle, because a fixed rectangle put the render's window half on sky.
+- **A worker's visual reads can be sound while its report is not.** Gemini 4 Argon's reads of the crops matched
+  the Lead's on every item, and its code matched the plan in every field. Its build report then named constants
+  that were never in the code and GLSL that does not exist. Read the code and the logs for every number. The
+  report's prose is a summary of what the model believes it did.
+- **A box difference proves a bend somewhere, not the bend you changed.** Codex's F8: the solid underpaint bends
+  too. The mutant that removes only the stroke bend, compared held against held, isolated the ribbons: 48.9% of
+  the box, the whole body.
+- **Run the gate's mutants in a checkout nobody else is using.** Codex was running its own mutants in the worker's
+  worktree at the same time. A second worktree, detached at the branch head, kept the two from corrupting each
+  other, and `git worktree add` refused the branch name until `--detach`.
+- **Pre-existing lint errors in an ignored folder hide behind a worktree.** `eslint .` on the main checkout failed
+  on four old scratch scripts; the clean worktree passed. Lint where the branch is, not where the scratch is.
+- **Tunables:** E4's entry added to CLAUDE.md on 2026-10-22 (the cypress's paint fields and the ±1 smoothing). No
+  existing tunable changed.
