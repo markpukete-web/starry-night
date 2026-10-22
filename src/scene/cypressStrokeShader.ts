@@ -109,7 +109,7 @@ const f = (n: number) => (Number.isInteger(n) ? `${n}.0` : `${n}`)
 export function strokeGlslWith(body: StrokeBody = STROKE_BODY_DEFAULTS): Omit<AliveInjection, 'key' | 'uniforms'> {
   const coarse = body.coarseShare > 0 ? `\n    vec2 lane2 = cyNoise1d(vStroke.y * ${f(body.coarseCycles)} + seed * 0.7 + w * 0.5);\n    streak = mix(streak, lane2.x, ${f(body.coarseShare)});` : ''
   const frayFactor = body.fray > 0 ? ` * (${f(Number((1 - body.fray).toFixed(6)))} + ${f(body.fray)} * cyNoise1(w * 40.0 + seed * 3.0))` : ''
-  const loadDecl = body.loadDrift > 0 ? '\n    float load = cyNoise1(w * 3.0 + seed * 1.3) - 0.5;' : ''
+  const loadDecl = body.loadDrift > 0 && body.laneEdge ? '\n    float load = cyNoise1(w * 3.0 + seed * 1.3) - 0.5;' : ''
   const gapDiscard = body.gaps ? `\n    if (y > ${f(body.gaps.band)} * r && streak < ${f(body.gaps.below)}) discard;` : ''
   const sideTerm = body.ridgeSide === 1 ? 'side' : `side * ${f(body.ridgeSide)}`
   const rakeExpr = `1.0 + ${f(body.rake)} * lit`
