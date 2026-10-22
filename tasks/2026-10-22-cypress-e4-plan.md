@@ -160,7 +160,8 @@ is an acceptable read.
 All on the worktree's server on port 5181, never 5179 (the Lead's checkout):
 
 - `node scripts/check-cypress-colour.ts <pass>/views/desktop-centre.png`: ΔE per third ≤ 10, spread ≥ 15, light
-  ≥ 9%, warm and green within 6 points of the painting's, rejected ≤ 0.4. `--control=grey` must exit 1. Its L
+  ≥ 9%, warm and green within 6 points of the painting's, rejected ≤ 0.4. Two controls must exit 1: `--control=grey`, and an off-tree box (`... 100 100 200 200`), which
+  fails on the minimum pixel count (the worker's read, B7). Its L
   percentiles are reported per pass against E3's (the same tool on E3's `views/desktop-centre.png`, in pass 1): the
   p50 within 1.5 L of E3's (Codex F6. ΔE per third did not see the spike's darkening. its p50 fell about 0.9).
 - `node scripts/cypress-silhouette.ts <pass>/views/desktop-centre.png 330 80 220 578 <pass>/sil`: the IoU, and
@@ -169,7 +170,8 @@ All on the worktree's server on port 5181, never 5179 (the Lead's checkout):
   is reported. its 3–8 verdict is not a gate for E4 (Codex F13: its exit is non-blocking here. E3's 3.4 was on
   `views/desktop-centre.png`. re-run there in pass 1 for the like-for-like baseline).
 - `npm run -s test:sky`, `npx tsc -b`, `npm run -s build`, `npx eslint .`.
-- `npm run -s check:reduced` and `npm run -s check:viewport` (read each script's header for how it takes the port).
+- `DIORAMA_CAPTURE_URL=http://127.0.0.1:5181/ npm run -s check:reduced` and the same for `check:viewport`: both
+  scripts read that variable and default to 5179 (the worker's read, B4).
 - Perf: `DIORAMA_CAPTURE_URL=http://127.0.0.1:5181/ DIORAMA_CAPTURE_EXTRA='arrival=0' node scripts/capture-diorama.mjs <pass>/perf --perf`
   gives `perf-summary.json`. the clock unpinned (Codex F12).
 - D1 unchanged (Codex F8): held and unheld frames at the same times, E3's G8 method:
@@ -266,8 +268,26 @@ above:
   camera, the same size, a different composition). Not comparable. The baseline is re-run on E3's view in pass 1.
 - F14 (P3) the painting's adjacent pigment tracks and canvas grain are beyond the lanes → deferred, stated in Risks.
 
-### The worker's buildability read (`w4:p5`, 2026-10-22, `scratch/cypress-e4-2026-10-22/buildability-report.md`)
+### The worker's buildability read (`w4:p5`, Gemini 3.8 Flash, 2026-10-22, `scratch/cypress-e4-2026-10-22/buildability-report.md`)
 
-(pending)
+**CAN BUILD**, seven items, read against the plan while the Lead was folding Codex's findings into it. Each checked:
+
+- B1 the registered-pair tool's pipeline restated from the lib's functions (`treeComponent`, `extent`, `trunkRun`,
+  the middle row at 47%) → as the plan says. Built in step 1.
+- B2 C6 written in step 1 would keep pass 1 red → the build brief phases it: C5 red before E4.1, C6 red before E4.2.
+- B3 one capture command cannot give the views and the perf file → already split (Codex F12). The worker read the
+  plan between the two versions.
+- B4 `check:reduced`, `check:viewport` and `capture-sky-frames.mjs` default to 5179 → `DIORAMA_CAPTURE_URL` on the
+  two checks, `--url` on the frames. Folded into E4.5.
+- B5 the contrast script's exit → `|| true`, as E4.5 says.
+- B6 the gap discard goes after `if (a < 0.02) discard;`, where `r` and `streak` both exist → yes. The derivatives
+  stay before every discard.
+- B7 the gate names two controls and the script has one flag → the off-tree box as the second. Folded into E4.5.
+
+Its read of the spike's images (asked for as the first sample of the experiment): "treatment 3 reads noticeably
+darker, muddier, and broken with fine dark speckled noise along ribbon flanks, lacking the crisp relief and
+luminous warm flame bands of the original." The darkness agrees with Codex's measure (F6). The speckle along the
+flanks is the gaps and the fray seen at 2× nearest-neighbour, which the on/off pairs will separate. The warm bands
+are F14's deferred pigment tracks.
 
 The build goes on these dispositions. The code review (G10) checks them in code. No second plan read.
