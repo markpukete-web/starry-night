@@ -331,3 +331,30 @@ test('C6 E4.2 sharper colour along the stroke: CYPRESS_RIBBON_CONFIG.colourSmoot
   assert.ok(groundRibbons.length > 0 && groundRibbons.every((r) => r.colours.length === 0), 'land ground trace returns no per-sample colours')
   assert.ok(domeRibbons.length > 0 && domeRibbons.every((r) => r.colours.length === 0), 'land dome trace returns no per-sample colours')
 })
+
+test('C7 registered-pair bodyWindow: on a synthetic narrowing and curving trunk mask, the rectangle lies inside the mask on every row', async () => {
+  const { bodyWindow, maskCoverage } = await import('./cypress-registered-pair.ts')
+  const mw = 100
+  const mh = 100
+  const data = new Uint8Array(mw * mh)
+  // Synthetic trunk from y = 0..99: wide at the base and middle (x = 20..80 at y = 47..99), narrowing and shifting left in upper rows (y = 34..46 -> x = 25..48 at y = 34)
+  for (let y = 0; y < mh; y++) {
+    const t = Math.max(0, (55 - y) / 55)
+    const left = Math.round(20 + 8 * t)
+    const right = Math.round(80 - 40 * t)
+    for (let x = left; x <= right; x++) {
+      data[y * mw + x] = 1
+    }
+  }
+  const mask = { width: mw, height: mh, data }
+  const win = bodyWindow(mask, 10, 20)
+  assert.ok(win.w > 0 && win.h > 0, 'window has positive width and height')
+  for (let py = 0; py < win.h; py++) {
+    const my = win.y - 20 + py
+    for (let px = 0; px < win.w; px++) {
+      const mx = win.x - 10 + px
+      assert.equal(mask.data[my * mw + mx], 1, `pixel (${mx}, ${my}) on row ${my} lies inside trunk mask`)
+    }
+  }
+  assert.equal(maskCoverage(mask, 10, 20, win), 1, 'mask coverage on narrowing trunk is 1.0 (100%)')
+})
