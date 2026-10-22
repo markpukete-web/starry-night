@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { sampleColours, TREE_TEXEL, type CypressRibbonSample } from '../src/scene/cypressStrokes.ts'
+import { sampleColours, TREE_TEXEL, type CypressRibbonSample, type RibbonRows } from '../src/scene/cypressStrokes.ts'
 import type { ImageData2D } from '../src/scene/useImageData.ts'
 
 const W = 40
@@ -198,4 +198,55 @@ test('C5 E4.1 the cypress paint fields: each field isolates cleanly against E1 d
 
   const brushSource = readFileSync(new URL('../src/scene/BrushCypress.tsx', import.meta.url), 'utf8')
   assert.ok(brushSource.includes('strokeGlslWith(CYPRESS_STROKE_BODY)'), 'BrushCypress installs strokeGlslWith(CYPRESS_STROKE_BODY)')
+})
+
+test('C6 E4.2 sharper colour along the stroke: CYPRESS_RIBBON_CONFIG.colourSmoothing is 1, traceCypressRibbons honours config.colourSmoothing on a two-band fixture where ±1 and ±3 differ, and land configs emit no per-sample colours', async () => {
+  const { CYPRESS_RIBBON_CONFIG, traceCypressRibbons } = await import('../src/scene/cypressStrokes.ts')
+  const { LAND_RIBBON_CONFIG } = await import('../src/scene/landStrokes.ts')
+  const { massConfig } = await import('../src/scene/landDomes.ts')
+
+  assert.equal(CYPRESS_RIBBON_CONFIG.colourSmoothing, 1, 'cypress colourSmoothing is ±1 sample')
+  assert.equal(CYPRESS_RIBBON_CONFIG.perSampleColours, true, 'cypress perSampleColours is enabled')
+
+  const bandPainting: ImageData2D = { data: new Uint8ClampedArray(W * H * 4), width: W, height: H }
+  const horizFlow: ImageData2D = { data: new Uint8ClampedArray(W * H * 4), width: W, height: H }
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const i = (y * W + x) * 4
+      const [r, g, b] = x < W / 2 ? [92, 60, 30] : [20, 50, 30]
+      bandPainting.data[i] = r
+      bandPainting.data[i + 1] = g
+      bandPainting.data[i + 2] = b
+      bandPainting.data[i + 3] = 255
+      // straight horizontal flow (dx = +1, dy = 0, inside = 255) so walks cross the vertical band boundary at x = 0.5
+      horizFlow.data[i] = 255
+      horizFlow.data[i + 1] = 128
+      horizFlow.data[i + 2] = 255
+      horizFlow.data[i + 3] = 255
+    }
+  }
+  const fixtureRows: RibbonRows = { width: W, height: H, uv: [0, 0, 1, 1], spans: [[0, 0, 1], [1, 0, 1]] }
+  const traceCfg = { ...CYPRESS_RIBBON_CONFIG, step: 1 / (W - 1), minLength: 0.5, maxLength: 0.8, spireSeedWeight: 1, heading: 'continuous' as const }
+  const ribbonsAtConfig = traceCypressRibbons(horizFlow, bandPainting, fixtureRows, 24, 42, traceCfg, TREE_TEXEL)
+  const ribbonsAt3 = traceCypressRibbons(horizFlow, bandPainting, fixtureRows, 24, 42, { ...traceCfg, colourSmoothing: 3 }, TREE_TEXEL)
+  assert.ok(ribbonsAtConfig.length > 0, 'traced ribbons on two-band fixture')
+
+  let crossingDiffered = 0
+  for (let r = 0; r < ribbonsAtConfig.length; r++) {
+    const rib1 = ribbonsAtConfig[r]
+    const rib3 = ribbonsAt3[r]
+    const expected1 = sampleColours(bandPainting, fixtureRows, rib1.samples, TREE_TEXEL, rib1.colour, 1)
+    assert.deepEqual(rib1.colours, expected1, `ribbon ${r} colours match ±1 smoothing from config`)
+    const differsFrom3 = rib1.colours.some((c, k) => Math.abs(c[0] - rib3.colours[k][0]) > 1e-4)
+    if (differsFrom3) crossingDiffered++
+  }
+  assert.ok(crossingDiffered > 0, 'at least one traced ribbon crosses the band edge and differs between ±1 and ±3')
+
+  assert.equal(LAND_RIBBON_CONFIG.perSampleColours, false, 'land ground config keeps perSampleColours: false')
+  const domeCfg = massConfig(horizFlow, 12)
+  assert.equal(domeCfg.perSampleColours, false, 'land dome massConfig keeps perSampleColours: false')
+  const groundRibbons = traceCypressRibbons(horizFlow, bandPainting, fixtureRows, 8, 42, LAND_RIBBON_CONFIG, TREE_TEXEL)
+  const domeRibbons = traceCypressRibbons(horizFlow, bandPainting, fixtureRows, 8, 42, domeCfg, TREE_TEXEL)
+  assert.ok(groundRibbons.length > 0 && groundRibbons.every((r) => r.colours.length === 0), 'land ground trace returns no per-sample colours')
+  assert.ok(domeRibbons.length > 0 && domeRibbons.every((r) => r.colours.length === 0), 'land dome trace returns no per-sample colours')
 })
