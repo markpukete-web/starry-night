@@ -205,8 +205,8 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   radius where the lane noise is under 0.3 (0.25% of the column's pixels: a dial that does nothing visible), the dry
   brush from 0.55 of the stroke (E1 0.75), the lit term side × 0.15 − 0.5 × the lane slope (E1 side − 0.12 × slope),
   rake 0.8 clamped [0.4, 1.6] (E3 0.5, unclamped). The colour along the stroke smoothed over ±1 sample (E3 ±3). Gate at
-  pass 2: ΔE 1.41 / 0.49 / 0.91, spread 18.1, light 11.6%, L p50 15.0 (E3 15.4), IoU 0.844, the registered window's
-  3 × 3 std 8.74 (the painting 9.06, E3 7.06), 60 fps (p95 17.4 ms). Two passes of the four used. Untuned by Mark.
+  pass 2: ΔE 1.41 / 0.49 / 0.91, spread 18.1, light 11.6%, L p50 15.0 (E3 15.4), IoU 0.844, the registered trunk
+  window's 3 × 3 std 7.33 (the painting 9.05, E3 5.04), 60 fps (p95 17.4 ms). Two passes of the four used. Untuned by Mark.
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)
