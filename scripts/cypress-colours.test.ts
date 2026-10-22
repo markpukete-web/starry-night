@@ -99,7 +99,7 @@ test('C2 the smoothing: a box of ±k samples in linear RGB blends only at a band
   assert.ok(edgeClipped.every((c) => Math.abs(c[0] - expectedHalf) < 1e-9), 'a window clipped at both ends averages what it holds')
 })
 
-test('C4 the stroke body factory: the defaults reproduce the land\'s text exactly, and the cypress\'s constants change only the lane, the rake and the coarse lane', async () => {
+test('C4 the stroke body factory: the defaults reproduce the land\'s text exactly (E1 hashes unchanged), and the cypress\'s constants emit the coarse lane, sharpened lane and saturation', async () => {
   const { strokeGlsl, strokeGlslWith, STROKE_BODY_DEFAULTS, CYPRESS_STROKE_BODY } = await import('../src/scene/cypressStrokeShader.ts')
   const defaults = strokeGlslWith(STROKE_BODY_DEFAULTS)
   // E1's four committed fields (399a956), pinned by hash so the land's program text cannot drift (code review F4)
@@ -113,12 +113,12 @@ test('C4 the stroke body factory: the defaults reproduce the land\'s text exactl
   assert.ok(defaults.fragmentBody.includes('mix(0.86, 1.08, streak)') && defaults.fragmentBody.includes('1.0 + 0.35 * lit'), 'E1 and E2 literals')
   assert.ok(!defaults.fragmentBody.includes('lane2'), 'no coarse lane by default')
   const cypress = strokeGlslWith(CYPRESS_STROKE_BODY)
-  assert.ok(cypress.fragmentBody.includes('mix(0.78, 1.14, ') && cypress.fragmentBody.includes('1.0 + 0.5 * lit'), 'the lane and the rake')
+  assert.ok(cypress.fragmentBody.includes('mix(0.78, 1.14, ') && cypress.fragmentBody.includes('1.0 + 0.8 * lit'), 'the lane and the rake')
   assert.ok(cypress.fragmentBody.includes('lane2') && cypress.fragmentBody.includes('mix(streak, lane2.x, 0.33)'), 'the coarse lane')
-  assert.ok(cypress.fragmentBody.includes('smoothstep(0.3, 0.7, streak)'), 'the sharpened lane')
-  // without the coarse lane and the edge, the two differ only on the lane and the rake lines
+  assert.ok(cypress.fragmentBody.includes('smoothstep(0.42 + 0.15 * load, 0.58 + 0.15 * load, streak)'), 'the sharpened drifting lane')
   assert.ok(cypress.fragmentBody.includes('mix(vec3(lum), col, 1.1)'), 'the cypress\'s saturation')
-  const plain = strokeGlslWith({ ...CYPRESS_STROKE_BODY, coarseShare: 0, laneEdge: null, saturation: 1.3 })
+  // per-field isolation of the E4 paint fields is verified in C5 below; with only laneLow, laneHigh and rake kept from CYPRESS_STROKE_BODY, only those two lines differ from E1's defaults
+  const plain = strokeGlslWith({ ...STROKE_BODY_DEFAULTS, laneLow: CYPRESS_STROKE_BODY.laneLow, laneHigh: CYPRESS_STROKE_BODY.laneHigh, rake: CYPRESS_STROKE_BODY.rake })
   const a = defaults.fragmentBody.split('\n')
   const b = plain.fragmentBody.split('\n')
   assert.equal(a.length, b.length)
@@ -152,9 +152,10 @@ test('C5 E4.1 the cypress paint fields: each field isolates cleanly against E1 d
   ]
   const cypress = strokeGlslWith(CYPRESS_STROKE_BODY)
   for (const [field, onVal] of fieldCases) {
-    const turnedOn = strokeGlslWith({ ...STROKE_BODY_DEFAULTS, [field]: onVal } as typeof STROKE_BODY_DEFAULTS)
+    const withOn = { ...STROKE_BODY_DEFAULTS, [field]: onVal }
+    const turnedOn = strokeGlslWith(withOn as typeof STROKE_BODY_DEFAULTS)
     assert.notEqual(turnedOn.fragmentBody, defaults.fragmentBody, `enabling ${String(field)} alone changes fragmentBody`)
-    const restored = strokeGlslWith({ ...STROKE_BODY_DEFAULTS, [field]: onVal, [field]: STROKE_BODY_DEFAULTS[field] } as typeof STROKE_BODY_DEFAULTS)
+    const restored = strokeGlslWith({ ...withOn, [field]: STROKE_BODY_DEFAULTS[field] } as typeof STROKE_BODY_DEFAULTS)
     assert.equal(hash(restored.fragmentBody), E1_FRAG, `restoring ${String(field)} to default restores E1 hash`)
     const turnedOffInCypress = strokeGlslWith({ ...CYPRESS_STROKE_BODY, [field]: STROKE_BODY_DEFAULTS[field] })
     assert.notEqual(turnedOffInCypress.fragmentBody, cypress.fragmentBody, `disabling ${String(field)} alone in CYPRESS_STROKE_BODY changes cypress fragmentBody`)
