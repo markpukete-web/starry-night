@@ -125,3 +125,76 @@ test('C4 the stroke body factory: the defaults reproduce the land\'s text exactl
   const differing = a.filter((line, i) => line !== b[i])
   assert.equal(differing.length, 2, `two lines differ: ${differing.join(' | ')}`)
 })
+
+test('C5 E4.1 the cypress paint fields: each field isolates cleanly against E1 defaults and CYPRESS_STROKE_BODY, the composed basic shader carries the dry ridged body without sheen, and BrushCypress installs CYPRESS_STROKE_BODY', async () => {
+  const { strokeGlslWith, STROKE_BODY_DEFAULTS, CYPRESS_STROKE_BODY } = await import('../src/scene/cypressStrokeShader.ts')
+  const { injectAliveSource } = await import('../src/scene/aliveMaterial.ts')
+  const { ShaderLib } = await import('three')
+  const { createHash } = await import('node:crypto')
+  const { readFileSync } = await import('node:fs')
+  const hash = (text: string) => createHash('sha256').update(text).digest('hex').slice(0, 16)
+  const E1_FRAG = '48240ba5268eba4d'
+  const defaults = strokeGlslWith(STROKE_BODY_DEFAULTS)
+  assert.equal(hash(defaults.fragmentBody), E1_FRAG, 'defaults fragmentBody matches E1 hash')
+
+  const fieldCases: [keyof typeof STROKE_BODY_DEFAULTS, unknown][] = [
+    ['tube', 0.95],
+    ['rim', 1.0],
+    ['sheen', 0],
+    ['laneCycles', 5.0],
+    ['loadDrift', 0.15],
+    ['fray', 0.16],
+    ['gaps', { band: 0.7, below: 0.3 }],
+    ['dryFrom', 0.55],
+    ['ridgeSide', 0.15],
+    ['ridgeSlope', 0.5],
+    ['rakeClamp', [0.4, 1.6]],
+  ]
+  const cypress = strokeGlslWith(CYPRESS_STROKE_BODY)
+  for (const [field, onVal] of fieldCases) {
+    const turnedOn = strokeGlslWith({ ...STROKE_BODY_DEFAULTS, [field]: onVal } as typeof STROKE_BODY_DEFAULTS)
+    assert.notEqual(turnedOn.fragmentBody, defaults.fragmentBody, `enabling ${String(field)} alone changes fragmentBody`)
+    const restored = strokeGlslWith({ ...STROKE_BODY_DEFAULTS, [field]: onVal, [field]: STROKE_BODY_DEFAULTS[field] } as typeof STROKE_BODY_DEFAULTS)
+    assert.equal(hash(restored.fragmentBody), E1_FRAG, `restoring ${String(field)} to default restores E1 hash`)
+    const turnedOffInCypress = strokeGlslWith({ ...CYPRESS_STROKE_BODY, [field]: STROKE_BODY_DEFAULTS[field] })
+    assert.notEqual(turnedOffInCypress.fragmentBody, cypress.fragmentBody, `disabling ${String(field)} alone in CYPRESS_STROKE_BODY changes cypress fragmentBody`)
+  }
+
+  assert.deepEqual(CYPRESS_STROKE_BODY.laneEdge, [0.42, 0.58], 'cypress laneEdge is narrowed to [0.42, 0.58]')
+  for (const token of [
+    'cyNoise1(w * 40.0 + seed * 3.0)',
+    '* r && streak < ',
+    'float load = cyNoise1(w * 3.0 + seed * 1.3) - 0.5;',
+    '0.42 + ',
+    '0.58 + ',
+    '* load',
+    '(side * ',
+    '* streakSlope)',
+    'clamp(1.0 + ',
+    'float rim = 1.0;',
+  ]) {
+    assert.ok(cypress.fragmentBody.includes(token), `cypress fragmentBody includes ${token}`)
+  }
+  assert.ok(!cypress.fragmentBody.includes('pow(max(lit, 0.0), 3.0)'), 'cypress fragmentBody omits the wet sheen line')
+  assert.ok(!cypress.fragmentBody.includes('(0.86 + 0.12 * (1.0 - y * y))'), 'cypress fragmentBody omits rounded tube shading')
+
+  const composed = injectAliveSource(ShaderLib.basic.vertexShader, ShaderLib.basic.fragmentShader, {
+    key: 'cypress-strokes',
+    uniforms: {},
+    ...cypress,
+  })
+  for (const token of [
+    'cyNoise1(w * 40.0 + seed * 3.0)',
+    '* r && streak < ',
+    'float load = cyNoise1(w * 3.0 + seed * 1.3) - 0.5;',
+    '(side * ',
+    'clamp(1.0 + ',
+  ]) {
+    assert.ok(composed.fragmentShader.includes(token), `composed basic fragmentShader includes ${token}`)
+  }
+  assert.ok(!composed.fragmentShader.includes('pow(max(lit, 0.0), 3.0)'), 'composed basic fragmentShader omits sheen')
+  assert.ok(composed.fragmentShader.indexOf('dFdx') < composed.fragmentShader.indexOf('discard;'), 'derivatives precede first discard')
+
+  const brushSource = readFileSync(new URL('../src/scene/BrushCypress.tsx', import.meta.url), 'utf8')
+  assert.ok(brushSource.includes('strokeGlslWith(CYPRESS_STROKE_BODY)'), 'BrushCypress installs strokeGlslWith(CYPRESS_STROKE_BODY)')
+})
