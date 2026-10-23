@@ -134,7 +134,9 @@ test('houses never block the path', () => {
       x: house.x + (cx * house.w / 2) * c - (cz * house.d / 2) * s,
       z: house.z + (cx * house.w / 2) * s + (cz * house.d / 2) * c,
     }))
-    const minDistance = Math.min(...corners.map(pt => Math.abs((pt.x - p[0]) * n[0] + (pt.z - p[2]) * n[2])))
+    // signed toward the house's own side: an unsigned distance passed a house centred on the path, every corner half
+    // its depth from the centreline (the Lead's gate, mutant 6)
+    const minDistance = Math.min(...corners.map(pt => house.side * ((pt.x - p[0]) * n[0] + (pt.z - p[2]) * n[2])))
     assert.ok(minDistance >= 0.08, `house at ${house.at} clearance ${minDistance} >= 0.08`)
   }
 })
