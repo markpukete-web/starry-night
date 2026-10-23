@@ -19,8 +19,10 @@ term in the street's own materials closes the far end.
 **Spec:** `docs/superpowers/specs/2026-10-23-village-street-design.md` (approved by Mark, 2026-10-23). This plan is
 its slice 1. Read both.
 
-**v2 (2026-10-23):** folds Codex's plan review (`scratch/street-s1-2026-10-23/plan-review-codex.md`, F1–F18, REVISE)
-and the worker's buildability read (`plan-review-worker.md`, B1–B14, BLOCKED). The dispositions are at the end.
+**v3 (2026-10-23):** v2 folded Codex's plan review (`scratch/street-s1-2026-10-23/plan-review-codex.md`, F1–F18, REVISE)
+and the worker's buildability read (`plan-review-worker.md`, B1–B14, BLOCKED). v3 folds their confirmation reads
+(`plan-confirm-codex.md`: F10, F12, F13 open, F19 new. `plan-confirm-worker.md`: B15 new). The dispositions are at
+the end.
 
 ## Global Constraints
 
@@ -102,7 +104,8 @@ worktree on 5181 (`npx vite --port 5181 --strictPort --host 127.0.0.1`). The Lea
   - `orbit`: `&view=orbit`, `--times 5` (a camera that is not the home's).
   - `arrival`: `?mode=diorama&clean=1&arrival=1`, `--times 0,0,0 --arrival-times 1,4.5,7`.
   - `reduced`: `DIORAMA_CAPTURE_URL='http://127.0.0.1:5181/' node scripts/check-reduced-motion.mjs
-    baseline/runN/reduced`.
+    baseline/runN/reduced`. Only its reduced-motion still frames enter the cross-run comparison. Its control frames
+    move by design (`check-reduced-motion.mjs:231–238`). The script's own exit status covers them within a run.
 - [ ] **Step 4: The rest.** `node scripts/export-village.mjs scratch/street-s1-2026-10-23/baseline/village` (record
   the hash). `npm run -s build` (record the main chunk's size in `baseline/bundle.txt`). Perf:
   `DIORAMA_CAPTURE_URL=http://127.0.0.1:5181/ DIORAMA_CAPTURE_EXTRA='arrival=0' node scripts/capture-diorama.mjs
@@ -262,14 +265,18 @@ Modify `src/scene/villageGeometry.ts`.
   existing `Suspense`) replaces `Diorama`, `OrbitControls` and `ArrivalDriver` are not mounted, no arrival layer, no
   `arrivalStep` to the sky, `useTouchInput` gets `touchEnabled(...)`. The camera takes `stationPose(station,
   isPortrait)` on mount and on every orientation change, its `near` and `far` set and the projection updated. The sky
-  keeps its `home` (`DIORAMA_CAMERAS.design` in landscape, `.mobile` in portrait).
+  keeps its `home` (`DIORAMA_CAMERAS.design` in landscape, `.mobile` in portrait). In street mode only, `Scene`
+  installs `window.__streetCamera = () => ({ position, quaternion, fov, near, far })`, independent of the touch hook
+  (which is off in street mode and installs `__camera` only when on, `useTouchInput.ts:224`, `:245`).
 - `Street.tsx`: loads `/reference/painting.jpg` and `/reference/land-flow.png` through `useImageData` with `onError`,
   and `/reference/land-masses.json` by `fetch` as `BrushIsland.tsx:64–76` does, each tracked as pending, ok or
   failed. `?streetFail=` substitutes `/reference/missing.png` for that one input. It builds once with
   `buildStreet` when `streetReadiness(...).render`, sets `window.__streetReady` from `.ready` and
   `window.__streetCounts = { ribbons, triangles, builds }`, where `builds` counts calls to `buildStreet`.
 - `streetFog.ts`: `FOG = { colour: PALETTE.skyHorizon, near: 0.6, far: 1.6 }` and `fogInjection(colour, near, far):
-  Omit<AliveInjection, 'key'>`: a varying `vFogDistance = -mvPosition.z` and
+  Omit<AliveInjection, 'key'>`: a varying set in the vertex body from the attribute,
+  `vFogDistance = -(modelViewMatrix * vec4(position, 1.0)).z`, because the injection's vertex body runs before
+  three's `project_vertex` declares `mvPosition` (`aliveMaterial.ts:43–46`). The fragment body:
   `diffuseColor.rgb = mix(diffuseColor.rgb, uFogColour, smoothstep(uFogNear, uFogFar, vFogDistance))`. The street's
   materials only. `scene.fog` is never set.
 - `landDomes.ts`: a `groundAt = islandHeightAt` parameter on `domesOf`, `liftToDomes`, `settleOnTerrain`,
@@ -294,8 +301,9 @@ Modify `src/scene/villageGeometry.ts`.
   identical to Task 0's run 1. Add `street=0` to the `base` URL once: identical to `base`. `npm run -s build`: the
   main chunk within 1 kB of `baseline/bundle.txt`, `Street` in its own chunk. `export-village.mjs`: the same hash.
 - [ ] **Step 6: The fresh-session street.** A capture of `?mode=diorama&clean=1&street=1` with no `arrival`
-  parameter in a new profile: `--wait-for 'window.__streetReady'`, then `--eval 'window.__camera()'`. The position
-  equals `stationPose(0, false).position` within 1e-6. No arrival layer in the DOM.
+  parameter in a new profile: `--wait-for 'window.__streetReady'`, then `--eval 'window.__streetCamera()'`. The
+  position equals `stationPose(0, false).position` plus the street group's offset (`STREET.originA` under anchor A)
+  within 1e-6. No arrival layer in the DOM. The capture's page errors are empty (the street's materials compile).
 - [ ] **Step 7: The failed loads.** `?street=1&streetFail=painting`, `=flow`, `=masses`: each capture shows the sky
   only, `window.__streetReady` true, `window.__streetCounts` undefined.
 - [ ] **Step 8:** Commit: `feat(street): street mode, the lazy mount, the station camera, the fog (S1 task 4)`.
@@ -317,7 +325,8 @@ Modify `src/scene/villageGeometry.ts`.
 
 - [ ] **Step 1: G4b, the GPU flat panel.** `?street=1&flat=1`: an orthographic camera facing a board with Task 3's
   four panel faces laid flat in a row, built by `traceFace` and drawn with the production materials and attributes.
-  Capture it pinned at t = 5 into `t5/flat-gpu.png` and open it beside the CPU panel at 1:1. The body's lanes, rake,
+  Capture it pinned at t = 5 into `t5/flat-gpu.png`. Its page errors must be empty: a shader that does not compile
+  fails here, before any judgement. Open it beside the CPU panel at 1:1. The body's lanes, rake,
   fray and dry tails must read as paint on a wall, not as fur or plastic. Retune `CYPRESS_STROKE_BODY`'s use here
   (a street body, if needed) before the volumes.
 - [ ] **Step 2: Write the failing tests** in `scripts/street-strokes.test.ts`:
@@ -355,8 +364,16 @@ Modify `src/scene/villageGeometry.ts`.
 
 - [ ] **Step 1: Write the failing tests:** `no anchor is today's transform` (exact equality on five seeded camera
   poses, position at the origin), `follow tracks the camera`, `worldFixed ignores the camera's turn`.
-- [ ] **Step 2:** Run. Expected: FAIL. **Step 3:** Implement. **Step 4:** Run. Expected: PASS. Re-run Task 0's
-  `orbit`, `light` and `reduced` captures: identical to the baseline.
+- [ ] **Step 2:** Run. Expected: FAIL. **Step 3:** Implement, with a seam `window.__skyTransform = () => ({
+  quaternion, position })` reading the sky group. **Step 4:** Run. Expected: PASS. Re-run Task 0's `orbit`, `light`
+  and `reduced` captures: identical to the baseline.
+- [ ] **Step 4b: The component applies the transform.** `scripts/check-sky-transform.mjs`, on `capture-diorama.mjs`'s
+  CDP setup and its drag: load `?mode=diorama&clean=1&arrival=0`, drag the canvas 240 px right, wait 1.5 s, read
+  `__skyTransform()` and `__camera()`. In node, compute the home quaternion from `DIORAMA_CAMERAS.design` (a
+  `lookAt` from its position to its target) and the expected `camera × home⁻¹`. Assert the sky's quaternion within
+  1e-6 of it and its position at the origin, and assert the camera moved off its home by at least 5°. Run it also
+  with `&sky=light` and under reduced-motion emulation. Exit 1 otherwise. (The `orbit` view is its own home, so a
+  pinned capture there cannot see a component that stops applying the transform.)
 - [ ] **Step 5:** The 16 frames: for anchor A and B, turn lock and world, stations 0 and 4, desktop and mobile,
   `capture-sky-frames.mjs scratch/street-s1-2026-10-23/t6 --url '…?mode=diorama&clean=1&street=1&station=S&skyAnchor=
   X&skyTurn=Y' --times 5 --wait-for 'window.__streetReady' --prefix sky-X-Y-sS` (add `--viewport mobile` and a `-m`
@@ -400,7 +417,7 @@ Modify `src/scene/villageGeometry.ts`.
 - [ ] **Step 3: Portrait.** Stations 0–4 with `--viewport mobile`. For each, the band check of Task 6.
 - [ ] **Step 4: Rotation.** `scripts/check-street-rotation.mjs`, on `check-viewport-camera.mjs`'s CDP setup: load
   `?street=1&station=2` at 1440 × 900, wait for `__streetReady`, set the metrics to 390 × 844, wait 1 s. Assert
-  `window.__streetCounts.builds === 1` and the camera's `fov === 75`. Exit 1 otherwise.
+  `window.__streetCounts.builds === 1` and `window.__streetCamera().fov === 75`. Exit 1 otherwise.
 - [ ] **Step 5:** Commit: `test(street): perf, reduced motion, portrait and rotation runs (S1 task 8)`.
 
 ### Task 9: The passes (Lead)
@@ -495,3 +512,13 @@ placements are explicit. B6 `forward` is a typed constant, tested. B7 `stationPo
 church. B8 as F8. B9 as F10. B10 as F12. B11 `compare-frames.mjs` per file. B12 the anchor has no scale (B follows
 the camera, the dome's radius holds), defaults A and lock. B13 the files are named, windows and fog against their
 regions. B14 `check-reduced-motion.mjs` through `DIORAMA_CAPTURE_URL`.
+
+v3, from the confirmation reads:
+
+- F10 and B15 accepted: `window.__streetCamera()` in street mode, independent of the touch hook, with the fov. Task 4
+  Step 6 compares against the station plus the anchor's offset. Task 8 Step 4 reads the fov from it.
+- F12 accepted: the reduced-motion control frames leave the cross-run comparison. The script's exit status covers them.
+- F13 accepted: `scripts/check-sky-transform.mjs` (Task 6 Step 4b) asserts the sky group's transform after a real
+  drag, against a home quaternion computed independently in node, on the moving sky, painted light and reduced motion.
+- F19 (P1) accepted: the fog's distance comes from `position` and `modelViewMatrix` in the vertex body. G4b and Task 4
+  Step 6 require empty page errors, so a shader that does not compile fails before any judgement.
