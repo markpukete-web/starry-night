@@ -6,7 +6,8 @@ import test from 'node:test'
 
 import { islandHeightAt } from '../src/scene/islandShape.ts'
 import type { BakedMass } from '../src/scene/landDomes.ts'
-import { buildStreet } from '../src/scene/streetGeometry.ts'
+import { Vector3 } from 'three'
+import { COTTAGE, ROOF_EDGE, buildStreet, cottageFaces, houseRoofEdges, type StreetShape } from '../src/scene/streetGeometry.ts'
 import { STREET_CHURCH, STREET_HOUSES } from '../src/scene/streetLayout.ts'
 import type { ImageData2D } from '../src/scene/useImageData.ts'
 import { VILLAGE_CHURCH } from '../src/scene/villageKnot.ts'
@@ -47,8 +48,10 @@ test('every face of a house is clad, and every edge has its outline', () => {
     assert.equal(faces.length, 8, `house ${house} has its eight faces`)
     for (const face of faces) assert.ok(face.ribbons >= 12, `house ${house}'s ${face.name} has ${face.ribbons} ribbons`)
     const outlines = build.report.outlines.find((o) => o.owner === `house-${house}`)
-    // four eaves, four corners, four rakes, the ridge, four along the ground
-    assert.equal(outlines?.edges, 17, `house ${house}'s edges are inked`)
+    // a painting house: four eaves, four corners, four rakes, the ridge, four along the ground. A cottage (its ridge
+    // along the width): four corners, four along the ground, two eaves, four rakes, the ridge
+    const edges = STREET_HOUSES[house].type === 'cottage' ? 15 : 17
+    assert.equal(outlines?.edges, edges, `house ${house}'s edges are inked`)
   }
 })
 
@@ -120,5 +123,64 @@ test('every vertex of underpaint and strokes has a source class, and the church 
     }
   }
   assert.ok(churchWallUnderpaint > 10, `found church wall underpaint vertices: ${churchWallUnderpaint}`)
+})
+
+/** A house's frame for the pure builders: centred at the origin, its width along x, its front toward +z. */
+const frame = { centre: new Vector3(0, 0, 0), along: new Vector3(1, 0, 0), toPath: new Vector3(0, 0, 1) }
+const close = (a: number, b: number, eps = 1e-9) => Math.abs(a - b) <= eps
+function planeNormal(c: Vector3[]): Vector3 {
+  return new Vector3().crossVectors(c[1].clone().sub(c[0]), c[c.length - 1].clone().sub(c[0])).normalize()
+}
+
+test('a cottage is a thick thatched roof on low walls', () => {
+  const cottages = STREET_HOUSES.filter((h) => h.type === 'cottage')
+  assert.equal(cottages.length, 4, 'four cottages in the table')
+  for (const h of cottages) {
+    const shape: StreetShape = h
+    const faces = cottageFaces(shape, frame.centre, frame.along, frame.toPath)
+    const of = (kind: string) => faces.filter((f) => f.kind === kind)
+    assert.equal(of('wall').length, 6, `${h.id}: four walls and two gables`)
+    assert.equal(of('wall').filter((f) => f.corners.length === 3).length, 2, `${h.id}: the gables are triangles`)
+    assert.equal(of('roof').length, 2, `${h.id}: two roof planes`)
+    assert.equal(of('underside').length, 2, `${h.id}: an underside under each`)
+    assert.equal(of('edge').length, 6, `${h.id}: an eave and two rakes on each plane`)
+    for (const side of ['front', 'back']) {
+      const roof = faces.find((f) => f.name === `${side} roof`)!
+      const under = faces.find((f) => f.name === `${side} underside`)!
+      const n = planeNormal(roof.corners)
+      assert.ok(close(Math.abs(n.dot(planeNormal(under.corners))), 1, 1e-9), `${h.id} ${side}: the underside is parallel to the roof`)
+      for (const p of under.corners) assert.ok(close(Math.abs(p.clone().sub(roof.corners[0]).dot(n)), COTTAGE.thickness), `${h.id} ${side}: the slab is ${COTTAGE.thickness} thick`)
+      // the eave is the roof's lowest edge, and it stands COTTAGE.overhang beyond its wall
+      const eaveZ = roof.corners[0].z
+      assert.ok(close(Math.abs(eaveZ), h.d / 2 + COTTAGE.overhang), `${h.id} ${side}: the eave overhangs the wall by ${COTTAGE.overhang}`)
+      assert.ok(close(roof.corners[0].y, roof.corners[1].y) && roof.corners[0].y < roof.corners[2].y, `${h.id} ${side}: the eave is level and below the ridge`)
+      assert.ok(roof.corners[0].y > 0.04, `${h.id} ${side}: the thatch's edge stands ${roof.corners[0].y.toFixed(3)} above the ground`)
+      // each edge face joins its roof's edge to its underside's
+      for (const edge of faces.filter((f) => f.kind === 'edge' && f.name.startsWith(side))) {
+        assert.equal(edge.corners.length, 4)
+        assert.ok(edge.corners.slice(0, 2).every((p) => roof.corners.some((q) => q.distanceTo(p) < 1e-12)), `${h.id} ${edge.name}: its top is the roof's edge`)
+        assert.ok(edge.corners.slice(2).every((p) => under.corners.some((q) => q.distanceTo(p) < 1e-12)), `${h.id} ${edge.name}: its foot is the underside's edge`)
+      }
+    }
+  }
+})
+
+test("every painting house's roof has an edge", () => {
+  const houses = STREET_HOUSES.filter((h) => h.type === 'painting')
+  assert.equal(houses.length, 6, 'six painting houses in the table')
+  for (const h of houses) {
+    const bands = houseRoofEdges(h, frame.centre, frame.along, frame.toPath)
+    assert.equal(bands.length, 6, `${h.id}: an eave and two rakes on each of two planes`)
+    for (const band of bands) {
+      const [a, b, b2, a2] = band.corners
+      assert.ok(close(a.distanceTo(a2), ROOF_EDGE) && close(b.distanceTo(b2), ROOF_EDGE), `${h.id} ${band.name}: ${ROOF_EDGE} deep`)
+      const drop = a2.clone().sub(a)
+      assert.ok(close(drop.dot(b.clone().sub(a)), 0, 1e-12), `${h.id} ${band.name}: hangs square to its edge`)
+      assert.ok(drop.y < 0, `${h.id} ${band.name}: hangs below the roof`)
+    }
+    const eaves = bands.filter((band) => band.name.endsWith('eave'))
+    assert.equal(eaves.length, 2)
+    for (const band of eaves) assert.ok(close(band.corners[0].y, band.corners[1].y), `${h.id} ${band.name}: level`)
+  }
 })
 

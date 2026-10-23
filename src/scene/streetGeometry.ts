@@ -232,10 +232,19 @@ export type StreetShape = {
  * the path; `along` is its width's direction, `toPath` its depth's, toward the street.
  */
 export function house(ctx: Context, owner: string, index: number, shape: StreetShape, centre: Vector3, along: Vector3, toPath: Vector3, lit: boolean, chimney: boolean): void {
-  // SPIKE: each house leans its own way, up to about 2.6° (a shear by height keeps every face flat)
+  leaned(ctx, index, along, () => buildHouse(ctx, owner, index, shape, centre, along, toPath, lit, chimney))
+}
+
+/** A Dutch cottage (S1b task 2): low walls under a thick thatched roof whose ridge runs along the front. */
+export function cottage(ctx: Context, owner: string, index: number, shape: StreetShape, centre: Vector3, along: Vector3, toPath: Vector3, lit: boolean, chimney: boolean): void {
+  leaned(ctx, index, along, () => buildCottage(ctx, owner, index, shape, centre, along, toPath, lit, chimney))
+}
+
+/** SPIKE: each house leans its own way, up to about 2.6° (a shear by height keeps every face flat). */
+function leaned(ctx: Context, index: number, along: Vector3, build: () => void): void {
   const lean = index === 100 ? 0 : (((index * 0.618 + 0.31) % 1) - 0.5) * 0.09
   const marks = [ctx.underpaint, ctx.strokes.arrays, ctx.outlines.arrays, ctx.windows].map((arr) => [arr, arr.positions.length] as const)
-  buildHouse(ctx, owner, index, shape, centre, along, toPath, lit, chimney)
+  build()
   for (const [arr, from] of marks) {
     for (let i = from; i < arr.positions.length; i += 3) {
       const y = arr.positions[i + 1]
@@ -265,14 +274,15 @@ function buildHouse(ctx: Context, owner: string, index: number, shape: StreetSha
     clad(ctx, owner, name, orientedFace(a.clone().setY(eave), z.clone().sub(a), upP, inside, { shape: 'triangle', kind: 'wall', source: wall, refHeight: eave, seed: seed + i, mirror: i === 5 }))
   }
   // the roof planes, from the eave (overhung) to the ridge; the ridge runs along the depth at the width's middle
-  const ridgeF = c(0, d / 2 + OVERHANG, eave + pitch)
-  const ridgeB = c(0, -d / 2 - OVERHANG, eave + pitch)
-  for (const [name, sideX, i] of [['left roof', -1, 6], ['right roof', 1, 7]] as const) {
-    const eaveF = c(sideX * (w / 2 + OVERHANG), d / 2 + OVERHANG, eave - OVERHANG * (pitch / (w / 2)))
-    const eaveB = c(sideX * (w / 2 + OVERHANG), -d / 2 - OVERHANG, eave - OVERHANG * (pitch / (w / 2)))
+  const planes = houseRoofPlanes(shape, centre, along, toPath)
+  planes.forEach(([side, [eaveF, eaveB, , ridgeF]], k) => {
     const slope = ridgeF.clone().sub(eaveF)
-    clad(ctx, owner, name, orientedFace(eaveF, eaveB.clone().sub(eaveF), slope, inside, { shape: 'quad', kind: 'roof', source: roof, refHeight: slope.length(), seed: seed + i, mirror: sideX > 0 }))
-  }
+    clad(ctx, owner, `${side} roof`, orientedFace(eaveF, eaveB.clone().sub(eaveF), slope, inside, { shape: 'quad', kind: 'roof', source: roof, refHeight: slope.length(), seed: seed + 6 + k, mirror: side === 'right' }))
+  })
+  const [ridgeB, ridgeF] = [planes[0][1][2], planes[0][1][3]]
+  // S1b task 3: the roof's thickness shown at its eave and rakes, a dark band under each edge
+  const edgeColour = sourceColour(ctx, roof).multiplyScalar(OPENING_DARK)
+  for (const band of houseRoofEdges(shape, centre, along, toPath)) polygon(ctx.underpaint, band.corners, edgeColour, 255)
   // the ink: four eaves, four corners, four rakes, the ridge, four along the ground
   const top = [fl, fr, br, bl].map((p) => p.clone().setY(eave))
   const base = [fl, fr, br, bl]
@@ -302,6 +312,130 @@ function buildHouse(ctx: Context, owner: string, index: number, shape: StreetSha
     const size = 0.035
     const box = [[0, 0], [1, 0], [1, 1], [0, 1]].map(([x, z]) => foot.clone().addScaledVector(along, x * size).addScaledVector(toPath, z * size))
     const tops = box.map((p) => p.clone().setY(eave + pitch * 0.68 + 0.1))
+    for (let k = 0; k < 4; k++) polygon(ctx.underpaint, [box[k], box[(k + 1) % 4], tops[(k + 1) % 4], tops[k]], INK, 255)
+    polygon(ctx.underpaint, tops, INK, 255)
+  }
+}
+
+/** A roof's edge band (S1b task 3): this deep, square to the roof plane, under its eave and its rakes. */
+export const ROOF_EDGE = 0.012
+
+/** The thatch as a slab (S1b task 2). The overhang is horizontal, beyond the front and back walls: on a pitch of about
+ * 59° the plan's 0.05 dropped the thatch's edge to 0.007 above the ground on a 0.09 wall, and 0.02 keeps it near 0.057. */
+export const COTTAGE = { thickness: 0.03, overhang: 0.02, rake: 0.03 }
+
+export type HouseFace = { name: string; kind: 'wall' | 'roof' | 'underside' | 'edge'; corners: Vector3[] }
+
+/** A quad's outward normal: the side its corners' winding faces, turned up for a roof. */
+function upwardNormal(corners: Vector3[]): Vector3 {
+  const n = new Vector3().crossVectors(corners[1].clone().sub(corners[0]), corners[corners.length - 1].clone().sub(corners[0])).normalize()
+  return n.y < 0 ? n.negate() : n
+}
+
+/** The bands under one roof plane's three free edges: [eave, rake, rake], each from its top edge down the inward normal. */
+function edgeBands(top: Vector3[], depth: number, names: [string, string, string]): HouseFace[] {
+  const down = upwardNormal(top).multiplyScalar(-depth)
+  const band = (a: Vector3, b: Vector3, name: string): HouseFace => ({ name, kind: 'edge', corners: [a, b, b.clone().add(down), a.clone().add(down)] })
+  return [band(top[0], top[1], names[0]), band(top[1], top[2], names[1]), band(top[3], top[0], names[2])]
+}
+
+/** A painting house's roof planes as `buildHouse` lays them: [eave front, eave back, ridge back, ridge front] per side. */
+function houseRoofPlanes(shape: StreetShape, centre: Vector3, along: Vector3, toPath: Vector3): [string, Vector3[]][] {
+  const c = (x: number, z: number, y: number) => centre.clone().addScaledVector(along, x).addScaledVector(toPath, z).setY(y)
+  const { w, d, eave, pitch } = shape
+  const ridgeF = c(0, d / 2 + OVERHANG, eave + pitch)
+  const ridgeB = c(0, -d / 2 - OVERHANG, eave + pitch)
+  return ([['left', -1], ['right', 1]] as const).map(([name, sideX]) => {
+    const eaveY = eave - OVERHANG * (pitch / (w / 2))
+    return [name, [c(sideX * (w / 2 + OVERHANG), d / 2 + OVERHANG, eaveY), c(sideX * (w / 2 + OVERHANG), -d / 2 - OVERHANG, eaveY), ridgeB, ridgeF]]
+  })
+}
+
+/** S1b task 3: the edge bands of a painting house's two roof planes (pure, the test's seam). */
+export function houseRoofEdges(shape: StreetShape, centre: Vector3, along: Vector3, toPath: Vector3): HouseFace[] {
+  return houseRoofPlanes(shape, centre, along, toPath).flatMap(([name, top]) => edgeBands(top, ROOF_EDGE, [`${name} eave`, `${name} back rake`, `${name} front rake`]))
+}
+
+/** S1b task 2: a cottage's faces (pure, the test's seam). Its width runs along `along`, its front faces `toPath`, the
+ * ridge runs along the width at the depth's middle, so the thatch slopes down toward the lane and away from it. */
+export function cottageFaces(shape: StreetShape, centre: Vector3, along: Vector3, toPath: Vector3): HouseFace[] {
+  const c = (x: number, z: number, y: number) => centre.clone().addScaledVector(along, x).addScaledVector(toPath, z).setY(y)
+  const { w, d, eave, pitch } = shape
+  const { thickness, overhang, rake } = COTTAGE
+  const [hw, hd] = [w / 2, d / 2]
+  const fl = c(-hw, hd, 0), fr = c(hw, hd, 0), br = c(hw, -hd, 0), bl = c(-hw, -hd, 0)
+  const faces: HouseFace[] = []
+  for (const [name, a, b] of [['front', fl, fr], ['right', fr, br], ['back', br, bl], ['left', bl, fl]] as const) {
+    faces.push({ name, kind: 'wall', corners: [a, b, b.clone().setY(eave), a.clone().setY(eave)] })
+  }
+  faces.push({ name: 'right gable', kind: 'wall', corners: [fr.clone().setY(eave), br.clone().setY(eave), c(hw, 0, eave + pitch)] })
+  faces.push({ name: 'left gable', kind: 'wall', corners: [bl.clone().setY(eave), fl.clone().setY(eave), c(-hw, 0, eave + pitch)] })
+  // the planes continue the gables' slope past the walls, so no gap opens between a gable and the thatch
+  const eaveY = eave - overhang * (pitch / hd)
+  for (const [side, sz] of [['front', 1], ['back', -1]] as const) {
+    const top = [c(-sz * (hw + rake), sz * (hd + overhang), eaveY), c(sz * (hw + rake), sz * (hd + overhang), eaveY), c(sz * (hw + rake), 0, eave + pitch), c(-sz * (hw + rake), 0, eave + pitch)]
+    const down = upwardNormal(top).multiplyScalar(-thickness)
+    faces.push({ name: `${side} roof`, kind: 'roof', corners: top })
+    faces.push({ name: `${side} underside`, kind: 'underside', corners: top.map((p) => p.clone().add(down)) })
+    faces.push(...edgeBands(top, thickness, [`${side} eave edge`, `${side} right rake edge`, `${side} left rake edge`]))
+  }
+  return faces
+}
+
+/** A source's mean colour, the base a face of it sits on. */
+function sourceColour(ctx: Context, source: StreetSourceName): Color {
+  return new Color().setRGB(...sourceUnderpaint(ctx.painting, source, 1), SRGBColorSpace)
+}
+
+function buildCottage(ctx: Context, owner: string, index: number, shape: StreetShape, centre: Vector3, along: Vector3, toPath: Vector3, lit: boolean, chimney: boolean): void {
+  const c = (x: number, z: number, y: number) => centre.clone().addScaledVector(along, x).addScaledVector(toPath, z).setY(y)
+  const { w, d, eave, pitch, wallSource: wall, roofSource: roof } = shape
+  const inside = centre.clone().setY(eave / 2)
+  const seed = 0x5900 + index * 97
+  const faces = cottageFaces(shape, centre, along, toPath)
+  // one brush through the village: the walls' strokes take the street's wall reference, not the 0.09 eave, which made
+  // them a third the size of a painting house's and three times as many (Fable N2, the measured street)
+  const wallFaces: StreetFace[] = []
+  const dark = sourceColour(ctx, roof).multiplyScalar(OPENING_DARK)
+  faces.forEach((f, i) => {
+    const [a, b] = f.corners
+    if (f.kind === 'wall') {
+      const u = b.clone().sub(a)
+      const v = f.corners.length === 3 ? f.corners[2].clone().sub(a.clone().addScaledVector(u, 0.5)) : f.corners[3].clone().sub(a)
+      const face = orientedFace(a, u, v, inside, { shape: f.corners.length === 3 ? 'triangle' : 'quad', kind: 'wall', source: wall, refHeight: STREET.wallRef, seed: seed + i, mirror: i % 2 === 1 })
+      clad(ctx, owner, f.name, face)
+      if (f.corners.length === 4) wallFaces.push(face)
+    } else if (f.kind === 'roof') {
+      const slope = f.corners[3].clone().sub(a)
+      clad(ctx, owner, f.name, orientedFace(a, b.clone().sub(a), slope, inside, { shape: 'quad', kind: 'roof', source: roof, refHeight: slope.length(), seed: seed + i, mirror: f.name.startsWith('back') }))
+    } else {
+      polygon(ctx.underpaint, f.corners, dark, 255)
+    }
+  })
+  // the ink: four corners and four along the ground, the two eaves, the four rakes and the ridge
+  const edges: [Vector3, Vector3, Vector3][] = []
+  wallFaces.forEach((face) => {
+    const [a, b] = facePolygon(face)
+    edges.push([a, a.clone().setY(eave), face.normal], [a, b, face.normal])
+  })
+  for (const side of ['front', 'back']) {
+    const top = faces.find((f) => f.name === `${side} roof`)!.corners
+    const n = upwardNormal(top)
+    edges.push([top[0], top[1], n], [top[1], top[2], n], [top[3], top[0], n])
+    if (side === 'front') edges.push([top[2], top[3], UP.clone()])
+  }
+  ink(ctx, owner, STREET.wallRef, edges, seed)
+  // the door reaches most of the low wall (at 0.6 of a 0.09 eave it stood below the camera's eye), a small window beside it
+  const front = wallFaces[0]
+  opening(ctx, front, index % 2 ? 0.34 : 0.66, 0.425, 0.16, 0.85, false, seed + 11)
+  ctx.report.windows.push({ owner, lit: false })
+  opening(ctx, front, index % 2 ? 0.74 : 0.26, 0.55, 0.12, 0.3, lit, seed + 13)
+  ctx.report.windows.push({ owner, lit })
+  if (chimney) {
+    const foot = c(w * 0.25, -d * 0.12, eave + pitch * 0.6)
+    const size = 0.035
+    const box = [[0, 0], [1, 0], [1, 1], [0, 1]].map(([x, z]) => foot.clone().addScaledVector(along, x * size).addScaledVector(toPath, z * size))
+    const tops = box.map((p) => p.clone().setY(eave + pitch + 0.06))
     for (let k = 0; k < 4; k++) polygon(ctx.underpaint, [box[k], box[(k + 1) % 4], tops[(k + 1) % 4], tops[k]], INK, 255)
     polygon(ctx.underpaint, tops, INK, 255)
   }
@@ -450,7 +584,7 @@ export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | nu
       0,
       -h.side * (Math.cos(thetaRad) * rz - Math.sin(thetaRad) * fz),
     )
-    house(ctx, `house-${index}`, index, h, new Vector3(h.x, 0, h.z), along, toPath, h.lit, h.chimney)
+    ;(h.type === 'cottage' ? cottage : house)(ctx, `house-${index}`, index, h, new Vector3(h.x, 0, h.z), along, toPath, h.lit, h.chimney)
   })
   ctx.report.church = church(ctx)
   const trees = buildStreetTrees(painting, STREET_TREES)

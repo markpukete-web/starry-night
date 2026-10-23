@@ -24,7 +24,10 @@ export const STREET_SOURCES = {
   roofBlue: [1108, 1045, 1150, 1073],
   roofSienna: [705, 1046, 726, 1066],
   /** placeholder, roofSienna's rectangle, Task 2 replaces it */
-  thatch: [705, 1046, 726, 1066],
+  /** S1b task 2: the striped roof's left part (olive, brown and grey strokes down its slope), picked from four candidates
+   * rendered on the cottages at stop 3 (`scratch/street-s1b-2026-10-23/t2/thatch/sheet.png`): it read as old mossy
+   * thatch, where the dark stripe read as metal, the sienna roof as tile and the cypress as the cypress */
+  thatch: [972, 1186, 1020, 1226],
   field: [760, 1214, 935, 1262],
   /** pass 5: a lit window of the painting's left village (lemon-yellow horizontal dabs over dark specks), found by colour */
   windowLit: [777, 1086, 782, 1094],
@@ -66,7 +69,8 @@ export const SOURCE_STROKES: Record<StreetSourceName, { width: [number, number];
   roofStriped: { width: [0.15, 0.3], length: [0.6, 1.0], axis: [0, 1], blend: 0.75, cover: 6 },
   roofBlue: { width: [0.15, 0.3], length: [0.6, 1.0], axis: [0, 1], blend: 0.75, cover: 6 },
   roofSienna: { width: [0.15, 0.3], length: [0.6, 1.0], axis: [0, 1], blend: 0.75, cover: 6 },
-  thatch: { width: [0.15, 0.3], length: [0.6, 1.0], axis: [0, 1], blend: 0.75, cover: 6 },
+  // thatch: long thin strokes held to the slope, the reed's direction
+  thatch: { width: [0.08, 0.16], length: [0.8, 1.6], axis: [0, 1], blend: 0.9, cover: 6 },
   field: { width: [0.15, 0.25], length: [1.5, 6.0], axis: [1, 0], blend: 0, smoothing: 3 },
   // the window's dabs at 1:1 of the 3840 scan: about 0.3 of its height across, its width along
   windowLit: { width: [0.2, 0.35], length: [0.5, 1.0], axis: [1, 0], blend: 0.6, cover: 4 },
