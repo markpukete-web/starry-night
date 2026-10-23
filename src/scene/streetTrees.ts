@@ -128,7 +128,8 @@ export function buildStreetTrees(painting: ImageData2D, masses: readonly LandMas
     const between = (range: readonly [number, number]) => range[0] + (range[1] - range[0]) * rand()
     const pushStroke = (steps: Vector3[][], tint: Color) => {
       pushDrapedRibbon(strokes, steps, steps.map(() => tint))
-      const strokeSeed = rand()
+      // the ribbons' seed range (`cypressStrokes.ts`), which the stroke body hashes
+      const strokeSeed = rand() * 1000
       for (let i = 0; i < steps.length; i++) {
         for (let j = 0; j < steps[i].length; j++) {
           stroke.push(i / (steps.length - 1), j / (steps[i].length - 1))

@@ -5,7 +5,7 @@
  *   - walls: mean of wallA, wallB and plaster in _work-painting.png over STREET_SOURCES
  *   - roofs: mean of roofStriped, roofBlue and roofSienna over STREET_SOURCES
  *   - ground: mean of field over STREET_SOURCES
- *   - path: mean of field mixed 0.65 with 0.35 of PALETTE.hillsCrest in linear sRGB (PATH_LIFT)
+ *   - path: mean of field mixed toward PATH_LIFT.toward by PATH_LIFT.share in linear sRGB, the build's own lift
  *   - trees: mean of TREE_CURLS, the painting's curled tree the street's trees take every pigment from (pass 6)
  *   - windows: mean of STREET_SOURCES.windowLit, the painting's window dabs a lit window is painted in (pass 5)
  *   - fog: PALETTE.skyHorizon
@@ -17,7 +17,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { PALETTE } from '../src/scene/palette.ts'
-import { STREET_SOURCES } from '../src/scene/streetStrokes.ts'
+import { PATH_LIFT, STREET_SOURCES } from '../src/scene/streetStrokes.ts'
 import { TREE_CURLS } from '../src/scene/streetTrees.ts'
 import palette from '../public/reference/palette.json' with { type: 'json' }
 import { decodePNG } from './lib/png.ts'
@@ -192,9 +192,11 @@ const refRoofs = meanLab([
 const refGround = meanLab(rectLabs(workPainting, STREET_SOURCES.field))
 
 const pathLabs: Lab[] = []
-const crestR = parseInt(PALETTE.hillsCrest.slice(1, 3), 16)
-const crestG = parseInt(PALETTE.hillsCrest.slice(3, 5), 16)
-const crestB = parseInt(PALETTE.hillsCrest.slice(5, 7), 16)
+// the build's own lift (Fable R12: the share was hard-coded at 0.35 after pass 5 set 0.12)
+const crestR = parseInt(PATH_LIFT.toward.slice(1, 3), 16)
+const crestG = parseInt(PATH_LIFT.toward.slice(3, 5), 16)
+const crestB = parseInt(PATH_LIFT.toward.slice(5, 7), 16)
+const keep = 1 - PATH_LIFT.share
 const linCrestR = linear(crestR), linCrestG = linear(crestG), linCrestB = linear(crestB)
 const [fx0, fy0, fx1, fy1] = STREET_SOURCES.field
 for (let y = fy0; y < fy1; y++) {
@@ -202,9 +204,9 @@ for (let y = fy0; y < fy1; y++) {
     const i = (y * workPainting.width + x) * 4
     pathLabs.push(
       linToLab(
-        0.65 * linear(workPainting.rgba[i]) + 0.35 * linCrestR,
-        0.65 * linear(workPainting.rgba[i + 1]) + 0.35 * linCrestG,
-        0.65 * linear(workPainting.rgba[i + 2]) + 0.35 * linCrestB,
+        keep * linear(workPainting.rgba[i]) + PATH_LIFT.share * linCrestR,
+        keep * linear(workPainting.rgba[i + 1]) + PATH_LIFT.share * linCrestG,
+        keep * linear(workPainting.rgba[i + 2]) + PATH_LIFT.share * linCrestB,
       ),
     )
   }
