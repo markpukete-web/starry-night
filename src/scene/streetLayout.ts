@@ -17,6 +17,8 @@ export const STREET = {
   fov: { landscape: 50, portrait: 75 },
   originA: [0, 0, 5.0] as const,
   wallRef: 0.2,
+  /** a house's front stands this far from the path's centreline (pass 1: 0.1 read as an alley) */
+  frontSetback: 0.2,
   forward: [-0.1041, 0, -0.9946] as const,
 } as const
 
@@ -99,8 +101,8 @@ export const STREET_HOUSES: readonly StreetHouse[] = HOUSE_SPECS.map((spec, i) =
   const [px, , pz] = pathPoint(spec.at)
   const [tx, , tz] = pathTangent(spec.at)
   const [nx, , nz] = [-tz, 0, tx]
-  const cx = px + nx * (spec.side * (0.1 + proto.d / 2))
-  const cz = pz + nz * (spec.side * (0.1 + proto.d / 2))
+  const cx = px + nx * (spec.side * (STREET.frontSetback + proto.d / 2))
+  const cz = pz + nz * (spec.side * (STREET.frontSetback + proto.d / 2))
   const yaw = Math.atan2(tz, tx)
   return {
     ...proto,
@@ -148,7 +150,8 @@ export const STREET_CHURCH = {
 const TREE_SPECS = [
   { id: 'olive-church', t: 0.35, side: -1 as const, dist: 0.55 },
   { id: 'olive-right', t: 0.6, side: 1 as const, dist: 0.55 },
-  { id: 'orchard-lower', t: 1.0, side: 1 as const, dist: 0.45 },
+  // pass 2: 0.45 stood the tree's dome against the camera at station 4
+  { id: 'orchard-lower', t: 1.0, side: 1 as const, dist: 0.7 },
 ] as const
 
 export const STREET_TREES: readonly LandMass[] = TREE_SPECS.map(spec => {

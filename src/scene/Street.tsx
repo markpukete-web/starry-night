@@ -3,7 +3,7 @@ import { useThree } from '@react-three/fiber'
 import { BufferAttribute, BufferGeometry, DoubleSide, MeshBasicMaterial, type PerspectiveCamera } from 'three'
 import { concatInjections, injectAlive, type AliveInjection } from './aliveMaterial.ts'
 import type { BrushArrays } from './brushForms.ts'
-import { CYPRESS_STROKE_BODY, strokeGlsl, strokeGlslWith } from './cypressStrokeShader.ts'
+import { CYPRESS_STROKE_BODY, strokeGlslWith } from './cypressStrokeShader.ts'
 import type { BakedMass } from './landDomes.ts'
 import { buildFlatPanel, buildStreet, FLAT_VIEW, type StreetBuild, type StreetCounts } from './streetGeometry.ts'
 import { FOG, fogInjection } from './streetFog.ts'
@@ -112,7 +112,8 @@ export default function Street() {
     return {
       solid: material('street-solid', null, fog(), false),
       strokes: material('street-strokes', strokeGlslWith(CYPRESS_STROKE_BODY), fog(), true),
-      trees: material('street-trees', strokeGlsl, fog(), true),
+      // pass 1: the land's body broke the curls into combs at walking distance; the cypress's (E4) holds them
+      trees: material('street-trees', strokeGlslWith(CYPRESS_STROKE_BODY), fog(), true),
     }
   }, [flags.flat])
   useEffect(() => () => { for (const m of Object.values(materials)) m.dispose() }, [materials])

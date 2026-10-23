@@ -4,6 +4,7 @@ import { CYPRESS_RIBBON_CONFIG, EVERY_TEXEL, ribbonColumns, traceCypressRibbons,
 import { massConfig, massCount } from './landDomes.ts'
 import { LAND_MAP } from './landMapping.ts'
 import { GROUND_TEXEL } from './landStrokes.ts'
+import { PALETTE } from './palette.ts'
 import type { ImageData2D } from './useImageData.ts'
 
 /**
@@ -47,16 +48,20 @@ export type StreetFace = {
 /**
  * Task 1's measurements (scratch/street-s1-2026-10-23/t1/): full stroke widths and lengths as fractions of the
  * reference height, and the axis the strokes lean to in face coordinates (+y up the face), with the blend toward it
- * (0 keeps the field's own direction). The lanes inside a stroke are the stroke body's (E4), not these.
+ * (0 keeps the field's own direction). The lanes inside a stroke are the stroke body's (E4), not these. Pass 1 (3D):
+ * the blend 0.5 → 0.75 (the near walls carried big curled swooshes; the walls' cover 3 → 3.5 to close the gaps
+ * the straighter strokes leave), the roofs' cover 3 → 6 (E4's body draws a stroke
+ * narrower than its strip, and the roof read sparse), the ground's colour smoothed over ±3 samples (the path broke into
+ * blocks close to the camera).
  */
-export const SOURCE_STROKES: Record<StreetSourceName, { width: [number, number]; length: [number, number]; axis: [number, number]; blend: number }> = {
-  wallA: { width: [0.12, 0.2], length: [0.6, 2.0], axis: [1, 0], blend: 0.5 },
-  wallB: { width: [0.12, 0.2], length: [0.6, 2.0], axis: [1, 0], blend: 0.5 },
-  plaster: { width: [0.1, 0.15], length: [0.5, 1.0], axis: [0, 1], blend: 0.5 },
-  roofStriped: { width: [0.15, 0.3], length: [0.6, 1.0], axis: [0, 1], blend: 0.5 },
-  roofBlue: { width: [0.15, 0.3], length: [0.6, 1.0], axis: [0, 1], blend: 0.5 },
-  roofSienna: { width: [0.15, 0.3], length: [0.6, 1.0], axis: [0, 1], blend: 0.5 },
-  field: { width: [0.15, 0.25], length: [1.5, 6.0], axis: [1, 0], blend: 0 },
+export const SOURCE_STROKES: Record<StreetSourceName, { width: [number, number]; length: [number, number]; axis: [number, number]; blend: number; cover?: number; smoothing?: number }> = {
+  wallA: { width: [0.12, 0.2], length: [0.6, 2.0], axis: [1, 0], blend: 0.75, cover: 3.5 },
+  wallB: { width: [0.12, 0.2], length: [0.6, 2.0], axis: [1, 0], blend: 0.75, cover: 3.5 },
+  plaster: { width: [0.1, 0.15], length: [0.5, 1.0], axis: [0, 1], blend: 0.75, cover: 3.5 },
+  roofStriped: { width: [0.15, 0.3], length: [0.6, 1.0], axis: [0, 1], blend: 0.75, cover: 6 },
+  roofBlue: { width: [0.15, 0.3], length: [0.6, 1.0], axis: [0, 1], blend: 0.75, cover: 6 },
+  roofSienna: { width: [0.15, 0.3], length: [0.6, 1.0], axis: [0, 1], blend: 0.75, cover: 6 },
+  field: { width: [0.15, 0.25], length: [1.5, 6.0], axis: [1, 0], blend: 0, smoothing: 3 },
 }
 
 /** the outlines' full width as a fraction of the wall (task 1: 0.12–0.18; the painting's are thick) */
@@ -239,7 +244,7 @@ export function faceConfig(face: StreetFace, count?: number, rows = 64): Cypress
   const maxLength = (scale.length[1] * face.refHeight) / height
   const area = 2 * ((minHalfWidth + maxHalfWidth) / 2) * Math.min(1, Math.sqrt(minLength * maxLength))
   // a triangle keeps the quad's count: the clip takes the strokes past its sloped sides
-  const auto = Math.round(Math.min(800, Math.max(16, COVER / area)))
+  const auto = Math.round(Math.min(800, Math.max(16, (scale.cover ?? COVER) / area)))
   return {
     ...CYPRESS_RIBBON_CONFIG,
     frontCount: count ?? auto,
@@ -256,7 +261,7 @@ export function faceConfig(face: StreetFace, count?: number, rows = 64): Cypress
     overshootSteps: 1,
     taper: TAPER,
     reliefSpread: 0.035,
-    colourSmoothing: 1,
+    colourSmoothing: scale.smoothing ?? 1,
     perSampleColours: true,
     heading: 'continuous',
   }
@@ -264,35 +269,16 @@ export function faceConfig(face: StreetFace, count?: number, rows = 64): Cypress
 
 export type FaceStrokes = { arrays: BrushArrays; stroke: number[]; seed: number[]; ribbons: number }
 
-const pathTexels = new WeakMap<ImageData2D, number>()
-
-/** The luminance at the field's 70th percentile: the path takes the field's paler ground texels. */
-function pathThreshold(painting: ImageData2D): number {
-  const cached = pathTexels.get(painting)
-  if (cached !== undefined) return cached
-  const [x0, y0, x1, y1] = STREET_SOURCES.field
-  const sx = painting.width / 1600
-  const sy = painting.height / 1267
-  const values: number[] = []
-  for (let y = Math.floor(y0 * sy); y < Math.ceil(y1 * sy); y++) {
-    for (let x = Math.floor(x0 * sx); x < Math.ceil(x1 * sx); x++) {
-      const i = (y * painting.width + x) * 4
-      const [r, g, b] = [painting.data[i], painting.data[i + 1], painting.data[i + 2]]
-      if (GROUND_TEXEL(r, g, b)) values.push(0.299 * r + 0.587 * g + 0.114 * b)
-    }
-  }
-  values.sort((a, b) => a - b)
-  const threshold = values.length ? values[Math.floor(values.length * 0.7)] : 0
-  pathTexels.set(painting, threshold)
-  return threshold
-}
+/**
+ * The path: the field's own ground texels lifted toward the hills' moonlit crest. Pass 2: a filter to the field's paler
+ * 30% (the first build) left most samples to copy their nearest accepted neighbour, and the runs of one colour read as
+ * blocks close to the camera.
+ */
+export const PATH_LIFT = { toward: PALETTE.hillsCrest, share: 0.35 }
 
 function acceptFor(face: StreetFace, painting: ImageData2D): TexelAccept {
-  if (face.kind === 'ground') return GROUND_TEXEL
-  if (face.kind === 'path') {
-    const threshold = pathThreshold(painting)
-    return (r, g, b) => GROUND_TEXEL(r, g, b) && 0.299 * r + 0.587 * g + 0.114 * b >= threshold
-  }
+  void painting
+  if (face.kind === 'ground' || face.kind === 'path') return GROUND_TEXEL
   return EVERY_TEXEL
 }
 
@@ -338,6 +324,7 @@ export function traceFace(face: StreetFace, flow: ImageData2D, painting: ImageDa
   const stroke: number[] = []
   const seed: number[] = []
   const colour = new Color()
+  const pathTone = new Color(PATH_LIFT.toward)
   let emitted = 0
   const point = (px: number, py: number) =>
     face.origin.clone().addScaledVector(face.u, px).addScaledVector(face.v, 1 - py).addScaledVector(face.normal, STROKE_LIFT)
@@ -354,7 +341,11 @@ export function traceFace(face: StreetFace, flow: ImageData2D, painting: ImageDa
       while (end + 1 < columns.length && keep[end + 1]) end++
       if (end - k + 1 >= 3) {
         const steps = columns.slice(k, end + 1).map((step) => step.map(([px, py]) => point(px, py)))
-        const colours = ribbon.colours.slice(k, end + 1).map(([r, g, b]) => colour.setRGB(r, g, b, SRGBColorSpace).multiplyScalar(ribbon.relief * shade).clone())
+        const colours = ribbon.colours.slice(k, end + 1).map(([r, g, b]) => {
+          colour.setRGB(r, g, b, SRGBColorSpace)
+          if (face.kind === 'path') colour.lerp(pathTone, PATH_LIFT.share)
+          return colour.multiplyScalar(ribbon.relief * shade).clone()
+        })
         pushDrapedRibbon(arrays, steps, colours)
         for (let s = 0; s < steps.length; s++) {
           for (let j = 0; j < COLUMNS; j++) {

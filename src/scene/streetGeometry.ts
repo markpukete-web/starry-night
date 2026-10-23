@@ -36,8 +36,10 @@ export type StreetBuild = {
 }
 
 const INK = new Color(PALETTE.ground)
-const WINDOW_LIT = new Color(PALETTE.windowOchre).multiplyScalar(1.6)
-const WINDOW_DARK = new Color(PALETTE.ground).lerp(new Color(PALETTE.house), 0.35)
+// pass 2: ×1.6 and 0.16 × 0.26 of the wall read as flat yellow slabs
+const WINDOW_LIT = new Color(PALETTE.windowOchre).multiplyScalar(1.25)
+// pass 1: 0.35 of the house blue read as flat blue doors
+const WINDOW_DARK = new Color(PALETTE.ground).lerp(new Color(PALETTE.house), 0.12)
 /** the roofs overhang the walls by this much along both axes */
 const OVERHANG = 0.015
 /** the door's and the windows' frames: a thin ink, a fraction of the wall's height */
@@ -183,7 +185,7 @@ function house(ctx: Context, owner: string, index: number, b: Building, centre: 
   const front = wallFaces[0]
   opening(ctx, front, 0.5, 0.3, 0.2, 0.6, false, seed + 11)
   ctx.report.windows.push({ owner, lit: false })
-  opening(ctx, front, index % 2 ? 0.2 : 0.8, 0.62, 0.16, 0.26, lit, seed + 13)
+  opening(ctx, front, index % 2 ? 0.2 : 0.8, 0.62, 0.12, 0.2, lit, seed + 13)
   ctx.report.windows.push({ owner, lit })
   // a chimney on every other house, a small dark box through the roof
   if (index % 2 === 0) {
