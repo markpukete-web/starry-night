@@ -96,3 +96,23 @@ What transfers to the street: houses as modelled volumes, outlines on edges and 
 close the end of the street, and lights along the path to lead the walk. What does not: his generic surface texture
 (our strokes come from the painting's flow and colour), his many bright windows (the palette gate), and his separate
 outlined peaks (the painting's range rolls).
+
+## The village's layout, studied after slice 1's gate (2026-10-23, evening)
+
+Mark judged slice 1's street "flat and dull", then "the house feels like a cardboard", and asked to study the layout of
+Simon's village for a better design. The only source is the 112 s video (both posts' links resolve to the videos, no
+live site). Frames every 2 s and full-resolution crops at 38, 46, 92, 100, 104, 108 and 110 s:
+`scratch/simon-village-2026-10-23/` (gitignored). Study only.
+
+- **The camera is always above the village**, on a hillside by the cypress, looking down about 25–40°. Roofs are the
+  most-seen surface and catch the moon; walls are dark.
+- **Houses are scattered over rolling ground**, each at its own angle, in loose clusters round the church. Meadow of
+  dark flake strokes between them, with olives, cypress and poplar cones, bushes.
+- **Paths are pale strips that wind and branch**, following the ground; the church sits where they meet.
+- **Houses vary**: cottage to two storeys, roofs with thickness and overhang, dark blue or ochre-brown roofs, one to
+  three warm windows, some shutters and chimneys.
+- **Three layers of depth**: foreground cypress, olive and meadow (fireflies in it), the village, outlined hills fading
+  into fog.
+
+Why slice 1's street failed: it built the one view Simon never shows, eye level in a corridor between two straight
+rows of same-facing boxes on flat ground, a view of walls in steep perspective, where flat cladding reads as card.
