@@ -17,8 +17,9 @@ export function readStreetFlags(search: string): StreetFlags {
   const ids = params.get('ids') === '1'
   const rawFail = params.get('streetFail') ?? params.get('fail')
   const fail = rawFail === 'painting' || rawFail === 'flow' || rawFail === 'masses' ? rawFail : null
-  const anchor = (params.get('skyAnchor') ?? params.get('anchor')) === 'B' ? 'B' : 'A'
-  const turn = (params.get('skyTurn') ?? params.get('turn')) === 'world' ? 'world' : 'lock'
+  // G5 (2026-10-23): the sky follows the camera (B) and holds the painting's arc in the world; A and lock stay as dev params
+  const anchor = (params.get('skyAnchor') ?? params.get('anchor')) === 'A' ? 'A' : 'B'
+  const turn = (params.get('skyTurn') ?? params.get('turn')) === 'lock' ? 'lock' : 'world'
 
   return {
     street,

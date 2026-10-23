@@ -17,8 +17,8 @@ test('flags', () => {
   assert.equal(def.flat, false)
   assert.equal(def.ids, false)
   assert.equal(def.fail, null)
-  assert.equal(def.anchor, 'A')
-  assert.equal(def.turn, 'lock')
+  assert.equal(def.anchor, 'B')
+  assert.equal(def.turn, 'world')
 
   // street=0 gives street: false
   assert.equal(readStreetFlags('?street=0').street, false)
@@ -33,8 +33,8 @@ test('flags', () => {
   assert.equal(readStreetFlags('?street=1&station=2').station, 2)
 
   // anchors and turns
-  assert.equal(readStreetFlags('?street=1&skyAnchor=B').anchor, 'B')
-  assert.equal(readStreetFlags('?street=1&skyTurn=world').turn, 'world')
+  assert.equal(readStreetFlags('?street=1&skyAnchor=A').anchor, 'A')
+  assert.equal(readStreetFlags('?street=1&skyTurn=lock').turn, 'lock')
 })
 
 test('readiness', () => {

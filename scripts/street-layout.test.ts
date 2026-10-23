@@ -109,6 +109,8 @@ test('stations stay inside the painted arc', () => {
       // Pitch
       const pitchDeg = (Math.atan2(dy, horiz) * 180) / Math.PI
       assert.ok(pitchDeg >= -20 && pitchDeg <= 40, `station ${i} portrait=${portrait} pitch ${pitchDeg} deg within -20 to +40 deg`)
+      // G5 (the world-fixed sky): the frame's top edge within the painted arc's +52°, with a 2° margin
+      assert.ok(pitchDeg + pose.fov / 2 <= 50, `station ${i} portrait=${portrait}: tilt ${pitchDeg.toFixed(1)}° + half the fov ${pose.fov / 2}° within 50°`)
     }
   }
 })

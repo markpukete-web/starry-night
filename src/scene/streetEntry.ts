@@ -11,12 +11,14 @@ export function isStreetMode(search: string): boolean {
 /**
  * The street's sky anchor (S1 task 6), undefined outside street mode so the diorama's sky is today's. `skyAnchor`: A
  * keeps the dome at the origin (the street placed inside it), B follows the camera. `skyTurn`: lock turns the sky with
- * the camera, world fixes the painting's arc in the world.
+ * the camera, world fixes the painting's arc in the world. G5 chose B and world from the 16 frames: the only pair that
+ * neither grows as the camera walks nor shows an unpainted band once the stations' tilt is capped.
  */
 export function streetSkyAnchor(search: string): SkyAnchor | undefined {
   if (!isStreetMode(search)) return undefined
   const params = new URLSearchParams(search)
-  return { follow: params.get('skyAnchor') === 'B', worldFixed: params.get('skyTurn') === 'world' }
+  // G5: B (follow) and world by default, as `readStreetFlags` reads them
+  return { follow: params.get('skyAnchor') !== 'A', worldFixed: params.get('skyTurn') !== 'lock' }
 }
 
 export function touchEnabled({ touch, reduced, arriving, street }: { touch: boolean; reduced: boolean; arriving: boolean; street: boolean }): boolean {

@@ -202,7 +202,9 @@ export function stationPose(
   } else {
     const doorX = churchX - endTx * (VILLAGE_CHURCH.nave.d / 2)
     const doorZ = churchZ - endTz * (VILLAGE_CHURCH.nave.d / 2)
-    target = [doorX, 0.25, doorZ]
+    // G5: the top of the frame stays inside the painted arc's +52° (tilt + half the vertical fov ≤ 50°): at 0.25 the
+    // tilt of 26° showed an unpainted band in every sky method; 0.13 tilts 10°
+    target = [doorX, 0.13, doorZ]
   }
 
   return {
