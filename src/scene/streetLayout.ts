@@ -204,7 +204,9 @@ export function stationPose(
     const doorX = churchX - endTx * (VILLAGE_CHURCH.nave.d / 2)
     const doorZ = churchZ - endTz * (VILLAGE_CHURCH.nave.d / 2)
     // G5: the top of the frame stays inside the painted arc's +52° (tilt + half the vertical fov ≤ 50°): at 0.25 the
-    // tilt of 26° showed an unpainted band in every sky method; 0.13 tilts 10°
+    // tilt of 26° showed an unpainted band in every sky method; 0.13 tilts 10°. The camera stands 0.223 from the
+    // nave's front wall, so the frame holds the door and the window, not the gable (Fable R1): the gable's peak needs
+    // about 0.5 with the door in frame too. Whether the walk ends on the door or the gable is Mark's call at the gate.
     target = [doorX, 0.13, doorZ]
   }
 

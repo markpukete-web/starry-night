@@ -1,6 +1,6 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei'
-import { lazy, Suspense, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react'
+import { Component, lazy, Suspense, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react'
 import { Diorama } from './Diorama'
 import { PaintingFlowSky3D, type SkyStyle } from './PaintingFlowSky3D'
 import type { AliveTuning } from './skyAlive'
@@ -18,6 +18,23 @@ import {
 } from './dioramaContract'
 
 const Street = lazy(() => import('./Street'))
+
+/**
+ * A street chunk that fails to load leaves the sky alone, settled, as a failed asset does (`streetReadiness`), rather
+ * than unmounting the page through the canvas (Fable R11).
+ */
+class StreetBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false }
+  static getDerivedStateFromError() {
+    return { failed: true }
+  }
+  componentDidCatch() {
+    ;(window as Window & { __streetReady?: boolean }).__streetReady = true
+  }
+  render() {
+    return this.state.failed ? null : this.props.children
+  }
+}
 
 type Props = {
   clean?: boolean
@@ -291,7 +308,9 @@ function Scene({
       <Suspense fallback={null}>
         {streetMode ? (
           // the street places the camera at its station itself, in its own chunk (the main bundle carries no layout)
-          <Street />
+          <StreetBoundary>
+            <Street />
+          </StreetBoundary>
         ) : (
           debug !== 'flow' && (
             <Diorama

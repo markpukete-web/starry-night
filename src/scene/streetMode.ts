@@ -15,11 +15,11 @@ export function readStreetFlags(search: string): StreetFlags {
   const station = (isNaN(rawStation) ? 0 : Math.max(0, Math.min(4, rawStation))) as 0 | 1 | 2 | 3 | 4
   const flat = params.get('flat') === '1'
   const ids = params.get('ids') === '1'
-  const rawFail = params.get('streetFail') ?? params.get('fail')
+  const rawFail = params.get('streetFail')
   const fail = rawFail === 'painting' || rawFail === 'flow' || rawFail === 'masses' ? rawFail : null
   // G5 (2026-10-23): the sky follows the camera (B) and holds the painting's arc in the world; A and lock stay as dev params
-  const anchor = (params.get('skyAnchor') ?? params.get('anchor')) === 'A' ? 'A' : 'B'
-  const turn = (params.get('skyTurn') ?? params.get('turn')) === 'lock' ? 'lock' : 'world'
+  const anchor = params.get('skyAnchor') === 'A' ? 'A' : 'B'
+  const turn = params.get('skyTurn') === 'lock' ? 'lock' : 'world'
 
   return {
     street,

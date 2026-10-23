@@ -54,20 +54,17 @@ test('every object lies inside the dome under method A', () => {
   const [ox, oy, oz] = STREET.originA
 
   // Houses
+  // the houses' own placement, as `houses never block the path` reads it (Fable R5: a stale setback was recomputed here)
   for (const house of STREET_HOUSES) {
     const at = house.at
-    const [px, , pz] = pathPoint(at)
-    const [tx, , tz] = pathTangent(at)
-    const [nx, , nz] = [-tz, 0, tx]
-    const cx = px + nx * (house.side * (0.1 + house.d / 2))
-    const cz = pz + nz * (house.side * (0.1 + house.d / 2))
+    const c = Math.cos(house.yaw), s = Math.sin(house.yaw)
 
     for (const sx of [-1, 1]) {
       for (const sz of [-1, 1]) {
         for (const y of [0, house.eave + house.pitch]) {
-          const cornerX = cx + tx * (sx * house.w / 2) + nx * (sz * house.d / 2) + ox
+          const cornerX = house.x + (sx * house.w / 2) * c - (sz * house.d / 2) * s + ox
           const cornerY = y + oy
-          const cornerZ = cz + tz * (sx * house.w / 2) + nz * (sz * house.d / 2) + oz
+          const cornerZ = house.z + (sx * house.w / 2) * s + (sz * house.d / 2) * c + oz
           const dist = Math.hypot(cornerX, cornerY, cornerZ)
           assert.ok(dist <= 5.8, `house at ${at} corner (${cornerX}, ${cornerY}, ${cornerZ}) dist ${dist} <= 5.8`)
         }

@@ -53,8 +53,9 @@ export type StreetFace = {
  * (0 keeps the field's own direction). The lanes inside a stroke are the stroke body's (E4), not these. Pass 1 (3D):
  * the blend 0.5 → 0.75 (the near walls carried big curled swooshes; the walls' cover 3 → 3.5 to close the gaps
  * the straighter strokes leave), the roofs' cover 3 → 6 (E4's body draws a stroke
- * narrower than its strip, and the roof read sparse), the ground's colour smoothed over ±3 samples (the path broke into
- * blocks close to the camera).
+ * narrower than its strip, and the roof read sparse), the ground's colour smoothed over ±3 samples. The smoothing was
+ * aimed at the path's blocks close to the camera, which turned out to be z-fighting, fixed by the lift levels
+ * (`734903f`); it stays for Mark's gate, the cap being spent.
  */
 export const SOURCE_STROKES: Record<StreetSourceName, { width: [number, number]; length: [number, number]; axis: [number, number]; blend: number; cover?: number; smoothing?: number }> = {
   wallA: { width: [0.12, 0.2], length: [0.6, 2.0], axis: [1, 0], blend: 0.75, cover: 3.5 },
@@ -331,7 +332,8 @@ export function traceFace(face: StreetFace, flow: ImageData2D, painting: ImageDa
   if (options.taper !== undefined) config.taper = options.taper
   const ribbons = traceCypressRibbons(crop, pigment ?? painting, rows, config.frontCount, face.seed, config, acceptFor(face, painting))
   const polygon = facePolygon(face, width, height)
-  const allowance = 0.5 * OUTLINE_FRACTION * face.refHeight + 1e-12
+  // half an outline's width past the edge, under the ink; the ground and the path draw no outline (Fable R8)
+  const allowance = (face.kind === 'ground' || face.kind === 'path' ? 0 : 0.5 * OUTLINE_FRACTION * face.refHeight) + 1e-12
   const shade = 1 + STREET_MOON_LIFT * moonShade(face.normal)
   const arrays = makeBrushArrays()
   const stroke: number[] = []

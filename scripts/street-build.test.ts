@@ -71,4 +71,6 @@ test('the church is the knot\'s: the belfry\'s width and the spire\'s height abo
   const floor = islandHeightAt(belfry.cx, belfry.cz) - belfry.floorDrop
   assert.ok(Math.abs(build.report.church.belfryWidth - belfry.width) < 1e-9)
   assert.ok(Math.abs(build.report.church.spireHeight - (spireTip.y - floor)) < 1e-9)
+  // the belfry's top above the street's ground, as the knot's stands above the island (Fable R4)
+  assert.ok(Math.abs(build.report.church.belfryHeight - (belfry.topY - floor)) < 1e-9)
 })

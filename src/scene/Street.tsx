@@ -35,8 +35,8 @@ function plainGeometry(a: BrushArrays, cls?: number[] | number): BufferGeometry 
 
 /**
  * The ground's and the path's body (pass 4): the cypress's (E4) without its gap discards, with soft lanes, the dry brush
- * only in the last 15% and half the fray. At walking distance E4's hard two-tone lanes and early dry brush cut the
- * path's strokes into rectangles across them, close to the camera.
+ * only in the last 15% and half the fray. It was aimed at the path's rectangles close to the camera, which turned out
+ * to be z-fighting, fixed by the lift levels (`734903f`); whether the ground returns to E4's body is Mark's call.
  */
 const STREET_GROUND_BODY: StrokeBody = { ...CYPRESS_STROKE_BODY, gaps: null, laneEdge: null, dryFrom: 0.85, fray: 0.08 }
 

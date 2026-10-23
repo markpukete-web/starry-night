@@ -16,14 +16,12 @@ export function skyTransform(
   cameraPosition: Vector3,
   homeInverse: Quaternion,
   anchor?: SkyAnchor,
+  /** written in place, so the frame loop allocates nothing (Fable R6): the sky's root itself */
+  out: { quaternion: Quaternion; position: Vector3 } = { quaternion: new Quaternion(), position: new Vector3() },
 ): { quaternion: Quaternion; position: Vector3 } {
-  const quaternion = anchor?.worldFixed
-    ? new Quaternion()
-    : cameraQuaternion.clone().multiply(homeInverse)
-
-  const position = anchor?.follow
-    ? cameraPosition.clone()
-    : new Vector3(0, 0, 0)
-
-  return { quaternion, position }
+  if (anchor?.worldFixed) out.quaternion.identity()
+  else out.quaternion.copy(cameraQuaternion).multiply(homeInverse)
+  if (anchor?.follow) out.position.copy(cameraPosition)
+  else out.position.set(0, 0, 0)
+  return out
 }

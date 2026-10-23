@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react'
-import { useFrame } from '@react-three/fiber'
+import { useFrame, useThree } from '@react-three/fiber'
 import { useTexture } from '@react-three/drei'
 import {
   AdditiveBlending,
@@ -1142,42 +1142,28 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
     /* eslint-enable react-hooks/immutability */
   }, [alive, gradientMaterial, mode, movingMaterial, ribbonMaterial, tuning, washMaterial])
 
-  /* eslint-disable react-hooks/immutability -- R3F render-loop writes: camera-locked sky rotation + time uniform */
-  useFrame(({ camera }, dt) => {
-    if (skyRoot.current) {
-      const transform = skyTransform(camera.quaternion, camera.position, homeInverse, anchor)
-      skyRoot.current.quaternion.copy(transform.quaternion)
-      skyRoot.current.position.copy(transform.position)
-      if (typeof window !== 'undefined') {
-        const w = window as Window & {
-          __skyTransform?: () => {
-            quaternion: [number, number, number, number] & { x: number; y: number; z: number; w: number }
-            position: [number, number, number] & { x: number; y: number; z: number }
-            camera: [number, number, number, number] & { x: number; y: number; z: number; w: number }
-          }
-        }
-        w.__skyTransform = () => {
-          const sq = skyRoot.current?.quaternion ?? transform.quaternion
-          const sp = skyRoot.current?.position ?? transform.position
-          const cq = camera.quaternion
-          const qArr = [sq.x, sq.y, sq.z, sq.w] as [number, number, number, number] & { x: number; y: number; z: number; w: number }
-          qArr.x = sq.x
-          qArr.y = sq.y
-          qArr.z = sq.z
-          qArr.w = sq.w
-          const pArr = [sp.x, sp.y, sp.z] as [number, number, number] & { x: number; y: number; z: number }
-          pArr.x = sp.x
-          pArr.y = sp.y
-          pArr.z = sp.z
-          const cArr = [cq.x, cq.y, cq.z, cq.w] as [number, number, number, number] & { x: number; y: number; z: number; w: number }
-          cArr.x = cq.x
-          cArr.y = cq.y
-          cArr.z = cq.z
-          cArr.w = cq.w
-          return { quaternion: qArr, position: pArr, camera: cArr }
-        }
+  // the capture seam (`check-sky-transform.mjs`), installed once and read at call time (Fable R6: it was re-created
+  // every frame)
+  const seamCamera = useThree((state) => state.camera)
+  useEffect(() => {
+    const w = window as Window & { __skyTransform?: () => unknown }
+    w.__skyTransform = () => {
+      const root = skyRoot.current
+      if (!root) return undefined
+      const { quaternion: sq, position: sp } = root
+      const cq = seamCamera.quaternion
+      return {
+        quaternion: Object.assign([sq.x, sq.y, sq.z, sq.w], { x: sq.x, y: sq.y, z: sq.z, w: sq.w }),
+        position: Object.assign([sp.x, sp.y, sp.z], { x: sp.x, y: sp.y, z: sp.z }),
+        camera: Object.assign([cq.x, cq.y, cq.z, cq.w], { x: cq.x, y: cq.y, z: cq.z, w: cq.w }),
       }
     }
+    return () => { delete w.__skyTransform }
+  }, [seamCamera])
+
+  /* eslint-disable react-hooks/immutability -- R3F render-loop writes: camera-locked sky rotation + time uniform */
+  useFrame(({ camera }, dt) => {
+    if (skyRoot.current) skyTransform(camera.quaternion, camera.position, homeInverse, anchor, skyRoot.current)
     if (paused) {
       // the light material is rebuilt at t = 0 on a pause; the halos' still is the t = 0 state too. B: the
       // store is cleared, so no surge with a pre-pause t0 lies in wait for the clock to catch up (review F7)

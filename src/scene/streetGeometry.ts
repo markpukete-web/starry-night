@@ -35,7 +35,7 @@ export type StreetBuild = {
     faces: { owner: string; name: string; ribbons: number }[]
     outlines: { owner: string; edges: number }[]
     windows: { owner: string; lit: boolean }[]
-    church: { belfryWidth: number; spireHeight: number }
+    church: { belfryWidth: number; belfryHeight: number; spireHeight: number }
   }
 }
 
@@ -162,7 +162,7 @@ function opening(ctx: Context, face: StreetFace, cu: number, cv: number, w: numb
  * A house: a box to the eave and a pitched roof whose ridge runs along its depth, so its front gable and door face
  * the path; `along` is its width's direction, `toPath` its depth's, toward the street.
  */
-function house(ctx: Context, owner: string, index: number, b: Building, centre: Vector3, along: Vector3, toPath: Vector3, lit: boolean): void {
+function house(ctx: Context, owner: string, index: number, b: Building, centre: Vector3, along: Vector3, toPath: Vector3, lit: boolean, chimney: boolean): void {
   const c = (x: number, z: number, y: number) => centre.clone().addScaledVector(along, x).addScaledVector(toPath, z).setY(y)
   const { w, d, eave, pitch } = b
   const wall = wallSource(b.wall, index)
@@ -211,8 +211,8 @@ function house(ctx: Context, owner: string, index: number, b: Building, centre: 
   ctx.report.windows.push({ owner, lit: false })
   opening(ctx, front, index % 2 ? 0.2 : 0.8, 0.62, 0.12, 0.2, lit, seed + 13)
   ctx.report.windows.push({ owner, lit })
-  // a chimney on every other house, a small dark box through the roof
-  if (index % 2 === 0) {
+  // a chimney, a small dark box through the roof
+  if (chimney) {
     const foot = c(w * 0.18, -d * 0.22, eave + pitch * 0.4)
     const size = 0.035
     const box = [[0, 0], [1, 0], [1, 1], [0, 1]].map(([x, z]) => foot.clone().addScaledVector(along, x * size).addScaledVector(toPath, z * size))
@@ -227,7 +227,8 @@ function church(ctx: Context): StreetBuild['report']['church'] {
   const { nave, belfry, spireTip } = STREET_CHURCH
   const along = new Vector3(Math.cos(nave.yaw), 0, Math.sin(nave.yaw))
   const toPath = new Vector3(-Math.sin(nave.yaw), 0, Math.cos(nave.yaw))
-  house(ctx, 'church', 100, nave, new Vector3(nave.x, 0, nave.z), along, toPath, false)
+  // the painting's church has no chimney (Fable R9)
+  house(ctx, 'church', 100, nave, new Vector3(nave.x, 0, nave.z), along, toPath, false, false)
   // heights above the street's ground, as the knot's stand above the island under the belfry
   const ground = islandHeightAt(VILLAGE_CHURCH.belfry.cx, VILLAGE_CHURCH.belfry.cz)
   const floor = -belfry.floorDrop
@@ -257,7 +258,7 @@ function church(ctx: Context): StreetBuild['report']['church'] {
     edges.push([at, bt, face.normal], [a, at, face.normal], [at, tip, face.normal])
   }
   ink(ctx, 'belfry', VILLAGE_CHURCH.nave.eave, edges, 0x6300)
-  return { belfryWidth: belfry.width, spireHeight: tipY - floor }
+  return { belfryWidth: belfry.width, belfryHeight: top - floor, spireHeight: tipY - floor }
 }
 
 /** The ground in tiles about 0.6 square either side of the path, strokes across it; the path its paler strip along. */
@@ -325,7 +326,7 @@ export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | nu
     ground: { arrays: makeBrushArrays(), stroke: [], seed: [], cls: [] },
     outlines: { arrays: makeBrushArrays(), stroke: [], seed: [], cls: [] },
     windows: Object.assign(makeBrushArrays(), { cls: [] }),
-    report: { faces: [], outlines: [], windows: [], church: { belfryWidth: 0, spireHeight: 0 } },
+    report: { faces: [], outlines: [], windows: [], church: { belfryWidth: 0, belfryHeight: 0, spireHeight: 0 } },
     ribbons: 0,
   }
   ground(ctx)
@@ -335,7 +336,8 @@ export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | nu
     const normal = new Vector3(-tz, 0, tx)
     const toPath = normal.multiplyScalar(-h.side)
     // at most one warm window a house, on a third of them
-    house(ctx, `house-${index}`, index, h, new Vector3(h.x, 0, h.z), along, toPath, index % 3 === 0)
+    // a chimney on every other house
+    house(ctx, `house-${index}`, index, h, new Vector3(h.x, 0, h.z), along, toPath, index % 3 === 0, index % 2 === 0)
   })
   ctx.report.church = church(ctx)
   const trees = buildStreetTrees(painting, STREET_TREES)
@@ -370,7 +372,7 @@ export function buildFlatPanel(painting: ImageData2D | null, flow: ImageData2D |
     ground: { arrays: makeBrushArrays(), stroke: [], seed: [], cls: [] },
     outlines: { arrays: makeBrushArrays(), stroke: [], seed: [], cls: [] },
     windows: Object.assign(makeBrushArrays(), { cls: [] }),
-    report: { faces: [], outlines: [], windows: [], church: { belfryWidth: 0, spireHeight: 0 } },
+    report: { faces: [], outlines: [], windows: [], church: { belfryWidth: 0, belfryHeight: 0, spireHeight: 0 } },
     ribbons: 0,
   }
   polygon(ctx.underpaint, [new Vector3(-0.3, -0.3, -0.05), new Vector3(1.9, -0.3, -0.05), new Vector3(1.9, 0.9, -0.05), new Vector3(-0.3, 0.9, -0.05)], new Color(0x111111), 255)
