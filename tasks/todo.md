@@ -1,6 +1,22 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-24 (late morning): Mark at S1b's gate, look pass 3 on the path built
+## Pickup — 2026-10-24 (end of session): S1b merged and live; slice 2 next
+
+Mark passed S1b's gate ("It does read like a village") and it is merged: PR #20, `b649060`. Codex found nothing at the
+head, CI passed, and production is deployed. The street is live behind
+`https://starrynight.markma.dev/?street=1&station=0` (stations 0 to 4). A plain visit is unchanged. The record:
+`tasks/2026-10-23-street-s1b.md`, Pickup.
+
+**Next: slice 2, Vincent and the walk** (the design `docs/superpowers/specs/2026-10-23-village-street-design.md`,
+"Slices", 1 to 2 sessions): the figure on the path, the camera behind him, the scroll wheel and arrow keys, the phone's
+automatic walk and its tap, the reduced-motion steps. The lane, its stations and the pale path are S1b's. Start with
+the plan, then the two plan reviews (Fable, and the Gemini worker for buildability), then the build.
+
+Carried open from S1b's gate (the record's Pickup has the evidence): the phone reading on a real device (open since S1),
+the near-black walls turned from the moon (ambient 0.4), the cottage door behind its thatch (C2), the sparse ground and
+the path's near slabs (the ground is slice 3's grass), and the village's craft (below, for after slice 3).
+
+## Pickup — 2026-10-24 (late morning): Mark at S1b's gate, superseded
 
 Mark on the live street: "It does read like a village", "keep the fog for now". On the path, after the Lead's sheet
 of Simon's: "Go with your recommendations". Look pass 3 (`1ca5fe3`): a pale lane, 0.12 wide, lift 0.5. Mark: "It has

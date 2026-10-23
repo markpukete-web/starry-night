@@ -2928,3 +2928,10 @@ reads as alive.
   band with straight sides. Inset the base, so the strokes draw the edge.
 - **A gate whose reference reads the build's own constant cannot judge that constant.** The path passed the colour
   gate at 0.12 and at 0.5. Its distance to the palette's hills (8.5 → 17.7) is the number that moved.
+- **Check a fix from every view that looks at it.** The Lead checked the square's inset at stop 4 on desktop, where the
+  lane's mouth is off frame. Fable's ID-pass row probe found the gap at stop 3 and on the phone at stop 4 (C8). A change
+  to a shared face needs the stops that face the change, on both viewports, before it is called done.
+- **Replace a section up to its own next heading, never up to a later named one.** The pickup rewrite cut from
+  "Pickup" to "Mark's gate" and took eleven sections with it, the same slip as the night before (`a89e353`). It was
+  caught before the commit by listing the headings. List the headings and read the diff's hunks before every commit of a
+  record.
