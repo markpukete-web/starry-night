@@ -24,6 +24,8 @@ export const STREET_SOURCES = {
   roofBlue: [1108, 1045, 1150, 1073],
   roofSienna: [705, 1046, 726, 1066],
   field: [760, 1214, 935, 1262],
+  /** pass 5: a lit window of the painting's left village (lemon-yellow horizontal dabs over dark specks), found by colour */
+  windowLit: [777, 1086, 782, 1094],
 } as const
 
 export type StreetSourceName = keyof typeof STREET_SOURCES
@@ -62,6 +64,8 @@ export const SOURCE_STROKES: Record<StreetSourceName, { width: [number, number];
   roofBlue: { width: [0.15, 0.3], length: [0.6, 1.0], axis: [0, 1], blend: 0.75, cover: 6 },
   roofSienna: { width: [0.15, 0.3], length: [0.6, 1.0], axis: [0, 1], blend: 0.75, cover: 6 },
   field: { width: [0.15, 0.25], length: [1.5, 6.0], axis: [1, 0], blend: 0, smoothing: 3 },
+  // the window's dabs at 1:1 of the 3840 scan: about 0.3 of its height across, its width along
+  windowLit: { width: [0.2, 0.35], length: [0.5, 1.0], axis: [1, 0], blend: 0.6, cover: 4 },
 }
 
 /** the outlines' full width as a fraction of the wall (task 1: 0.12–0.18; the painting's are thick) */
@@ -280,9 +284,10 @@ export type FaceStrokes = { arrays: BrushArrays; stroke: number[]; seed: number[
 /**
  * The path: the field's own ground texels lifted toward the hills' moonlit crest. Pass 2: a filter to the field's paler
  * 30% (the first build) left most samples to copy their nearest accepted neighbour, and the runs of one colour read as
- * blocks close to the camera.
+ * blocks close to the camera. Pass 5 (Mark: "go ahead with the extra pass"): the share 0.35 → 0.12, the path a pale
+ * river across the near frame where the painting's ground is dark blue-green.
  */
-export const PATH_LIFT = { toward: PALETTE.hillsCrest, share: 0.35 }
+export const PATH_LIFT = { toward: PALETTE.hillsCrest, share: 0.12 }
 
 function acceptFor(face: StreetFace, painting: ImageData2D): TexelAccept {
   void painting
@@ -314,7 +319,7 @@ export function sourceUnderpaint(painting: ImageData2D, source: StreetSourceName
  * steps go. Colours per sample from the source, lit by the moon's share on the face's normal. `options` are the
  * tests' seams: a fixed count, half-width and taper.
  */
-export function traceFace(face: StreetFace, flow: ImageData2D, painting: ImageData2D, options: { count?: number; fixedHalfWidth?: number; taper?: number } = {}): FaceStrokes {
+export function traceFace(face: StreetFace, flow: ImageData2D, painting: ImageData2D, options: { count?: number; fixedHalfWidth?: number; taper?: number; tint?: number } = {}): FaceStrokes {
   const width = face.u.length()
   const height = face.v.length()
   const { crop, rows, pigment } = faceCrop(flow, face, 64, painting)
@@ -353,7 +358,7 @@ export function traceFace(face: StreetFace, flow: ImageData2D, painting: ImageDa
         const colours = ribbon.colours.slice(k, end + 1).map(([r, g, b]) => {
           colour.setRGB(r, g, b, SRGBColorSpace)
           if (face.kind === 'path') colour.lerp(pathTone, PATH_LIFT.share)
-          return colour.multiplyScalar(ribbon.relief * shade).clone()
+          return colour.multiplyScalar(ribbon.relief * shade * (options.tint ?? 1)).clone()
         })
         pushDrapedRibbon(arrays, steps, colours)
         for (let s = 0; s < steps.length; s++) {

@@ -38,8 +38,8 @@ export type StreetBuild = {
 }
 
 const INK = new Color(PALETTE.ground)
-// pass 2: ×1.6 and 0.16 × 0.26 of the wall read as flat yellow slabs
-const WINDOW_LIT = new Color(PALETTE.windowOchre).multiplyScalar(1.25)
+/** pass 5: a door's and a dark window's strokes are their wall's, at this share of its value */
+const OPENING_DARK = 0.3
 // pass 1: 0.35 of the house blue read as flat blue doors
 const WINDOW_DARK = new Color(PALETTE.ground).lerp(new Color(PALETTE.house), 0.12)
 /** the roofs overhang the walls by this much along both axes */
@@ -132,7 +132,21 @@ function ink(ctx: Context, owner: string, refHeight: number, edges: [Vector3, Ve
 function opening(ctx: Context, face: StreetFace, cu: number, cv: number, w: number, h: number, lit: boolean, seed: number): void {
   const at = (s: number, t: number) => face.origin.clone().addScaledVector(face.u, s).addScaledVector(face.v, t).addScaledVector(face.normal, 0.0055)
   const quad = [at(cu - w / 2, cv - h / 2), at(cu + w / 2, cv - h / 2), at(cu + w / 2, cv + h / 2), at(cu - w / 2, cv + h / 2)]
-  polygon(ctx.windows, quad, lit ? WINDOW_LIT : WINDOW_DARK)
+  // pass 5: painted, not a flat card: a lit window in the painting's own window dabs, a door or a dark window in its
+  // wall's strokes darkened, each over a dark base and strokes sized to the opening
+  polygon(ctx.windows, quad, WINDOW_DARK)
+  const opening: StreetFace = {
+    ...face,
+    origin: quad[0],
+    u: face.u.clone().multiplyScalar(w),
+    v: face.v.clone().multiplyScalar(h),
+    shape: 'quad',
+    source: lit ? 'windowLit' : face.source,
+    refHeight: face.v.length() * h,
+    seed,
+    mirror: false,
+  }
+  append(ctx.strokes, traceFace(opening, ctx.flow, ctx.painting, { tint: lit ? 1 : OPENING_DARK }))
   const frame: StreetFace = { ...face, refHeight: face.v.length() * FRAME }
   append(ctx.outlines, outlineFace(frame, quad.map((p, i) => [p, quad[(i + 1) % 4]] as const), INK, seed))
 }
@@ -280,7 +294,8 @@ function ground(ctx: Context): void {
     }
   }
   // the path, raised a hair over the ground's strokes, in segments along its bend
-  const width = 0.12
+  // pass 5: 0.12 read as a pale river across the near frame
+  const width = 0.08
   const segments = 8
   for (let s = 0; s < segments; s++) {
     const t0 = -0.25 + (s / segments) * 1.4
