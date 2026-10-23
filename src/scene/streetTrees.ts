@@ -1,16 +1,16 @@
 import { Color, SRGBColorSpace, Vector3 } from 'three'
 import { mulberry32 } from './brush.ts'
 import { makeBrushArrays, MOON_DIR, pushDrapedRibbon, type BrushArrays } from './brushForms.ts'
-import { FOLIAGE_TEXEL, pushDome, underpaintColour, type LandTrees } from './landDomes.ts'
+import { pushDome, type LandTrees } from './landDomes.ts'
 import type { LandMass } from './landMasses.ts'
 import { PALETTE } from './palette.ts'
 import type { ImageData2D } from './useImageData.ts'
 
 /**
  * The street's trees (pass 6, the design's "trees take Simon's structure"): a dark twisting trunk with branches in the
- * houses' ink, carrying round clumps. Each clump is a sphere in the mass's underpaint under curled dabs that wrap
- * around it, in the painting's own foliage pigments from the mass's box: the moonward and outer dabs take the pale
- * ones, the inner and lower the dark. Sizes are fractions of the crown's radius R. The dabs' scale is the village
+ * houses' ink, carrying round clumps. Each clump is a sphere in the curls' darkest tenth under curled dabs that wrap
+ * around it, in the painting's own tree curls (`TREE_CURLS`): the moonward and outer dabs take the pale crests, the
+ * inner and lower the dark. Sizes are fractions of the crown's radius R. The dabs' scale is the village
  * trees' curls at 1:1 (task 1 on `orchard-lower`: arcs 15–25 px wide and 60–120 px long in a 240 px tall box, so
  * 0.5–1.0 R long and 0.12–0.2 R wide). The dabs run 0.4–0.8 R, so a curl stays on its clump. Each dab is a crescent
  * turned its own way, as the painting's curls are.
@@ -24,7 +24,7 @@ export const STREET_TREE = {
   clumps: 7,
   /** a clump's radius over the crown's, then × 0.85–1.15 */
   clump: 0.42,
-  dabs: 90,
+  dabs: 150,
   /** a dab's arc length and half-width, fractions of the crown's radius, and the sweep of its crescent (radians) */
   dabLength: [0.4, 0.8],
   dabHalfWidth: [0.06, 0.1],
@@ -32,7 +32,16 @@ export const STREET_TREE = {
   /** the trunk's radius at the ground and at the fork, a branch's at the fork and at its clump, fractions of R */
   trunk: [0.09, 0.06],
   branch: [0.035, 0.015],
+  /** ink strokes along the trunk, each ±0.5 rad round it */
+  barkStrokes: 4,
 } as const
+
+/**
+ * The painting's tree curls, in 1600 px coordinates: the middle of the curled tree right of the church, every texel a
+ * curl, pale cyan crests to blue-black. Pass 6: the masses' boxes hold walls, roofs, a field and a window, and the
+ * foliage filter that keeps those out dropped the pale crests too, so the crowns came out dark.
+ */
+export const TREE_CURLS = [1000, 995, 1072, 1039] as const
 
 const INK = new Color(PALETTE.ground)
 const STEPS = 9
@@ -41,33 +50,35 @@ const LIFT_LEVELS = 16
 
 type Pigment = [number, number, number]
 
-/** The mass's foliage texels in its box, darkest first (sRGB 0..1). */
-function pigments(painting: ImageData2D, mass: LandMass): Pigment[] {
+/** Every texel of `TREE_CURLS`, darkest first (sRGB 0..1). */
+function curlPigments(painting: ImageData2D): Pigment[] {
   const out: [number, Pigment][] = []
   const sx = painting.width / 1600
   const sy = painting.height / 1267
-  for (let y = Math.floor(mass.box[1] * sy); y < Math.ceil(mass.box[3] * sy); y++) {
-    for (let x = Math.floor(mass.box[0] * sx); x < Math.ceil(mass.box[2] * sx); x++) {
+  for (let y = Math.floor(TREE_CURLS[1] * sy); y < Math.ceil(TREE_CURLS[3] * sy); y++) {
+    for (let x = Math.floor(TREE_CURLS[0] * sx); x < Math.ceil(TREE_CURLS[2] * sx); x++) {
       const i = (y * painting.width + x) * 4
       const [r, g, b] = [painting.data[i], painting.data[i + 1], painting.data[i + 2]]
-      if (FOLIAGE_TEXEL(r, g, b)) out.push([0.299 * r + 0.587 * g + 0.114 * b, [r / 255, g / 255, b / 255]])
+      out.push([0.299 * r + 0.587 * g + 0.114 * b, [r / 255, g / 255, b / 255]])
     }
   }
-  out.sort((a, b) => a[0] - b[0])
-  return out.length ? out.map((o) => o[1]) : [[0.1, 0.15, 0.12]]
+  return out.sort((a, b) => a[0] - b[0]).map((o) => o[1])
+}
+
+/** The tube's frame at point i: two unit vectors across the path's tangent. */
+function tubeFrame(path: Vector3[], i: number): [Vector3, Vector3] {
+  const tangent = path[Math.min(i + 1, path.length - 1)].clone().sub(path[Math.max(i - 1, 0)]).normalize()
+  const side = new Vector3(0, 1, 0).cross(tangent)
+  if (side.lengthSq() < 1e-6) side.set(1, 0, 0)
+  side.normalize()
+  return [side, tangent.clone().cross(side).normalize()]
 }
 
 /** A tapering tube along a polyline, closed rings of `around` points, appended to the solid. */
 function pushTube(arr: BrushArrays, path: Vector3[], r0: number, r1: number, colour: Color, around = 6): void {
   const base = arr.positions.length / 3
-  const side = new Vector3()
-  const up = new Vector3()
   for (let i = 0; i < path.length; i++) {
-    const tangent = path[Math.min(i + 1, path.length - 1)].clone().sub(path[Math.max(i - 1, 0)]).normalize()
-    side.set(0, 1, 0).cross(tangent)
-    if (side.lengthSq() < 1e-6) side.set(1, 0, 0)
-    side.normalize()
-    up.copy(tangent).cross(side).normalize()
+    const [side, up] = tubeFrame(path, i)
     const r = r0 + (r1 - r0) * (i / (path.length - 1))
     for (let k = 0; k < around; k++) {
       const a = (k / around) * Math.PI * 2
@@ -107,12 +118,24 @@ export function buildStreetTrees(painting: ImageData2D, masses: readonly LandMas
   const counts: LandTrees['counts'] = {}
   const T = STREET_TREE
   const colour = new Color()
+  const palette = curlPigments(painting)
+  const dark = palette.slice(0, Math.max(1, Math.floor(palette.length / 10)))
+  const under = [0, 1, 2].map((c) => dark.reduce((sum, p) => sum + p[c], 0) / dark.length)
+  const mid = palette[Math.floor(palette.length / 2)]
 
   masses.forEach((mass, index) => {
     const rand = mulberry32(seed + index * 7919)
     const between = (range: readonly [number, number]) => range[0] + (range[1] - range[0]) * rand()
-    const palette = pigments(painting, mass)
-    const under = underpaintColour(painting, mass)
+    const pushStroke = (steps: Vector3[][], tint: Color) => {
+      pushDrapedRibbon(strokes, steps, steps.map(() => tint))
+      const strokeSeed = rand()
+      for (let i = 0; i < steps.length; i++) {
+        for (let j = 0; j < steps[i].length; j++) {
+          stroke.push(i / (steps.length - 1), j / (steps[i].length - 1))
+          seeds.push(strokeSeed)
+        }
+      }
+    }
     const R = Math.min(T.crown[1], Math.max(T.crown[0], mass.width / 2))
     const forkY = T.fork + T.forkPerR * R
 
@@ -130,6 +153,23 @@ export function buildStreetTrees(painting: ImageData2D, masses: readonly LandMas
       8,
     )
     pushTube(solid, trunk, T.trunk[0] * R, T.trunk[1] * R, INK)
+    // the bark: ink strokes along the trunk, the moon's side lifted toward the curls' middle tone
+    for (let k = 0; k < T.barkStrokes; k++) {
+      const a0 = (k / T.barkStrokes) * Math.PI * 2 + (rand() - 0.5) * 0.4
+      const steps = trunk.map((point, i) => {
+        const [side, up] = tubeFrame(trunk, i)
+        const r = (T.trunk[0] + (T.trunk[1] - T.trunk[0]) * (i / (trunk.length - 1))) * R * 1.12
+        return Array.from({ length: COLUMNS }, (_, j) => {
+          const a = a0 + 0.5 * (2 * (j / (COLUMNS - 1)) - 1)
+          const p = point.clone().addScaledVector(side, r * Math.cos(a)).addScaledVector(up, r * Math.sin(a))
+          return p.setY(Math.max(0, p.y))
+        })
+      })
+      const [side, up] = tubeFrame(trunk, trunk.length >> 1)
+      const facing = side.multiplyScalar(Math.cos(a0)).addScaledVector(up, Math.sin(a0))
+      const lit = new Color().setRGB(mid[0], mid[1], mid[2], SRGBColorSpace)
+      pushStroke(steps, INK.clone().lerp(lit, 0.5 * Math.max(0, facing.dot(MOON_DIR))).multiplyScalar(between([0.9, 1.1])))
+    }
 
     // the clumps: one on top, the rest in a ring about the crown's centre
     const crownCentre = fork.clone().setY(forkY + 0.5 * R)
@@ -192,17 +232,12 @@ export function buildStreetTrees(painting: ImageData2D, masses: readonly LandMas
           }))
         }
         // the tone: the moon's light and the crown's outside take the pale pigments, its inside the dark
-        const tone = Math.min(1, Math.max(0, 0.6 * Math.max(0, n.dot(MOON_DIR)) + 0.4 * Math.max(0, n.dot(outward)) + (rand() - 0.5) * 0.3))
-        const pigment = palette[Math.floor(Math.pow(tone, 1.3) * (palette.length - 1))]
+        // (the light term averages about 0.25 over a sphere, so doubled the crown's mean pigment sits near the curls'
+        // median; pass 6's first trees took it to the power 1.3, about the 17th percentile, and came out dark)
+        const tone = Math.min(1, Math.max(0, 2 * (0.6 * Math.max(0, n.dot(MOON_DIR)) + 0.4 * Math.max(0, n.dot(outward))) + (rand() - 0.5) * 0.3))
+        const pigment = palette[Math.floor(tone * (palette.length - 1))]
         const tint = new Color().setRGB(pigment[0], pigment[1], pigment[2], SRGBColorSpace).multiplyScalar(between([0.965, 1.035]))
-        pushDrapedRibbon(strokes, steps, steps.map(() => tint))
-        const dabSeed = rand()
-        for (let i = 0; i < STEPS; i++) {
-          for (let j = 0; j < COLUMNS; j++) {
-            stroke.push(i / (STEPS - 1), j / (COLUMNS - 1))
-            seeds.push(dabSeed)
-          }
-        }
+        pushStroke(steps, tint)
         counts[mass.id].front++
       }
     }
