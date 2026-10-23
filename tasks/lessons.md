@@ -2888,4 +2888,11 @@ reads as alive.
   found one tree no station ever frames, about 36,000 triangles for nothing.
 - **Keep a decimation's anchors.** "Every k-th sample and the ends" dropped the seed sample the drape anchors on, so 37
   ribbons vanished at stride 4. Before thinning a list, find every index another function looks up in it.
+- **"agent_prompted" is not delivery.** The second brief's pointer landed in the worker's input box and Enter went to
+  a background-task log viewer (the worker had left Vite running as a background task, which takes focus in the
+  Antigravity CLI). The pane went idle in under a minute with the prompt unsent. Clear the input (Escape, then focus it,
+  then ctrl+u), resend, and confirm the status turns to working within ten seconds.
+- **Never swap files in a delegate's worktree, even while it sits idle.** A probe that ran `git checkout 2278cc5 -- src`
+  and back in the worker's checkout left the tree clean but fired a hot update in its dev server. Probe old code with
+  `git show <rev>:<path>` or in a worktree of your own.
 
