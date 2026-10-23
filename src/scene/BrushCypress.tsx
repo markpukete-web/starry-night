@@ -6,7 +6,7 @@ import rowTableJson from '../../public/reference/cypress-rows.json'
 import { makeBrushArrays, moonShade, pushDrapedRibbon } from './brushForms'
 import { buildCypressLobeSolid, drapeRibbon, liftToLobes, RIBBON_LIFT, ringsByLobe, stepColours, STRIP_COLUMNS, type CypressLobeSolidOptions } from './cypressLobeGeometry'
 import { buildCypressLobePlan, sampleCypressLobe, type CypressLobeRows } from './cypressLobes'
-import { CYPRESS_RIBBON_CONFIG, ribbonColumns, traceCypressRibbons } from './cypressStrokes'
+import { CYPRESS_RIBBON_CONFIG, ribbonColumns, strideSamples, traceCypressRibbons } from './cypressStrokes'
 import { cypressViewBearing } from './cypressMapping'
 import { DIORAMA_CAMERAS } from './dioramaContract'
 import { useImageData } from './useImageData'
@@ -26,6 +26,9 @@ import { ALIVE_DEFAULTS, type AliveTuning } from './skyAlive'
 
 const HEIGHT = 2.7
 const BASE = new Vector3(-1.5, 0.02, 0.72)
+/** `at`'s default, one array for every render: a fresh literal is a new dependency of the geometry memo each time, so
+ * the diorama rebuilt its tree on every re-render (S1b, the Lead's merge read of Task 5) */
+const BASE_AT = [BASE.x, BASE.y, BASE.z] as const
 /** no lift on the pigment (retune 2: with 1.08 and the lane rule the render was 8–14 L lighter than the painting) */
 const SOURCE_STROKE_LIFT = 1
 const MOON_LIFT = 0.04
@@ -57,6 +60,10 @@ export function BrushCypress({
   tuning = ALIVE_DEFAULTS,
   ready: readyRef,
   touch,
+  at = BASE_AT,
+  scale = 1,
+  viewFrom = DIORAMA_CAMERAS.design.position,
+  stride = 1,
 }: {
   /** The one sky clock (second pass, A3): pinned, advanced, or 0 while paused. */
   clock?: RefObject<number>
@@ -67,6 +74,10 @@ export function BrushCypress({
   ready?: RefObject<boolean>
   /** D1 (touch the land): the store the input hook writes, the sky clock it stamps, the bend knob. Absent, the tree is E1's, bit for bit. */
   touch?: { store: RefObject<LandStore>; clock: RefObject<number>; bendGain: number }
+  at?: readonly [number, number, number]
+  scale?: number
+  viewFrom?: readonly [number, number, number]
+  stride?: number
 } = {}) {
   const bend = touch !== undefined
   const paintingData = useImageData('/reference/painting.jpg')
@@ -85,7 +96,7 @@ export function BrushCypress({
     const started = performance.now()
     const plan = buildCypressLobePlan(rowTable)
     const main = plan.lobes[0]
-    const bearing = cypressViewBearing(DIORAMA_CAMERAS.design.position, [BASE.x, BASE.y, BASE.z])
+    const bearing = cypressViewBearing(viewFrom, at)
     const anchor = sampleCypressLobe(main, 0.08)?.sourceCenter ?? 0.5
     const geometryOptions: CypressLobeSolidOptions = {
       bearing,
@@ -137,16 +148,17 @@ export function BrushCypress({
       const back = traceCypressRibbons(flowData, paintingData, rowTable, Math.round(CYPRESS_RIBBON_CONFIG.frontCount * CYPRESS_RIBBON_CONFIG.backShare), 0xbacc51de)
       for (const [frontFacing, ribbons] of [[true, front], [false, back]] as const) {
         for (const ribbon of ribbons) {
-          const columns = ribbonColumns(ribbon, flowData.width, flowData.height, CYPRESS_RIBBON_CONFIG.taper, STRIP_COLUMNS)
-          const draped = drapeRibbon(ribbon, columns, rings, geometryOptions, frontFacing, RIBBON_LIFT)
+          const strided = stride > 1 ? strideSamples(ribbon, stride) : ribbon
+          const columns = ribbonColumns(strided, flowData.width, flowData.height, CYPRESS_RIBBON_CONFIG.taper, STRIP_COLUMNS)
+          const draped = drapeRibbon(strided, columns, rings, geometryOptions, frontFacing, RIBBON_LIFT)
           if (!draped) continue
-          const seedLift = liftToLobes(rings, ribbon.seedSample.px, 1 - ribbon.seedSample.py, geometryOptions, frontFacing)
+          const seedLift = liftToLobes(rings, strided.seedSample.px, 1 - strided.seedSample.py, geometryOptions, frontFacing)
           const shade = seedLift ? 1 + MOON_LIFT * moonShade(normal.set(...seedLift.normal)) : 1
           // E3: the source pigment along the stroke, one per kept step (the texel under each sample, sky samples
           // filled, smoothed over a third of a band), with the moon's shade from the seed's normal; one colour per
           // ribbon averaged a brown band with a green one where the path crosses them
-          const gain = ribbon.relief * SOURCE_STROKE_LIFT * shade
-          const colours = stepColours(ribbon, draped).map(([r, g, b]) => strokeColour.setRGB(r, g, b, SRGBColorSpace).multiplyScalar(gain).clone())
+          const gain = strided.relief * SOURCE_STROKE_LIFT * shade
+          const colours = stepColours(strided, draped).map(([r, g, b]) => strokeColour.setRGB(r, g, b, SRGBColorSpace).multiplyScalar(gain).clone())
           if (colours.length !== draped.kept.length) throw new Error('cypress ribbon colours out of step with its kept run')
           const before = arrays.positions.length / 3
           pushDrapedRibbon(arrays, draped.steps, colours)
@@ -159,7 +171,7 @@ export function BrushCypress({
             // the draped strip packs its columns left to right per step
             for (let j = 0; j < STRIP_COLUMNS; j++) {
               strokeAttr.push(len, j / (STRIP_COLUMNS - 1))
-              seedAttr.push(ribbon.seed)
+              seedAttr.push(strided.seed)
               if (alive) pushFlicker(strokeFlicker, flicker[k][0], flicker[k][1])
             }
           }
@@ -194,10 +206,12 @@ export function BrushCypress({
     /* eslint-disable react-hooks/purity, react-hooks/immutability -- the timing seam, written once per build */
     const buildMs = performance.now() - started
     ;(window as AliveFoliageWindow).__cypressBuildMs = buildMs
+    const totalCypressTriangles = compiled.indices.length / 3 + arrays.indices.length / 3
+    ;(window as unknown as { __cypressTriangles?: number }).__cypressTriangles = totalCypressTriangles
     /* eslint-enable react-hooks/purity, react-hooks/immutability */
     if (import.meta.env.DEV) console.info(`[cypress] built in ${buildMs.toFixed(0)} ms: ${frontCount} front and ${backCount} back ribbons, ${arrays.indices.length / 3} triangles`)
     return { solid, strokes }
-  }, [alive, paintingData, flowData, flowFailed])
+  }, [alive, paintingData, flowData, flowFailed, at, viewFrom, stride])
 
   // the materials: three's stock MeshBasicMaterial with injections (aliveMaterial.ts). The solid is the flat
   // underpaint, the strokes carry the sky's stroke body; with `alive` the flicker multiplies after it
@@ -256,8 +270,8 @@ export function BrushCypress({
       strokeUniforms.uTime.value = t
     }
     if (touch) {
-      // the touches in the tree's frame: the group sits at BASE
-      const { entries, count } = landUniformValues(touch.store.current, touch.clock.current, [BASE.x, BASE.y, BASE.z])
+      // the touches in the tree's frame: the group sits at `at`
+      const { entries, count } = landUniformValues(touch.store.current, touch.clock.current, [at[0], at[1], at[2]])
       for (const injection of [solidBend, strokeBend]) {
         const list = injection.uniforms.uLand.value as Float32Array
         list.fill(0)
@@ -287,7 +301,7 @@ export function BrushCypress({
 
   if (!geometries) return null
   return (
-    <group position={BASE} name="cypress">
+    <group position={at as [number, number, number]} scale={scale} name="cypress">
       <mesh name="cypress-solid" geometry={geometries.solid} material={solidMaterial} renderOrder={2} />
       <mesh name="cypress-strokes" geometry={geometries.strokes} material={strokeMaterial} renderOrder={3} />
     </group>

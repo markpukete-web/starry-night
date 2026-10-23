@@ -206,7 +206,20 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   brush from 0.55 of the stroke (E1 0.75), the lit term side × 0.15 − 0.5 × the lane slope (E1 side − 0.12 × slope),
   rake 0.8 clamped [0.4, 1.6] (E3 0.5, unclamped). The colour along the stroke smoothed over ±1 sample (E3 ±3). Gate at
   pass 2: ΔE 1.41 / 0.49 / 0.91, spread 18.1, light 11.6%, L p50 15.0 (E3 15.4), IoU 0.844, the registered trunk
-  window's 3 × 3 std 7.33 (the painting 9.05, E3 5.04), 60 fps (p95 17.4 ms). Two passes of the four used. Untuned by Mark.
+  window's 3 × 3 std 7.33 (the painting 9.05, E3 5.04), 60 fps (p95 17.4 ms). Two passes of the four used. Passed by
+  Mark on production, 2026-10-23 ("It passed").
+- The village street, S1 and S1b, behind `?street=1&station=0` to `4` (2026-10-24, `src/scene/streetLayout.ts`,
+  `streetGeometry.ts`, `streetStrokes.ts`, `streetLight.ts`, `streetLife.ts`; the record `tasks/2026-10-23-street-s1b.md`):
+  the map `layout-v1.svg` read at 0.0024 per pixel, the lane its Bézier, 2.396 long; stations at `t` 0, 0.23, 0.44, 0.66,
+  0.9; stop 0 aimed 9° left of the church (portrait 17°), the cypress 0.9 from stop 0's camera 26° left of its heading,
+  height 0.9, stride 4; stop 4's target centring the door's foot and the gable's peak (0.203). The budget 641,310 for the
+  street (1,444,930 − 660,388 − 143,232), `DETAIL` lane 0.6, house 0.46; the street 631,290 triangles. `COTTAGE`
+  thickness 0.02, overhang 0.02, rake 0.03; `ROOF_EDGE` 0.012; the thatch [972, 1186, 1020, 1226]; the bases at the
+  source's mean, the ground's at its darkest 40%; the hills at radii 4.9 and 5.6, 0.8 of their height; `STREET_LIGHT`
+  ambient 0.4, key 0.9 (the spike's). The path 0.12 wide, `PATH_LIFT` 0.5 toward `hillsCrest` on its strokes and its
+  base, the base inset 0.024 from each edge (across on the lane, all four sides of the square), the segments' overlap
+  0.02 in `t` (look pass 3 of 4, a pale lane like Simon Lee's). The colour gate keeps the fog on (Mark: "keep the fog for
+  now"). `?light=0` builds the street unlit for the gate. Passed by Mark, 2026-10-24 ("It does read like a village").
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)

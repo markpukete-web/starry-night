@@ -35,6 +35,7 @@ const times = opt('times', '0,0.5,3.7,11.2').split(',').map(Number)
 const viewportName = opt('viewport', 'desktop')
 const prefix = opt('prefix', viewportName)
 const evalBefore = opt('eval', null)
+const waitFor = opt('wait-for', null)
 // presence and value apart: an empty `--arrival-times ''` (a shell variable that came out empty) must fail, not
 // silently run the sky-only path with the arrival unpinned (Codex, code review F15)
 const hasArrivalTimes = args.includes('--arrival-times')
@@ -195,6 +196,15 @@ async function main() {
       if (Date.now() - start > 25000) throw new Error(`no canvas at ${url}`)
     }
     await sleep(2500 + SETTLE_MS)
+    if (waitFor) {
+      const waitStart = Date.now()
+      for (;;) {
+        const probe = await page.send('Runtime.evaluate', { expression: `Boolean(${waitFor})`, returnByValue: true })
+        if (probe.result?.value === true) break
+        if (Date.now() - waitStart > 30000) throw new Error(`--wait-for timed out after 30s: ${waitFor}`)
+        await sleep(200)
+      }
+    }
     let evalResult = null
     if (evalBefore) {
       // pin the clock in the same evaluation, before the page code: an unpinned frame between the two would prune
@@ -204,7 +214,7 @@ async function main() {
       evalResult = ran.result.value ?? null
     }
     // the new fields only when their options are on, so the old path's JSON is the old JSON (code review F14)
-    const summary = { url, viewport, times, ...(arrivalTimes ? { arrivalTimes } : {}), ...(screenshot ? { screenshot } : {}), evalBefore, evalResult, frames: [], errors: page.errors }
+    const summary = { url, viewport, times, ...(arrivalTimes ? { arrivalTimes } : {}), ...(screenshot ? { screenshot } : {}), ...(waitFor ? { waitFor } : {}), evalBefore, evalResult, frames: [], errors: page.errors }
     const firstMoving = times.find((t) => t > 0)
     for (let i = 0; i < times.length; i++) {
       const t = times[i]

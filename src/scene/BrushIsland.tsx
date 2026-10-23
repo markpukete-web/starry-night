@@ -7,23 +7,10 @@ import { strokeGlsl } from './cypressStrokeShader'
 import { buildIsland } from './islandGeometry'
 import { buildLandTrees, type BakedMass } from './landDomes'
 import { buildLandStrokes } from './landStrokes'
+import { strokeGeometry } from './strokeGeometry'
 import { useImageData } from './useImageData'
 
 type LandWindow = Window & { __landBuildMs?: number }
-
-/** A brush-arrays build as a geometry with E1's stroke attributes, and D1's bend weight when given. */
-function strokeGeometry(arrays: { positions: number[]; colors: number[]; indices: number[] }, stroke: number[], seed: number[], bend?: number[]): BufferGeometry {
-  const geometry = new BufferGeometry()
-  geometry.setAttribute('position', new BufferAttribute(new Float32Array(arrays.positions), 3))
-  geometry.setAttribute('color', new BufferAttribute(new Float32Array(arrays.colors), 3))
-  geometry.setAttribute('aStroke', new BufferAttribute(new Float32Array(stroke), 2))
-  geometry.setAttribute('aSeed', new BufferAttribute(new Float32Array(seed), 1))
-  if (bend) geometry.setAttribute('aBend', new BufferAttribute(new Float32Array(bend), 1))
-  geometry.setIndex(arrays.indices)
-  geometry.computeVertexNormals()
-  geometry.computeBoundingSphere()
-  return geometry
-}
 
 function plainGeometry(arrays: { positions: number[]; colors: number[]; indices: number[] }, bend?: number[]): BufferGeometry {
   const geometry = new BufferGeometry()

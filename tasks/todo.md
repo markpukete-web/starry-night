@@ -1,6 +1,124 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-22 (evening): E4 (the cypress's paint) in build on the worker as an experiment; the Lead gates
+## Pickup — 2026-10-24 (late morning): Mark at S1b's gate, look pass 3 on the path built
+
+Mark on the live street: "It does read like a village", "keep the fog for now". On the path, after the Lead's sheet
+of Simon's: "Go with your recommendations". Look pass 3 (`1ca5fe3`): a pale lane, 0.12 wide, lift 0.5. Mark: "It has
+improvments. Simon's parth and village comes with a cartoon feel and a bit more realistic than us, but maybe when the
+whole plan finished our villiage would have the same feelings." Open: his verdict on S1b's gate (merge, slices 2 to 4),
+and whether Fable reads pass 3 first. The record: `tasks/2026-10-23-street-s1b.md`, Pickup.
+
+**Noted, not queued (scope rule): the village's craft.** Slices 2 to 4 add Vincent, the walk, the grass and the portal.
+None of them changes how a house is made, so they will not by themselves give Simon's solid, slightly realistic
+village. What gives his that (`tasks/2026-10-11-simon-lee-study.md`, the village study): modelled detail (door frames,
+shutters, steps, eaves, fences and small lamps along the paths), surfaces that read as solid paint rather than long
+strokes with gaps, and the grass's dabs breaking the path's edge. Slice 3's grass covers the last one. The first two
+would be a slice of their own, in the painting's strokes, not his generic texture (the bar). Mark decides after slice 3.
+
+## Pickup — 2026-10-24 (morning): the street S1b built, gated and reviewed overnight; superseded
+
+Mark, leaving for the night: "finish all the slices and completed all the visual gates and code gates before present to
+me". S1b (the village lane) is complete through Task 11 on `feat/street-s1b-lead` at `305aefe`, local, not merged, not
+pushed. The Lead's gate G1 to G11 and Fable's two reviews are done (review 1 FIX, fixed; the confirmation read FIX on
+C7, fixed). Start with `tasks/2026-10-23-street-s1b.md`, its Pickup section: the live URL, the sheets, and six
+decisions parked for Mark (does it read as a village, the moonlight's ambient, the gate's fog, stop 4's p95, the
+cottage door, the ground and path within the budget). Slices 2 to 4 wait for his verdict.
+
+## Pickup — 2026-10-23 (evening, superseded): the street S1b plan, both reviews in, the revision next
+
+Slice 1's street failed Mark's gate ("flat and dull", then "cardboard"). The redesign is an invented village lane at
+eye level (the design's last section, Mark approved the map). The plan is `tasks/2026-10-23-street-s1b-plan.md`. Mark
+approved its direction: "It does and the plan sounds all right." The worker (GAPS) and Fable (REVISE, two P1s) have
+reviewed it. Neither review is folded in yet. Start with `tasks/2026-10-23-street-s1b.md`: where we are, both
+reports in short, the answers already reached, and the three decisions open for the revision (the cypress's 537,816
+triangles against the budget first). Then revise the plan once, commit it locally, and the worker starts Task 0.
+
+## Pickup — 2026-10-23 (afternoon): E4 closed on Mark's word; the village street designed, Mark's approval pending
+
+Mark, 2026-10-23: "It passed. Let's close this slice and move on to the next one." E4 is closed. Before his review the
+Lead captured production at the pinned t = 5: the tree's crop is byte-identical to pass 2's frame, so the live site
+serves the gated build. The record (`tasks/2026-10-22-cypress-e4.md`, Open) and the Tunables entry carry the pass.
+The land roadmap (E1, E2, D1, then E3 and E4 on the cypress) is done.
+
+1. **The next slice is the village street** (decided 2026-10-23, replacing the three spikes below). Mark, on the
+   spike question: a path with the camera behind a figure, and a hand in the grass like Jeroen's clip. The Lead's
+   throwaway captures (`scratch/explore-2026-10-23/`: the dive at five distances, our village up close beside Simon's)
+   showed the village cannot carry a walk and that rebuilding it in place would change the passed home view. Mark
+   chose a portal into one street built for walking, Vincent from behind, scroll or arrow keys on a computer, an
+   automatic walk with a tap on a phone, and Simon's village as the reference for the look when in doubt. The design:
+   `docs/superpowers/specs/2026-10-23-village-street-design.md`. The builder read is done and its nine questions are
+   settled as the Lead's calls. The consultant (Fable, the Consultant tab) read it: REVISE, C1–C19, all folded, its
+   confirmation read closed C2–C19, and C1's last clause is added as it proposed. The estimate is now 8 to 10
+   sessions, and slice 1's gate is where Mark decides whether slices 2 to 4 are built. Next: Mark's approval, then
+   the plan for slice 1, the street's look. Slice 1 starts with a fresh phone reading (`?perf=1` on the live site).
+   - **Proposed to Mark, the locked acceptance criterion on the camera** (Mark, 2026-10-23: "Lift it for the path").
+     Today: "Camera stays within the orbit limits in Tunables (polar + distance; no free-fly or panning); the diorama
+     always reads as Starry Night — head-on it is the painting's composition." Proposed: "Camera stays within the
+     orbit limits in Tunables (polar + distance; no free-fly or panning) while the visitor orbits the diorama. An
+     authored camera path (the village street's portal flight and walk, 2026-10-23) may leave them, and the visitor
+     never steers the camera off it. The diorama always reads as Starry Night — head-on it is the painting's
+     composition." Mark applies it in `CLAUDE.md`.
+   - **Idea for slice 3, not built** (Mark, 2026-10-23: "some flowers that Vincent drew of other drawings perhaps"):
+     flowers beside the path with the grass, for the hand to touch. Their shape and brushwork may follow Vincent's own
+     Saint-Rémy flowers. Their colours come from The Starry Night's palette, because the bar locks colour to the
+     painting. Mark decides at slice 1's gate whether slice 3 is built.
+2. **The experiment's verdict** (Gemini 4 Argon for visual work under the Lead's gating) is not given.
+3. **Open from E4, not blocking:** the gaps field does nothing visible (keep or remove). The render's marks are thin
+   scratches where the painting's bands are 30–60 px, with no dark contour strokes and no yellow-green highlights.
+   The painting's pigment tracks and canvas grain stay deferred.
+4. **Housekeeping unchanged:** the remote branch `feat/cypress-paint-e4` is Mark's to delete. The `painting.jpg`
+   decodes, the flat land gate's masses panel and `test:sky`'s file list are as before.
+
+### The spikes, costed from the code (the Lead, 2026-10-22, moved here 2026-10-23)
+
+The sky is a front arc on a dome of radius 6, about 123° wide, rotated with the camera every frame
+(`src/scene/PaintingFlowSky3D.tsx:1145`). Its back is empty. The orbit is held to azimuth −15° to +45°, polar 33° to
+93°, distance 3.25 to 5.6, no pan (`src/scene/dioramaContract.ts:77`).
+
+1. **The dive between the ribbons of the great whorl.** The camera travels from the home pose about ten units toward
+   the whorl and passes between the strokes. The lock is on rotation only, so position moves freely today. No new
+   world. The unknown: whether the ribbons hold up at close range, as they are flat strips on the sphere with a
+   painted lane. One afternoon: an authored dolly behind `?dive=1`, five captures at five distances.
+2. **The rail into the village street.** An authored camera path from the home pose down to eye height in the
+   street, then looking up. A house is 0.3 units tall, so the eye sits near 0.05. The sky stays camera-locked, which
+   works for a rail that turns less than the arc's 123°. The unknown: whether E2's ground ribbons and domes read at
+   walking scale. One afternoon: a spline, a scrub knob, five captures.
+3. **Simon's walk.** A figure on the path, the camera behind, turning freely. It needs a world-space sky (the
+   invented back of the dome that the front-arc decision gave up), ground and village at walking scale, and
+   collision. Weeks, not an afternoon. The honest spike is a half-afternoon costing: lift the lock, turn 180°,
+   capture the void.
+
+Spikes 1 and 2 leave the orbit limits during the path. The limits are a locked acceptance criterion and free-fly is
+out of scope. An authored path is not free-fly, but the lock is Mark's to lift. The Lead's recommendation: spike 1
+first, then 2. Spike 3 only as the costing capture.
+
+## Pickup — 2026-10-23 (small hours): E4 (the cypress's paint) merged and live (PR #19, `949e4b9`); Mark's live review next (superseded by the pickup above)
+
+Mark closed the session on 2026-10-22: "Take the lead, once Gemini's done, you gated. Then push and merged. I will
+review live tomorrow." Done. `main` is at `949e4b9`, deployed. The record is `tasks/2026-10-22-cypress-e4.md` (the
+passes, the gate G1–G11, the experiment's findings, the PR). The plan with every disposition is
+`tasks/2026-10-22-cypress-e4-plan.md`. Read `tasks/lessons.md` from "E4 (the cypress's paint)".
+
+1. **Mark's taste gate on production**, the tree's still look: the body at 2× in
+   `scratch/cypress-e4-2026-10-22/p2/montage-body-2x.png` (the painting, E3, pass 1, pass 2) and the 1:1 tree in
+   `p2/montage-tree.png`, then the live site. The question he asked: does it still feel like a jelly? His phone's
+   `?perf=1` reading stays open.
+2. **Codex's PR review of #19 completed with no findings** (the thumbs-up on `8d006ad`). Nothing to answer. PR #18's
+   review (E3) never completed and stays closed on Mark's word; if it ever posts, answer it then.
+3. **The experiment's verdict is Mark's.** The record's "The experiment" section: Gemini 4 Argon's code matched the
+   plan in every field, its visual reads matched the Lead's on every crop, its tests were not vacuous under eleven
+   configuration mutants, and Codex's review found a test gap (emission mutants) and a crop defect it then fixed in
+   three commits. Its build report invented constants and numbers. 47 minutes for the build and two passes.
+4. **Open from E4:** the gaps field does nothing visible (0.25% of the column): keep as a dial or remove. The
+   registered pair after F2 is a strip too narrow for the eye (a per-row mask would widen it). The painting's
+   adjacent pigment tracks within a stroke and its canvas grain are deferred.
+5. **The explorable question** stays open: Mark has not picked a spike (the dive, the rail, Simon's walk). The
+   Lead's costing is in the 2026-10-22 chat only; the readings are under "Proposed to Mark — inside the painting".
+6. **Housekeeping:** the worker's worktree and the Lead's gate worktree removed, the servers on 5179, 5181 and 5182
+   stopped, the local branch deleted (the remote `feat/cypress-paint-e4` is Mark's to delete). The earlier items
+   (the `painting.jpg` decodes, the flat land gate's masses panel, `test:sky`'s file list) are unchanged.
+
+## Pickup — 2026-10-22 (evening): E4 (the cypress's paint) in build on the worker as an experiment; the Lead gates (superseded by the pickup above)
 
 Mark, 2026-10-22 evening: "Can you refine our tree?", the tree "feel like a jelly" (the still look), the spike's
 treatment 3 picked, then "I want to test if Gemini 4 Argon is capable of doing visual work. Can you task it and gated

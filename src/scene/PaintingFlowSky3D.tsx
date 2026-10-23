@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react'
-import { useFrame } from '@react-three/fiber'
+import { useFrame, useThree } from '@react-three/fiber'
 import { useTexture } from '@react-three/drei'
 import {
   AdditiveBlending,
@@ -38,6 +38,7 @@ import { flareShape, pruneFlares, pruneKicks, pruneSurges, surgeUniformValues, T
 import { MOON_PAINTED_UV, STAR_ANCHORS } from './skyTargets'
 import { PALETTE } from './palette'
 import { DIORAMA_CAPTURE } from './dioramaContract'
+import { skyTransform, type SkyAnchor } from './skyAnchor'
 
 type PaintingFlowSkyDebug = 'final' | 'flow'
 
@@ -184,6 +185,8 @@ type Props = {
   arrivalStep?: RefObject<number | null>
   /** C: true once the ribbons have a geometry to draw; the arrival waits for it (with the cypress and the scan). */
   ready?: RefObject<boolean>
+  /** Street sky anchor: follow tracks camera translation, worldFixed locks rotation to world identity */
+  anchor?: SkyAnchor
 }
 
 // The ALIVE define (make-it-alive A, the flag on) compiles the gust clock in; without it the shaders are main's:
@@ -828,7 +831,7 @@ function SourceOrbs({
 
 
 
-export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky = 'light', still = false, alive = false, tuning = ALIVE_DEFAULTS, clock: sharedClock, touch = false, touchStore, arrivalStep, ready: readyRef }: Props) {
+export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky = 'light', still = false, alive = false, tuning = ALIVE_DEFAULTS, clock: sharedClock, touch = false, touchStore, arrivalStep, ready: readyRef, anchor }: Props) {
   const skyRoot = useRef<Group>(null)
   // the sky clock as this frame wrote it, for the halos' breath (A2) and the foreground (A3): pinned, advanced,
   // or 0 while paused. The scene's ref when given, else this one.
@@ -1139,11 +1142,28 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
     /* eslint-enable react-hooks/immutability */
   }, [alive, gradientMaterial, mode, movingMaterial, ribbonMaterial, tuning, washMaterial])
 
+  // the capture seam (`check-sky-transform.mjs`), installed once and read at call time (Fable R6: it was re-created
+  // every frame)
+  const seamCamera = useThree((state) => state.camera)
+  useEffect(() => {
+    const w = window as Window & { __skyTransform?: () => unknown }
+    w.__skyTransform = () => {
+      const root = skyRoot.current
+      if (!root) return undefined
+      const { quaternion: sq, position: sp } = root
+      const cq = seamCamera.quaternion
+      return {
+        quaternion: Object.assign([sq.x, sq.y, sq.z, sq.w], { x: sq.x, y: sq.y, z: sq.z, w: sq.w }),
+        position: Object.assign([sp.x, sp.y, sp.z], { x: sp.x, y: sp.y, z: sp.z }),
+        camera: Object.assign([cq.x, cq.y, cq.z, cq.w], { x: cq.x, y: cq.y, z: cq.z, w: cq.w }),
+      }
+    }
+    return () => { delete w.__skyTransform }
+  }, [seamCamera])
+
   /* eslint-disable react-hooks/immutability -- R3F render-loop writes: camera-locked sky rotation + time uniform */
   useFrame(({ camera }, dt) => {
-    if (skyRoot.current) {
-      skyRoot.current.quaternion.copy(camera.quaternion).multiply(homeInverse)
-    }
+    if (skyRoot.current) skyTransform(camera.quaternion, camera.position, homeInverse, anchor, skyRoot.current)
     if (paused) {
       // the light material is rebuilt at t = 0 on a pause; the halos' still is the t = 0 state too. B: the
       // store is cleared, so no surge with a pre-pause t0 lies in wait for the clock to catch up (review F7)

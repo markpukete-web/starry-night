@@ -38,7 +38,7 @@ export function placeMass(mass: LandMass): Placed {
 }
 
 /** The mass's domes: evenly along the base, each with its lowest point on the terrain under its own centre. */
-export function domesOf(mass: Placed): Dome[] {
+export function domesOf(mass: Placed, groundAt: (x: number, z: number) => number = islandHeightAt): Dome[] {
   const ry = mass.height / 2
   const count = Math.max(1, Math.round(mass.width / (ry * 1.4)))
   const rx = (0.75 * mass.width) / count
@@ -46,7 +46,7 @@ export function domesOf(mass: Placed): Dome[] {
   const domes: Dome[] = []
   for (let i = 0; i < count; i++) {
     const cx = mass.x - mass.width / 2 + ((i + 0.5) * mass.width) / count
-    domes.push({ centre: new Vector3(cx, islandHeightAt(cx, mass.z) + ry, mass.z), rx, ry, rz })
+    domes.push({ centre: new Vector3(cx, groundAt(cx, mass.z) + ry, mass.z), rx, ry, rz })
   }
   return domes
 }
@@ -60,9 +60,9 @@ export type DomeLift = { position: Vector3; lateral: number; dome: Dome }
  * rim's plane within RIM_REACH radii, else null. The position is continuous across dome boundaries (a maximum of
  * continuous depths).
  */
-export function liftToDomes(domes: Dome[], mass: Placed, s: number, t: number, front: boolean): DomeLift | null {
+export function liftToDomes(domes: Dome[], mass: Placed, s: number, t: number, front: boolean, groundAt: (x: number, z: number) => number = islandHeightAt): DomeLift | null {
   const x = mass.x - mass.width / 2 + s * mass.width
-  const y = islandHeightAt(x, mass.z) + (1 - t) * mass.height
+  const y = groundAt(x, mass.z) + (1 - t) * mass.height
   return liftAt(domes, x, y, front ? 1 : -1)
 }
 
@@ -95,14 +95,14 @@ function liftAt(domes: Dome[], x: number, y: number, facing: 1 | -1): DomeLift |
  * left it). The upper bound sits above every dome and above the plane's floor, so it clears by construction;
  * every candidate is verified against both constraints.
  */
-function settleOnTerrain(domes: Dome[], x: number, yLow: number, facing: 1 | -1, lift: number, planeZ: number): Vector3 | null {
+function settleOnTerrain(domes: Dome[], x: number, yLow: number, facing: 1 | -1, lift: number, planeZ: number, groundAt: (x: number, z: number) => number = islandHeightAt): Vector3 | null {
   const clears = (y: number): Vector3 | null => {
     const hit = liftAt(domes, x, y, facing)
     const p = hit ? hit.position : new Vector3(x, y, planeZ)
     p.z += facing * lift
-    return p.y >= islandHeightAt(p.x, p.z) + CONTACT ? p : null
+    return p.y >= groundAt(p.x, p.z) + CONTACT ? p : null
   }
-  let hi = Math.max(yLow, islandHeightAt(x, planeZ + facing * lift) + CONTACT)
+  let hi = Math.max(yLow, groundAt(x, planeZ + facing * lift) + CONTACT)
   for (const d of domes) hi = Math.max(hi, d.centre.y + d.ry)
   let best = clears(hi)
   if (!best) return null
@@ -125,7 +125,7 @@ export type DrapedStrip = { steps: Vector3[][] }
  * the contact height where it would enter the ground. The seed anchors the kept run as E1's drape does. Null
  * when fewer than three steps survive.
  */
-export function drapeOnDomes(ribbon: CypressRibbon, columns: [number, number][][], domes: Dome[], mass: Placed, front: boolean, lift = DOME_LIFT): DrapedStrip | null {
+export function drapeOnDomes(ribbon: CypressRibbon, columns: [number, number][][], domes: Dome[], mass: Placed, front: boolean, lift = DOME_LIFT, groundAt: (x: number, z: number) => number = islandHeightAt): DrapedStrip | null {
   const seedIndex = ribbon.samples.indexOf(ribbon.seedSample)
   const count = columns[0]?.length ?? 0
   const facing = front ? 1 : -1
@@ -133,14 +133,14 @@ export function drapeOnDomes(ribbon: CypressRibbon, columns: [number, number][][
   for (let k = 0; k < ribbon.samples.length; k++) {
     const points: Vector3[] = []
     for (const [s, t] of columns[k]) {
-      const hit = liftToDomes(domes, mass, s, t, front)
+      const hit = liftToDomes(domes, mass, s, t, front, groundAt)
       if (!hit) break
       const point = hit.position
       point.z += facing * lift
-      if (point.y < islandHeightAt(point.x, point.z) + CONTACT) {
+      if (point.y < groundAt(point.x, point.z) + CONTACT) {
         // the contact clamp: raised in y alone, a rim point kept the rim's shallow z and sat 0.033 inside the solid
         // (Codex E2 F2); settle it where the union's surface meets the terrain's floor instead
-        const settled = settleOnTerrain(domes, point.x, point.y, facing, lift, mass.z)
+        const settled = settleOnTerrain(domes, point.x, point.y, facing, lift, mass.z, groundAt)
         if (!settled) break
         point.copy(settled)
       }
@@ -286,7 +286,16 @@ export type LandTrees = {
 }
 
 /** Every mass's domes and strips, as buffers. Deterministic in `seed`. */
-export function buildLandTrees(flow: ImageData2D, painting: ImageData2D, baked: BakedMass[], seed = 0x7ee5, masses: readonly LandMass[] = LAND_MASSES): LandTrees {
+export function buildLandTrees(
+  flow: ImageData2D,
+  painting: ImageData2D,
+  baked: BakedMass[],
+  seed = 0x7ee5,
+  masses: readonly LandMass[] = LAND_MASSES,
+  groundAt: (x: number, z: number) => number = islandHeightAt,
+  /** the curls' config per mass: the diorama's by default, the street's narrower curls at walking distance (S1) */
+  configFor: (crop: ImageData2D, pixels: number) => CypressRibbonConfig = (crop, pixels) => massConfig(crop, massCount(pixels)),
+): LandTrees {
   const solid = makeBrushArrays()
   const strokes = makeBrushArrays()
   const stroke: number[] = []
@@ -297,7 +306,7 @@ export function buildLandTrees(flow: ImageData2D, painting: ImageData2D, baked: 
   // the bend weight of the vertices appended since `from`: height over the terrain under each, over the mass's height
   const weigh = (arr: BrushArrays, from: number, into: number[], height: number) => {
     for (let i = from; i < arr.positions.length; i += 3) {
-      const above = arr.positions[i + 1] - islandHeightAt(arr.positions[i], arr.positions[i + 2])
+      const above = arr.positions[i + 1] - groundAt(arr.positions[i], arr.positions[i + 2])
       into.push(Math.min(1, Math.max(0, above / height)))
     }
   }
@@ -306,7 +315,7 @@ export function buildLandTrees(flow: ImageData2D, painting: ImageData2D, baked: 
     const entry = baked.find((m) => m.id === mass.id)
     if (!entry) throw new Error(`land mass ${mass.id} is not baked`)
     const placed = placeMass(mass)
-    const domes = domesOf(placed)
+    const domes = domesOf(placed, groundAt)
     const under = underpaintColour(painting, mass)
     colour.setRGB(under[0], under[1], under[2], SRGBColorSpace)
     for (const dome of domes) {
@@ -315,14 +324,14 @@ export function buildLandTrees(flow: ImageData2D, painting: ImageData2D, baked: 
       weigh(solid, from, solidBend, placed.height)
     }
     const { crop, rows, pixels } = massCrop(flow, entry)
-    const config = massConfig(crop, massCount(pixels))
+    const config = configFor(crop, pixels)
     counts[mass.id] = { front: 0, back: 0 }
     for (const front of [true, false]) {
       const count = front ? config.frontCount : Math.round(config.frontCount * config.backShare)
       const ribbons = traceCypressRibbons(crop, painting, rows, count, seed + index * 2 + (front ? 0 : 1), config, FOLIAGE_TEXEL)
       for (const ribbon of ribbons) {
         const columns = ribbonColumns(ribbon, crop.width, crop.height, config.taper, STRIP_COLUMNS)
-        const strip = drapeOnDomes(ribbon, columns, domes, placed, front)
+        const strip = drapeOnDomes(ribbon, columns, domes, placed, front, DOME_LIFT, groundAt)
         if (!strip) continue
         const tint = colour.setRGB(ribbon.colour[0], ribbon.colour[1], ribbon.colour[2], SRGBColorSpace).multiplyScalar(ribbon.relief).clone()
         const from = strokes.positions.length

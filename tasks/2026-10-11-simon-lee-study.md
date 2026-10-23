@@ -69,3 +69,50 @@ exploration are ideas to learn from, not queued (`tasks/todo.md`, "Direction con
 
 Noted ideas, not queued (scope rule): rain and fog, fireflies, walk mode and collectibles, the
 painter's-palette placement menu.
+
+## The village, studied for a walkable street (2026-10-23)
+
+Mark, 2026-10-23: the next slice is a portal from the village into one street built for walking, where the visitor
+walks a path and touches the grass with a hand cursor. He asked what Simon's village can teach us. Read from 4K crops
+of the 112 s video at 35 s and 100 s (`scratch/explore-2026-10-23/simon/`, gitignored). Study only: no code or asset
+of his is used.
+
+- **He never walks this village.** Sampled every 2 s, the video shows it only from above. His walk mode is in the
+  Wheat Field scene, in daylight (the 82 s video, 1:04–1:12).
+- **Houses are simple volumes with modelled detail.** A box and a pitched roof, with chimneys, shutters, door frames
+  and eaves as geometry. Walls are pale lavender or grey-blue, roofs dark blue or warm ochre. One painterly texture of
+  large brush patches covers every surface. It is generic, not taken from the painting.
+- **Dark ink outlines** run along every house edge and along the crest of every hill. This does the most to make his
+  village read as painted. The painting outlines its hills, roofs and the cypress's bands the same way. E4's read noted
+  that our render has no dark contour strokes.
+- **Trees.** The olives are a twisted trunk carrying round clumps of leaf-shaped cards: pale lit edges, dark centres.
+  The poplars and cypresses are tall dark cones.
+- **The ground** is thousands of small flake-shaped dabs at random angles, dark blue with a few lit flecks. They are
+  not grass blades. Paths are paler, smoother strips.
+- **Depth.** Blue fog lightens the far houses and hills. Warm window rectangles are few per house. Small lights run
+  along the paths. A dense cluster at varied heights and angles hides the ground between the houses.
+
+What transfers to the street: houses as modelled volumes, outlines on edges and crests, leaf-clump trees, fog to
+close the end of the street, and lights along the path to lead the walk. What does not: his generic surface texture
+(our strokes come from the painting's flow and colour), his many bright windows (the palette gate), and his separate
+outlined peaks (the painting's range rolls).
+
+## The village's layout, studied after slice 1's gate (2026-10-23, evening)
+
+Mark judged slice 1's street "flat and dull", then "the house feels like a cardboard", and asked to study the layout of
+Simon's village for a better design. The only source is the 112 s video (both posts' links resolve to the videos, no
+live site). Frames every 2 s and full-resolution crops at 38, 46, 92, 100, 104, 108 and 110 s:
+`scratch/simon-village-2026-10-23/` (gitignored). Study only.
+
+- **The camera is always above the village**, on a hillside by the cypress, looking down about 25–40°. Roofs are the
+  most-seen surface and catch the moon; walls are dark.
+- **Houses are scattered over rolling ground**, each at its own angle, in loose clusters round the church. Meadow of
+  dark flake strokes between them, with olives, cypress and poplar cones, bushes.
+- **Paths are pale strips that wind and branch**, following the ground; the church sits where they meet.
+- **Houses vary**: cottage to two storeys, roofs with thickness and overhang, dark blue or ochre-brown roofs, one to
+  three warm windows, some shutters and chimneys.
+- **Three layers of depth**: foreground cypress, olive and meadow (fireflies in it), the village, outlined hills fading
+  into fog.
+
+Why slice 1's street failed: it built the one view Simon never shows, eye level in a corridor between two straight
+rows of same-facing boxes on flat ground, a view of walls in steep perspective, where flat cladding reads as card.

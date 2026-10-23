@@ -9,6 +9,8 @@ import { join } from 'node:path'
 const DEFAULT_URL = 'http://127.0.0.1:5179/'
 const outDir = process.argv[2] || 'output/playwright/diorama-recovery-2026-07-07'
 const perfOnly = process.argv.includes('--perf')
+const dprIndex = process.argv.indexOf('--dpr')
+const dpr = dprIndex >= 0 ? Number(process.argv[dprIndex + 1]) : 1
 const appUrl = process.env.DIORAMA_CAPTURE_URL || DEFAULT_URL
 const appPort = new URL(appUrl).port || '80'
 const chromePath =
@@ -166,7 +168,7 @@ class CdpPage {
   }
 }
 
-async function newPage(port, url, viewport, errors) {
+async function newPage(port, url, viewport, errors, deviceDpr = dpr) {
   const response = await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: 'PUT' })
   if (!response.ok) throw new Error(`Failed to create Chrome target: ${response.status}`)
   const target = await response.json()
@@ -175,7 +177,7 @@ async function newPage(port, url, viewport, errors) {
   await page.send('Emulation.setDeviceMetricsOverride', {
     width: viewport.width,
     height: viewport.height,
-    deviceScaleFactor: 1,
+    deviceScaleFactor: deviceDpr,
     mobile: Boolean(viewport.mobile),
   })
   await page.send('Page.navigate', { url })
@@ -234,11 +236,14 @@ async function readPerf(page) {
       const perf = window.__perf
       if (!perf || perf.t.length < 30) return null
       const intervals = perf.t.slice(1).map((value, index) => value - perf.t[index]).sort((a, b) => a - b)
+      const canvas = document.querySelector('canvas')
       return {
         samples: intervals.length,
         meanMs: intervals.reduce((sum, value) => sum + value, 0) / intervals.length,
+        p50Ms: intervals[Math.floor(intervals.length / 2)],
         p95Ms: intervals[Math.min(intervals.length - 1, Math.floor(intervals.length * 0.95))],
         maxMs: intervals[intervals.length - 1],
+        drawingBuffer: canvas ? { width: canvas.width, height: canvas.height } : null,
         info: perf.info,
       }
     })()`,
@@ -306,6 +311,8 @@ async function main() {
       }
       const summary = {
         browser: chromePath,
+        dpr,
+        drawingBuffer: metrics[0]?.metrics?.drawingBuffer ?? null,
         note: 'mobile-viewport-final is viewport emulation on desktop hardware, not the locked real-device gate',
         metrics,
         errors,

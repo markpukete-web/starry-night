@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -69,9 +70,18 @@ function closedEdges(g, name) {
   console.log(`${name}: ${ids.size} welded positions, ${edges.size} edges; closed edge incidence`)
 }
 
+const hasher = createHash('sha256')
 for (const name of GEOMETRIES) {
   const g = meshes[name]
   if (!g) continue
+  for (const attr of ['position', 'color', 'uv']) {
+    if (g.attributes[attr]) {
+      hasher.update(Buffer.from(g.attributes[attr].array.buffer, g.attributes[attr].array.byteOffset, g.attributes[attr].array.byteLength))
+    }
+  }
+  if (g.index) {
+    hasher.update(Buffer.from(g.index.array.buffer, g.index.array.byteOffset, g.index.array.byteLength))
+  }
   assert(g.attributes && g.attributes.position, `${name}: not a geometry`)
   if (control === 'open-solid' && name === 'solid') {
     // the control: one triangle gone, the closure check must fail
@@ -111,4 +121,5 @@ for (const name of GEOMETRIES) {
   repeat[name].dispose()
 }
 assert.equal(typeof meshes.litMarks, 'number', 'litMarks is the lit window marks count, not a geometry')
+console.log(`sha256 ${hasher.digest('hex')}`)
 writeFileSync(`${directory}/runtime-model.json`, JSON.stringify(output))
