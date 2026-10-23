@@ -1,6 +1,46 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-23 (small hours): E4 (the cypress's paint) merged and live (PR #19, `949e4b9`); Mark's live review next
+## Pickup — 2026-10-23 (afternoon): E4 closed on Mark's word; the explorable question is next, Mark's pick pending
+
+Mark, 2026-10-23: "It passed. Let's close this slice and move on to the next one." E4 is closed. Before his review the
+Lead captured production at the pinned t = 5: the tree's crop is byte-identical to pass 2's frame, so the live site
+serves the gated build. The record (`tasks/2026-10-22-cypress-e4.md`, Open) and the Tunables entry carry the pass.
+The land roadmap (E1, E2, D1, then E3 and E4 on the cypress) is done.
+
+1. **The next slice is the explorable question** (the land direction, "Then the explorable question ... not before
+   E1–D1"). Mark picks the spike and decides whether the orbit limit lifts for an authored camera path. The costing
+   is below, moved into the repo from the 2026-10-22 chat.
+2. **The experiment's verdict** (Gemini 4 Argon for visual work under the Lead's gating) is not given.
+3. **Open from E4, not blocking:** the gaps field does nothing visible (keep or remove). The render's marks are thin
+   scratches where the painting's bands are 30–60 px, with no dark contour strokes and no yellow-green highlights.
+   The painting's pigment tracks and canvas grain stay deferred.
+4. **Housekeeping unchanged:** the remote branch `feat/cypress-paint-e4` is Mark's to delete. The `painting.jpg`
+   decodes, the flat land gate's masses panel and `test:sky`'s file list are as before.
+
+### The spikes, costed from the code (the Lead, 2026-10-22, moved here 2026-10-23)
+
+The sky is a front arc on a dome of radius 6, about 123° wide, rotated with the camera every frame
+(`src/scene/PaintingFlowSky3D.tsx:1145`). Its back is empty. The orbit is held to azimuth −15° to +45°, polar 33° to
+93°, distance 3.25 to 5.6, no pan (`src/scene/dioramaContract.ts:77`).
+
+1. **The dive between the ribbons of the great whorl.** The camera travels from the home pose about ten units toward
+   the whorl and passes between the strokes. The lock is on rotation only, so position moves freely today. No new
+   world. The unknown: whether the ribbons hold up at close range, as they are flat strips on the sphere with a
+   painted lane. One afternoon: an authored dolly behind `?dive=1`, five captures at five distances.
+2. **The rail into the village street.** An authored camera path from the home pose down to eye height in the
+   street, then looking up. A house is 0.3 units tall, so the eye sits near 0.05. The sky stays camera-locked, which
+   works for a rail that turns less than the arc's 123°. The unknown: whether E2's ground ribbons and domes read at
+   walking scale. One afternoon: a spline, a scrub knob, five captures.
+3. **Simon's walk.** A figure on the path, the camera behind, turning freely. It needs a world-space sky (the
+   invented back of the dome that the front-arc decision gave up), ground and village at walking scale, and
+   collision. Weeks, not an afternoon. The honest spike is a half-afternoon costing: lift the lock, turn 180°,
+   capture the void.
+
+Spikes 1 and 2 leave the orbit limits during the path. The limits are a locked acceptance criterion and free-fly is
+out of scope. An authored path is not free-fly, but the lock is Mark's to lift. The Lead's recommendation: spike 1
+first, then 2. Spike 3 only as the costing capture.
+
+## Pickup — 2026-10-23 (small hours): E4 (the cypress's paint) merged and live (PR #19, `949e4b9`); Mark's live review next (superseded by the pickup above)
 
 Mark closed the session on 2026-10-22: "Take the lead, once Gemini's done, you gated. Then push and merged. I will
 review live tomorrow." Done. `main` is at `949e4b9`, deployed. The record is `tasks/2026-10-22-cypress-e4.md` (the
