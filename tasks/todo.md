@@ -1,6 +1,21 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-24 (morning): the street S1b built, gated and reviewed overnight; Mark's gate next
+## Pickup — 2026-10-24 (late morning): Mark at S1b's gate, look pass 3 on the path built
+
+Mark on the live street: "It does read like a village", "keep the fog for now". On the path, after the Lead's sheet
+of Simon's: "Go with your recommendations". Look pass 3 (`1ca5fe3`): a pale lane, 0.12 wide, lift 0.5. Mark: "It has
+improvments. Simon's parth and village comes with a cartoon feel and a bit more realistic than us, but maybe when the
+whole plan finished our villiage would have the same feelings." Open: his verdict on S1b's gate (merge, slices 2 to 4),
+and whether Fable reads pass 3 first. The record: `tasks/2026-10-23-street-s1b.md`, Pickup.
+
+**Noted, not queued (scope rule): the village's craft.** Slices 2 to 4 add Vincent, the walk, the grass and the portal.
+None of them changes how a house is made, so they will not by themselves give Simon's solid, slightly realistic
+village. What gives his that (`tasks/2026-10-11-simon-lee-study.md`, the village study): modelled detail (door frames,
+shutters, steps, eaves, fences and small lamps along the paths), surfaces that read as solid paint rather than long
+strokes with gaps, and the grass's dabs breaking the path's edge. Slice 3's grass covers the last one. The first two
+would be a slice of their own, in the painting's strokes, not his generic texture (the bar). Mark decides after slice 3.
+
+## Pickup — 2026-10-24 (morning): the street S1b built, gated and reviewed overnight; superseded
 
 Mark, leaving for the night: "finish all the slices and completed all the visual gates and code gates before present to
 me". S1b (the village lane) is complete through Task 11 on `feat/street-s1b-lead` at `305aefe`, local, not merged, not
