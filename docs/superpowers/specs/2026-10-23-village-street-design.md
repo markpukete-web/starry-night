@@ -1,7 +1,8 @@
 # The village street: walk into the painting — design, 2026-10-23
 
-Status: design, written by the Lead (Claude) from a conversation with Mark on 2026-10-23. Not approved yet. Nothing
-is built.
+Status: design, written by the Lead (Claude) from a conversation with Mark on 2026-10-23. Read by a fresh builder
+(nine questions) and by the consultant (Fable, `scratch/explore-2026-10-23/consultant-design-report.md`: REVISE,
+findings C1–C19, every one checked against the code and folded below). Not approved yet. Nothing is built.
 
 ## Intent
 
@@ -18,9 +19,11 @@ stretched over boxes (`scratch/explore-2026-10-23/simon-vs-ours.png`).
 ## What the visitor does
 
 1. On the diorama, after the arrival, the visitor hovers over the village. The cursor becomes a hand and shows that
-   the village can be entered.
-2. A click flies the camera down toward the rooftops near the church. Near the bottom, a dissolve takes the visitor
-   into the street.
+   the village can be entered. On every device, a small control in the chrome also enters it.
+2. A click flies the camera down toward the rooftops near the church. The dissolve starts no closer to the houses
+   than the camera of capture `v2` (`scratch/explore-2026-10-23/village/`, at 0.9, 0.35, 1.5), the last distance
+   at which today's walls still read as paint (C11). The dissolve's layer shows the flight's last frame and fades it
+   over the street (C9).
 3. Vincent stands on the path, small, seen from behind: straw hat, blue smock, a rolled canvas under his arm. The
    camera is behind him. The path leads up the street to the church, with the steeple ahead and the painting's sky
    above the roofs.
@@ -29,10 +32,10 @@ stretched over boxes (`scratch/explore-2026-10-23/simon-vs-ours.png`).
    finger is the hand.
 5. Grass stands beside the path, painted in short Van Gogh strokes in the painting's night colours. The hand moves
    through it. The blades bend away from the hand and spring back.
-6. The path ends at the church. A way back (a control on screen, and Escape) returns the visitor to the diorama as
-   it was.
+6. The path ends at the church. A way back (a control on screen, and Escape) returns the visitor to the diorama
+   through the same layer, at the orbit pose the visitor left from (C16).
 
-Mark confirmed this whole sequence on 2026-10-23 ("That's exactly what I was imagine", "Vincent from behind sounds
+Mark agreed to this whole sequence on 2026-10-23 ("That's exactly what I was imagine", "Vincent from behind sounds
 right", "that's how I picture it").
 
 ## Goals
@@ -57,97 +60,134 @@ used (`CLAUDE.md`, "study, never copy implementation or assets"). The study is
 `tasks/2026-10-11-simon-lee-study.md`, section "The village, studied for a walkable street". Its 4K crops are in
 `scratch/explore-2026-10-23/simon/`.
 
+The order when the two differ (C14): the scan and `palette.json` come first, because the bar is locked. Simon's
+village answers only what the scan cannot show at walking distance: volumes, outlines, fog. Where the scan does show a
+form, the scan's form wins. The painting's village trees are dark round masses and its fields are long strokes, so
+the street's trees and ground start from those, not from his leaf cards and flake dabs.
+
 What the study says to take: houses as modelled volumes (a box, a pitched roof, chimneys, shutters, door frames),
-dark ink outlines along house edges and along crests, olive trees as a twisted trunk carrying round leaf clumps, tall
-dark cypresses and poplars, blue fog that lightens what is far away, and few warm windows. What it says not to take:
-his one generic paint texture on every surface, his many bright windows, and his separate outlined peaks.
+dark ink outlines along house edges and along crests, blue fog that lightens what is far away, and few warm windows.
+What it says not to take: his one generic paint texture on every surface, his many bright windows, and his separate
+outlined peaks.
 
 ## Constraints
 
 - **The bar** (`CLAUDE.md`, locked). The painting shows the village only from far away, so the street is invented.
-  The bar's rule for invented parts applies: they "continue that same derived style". Colours come from
-  `public/reference/palette.json` (the `village`, `villageWarm`, `hills` and `cypress` regions) and the scan, within
-  the palette tolerance in Tunables. Surfaces are painted in strokes, as the diorama's are, not in a generic texture.
-- **The orbit limits** (`CLAUDE.md` acceptance criteria, locked). Mark, 2026-10-23, asked whether the camera may
-  leave the orbit limits along an authored path: "Lift it for the path." The criterion's text is Mark's to edit.
-  The Lead proposes the wording in `tasks/todo.md`. Free-fly and panning stay out of scope.
-- **Performance** (locked): 60 fps desktop, 30 fps mid-tier mobile, the devicePixelRatio caps in Tunables. Only one
-  of the two scenes renders at a time.
-- **Reduced motion** (locked: "a dignified still state"). The Lead's call: under `prefers-reduced-motion` the portal
-  cuts instead of flying, Vincent does not walk by himself, the walk moves only on the visitor's input, and the grass
-  bends under the hand without the swing.
-- **The home page does not grow.** The Lead's call: the street's code and assets load on the first hover or click
-  over the village, not with the page.
-- **The diorama does not change.** Its gates stay passed. The capture and guard scripts keep producing the same
-  frames (`scripts/compare-frames.mjs` against a capture taken before the work: identical outside the portal hint).
+  The bar's rule for invented parts applies: they "continue that same derived style". Surfaces are painted in
+  strokes, as the diorama's are, not in a generic texture.
+- **Stroke scale and direction** (C3). A stroke's width and length on a wall, a roof and the ground are set as a
+  fraction of the object, measured from the scan's village at 1:1, never in screen pixels. Their direction follows
+  the object's edges and the derived flow field over the village's rectangle, as E2's ground follows the band's field.
+  The record is clear on why: at 8–14 px lanes the cypress read as fur (`tasks/lessons.md`, E1), and stroke width in
+  scan pixels is not stroke width on screen (E2).
+- **The palette gate** (C5). Every surface is measured against a region of `public/reference/palette.json`, within
+  the palette tolerance in Tunables: walls and roofs against `village`, windows and lamps against `villageWarm`,
+  trees against `cypress`, the far slopes, the grass and the path against `hills`, the fog against the `sky`
+  region's horizon colours, Vincent's smock against `village`'s blues and his hat against `villageWarm`. Slice 1's
+  plan defines the masks.
+- **The camera criterion** (`CLAUDE.md` acceptance criteria, locked). Mark, 2026-10-23, asked whether the camera may
+  leave the orbit limits along an authored path: "Lift it for the path." The criterion's text is Mark's to edit. The
+  Lead proposes the wording in `tasks/todo.md`. Mark's edit lands before `?street=1` reaches `main`. Until then the
+  street lives on a branch (C17). Free-fly and panning stay out of scope.
+- **Performance** (locked): 60 fps desktop, 30 fps mid-tier mobile, the devicePixelRatio caps in Tunables.
+- **Reduced motion** (locked: "a dignified still state — the painting, well lit, no churn"). Under
+  `prefers-reduced-motion` the portal cuts instead of flying. Vincent never walks by himself. On a computer the scroll
+  wheel and the arrow keys still walk him. On a phone a tap on Vincent takes him to the next stop on the path (C6).
+  The grass bends under the hand without the swing. The street's sky is the painted-light still, as the diorama's is
+  (`src/scene/PaintingFlowSky3D.tsx:873`), and two frames apart in time stay byte-identical, as
+  `scripts/check-reduced-motion.mjs` requires.
+- **The home page does not grow.** The street's code and assets load on the first hover over the village or the
+  first press of the control, not with the page. The dissolve's layer holds until the street reports ready, with a
+  15 s timeout as the arrival's (`src/scene/arrival.ts:44`). On a timeout the layer lifts back onto the diorama, the
+  hint stays, and nothing half-loaded shows (C10).
+- **The diorama does not change.** Its gates stay passed. A capture with no pointer is byte-identical to a capture
+  taken before the work (`scripts/compare-frames.mjs`). The hint is DOM and adds no mesh to the scene.
 
 ## The sky in the street
 
-The diorama's sky turns with the camera (`src/scene/PaintingFlowSky3D.tsx:1145`). Its back is empty, because the
-painting cannot supply it. In the street, the path faces into the painting, so the visitor looks toward the part of
-the sky the painting shows. The constraint: the sky the visitor sees in the street is the painting's sky, with the
-strokes still moving, and no empty or invented back is ever on screen. How the street's sky meets that (the same
-camera-locked sky, or the front arc fixed in the world with the camera's turn held inside it) is left to the plan,
-with a capture of each.
+The constraint: the sky the visitor sees in the street is the painting's sky, with its strokes moving (still under
+reduced motion), and no empty band, invented back or gradient is ever on screen. Two facts in the code bound how.
+
+- **Its size and place** (C1). The sky is a dome of radius 6 (`src/scene/skyMapping.ts:4`), centred on the world
+  origin (the sky group has no position, `PaintingFlowSky3D.tsx:1227`). Its ribbons test depth, so anything farther
+  than 6 units from the origin is painted over. The street is therefore built either at the diorama's scale inside the
+  dome, every object within 6 units of the origin and the camera about as far from the centre as the home camera, or
+  with the sky group moved with the street's camera and scaled so the whole street, the far church included, lies
+  inside it. Either way the camera's near plane (0.08 today, `src/scene/dioramaContract.ts:45`) is set from the
+  street's scale, so the ground near Vincent never clips.
+- **Its turn** (C2). Under today's lock the sky turns with the camera (`PaintingFlowSky3D.tsx:1145`), so it is fixed
+  on screen. Tilting the camera up at the steeple moves the roofs down and leaves the painted band where it was. The
+  strokes fade out from v 0.76 of the painting (`src/scene/dioramaSkyProjection.ts:28`), and below them is the
+  gradient sphere, drawn with no depth test (`PaintingFlowSky3D.tsx:895–899`). So under the lock the camera never
+  tilts, and the roofline, the fog or the ground covers the screen below the painted band at every point of the path.
+  With the painting's front arc fixed in the world instead, the path's heading stays within the arc's ±71° across and
+  its tilt within +52°. The touch hook's sky mapping (`src/scene/useTouchInput.ts:95–106`) then needs re-keying,
+  because it assumes the lock. Slice 1 chooses between the two with a capture of each at the path's end.
+- **Portrait** (C15). In portrait the diorama keys the sky to its portrait home, with a field of view of 88 and an
+  unpainted band at the top (`dioramaContract.ts:48–65`). The street's plan names its camera's field of view in
+  landscape and in portrait, and which `home` the sky takes in each.
+- **Touch and pause** (C19). B's surges stay on for the sky above the roofs, so the sky behaves as it does on the
+  diorama. The pause control stops the sky, Vincent's automatic walk and the grass's swing together.
 
 ## The Lead's calls, for Mark to read
 
 These are the Lead's, not Mark's words:
 
 - The flight down toward the church, the steeple as the end of the path, and fog closing the far end. Mark heard
-  these as guesses and confirmed the sequence.
+  these as guesses and agreed to the sequence.
 - The hand cursor is a hand icon, not a pointer.
 - The grass also parts around Vincent's feet as he walks, as Simon's wheat does around his figure.
 - Small warm lights along the path, as in Simon's village, if they pass the palette gate. Otherwise none.
-- Reduced motion and loading, as written under Constraints.
-
-Settled after the builder read (a fresh reader's nine questions, 2026-10-23), also the Lead's calls:
-
-- **One canvas.** The street is a second scene inside the existing R3F `Canvas` (`src/App.tsx:129`), never a second
-  canvas, so a phone never holds two WebGL contexts. The dissolve is a DOM layer over the canvas, as the arrival's is
-  (`src/scene/DioramaExperience.tsx:392`): it covers the canvas, the scenes swap under it, and it uncovers the street.
+- **One canvas.** The street is a second scene inside the diorama's `Canvas` (`src/scene/DioramaExperience.tsx:364`),
+  mounted in `Scene` beside the sky, never a second canvas, so a phone never holds two WebGL contexts (C4). The
+  canvas keeps its drawing buffer, so the layer can take the flight's last frame.
 - **The sky.** The street reuses the diorama's sky instance, kept mounted, never a second build. The diorama's island,
   cypress and village stop rendering while the street shows.
-- **Its own space.** The street sits in its own coordinates at walking scale, not inside the diorama's world. The
-  dissolve hides the change of scale. Its layout follows the painting's (the church ahead, the hills behind), not
-  `villageStations.ts`.
-- **The budget.** Slice 1 measures the frame time with the sky and the street together, on desktop and in the
-  phone's emulated viewport, and sets the street's triangle budget from that measurement. The locked frame rates are
-  the gate. Mark's phone reading (`?perf=1`) decides.
-- **The palette gate.** The street's captures are measured against `palette.json`'s regions (walls and roofs
-  against `village`, windows against `villageWarm`, trees against `cypress`, the far slopes against `hills`), with
-  the same ΔE tolerance. Slice 1's plan defines the masks.
+- **The layout.** The street follows the painting's layout: the church ahead, the hills behind. The church's and the
+  houses' proportions come from the diorama's authored knot (`src/scene/villageGeometry.ts:8–11`, the church at
+  `:237`), scaled. The stroke cladding is new (C18).
+- **The budget** (C12). Slice 1 starts by measuring today's diorama: its frame time on desktop and on Mark's phone
+  (`?perf=1`). The only phone reading on record predates E1 to E4 (`tasks/todo.md:470`). The street's triangle
+  budget is the headroom under 60 fps and 30 fps from that measurement.
 - **Strokes.** A new stroke generator for the houses is allowed: it is new code, not a dependency. It reuses the
   existing tracer and ribbon code where they fit. The houses and the church are built in code. A modelling tool or
   any new npm package is a dependency question for Mark.
-- **The hand and the walk.** The hand acts on the grass under the pointer. On a phone, a tap inside Vincent's
-  silhouette stops or starts him, and a touch anywhere else is the hand.
-- **The portal on every device, behind a flag first.** A small control in the existing chrome enters the village on
-  every device, because a phone has no hover. On a computer, hovering over the village also shows the hand and a soft
-  hint. The street ships behind `?street=1` until Mark's gate, then becomes the default with `?street=0` to turn it
-  off, as A, B and C did. A tap on the village's houses enters. A tap on the trees and bushes stays D1's bend.
-- **Vincent's colours** come from the palette's existing regions (the smock from the blues, the hat from
-  `villageWarm`). He is an invented part and follows the bar's rule for invented parts.
-- **The diorama's frames.** The hover test runs on pointer moves only, as a ray test against the village's bounds,
-  and adds no mesh to the scene. The hint is DOM. A capture with no pointer is byte-identical to the capture from
-  before the work.
+- **The hand** (C8). The hand acts on the grass under the pointer. Unlike D1, the hand's world point is re-cast every
+  frame the camera moves, not only when the pointer moves, so it stays under a still mouse or a resting finger while
+  Vincent walks. On a phone, a tap inside Vincent's silhouette stops or starts him, and a touch anywhere else is the
+  hand.
+- **The portal's pointer** (C7). The portal has its own pointer listener, on once the arrival ends, whatever `touch`,
+  `alive` and reduced motion are. The touch hook is off in some of those states (`DioramaExperience.tsx:246`). A
+  hover over the village surges the sky as it does today. A tap on the village's houses enters and no longer surges
+  the sky behind them (today it does, `useTouchInput.ts:219–222`). A tap on the trees and bushes stays D1's bend. A
+  seam test pins both.
+- **Behind a flag first.** The street ships behind `?street=1` until Mark's gate, then becomes the default with
+  `?street=0` to turn it off, as A, B and C did.
+- **Vincent** is an invented part and follows the bar's rule for invented parts. His colours are gated as above.
+- **The way back** saves the orbit pose at the click and restores it, through the same layer (C16). drei's controls
+  do not update while they are off, so nothing else would restore it.
 
 ## Slices and gates
 
 Each slice runs the project's loop: plan file, review, build, captures, the Lead's gate, then Mark's taste gate on
-captures. The Lead's estimate is 5 to 6 sessions in total.
+captures. The Lead's estimate is 8 to 10 sessions in total (C13). E1 alone, one object with a measured plan, took a
+full day with four retunes and a review, and slice 1 holds five new mechanisms.
 
-1. **The street's look** (2 to 3 sessions, the hardest). The street as its own scene behind a development URL: the
-   houses, the church and steeple, the trees, the ground, the path, the fog and the sky above the roofs, seen from
-   fixed points along the path. Mark's gate compares captures against Simon's village crops and the painting.
-2. **Vincent and the walk** (1 session). The figure, the path, the scroll and arrow keys, the phone's automatic walk
-   and its tap, the camera behind him.
-3. **The grass and the hand** (1 session). The blades beside the path, the hand cursor, the bend and the spring-back
-   (D1's model in `src/scene/landTouch.ts`: a push that rises, then a damped swing back to zero), the finger on a
-   phone.
-4. **The portal** (1 session). The hover hint over the village, the flight down, the dissolve (the arrival's, in
-   `src/scene/arrival.ts`), the way back, reduced motion, the lazy load. The diorama's frames compared against the
-   capture from before the work.
+1. **The street's look** (4 to 5 sessions, the hardest). First the baseline reading (the budget, above). Then a flat
+   panel: one wall, one roof, one tree and the ground drawn flat beside the painting's village crop at matched
+   scale, before any house stands in 3D (C3, as E2's flat gates did). Then the street as its own scene behind a
+   development URL: the houses, the church and steeple, the trees, the ground, the path, the fog and the sky above
+   the roofs, seen from fixed points along the path, with the sky's method chosen (above). Mark's gate compares
+   captures against the painting first, and Simon's village crops where the painting is silent. **This gate is
+   where Mark decides whether slices 2 to 4 are built.**
+2. **Vincent and the walk** (1 to 2 sessions). The figure, the path, the scroll and arrow keys, the phone's automatic
+   walk and its tap, the reduced-motion steps, the camera behind him.
+3. **The grass and the hand** (1 to 2 sessions). The blades beside the path, the hand cursor, the bend and the
+   spring-back (D1's model in `src/scene/landTouch.ts`: a push that rises, then a damped swing back to zero), the
+   hand re-cast as the camera moves, the finger on a phone.
+4. **The portal** (1 to 2 sessions). The control and the hover hint, the portal's own pointer listener, the flight
+   down bounded by `v2`, the layer with the flight's last frame, the lazy load and its timeout, the way back to the
+   saved pose, reduced motion. The diorama's frames compared against the capture from before the work.
 
 The first slice comes first because the look decides whether the rest is worth building. If the street does not read
 as Van Gogh's village at walking distance, the walk and the grass cannot rescue it.
@@ -155,10 +195,10 @@ as Van Gogh's village at walking distance, the walk and the grass cannot rescue 
 ## Left to the builder
 
 - How many houses, their layout and the street's exact shape, within "one street to the church".
-- How surfaces are clad in strokes, and how the outlines are drawn.
+- How surfaces are clad in strokes and how the outlines are drawn, within the stroke-scale rule.
 - Vincent's construction and his walking movement, within "a few simple shapes, seen small and from behind".
-- The grass blades' count, shape and distribution, within the frame-rate limits.
-- The camera's distance and height behind Vincent, the walk's speed and the phone's pace.
-- The fog's colour and distance, from the palette.
-- The look of the portal hint and the way-back control, within the diorama's existing chrome.
-- The sky's method in the street, within the constraint above.
+- The grass blades' count, shape and distribution, within the budget.
+- The camera's distance and height behind Vincent, the walk's speed, the phone's pace and the reduced-motion stops.
+- The fog's colour and distance, within the palette gate.
+- The look of the portal control, the hint and the way-back control, within the diorama's existing chrome.
+- The sky's method and the street's scale, within the constraints above.
