@@ -18,7 +18,7 @@ import { mulberry32 } from './brush.ts'
 import type { BrushArraysWithCls } from './streetGeometry.ts'
 import { FOG, fogInjection } from './streetFog.ts'
 import type { ImageData2D } from './useImageData.ts'
-import { pathPoint, pathTangent, STREET, STREET_HOUSES } from './streetLayout.ts'
+import { pathPoint, pathTangent, STREET, STREET_CHURCH, STREET_HOUSES, STREET_TREES } from './streetLayout.ts'
 
 /**
  * SPIKE (2026-10-23, throwaway; Mark: "flat and dull" against Simon Lee's village with "a bit of breeze with fire
@@ -73,6 +73,20 @@ function radialTexture(): CanvasTexture {
   const t = new CanvasTexture(canvas)
   t.colorSpace = SRGBColorSpace
   return t
+}
+
+/** A soft-edged dark rectangle: the ground's shadow under a house (the footprint fills the middle 0.53). */
+const FOOT_FILL = 68 / 128
+function footprintTexture(): CanvasTexture {
+  const size = 128
+  const canvas = document.createElement('canvas')
+  canvas.width = size
+  canvas.height = size
+  const g = canvas.getContext('2d')!
+  g.filter = 'blur(12px)'
+  g.fillStyle = 'rgba(0,0,0,1)'
+  g.fillRect(30, 30, 68, 68)
+  return new CanvasTexture(canvas)
 }
 
 function insideAHouse(x: number, z: number): boolean {
@@ -236,7 +250,11 @@ export default function StreetAlive({ windows, painting }: { windows: BrushArray
     const hills = new MeshBasicMaterial({ map: hillPaint, vertexColors: true, side: DoubleSide, toneMapped: false })
     // the air between: the street's fog colour, reached far beyond the street's own fog
     injectAlive(hills, { key: 'street-hills', ...fogInjection(FOG.colour, 1.5, 10) })
-    return { flyGeometry, flyMaterial, texture, pool: glowMaterial(ALIVE.pool[1]), halo: glowMaterial(ALIVE.halo[1]), hillsGeometry: hillsGeometry(), hills, hillPaint }
+    // the ground's contact shadow under each house and tree (Mark: "the house feels like a cardboard")
+    const footTexture = footprintTexture()
+    const foot = new MeshBasicMaterial({ map: footTexture, color: new Color(0, 0, 0), transparent: true, opacity: 0.65, depthWrite: false, toneMapped: false })
+    const blob = new MeshBasicMaterial({ map: texture, color: new Color(0, 0, 0), transparent: true, opacity: 0.6, depthWrite: false, toneMapped: false })
+    return { flyGeometry, flyMaterial, texture, pool: glowMaterial(ALIVE.pool[1]), halo: glowMaterial(ALIVE.halo[1]), hillsGeometry: hillsGeometry(), hills, hillPaint, footTexture, foot, blob }
   }, [painting])
   useEffect(() => () => {
     parts.flyGeometry.dispose()
@@ -247,6 +265,9 @@ export default function StreetAlive({ windows, painting }: { windows: BrushArray
     parts.hillsGeometry.dispose()
     parts.hills.dispose()
     parts.hillPaint.dispose()
+    parts.footTexture.dispose()
+    parts.foot.dispose()
+    parts.blob.dispose()
   }, [parts])
 
   const lit = useMemo(() => litWindows(windows), [windows])
@@ -254,6 +275,18 @@ export default function StreetAlive({ windows, painting }: { windows: BrushArray
   return (
     <group name="street-alive">
       <mesh name="street-hills" geometry={parts.hillsGeometry} material={parts.hills} renderOrder={-1} />
+      {[...STREET_HOUSES, STREET_CHURCH.nave].map((h, i) => (
+        <group key={`foot-${i}`} position={[h.x, 0.006, h.z]} rotation={[0, -h.yaw, 0]}>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} material={parts.foot} renderOrder={3}>
+            <planeGeometry args={[h.w / FOOT_FILL, h.d / FOOT_FILL]} />
+          </mesh>
+        </group>
+      ))}
+      {STREET_TREES.map((t, i) => (
+        <mesh key={`blob-${i}`} position={[t.x, 0.006, t.z]} rotation={[-Math.PI / 2, 0, 0]} material={parts.blob} renderOrder={3}>
+          <planeGeometry args={[0.5, 0.5]} />
+        </mesh>
+      ))}
       {lit.map((w, i) => {
         const pool = w.centre.clone().addScaledVector(w.normal, ALIVE.pool[0] * 0.6).setY(0.003)
         const halo = w.centre.clone().addScaledVector(w.normal, 0.008)

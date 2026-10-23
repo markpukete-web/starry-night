@@ -1,5 +1,5 @@
 import { Color, SRGBColorSpace, Vector3 } from 'three'
-import { makeBrushArrays, type BrushArrays } from './brushForms.ts'
+import { makeBrushArrays, smooth, type BrushArrays } from './brushForms.ts'
 import { islandHeightAt } from './islandShape.ts'
 import { buildLandTrees, type BakedMass, type LandTrees } from './landDomes.ts'
 import { buildStreetTrees } from './streetTrees.ts'
@@ -140,6 +140,28 @@ function lightOf(face: StreetFace): number {
   return SPIKE_LIGHT.ambient + SPIKE_LIGHT.key * Math.max(0, face.normal.dot(SPIKE_MOON))
 }
 
+/** SPIKE (Mark: "the house feels like a cardboard"): a wall's ambient shadow, darker toward the ground, at its corners and
+ * in a band under the eaves. Walls standing on the ground only. */
+function wallShade(face: StreetFace, x: number, y: number, z: number): number {
+  if (face.kind !== 'wall' || face.shape !== 'quad' || face.origin.y > 0.01) return 1
+  const rel = new Vector3(x, y, z).sub(face.origin)
+  const s = rel.dot(face.u) / face.u.lengthSq()
+  const t = rel.dot(face.v) / face.v.lengthSq()
+  const ground = 0.5 + 0.5 * smooth(0, 0.5, t)
+  const eaves = 1 - 0.25 * smooth(0.8, 1, t)
+  const corner = 0.78 + 0.22 * smooth(0, 0.14, Math.min(s, 1 - s))
+  return ground * eaves * corner
+}
+
+function shadeNew(arr: BrushArrays, from: number, face: StreetFace): void {
+  for (let i = from; i < arr.positions.length; i += 3) {
+    const k = wallShade(face, arr.positions[i], arr.positions[i + 1], arr.positions[i + 2])
+    arr.colors[i] *= k
+    arr.colors[i + 1] *= k
+    arr.colors[i + 2] *= k
+  }
+}
+
 function clad(ctx: Context, owner: string, name: string, face: StreetFace): void {
   // a roof's base is its source's mean, not its darkest tenth: the street's eye meets the roofs at a grazing angle,
   // where the strokes thin out, and 46–99% of a roof's pixels showed the dark base (the per-source gate, `t12/`)
@@ -147,9 +169,12 @@ function clad(ctx: Context, owner: string, name: string, face: StreetFace): void
   const cls = face.kind === 'wall' ? 0 : face.kind === 'roof' ? 1 : face.kind === 'ground' ? 3 : 4
   const src = face.kind === 'wall' || face.kind === 'roof' ? (SOURCE_CLASSES[face.source] ?? 255) : 255
   const light = lightOf(face)
+  const underFrom = ctx.underpaint.positions.length
   polygon(ctx.underpaint, facePolygon(face), new Color().setRGB(r, g, b, SRGBColorSpace).multiplyScalar(light), cls, src)
   const traced = traceFace(face, ctx.flow, ctx.painting)
   for (let k = 0; k < traced.arrays.colors.length; k++) traced.arrays.colors[k] *= light
+  shadeNew(ctx.underpaint, underFrom, face)
+  shadeNew(traced.arrays, 0, face)
   append(face.kind === 'ground' || face.kind === 'path' ? ctx.ground : ctx.strokes, traced, cls, src)
   ctx.ribbons += traced.ribbons
   ctx.report.faces.push({ owner, name, ribbons: traced.ribbons })
@@ -196,6 +221,20 @@ function opening(ctx: Context, face: StreetFace, cu: number, cv: number, w: numb
  * the path; `along` is its width's direction, `toPath` its depth's, toward the street.
  */
 function house(ctx: Context, owner: string, index: number, b: Building, centre: Vector3, along: Vector3, toPath: Vector3, lit: boolean, chimney: boolean): void {
+  // SPIKE: each house leans its own way, up to about 2.6° (a shear by height keeps every face flat)
+  const lean = index === 100 ? 0 : (((index * 0.618 + 0.31) % 1) - 0.5) * 0.09
+  const marks = [ctx.underpaint, ctx.strokes.arrays, ctx.outlines.arrays, ctx.windows].map((arr) => [arr, arr.positions.length] as const)
+  buildHouse(ctx, owner, index, b, centre, along, toPath, lit, chimney)
+  for (const [arr, from] of marks) {
+    for (let i = from; i < arr.positions.length; i += 3) {
+      const y = arr.positions[i + 1]
+      arr.positions[i] += along.x * lean * y
+      arr.positions[i + 2] += along.z * lean * y
+    }
+  }
+}
+
+function buildHouse(ctx: Context, owner: string, index: number, b: Building, centre: Vector3, along: Vector3, toPath: Vector3, lit: boolean, chimney: boolean): void {
   const c = (x: number, z: number, y: number) => centre.clone().addScaledVector(along, x).addScaledVector(toPath, z).setY(y)
   const { w, d, eave, pitch } = b
   const wall = wallSource(b.wall, index)
