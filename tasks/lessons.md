@@ -2896,3 +2896,22 @@ reads as alive.
   and back in the worker's checkout left the tree clean but fired a hot update in its dev server. Probe old code with
   `git show <rev>:<path>` or in a worktree of your own.
 
+## 2026-10-24 (overnight) — the street S1b, built, gated and reviewed while Mark slept
+
+- **A check's PASS must prove the event it names happened.** Three times in one slice a check could pass on nothing:
+  F8 (a readiness test of a pure function), C1 (a build counter that deleted itself) and C7 (a hang check that passed
+  when its pattern matched no request). Make every check assert that its precondition fired (the hold, the second
+  build) and give each failure its own message.
+- **`process.exit` inside `try` skips `finally`.** Two browser checks exited on failure without closing Chrome, and five
+  orphaned headless Chromes burned GPU through the night's perf runs, doubling the plain diorama's p95. Throw instead,
+  and count headless Chromes before and after any perf run.
+- **Under a 60 Hz lock, p95 is the timer's jitter.** The mean sat at 16.67 ms at every station while p95 moved 16.9 to
+  18.4 between runs of one build. Read the mean and the max, run base and head back to back, and run several rounds
+  before calling a station over its bar.
+- **A gate tuned on a short street meets the fog on a long one.** The colour gate's two failures at stop 0 were the
+  fog's deliberate blue on houses 1.4 to 1.8 away, which the 1.2 lane never placed in the counted range. Pushing the fog
+  out in a throwaway edit proved the paint itself matched (12.5 → 3.4). Prove a cause by removing it, not by reasoning.
+- **A grazing angle shows a face's base.** The darkest-tenth base that read as separation on a wall seen square read as
+  black on the ground and on half-density walls seen at eye level. The mean (and the darkest 40% for the ground) fixed
+  both, at no triangle cost.
+
