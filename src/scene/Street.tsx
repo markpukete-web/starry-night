@@ -11,7 +11,7 @@ import { BrushCypress } from './BrushCypress.tsx'
 import { STREET, stationPose, STREET_CYPRESS_AT, STOP0_CAMERA } from './streetLayout.ts'
 import { readStreetFlags, streetReadiness, type AssetStatus } from './streetMode.ts'
 import { strokeGeometry } from './strokeGeometry.ts'
-import StreetAlive, { swayInjection } from './streetAlive.tsx'
+import StreetLife, { swayInjection } from './streetLife.tsx'
 import { useImageData } from './useImageData.ts'
 
 type StreetWindow = Window & {
@@ -91,7 +91,7 @@ function material(key: string, body: Omit<AliveInjection, 'key' | 'uniforms'> | 
  * the camera at its station itself, so the layout stays in this lazy chunk. `?flat=1` draws the flat panel instead
  * (G4b: four faces laid flat in the production materials, no fog), facing the camera.
  */
-export default function Street() {
+export default function Street({ reduced = false }: { reduced?: boolean } = {}) {
   const flags = useMemo(() => readStreetFlags(typeof window !== 'undefined' ? window.location.search : ''), [])
   const { camera, size } = useThree()
   const portrait = size.height > size.width
@@ -217,7 +217,7 @@ export default function Street() {
           alive={false}
         />
       )}
-      {!flags.flat && flags.ids === 0 && build && paintingData && <StreetAlive windows={build.windows} painting={paintingData} />}
+      {!flags.flat && flags.ids === 0 && build && paintingData && <StreetLife windows={build.windows} painting={paintingData} reduced={reduced} />}
     </group>
   )
 }

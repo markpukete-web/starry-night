@@ -167,6 +167,7 @@ async function main() {
     const evalRes = await page.send('Runtime.evaluate', {
       expression: `(() => ({
         counts: window.__streetCounts,
+        lifeBuilds: window.__streetLifeBuilds,
         camera: typeof window.__streetCamera === 'function' ? window.__streetCamera() : null
       }))()`,
       returnByValue: true,
@@ -178,10 +179,16 @@ async function main() {
     console.log('Street rotation state:', JSON.stringify(state, null, 2))
 
     const builds = state.counts?.builds
+    const lifeBuilds = state.lifeBuilds
     const fov = state.camera?.fov
 
     if (builds !== 1) {
       console.error(`FAIL: expected window.__streetCounts.builds === 1, got ${builds}`)
+      process.exit(1)
+    }
+
+    if (lifeBuilds !== 1) {
+      console.error(`FAIL: expected window.__streetLifeBuilds === 1, got ${lifeBuilds}`)
       process.exit(1)
     }
 
@@ -190,7 +197,7 @@ async function main() {
       process.exit(1)
     }
 
-    console.log(`PASS: street rotation holds builds=${builds} and updates fov=${fov}`)
+    console.log(`PASS: street rotation holds builds=${builds}, lifeBuilds=${lifeBuilds} and updates fov=${fov}`)
     await page.close()
   } finally {
     chrome.cleanup()
