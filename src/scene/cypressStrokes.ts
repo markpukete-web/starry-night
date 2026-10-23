@@ -340,3 +340,27 @@ export function ribbonColumns(ribbon: CypressRibbon, width: number, height: numb
     return out
   })
 }
+
+/**
+ * Keeps every k-th sample of a traced ribbon, its first and last always, and the sample that is ribbon.seedSample
+ * always (drapeRibbon anchors the kept run on it, Fable N1), before ribbonColumns and drapeRibbon. k <= 1 returns
+ * the ribbon unchanged.
+ */
+export function strideSamples(ribbon: CypressRibbon, k: number): CypressRibbon {
+  if (k <= 1 || ribbon.samples.length <= 2) return ribbon
+  const keptSamples: CypressRibbonSample[] = []
+  const keptColours: [number, number, number][] = []
+  const hasColours = ribbon.colours && ribbon.colours.length === ribbon.samples.length
+  const n = ribbon.samples.length
+  for (let i = 0; i < n; i++) {
+    if (i === 0 || i === n - 1 || i % k === 0 || ribbon.samples[i] === ribbon.seedSample) {
+      keptSamples.push(ribbon.samples[i])
+      if (hasColours) keptColours.push(ribbon.colours[i])
+    }
+  }
+  return {
+    ...ribbon,
+    samples: keptSamples,
+    colours: hasColours ? keptColours : ribbon.colours,
+  }
+}

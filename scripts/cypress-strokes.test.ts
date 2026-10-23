@@ -8,6 +8,7 @@ import {
   CYPRESS_RIBBON_CONFIG,
   ribbonEdges,
   runHalfWidthAt,
+  strideSamples,
   traceCypressRibbons,
   type CypressRibbon,
 } from '../src/scene/cypressStrokes.ts'
@@ -301,5 +302,38 @@ test('a continuous walk passes through a sink by its sign continuity instead of 
     assert.ok(ribbon.samples.length <= distinct + 4, `a walk of ${ribbon.samples.length} samples over ${distinct} texels: the walk cycled`)
     // the crossing itself (Codex's confirmation read, F6): samples on both sides of the sink
     assert.ok(px.some((x) => x < 30) && px.some((x) => x > 30), `a walk from ${Math.min(...px)} to ${Math.max(...px)} never crosses the sink`)
+  }
+})
+
+test('strideSamples keeps the ends, the seed and every k-th sample', () => {
+  const samples = Array.from({ length: 11 }, (_, i) => ({ px: i / 10, py: i / 10, inside: true }))
+  const seedSample = samples[5]
+  const colours = Array.from({ length: 11 }, (_, i) => [i / 10, i / 10, i / 10] as [number, number, number])
+  const ribbon: CypressRibbon = {
+    samples,
+    seedSample,
+    colour: [0.5, 0.5, 0.5],
+    colours,
+    halfWidth: 0.05,
+    relief: 1,
+    seed: 123,
+  }
+
+  const r1 = strideSamples(ribbon, 1)
+  assert.equal(r1.samples.length, 11)
+  assert.equal(r1.colours.length, 11)
+  assert.ok(r1.samples.includes(r1.seedSample))
+
+  const r4 = strideSamples(ribbon, 4)
+  assert.deepEqual(r4.samples.map((s) => samples.indexOf(s)), [0, 4, 5, 8, 10])
+  assert.equal(r4.samples.length, r4.colours.length)
+  assert.ok(r4.samples.includes(r4.seedSample))
+
+  for (let k = 1; k <= 4; k++) {
+    const rk = strideSamples(ribbon, k)
+    assert.ok(rk.samples.includes(rk.seedSample), `k=${k} includes seedSample`)
+    assert.equal(rk.samples.length, rk.colours.length, `k=${k} per-sample array lengths in step`)
+    assert.equal(rk.samples[0], samples[0], `k=${k} keeps first sample`)
+    assert.equal(rk.samples[rk.samples.length - 1], samples[samples.length - 1], `k=${k} keeps last sample`)
   }
 })
