@@ -238,7 +238,8 @@ export function faceConfig(face: StreetFace, count?: number, rows = 64): Cypress
   const minLength = (scale.length[0] * face.refHeight) / height
   const maxLength = (scale.length[1] * face.refHeight) / height
   const area = 2 * ((minHalfWidth + maxHalfWidth) / 2) * Math.min(1, Math.sqrt(minLength * maxLength))
-  const auto = Math.round(Math.min(800, Math.max(12, (COVER / area) * (face.shape === 'triangle' ? 0.5 : 1))))
+  // a triangle keeps the quad's count: the clip takes the strokes past its sloped sides
+  const auto = Math.round(Math.min(800, Math.max(16, COVER / area)))
   return {
     ...CYPRESS_RIBBON_CONFIG,
     frontCount: count ?? auto,
