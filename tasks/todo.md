@@ -1,5 +1,14 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-10-23 (evening): the street S1b plan, both reviews in, the revision next
+
+Slice 1's street failed Mark's gate ("flat and dull", then "cardboard"). The redesign is an invented village lane at
+eye level (the design's last section, Mark approved the map). The plan is `tasks/2026-10-23-street-s1b-plan.md`. Mark
+approved its direction: "It does and the plan sounds all right." The worker (GAPS) and Fable (REVISE, two P1s) have
+reviewed it. Neither review is folded in yet. Start with `tasks/2026-10-23-street-s1b.md`: where we are, both
+reports in short, the answers already reached, and the three decisions open for the revision (the cypress's 537,816
+triangles against the budget first). Then revise the plan once, commit it locally, and the worker starts Task 0.
+
 ## Pickup — 2026-10-23 (afternoon): E4 closed on Mark's word; the village street designed, Mark's approval pending
 
 Mark, 2026-10-23: "It passed. Let's close this slice and move on to the next one." E4 is closed. Before his review the
