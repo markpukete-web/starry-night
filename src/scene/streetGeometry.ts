@@ -3,8 +3,8 @@ import { makeBrushArrays, type BrushArrays } from './brushForms.ts'
 import { islandHeightAt } from './islandShape.ts'
 import { buildLandTrees, type BakedMass, type LandTrees } from './landDomes.ts'
 import { PALETTE } from './palette.ts'
-import { STREET, STREET_CHURCH, STREET_HOUSES, STREET_TREES, pathPoint, pathTangent } from './streetLayout.ts'
-import { outlineFace, sourceUnderpaint, traceFace, type FaceStrokes, type StreetFace, type StreetSourceName } from './streetStrokes.ts'
+import { STREET, STREET_CHURCH, STREET_HOUSES, STREET_TREES, pathPoint, pathTangent, streetGroundAt } from './streetLayout.ts'
+import { outlineFace, sourceUnderpaint, streetMassConfig, traceFace, type FaceStrokes, type StreetFace, type StreetSourceName } from './streetStrokes.ts'
 import type { ImageData2D } from './useImageData.ts'
 import { VILLAGE_CHURCH, type Building, type Pigment } from './villageKnot.ts'
 
@@ -288,7 +288,7 @@ export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | nu
     house(ctx, `house-${index}`, index, h, new Vector3(h.x, 0, h.z), along, toPath, index % 3 === 0)
   })
   ctx.report.church = church(ctx)
-  const trees = buildLandTrees(flow, painting, masses, 0x7ee5, STREET_TREES)
+  const trees = buildLandTrees(flow, painting, masses, 0x7ee5, STREET_TREES, streetGroundAt, streetMassConfig)
   const triangles = (ctx.underpaint.indices.length + ctx.strokes.arrays.indices.length + ctx.outlines.arrays.indices.length + ctx.windows.indices.length + trees.solid.indices.length + trees.strokes.indices.length) / 3
   return {
     underpaint: ctx.underpaint,
@@ -299,4 +299,45 @@ export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | nu
     counts: { ribbons: ctx.ribbons, triangles, builds: 0 },
     report: ctx.report,
   }
+}
+
+/** G4b's view of the flat panel: the camera square on the board, the five pieces in two rows. */
+export const FLAT_VIEW = { position: [0.8, 0.285, 1.9] as [number, number, number], target: [0.8, 0.285, 0] as [number, number, number], fov: 30 }
+
+/**
+ * G4b, the flat panel in the production materials (S1 task 5 step 1): a wall (`wallA`), a gable (`wallB`), a roof
+ * (`roofStriped`), the field and a tree mass laid flat facing +z, on a dark board that hides the sky, so the stroke
+ * body's lanes, rake, fray and dry tails can be read on a wall before the volumes stand.
+ */
+export function buildFlatPanel(painting: ImageData2D | null, flow: ImageData2D | null, masses: BakedMass[] | null): StreetBuild | null {
+  if (!painting || !flow || !masses) return null
+  const ctx: Context = {
+    flow,
+    painting,
+    underpaint: makeBrushArrays(),
+    strokes: { arrays: makeBrushArrays(), stroke: [], seed: [] },
+    outlines: { arrays: makeBrushArrays(), stroke: [], seed: [] },
+    windows: makeBrushArrays(),
+    report: { faces: [], outlines: [], windows: [], church: { belfryWidth: 0, spireHeight: 0 } },
+    ribbons: 0,
+  }
+  polygon(ctx.underpaint, [new Vector3(-0.3, -0.3, -0.05), new Vector3(1.9, -0.3, -0.05), new Vector3(1.9, 0.9, -0.05), new Vector3(-0.3, 0.9, -0.05)], new Color(0x111111))
+  const toward = new Vector3(0, 0, 1)
+  const behind = new Vector3(0.8, 0.3, -1)
+  const pieces: [string, Vector3, number, number, StreetFace['shape'], StreetFace['kind'], StreetSourceName, number][] = [
+    ['wall', new Vector3(0, 0.32, 0), 0.6, 0.2, 'quad', 'wall', 'wallA', 0.2],
+    ['gable', new Vector3(0.7, 0.32, 0), 0.4, 0.14, 'triangle', 'wall', 'wallB', 0.2],
+    ['roof', new Vector3(1.2, 0.32, 0), 0.4, 0.25, 'quad', 'roof', 'roofStriped', 0.25],
+    ['field', new Vector3(0, 0, 0), 0.8, 0.25, 'quad', 'ground', 'field', 0.2],
+  ]
+  pieces.forEach(([name, origin, w, h, shape, kind, source, ref], i) => {
+    const face = orientedFace(origin, new Vector3(w, 0, 0), new Vector3(0, h, 0), behind, { shape, kind, source, refHeight: ref, seed: 0x7100 + i, mirror: false })
+    clad(ctx, 'flat', name, face)
+    const corners = facePolygon(face)
+    ink(ctx, 'flat', ref, corners.map((p, k) => [p, corners[(k + 1) % corners.length], toward] as [Vector3, Vector3, Vector3]), 0x7200 + i)
+  })
+  const tree = STREET_TREES.find((t) => t.id === 'orchard-lower') ?? STREET_TREES[0]
+  const trees = buildLandTrees(flow, painting, masses, 0x7ee5, [{ ...tree, x: 1.35, z: 0 }], streetGroundAt, streetMassConfig)
+  const triangles = (ctx.underpaint.indices.length + ctx.strokes.arrays.indices.length + ctx.outlines.arrays.indices.length + trees.solid.indices.length + trees.strokes.indices.length) / 3
+  return { underpaint: ctx.underpaint, strokes: ctx.strokes, outlines: ctx.outlines, windows: ctx.windows, trees, counts: { ribbons: ctx.ribbons, triangles, builds: 0 }, report: ctx.report }
 }

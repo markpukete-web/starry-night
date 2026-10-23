@@ -1,6 +1,6 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei'
-import { Suspense, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react'
 import { Diorama } from './Diorama'
 import { PaintingFlowSky3D, type SkyStyle } from './PaintingFlowSky3D'
 import type { AliveTuning } from './skyAlive'
@@ -8,6 +8,7 @@ import { emptyTouchStore, type TouchStore } from './touchSurge'
 import { useTouchInput } from './useTouchInput'
 import { emptyLandStore, type LandStore } from './landTouch'
 import { ARRIVAL, ArrivalClock, arrivalCamera, arrivalFrame, rememberArrived } from './arrival'
+import { isStreetMode, touchEnabled } from './streetEntry'
 // (ARRIVAL.reveal feeds the chrome's fade-in through a custom property; the clock owns every other constant)
 import {
   DIORAMA_CAMERAS,
@@ -15,6 +16,8 @@ import {
   type DioramaDebugMode,
   type DioramaViewMode,
 } from './dioramaContract'
+
+const Street = lazy(() => import('./Street'))
 
 type Props = {
   clean?: boolean
@@ -223,6 +226,7 @@ function Scene({
   arriving: boolean
   onArrived: () => void
 }) {
+  const streetMode = useMemo(() => isStreetMode(typeof window !== 'undefined' ? window.location.search : ''), [])
   const debug = readDebugMode()
   const view = readViewMode()
   // R3F's `size` is the canvas size and re-renders on resize. Reading window.inner* here instead
@@ -230,7 +234,10 @@ function Scene({
   // framing — landscape→portrait held the desktop close-up (Codex, 2026-07-28).
   const { size } = useThree()
   const isPortrait = size.height > size.width
-  const camera = isPortrait && view === 'design' ? DIORAMA_CAMERAS.mobile : DIORAMA_CAMERAS[view]
+  const defaultCamera = isPortrait && view === 'design' ? DIORAMA_CAMERAS.mobile : DIORAMA_CAMERAS[view]
+  const skyHome = isPortrait ? DIORAMA_CAMERAS.mobile : DIORAMA_CAMERAS.design
+
+
   const background = useMemo(() => (debug === 'stage' ? '#071020' : '#06112a'), [debug])
   const measurePerformance = readPerfMode()
   // The one sky clock (make-it-alive A, second pass): the sky's frame loop writes it (pinned, advanced, or 0 while
@@ -243,35 +250,59 @@ function Scene({
   const landStore = useRef<LandStore>(emptyLandStore())
   const bendGain = aliveTuning?.bend ?? 1
   // C: no touch until the arrival is done; a tap during it is the skip
-  useTouchInput({ enabled: touch && !reduced && !arriving, store: touchStore, clock: skyClock, home: camera, knob: aliveTuning?.surge ?? 1, land: touch ? { store: landStore, bendGain } : undefined })
-  const landTouch = useMemo(() => (touch ? { store: landStore, clock: skyClock, bendGain } : undefined), [touch, bendGain])
+  useTouchInput({
+    enabled: touchEnabled({ touch, reduced, arriving, street: streetMode }),
+    store: touchStore,
+    clock: skyClock,
+    home: streetMode ? skyHome : defaultCamera,
+    knob: aliveTuning?.surge ?? 1,
+    land: touch && !streetMode ? { store: landStore, bendGain } : undefined,
+  })
+  const landTouch = useMemo(() => (touch && !streetMode ? { store: landStore, clock: skyClock, bendGain } : undefined), [touch, streetMode, bendGain])
 
   return (
     <>
       <color attach="background" args={[background]} />
       <PerspectiveCamera
         makeDefault
-        position={[...camera.position]}
-        fov={camera.fov}
-        near={camera.near}
-        far={camera.far}
+        position={[...defaultCamera.position]}
+        fov={defaultCamera.fov}
+        near={defaultCamera.near}
+        far={defaultCamera.far}
       />
-      <OrbitControls
-        enabled={!arriving}
-        target={[...camera.target]}
-        minDistance={DIORAMA_ORBIT.minDistance}
-        maxDistance={DIORAMA_ORBIT.maxDistance}
-        minAzimuthAngle={DIORAMA_ORBIT.minAzimuthAngle}
-        maxAzimuthAngle={DIORAMA_ORBIT.maxAzimuthAngle}
-        minPolarAngle={DIORAMA_ORBIT.minPolarAngle}
-        maxPolarAngle={DIORAMA_ORBIT.maxPolarAngle}
-        enablePan={DIORAMA_ORBIT.enablePan}
-        enableDamping={DIORAMA_ORBIT.enableDamping}
-      />
+      {!streetMode && (
+        <OrbitControls
+          enabled={!arriving}
+          target={[...defaultCamera.target]}
+          minDistance={DIORAMA_ORBIT.minDistance}
+          maxDistance={DIORAMA_ORBIT.maxDistance}
+          minAzimuthAngle={DIORAMA_ORBIT.minAzimuthAngle}
+          maxAzimuthAngle={DIORAMA_ORBIT.maxAzimuthAngle}
+          minPolarAngle={DIORAMA_ORBIT.minPolarAngle}
+          maxPolarAngle={DIORAMA_ORBIT.maxPolarAngle}
+          enablePan={DIORAMA_ORBIT.enablePan}
+          enableDamping={DIORAMA_ORBIT.enableDamping}
+        />
+      )}
       {measurePerformance && <PerfProbe />}
-      {arrival && <ArrivalDriver home={camera} reduced={still} onDone={onArrived} {...refs} />}
+      {!streetMode && arrival && <ArrivalDriver home={defaultCamera} reduced={still} onDone={onArrived} {...refs} />}
       <Suspense fallback={null}>
-        {debug !== 'flow' && <Diorama debug={debug === 'stage' ? 'stage' : 'final'} clock={skyClock} alive={alive} tuning={aliveTuning} cypressReady={arrival ? refs.cypressReadyRef : undefined} landReady={arrival ? refs.landReadyRef : undefined} touch={landTouch} />}
+        {streetMode ? (
+          // the street places the camera at its station itself, in its own chunk (the main bundle carries no layout)
+          <Street />
+        ) : (
+          debug !== 'flow' && (
+            <Diorama
+              debug={debug === 'stage' ? 'stage' : 'final'}
+              clock={skyClock}
+              alive={alive}
+              tuning={aliveTuning}
+              cypressReady={arrival ? refs.cypressReadyRef : undefined}
+              landReady={arrival ? refs.landReadyRef : undefined}
+              touch={landTouch}
+            />
+          )
+        )}
         {debug !== 'stage' && (
           <PaintingFlowSky3D
             paused={reduced}
@@ -280,13 +311,13 @@ function Scene({
             alive={alive}
             tuning={aliveTuning}
             clock={skyClock}
-            touch={touch}
+            touch={touch && !streetMode}
             touchStore={touchStore}
-            arrivalStep={arrival ? refs.arrivalStepRef : undefined}
-            ready={arrival ? refs.skyReadyRef : undefined}
+            arrivalStep={!streetMode && arrival ? refs.arrivalStepRef : undefined}
+            ready={!streetMode && arrival ? refs.skyReadyRef : undefined}
             debug={debug === 'flow' ? 'flow' : 'final'}
             /* a stable module constant, so the sky's home quaternion memo holds across renders */
-            home={camera}
+            home={streetMode ? skyHome : defaultCamera}
           />
         )}
       </Suspense>
@@ -314,10 +345,12 @@ function VincentsLine() {
 }
 
 export function DioramaExperience({ clean = false, reduced = false, sky = 'light', still = false, alive = false, aliveTuning, touch = false, arrival = false, children }: Props) {
+  const streetMode = useMemo(() => isStreetMode(typeof window !== 'undefined' ? window.location.search : ''), [])
+  const effectiveArrival = !streetMode && arrival
   const [arrived, setArrived] = useState(false)
-  const arriving = arrival && !arrived
+  const arriving = effectiveArrival && !arrived
   // reduced motion: the line is a static caption with its own life, gone on the first pointer or key (review F1)
-  const [captionShown, setCaptionShown] = useState(arrival && still)
+  const [captionShown, setCaptionShown] = useState(effectiveArrival && still)
   const layerRef = useRef<HTMLDivElement>(null)
   const scanRef = useRef<HTMLImageElement>(null)
   const lineRef = useRef<HTMLElement>(null)
