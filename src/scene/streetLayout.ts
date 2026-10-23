@@ -274,6 +274,14 @@ export function streetGroundAt(x: number, z: number): number {
   return 0
 }
 
+const [p0x, , p0z] = pathPoint(0)
+const [t0x, , t0z] = pathTangent(0)
+export const STOP0_CAMERA: readonly [number, number, number] = [
+  p0x - t0x * STREET.behind,
+  STREET.eye,
+  p0z - t0z * STREET.behind,
+] as const
+
 const STATION_T = [0, 0.23, 0.44, 0.66, 0.9] as const
 
 export function stationPose(
