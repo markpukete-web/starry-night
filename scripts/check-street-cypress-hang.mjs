@@ -163,8 +163,13 @@ async function main() {
 
     const elapsedMs = Date.now() - start
 
-    // a throw, not process.exit: the exit skipped the finally and left the headless Chrome running
-    if (!ready) throw new Error(`FAIL: window.__streetReady was not ready within 25 s (elapsed ${elapsedMs} ms)`)
+    // a throw, not process.exit: the exit skipped the finally and left the headless Chrome running. The message names the
+    // hold and the street's counts, so a guard waiting for the held cypress, a server that is down and an early script
+    // error read apart (Fable C7)
+    if (!ready) {
+      const counts = await page.send('Runtime.evaluate', { expression: 'JSON.stringify(window.__streetCounts ?? null)', returnByValue: true })
+      throw new Error(`FAIL: window.__streetReady was not ready within 25 s (elapsed ${elapsedMs} ms); held: ${page.interceptedUrl ?? 'nothing'}; street counts: ${counts.result?.value ?? 'unreadable'}`)
+    }
 
     const countsRes = await page.send('Runtime.evaluate', {
       expression: 'window.__streetCounts ? window.__streetCounts.triangles : 0',
@@ -174,7 +179,13 @@ async function main() {
 
     if (triangles <= 0) throw new Error(`FAIL: expected window.__streetCounts.triangles > 0, got ${triangles}`)
 
-    console.log(`PASS: street became ready in ${elapsedMs} ms with ${triangles} triangles while cypress held unanswered (${page.interceptedUrl ?? 'intercepted'})`)
+    // a PASS must have held something: if the flow's URL changes and the pattern matches nothing, the street is ready as
+    // on any visit and the check would pass vacuously (Fable C7). The cypress may ask after the street is ready
+    const holdStart = Date.now()
+    while (!page.interceptedUrl && Date.now() - holdStart < 5000) await sleep(100)
+    if (!page.interceptedUrl) throw new Error('FAIL: the cypress flow was never requested, so nothing was held')
+
+    console.log(`PASS: street became ready in ${elapsedMs} ms with ${triangles} triangles while cypress held unanswered (${page.interceptedUrl})`)
     await page.close()
   } finally {
     chrome.cleanup()
