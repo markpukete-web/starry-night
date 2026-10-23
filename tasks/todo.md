@@ -1,5 +1,38 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-10-24 (late morning): Mark at S1b's gate, look pass 3 on the path built
+
+Mark on the live street: "It does read like a village", "keep the fog for now". On the path, after the Lead's sheet
+of Simon's: "Go with your recommendations". Look pass 3 (`1ca5fe3`): a pale lane, 0.12 wide, lift 0.5. Mark: "It has
+improvments. Simon's parth and village comes with a cartoon feel and a bit more realistic than us, but maybe when the
+whole plan finished our villiage would have the same feelings." Open: his verdict on S1b's gate (merge, slices 2 to 4),
+and whether Fable reads pass 3 first. The record: `tasks/2026-10-23-street-s1b.md`, Pickup.
+
+**Noted, not queued (scope rule): the village's craft.** Slices 2 to 4 add Vincent, the walk, the grass and the portal.
+None of them changes how a house is made, so they will not by themselves give Simon's solid, slightly realistic
+village. What gives his that (`tasks/2026-10-11-simon-lee-study.md`, the village study): modelled detail (door frames,
+shutters, steps, eaves, fences and small lamps along the paths), surfaces that read as solid paint rather than long
+strokes with gaps, and the grass's dabs breaking the path's edge. Slice 3's grass covers the last one. The first two
+would be a slice of their own, in the painting's strokes, not his generic texture (the bar). Mark decides after slice 3.
+
+## Pickup — 2026-10-24 (morning): the street S1b built, gated and reviewed overnight; superseded
+
+Mark, leaving for the night: "finish all the slices and completed all the visual gates and code gates before present to
+me". S1b (the village lane) is complete through Task 11 on `feat/street-s1b-lead` at `305aefe`, local, not merged, not
+pushed. The Lead's gate G1 to G11 and Fable's two reviews are done (review 1 FIX, fixed; the confirmation read FIX on
+C7, fixed). Start with `tasks/2026-10-23-street-s1b.md`, its Pickup section: the live URL, the sheets, and six
+decisions parked for Mark (does it read as a village, the moonlight's ambient, the gate's fog, stop 4's p95, the
+cottage door, the ground and path within the budget). Slices 2 to 4 wait for his verdict.
+
+## Pickup — 2026-10-23 (evening, superseded): the street S1b plan, both reviews in, the revision next
+
+Slice 1's street failed Mark's gate ("flat and dull", then "cardboard"). The redesign is an invented village lane at
+eye level (the design's last section, Mark approved the map). The plan is `tasks/2026-10-23-street-s1b-plan.md`. Mark
+approved its direction: "It does and the plan sounds all right." The worker (GAPS) and Fable (REVISE, two P1s) have
+reviewed it. Neither review is folded in yet. Start with `tasks/2026-10-23-street-s1b.md`: where we are, both
+reports in short, the answers already reached, and the three decisions open for the revision (the cypress's 537,816
+triangles against the budget first). Then revise the plan once, commit it locally, and the worker starts Task 0.
+
 ## Pickup — 2026-10-23 (afternoon): E4 closed on Mark's word; the village street designed, Mark's approval pending
 
 Mark, 2026-10-23: "It passed. Let's close this slice and move on to the next one." E4 is closed. Before his review the
@@ -25,6 +58,10 @@ The land roadmap (E1, E2, D1, then E3 and E4 on the cypress) is done.
      authored camera path (the village street's portal flight and walk, 2026-10-23) may leave them, and the visitor
      never steers the camera off it. The diorama always reads as Starry Night — head-on it is the painting's
      composition." Mark applies it in `CLAUDE.md`.
+   - **Idea for slice 3, not built** (Mark, 2026-10-23: "some flowers that Vincent drew of other drawings perhaps"):
+     flowers beside the path with the grass, for the hand to touch. Their shape and brushwork may follow Vincent's own
+     Saint-Rémy flowers. Their colours come from The Starry Night's palette, because the bar locks colour to the
+     painting. Mark decides at slice 1's gate whether slice 3 is built.
 2. **The experiment's verdict** (Gemini 4 Argon for visual work under the Lead's gating) is not given.
 3. **Open from E4, not blocking:** the gaps field does nothing visible (keep or remove). The render's marks are thin
    scratches where the painting's bands are 30–60 px, with no dark contour strokes and no yellow-green highlights.

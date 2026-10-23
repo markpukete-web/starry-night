@@ -65,8 +65,18 @@ used (`CLAUDE.md`, "study, never copy implementation or assets"). The study is
 
 The order when the two differ (C14): the scan and `palette.json` come first, because the bar is locked. Simon's
 village answers only what the scan cannot show at walking distance: volumes, outlines, fog. Where the scan does show a
-form, the scan's form wins. The painting's village trees are dark round masses and its fields are long strokes, so
-the street's trees and ground start from those, not from his leaf cards and flake dabs.
+form, the scan's form wins. The painting's fields are long strokes, so the street's ground starts from those, not from
+his flake dabs.
+
+The trees take Simon's structure (Mark, 2026-10-23, after pass 6: "do you think we can build the Van Gogh type of
+trees like Simon's?", then "Yes, update the design"). The scan shows its village trees only from far away, as dark
+round masses, so it says nothing about their structure at walking distance. The land's trees, built for the diorama's
+distance, read there as flat dark discs with straight edges (`scratch/street-s1-2026-10-23/gate/trees-before-after.png`).
+Each street tree is a dark twisting trunk with branches in tapering ink strokes, carrying round clumps of foliage.
+The painting's curling strokes in its village trees' colours cover each clump, dark at the centre and pale at the
+lit edge. His leaf cards, models and textures are not copied. Seen from the far stops, the clumps must still read
+together as one dark round mass, as the painting's trees do. Van Gogh painted olive trees at Saint-Rémy in the same
+months as The Starry Night: their trunks and clumps may guide the form, never the colour.
 
 What the study says to take: houses as modelled volumes (a box, a pitched roof, chimneys, shutters, door frames),
 dark ink outlines along house edges and along crests, blue fog that lightens what is far away, and few warm windows.
@@ -199,6 +209,46 @@ full day with four retunes and a review, and slice 1 holds five new mechanisms.
 
 The first slice comes first because the look decides whether the rest is worth building. If the street does not read
 as Van Gogh's village at walking distance, the walk and the grass cannot rescue it.
+
+## The redesign after slice 1's gate (2026-10-23, evening)
+
+Slice 1 built the street as specified and its code passed review (Fable, MERGE). Mark's gate on the live street did not
+pass it: "flat and dull", "the house feels like a cardboard". A throwaway spike (`spike/street-alive`, `bf4259e`,
+`2278cc5`) showed that light, motion and depth help ("Better"), but the houses stayed cardboard. The study of Simon's
+village (`tasks/2026-10-11-simon-lee-study.md`, "The village's layout") named the cause: slice 1 built the one view
+Simon never shows, eye level in a corridor between two straight rows of same-facing boxes on flat ground. Mark kept
+the eye level ("I picture the eye level because originally we were planning to plant some grass so that user can feel
+and touch") and approved the plan from above (`scratch/village-redesign-2026-10-23/layout-v1.png`: "Saw the map.
+Proceed to the plan"). Slice 1b rebuilds the street's layout and houses on slice 1's code. This section overrides the
+earlier sections where they differ.
+
+**An invented village, as Vincent's was.** Mark's research: the painting's view was real (the Alpilles, the cypress),
+the village an imaginary composite, its church in the style of his Dutch homeland. The street is composed the same way:
+invented, painted in the painting's own paint, with footprints of the painting a visitor recognises.
+
+- **The lane.** A winding lane, an S-curve, from stop 0 to a small square before the church. Grass along both edges is
+  slice 3's. The camera stays at eye level, behind Vincent's place on the lane. The ground stays flat in this slice
+  (rolling ground is noted for after Mark's gate).
+- **The footprints of the painting.** The painting's cypress towers on the left at stop 0, so stop 0 looks past it up
+  the lane to the spire, the hills and the sky: the painting's composition from inside. The church with its Dutch spire
+  stands on the square. The striped-roof house and the sienna-roof house of the painting's village stand among the
+  others. Few lit windows, in the painting's own lemon dabs. The round curled trees (pass 6) in the gaps. The hills in
+  the painting's own hill paint, seen between the houses.
+- **The houses: mixed** (Mark: "I'd keen on mixed"). About ten (Mark: "Would that be too many?"; the Lead's call, ten,
+  paid for by detail with distance). Some are the painting's houses, pale walls under blue, sienna or striped roofs,
+  one of them two storeys. Some are Dutch cottages after Vincent's Nuenen cottages: low walls under a thick, steep
+  thatched roof, the thatch painted in strokes. Each house stands at its own angle and distance from the lane, with gaps
+  between. Every roof has thickness and an overhang.
+- **Against the cardboard** (from the spike): walls darker toward the ground, at their corners and under the eaves;
+  each house leaning a little its own way; a soft shadow on the ground under each house and tree; roofs with an edge.
+- **Light and life** (from the spike, "Better"): the sky's moon lights the faces turned to it, the far sides fall to
+  0.4; a warm glow at each lit window and on the ground below it; the trees sway in a breeze; fireflies over the lane.
+  Reduced motion stills the sway and the fireflies.
+- **Detail with distance.** The near houses keep slice 1's stroke density. A house far from every stop, and the ground
+  far from the lane, take fewer strokes. The street stays within the diorama's triangle count.
+- **Stop 4** stands on the square far enough back that the church's gable and door are both in frame (Fable R1).
+- **Mark sees the street live early**, after the layout and the houses stand, before the light and life are tuned
+  (`tasks/lessons.md`, 2026-10-23).
 
 ## Left to the builder
 

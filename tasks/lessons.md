@@ -2862,3 +2862,69 @@ after PR #8 merged (`246e817`, "Merge it then start the second pass").
   on four old scratch scripts; the clean worktree passed. Lint where the branch is, not where the scratch is.
 - **Tunables:** E4's entry added to CLAUDE.md on 2026-10-22 (the cypress's paint fields and the ±1 smoothing). No
   existing tunable changed.
+
+## 2026-10-23 — the street: a colour gate that passes does not make a place feel alive
+
+Slice 1 spent five look passes and a day of colour gating on the street's paint (strokes, openings, windows, roofs, a
+per-source ΔE gate that ended green). Mark's first live view: "flat and dull", against Simon Lee's village with its
+breeze, fireflies and 3D feel. The causes were structural and visible from the first frame: unlit materials, nothing
+moving in the street, no depth behind it. Each pass compared crops against the painting, and the painting is a flat
+image, so the comparison could never see what was missing. Lesson: when the reference that matters is a living 3D
+scene, compare against it live (motion, light, depth) before the first look pass, and show Mark the live view early,
+not montages of stills. The colour gate measures drift from the painting; it says nothing about whether the place
+reads as alive.
+
+## 2026-10-23 (night) — the street S1b plan, revision 2 and 3
+
+- **A sketch map's scale is a decision, and its dots are not footprints.** Revision 1 read the map at about 0.0016 per
+  pixel and kept the table's sizes, so seven house pairs overlapped. Sweeping the scale against the layout tests found
+  the first clean one (0.0024) in a minute. The map's tree dots were drawn at a third of the trees' reach, so the trees
+  had to be placed, not read.
+- **Area does not predict a stroked face's cost.** The Lead scaled S1's triangles by area and count and came in 4% to 6%
+  under at every rung. Fable's probe with the real tracer found why: a wall's ribbon count goes with its width over its
+  eave, so a cottage's 0.09-high walls cost three times a painting house's. Measure with the real builder before a
+  budget decides anything. A probe that first reproduces the shipped count to the triangle is trustworthy.
+- **Check what each camera frames before paying for it.** A plan-view bearing test over every station and orientation
+  found one tree no station ever frames, about 36,000 triangles for nothing.
+- **Keep a decimation's anchors.** "Every k-th sample and the ends" dropped the seed sample the drape anchors on, so 37
+  ribbons vanished at stride 4. Before thinning a list, find every index another function looks up in it.
+- **"agent_prompted" is not delivery.** The second brief's pointer landed in the worker's input box and Enter went to
+  a background-task log viewer (the worker had left Vite running as a background task, which takes focus in the
+  Antigravity CLI). The pane went idle in under a minute with the prompt unsent. Clear the input (Escape, then focus it,
+  then ctrl+u), resend, and confirm the status turns to working within ten seconds.
+- **Never swap files in a delegate's worktree, even while it sits idle.** A probe that ran `git checkout 2278cc5 -- src`
+  and back in the worker's checkout left the tree clean but fired a hot update in its dev server. Probe old code with
+  `git show <rev>:<path>` or in a worktree of your own.
+
+## 2026-10-24 (overnight) — the street S1b, built, gated and reviewed while Mark slept
+
+- **A check's PASS must prove the event it names happened.** Three times in one slice a check could pass on nothing:
+  F8 (a readiness test of a pure function), C1 (a build counter that deleted itself) and C7 (a hang check that passed
+  when its pattern matched no request). Make every check assert that its precondition fired (the hold, the second
+  build) and give each failure its own message.
+- **`process.exit` inside `try` skips `finally`.** Two browser checks exited on failure without closing Chrome, and five
+  orphaned headless Chromes burned GPU through the night's perf runs, doubling the plain diorama's p95. Throw instead,
+  and count headless Chromes before and after any perf run.
+- **Under a 60 Hz lock, p95 is the timer's jitter.** The mean sat at 16.67 ms at every station while p95 moved 16.9 to
+  18.4 between runs of one build. Read the mean and the max, run base and head back to back, and run several rounds
+  before calling a station over its bar.
+- **A gate tuned on a short street meets the fog on a long one.** The colour gate's two failures at stop 0 were the
+  fog's deliberate blue on houses 1.4 to 1.8 away, which the 1.2 lane never placed in the counted range. Pushing the fog
+  out in a throwaway edit proved the paint itself matched (12.5 → 3.4). Prove a cause by removing it, not by reasoning.
+- **A grazing angle shows a face's base.** The darkest-tenth base that read as separation on a wall seen square read as
+  black on the ground and on half-density walls seen at eye level. The mean (and the darkest 40% for the ground) fixed
+  both, at no triangle cost.
+
+
+## S1b look pass 3, the path (2026-10-24, morning)
+
+- **Where the painting shows nothing, the live reference decides.** In S1's pass 5 the Lead cut the path's lift
+  0.35 → 0.12 and its width 0.12 → 0.08, reading a pale path as wrong against the painting's dark ground. The painting
+  has no path. Simon Lee's village does, and it is pale. At Mark's gate the path read as part of the ground, and the
+  fix was the old values back, near enough. Before toning down something the painting does not contain, look at
+  what the reference Mark judges by does with it.
+- **A lifted base under clipped strokes shows its ruled edge.** A face's strokes are dropped where any column leaves
+  the face, so near the camera they stop short of its edges. A dark base hid that. A pale one showed as a flat grey
+  band with straight sides. Inset the base, so the strokes draw the edge.
+- **A gate whose reference reads the build's own constant cannot judge that constant.** The path passed the colour
+  gate at 0.12 and at 0.5. Its distance to the palette's hills (8.5 → 17.7) is the number that moved.

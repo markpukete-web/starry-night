@@ -62,8 +62,9 @@ the end.
 
 ## Roles
 
-Lead: Claude (`w4:p1`). Reviewer: Codex (`w4:p4`). Worker: Antigravity (`w4:p5`). Consultant: Fable (`w4:p6`), a
-second read when Codex runs low. The Lead builds Tasks 1, 3, 5 and 9 and gates every task. The worker builds Tasks 0,
+Lead: Claude (`w4:p1`). Reviewer: Fable (`w4:p6`, the Consultant tab), from 2026-10-23 when Codex's usage ran low
+(Mark: "please put your review to Fable instead"). Codex (`w4:p4`) read the plan and is held back. Worker:
+Antigravity (`w4:p5`). The Lead builds Tasks 1, 3, 5 and 9 and gates every task. The worker builds Tasks 0,
 2, 4, 6's plumbing, 7 and 8 from briefs, red test first, and reports evidence, not verdicts. The worker serves its
 worktree on 5181 (`npx vite --port 5181 --strictPort --host 127.0.0.1`). The Lead serves on 5182.
 
@@ -113,7 +114,8 @@ worktree on 5181 (`npx vite --port 5181 --strictPort --host 127.0.0.1`). The Lea
 - [ ] **Step 5:** Commit the tools: `chore(capture): --dpr, p50, --wait-for and the village hash (S1 task 0)`.
 
 The street's budget: its scene's `info.triangles` at most the diorama's from Step 4 (the same sky, the foreground
-swapped like for like), desktop p95 ≤ 16.7 ms at DPR 1.5. Mark's phone reading on production
+swapped like for like), desktop p95 at most 0.5 ms above the diorama's at DPR 1.5 (Task 0 measured 17.3 ms: the
+headless browser is locked to 60 Hz, so 16.7 ms is the floor, not a bar). Mark's phone reading on production
 (`starrynight.markma.dev/?perf=1`) is asked for by the Lead. It does not block the build.
 
 ### Task 1: The stroke scale, measured (Lead) — done 2026-10-23
@@ -430,10 +432,10 @@ Modify `src/scene/villageGeometry.ts`.
 - [ ] **Step 3:** Retune. Re-run Tasks 7 and 8's gates. At most four passes. Stop at the first pass with no defect
   left.
 
-### Task 10: Review, gate and record (Lead, Codex)
+### Task 10: Review, gate and record (Lead, Fable)
 
 - [ ] **Step 1:** The Lead's own suite run in a clean worktree: `test:sky`, `tsc -b`, `build`, `eslint`.
-- [ ] **Step 2:** Codex's code review of the branch from a brief file. Fixes in one round. A confirmation read bounded
+- [ ] **Step 2:** Fable's code review of the branch from a brief file. Fixes in one round. A confirmation read bounded
   to its findings.
 - [ ] **Step 3:** The Lead's gate (G1–G11), the mutants run one at a time with the artefact (diff, red, restore,
   `git diff --exit-code`, green).
@@ -451,10 +453,10 @@ Modify `src/scene/villageGeometry.ts`.
 | G4 | the flat panels: G4a (CPU, the marks) and G4b (GPU, the material) |
 | G5 | the sky's method chosen from the 16 frames, no gradient band at any station |
 | G6 | the palette gate: ΔE76 < 10 per class, the three controls exit 1 |
-| G7 | perf at DPR 1.5: desktop p95 ≤ 16.7 ms, triangles ≤ the diorama's, then Mark's phone reading |
+| G7 | perf at DPR 1.5, like for like: desktop p95 at most 0.5 ms above Task 0's 17.3 ms, triangles ≤ 1,444,930, then Mark's phone reading |
 | G8 | reduced motion, the fresh-session street, the failed loads, rotation |
 | G9 | the captures opened at 1:1, every defect named, the montages built |
-| G10 | Codex's code review answered, its confirmation read |
+| G10 | Fable's code review answered, its confirmation read |
 | G11 | the six mutants below, each red in its named test and green after the restore |
 
 The mutants (G11):
