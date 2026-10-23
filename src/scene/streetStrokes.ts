@@ -328,11 +328,14 @@ export function sourceUnderpaint(painting: ImageData2D, source: StreetSourceName
  * steps go. Colours per sample from the source, lit by the moon's share on the face's normal. `options` are the
  * tests' seams: a fixed count, half-width and taper.
  */
-export function traceFace(face: StreetFace, flow: ImageData2D, painting: ImageData2D, options: { count?: number; fixedHalfWidth?: number; taper?: number; tint?: number } = {}): FaceStrokes {
+export function traceFace(face: StreetFace, flow: ImageData2D, painting: ImageData2D, options: { count?: number; fixedHalfWidth?: number; taper?: number; tint?: number; density?: number } = {}): FaceStrokes {
   const width = face.u.length()
   const height = face.v.length()
   const { crop, rows, pigment } = faceCrop(flow, face, 64, painting)
   const config = faceConfig(face, options.count, crop.height)
+  if (options.density !== undefined) {
+    config.frontCount = Math.round(config.frontCount * options.density)
+  }
   if (options.fixedHalfWidth !== undefined) {
     config.minHalfWidth = options.fixedHalfWidth
     config.maxHalfWidth = options.fixedHalfWidth
