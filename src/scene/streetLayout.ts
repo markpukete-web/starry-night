@@ -147,11 +147,12 @@ export const STREET_CHURCH = {
   },
 } as const
 
+// pass 6 (Mark: "move the trees into view"): behind the house rows the houses hid every tree. They stand round the
+// church past the last houses, far enough ahead that a whole tree fits the frame from the stations before it
 const TREE_SPECS = [
-  { id: 'olive-church', t: 0.35, side: -1 as const, dist: 0.55 },
-  { id: 'olive-right', t: 0.6, side: 1 as const, dist: 0.55 },
-  // pass 2: 0.45 stood the tree's dome against the camera at station 4
-  { id: 'orchard-lower', t: 1.0, side: 1 as const, dist: 0.7 },
+  { id: 'olive-church', t: 1.15, side: -1 as const, dist: 0.42 },
+  { id: 'olive-right', t: 1.1, side: 1 as const, dist: 0.45 },
+  { id: 'orchard-lower', t: 1.35, side: 1 as const, dist: 0.62 },
 ] as const
 
 export const STREET_TREES: readonly LandMass[] = TREE_SPECS.map(spec => {

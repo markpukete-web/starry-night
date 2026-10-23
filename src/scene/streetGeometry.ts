@@ -2,6 +2,7 @@ import { Color, SRGBColorSpace, Vector3 } from 'three'
 import { makeBrushArrays, type BrushArrays } from './brushForms.ts'
 import { islandHeightAt } from './islandShape.ts'
 import { buildLandTrees, type BakedMass, type LandTrees } from './landDomes.ts'
+import { buildStreetTrees } from './streetTrees.ts'
 import { PALETTE } from './palette.ts'
 import { STREET, STREET_CHURCH, STREET_HOUSES, STREET_TREES, pathPoint, pathTangent, streetGroundAt } from './streetLayout.ts'
 import { outlineFace, sourceUnderpaint, streetMassConfig, traceFace, type FaceStrokes, type StreetFace, type StreetSourceName } from './streetStrokes.ts'
@@ -331,7 +332,7 @@ export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | nu
     house(ctx, `house-${index}`, index, h, new Vector3(h.x, 0, h.z), along, toPath, index % 3 === 0)
   })
   ctx.report.church = church(ctx)
-  const trees = buildLandTrees(flow, painting, masses, 0x7ee5, STREET_TREES, streetGroundAt, streetMassConfig)
+  const trees = buildStreetTrees(painting, STREET_TREES)
   const triangles = (ctx.underpaint.indices.length + ctx.strokes.arrays.indices.length + ctx.ground.arrays.indices.length + ctx.outlines.arrays.indices.length + ctx.windows.indices.length + trees.solid.indices.length + trees.strokes.indices.length) / 3
   return {
     underpaint: ctx.underpaint,
