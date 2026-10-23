@@ -1,0 +1,353 @@
+/*
+ * The street's palette gate (S1 task 7).
+ *
+ * Compares the street render's mean Lab per class under its ID pass mask against references:
+ *   - walls: mean of wallA, wallB and plaster in _work-painting.png over STREET_SOURCES
+ *   - roofs: mean of roofStriped, roofBlue and roofSienna over STREET_SOURCES
+ *   - ground: mean of field over STREET_SOURCES
+ *   - path: mean of field mixed 0.65 with 0.35 of PALETTE.hillsCrest in linear sRGB (PATH_LIFT)
+ *   - trees: mean of the three trees' boxes over texels FOLIAGE_TEXEL accepts
+ *   - windows: nearest swatch of palette.json's villageWarm region
+ *   - fog: PALETTE.skyHorizon
+ *
+ * Usage:
+ *   node scripts/check-street-colour.ts <dir> --station S --viewport V [--control=cyan]
+ */
+
+import { existsSync, readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { FOLIAGE_TEXEL } from '../src/scene/landDomes.ts'
+import { PALETTE } from '../src/scene/palette.ts'
+import { STREET_TREES } from '../src/scene/streetLayout.ts'
+import { STREET_SOURCES } from '../src/scene/streetStrokes.ts'
+import palette from '../public/reference/palette.json' with { type: 'json' }
+import { decodePNG } from './lib/png.ts'
+
+const ROOT = resolve(import.meta.dirname, '..')
+
+const args = process.argv.slice(2)
+const dirArg = args.find((a) => !a.startsWith('--'))
+const opt = (name: string, fallback: string = ''): string => {
+  const i = args.indexOf(`--${name}`)
+  if (i >= 0 && i + 1 < args.length) return args[i + 1]
+  const prefix = `--${name}=`
+  const match = args.find((a) => a.startsWith(prefix))
+  return match ? match.slice(prefix.length) : fallback
+}
+
+const station = opt('station', '0')
+const viewport = opt('viewport', 'desktop')
+const control = opt('control', '')
+const fullPrefixOpt = opt('full-prefix', '')
+const idsPrefixOpt = opt('ids-prefix', '')
+
+if (!dirArg) {
+  console.error('Usage: check-street-colour.ts <dir> --station S --viewport V [--control=cyan]')
+  process.exit(1)
+}
+
+const dir = resolve(process.cwd(), dirArg)
+
+function findFile(basePrefix: string, extensions: string[]): string | null {
+  for (const ext of extensions) {
+    const candidate = resolve(dir, `${basePrefix}${ext}`)
+    if (existsSync(candidate)) return candidate
+  }
+  return null
+}
+
+const fullPrefix = fullPrefixOpt || `full-s${station}-${viewport}`
+const idsPrefix = idsPrefixOpt || `ids-s${station}-${viewport}`
+
+const fullPngPath = findFile(fullPrefix, ['-t5.png', '.png'])
+const fullJsonPath = findFile(fullPrefix, ['-frames.json', '.json'])
+const idsPngPath = findFile(idsPrefix, ['-t5.png', '.png'])
+const idsJsonPath = findFile(idsPrefix, ['-frames.json', '.json'])
+
+if (!fullPngPath || !fullJsonPath || !idsPngPath || !idsJsonPath) {
+  console.error(`Missing input files in ${dir}:`)
+  if (!fullPngPath) console.error(`  full PNG: ${fullPrefix}{ -t5.png, .png }`)
+  if (!fullJsonPath) console.error(`  full JSON: ${fullPrefix}{ -frames.json, .json }`)
+  if (!idsPngPath) console.error(`  ids PNG: ${idsPrefix}{ -t5.png, .png }`)
+  if (!idsJsonPath) console.error(`  ids JSON: ${idsPrefix}{ -frames.json, .json }`)
+  process.exit(1)
+}
+
+const fullMeta = JSON.parse(readFileSync(fullJsonPath, 'utf8'))
+const idsMeta = JSON.parse(readFileSync(idsJsonPath, 'utf8'))
+
+function cleanUrl(u: string): string {
+  return u
+    .replace(/([?&])ids=1(&|$)/, (_, sep, end) => (end === '&' ? sep : ''))
+    .replace(/([?&])fogColour=[^&]+(&|$)/, (_, sep, end) => (end === '&' ? sep : ''))
+    .replace(/[?&]$/, '')
+    .replace(/\?&/, '?')
+}
+
+// Validation: URLs (less &ids=1), viewports, times
+if (cleanUrl(fullMeta.url) !== cleanUrl(idsMeta.url)) {
+  console.error(`FAIL: URLs differ (ignoring &ids=1): full "${fullMeta.url}" vs ids "${idsMeta.url}"`)
+  process.exit(1)
+}
+
+if (
+  fullMeta.viewport?.width !== idsMeta.viewport?.width ||
+  fullMeta.viewport?.height !== idsMeta.viewport?.height ||
+  Boolean(fullMeta.viewport?.mobile) !== Boolean(idsMeta.viewport?.mobile)
+) {
+  console.error(`FAIL: Viewports differ: full ${JSON.stringify(fullMeta.viewport)} vs ids ${JSON.stringify(idsMeta.viewport)}`)
+  process.exit(1)
+}
+
+if (JSON.stringify(fullMeta.times) !== JSON.stringify(idsMeta.times)) {
+  console.error(`FAIL: Times differ: full ${JSON.stringify(fullMeta.times)} vs ids ${JSON.stringify(idsMeta.times)}`)
+  process.exit(1)
+}
+
+const fullPng = decodePNG(readFileSync(fullPngPath))
+const idsPng = decodePNG(readFileSync(idsPngPath))
+
+if (fullPng.width !== idsPng.width || fullPng.height !== idsPng.height) {
+  console.error(`FAIL: Dimensions differ: full ${fullPng.width}x${fullPng.height} vs ids ${idsPng.width}x${idsPng.height}`)
+  process.exit(1)
+}
+
+const W = fullPng.width
+const H = fullPng.height
+const totalPixels = W * H
+
+type Lab = { l: number; a: number; b: number }
+
+function linear(v: number): number {
+  const c = v / 255
+  return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)
+}
+
+function linToLab(r: number, g: number, b: number): Lab {
+  const x = (0.4124564 * r + 0.3575761 * g + 0.1804375 * b) / 0.95047
+  const y = 0.2126729 * r + 0.7151522 * g + 0.072175 * b
+  const z = (0.0193339 * r + 0.119192 * g + 0.9503041 * b) / 1.08883
+  const f = (val: number) => (val > 216 / 24389 ? Math.cbrt(val) : (24389 / 27) * val / 116 + 16 / 116)
+  return { l: 116 * f(y) - 16, a: 500 * (f(x) - f(y)), b: 200 * (f(y) - f(z)) }
+}
+
+function srgbToLab(r: number, g: number, b: number): Lab {
+  return linToLab(linear(r), linear(g), linear(b))
+}
+
+function deltaE76(a: Lab, b: Lab): number {
+  return Math.hypot(a.l - b.l, a.a - b.a, a.b - b.b)
+}
+
+// Work painting
+const paintingPath = resolve(ROOT, 'reference/derived/_work-painting.png')
+const workPainting = decodePNG(readFileSync(paintingPath))
+
+function rectLabs(img: typeof workPainting, rect: readonly [number, number, number, number]): Lab[] {
+  const out: Lab[] = []
+  const [x0, y0, x1, y1] = rect
+  for (let y = y0; y < y1; y++) {
+    for (let x = x0; x < x1; x++) {
+      const i = (y * img.width + x) * 4
+      out.push(srgbToLab(img.rgba[i], img.rgba[i + 1], img.rgba[i + 2]))
+    }
+  }
+  return out
+}
+
+function meanLab(labs: Lab[]): Lab {
+  let l = 0, a = 0, b = 0
+  for (const v of labs) {
+    l += v.l
+    a += v.a
+    b += v.b
+  }
+  return { l: l / labs.length, a: a / labs.length, b: b / labs.length }
+}
+
+function regionWeightedMeanLab(regionName: string): Lab {
+  const reg = (palette.regions as Record<string, { colours: { lab: number[]; weight: number }[] }>)[regionName]
+  let l = 0, a = 0, b = 0, totalW = 0
+  for (const c of reg.colours) {
+    l += c.lab[0] * c.weight
+    a += c.lab[1] * c.weight
+    b += c.lab[2] * c.weight
+    totalW += c.weight
+  }
+  return { l: l / totalW, a: a / totalW, b: b / totalW }
+}
+
+// References
+const refWalls = meanLab([
+  ...rectLabs(workPainting, STREET_SOURCES.wallA),
+  ...rectLabs(workPainting, STREET_SOURCES.wallB),
+  ...rectLabs(workPainting, STREET_SOURCES.plaster),
+])
+
+const refRoofs = meanLab([
+  ...rectLabs(workPainting, STREET_SOURCES.roofStriped),
+  ...rectLabs(workPainting, STREET_SOURCES.roofBlue),
+  ...rectLabs(workPainting, STREET_SOURCES.roofSienna),
+])
+
+const refGround = meanLab(rectLabs(workPainting, STREET_SOURCES.field))
+
+const pathLabs: Lab[] = []
+const crestR = parseInt(PALETTE.hillsCrest.slice(1, 3), 16)
+const crestG = parseInt(PALETTE.hillsCrest.slice(3, 5), 16)
+const crestB = parseInt(PALETTE.hillsCrest.slice(5, 7), 16)
+const linCrestR = linear(crestR), linCrestG = linear(crestG), linCrestB = linear(crestB)
+const [fx0, fy0, fx1, fy1] = STREET_SOURCES.field
+for (let y = fy0; y < fy1; y++) {
+  for (let x = fx0; x < fx1; x++) {
+    const i = (y * workPainting.width + x) * 4
+    pathLabs.push(
+      linToLab(
+        0.65 * linear(workPainting.rgba[i]) + 0.35 * linCrestR,
+        0.65 * linear(workPainting.rgba[i + 1]) + 0.35 * linCrestG,
+        0.65 * linear(workPainting.rgba[i + 2]) + 0.35 * linCrestB,
+      ),
+    )
+  }
+}
+const refPath = meanLab(pathLabs)
+
+const treeLabs: Lab[] = []
+for (const t of STREET_TREES) {
+  const [bx0, by0, bx1, by1] = t.box
+  for (let y = by0; y < by1; y++) {
+    for (let x = bx0; x < bx1; x++) {
+      const i = (y * workPainting.width + x) * 4
+      const r = workPainting.rgba[i], g = workPainting.rgba[i + 1], b = workPainting.rgba[i + 2]
+      if (FOLIAGE_TEXEL(r, g, b)) {
+        treeLabs.push(srgbToLab(r, g, b))
+      }
+    }
+  }
+}
+const refTrees = meanLab(treeLabs)
+
+const fogR = parseInt(PALETTE.skyHorizon.slice(1, 3), 16)
+const fogG = parseInt(PALETTE.skyHorizon.slice(3, 5), 16)
+const fogB = parseInt(PALETTE.skyHorizon.slice(5, 7), 16)
+const refFog = srgbToLab(fogR, fogG, fogB)
+
+// Palette regional means
+const diagVillage = regionWeightedMeanLab('village')
+const diagHills = regionWeightedMeanLab('hills')
+const diagCypress = regionWeightedMeanLab('cypress')
+
+type ClassDef = {
+  idR: number
+  idG: number
+  idB: number
+  minArea: number
+  ref: Lab | null
+  diag: Lab | null
+}
+
+const CLASSES: Record<string, ClassDef> = {
+  walls: { idR: 255, idG: 0, idB: 0, minArea: 2000, ref: refWalls, diag: diagVillage },
+  roofs: { idR: 0, idG: 255, idB: 0, minArea: 2000, ref: refRoofs, diag: diagVillage },
+  ground: { idR: 255, idG: 255, idB: 0, minArea: 2000, ref: refGround, diag: diagHills },
+  path: { idR: 0, idG: 255, idB: 255, minArea: 1000, ref: refPath, diag: diagHills },
+  trees: { idR: 255, idG: 0, idB: 255, minArea: 1000, ref: refTrees, diag: diagCypress },
+  fog: { idR: 255, idG: 255, idB: 255, minArea: 1000, ref: refFog, diag: null },
+  windows: { idR: 0, idG: 0, idB: 255, minArea: 100, ref: null, diag: null },
+}
+
+// Find pixel indices for each class
+const maskIndices: Record<string, number[]> = {
+  walls: [],
+  roofs: [],
+  windows: [],
+  ground: [],
+  path: [],
+  trees: [],
+  fog: [],
+}
+
+for (let i = 0; i < totalPixels; i++) {
+  const o = i * 4
+  const r = idsPng.rgba[o]
+  const g = idsPng.rgba[o + 1]
+  const b = idsPng.rgba[o + 2]
+  if (r === 255 && g === 0 && b === 0) maskIndices.walls.push(i)
+  else if (r === 0 && g === 255 && b === 0) maskIndices.roofs.push(i)
+  else if (r === 0 && g === 0 && b === 255) maskIndices.windows.push(i)
+  else if (r === 255 && g === 255 && b === 0) maskIndices.ground.push(i)
+  else if (r === 0 && g === 255 && b === 255) maskIndices.path.push(i)
+  else if (r === 255 && g === 0 && b === 255) maskIndices.trees.push(i)
+  else if (r === 255 && g === 255 && b === 255) maskIndices.fog.push(i)
+}
+
+// Full image copy in case of control
+const fullRgba = new Uint8Array(fullPng.rgba)
+if (control === 'cyan') {
+  for (const indices of Object.values(maskIndices)) {
+    const nToCyan = Math.floor(indices.length * 0.4)
+    for (let k = 0; k < nToCyan; k++) {
+      const o = indices[k] * 4
+      fullRgba[o] = 0
+      fullRgba[o + 1] = 255
+      fullRgba[o + 2] = 255
+    }
+  }
+}
+
+const failures: string[] = []
+console.log(`Street colour check: station ${station}, viewport ${viewport}${control ? ` (control: ${control})` : ''}`)
+console.log(`Files: full="${fullPngPath}", ids="${idsPngPath}"`)
+
+for (const [name, def] of Object.entries(CLASSES)) {
+  const indices = maskIndices[name]
+  const area = indices.length
+  if (area < def.minArea) {
+    failures.push(`${name}: area ${area} px < minimum ${def.minArea} px`)
+    console.log(`  ${name.padEnd(8)}: FAIL area ${area} px < min ${def.minArea} px`)
+    continue
+  }
+
+  let sumL = 0, sumA = 0, sumB = 0
+  for (const idx of indices) {
+    const o = idx * 4
+    const lab = srgbToLab(fullRgba[o], fullRgba[o + 1], fullRgba[o + 2])
+    sumL += lab.l
+    sumA += lab.a
+    sumB += lab.b
+  }
+  const mean: Lab = { l: sumL / area, a: sumA / area, b: sumB / area }
+
+  let refLab = def.ref
+  if (name === 'windows') {
+    // nearest swatch of villageWarm
+    let best = palette.regions.villageWarm.colours[0]
+    let bestD = Infinity
+    for (const sw of palette.regions.villageWarm.colours) {
+      const d = Math.hypot(mean.l - sw.lab[0], mean.a - sw.lab[1], mean.b - sw.lab[2])
+      if (d < bestD) {
+        bestD = d
+        best = sw
+      }
+    }
+    refLab = { l: best.lab[0], a: best.lab[1], b: best.lab[2] }
+  }
+
+  const dE = deltaE76(mean, refLab!)
+  const diagDE = def.diag ? deltaE76(mean, def.diag) : null
+  const diagStr = diagDE !== null ? ` (diag to palette: ${diagDE.toFixed(2)})` : ''
+
+  if (dE >= 10) {
+    failures.push(`${name}: ΔE76 ${dE.toFixed(2)} >= 10`)
+    console.log(`  ${name.padEnd(8)}: FAIL ΔE76 ${dE.toFixed(2)} (area ${area} px, mean Lab [${mean.l.toFixed(1)}, ${mean.a.toFixed(1)}, ${mean.b.toFixed(1)}])${diagStr}`)
+  } else {
+    console.log(`  ${name.padEnd(8)}: PASS ΔE76 ${dE.toFixed(2)} < 10 (area ${area} px, mean Lab [${mean.l.toFixed(1)}, ${mean.a.toFixed(1)}, ${mean.b.toFixed(1)}])${diagStr}`)
+  }
+}
+
+if (failures.length > 0) {
+  console.log(`FAIL: ${failures.length} failure(s):\n  - ${failures.join('\n  - ')}`)
+  process.exit(1)
+} else {
+  console.log('PASS: all classes meet minimum area and ΔE76 < 10')
+}

@@ -9,6 +9,13 @@ export function isStreetMode(search: string): boolean {
 }
 
 /**
+ * The street's ID pass (S1 task 7): the sky hidden, the background black, every street fragment drawn in its ID colour.
+ */
+export function streetIdsPass(search: string): boolean {
+  return isStreetMode(search) && new URLSearchParams(search).get('ids') === '1'
+}
+
+/**
  * The street's sky anchor (S1 task 6), undefined outside street mode so the diorama's sky is today's. `skyAnchor`: A
  * keeps the dome at the origin (the street placed inside it), B follows the camera. `skyTurn`: lock turns the sky with
  * the camera, world fixes the painting's arc in the world. G5 chose B and world from the 16 frames: the only pair that

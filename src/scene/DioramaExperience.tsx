@@ -8,7 +8,7 @@ import { emptyTouchStore, type TouchStore } from './touchSurge'
 import { useTouchInput } from './useTouchInput'
 import { emptyLandStore, type LandStore } from './landTouch'
 import { ARRIVAL, ArrivalClock, arrivalCamera, arrivalFrame, rememberArrived } from './arrival'
-import { isStreetMode, streetSkyAnchor, touchEnabled } from './streetEntry'
+import { isStreetMode, streetIdsPass, streetSkyAnchor, touchEnabled } from './streetEntry'
 // (ARRIVAL.reveal feeds the chrome's fade-in through a custom property; the clock owns every other constant)
 import {
   DIORAMA_CAMERAS,
@@ -227,6 +227,7 @@ function Scene({
   onArrived: () => void
 }) {
   const streetMode = useMemo(() => isStreetMode(typeof window !== 'undefined' ? window.location.search : ''), [])
+  const idsPass = useMemo(() => streetIdsPass(typeof window !== 'undefined' ? window.location.search : ''), [])
   const skyAnchor = useMemo(() => streetSkyAnchor(typeof window !== 'undefined' ? window.location.search : ''), [])
   const debug = readDebugMode()
   const view = readViewMode()
@@ -239,7 +240,7 @@ function Scene({
   const skyHome = isPortrait ? DIORAMA_CAMERAS.mobile : DIORAMA_CAMERAS.design
 
 
-  const background = useMemo(() => (debug === 'stage' ? '#071020' : '#06112a'), [debug])
+  const background = useMemo(() => (idsPass ? '#000000' : debug === 'stage' ? '#071020' : '#06112a'), [idsPass, debug])
   const measurePerformance = readPerfMode()
   // The one sky clock (make-it-alive A, second pass): the sky's frame loop writes it (pinned, advanced, or 0 while
   // paused) and the foreground reads it, so the cypress and the windows keep the sky's time. With no sky
@@ -304,7 +305,7 @@ function Scene({
             />
           )
         )}
-        {debug !== 'stage' && (
+        {debug !== 'stage' && !idsPass && (
           <PaintingFlowSky3D
             paused={reduced}
             sky={sky}

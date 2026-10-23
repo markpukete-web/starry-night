@@ -50,4 +50,4 @@ export function streetReadiness(s: {
 }
 
 // the main bundle's two street checks live in streetEntry.ts, so this module (and its flags) stays in the lazy chunk
-export { isStreetMode, touchEnabled } from './streetEntry.ts'
+export { isStreetMode, streetIdsPass, touchEnabled } from './streetEntry.ts'

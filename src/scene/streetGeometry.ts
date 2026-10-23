@@ -17,15 +17,16 @@ import { VILLAGE_CHURCH, type Building, type Pigment } from './villageKnot.ts'
 
 export type StreetCounts = { ribbons: number; triangles: number; builds: number }
 
-type Strokes = { arrays: BrushArrays; stroke: number[]; seed: number[] }
+export type BrushArraysWithCls = BrushArrays & { cls: number[] }
+export type Strokes = { arrays: BrushArrays; stroke: number[]; seed: number[]; cls: number[] }
 
 export type StreetBuild = {
-  underpaint: BrushArrays
+  underpaint: BrushArraysWithCls
   strokes: Strokes
   /** the ground's and the path's strokes, drawn in their own calmer body (pass 4) */
   ground: Strokes
   outlines: Strokes
-  windows: BrushArrays
+  windows: BrushArraysWithCls
   trees: LandTrees
   counts: StreetCounts
   /** the gates' read of the build: ribbons per face, inked edges per volume, the windows, the church's measures */
@@ -58,20 +59,23 @@ function roofSource(pigment: Pigment, index: number): StreetSourceName {
   return index % 3 === 2 ? 'roofStriped' : 'roofBlue'
 }
 
-function append(into: Strokes, from: FaceStrokes): void {
+function append(into: Strokes, from: FaceStrokes, cls: number): void {
   const base = into.arrays.positions.length / 3
   into.arrays.positions.push(...from.arrays.positions)
   into.arrays.colors.push(...from.arrays.colors)
   for (const i of from.arrays.indices) into.arrays.indices.push(i + base)
   into.stroke.push(...from.stroke)
   into.seed.push(...from.seed)
+  const count = from.arrays.positions.length / 3
+  for (let i = 0; i < count; i++) into.cls.push(cls)
 }
 
-function polygon(arr: BrushArrays, vertices: Vector3[], colour: Color): void {
+function polygon(arr: BrushArraysWithCls, vertices: Vector3[], colour: Color, cls: number): void {
   const start = arr.positions.length / 3
   for (const p of vertices) {
     arr.positions.push(p.x, p.y, p.z)
     arr.colors.push(colour.r, colour.g, colour.b)
+    arr.cls.push(cls)
   }
   for (let i = 1; i < vertices.length - 1; i++) arr.indices.push(start, start + i, start + i + 1)
 }
@@ -100,11 +104,11 @@ function facePolygon(face: StreetFace): Vector3[] {
 type Context = {
   flow: ImageData2D
   painting: ImageData2D
-  underpaint: BrushArrays
+  underpaint: BrushArraysWithCls
   strokes: Strokes
   ground: Strokes
   outlines: Strokes
-  windows: BrushArrays
+  windows: BrushArraysWithCls
   report: StreetBuild['report']
   ribbons: number
 }
@@ -112,9 +116,10 @@ type Context = {
 /** Clad one face: its underpaint, its strokes, its report line. */
 function clad(ctx: Context, owner: string, name: string, face: StreetFace): void {
   const [r, g, b] = sourceUnderpaint(ctx.painting, face.source)
-  polygon(ctx.underpaint, facePolygon(face), new Color().setRGB(r, g, b, SRGBColorSpace))
+  const cls = face.kind === 'wall' ? 0 : face.kind === 'roof' ? 1 : face.kind === 'ground' ? 3 : 4
+  polygon(ctx.underpaint, facePolygon(face), new Color().setRGB(r, g, b, SRGBColorSpace), cls)
   const traced = traceFace(face, ctx.flow, ctx.painting)
-  append(face.kind === 'ground' || face.kind === 'path' ? ctx.ground : ctx.strokes, traced)
+  append(face.kind === 'ground' || face.kind === 'path' ? ctx.ground : ctx.strokes, traced, cls)
   ctx.ribbons += traced.ribbons
   ctx.report.faces.push({ owner, name, ribbons: traced.ribbons })
 }
@@ -123,7 +128,7 @@ function clad(ctx: Context, owner: string, name: string, face: StreetFace): void
 function ink(ctx: Context, owner: string, refHeight: number, edges: [Vector3, Vector3, Vector3][], seed: number): void {
   edges.forEach(([a, b, normal], i) => {
     const face: StreetFace = { origin: a, u: b.clone().sub(a), v: UP.clone(), normal, shape: 'quad', kind: 'wall', source: 'wallA', refHeight, seed, mirror: false }
-    append(ctx.outlines, outlineFace(face, [[a, b]], INK, seed * 17 + i))
+    append(ctx.outlines, outlineFace(face, [[a, b]], INK, seed * 17 + i), 255)
   })
   ctx.report.outlines.push({ owner, edges: edges.length })
 }
@@ -132,9 +137,9 @@ function ink(ctx: Context, owner: string, refHeight: number, edges: [Vector3, Ve
 function opening(ctx: Context, face: StreetFace, cu: number, cv: number, w: number, h: number, lit: boolean, seed: number): void {
   const at = (s: number, t: number) => face.origin.clone().addScaledVector(face.u, s).addScaledVector(face.v, t).addScaledVector(face.normal, 0.0055)
   const quad = [at(cu - w / 2, cv - h / 2), at(cu + w / 2, cv - h / 2), at(cu + w / 2, cv + h / 2), at(cu - w / 2, cv + h / 2)]
-  polygon(ctx.windows, quad, lit ? WINDOW_LIT : WINDOW_DARK)
+  polygon(ctx.windows, quad, lit ? WINDOW_LIT : WINDOW_DARK, lit ? 2 : 255)
   const frame: StreetFace = { ...face, refHeight: face.v.length() * FRAME }
-  append(ctx.outlines, outlineFace(frame, quad.map((p, i) => [p, quad[(i + 1) % 4]] as const), INK, seed))
+  append(ctx.outlines, outlineFace(frame, quad.map((p, i) => [p, quad[(i + 1) % 4]] as const), INK, seed), 255)
 }
 
 /**
@@ -196,8 +201,8 @@ function house(ctx: Context, owner: string, index: number, b: Building, centre: 
     const size = 0.035
     const box = [[0, 0], [1, 0], [1, 1], [0, 1]].map(([x, z]) => foot.clone().addScaledVector(along, x * size).addScaledVector(toPath, z * size))
     const tops = box.map((p) => p.clone().setY(eave + pitch * 0.68 + 0.1))
-    for (let k = 0; k < 4; k++) polygon(ctx.underpaint, [box[k], box[(k + 1) % 4], tops[(k + 1) % 4], tops[k]], INK)
-    polygon(ctx.underpaint, tops, INK)
+    for (let k = 0; k < 4; k++) polygon(ctx.underpaint, [box[k], box[(k + 1) % 4], tops[(k + 1) % 4], tops[k]], INK, 255)
+    polygon(ctx.underpaint, tops, INK, 255)
   }
 }
 
@@ -298,11 +303,11 @@ export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | nu
   const ctx: Context = {
     flow,
     painting,
-    underpaint: makeBrushArrays(),
-    strokes: { arrays: makeBrushArrays(), stroke: [], seed: [] },
-    ground: { arrays: makeBrushArrays(), stroke: [], seed: [] },
-    outlines: { arrays: makeBrushArrays(), stroke: [], seed: [] },
-    windows: makeBrushArrays(),
+    underpaint: Object.assign(makeBrushArrays(), { cls: [] }),
+    strokes: { arrays: makeBrushArrays(), stroke: [], seed: [], cls: [] },
+    ground: { arrays: makeBrushArrays(), stroke: [], seed: [], cls: [] },
+    outlines: { arrays: makeBrushArrays(), stroke: [], seed: [], cls: [] },
+    windows: Object.assign(makeBrushArrays(), { cls: [] }),
     report: { faces: [], outlines: [], windows: [], church: { belfryWidth: 0, spireHeight: 0 } },
     ribbons: 0,
   }
@@ -343,15 +348,15 @@ export function buildFlatPanel(painting: ImageData2D | null, flow: ImageData2D |
   const ctx: Context = {
     flow,
     painting,
-    underpaint: makeBrushArrays(),
-    strokes: { arrays: makeBrushArrays(), stroke: [], seed: [] },
-    ground: { arrays: makeBrushArrays(), stroke: [], seed: [] },
-    outlines: { arrays: makeBrushArrays(), stroke: [], seed: [] },
-    windows: makeBrushArrays(),
+    underpaint: Object.assign(makeBrushArrays(), { cls: [] }),
+    strokes: { arrays: makeBrushArrays(), stroke: [], seed: [], cls: [] },
+    ground: { arrays: makeBrushArrays(), stroke: [], seed: [], cls: [] },
+    outlines: { arrays: makeBrushArrays(), stroke: [], seed: [], cls: [] },
+    windows: Object.assign(makeBrushArrays(), { cls: [] }),
     report: { faces: [], outlines: [], windows: [], church: { belfryWidth: 0, spireHeight: 0 } },
     ribbons: 0,
   }
-  polygon(ctx.underpaint, [new Vector3(-0.3, -0.3, -0.05), new Vector3(1.9, -0.3, -0.05), new Vector3(1.9, 0.9, -0.05), new Vector3(-0.3, 0.9, -0.05)], new Color(0x111111))
+  polygon(ctx.underpaint, [new Vector3(-0.3, -0.3, -0.05), new Vector3(1.9, -0.3, -0.05), new Vector3(1.9, 0.9, -0.05), new Vector3(-0.3, 0.9, -0.05)], new Color(0x111111), 255)
   const toward = new Vector3(0, 0, 1)
   const behind = new Vector3(0.8, 0.3, -1)
   const pieces: [string, Vector3, number, number, StreetFace['shape'], StreetFace['kind'], StreetSourceName, number][] = [
