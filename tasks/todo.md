@@ -25,6 +25,10 @@ The land roadmap (E1, E2, D1, then E3 and E4 on the cypress) is done.
      authored camera path (the village street's portal flight and walk, 2026-10-23) may leave them, and the visitor
      never steers the camera off it. The diorama always reads as Starry Night — head-on it is the painting's
      composition." Mark applies it in `CLAUDE.md`.
+   - **Idea for slice 3, not built** (Mark, 2026-10-23: "some flowers that Vincent drew of other drawings perhaps"):
+     flowers beside the path with the grass, for the hand to touch. Their shape and brushwork may follow Vincent's own
+     Saint-Rémy flowers. Their colours come from The Starry Night's palette, because the bar locks colour to the
+     painting. Mark decides at slice 1's gate whether slice 3 is built.
 2. **The experiment's verdict** (Gemini 4 Argon for visual work under the Lead's gating) is not given.
 3. **Open from E4, not blocking:** the gaps field does nothing visible (keep or remove). The render's marks are thin
    scratches where the painting's bands are 30–60 px, with no dark contour strokes and no yellow-green highlights.

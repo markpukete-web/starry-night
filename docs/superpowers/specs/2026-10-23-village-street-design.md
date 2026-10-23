@@ -65,8 +65,18 @@ used (`CLAUDE.md`, "study, never copy implementation or assets"). The study is
 
 The order when the two differ (C14): the scan and `palette.json` come first, because the bar is locked. Simon's
 village answers only what the scan cannot show at walking distance: volumes, outlines, fog. Where the scan does show a
-form, the scan's form wins. The painting's village trees are dark round masses and its fields are long strokes, so
-the street's trees and ground start from those, not from his leaf cards and flake dabs.
+form, the scan's form wins. The painting's fields are long strokes, so the street's ground starts from those, not from
+his flake dabs.
+
+The trees take Simon's structure (Mark, 2026-10-23, after pass 6: "do you think we can build the Van Gogh type of
+trees like Simon's?", then "Yes, update the design"). The scan shows its village trees only from far away, as dark
+round masses, so it says nothing about their structure at walking distance. The land's trees, built for the diorama's
+distance, read there as flat dark discs with straight edges (`scratch/street-s1-2026-10-23/gate/trees-before-after.png`).
+Each street tree is a dark twisting trunk with branches in tapering ink strokes, carrying round clumps of foliage.
+The painting's curling strokes in its village trees' colours cover each clump, dark at the centre and pale at the
+lit edge. His leaf cards, models and textures are not copied. Seen from the far stops, the clumps must still read
+together as one dark round mass, as the painting's trees do. Van Gogh painted olive trees at Saint-Rémy in the same
+months as The Starry Night: their trunks and clumps may guide the form, never the colour.
 
 What the study says to take: houses as modelled volumes (a box, a pitched roof, chimneys, shutters, door frames),
 dark ink outlines along house edges and along crests, blue fog that lightens what is far away, and few warm windows.
