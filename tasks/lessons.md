@@ -2862,3 +2862,14 @@ after PR #8 merged (`246e817`, "Merge it then start the second pass").
   on four old scratch scripts; the clean worktree passed. Lint where the branch is, not where the scratch is.
 - **Tunables:** E4's entry added to CLAUDE.md on 2026-10-22 (the cypress's paint fields and the ±1 smoothing). No
   existing tunable changed.
+
+## 2026-10-23 — the street: a colour gate that passes does not make a place feel alive
+
+Slice 1 spent five look passes and a day of colour gating on the street's paint (strokes, openings, windows, roofs, a
+per-source ΔE gate that ended green). Mark's first live view: "flat and dull", against Simon Lee's village with its
+breeze, fireflies and 3D feel. The causes were structural and visible from the first frame: unlit materials, nothing
+moving in the street, no depth behind it. Each pass compared crops against the painting, and the painting is a flat
+image, so the comparison could never see what was missing. Lesson: when the reference that matters is a living 3D
+scene, compare against it live (motion, light, depth) before the first look pass, and show Mark the live view early,
+not montages of stills. The colour gate measures drift from the painting; it says nothing about whether the place
+reads as alive.
