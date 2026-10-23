@@ -38,6 +38,7 @@ import { flareShape, pruneFlares, pruneKicks, pruneSurges, surgeUniformValues, T
 import { MOON_PAINTED_UV, STAR_ANCHORS } from './skyTargets'
 import { PALETTE } from './palette'
 import { DIORAMA_CAPTURE } from './dioramaContract'
+import { skyTransform, type SkyAnchor } from './skyAnchor'
 
 type PaintingFlowSkyDebug = 'final' | 'flow'
 
@@ -184,6 +185,8 @@ type Props = {
   arrivalStep?: RefObject<number | null>
   /** C: true once the ribbons have a geometry to draw; the arrival waits for it (with the cypress and the scan). */
   ready?: RefObject<boolean>
+  /** Street sky anchor: follow tracks camera translation, worldFixed locks rotation to world identity */
+  anchor?: SkyAnchor
 }
 
 // The ALIVE define (make-it-alive A, the flag on) compiles the gust clock in; without it the shaders are main's:
@@ -828,7 +831,7 @@ function SourceOrbs({
 
 
 
-export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky = 'light', still = false, alive = false, tuning = ALIVE_DEFAULTS, clock: sharedClock, touch = false, touchStore, arrivalStep, ready: readyRef }: Props) {
+export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky = 'light', still = false, alive = false, tuning = ALIVE_DEFAULTS, clock: sharedClock, touch = false, touchStore, arrivalStep, ready: readyRef, anchor }: Props) {
   const skyRoot = useRef<Group>(null)
   // the sky clock as this frame wrote it, for the halos' breath (A2) and the foreground (A3): pinned, advanced,
   // or 0 while paused. The scene's ref when given, else this one.
@@ -1142,7 +1145,38 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
   /* eslint-disable react-hooks/immutability -- R3F render-loop writes: camera-locked sky rotation + time uniform */
   useFrame(({ camera }, dt) => {
     if (skyRoot.current) {
-      skyRoot.current.quaternion.copy(camera.quaternion).multiply(homeInverse)
+      const transform = skyTransform(camera.quaternion, camera.position, homeInverse, anchor)
+      skyRoot.current.quaternion.copy(transform.quaternion)
+      skyRoot.current.position.copy(transform.position)
+      if (typeof window !== 'undefined') {
+        const w = window as Window & {
+          __skyTransform?: () => {
+            quaternion: [number, number, number, number] & { x: number; y: number; z: number; w: number }
+            position: [number, number, number] & { x: number; y: number; z: number }
+            camera: [number, number, number, number] & { x: number; y: number; z: number; w: number }
+          }
+        }
+        w.__skyTransform = () => {
+          const sq = skyRoot.current?.quaternion ?? transform.quaternion
+          const sp = skyRoot.current?.position ?? transform.position
+          const cq = camera.quaternion
+          const qArr = [sq.x, sq.y, sq.z, sq.w] as [number, number, number, number] & { x: number; y: number; z: number; w: number }
+          qArr.x = sq.x
+          qArr.y = sq.y
+          qArr.z = sq.z
+          qArr.w = sq.w
+          const pArr = [sp.x, sp.y, sp.z] as [number, number, number] & { x: number; y: number; z: number }
+          pArr.x = sp.x
+          pArr.y = sp.y
+          pArr.z = sp.z
+          const cArr = [cq.x, cq.y, cq.z, cq.w] as [number, number, number, number] & { x: number; y: number; z: number; w: number }
+          cArr.x = cq.x
+          cArr.y = cq.y
+          cArr.z = cq.z
+          cArr.w = cq.w
+          return { quaternion: qArr, position: pArr, camera: cArr }
+        }
+      }
     }
     if (paused) {
       // the light material is rebuilt at t = 0 on a pause; the halos' still is the t = 0 state too. B: the
