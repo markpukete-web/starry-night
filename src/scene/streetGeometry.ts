@@ -139,9 +139,11 @@ type Context = {
 function clad(ctx: Context, owner: string, name: string, face: StreetFace, density = 1): void {
   // a roof's base is its source's mean, not its darkest tenth: the street's eye meets the roofs at a grazing angle,
   // where the strokes thin out, and 46–99% of a roof's pixels showed the dark base (the per-source gate, `t12/`)
-  // S1b look pass 1: the ground and the path meet the eye at a grazing angle too. On the darkest tenth near-black filled
-  // the lower 40% of every frame at stop 0 (`t8/cap/`). On the whole mean the ground read as a flat grey plane (`t9/p1/`)
-  const share = face.kind === 'roof' ? 1 : face.kind === 'ground' || face.kind === 'path' ? GROUND_BASE_SHARE : 0.1
+  // S1b look passes 1 and 2: a face's base is its source's mean. On the darkest tenth the gaps between strokes read as
+  // black: near-black filled the lower 40% of every frame (`t8/cap/`), and a wall at half density read as dark planks
+  // (`t9/wall-bases.png`). The ground and the path keep a darker share, because on the whole mean they read as a flat
+  // grey plane (`t9/ground-bases.png`)
+  const share = face.kind === 'ground' || face.kind === 'path' ? GROUND_BASE_SHARE : 1
   const [r, g, b] = sourceUnderpaint(ctx.painting, face.source, share)
   const cls = face.kind === 'wall' ? 0 : face.kind === 'roof' ? 1 : face.kind === 'ground' ? 3 : 4
   const src = face.kind === 'wall' || face.kind === 'roof' ? (SOURCE_CLASSES[face.source] ?? 255) : 255
