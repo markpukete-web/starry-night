@@ -131,7 +131,9 @@ type Context = {
 
 /** Clad one face: its underpaint, its strokes, its report line. */
 function clad(ctx: Context, owner: string, name: string, face: StreetFace): void {
-  const [r, g, b] = sourceUnderpaint(ctx.painting, face.source)
+  // a roof's base is its source's mean, not its darkest tenth: the street's eye meets the roofs at a grazing angle,
+  // where the strokes thin out, and 46–99% of a roof's pixels showed the dark base (the per-source gate, `t12/`)
+  const [r, g, b] = sourceUnderpaint(ctx.painting, face.source, face.kind === 'roof' ? 1 : 0.1)
   const cls = face.kind === 'wall' ? 0 : face.kind === 'roof' ? 1 : face.kind === 'ground' ? 3 : 4
   const src = face.kind === 'wall' || face.kind === 'roof' ? (SOURCE_CLASSES[face.source] ?? 255) : 255
   polygon(ctx.underpaint, facePolygon(face), new Color().setRGB(r, g, b, SRGBColorSpace), cls, src)
