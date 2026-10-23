@@ -2,7 +2,9 @@
 
 Status: design, written by the Lead (Claude) from a conversation with Mark on 2026-10-23. Read by a fresh builder
 (nine questions) and by the consultant (Fable, `scratch/explore-2026-10-23/consultant-design-report.md`: REVISE,
-findings C1–C19, every one checked against the code and folded below). Not approved yet. Nothing is built.
+findings C1–C19, every one checked against the code and folded below). The consultant's confirmation read
+(`consultant-confirm-report.md`) closed C2–C19 and left C1 open on one clause: the sky's growth along the walk. That
+clause is added as the consultant proposed it and has not had a further read. Not approved yet. Nothing is built.
 
 ## Intent
 
@@ -114,7 +116,11 @@ reduced motion), and no empty band, invented back or gradient is ever on screen.
   dome, every object within 6 units of the origin and the camera about as far from the centre as the home camera, or
   with the sky group moved with the street's camera and scaled so the whole street, the far church included, lies
   inside it. Either way the camera's near plane (0.08 today, `src/scene/dioramaContract.ts:45`) is set from the
-  street's scale, so the ground near Vincent never clips.
+  street's scale, so the ground near Vincent never clips. In the first way, the walk toward the church also moves the
+  camera toward the painted arc, so the sky grows on screen as Vincent walks
+  (`scratch/explore-2026-10-23/dive-sheet.png` shows the growth). The sky's allowed growth then bounds the path's
+  length, judged from a capture at the path's start beside one at its end. In the second way the sky does not grow
+  (consultant's confirmation read, C1).
 - **Its turn** (C2). Under today's lock the sky turns with the camera (`PaintingFlowSky3D.tsx:1145`), so it is fixed
   on screen. Tilting the camera up at the steeple moves the roofs down and leaves the painted band where it was. The
   strokes fade out from v 0.76 of the painting (`src/scene/dioramaSkyProjection.ts:28`), and below them is the
@@ -122,7 +128,7 @@ reduced motion), and no empty band, invented back or gradient is ever on screen.
   tilts, and the roofline, the fog or the ground covers the screen below the painted band at every point of the path.
   With the painting's front arc fixed in the world instead, the path's heading stays within the arc's ±71° across and
   its tilt within +52°. The touch hook's sky mapping (`src/scene/useTouchInput.ts:95–106`) then needs re-keying,
-  because it assumes the lock. Slice 1 chooses between the two with a capture of each at the path's end.
+  because it assumes the lock. Slice 1 chooses between the two with captures of each at the path's start and end.
 - **Portrait** (C15). In portrait the diorama keys the sky to its portrait home, with a field of view of 88 and an
   unpainted band at the top (`dioramaContract.ts:48–65`). The street's plan names its camera's field of view in
   landscape and in portrait, and which `home` the sky takes in each.

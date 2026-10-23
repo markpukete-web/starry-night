@@ -14,7 +14,10 @@ The land roadmap (E1, E2, D1, then E3 and E4 on the cypress) is done.
    chose a portal into one street built for walking, Vincent from behind, scroll or arrow keys on a computer, an
    automatic walk with a tap on a phone, and Simon's village as the reference for the look when in doubt. The design:
    `docs/superpowers/specs/2026-10-23-village-street-design.md`. The builder read is done and its nine questions are
-   settled as the Lead's calls. Next: Mark's approval, then the plan for slice 1, the street's look.
+   settled as the Lead's calls. The consultant (Fable, the Consultant tab) read it: REVISE, C1–C19, all folded, its
+   confirmation read closed C2–C19, and C1's last clause is added as it proposed. The estimate is now 8 to 10
+   sessions, and slice 1's gate is where Mark decides whether slices 2 to 4 are built. Next: Mark's approval, then
+   the plan for slice 1, the street's look. Slice 1 starts with a fresh phone reading (`?perf=1` on the live site).
    - **Proposed to Mark, the locked acceptance criterion on the camera** (Mark, 2026-10-23: "Lift it for the path").
      Today: "Camera stays within the orbit limits in Tunables (polar + distance; no free-fly or panning); the diorama
      always reads as Starry Night — head-on it is the painting's composition." Proposed: "Camera stays within the
