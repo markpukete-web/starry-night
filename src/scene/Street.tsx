@@ -10,6 +10,7 @@ import { FOG, fogInjection } from './streetFog.ts'
 import { STREET, stationPose } from './streetLayout.ts'
 import { readStreetFlags, streetReadiness, type AssetStatus } from './streetMode.ts'
 import { strokeGeometry } from './strokeGeometry.ts'
+import StreetAlive, { swayInjection } from './streetAlive.tsx'
 import { useImageData } from './useImageData.ts'
 
 type StreetWindow = Window & {
@@ -73,9 +74,10 @@ function idInjection(threshold = FOG.near + 0.6 * (FOG.far - FOG.near)): Omit<Al
   }
 }
 
-function material(key: string, body: Omit<AliveInjection, 'key' | 'uniforms'> | null, fog: Omit<AliveInjection, 'key'>, stroke: boolean, ids: boolean): MeshBasicMaterial {
+function material(key: string, body: Omit<AliveInjection, 'key' | 'uniforms'> | null, fog: Omit<AliveInjection, 'key'>, stroke: boolean, ids: boolean, extra?: Omit<AliveInjection, 'key'>): MeshBasicMaterial {
   const m = new MeshBasicMaterial(stroke ? { vertexColors: true, toneMapped: false, side: DoubleSide, alphaTest: 0.5 } : { vertexColors: true, toneMapped: false, side: DoubleSide })
   const parts: Omit<AliveInjection, 'key'>[] = [body ? { uniforms: {}, ...body } : NO_INJECTION, fog]
+  if (extra) parts.push(extra)
   if (ids) parts.push(idInjection())
   injectAlive(m, concatInjections(ids ? `${key}-ids` : key, ...parts))
   return m
@@ -162,7 +164,9 @@ export default function Street() {
       strokes: material('street-strokes', strokeGlslWith(CYPRESS_STROKE_BODY), fog(), true, ids),
       ground: material('street-ground', strokeGlslWith(STREET_GROUND_BODY), fog(), true, ids),
       // pass 1: the land's body broke the curls into combs at walking distance; the cypress's (E4) holds them
-      trees: material('street-trees', strokeGlslWith(CYPRESS_STROKE_BODY), fog(), true, ids),
+      // SPIKE: the trees sway in a breeze (streetAlive.tsx)
+      trees: material('street-trees-sway', strokeGlslWith(CYPRESS_STROKE_BODY), fog(), true, ids, swayInjection()),
+      treeSolid: material('street-trees-solid-sway', null, fog(), false, ids, swayInjection()),
     }
   }, [flags.flat, flags.ids])
   useEffect(() => () => { for (const m of Object.values(materials)) m.dispose() }, [materials])
@@ -196,8 +200,9 @@ export default function Street() {
       <mesh name="street-strokes" geometry={meshes.strokes} material={materials.strokes} renderOrder={1} />
       <mesh name="street-windows" geometry={meshes.windows} material={materials.solid} renderOrder={2} />
       <mesh name="street-outlines" geometry={meshes.outlines} material={materials.strokes} renderOrder={3} />
-      <mesh name="street-trees-solid" geometry={meshes.treeSolid} material={materials.solid} renderOrder={2} />
+      <mesh name="street-trees-solid" geometry={meshes.treeSolid} material={materials.treeSolid} renderOrder={2} />
       <mesh name="street-trees-strokes" geometry={meshes.treeStrokes} material={materials.trees} renderOrder={3} />
+      {!flags.flat && flags.ids === 0 && build && paintingData && <StreetAlive windows={build.windows} painting={paintingData} />}
     </group>
   )
 }

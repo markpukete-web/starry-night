@@ -4,6 +4,7 @@ import { islandHeightAt } from './islandShape.ts'
 import { buildLandTrees, type BakedMass, type LandTrees } from './landDomes.ts'
 import { buildStreetTrees } from './streetTrees.ts'
 import { PALETTE } from './palette.ts'
+import { MOON_UV, uvToFrontDir } from './skyMapping.ts'
 import { STREET, STREET_CHURCH, STREET_HOUSES, STREET_TREES, pathPoint, pathTangent, streetGroundAt } from './streetLayout.ts'
 import { outlineFace, sourceUnderpaint, streetMassConfig, traceFace, type FaceStrokes, type StreetFace, type StreetSourceName } from './streetStrokes.ts'
 import type { ImageData2D } from './useImageData.ts'
@@ -130,14 +131,25 @@ type Context = {
 }
 
 /** Clad one face: its underpaint, its strokes, its report line. */
+/** SPIKE: the street's moon (the sky's own, world-fixed under G5) lights the walls and the roofs; the side away from it
+ * falls to `ambient`. */
+const SPIKE_MOON = uvToFrontDir(MOON_UV[0], MOON_UV[1])
+export const SPIKE_LIGHT = { ambient: 0.4, key: 0.9 }
+function lightOf(face: StreetFace): number {
+  if (face.kind !== 'wall' && face.kind !== 'roof') return 1
+  return SPIKE_LIGHT.ambient + SPIKE_LIGHT.key * Math.max(0, face.normal.dot(SPIKE_MOON))
+}
+
 function clad(ctx: Context, owner: string, name: string, face: StreetFace): void {
   // a roof's base is its source's mean, not its darkest tenth: the street's eye meets the roofs at a grazing angle,
   // where the strokes thin out, and 46–99% of a roof's pixels showed the dark base (the per-source gate, `t12/`)
   const [r, g, b] = sourceUnderpaint(ctx.painting, face.source, face.kind === 'roof' ? 1 : 0.1)
   const cls = face.kind === 'wall' ? 0 : face.kind === 'roof' ? 1 : face.kind === 'ground' ? 3 : 4
   const src = face.kind === 'wall' || face.kind === 'roof' ? (SOURCE_CLASSES[face.source] ?? 255) : 255
-  polygon(ctx.underpaint, facePolygon(face), new Color().setRGB(r, g, b, SRGBColorSpace), cls, src)
+  const light = lightOf(face)
+  polygon(ctx.underpaint, facePolygon(face), new Color().setRGB(r, g, b, SRGBColorSpace).multiplyScalar(light), cls, src)
   const traced = traceFace(face, ctx.flow, ctx.painting)
+  for (let k = 0; k < traced.arrays.colors.length; k++) traced.arrays.colors[k] *= light
   append(face.kind === 'ground' || face.kind === 'path' ? ctx.ground : ctx.strokes, traced, cls, src)
   ctx.ribbons += traced.ribbons
   ctx.report.faces.push({ owner, name, ribbons: traced.ribbons })
