@@ -185,8 +185,9 @@ the triangle cap, with his phone's frame rate as the check.
   cross product with that segment's direction.
 - [ ] **Step 3: The square, the church and the path.** `STREET_SQUARE`: the map's (500, 300), radius 0.25. The nave's
   centre is the square's centre plus `(0.25 + nave.d / 2) × forward`, its front wall (the door) facing back down the
-  lane: `yaw = atan2(forward.x, −forward.z)`, the belfry placed from it as today. The path: 24 segments from `t` −0.2 to
-  1.0. The square: eight `path` triangles about its centre. The ground's near band runs from −0.45 to the along of
+  lane: `yaw = atan2(forward.x, −forward.z)`, the belfry placed from it as today. The path: 12 segments from `t` −0.2 to
+  1.0, each running 0.01 of `t` (0.024 world, S1's overlap) into the next. (Task 1 built 24 segments without the
+  overlap: each face was 0.12 × 0.08, its clipped strokes rounded into blobs, and black showed between them.) The square: eight `path` triangles about its centre. The ground's near band runs from −0.45 to the along of
   `pathPoint(1)` plus 0.75 (about 2.86), so it covers the church. The far band starts there.
 - [ ] **Step 4: The houses.** `HOUSE_SPECS` replaced by this table. `x`, `y` and `θ` are the map's. Sizes are world
   units. `eave` already includes the storeys. L1 stands 90 px left of the map's place, because the cypress takes it
