@@ -141,7 +141,10 @@ function opening(ctx: Context, face: StreetFace, cu: number, cv: number, w: numb
   // pass 5: painted, not a flat card: a lit window in the painting's own window dabs, a door or a dark window in its
   // wall's strokes darkened, each over a dark base and strokes sized to the opening
   // the ID pass's classes (task 7): a lit window's base and strokes are the windows (2), a door or a dark window none (255)
-  polygon(ctx.windows, quad, WINDOW_DARK, lit ? 2 : 255)
+  // a lit window's base is its dabs' own mean, not a dark one: the dark base showed between the dabs and dulled the
+  // window to L 41 against the dabs' 55 (the palette gate on the merged head)
+  const base = lit ? new Color().setRGB(...sourceUnderpaint(ctx.painting, 'windowLit', 1), SRGBColorSpace) : WINDOW_DARK
+  polygon(ctx.windows, quad, base, lit ? 2 : 255)
   const opening: StreetFace = {
     ...face,
     origin: quad[0],

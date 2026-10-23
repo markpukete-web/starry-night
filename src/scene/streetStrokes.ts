@@ -296,8 +296,9 @@ function acceptFor(face: StreetFace, painting: ImageData2D): TexelAccept {
   return EVERY_TEXEL
 }
 
-/** The mean of the darkest tenth of the source's texels (sRGB 0..1): the face's underpaint. */
-export function sourceUnderpaint(painting: ImageData2D, source: StreetSourceName): [number, number, number] {
+/** The mean of the darkest `share` of the source's texels (sRGB 0..1), a tenth for a face's underpaint; all of them
+ * for a lit window's base. */
+export function sourceUnderpaint(painting: ImageData2D, source: StreetSourceName, share = 0.1): [number, number, number] {
   const [x0, y0, x1, y1] = STREET_SOURCES[source]
   const sx = painting.width / 1600
   const sy = painting.height / 1267
@@ -310,7 +311,7 @@ export function sourceUnderpaint(painting: ImageData2D, source: StreetSourceName
     }
   }
   texels.sort((a, b) => a[0] - b[0])
-  const dark = texels.slice(0, Math.max(1, Math.round(texels.length / 10)))
+  const dark = texels.slice(0, Math.max(1, Math.round(texels.length * share)))
   return [0, 1, 2].map((c) => dark.reduce((sum, t) => sum + t[c + 1], 0) / dark.length / 255) as [number, number, number]
 }
 
