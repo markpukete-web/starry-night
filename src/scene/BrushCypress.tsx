@@ -26,6 +26,9 @@ import { ALIVE_DEFAULTS, type AliveTuning } from './skyAlive'
 
 const HEIGHT = 2.7
 const BASE = new Vector3(-1.5, 0.02, 0.72)
+/** `at`'s default, one array for every render: a fresh literal is a new dependency of the geometry memo each time, so
+ * the diorama rebuilt its tree on every re-render (S1b, the Lead's merge read of Task 5) */
+const BASE_AT = [BASE.x, BASE.y, BASE.z] as const
 /** no lift on the pigment (retune 2: with 1.08 and the lane rule the render was 8–14 L lighter than the painting) */
 const SOURCE_STROKE_LIFT = 1
 const MOON_LIFT = 0.04
@@ -57,7 +60,7 @@ export function BrushCypress({
   tuning = ALIVE_DEFAULTS,
   ready: readyRef,
   touch,
-  at = [BASE.x, BASE.y, BASE.z],
+  at = BASE_AT,
   scale = 1,
   viewFrom = DIORAMA_CAMERAS.design.position,
   stride = 1,
