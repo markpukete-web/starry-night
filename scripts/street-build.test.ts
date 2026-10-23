@@ -8,7 +8,7 @@ import { islandHeightAt } from '../src/scene/islandShape.ts'
 import type { BakedMass } from '../src/scene/landDomes.ts'
 import { Vector3 } from 'three'
 import { COTTAGE, ROOF_EDGE, buildStreet, cottageFaces, houseRoofEdges, type StreetShape } from '../src/scene/streetGeometry.ts'
-import { STREET_CHURCH, STREET_HOUSES } from '../src/scene/streetLayout.ts'
+import { DETAIL, detailOf, STREET, STREET_CHURCH, STREET_HOUSES, STREET_TRIANGLE_BUDGET, laneDistance, pathPoint } from '../src/scene/streetLayout.ts'
 import type { ImageData2D } from '../src/scene/useImageData.ts'
 import { VILLAGE_CHURCH } from '../src/scene/villageKnot.ts'
 import { decodePNG } from './lib/png.ts'
@@ -183,4 +183,60 @@ test("every painting house's roof has an edge", () => {
     for (const band of eaves) assert.ok(close(band.corners[0].y, band.corners[1].y), `${h.id} ${band.name}: level`)
   }
 })
+
+test('far houses and far ground take half', () => {
+  assert.ok(build)
+  let halfHouses = 0
+  let halfNearTiles = 0
+  const [fx, , fz] = STREET.forward
+  const forward = new Vector3(fx, 0, fz)
+  const across = new Vector3(-fz, 0, fx)
+  const p1 = pathPoint(1)
+  const p1Along = p1[0] * fx + p1[2] * fz
+  const [from, to, side] = [-0.45, p1Along + 0.75, 1.25]
+  const alongTiles = Math.round((to - from) / 0.6)
+  const acrossTiles = Math.round((2 * side) / 0.6)
+  const tileAlong = (to - from) / alongTiles
+  const tileAcross = (2 * side) / acrossTiles
+
+  for (const f of build.report.faces) {
+    const density = f.density
+    if (f.owner.startsWith('house-')) {
+      const idx = parseInt(f.owner.slice('house-'.length), 10)
+      const h = STREET_HOUSES[idx]
+      const expected = detailOf(h.x, h.z)
+      assert.equal(density, expected, `${f.owner} ${f.name} density ${density} against ${expected}`)
+      if (expected === 0.5) halfHouses++
+    } else if (f.owner === 'ground') {
+      const match = f.name.match(/^tile (\d+),(\d+)$/)
+      if (match) {
+        const i = parseInt(match[1], 10)
+        const j = parseInt(match[2], 10)
+        const origin = forward.clone().multiplyScalar(from + i * tileAlong).addScaledVector(across, -side + j * tileAcross)
+        const centre = origin.clone().addScaledVector(across, tileAcross / 2).addScaledVector(forward, tileAlong / 2)
+        const expected = laneDistance(centre.x, centre.z) > DETAIL.lane ? 0.5 : 1
+        assert.equal(density, expected, `ground tile ${i},${j} density ${density} against ${expected}`)
+        if (expected === 0.5) halfNearTiles++
+      } else if (f.name.startsWith('far') || f.name.startsWith('side')) {
+        assert.equal(density, 0.5, `${f.name} density ${density} against 0.5`)
+      } else {
+        assert.equal(density, 1, `${f.name} density ${density} against 1`)
+      }
+    } else {
+      assert.equal(density, 1, `${f.owner} ${f.name} density ${density} against 1`)
+    }
+  }
+  assert.ok(halfHouses > 0, 'at least one house takes 0.5')
+  assert.ok(halfNearTiles > 0, 'at least one near ground tile takes 0.5')
+})
+
+test('the street fits its budget', () => {
+  assert.ok(build)
+  assert.ok(build.counts.triangles > 0, 'triangles > 0')
+  assert.ok(
+    build.counts.triangles <= STREET_TRIANGLE_BUDGET,
+    `street triangles ${build.counts.triangles} <= budget ${STREET_TRIANGLE_BUDGET}`,
+  )
+})
+
 

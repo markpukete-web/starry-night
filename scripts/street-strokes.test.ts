@@ -217,3 +217,13 @@ test('the stroke attributes are whole, and a build without them throws', () => {
   assert.throws(() => strokeGeometry(strokes.arrays, [], strokes.seed), /aStroke/)
   assert.throws(() => strokeGeometry(strokes.arrays, strokes.stroke, []), /aSeed/)
 })
+
+test('density halves the ribbons', () => {
+  const f = face(0.6, 0.2)
+  const full = traceFace(f, uniformFlow(1, 0), splitPainting(9999))
+  const half = traceFace(f, uniformFlow(1, 0), splitPainting(9999), { density: 0.5 })
+  assert.ok(full.ribbons > 0, 'full ribbons > 0')
+  const ratio = half.ribbons / full.ribbons
+  assert.ok(ratio >= 0.4 && ratio <= 0.6, `ratio ${ratio.toFixed(3)} at density 0.5 (half ${half.ribbons}, full ${full.ribbons})`)
+})
+

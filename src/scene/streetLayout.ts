@@ -335,3 +335,21 @@ export function stationPose(
     far: STREET.far,
   }
 }
+
+/**
+ * The street's triangle budget: 1,444,930 ceiling − 660,388 non-street share (Task 0, station 4 mobile, scratch/street-s1b-2026-10-23/t0/numbers.md)
+ * − 143,232 street cypress at stride 4 (Task 5 report, scratch/street-s1b-2026-10-23/t5/cap/4-desktop-frames.json) = 641,310.
+ */
+export const STREET_TRIANGLE_BUDGET = 641310
+
+export const DETAIL = { lane: 0.6, house: 0.46 }
+
+const stationCameras = ([0, 1, 2, 3, 4] as const).map((i) => stationPose(i, false).position)
+
+export function detailOf(x: number, z: number, threshold = DETAIL.house): 1 | 0.5 {
+  for (const cam of stationCameras) {
+    if (Math.hypot(x - cam[0], z - cam[2]) <= threshold) return 1
+  }
+  return 0.5
+}
+
