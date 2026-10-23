@@ -119,8 +119,8 @@ export default function Street() {
 
   const build = useMemo<StreetBuild | null>(() => {
     if (!readiness.render) return null
-    return flags.flat ? buildFlatPanel(paintingData, flowData, massesState.data) : buildStreet(paintingData, flowData, massesState.data)
-  }, [readiness.render, flags.flat, paintingData, flowData, massesState.data])
+    return flags.flat ? buildFlatPanel(paintingData, flowData, massesState.data) : buildStreet(paintingData, flowData, massesState.data, { lit: flags.light })
+  }, [readiness.render, flags.flat, flags.light, paintingData, flowData, massesState.data])
 
   useEffect(() => {
     const w = window as StreetWindow
@@ -203,7 +203,7 @@ export default function Street() {
       <mesh name="street-outlines" geometry={meshes.outlines} material={materials.strokes} renderOrder={3} />
       <mesh name="street-trees-solid" geometry={meshes.treeSolid} material={materials.treeSolid} renderOrder={2} />
       <mesh name="street-trees-strokes" geometry={meshes.treeStrokes} material={materials.trees} renderOrder={3} />
-      {!flags.flat && flags.ids === 0 && build && paintingData && <StreetAlive windows={build.windows} painting={paintingData} />}
+      {!flags.flat && flags.ids === 0 && flags.light && build && paintingData && <StreetAlive windows={build.windows} painting={paintingData} />}
     </group>
   )
 }

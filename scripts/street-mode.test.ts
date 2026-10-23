@@ -19,6 +19,9 @@ test('flags', () => {
   assert.equal(def.fail, null)
   assert.equal(def.anchor, 'B')
   assert.equal(def.turn, 'world')
+  // S1b task 4: the street is lit unless `light=0` (the palette gate's captures)
+  assert.equal(def.light, true)
+  assert.equal(readStreetFlags('?street=1&light=0').light, false)
 
   // street=0 gives street: false
   assert.equal(readStreetFlags('?street=0').street, false)

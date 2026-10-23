@@ -1,10 +1,10 @@
 import { Color, SRGBColorSpace, Vector3 } from 'three'
-import { makeBrushArrays, smooth, type BrushArrays } from './brushForms.ts'
+import { makeBrushArrays, type BrushArrays } from './brushForms.ts'
 import { islandHeightAt } from './islandShape.ts'
 import { buildLandTrees, type BakedMass, type LandTrees } from './landDomes.ts'
 import { buildStreetTrees } from './streetTrees.ts'
 import { PALETTE } from './palette.ts'
-import { MOON_UV, uvToFrontDir } from './skyMapping.ts'
+import { leanOf, lightOf, shadeNew } from './streetLight.ts'
 import { STREET, STREET_CHURCH, STREET_HOUSES, STREET_SQUARE, STREET_TREES, pathPoint, pathTangent, streetGroundAt } from './streetLayout.ts'
 import { outlineFace, sourceUnderpaint, streetMassConfig, traceFace, type FaceStrokes, type StreetFace, type StreetSourceName } from './streetStrokes.ts'
 import type { ImageData2D } from './useImageData.ts'
@@ -129,53 +129,24 @@ type Context = {
   windows: BrushArraysWithCls
   report: StreetBuild['report']
   ribbons: number
+  /** false under the dev flag `light=0` */
+  lit: boolean
 }
 
 /** Clad one face: its underpaint, its strokes, its report line. */
-/** SPIKE: the street's moon (the sky's own, world-fixed under G5) lights the walls and the roofs; the side away from it
- * falls to `ambient`. */
-const SPIKE_MOON = uvToFrontDir(MOON_UV[0], MOON_UV[1])
-export const SPIKE_LIGHT = { ambient: 0.4, key: 0.9 }
-function lightOf(face: StreetFace): number {
-  if (face.kind !== 'wall' && face.kind !== 'roof') return 1
-  return SPIKE_LIGHT.ambient + SPIKE_LIGHT.key * Math.max(0, face.normal.dot(SPIKE_MOON))
-}
-
-/** SPIKE (Mark: "the house feels like a cardboard"): a wall's ambient shadow, darker toward the ground, at its corners and
- * in a band under the eaves. Walls standing on the ground only. */
-function wallShade(face: StreetFace, x: number, y: number, z: number): number {
-  if (face.kind !== 'wall' || face.shape !== 'quad' || face.origin.y > 0.01) return 1
-  const rel = new Vector3(x, y, z).sub(face.origin)
-  const s = rel.dot(face.u) / face.u.lengthSq()
-  const t = rel.dot(face.v) / face.v.lengthSq()
-  const ground = 0.5 + 0.5 * smooth(0, 0.5, t)
-  const eaves = 1 - 0.25 * smooth(0.8, 1, t)
-  const corner = 0.78 + 0.22 * smooth(0, 0.14, Math.min(s, 1 - s))
-  return ground * eaves * corner
-}
-
-function shadeNew(arr: BrushArrays, from: number, face: StreetFace): void {
-  for (let i = from; i < arr.positions.length; i += 3) {
-    const k = wallShade(face, arr.positions[i], arr.positions[i + 1], arr.positions[i + 2])
-    arr.colors[i] *= k
-    arr.colors[i + 1] *= k
-    arr.colors[i + 2] *= k
-  }
-}
-
 function clad(ctx: Context, owner: string, name: string, face: StreetFace): void {
   // a roof's base is its source's mean, not its darkest tenth: the street's eye meets the roofs at a grazing angle,
   // where the strokes thin out, and 46–99% of a roof's pixels showed the dark base (the per-source gate, `t12/`)
   const [r, g, b] = sourceUnderpaint(ctx.painting, face.source, face.kind === 'roof' ? 1 : 0.1)
   const cls = face.kind === 'wall' ? 0 : face.kind === 'roof' ? 1 : face.kind === 'ground' ? 3 : 4
   const src = face.kind === 'wall' || face.kind === 'roof' ? (SOURCE_CLASSES[face.source] ?? 255) : 255
-  const light = lightOf(face)
+  const light = lightOf(face, ctx.lit)
   const underFrom = ctx.underpaint.positions.length
   polygon(ctx.underpaint, facePolygon(face), new Color().setRGB(r, g, b, SRGBColorSpace).multiplyScalar(light), cls, src)
   const traced = traceFace(face, ctx.flow, ctx.painting)
   for (let k = 0; k < traced.arrays.colors.length; k++) traced.arrays.colors[k] *= light
-  shadeNew(ctx.underpaint, underFrom, face)
-  shadeNew(traced.arrays, 0, face)
+  shadeNew(ctx.underpaint, underFrom, face, ctx.lit)
+  shadeNew(traced.arrays, 0, face, ctx.lit)
   append(face.kind === 'ground' || face.kind === 'path' ? ctx.ground : ctx.strokes, traced, cls, src)
   ctx.ribbons += traced.ribbons
   ctx.report.faces.push({ owner, name, ribbons: traced.ribbons })
@@ -240,9 +211,9 @@ export function cottage(ctx: Context, owner: string, index: number, shape: Stree
   leaned(ctx, index, along, () => buildCottage(ctx, owner, index, shape, centre, along, toPath, lit, chimney))
 }
 
-/** SPIKE: each house leans its own way, up to about 2.6° (a shear by height keeps every face flat). */
+/** Each house leans its own way (`streetLight.ts`): a shear by height keeps every face flat. */
 function leaned(ctx: Context, index: number, along: Vector3, build: () => void): void {
-  const lean = index === 100 ? 0 : (((index * 0.618 + 0.31) % 1) - 0.5) * 0.09
+  const lean = leanOf(index)
   const marks = [ctx.underpaint, ctx.strokes.arrays, ctx.outlines.arrays, ctx.windows].map((arr) => [arr, arr.positions.length] as const)
   build()
   for (const [arr, from] of marks) {
@@ -559,7 +530,7 @@ function ground(ctx: Context): void {
   }
 }
 
-export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | null, masses: BakedMass[] | null): StreetBuild | null {
+export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | null, masses: BakedMass[] | null, { lit = true }: { lit?: boolean } = {}): StreetBuild | null {
   if (!painting || !flow || !masses) return null
   const ctx: Context = {
     flow,
@@ -571,6 +542,7 @@ export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | nu
     windows: Object.assign(makeBrushArrays(), { cls: [], src: [] }),
     report: { faces: [], outlines: [], windows: [], church: { belfryWidth: 0, belfryHeight: 0, spireHeight: 0 } },
     ribbons: 0,
+    lit,
   }
   ground(ctx)
   STREET_HOUSES.forEach((h, index) => {
@@ -621,6 +593,7 @@ export function buildFlatPanel(painting: ImageData2D | null, flow: ImageData2D |
     windows: Object.assign(makeBrushArrays(), { cls: [], src: [] }),
     report: { faces: [], outlines: [], windows: [], church: { belfryWidth: 0, belfryHeight: 0, spireHeight: 0 } },
     ribbons: 0,
+    lit: true,
   }
   polygon(ctx.underpaint, [new Vector3(-0.3, -0.3, -0.05), new Vector3(1.9, -0.3, -0.05), new Vector3(1.9, 0.9, -0.05), new Vector3(-0.3, 0.9, -0.05)], new Color(0x111111), 255)
   const toward = new Vector3(0, 0, 1)

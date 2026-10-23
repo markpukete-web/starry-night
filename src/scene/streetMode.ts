@@ -6,6 +6,8 @@ export type StreetFlags = {
   fail: 'painting' | 'flow' | 'masses' | null
   anchor: 'A' | 'B'
   turn: 'lock' | 'world'
+  /** S1b task 4: false under `light=0`, the palette gate's unlit captures */
+  light: boolean
 }
 
 export function readStreetFlags(search: string): StreetFlags {
@@ -30,6 +32,7 @@ export function readStreetFlags(search: string): StreetFlags {
     fail,
     anchor,
     turn,
+    light: params.get('light') !== '0',
   }
 }
 
