@@ -6,20 +6,16 @@ import atlas from './village-atlas.json'
 import { MARK_STEPS, markVertexCount, packGlow, type LitRange } from './villageGlow'
 import { VILLAGE_PATCHES, type VillagePatchName } from './villagePatches'
 
+import { VILLAGE_NEIGHBOURS, VILLAGE_CONTEXT, VILLAGE_CHURCH, type Building, type Pigment } from './villageKnot.ts'
+
 // The church and four neighbours are authored as one knot. Axes and relative heights come
 // from painting.jpg's full lower village, not the old crop ending halfway through the town.
 // Three context houses complete the village in the same medium; the foliage rows are the land's masses (E2).
 // Developed as a DEV study (tasks/2026-10-05-village-*.md, 2026-10-06-village-context.md).
 type Face = readonly [Vector3, Vector3, Vector3, Vector3]
-type Pigment = 'wall' | 'pale' | 'roof' | 'sienna' | 'striped'
 type SkinArrays = BrushArrays & { uv: number[] }
 /** The paint mesh's arrays, with the vertex range of every lit window mark (make-it-alive A, second pass: the glimmer). */
 type PaintArrays = BrushArrays & { lit: LitRange[] }
-type Building = {
-  x: number; z: number; w: number; d: number; eave: number; pitch: number; yaw: number
-  wall: Pigment; roof: Pigment; window?: 'front' | 'side'; door?: boolean; chimney?: boolean
-  wallPatch: VillagePatchName; roofPatch: VillagePatchName
-}
 
 const INK = new Color(PALETTE.ground)
 const BLUE = new Color(PALETTE.house)
@@ -27,31 +23,6 @@ const PALE = new Color(PALETTE.steeple)
 const OCHRE = new Color(PALETTE.windowOchre)
 const SIENNA = new Color(PALETTE.roofSienna)
 const ROOF = new Color(PALETTE.roof)
-
-const NEIGHBOURS: Building[] = [
-  { x: -0.34, z: 0.42, w: 0.21, d: 0.27, eave: 0.18, pitch: 0.14, yaw: 0.58,
-    wall: 'pale', roof: 'roof', wallPatch: 'paleLeft', roofPatch: 'quietRoof', door: true },
-  { x: -0.66, z: 0.65, w: 0.28, d: 0.34, eave: 0.14, pitch: 0.115, yaw: 1.28,
-    wall: 'wall', roof: 'sienna', wallPatch: 'blueWallA', roofPatch: 'siennaRoof', window: 'side' },
-  { x: 0.39, z: 0.90, w: 0.31, d: 0.46, eave: 0.15, pitch: 0.155, yaw: 1.44,
-    wall: 'wall', roof: 'striped', wallPatch: 'blueWallB', roofPatch: 'stripedRoof', window: 'side' },
-  { x: 0.38, z: 0.43, w: 0.22, d: 0.29, eave: 0.22, pitch: 0.14, yaw: -0.26,
-    wall: 'wall', roof: 'roof', wallPatch: 'blueWallC', roofPatch: 'blueRoof', chimney: true, window: 'front' },
-]
-
-// The three houses that stayed procedural beside the knot until C1 (old BrushVillage houses 3, 4, 6),
-// painted from the matching part of the painting's village. The old footprints interpenetrated
-// their neighbours behind uniform dark paint, so each moved to clear every footprint by ≥0.02
-// (scratch/village-context-2026-10-06/clearance). Built after the church so the approved R5/F2
-// buffers stay an exact prefix.
-const CONTEXT: Building[] = [
-  { x: 0.77, z: 0.585, w: 0.28, d: 0.26, eave: 0.2, pitch: 0.14, yaw: -0.3,
-    wall: 'wall', roof: 'roof', wallPatch: 'blueWallD', roofPatch: 'navyRoofRight', window: 'front' },
-  { x: 1.1, z: 0.415, w: 0.3, d: 0.26, eave: 0.22, pitch: 0.14, yaw: 0.32,
-    wall: 'pale', roof: 'roof', wallPatch: 'paleLeft', roofPatch: 'brownRoof', window: 'front' },
-  { x: -0.86, z: 0.35, w: 0.3, d: 0.26, eave: 0.2, pitch: 0.14, yaw: 0.1,
-    wall: 'wall', roof: 'roof', wallPatch: 'blueWallLeft', roofPatch: 'blueRoofLeft', window: 'front' },
-]
 
 function geometry(a: BrushArrays | SkinArrays, glow?: Float32Array): BufferGeometry {
   const g = new BufferGeometry()
@@ -235,14 +206,10 @@ function building(solid: BrushArrays, skin: SkinArrays, paint: PaintArrays, b: B
 }
 
 function church(solid: BrushArrays, skin: SkinArrays, paint: PaintArrays): void {
-  building(solid, skin, paint, {
-    x: -0.036, z: 0.37, w: 0.26, d: 0.31, eave: 0.24, pitch: 0.185, yaw: 0.65,
-    wall: 'pale', roof: 'roof', wallPatch: 'churchPlaster', roofPatch: 'churchRoof', door: true,
-  })
+  building(solid, skin, paint, VILLAGE_CHURCH.nave)
   // The belfry sits at the far end of the nave, to the right in the design view.
-  const cx = 0.066, cz = 0.235, width = 0.09, yaw = 0.65
-  const floor = islandHeightAt(cx, cz) - 0.035
-  const topY = 0.445
+  const { cx, cz, width, yaw, floorDrop, topY } = VILLAGE_CHURCH.belfry
+  const floor = islandHeightAt(cx, cz) - floorDrop
   const corners = [[-1, 1], [1, 1], [1, -1], [-1, -1]].map(([x, z]) =>
     new Vector3(cx + (x * Math.cos(yaw) - z * Math.sin(yaw)) * width / 2, floor,
       cz + (x * Math.sin(yaw) + z * Math.cos(yaw)) * width / 2))
@@ -256,7 +223,7 @@ function church(solid: BrushArrays, skin: SkinArrays, paint: PaintArrays): void 
     edge(paint, corners[i], top[i], normal(f), 0.004)
   }
   polygon(solid, [...corners].reverse(), INK)
-  const tip = new Vector3(cx - 0.012, 1.125, cz - 0.008)
+  const tip = new Vector3(cx + VILLAGE_CHURCH.spireTip.dx, VILLAGE_CHURCH.spireTip.y, cz + VILLAGE_CHURCH.spireTip.dz)
   for (let i = 0; i < 4; i++) {
     const f: Face = [top[i], top[(i + 1) % 4], tip, tip]
     paintFace(solid, skin, f, 'pale', 'spire', i === 1 ? 0.82 : 1)
@@ -276,9 +243,9 @@ export function buildVillage({ glow = false }: { glow?: boolean } = {}) {
   const solid = makeBrushArrays()
   const paint: PaintArrays = { ...makeBrushArrays(), lit: [] }
   const skin: SkinArrays = { ...makeBrushArrays(), uv: [] }
-  NEIGHBOURS.forEach(b => building(solid, skin, paint, b))
+  VILLAGE_NEIGHBOURS.forEach(b => building(solid, skin, paint, b))
   church(solid, skin, paint)
-  CONTEXT.forEach(b => building(solid, skin, paint, b))
+  VILLAGE_CONTEXT.forEach(b => building(solid, skin, paint, b))
   return {
     solid: geometry(solid),
     paint: geometry(paint, glow ? packGlow(paint.positions.length / 3, paint.lit) : undefined),
