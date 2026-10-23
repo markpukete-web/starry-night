@@ -173,6 +173,7 @@ test('a face is covered', () => {
 })
 
 test('every source is inscribed in its patch, and the field is clear of houses and masses', () => {
+  // the thatch has no patch: picked from rendered candidates, it straddles the striped roof's edge (the S1b record)
   const patchOf: Record<string, keyof typeof VILLAGE_PATCHES> = {
     wallA: 'blueWallA', wallB: 'blueWallB', plaster: 'churchPlaster', roofStriped: 'stripedRoof', roofBlue: 'blueRoof', roofSienna: 'siennaRoof',
   }

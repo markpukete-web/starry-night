@@ -8,10 +8,11 @@ import type { BakedMass } from './landDomes.ts'
 import { buildFlatPanel, buildStreet, FLAT_VIEW, type StreetBuild, type StreetCounts } from './streetGeometry.ts'
 import { FOG, fogInjection } from './streetFog.ts'
 import { BrushCypress } from './BrushCypress.tsx'
-import { STREET, stationPose, STREET_CYPRESS_AT, STOP0_CAMERA } from './streetLayout.ts'
+import { STREET, stationPose, STREET_CYPRESS_AT, STREET_CYPRESS_STRIDE, STOP0_CAMERA } from './streetLayout.ts'
 import { readStreetFlags, streetReadiness, type AssetStatus } from './streetMode.ts'
 import { strokeGeometry } from './strokeGeometry.ts'
-import StreetLife, { swayInjection } from './streetLife.tsx'
+import StreetLife from './streetLife.tsx'
+import { swayInjection } from './streetLife.ts'
 import { useImageData } from './useImageData.ts'
 
 type StreetWindow = Window & {
@@ -197,7 +198,7 @@ export default function Street({ reduced = false }: { reduced?: boolean } = {}) 
   if (!meshes) return null
   const devStrideStr = import.meta.env.DEV && typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('cypressStride') : null
   const devStride = devStrideStr ? parseInt(devStrideStr, 10) : null
-  const cypressStride = devStride && !Number.isNaN(devStride) ? devStride : 4
+  const cypressStride = devStride && !Number.isNaN(devStride) ? devStride : STREET_CYPRESS_STRIDE
 
   return (
     <group name="street" position={offset}>
@@ -208,6 +209,8 @@ export default function Street({ reduced = false }: { reduced?: boolean } = {}) 
       <mesh name="street-outlines" geometry={meshes.outlines} material={materials.strokes} renderOrder={3} />
       <mesh name="street-trees-solid" geometry={meshes.treeSolid} material={materials.treeSolid} renderOrder={2} />
       <mesh name="street-trees-strokes" geometry={meshes.treeStrokes} material={materials.trees} renderOrder={3} />
+      {/* the cypress draws in its own colours in the ID frames too: the gate masks by exact ID colour, which its channels
+       never reach, and the full frame shows the same pixels as tree, so the two frames agree (Fable C3) */}
       {!flags.flat && (
         <BrushCypress
           at={STREET_CYPRESS_AT}

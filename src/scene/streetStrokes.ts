@@ -14,8 +14,9 @@ import type { ImageData2D } from './useImageData.ts'
  * and length is a fraction of a reference height measured on the scan at 1:1 (task 1), never a screen size.
  */
 
-/** Axis-aligned source rectangles in painting px (1600 × 1267), each inscribed in its `VILLAGE_PATCHES` quad; the field
- * is the painting's clean field strip between the cypress and the front house (task 1: no house, no mass). */
+/** Axis-aligned source rectangles in painting px (1600 × 1267), each inscribed in its `VILLAGE_PATCHES` quad but the
+ * thatch, which the Lead picked from rendered candidates and which straddles the striped roof's edge; the field is the
+ * painting's clean field strip between the cypress and the front house (task 1: no house, no mass). */
 export const STREET_SOURCES = {
   wallA: [757, 1179, 838, 1200],
   wallB: [1261, 1121, 1359, 1147],
@@ -23,7 +24,6 @@ export const STREET_SOURCES = {
   roofStriped: [1016, 1186, 1084, 1220],
   roofBlue: [1108, 1045, 1150, 1073],
   roofSienna: [705, 1046, 726, 1066],
-  /** placeholder, roofSienna's rectangle, Task 2 replaces it */
   /** S1b task 2: the striped roof's left part (olive, brown and grey strokes down its slope), picked from four candidates
    * rendered on the cottages at stop 3 (`scratch/street-s1b-2026-10-23/t2/thatch/sheet.png`): it read as old mossy
    * thatch, where the dark stripe read as metal, the sienna roof as tile and the cypress as the cypress */

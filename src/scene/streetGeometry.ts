@@ -299,8 +299,11 @@ function buildHouse(ctx: Context, owner: string, index: number, shape: StreetSha
 export const ROOF_EDGE = 0.012
 
 /** The thatch as a slab (S1b task 2). The overhang is horizontal, beyond the front and back walls: on a pitch of about
- * 59° the plan's 0.05 dropped the thatch's edge to 0.007 above the ground on a 0.09 wall, and 0.02 keeps it near 0.057. */
-export const COTTAGE = { thickness: 0.03, overhang: 0.02, rake: 0.03 }
+ * 59° the plan's 0.05 dropped the thatch's edge to 0.007 above the ground on a 0.09 wall, and 0.02 keeps it near 0.057.
+ * The eave's band drops `thickness` along the roof's normal, `thickness × sin(slope)` inward, so it must stay under the
+ * overhang: at 0.03 it reached 0.026 and cut through the wall and the door (Fable C2). 0.02 ends 0.003 outside. `rake`
+ * carries the roof past each gable. */
+export const COTTAGE = { thickness: 0.02, overhang: 0.02, rake: 0.03 }
 
 export type HouseFace = { name: string; kind: 'wall' | 'roof' | 'underside' | 'edge'; corners: Vector3[] }
 
@@ -355,7 +358,9 @@ export function cottageFaces(shape: StreetShape, centre: Vector3, along: Vector3
     const down = upwardNormal(top).multiplyScalar(-thickness)
     faces.push({ name: `${side} roof`, kind: 'roof', corners: top })
     faces.push({ name: `${side} underside`, kind: 'underside', corners: top.map((p) => p.clone().add(down)) })
-    faces.push(...edgeBands(top, thickness, [`${side} eave edge`, `${side} right rake edge`, `${side} left rake edge`]))
+    // the back plane's corners run the other way, so its first rake is the −x one
+    const [first, last] = sz > 0 ? ['right', 'left'] : ['left', 'right']
+    faces.push(...edgeBands(top, thickness, [`${side} eave edge`, `${side} ${first} rake edge`, `${side} ${last} rake edge`]))
   }
   return faces
 }
@@ -513,11 +518,15 @@ function ground(ctx: Context): void {
     }
   }
   // the path, raised a hair over the ground's strokes, in segments along its bend
+  // it ends at the square's near edge: the lane's end lies inside the square, and segments running on into it laid two
+  // faces' strokes on one plane (Fable's note on D3)
   const width = 0.08
   const segments = 12
+  const [ex, , ez] = pathPoint(1)
+  const tEnd = 1 - (STREET_SQUARE.radius - Math.hypot(ex - STREET_SQUARE.x, ez - STREET_SQUARE.z)) / STREET.pathLength
   for (let s = 0; s < segments; s++) {
-    const t0 = -0.2 + (s / segments) * 1.2
-    const t1 = -0.2 + ((s + 1) / segments) * 1.2 + 0.01
+    const t0 = -0.2 + (s / segments) * (tEnd + 0.2)
+    const t1 = -0.2 + ((s + 1) / segments) * (tEnd + 0.2) + 0.01
     const p0 = new Vector3(...pathPoint(t0))
     const p1 = new Vector3(...pathPoint(t1))
     const normal = new Vector3(...pathTangent((t0 + t1) / 2)).cross(UP).normalize()
@@ -545,11 +554,10 @@ export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | nu
     lit,
   }
   ground(ctx)
+  const [fx, , fz] = STREET.forward
+  const [rx, rz] = [-fz, fx]
   STREET_HOUSES.forEach((h, index) => {
     const thetaRad = (h.theta * Math.PI) / 180
-    const [fx, , fz] = STREET.forward
-    const rx = -fz
-    const rz = fx
     const along = new Vector3(Math.cos(h.yaw), 0, Math.sin(h.yaw))
     const toPath = new Vector3(
       -h.side * (Math.cos(thetaRad) * rx - Math.sin(thetaRad) * fx),

@@ -21,11 +21,8 @@ export const LIFE = {
   halo: [0.09, 0.85] as const,
 }
 
-export const ALIVE = LIFE
-
 /** One clock for the sway and the fireflies. */
 export const lifeTimeUniform = { value: 0 }
-export const aliveTime = lifeTimeUniform
 
 export function lifeTime(pinned: number | undefined, elapsed: number, reduced: boolean): number {
   if (reduced) return 0

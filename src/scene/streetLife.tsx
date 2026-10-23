@@ -1,4 +1,3 @@
-/* eslint-disable react-refresh/only-export-components */
 import { useEffect, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import {
@@ -19,29 +18,11 @@ import type { BrushArraysWithCls } from './streetGeometry.ts'
 import { FOG, fogInjection } from './streetFog.ts'
 import type { ImageData2D } from './useImageData.ts'
 import { pathPoint, pathTangent, STREET_CHURCH, STREET_HOUSES, STREET_TREES } from './streetLayout.ts'
-import {
-  HILL_PAINT,
-  LIFE,
-  ALIVE,
-  lifeTimeUniform,
-  aliveTime,
-  lifeTime,
-  swayInjection,
-  litWindows,
-  hillsGeometry,
-} from './streetLife.ts'
+import { HILL_PAINT, LIFE, lifeTimeUniform, lifeTime, litWindows, hillsGeometry } from './streetLife.ts'
 
-export {
-  HILL_PAINT,
-  LIFE,
-  ALIVE,
-  lifeTimeUniform,
-  aliveTime,
-  lifeTime,
-  swayInjection,
-  litWindows,
-  hillsGeometry,
-}
+/** The life's builds, each counted once: StrictMode runs a mount's effect twice in development on the same `parts`, and a
+ * real rebuild is a new object. A count deleted in the effect's cleanup read 1 after any number of rebuilds (Fable C1). */
+const countedBuilds = new WeakSet<object>()
 
 function radialTexture(): CanvasTexture {
   const size = 128
@@ -187,11 +168,10 @@ export function StreetLife({ windows, painting, reduced = false }: { windows: Br
   }, [parts])
 
   useEffect(() => {
+    if (countedBuilds.has(parts)) return
+    countedBuilds.add(parts)
     const w = window as Window & { __streetLifeBuilds?: number }
     w.__streetLifeBuilds = (w.__streetLifeBuilds ?? 0) + 1
-    return () => {
-      delete w.__streetLifeBuilds
-    }
   }, [parts])
 
   const lit = useMemo(() => litWindows(windows), [windows])

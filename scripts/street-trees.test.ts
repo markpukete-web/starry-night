@@ -34,7 +34,9 @@ test('the trees build the same twice, every vertex finite, one stroke pair and s
 })
 
 test('each tree stands on the ground and its crown rises above the eaves', () => {
-  const eave = Math.max(...STREET_HOUSES.map((h) => h.eave / h.storeys))
+  // the tallest eave, L4's 0.3 (its two storeys included): olive-church's crown tops out at 0.350, so the old margin of
+  // 0.05 is dropped rather than the bar lowered to a storey's height (Fable C4)
+  const eave = Math.max(...STREET_HOUSES.map((h) => h.eave))
   const p = trees.solid.positions
   for (const tree of STREET_TREES) {
     let low = Infinity
@@ -45,7 +47,7 @@ test('each tree stands on the ground and its crown rises above the eaves', () =>
       high = Math.max(high, p[i + 1])
     }
     assert.ok(Math.abs(low) < 0.002, `${tree.id} stands on the ground (lowest ${low})`)
-    assert.ok(high > eave + 0.05, `${tree.id} rises above the eaves (${high} against ${eave})`)
+    assert.ok(high > eave, `${tree.id} rises above the eaves (${high} against ${eave})`)
   }
 })
 

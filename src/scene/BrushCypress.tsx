@@ -270,7 +270,7 @@ export function BrushCypress({
       strokeUniforms.uTime.value = t
     }
     if (touch) {
-      // the touches in the tree's frame: the group sits at at
+      // the touches in the tree's frame: the group sits at `at`
       const { entries, count } = landUniformValues(touch.store.current, touch.clock.current, [at[0], at[1], at[2]])
       for (const injection of [solidBend, strokeBend]) {
         const list = injection.uniforms.uLand.value as Float32Array

@@ -8,7 +8,6 @@ import {
 export const MAP = {
   origin: [500, 1210] as const,
   scale: 0.0024,
-  laneHalfWidth: 0.12,
 } as const
 
 const STREET_FORWARD = [-0.1041, 0, -0.9946] as const
@@ -274,13 +273,11 @@ export function streetGroundAt(x: number, z: number): number {
   return 0
 }
 
-const [p0x, , p0z] = pathPoint(0)
-const [t0x, , t0z] = pathTangent(0)
-export const STOP0_CAMERA: readonly [number, number, number] = [
-  p0x - t0x * STREET.behind,
-  STREET.eye,
-  p0z - t0z * STREET.behind,
-] as const
+export const STOP0_CAMERA: readonly [number, number, number] = [cam0Pos.x, cam0Pos.y, cam0Pos.z] as const
+
+/** The street's cypress keeps every fourth sample of each ribbon: the Lead read strides 1 to 4 at stop 0 at 1:1 and the
+ * tree read the same (`scratch/street-s1b-2026-10-23/t5/stride-sheet-desktop.png`), 143,232 triangles against 537,816. */
+export const STREET_CYPRESS_STRIDE = 4
 
 const STATION_T = [0, 0.23, 0.44, 0.66, 0.9] as const
 

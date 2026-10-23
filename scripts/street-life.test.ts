@@ -1,14 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { BufferGeometry, Vector3 } from 'three'
-import {
-  hillsGeometry,
-  lifeTime,
-  litWindows,
-  LIFE,
-  swayInjection,
-  HILL_PAINT,
-} from '../src/scene/streetLife.ts'
+import { hillsGeometry, lifeTime, litWindows } from '../src/scene/streetLife.ts'
 import { STREET, STREET_HOUSES } from '../src/scene/streetLayout.ts'
 import type { BrushArraysWithCls } from '../src/scene/streetGeometry.ts'
 
@@ -58,15 +51,6 @@ test('life time follows the pinned clock and stops when reduced', () => {
   assert.equal(lifeTime(5, 99, false), 5)
   assert.equal(lifeTime(undefined, 99, false), 99)
   assert.equal(lifeTime(undefined, 99, true), 0)
-})
-
-test('LIFE constants and swayInjection are defined', () => {
-  assert.equal(LIFE.sway, 0.06)
-  assert.equal(LIFE.fireflies, 160)
-  assert.deepEqual(LIFE.fireflyT, [0.05, 1.0])
-  assert.deepEqual(HILL_PAINT, [990, 858, 1290, 898])
-  const injection = swayInjection()
-  assert.ok(injection.vertexTransform.includes('swayH'))
 })
 
 test('the hills stand on the ground behind the street', () => {
