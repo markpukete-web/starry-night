@@ -293,9 +293,11 @@ export type FaceStrokes = { arrays: BrushArrays; stroke: number[]; seed: number[
  * The path: the field's own ground texels lifted toward the hills' moonlit crest. Pass 2: a filter to the field's paler
  * 30% (the first build) left most samples to copy their nearest accepted neighbour, and the runs of one colour read as
  * blocks close to the camera. Pass 5 (Mark: "go ahead with the extra pass"): the share 0.35 → 0.12, the path a pale
- * river across the near frame where the painting's ground is dark blue-green.
+ * river across the near frame where the painting's ground is dark blue-green. S1b look pass 3 (Mark: "Go with your
+ * recommendations"): 0.12 → 0.5, a pale lane like Simon Lee's. The painting shows no path, and at 0.12 the path had
+ * the ground's tone and read as part of it.
  */
-export const PATH_LIFT = { toward: PALETTE.hillsCrest, share: 0.12 }
+export const PATH_LIFT = { toward: PALETTE.hillsCrest, share: 0.5 }
 
 function acceptFor(face: StreetFace, painting: ImageData2D): TexelAccept {
   void painting

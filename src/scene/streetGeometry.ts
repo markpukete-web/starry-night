@@ -6,7 +6,7 @@ import { buildStreetTrees } from './streetTrees.ts'
 import { PALETTE } from './palette.ts'
 import { leanOf, lightOf, shadeNew } from './streetLight.ts'
 import { DETAIL, STREET, STREET_CHURCH, STREET_HOUSES, STREET_SQUARE, STREET_TREES, detailOf, laneDistance, pathPoint, pathTangent, streetGroundAt } from './streetLayout.ts'
-import { outlineFace, sourceUnderpaint, streetMassConfig, traceFace, type FaceStrokes, type StreetFace, type StreetSourceName } from './streetStrokes.ts'
+import { outlineFace, PATH_LIFT, sourceUnderpaint, streetMassConfig, traceFace, type FaceStrokes, type StreetFace, type StreetSourceName } from './streetStrokes.ts'
 import type { ImageData2D } from './useImageData.ts'
 import { VILLAGE_CHURCH, type Pigment } from './villageKnot.ts'
 
@@ -47,6 +47,8 @@ const OPENING_DARK = 0.3
 const WINDOW_DARK = new Color(PALETTE.ground).lerp(new Color(PALETTE.house), 0.12)
 /** the ground's and the path's base: the mean of the field source's darkest share (look pass 1) */
 const GROUND_BASE_SHARE = 0.4
+/** Look pass 3: the path's pale base stops this share of its width short of each edge, so strokes draw the edge */
+const PATH_BASE_INSET = 0.2
 /** the roofs overhang the walls by this much along both axes */
 const OVERHANG = 0.015
 /** the door's and the windows' frames: a thin ink, a fraction of the wall's height */
@@ -142,14 +144,21 @@ function clad(ctx: Context, owner: string, name: string, face: StreetFace, densi
   // S1b look passes 1 and 2: a face's base is its source's mean. On the darkest tenth the gaps between strokes read as
   // black: near-black filled the lower 40% of every frame (`t8/cap/`), and a wall at half density read as dark planks
   // (`t9/wall-bases.png`). The ground and the path keep a darker share, because on the whole mean they read as a flat
-  // grey plane (`t9/ground-bases.png`)
+  // grey plane (`t9/ground-bases.png`). Look pass 3: the path's base takes its strokes' lift, or pale strokes sit on a
+  // dark base, and stops short of the path's edges, where the clipped strokes left it as a ruled grey band
   const share = face.kind === 'ground' || face.kind === 'path' ? GROUND_BASE_SHARE : 1
   const [r, g, b] = sourceUnderpaint(ctx.painting, face.source, share)
   const cls = face.kind === 'wall' ? 0 : face.kind === 'roof' ? 1 : face.kind === 'ground' ? 3 : 4
   const src = face.kind === 'wall' || face.kind === 'roof' ? (SOURCE_CLASSES[face.source] ?? 255) : 255
   const light = lightOf(face, ctx.lit)
   const underFrom = ctx.underpaint.positions.length
-  polygon(ctx.underpaint, facePolygon(face), new Color().setRGB(r, g, b, SRGBColorSpace).multiplyScalar(light), cls, src)
+  const base = new Color().setRGB(r, g, b, SRGBColorSpace)
+  if (face.kind === 'path') base.lerp(new Color(PATH_LIFT.toward), PATH_LIFT.share)
+  const baseFace =
+    face.kind === 'path'
+      ? { ...face, origin: face.origin.clone().addScaledVector(face.v, PATH_BASE_INSET), v: face.v.clone().multiplyScalar(1 - 2 * PATH_BASE_INSET) }
+      : face
+  polygon(ctx.underpaint, facePolygon(baseFace), base.multiplyScalar(light), cls, src)
   const traced = traceFace(face, ctx.flow, ctx.painting, { density })
   for (let k = 0; k < traced.arrays.colors.length; k++) traced.arrays.colors[k] *= light
   shadeNew(ctx.underpaint, underFrom, face, ctx.lit)
@@ -520,7 +529,7 @@ function ground(ctx: Context): void {
   // the path, raised a hair over the ground's strokes, in segments along its bend
   // it ends at the square's near edge: the lane's end lies inside the square, and segments running on into it laid two
   // faces' strokes on one plane (Fable's note on D3)
-  const width = 0.08
+  const width = 0.12
   const segments = 12
   const [ex, , ez] = pathPoint(1)
   const tEnd = 1 - (STREET_SQUARE.radius - Math.hypot(ex - STREET_SQUARE.x, ez - STREET_SQUARE.z)) / STREET.pathLength
