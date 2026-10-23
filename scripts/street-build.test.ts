@@ -82,10 +82,10 @@ test('every vertex of underpaint and strokes has a source class, and the church 
   assert.equal(build.underpaint.src?.length, upCount, 'underpaint has src per vertex')
   assert.equal(build.strokes.src?.length, strCount, 'strokes has src per vertex')
   for (const s of build.underpaint.src) {
-    assert.ok((s >= 0 && s <= 5) || s === 255, `underpaint src ${s} valid`)
+    assert.ok((s >= 0 && s <= 6) || s === 255, `underpaint src ${s} valid`)
   }
   for (const s of build.strokes.src) {
-    assert.ok((s >= 0 && s <= 5) || s === 255, `strokes src ${s} valid`)
+    assert.ok((s >= 0 && s <= 6) || s === 255, `strokes src ${s} valid`)
   }
   const churchNave = STREET_CHURCH.nave
   const churchBelfry = STREET_CHURCH.belfry

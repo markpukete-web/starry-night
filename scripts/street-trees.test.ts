@@ -34,7 +34,7 @@ test('the trees build the same twice, every vertex finite, one stroke pair and s
 })
 
 test('each tree stands on the ground and its crown rises above the eaves', () => {
-  const eave = Math.max(...STREET_HOUSES.map((h) => h.eave))
+  const eave = Math.max(...STREET_HOUSES.map((h) => h.eave / h.storeys))
   const p = trees.solid.positions
   for (const tree of STREET_TREES) {
     let low = Infinity

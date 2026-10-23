@@ -229,6 +229,7 @@ const refPlaster = meanLab(rectLabs(workPainting, STREET_SOURCES.plaster))
 const refRoofStriped = meanLab(rectLabs(workPainting, STREET_SOURCES.roofStriped))
 const refRoofBlue = meanLab(rectLabs(workPainting, STREET_SOURCES.roofBlue))
 const refRoofSienna = meanLab(rectLabs(workPainting, STREET_SOURCES.roofSienna))
+const refThatch = meanLab(rectLabs(workPainting, STREET_SOURCES.thatch))
 
 const SOURCES: Record<string, { idR: number; idG: number; idB: number; ref: Lab }> = {
   wallA: { idR: 255, idG: 0, idB: 0, ref: refWallA },
@@ -237,6 +238,7 @@ const SOURCES: Record<string, { idR: number; idG: number; idB: number; ref: Lab 
   roofStriped: { idR: 255, idG: 255, idB: 0, ref: refRoofStriped },
   roofBlue: { idR: 0, idG: 255, idB: 255, ref: refRoofBlue },
   roofSienna: { idR: 255, idG: 0, idB: 255, ref: refRoofSienna },
+  thatch: { idR: 255, idG: 128, idB: 0, ref: refThatch },
 }
 
 // Palette regional means
@@ -271,6 +273,7 @@ if (sources) {
     roofStriped: [],
     roofBlue: [],
     roofSienna: [],
+    thatch: [],
   }
 
   for (let i = 0; i < totalPixels; i++) {
@@ -284,6 +287,7 @@ if (sources) {
     else if (r === 255 && g === 255 && b === 0) maskIndices.roofStriped.push(i)
     else if (r === 0 && g === 255 && b === 255) maskIndices.roofBlue.push(i)
     else if (r === 255 && g === 0 && b === 255) maskIndices.roofSienna.push(i)
+    else if (r === 255 && g >= 120 && g <= 136 && b === 0) maskIndices.thatch.push(i)
   }
 
   const fullRgba = new Uint8Array(fullPng.rgba)

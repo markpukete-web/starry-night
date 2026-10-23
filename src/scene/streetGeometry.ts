@@ -5,10 +5,10 @@ import { buildLandTrees, type BakedMass, type LandTrees } from './landDomes.ts'
 import { buildStreetTrees } from './streetTrees.ts'
 import { PALETTE } from './palette.ts'
 import { MOON_UV, uvToFrontDir } from './skyMapping.ts'
-import { STREET, STREET_CHURCH, STREET_HOUSES, STREET_TREES, pathPoint, pathTangent, streetGroundAt } from './streetLayout.ts'
+import { STREET, STREET_CHURCH, STREET_HOUSES, STREET_SQUARE, STREET_TREES, pathPoint, pathTangent, streetGroundAt } from './streetLayout.ts'
 import { outlineFace, sourceUnderpaint, streetMassConfig, traceFace, type FaceStrokes, type StreetFace, type StreetSourceName } from './streetStrokes.ts'
 import type { ImageData2D } from './useImageData.ts'
-import { VILLAGE_CHURCH, type Building, type Pigment } from './villageKnot.ts'
+import { VILLAGE_CHURCH, type Pigment } from './villageKnot.ts'
 
 /**
  * The street's build (S1 task 5, tasks/2026-10-23-street-s1-plan.md): the houses and the church as volumes with the
@@ -68,6 +68,7 @@ export const SOURCE_CLASSES: Record<StreetSourceName, number> = {
   roofStriped: 3,
   roofBlue: 4,
   roofSienna: 5,
+  thatch: 6,
   field: 255,
   windowLit: 255,
 }
@@ -216,15 +217,25 @@ function opening(ctx: Context, face: StreetFace, cu: number, cv: number, w: numb
   append(ctx.outlines, outlineFace(frame, quad.map((p, i) => [p, quad[(i + 1) % 4]] as const), INK, seed), 255)
 }
 
+export type StreetShape = {
+  w: number
+  d: number
+  eave: number
+  pitch: number
+  storeys: 1 | 2
+  wallSource: StreetSourceName
+  roofSource: StreetSourceName
+}
+
 /**
  * A house: a box to the eave and a pitched roof whose ridge runs along its depth, so its front gable and door face
  * the path; `along` is its width's direction, `toPath` its depth's, toward the street.
  */
-function house(ctx: Context, owner: string, index: number, b: Building, centre: Vector3, along: Vector3, toPath: Vector3, lit: boolean, chimney: boolean): void {
+export function house(ctx: Context, owner: string, index: number, shape: StreetShape, centre: Vector3, along: Vector3, toPath: Vector3, lit: boolean, chimney: boolean): void {
   // SPIKE: each house leans its own way, up to about 2.6° (a shear by height keeps every face flat)
   const lean = index === 100 ? 0 : (((index * 0.618 + 0.31) % 1) - 0.5) * 0.09
   const marks = [ctx.underpaint, ctx.strokes.arrays, ctx.outlines.arrays, ctx.windows].map((arr) => [arr, arr.positions.length] as const)
-  buildHouse(ctx, owner, index, b, centre, along, toPath, lit, chimney)
+  buildHouse(ctx, owner, index, shape, centre, along, toPath, lit, chimney)
   for (const [arr, from] of marks) {
     for (let i = from; i < arr.positions.length; i += 3) {
       const y = arr.positions[i + 1]
@@ -234,11 +245,9 @@ function house(ctx: Context, owner: string, index: number, b: Building, centre: 
   }
 }
 
-function buildHouse(ctx: Context, owner: string, index: number, b: Building, centre: Vector3, along: Vector3, toPath: Vector3, lit: boolean, chimney: boolean): void {
+function buildHouse(ctx: Context, owner: string, index: number, shape: StreetShape, centre: Vector3, along: Vector3, toPath: Vector3, lit: boolean, chimney: boolean): void {
   const c = (x: number, z: number, y: number) => centre.clone().addScaledVector(along, x).addScaledVector(toPath, z).setY(y)
-  const { w, d, eave, pitch } = b
-  const wall = wallSource(b.wall, index)
-  const roof = roofSource(b.roof, index)
+  const { w, d, eave, pitch, storeys, wallSource: wall, roofSource: roof } = shape
   const inside = centre.clone().setY(eave / 2)
   const seed = 0x5700 + index * 97
   // the walls: front (toward the path), right, back, left
@@ -279,10 +288,14 @@ function buildHouse(ctx: Context, owner: string, index: number, b: Building, cen
   ink(ctx, owner, eave, edges, seed)
   // the door and a window on the front; only `lit` houses show a warm one
   const front = wallFaces[0]
-  opening(ctx, front, 0.5, 0.3, 0.2, 0.6, false, seed + 11)
+  opening(ctx, front, 0.5, 0.3 / storeys, 0.2, 0.6 / storeys, false, seed + 11)
   ctx.report.windows.push({ owner, lit: false })
-  opening(ctx, front, index % 2 ? 0.2 : 0.8, 0.62, 0.12, 0.2, lit, seed + 13)
+  opening(ctx, front, index % 2 ? 0.2 : 0.8, 0.62 / storeys, 0.12, 0.2 / storeys, lit, seed + 13)
   ctx.report.windows.push({ owner, lit })
+  if (storeys === 2) {
+    opening(ctx, front, index % 2 ? 0.2 : 0.8, (1 + 0.62) / storeys, 0.12, 0.2 / storeys, false, seed + 17)
+    ctx.report.windows.push({ owner, lit: false })
+  }
   // a chimney, a small dark box through the roof
   if (chimney) {
     const foot = c(w * 0.18, -d * 0.22, eave + pitch * 0.4)
@@ -299,8 +312,17 @@ function church(ctx: Context): StreetBuild['report']['church'] {
   const { nave, belfry, spireTip } = STREET_CHURCH
   const along = new Vector3(Math.cos(nave.yaw), 0, Math.sin(nave.yaw))
   const toPath = new Vector3(-Math.sin(nave.yaw), 0, Math.cos(nave.yaw))
+  const churchShape: StreetShape = {
+    w: nave.w,
+    d: nave.d,
+    eave: nave.eave,
+    pitch: nave.pitch,
+    storeys: 1,
+    wallSource: wallSource(nave.wall, 100),
+    roofSource: roofSource(nave.roof, 100),
+  }
   // the painting's church has no chimney (Fable R9)
-  house(ctx, 'church', 100, nave, new Vector3(nave.x, 0, nave.z), along, toPath, false, false)
+  house(ctx, 'church', 100, churchShape, new Vector3(nave.x, 0, nave.z), along, toPath, false, false)
   // heights above the street's ground, as the knot's stand above the island under the belfry
   const ground = islandHeightAt(VILLAGE_CHURCH.belfry.cx, VILLAGE_CHURCH.belfry.cz)
   const floor = -belfry.floorDrop
@@ -335,9 +357,12 @@ function church(ctx: Context): StreetBuild['report']['church'] {
 
 /** The ground in tiles about 0.6 square either side of the path, strokes across it; the path its paler strip along. */
 function ground(ctx: Context): void {
-  const forward = new Vector3(...STREET.forward).normalize()
-  const across = new Vector3().crossVectors(forward, UP).normalize()
-  const [from, to, side] = [-0.45, STREET.pathLength + 0.75, 1.25]
+  const [fx, , fz] = STREET.forward
+  const forward = new Vector3(fx, 0, fz)
+  const across = new Vector3(-fz, 0, fx)
+  const p1 = pathPoint(1)
+  const p1Along = p1[0] * fx + p1[2] * fz
+  const [from, to, side] = [-0.45, p1Along + 0.75, 1.25]
   const alongTiles = Math.round((to - from) / 0.6)
   const acrossTiles = Math.round((2 * side) / 0.6)
   const tileAlong = (to - from) / alongTiles
@@ -374,17 +399,29 @@ function ground(ctx: Context): void {
     }
   }
   // the path, raised a hair over the ground's strokes, in segments along its bend
-  // pass 5: 0.12 read as a pale river across the near frame
   const width = 0.08
-  const segments = 8
+  const segments = 24
   for (let s = 0; s < segments; s++) {
-    const t0 = -0.25 + (s / segments) * 1.4
-    const t1 = -0.25 + ((s + 1) / segments) * 1.4 + 0.02
+    const t0 = -0.2 + (s / segments) * 1.2
+    const t1 = -0.2 + ((s + 1) / segments) * 1.2
     const p0 = new Vector3(...pathPoint(t0))
     const p1 = new Vector3(...pathPoint(t1))
     const normal = new Vector3(...pathTangent((t0 + t1) / 2)).cross(UP).normalize()
     const origin = p0.clone().addScaledVector(normal, -width / 2).setY(0.002)
     clad(ctx, 'path', `segment ${s}`, orientedFace(origin, p1.clone().sub(p0), normal.clone().multiplyScalar(width), below, { shape: 'quad', kind: 'path', source: 'field', refHeight: STREET.wallRef, seed: 0x6500 + s, mirror: s % 2 === 1 }))
+  }
+  // The square: eight path triangles about its centre
+  const sqCenter = new Vector3(STREET_SQUARE.x, 0.002, STREET_SQUARE.z)
+  const sqRadius = STREET_SQUARE.radius
+  for (let k = 0; k < 8; k++) {
+    const theta0 = (k * 2 * Math.PI) / 8
+    const theta1 = ((k + 1) * 2 * Math.PI) / 8
+    const pA = sqCenter.clone().addScaledVector(across, sqRadius * Math.cos(theta0)).addScaledVector(forward, sqRadius * Math.sin(theta0))
+    const pB = sqCenter.clone().addScaledVector(across, sqRadius * Math.cos(theta1)).addScaledVector(forward, sqRadius * Math.sin(theta1))
+    const u = pB.clone().sub(pA)
+    const mid = pA.clone().addScaledVector(u, 0.5)
+    const v = sqCenter.clone().sub(mid)
+    clad(ctx, 'path', `square ${k}`, orientedFace(pA, u, v, below, { shape: 'triangle', kind: 'path', source: 'field', refHeight: STREET.wallRef, seed: 0x6530 + k, mirror: k % 2 === 1 }))
   }
 }
 
@@ -403,13 +440,17 @@ export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | nu
   }
   ground(ctx)
   STREET_HOUSES.forEach((h, index) => {
-    const [tx, , tz] = pathTangent(h.at)
-    const along = new Vector3(tx, 0, tz)
-    const normal = new Vector3(-tz, 0, tx)
-    const toPath = normal.multiplyScalar(-h.side)
-    // at most one warm window a house, on a third of them
-    // a chimney on every other house
-    house(ctx, `house-${index}`, index, h, new Vector3(h.x, 0, h.z), along, toPath, index % 3 === 0, index % 2 === 0)
+    const thetaRad = (h.theta * Math.PI) / 180
+    const [fx, , fz] = STREET.forward
+    const rx = -fz
+    const rz = fx
+    const along = new Vector3(Math.cos(h.yaw), 0, Math.sin(h.yaw))
+    const toPath = new Vector3(
+      -h.side * (Math.cos(thetaRad) * rx - Math.sin(thetaRad) * fx),
+      0,
+      -h.side * (Math.cos(thetaRad) * rz - Math.sin(thetaRad) * fz),
+    )
+    house(ctx, `house-${index}`, index, h, new Vector3(h.x, 0, h.z), along, toPath, h.lit, h.chimney)
   })
   ctx.report.church = church(ctx)
   const trees = buildStreetTrees(painting, STREET_TREES)
