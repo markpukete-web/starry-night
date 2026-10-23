@@ -1,6 +1,7 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei'
-import { Suspense, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react'
+import type { PerspectiveCamera as ThreePerspectiveCamera } from 'three'
 import { Diorama } from './Diorama'
 import { PaintingFlowSky3D, type SkyStyle } from './PaintingFlowSky3D'
 import type { AliveTuning } from './skyAlive'
@@ -8,6 +9,8 @@ import { emptyTouchStore, type TouchStore } from './touchSurge'
 import { useTouchInput } from './useTouchInput'
 import { emptyLandStore, type LandStore } from './landTouch'
 import { ARRIVAL, ArrivalClock, arrivalCamera, arrivalFrame, rememberArrived } from './arrival'
+import { readStreetFlags, touchEnabled } from './streetMode'
+import { stationPose, STREET } from './streetLayout'
 // (ARRIVAL.reveal feeds the chrome's fade-in through a custom property; the clock owns every other constant)
 import {
   DIORAMA_CAMERAS,
@@ -15,6 +18,8 @@ import {
   type DioramaDebugMode,
   type DioramaViewMode,
 } from './dioramaContract'
+
+const Street = lazy(() => import('./Street'))
 
 type Props = {
   clean?: boolean
@@ -223,14 +228,97 @@ function Scene({
   arriving: boolean
   onArrived: () => void
 }) {
+  const streetFlags = useMemo(
+    () => readStreetFlags(typeof window !== 'undefined' ? window.location.search : ''),
+    [],
+  )
+  const streetMode = streetFlags.street
   const debug = readDebugMode()
   const view = readViewMode()
   // R3F's `size` is the canvas size and re-renders on resize. Reading window.inner* here instead
   // left the camera stale until reload, so rotating a device kept the previous orientation's
   // framing — landscape→portrait held the desktop close-up (Codex, 2026-07-28).
-  const { size } = useThree()
+  const { size, camera: r3fCamera } = useThree()
   const isPortrait = size.height > size.width
-  const camera = isPortrait && view === 'design' ? DIORAMA_CAMERAS.mobile : DIORAMA_CAMERAS[view]
+  const defaultCamera = isPortrait && view === 'design' ? DIORAMA_CAMERAS.mobile : DIORAMA_CAMERAS[view]
+  const skyHome = isPortrait ? DIORAMA_CAMERAS.mobile : DIORAMA_CAMERAS.design
+
+  const pose = useMemo(
+    () => stationPose(streetFlags.station, isPortrait),
+    [streetFlags.station, isPortrait],
+  )
+  const offset = useMemo<[number, number, number]>(
+    () => (streetFlags.anchor === 'A' ? [STREET.originA[0], STREET.originA[1], STREET.originA[2]] : [0, 0, 0]),
+    [streetFlags.anchor],
+  )
+  const camPos: [number, number, number] = useMemo(
+    () => [pose.position[0] + offset[0], pose.position[1] + offset[1], pose.position[2] + offset[2]],
+    [pose.position, offset],
+  )
+  const camTarget: [number, number, number] = useMemo(
+    () => [pose.target[0] + offset[0], pose.target[1] + offset[1], pose.target[2] + offset[2]],
+    [pose.target, offset],
+  )
+
+  useEffect(() => {
+    if (!streetMode) return
+    /* eslint-disable react-hooks/immutability -- R3F camera pose & projection update for street mode */
+    const persp = r3fCamera as ThreePerspectiveCamera
+    persp.position.set(camPos[0], camPos[1], camPos[2])
+    persp.lookAt(camTarget[0], camTarget[1], camTarget[2])
+    persp.fov = pose.fov
+    persp.near = pose.near
+    persp.far = pose.far
+    persp.updateProjectionMatrix()
+    /* eslint-enable react-hooks/immutability */
+  }, [streetMode, camPos, camTarget, pose.fov, pose.near, pose.far, r3fCamera])
+
+  useEffect(() => {
+    if (!streetMode || typeof window === 'undefined') return
+    const w = window as Window & {
+      __streetCamera?: () => {
+        position: [number, number, number] & { x: number; y: number; z: number }
+        quaternion: [number, number, number, number] & { x: number; y: number; z: number; w: number }
+        fov: number
+        near: number
+        far: number
+      }
+    }
+    w.__streetCamera = () => {
+      const persp = r3fCamera as ThreePerspectiveCamera
+      const p = [persp.position.x, persp.position.y, persp.position.z] as [number, number, number] & {
+        x: number
+        y: number
+        z: number
+      }
+      p.x = persp.position.x
+      p.y = persp.position.y
+      p.z = persp.position.z
+
+      const q = [persp.quaternion.x, persp.quaternion.y, persp.quaternion.z, persp.quaternion.w] as [
+        number,
+        number,
+        number,
+        number,
+      ] & { x: number; y: number; z: number; w: number }
+      q.x = persp.quaternion.x
+      q.y = persp.quaternion.y
+      q.z = persp.quaternion.z
+      q.w = persp.quaternion.w
+
+      return {
+        position: p,
+        quaternion: q,
+        fov: persp.fov,
+        near: persp.near,
+        far: persp.far,
+      }
+    }
+    return () => {
+      delete w.__streetCamera
+    }
+  }, [streetMode, r3fCamera])
+
   const background = useMemo(() => (debug === 'stage' ? '#071020' : '#06112a'), [debug])
   const measurePerformance = readPerfMode()
   // The one sky clock (make-it-alive A, second pass): the sky's frame loop writes it (pinned, advanced, or 0 while
@@ -243,35 +331,58 @@ function Scene({
   const landStore = useRef<LandStore>(emptyLandStore())
   const bendGain = aliveTuning?.bend ?? 1
   // C: no touch until the arrival is done; a tap during it is the skip
-  useTouchInput({ enabled: touch && !reduced && !arriving, store: touchStore, clock: skyClock, home: camera, knob: aliveTuning?.surge ?? 1, land: touch ? { store: landStore, bendGain } : undefined })
-  const landTouch = useMemo(() => (touch ? { store: landStore, clock: skyClock, bendGain } : undefined), [touch, bendGain])
+  useTouchInput({
+    enabled: touchEnabled({ touch, reduced, arriving, street: streetMode }),
+    store: touchStore,
+    clock: skyClock,
+    home: streetMode ? skyHome : defaultCamera,
+    knob: aliveTuning?.surge ?? 1,
+    land: touch && !streetMode ? { store: landStore, bendGain } : undefined,
+  })
+  const landTouch = useMemo(() => (touch && !streetMode ? { store: landStore, clock: skyClock, bendGain } : undefined), [touch, streetMode, bendGain])
 
   return (
     <>
       <color attach="background" args={[background]} />
       <PerspectiveCamera
         makeDefault
-        position={[...camera.position]}
-        fov={camera.fov}
-        near={camera.near}
-        far={camera.far}
+        position={streetMode ? camPos : [...defaultCamera.position]}
+        fov={streetMode ? pose.fov : defaultCamera.fov}
+        near={streetMode ? pose.near : defaultCamera.near}
+        far={streetMode ? pose.far : defaultCamera.far}
       />
-      <OrbitControls
-        enabled={!arriving}
-        target={[...camera.target]}
-        minDistance={DIORAMA_ORBIT.minDistance}
-        maxDistance={DIORAMA_ORBIT.maxDistance}
-        minAzimuthAngle={DIORAMA_ORBIT.minAzimuthAngle}
-        maxAzimuthAngle={DIORAMA_ORBIT.maxAzimuthAngle}
-        minPolarAngle={DIORAMA_ORBIT.minPolarAngle}
-        maxPolarAngle={DIORAMA_ORBIT.maxPolarAngle}
-        enablePan={DIORAMA_ORBIT.enablePan}
-        enableDamping={DIORAMA_ORBIT.enableDamping}
-      />
+      {!streetMode && (
+        <OrbitControls
+          enabled={!arriving}
+          target={[...defaultCamera.target]}
+          minDistance={DIORAMA_ORBIT.minDistance}
+          maxDistance={DIORAMA_ORBIT.maxDistance}
+          minAzimuthAngle={DIORAMA_ORBIT.minAzimuthAngle}
+          maxAzimuthAngle={DIORAMA_ORBIT.maxAzimuthAngle}
+          minPolarAngle={DIORAMA_ORBIT.minPolarAngle}
+          maxPolarAngle={DIORAMA_ORBIT.maxPolarAngle}
+          enablePan={DIORAMA_ORBIT.enablePan}
+          enableDamping={DIORAMA_ORBIT.enableDamping}
+        />
+      )}
       {measurePerformance && <PerfProbe />}
-      {arrival && <ArrivalDriver home={camera} reduced={still} onDone={onArrived} {...refs} />}
+      {!streetMode && arrival && <ArrivalDriver home={defaultCamera} reduced={still} onDone={onArrived} {...refs} />}
       <Suspense fallback={null}>
-        {debug !== 'flow' && <Diorama debug={debug === 'stage' ? 'stage' : 'final'} clock={skyClock} alive={alive} tuning={aliveTuning} cypressReady={arrival ? refs.cypressReadyRef : undefined} landReady={arrival ? refs.landReadyRef : undefined} touch={landTouch} />}
+        {streetMode ? (
+          <Street />
+        ) : (
+          debug !== 'flow' && (
+            <Diorama
+              debug={debug === 'stage' ? 'stage' : 'final'}
+              clock={skyClock}
+              alive={alive}
+              tuning={aliveTuning}
+              cypressReady={arrival ? refs.cypressReadyRef : undefined}
+              landReady={arrival ? refs.landReadyRef : undefined}
+              touch={landTouch}
+            />
+          )
+        )}
         {debug !== 'stage' && (
           <PaintingFlowSky3D
             paused={reduced}
@@ -280,13 +391,13 @@ function Scene({
             alive={alive}
             tuning={aliveTuning}
             clock={skyClock}
-            touch={touch}
+            touch={touch && !streetMode}
             touchStore={touchStore}
-            arrivalStep={arrival ? refs.arrivalStepRef : undefined}
-            ready={arrival ? refs.skyReadyRef : undefined}
+            arrivalStep={!streetMode && arrival ? refs.arrivalStepRef : undefined}
+            ready={!streetMode && arrival ? refs.skyReadyRef : undefined}
             debug={debug === 'flow' ? 'flow' : 'final'}
             /* a stable module constant, so the sky's home quaternion memo holds across renders */
-            home={camera}
+            home={streetMode ? skyHome : defaultCamera}
           />
         )}
       </Suspense>
@@ -314,10 +425,16 @@ function VincentsLine() {
 }
 
 export function DioramaExperience({ clean = false, reduced = false, sky = 'light', still = false, alive = false, aliveTuning, touch = false, arrival = false, children }: Props) {
+  const streetFlags = useMemo(
+    () => readStreetFlags(typeof window !== 'undefined' ? window.location.search : ''),
+    [],
+  )
+  const streetMode = streetFlags.street
+  const effectiveArrival = !streetMode && arrival
   const [arrived, setArrived] = useState(false)
-  const arriving = arrival && !arrived
+  const arriving = effectiveArrival && !arrived
   // reduced motion: the line is a static caption with its own life, gone on the first pointer or key (review F1)
-  const [captionShown, setCaptionShown] = useState(arrival && still)
+  const [captionShown, setCaptionShown] = useState(effectiveArrival && still)
   const layerRef = useRef<HTMLDivElement>(null)
   const scanRef = useRef<HTMLImageElement>(null)
   const lineRef = useRef<HTMLElement>(null)

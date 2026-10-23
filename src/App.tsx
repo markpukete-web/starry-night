@@ -11,6 +11,7 @@ import { ALIVE_DEFAULTS, ALIVE_KNOBS, clampAliveKnob, hasAliveKnobs, readAliveTu
 import { tuned } from './scene/tuning'
 import { AliveTuner } from './AliveTuner'
 import { arrivedThisSession } from './scene/arrival'
+import { readStreetFlags } from './scene/streetMode'
 import { ReliefExperience } from './scene/ReliefExperience'
 import { VisitorChrome } from './VisitorChrome'
 
@@ -64,8 +65,9 @@ export default function App() {
   const off = (name: string) => params.get(name) === '0'
   const alive = !off('alive') || tune
   const touch = alive && !off('touch')
+  const street = readStreetFlags(typeof window !== 'undefined' ? window.location.search : '').street
   // The opening plays once per session on a plain visit; `?arrival=1` always plays it, that being the link's point
-  const arrival = params.get('arrival') === '1' || (!off('arrival') && !arrivedThisSession())
+  const arrival = !street && (params.get('arrival') === '1' || (!off('arrival') && !arrivedThisSession()))
   // The shipped defaults for A's knobs live in sky-tuning.json (the tuner's "set as default" writes them);
   // a URL knob overrides them, and with the tuner open the last slider positions are remembered per browser.
   const [aliveTuning, setAliveTuning] = useState<AliveTuning>(() => {
