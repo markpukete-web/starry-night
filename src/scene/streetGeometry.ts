@@ -47,8 +47,8 @@ const OPENING_DARK = 0.3
 const WINDOW_DARK = new Color(PALETTE.ground).lerp(new Color(PALETTE.house), 0.12)
 /** the ground's and the path's base: the mean of the field source's darkest share (look pass 1) */
 const GROUND_BASE_SHARE = 0.4
-/** Look pass 3: the path's pale base stops this share of its width short of each edge, so strokes draw the edge */
-const PATH_BASE_INSET = 0.2
+/** Look pass 3: the path's pale base stops this far short of its edges (0.2 of its width), so strokes draw the edge */
+const PATH_BASE_INSET = 0.024
 /** the roofs overhang the walls by this much along both axes */
 const OVERHANG = 0.015
 /** the door's and the windows' frames: a thin ink, a fraction of the wall's height */
@@ -138,7 +138,7 @@ type Context = {
 }
 
 /** Clad one face: its underpaint, its strokes, its report line. */
-function clad(ctx: Context, owner: string, name: string, face: StreetFace, density = 1): void {
+function clad(ctx: Context, owner: string, name: string, face: StreetFace, density = 1, [insetU, insetV] = [0, 0]): void {
   // a roof's base is its source's mean, not its darkest tenth: the street's eye meets the roofs at a grazing angle,
   // where the strokes thin out, and 46–99% of a roof's pixels showed the dark base (the per-source gate, `t12/`)
   // S1b look passes 1 and 2: a face's base is its source's mean. On the darkest tenth the gaps between strokes read as
@@ -154,10 +154,8 @@ function clad(ctx: Context, owner: string, name: string, face: StreetFace, densi
   const underFrom = ctx.underpaint.positions.length
   const base = new Color().setRGB(r, g, b, SRGBColorSpace)
   if (face.kind === 'path') base.lerp(new Color(PATH_LIFT.toward), PATH_LIFT.share)
-  const baseFace =
-    face.kind === 'path'
-      ? { ...face, origin: face.origin.clone().addScaledVector(face.v, PATH_BASE_INSET), v: face.v.clone().multiplyScalar(1 - 2 * PATH_BASE_INSET) }
-      : face
+  const [fu, fv] = [insetU / face.u.length(), insetV / face.v.length()]
+  const baseFace = { ...face, origin: face.origin.clone().addScaledVector(face.u, fu).addScaledVector(face.v, fv), u: face.u.clone().multiplyScalar(1 - 2 * fu), v: face.v.clone().multiplyScalar(1 - 2 * fv) }
   polygon(ctx.underpaint, facePolygon(baseFace), base.multiplyScalar(light), cls, src)
   const traced = traceFace(face, ctx.flow, ctx.painting, { density })
   for (let k = 0; k < traced.arrays.colors.length; k++) traced.arrays.colors[k] *= light
@@ -535,17 +533,18 @@ function ground(ctx: Context): void {
   const tEnd = 1 - (STREET_SQUARE.radius - Math.hypot(ex - STREET_SQUARE.x, ez - STREET_SQUARE.z)) / STREET.pathLength
   for (let s = 0; s < segments; s++) {
     const t0 = -0.2 + (s / segments) * (tEnd + 0.2)
-    const t1 = -0.2 + ((s + 1) / segments) * (tEnd + 0.2) + 0.01
+    // the overlap 0.02 closes the joints' outer corners at 0.12 wide and runs the last base past the square's (Fable C8)
+    const t1 = -0.2 + ((s + 1) / segments) * (tEnd + 0.2) + 0.02
     const p0 = new Vector3(...pathPoint(t0))
     const p1 = new Vector3(...pathPoint(t1))
     const normal = new Vector3(...pathTangent((t0 + t1) / 2)).cross(UP).normalize()
     const origin = p0.clone().addScaledVector(normal, -width / 2).setY(0.002)
-    clad(ctx, 'path', `segment ${s}`, orientedFace(origin, p1.clone().sub(p0), normal.clone().multiplyScalar(width), below, { shape: 'quad', kind: 'path', source: 'field', refHeight: STREET.wallRef, seed: 0x6500 + s, mirror: s % 2 === 1 }))
+    clad(ctx, 'path', `segment ${s}`, orientedFace(origin, p1.clone().sub(p0), normal.clone().multiplyScalar(width), below, { shape: 'quad', kind: 'path', source: 'field', refHeight: STREET.wallRef, seed: 0x6500 + s, mirror: s % 2 === 1 }), 1, [0, PATH_BASE_INSET])
   }
   // the square, one face: as eight triangles about its centre its strokes ran to the middle and scattered (look pass 1)
   const sqRadius = STREET_SQUARE.radius
   const sqOrigin = new Vector3(STREET_SQUARE.x, 0.002, STREET_SQUARE.z).addScaledVector(across, -sqRadius).addScaledVector(forward, -sqRadius)
-  clad(ctx, 'path', 'square', orientedFace(sqOrigin, across.clone().multiplyScalar(2 * sqRadius), forward.clone().multiplyScalar(2 * sqRadius), below, { shape: 'quad', kind: 'path', source: 'field', refHeight: STREET.wallRef, seed: 0x6530, mirror: false }))
+  clad(ctx, 'path', 'square', orientedFace(sqOrigin, across.clone().multiplyScalar(2 * sqRadius), forward.clone().multiplyScalar(2 * sqRadius), below, { shape: 'quad', kind: 'path', source: 'field', refHeight: STREET.wallRef, seed: 0x6530, mirror: false }), 1, [PATH_BASE_INSET, PATH_BASE_INSET])
 }
 
 export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | null, masses: BakedMass[] | null, { lit = true }: { lit?: boolean } = {}): StreetBuild | null {

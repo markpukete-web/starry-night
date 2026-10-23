@@ -240,3 +240,27 @@ test('the street fits its budget', () => {
 })
 
 
+
+test('the path\'s pale base runs unbroken along the lane and into the square (look pass 3, Fable C8)', () => {
+  assert.ok(build)
+  const { positions, indices, cls } = build.underpaint
+  const tris: number[][] = []
+  for (let i = 0; i < indices.length; i += 3) {
+    const [a, b, c] = [indices[i], indices[i + 1], indices[i + 2]]
+    if (cls[a] === 4 && cls[b] === 4 && cls[c] === 4) tris.push([a, b, c].flatMap((k) => [positions[k * 3], positions[k * 3 + 2]]))
+  }
+  const inside = (x: number, z: number) =>
+    tris.some(([ax, az, bx, bz, cx, cz]) => {
+      const d1 = (x - bx) * (az - bz) - (ax - bx) * (z - bz)
+      const d2 = (x - cx) * (bz - cz) - (bx - cx) * (z - cz)
+      const d3 = (x - ax) * (cz - az) - (cx - ax) * (z - az)
+      return !((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0))
+    })
+  const misses: string[] = []
+  for (let t = -0.19; t <= 1; t += 0.002) {
+    // the lane's centre: off it the segments' chords leave the curve by more than the base's margin mid-segment
+    const [x, , z] = pathPoint(t)
+    if (!inside(x, z)) misses.push(t.toFixed(3))
+  }
+  assert.deepEqual(misses, [], `lane t with no path base under it: ${misses.join(', ')}`)
+})
