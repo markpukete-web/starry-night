@@ -45,6 +45,8 @@ const INK = new Color(PALETTE.ground)
 const OPENING_DARK = 0.3
 // pass 1: 0.35 of the house blue read as flat blue doors
 const WINDOW_DARK = new Color(PALETTE.ground).lerp(new Color(PALETTE.house), 0.12)
+/** the ground's and the path's base: the mean of the field source's darkest share (look pass 1) */
+const GROUND_BASE_SHARE = 0.4
 /** the roofs overhang the walls by this much along both axes */
 const OVERHANG = 0.015
 /** the door's and the windows' frames: a thin ink, a fraction of the wall's height */
@@ -137,7 +139,10 @@ type Context = {
 function clad(ctx: Context, owner: string, name: string, face: StreetFace): void {
   // a roof's base is its source's mean, not its darkest tenth: the street's eye meets the roofs at a grazing angle,
   // where the strokes thin out, and 46–99% of a roof's pixels showed the dark base (the per-source gate, `t12/`)
-  const [r, g, b] = sourceUnderpaint(ctx.painting, face.source, face.kind === 'roof' ? 1 : 0.1)
+  // S1b look pass 1: the ground and the path meet the eye at a grazing angle too. On the darkest tenth near-black filled
+  // the lower 40% of every frame at stop 0 (`t8/cap/`). On the whole mean the ground read as a flat grey plane (`t9/p1/`)
+  const share = face.kind === 'roof' ? 1 : face.kind === 'ground' || face.kind === 'path' ? GROUND_BASE_SHARE : 0.1
+  const [r, g, b] = sourceUnderpaint(ctx.painting, face.source, share)
   const cls = face.kind === 'wall' ? 0 : face.kind === 'roof' ? 1 : face.kind === 'ground' ? 3 : 4
   const src = face.kind === 'wall' || face.kind === 'roof' ? (SOURCE_CLASSES[face.source] ?? 255) : 255
   const light = lightOf(face, ctx.lit)
@@ -515,19 +520,10 @@ function ground(ctx: Context): void {
     const origin = p0.clone().addScaledVector(normal, -width / 2).setY(0.002)
     clad(ctx, 'path', `segment ${s}`, orientedFace(origin, p1.clone().sub(p0), normal.clone().multiplyScalar(width), below, { shape: 'quad', kind: 'path', source: 'field', refHeight: STREET.wallRef, seed: 0x6500 + s, mirror: s % 2 === 1 }))
   }
-  // The square: eight path triangles about its centre
-  const sqCenter = new Vector3(STREET_SQUARE.x, 0.002, STREET_SQUARE.z)
+  // the square, one face: as eight triangles about its centre its strokes ran to the middle and scattered (look pass 1)
   const sqRadius = STREET_SQUARE.radius
-  for (let k = 0; k < 8; k++) {
-    const theta0 = (k * 2 * Math.PI) / 8
-    const theta1 = ((k + 1) * 2 * Math.PI) / 8
-    const pA = sqCenter.clone().addScaledVector(across, sqRadius * Math.cos(theta0)).addScaledVector(forward, sqRadius * Math.sin(theta0))
-    const pB = sqCenter.clone().addScaledVector(across, sqRadius * Math.cos(theta1)).addScaledVector(forward, sqRadius * Math.sin(theta1))
-    const u = pB.clone().sub(pA)
-    const mid = pA.clone().addScaledVector(u, 0.5)
-    const v = sqCenter.clone().sub(mid)
-    clad(ctx, 'path', `square ${k}`, orientedFace(pA, u, v, below, { shape: 'triangle', kind: 'path', source: 'field', refHeight: STREET.wallRef, seed: 0x6530 + k, mirror: k % 2 === 1 }))
-  }
+  const sqOrigin = new Vector3(STREET_SQUARE.x, 0.002, STREET_SQUARE.z).addScaledVector(across, -sqRadius).addScaledVector(forward, -sqRadius)
+  clad(ctx, 'path', 'square', orientedFace(sqOrigin, across.clone().multiplyScalar(2 * sqRadius), forward.clone().multiplyScalar(2 * sqRadius), below, { shape: 'quad', kind: 'path', source: 'field', refHeight: STREET.wallRef, seed: 0x6530, mirror: false }))
 }
 
 export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | null, masses: BakedMass[] | null, { lit = true }: { lit?: boolean } = {}): StreetBuild | null {
