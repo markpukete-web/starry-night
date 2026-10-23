@@ -365,11 +365,12 @@ Modify `src/scene/villageGeometry.ts`.
 - [ ] **Step 1: Write the failing tests:** `no anchor is today's transform` (exact equality on five seeded camera
   poses, position at the origin), `follow tracks the camera`, `worldFixed ignores the camera's turn`.
 - [ ] **Step 2:** Run. Expected: FAIL. **Step 3:** Implement, with a seam `window.__skyTransform = () => ({
-  quaternion, position })` reading the sky group. **Step 4:** Run. Expected: PASS. Re-run Task 0's `orbit`, `light`
+  quaternion, position, camera })` set in the sky's own frame loop: the sky group's quaternion and position and the
+  R3F camera's quaternion, so it needs no touch hook (which is off under reduced motion, `DioramaExperience.tsx:246`). **Step 4:** Run. Expected: PASS. Re-run Task 0's `orbit`, `light`
   and `reduced` captures: identical to the baseline.
 - [ ] **Step 4b: The component applies the transform.** `scripts/check-sky-transform.mjs`, on `capture-diorama.mjs`'s
   CDP setup and its drag: load `?mode=diorama&clean=1&arrival=0`, drag the canvas 240 px right, wait 1.5 s, read
-  `__skyTransform()` and `__camera()`. In node, compute the home quaternion from `DIORAMA_CAMERAS.design` (a
+  `__skyTransform()`. In node, compute the home quaternion from `DIORAMA_CAMERAS.design` (a
   `lookAt` from its position to its target) and the expected `camera × home⁻¹`. Assert the sky's quaternion within
   1e-6 of it and its position at the origin, and assert the camera moved off its home by at least 5°. Run it also
   with `&sky=light` and under reduced-motion emulation. Exit 1 otherwise. (The `orbit` view is its own home, so a
@@ -520,5 +521,7 @@ v3, from the confirmation reads:
 - F12 accepted: the reduced-motion control frames leave the cross-run comparison. The script's exit status covers them.
 - F13 accepted: `scripts/check-sky-transform.mjs` (Task 6 Step 4b) asserts the sky group's transform after a real
   drag, against a home quaternion computed independently in node, on the moving sky, painted light and reduced motion.
+- F13, last confirmation (`plan-confirm2-codex.md`): `__skyTransform()` carries the camera's quaternion, read in the
+  sky's frame loop, so Step 4b needs no touch seam under reduced motion. Applied as Codex stated it. Not re-read.
 - F19 (P1) accepted: the fog's distance comes from `position` and `modelViewMatrix` in the vertex body. G4b and Task 4
   Step 6 require empty page errors, so a shader that does not compile fails before any judgement.
