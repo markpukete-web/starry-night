@@ -1,15 +1,27 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-23 (afternoon): E4 closed on Mark's word; the explorable question is next, Mark's pick pending
+## Pickup — 2026-10-23 (afternoon): E4 closed on Mark's word; the village street designed, Mark's approval pending
 
 Mark, 2026-10-23: "It passed. Let's close this slice and move on to the next one." E4 is closed. Before his review the
 Lead captured production at the pinned t = 5: the tree's crop is byte-identical to pass 2's frame, so the live site
 serves the gated build. The record (`tasks/2026-10-22-cypress-e4.md`, Open) and the Tunables entry carry the pass.
 The land roadmap (E1, E2, D1, then E3 and E4 on the cypress) is done.
 
-1. **The next slice is the explorable question** (the land direction, "Then the explorable question ... not before
-   E1–D1"). Mark picks the spike and decides whether the orbit limit lifts for an authored camera path. The costing
-   is below, moved into the repo from the 2026-10-22 chat.
+1. **The next slice is the village street** (decided 2026-10-23, replacing the three spikes below). Mark, on the
+   spike question: a path with the camera behind a figure, and a hand in the grass like Jeroen's clip. The Lead's
+   throwaway captures (`scratch/explore-2026-10-23/`: the dive at five distances, our village up close beside Simon's)
+   showed the village cannot carry a walk and that rebuilding it in place would change the passed home view. Mark
+   chose a portal into one street built for walking, Vincent from behind, scroll or arrow keys on a computer, an
+   automatic walk with a tap on a phone, and Simon's village as the reference for the look when in doubt. The design:
+   `docs/superpowers/specs/2026-10-23-village-street-design.md`. The builder read is done and its nine questions are
+   settled as the Lead's calls. Next: Mark's approval, then the plan for slice 1, the street's look.
+   - **Proposed to Mark, the locked acceptance criterion on the camera** (Mark, 2026-10-23: "Lift it for the path").
+     Today: "Camera stays within the orbit limits in Tunables (polar + distance; no free-fly or panning); the diorama
+     always reads as Starry Night — head-on it is the painting's composition." Proposed: "Camera stays within the
+     orbit limits in Tunables (polar + distance; no free-fly or panning) while the visitor orbits the diorama. An
+     authored camera path (the village street's portal flight and walk, 2026-10-23) may leave them, and the visitor
+     never steers the camera off it. The diorama always reads as Starry Night — head-on it is the painting's
+     composition." Mark applies it in `CLAUDE.md`.
 2. **The experiment's verdict** (Gemini 4 Argon for visual work under the Lead's gating) is not given.
 3. **Open from E4, not blocking:** the gaps field does nothing visible (keep or remove). The render's marks are thin
    scratches where the painting's bands are 30–60 px, with no dark contour strokes and no yellow-green highlights.
