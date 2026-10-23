@@ -4,7 +4,8 @@ Status: design, written by the Lead (Claude) from a conversation with Mark on 20
 (nine questions) and by the consultant (Fable, `scratch/explore-2026-10-23/consultant-design-report.md`: REVISE,
 findings C1–C19, every one checked against the code and folded below). The consultant's confirmation read
 (`consultant-confirm-report.md`) closed C2–C19 and left C1 open on one clause: the sky's growth along the walk. That
-clause is added as the consultant proposed it and has not had a further read. Not approved yet. Nothing is built.
+clause is added as the consultant proposed it and has not had a further read. Approved by Mark, 2026-10-23
+("Approved, write the plan for slice 1"). Nothing is built.
 
 ## Intent
 
