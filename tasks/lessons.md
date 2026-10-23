@@ -2915,3 +2915,16 @@ reads as alive.
   black on the ground and on half-density walls seen at eye level. The mean (and the darkest 40% for the ground) fixed
   both, at no triangle cost.
 
+
+## S1b look pass 3, the path (2026-10-24, morning)
+
+- **Where the painting shows nothing, the live reference decides.** In S1's pass 5 the Lead cut the path's lift
+  0.35 → 0.12 and its width 0.12 → 0.08, reading a pale path as wrong against the painting's dark ground. The painting
+  has no path. Simon Lee's village does, and it is pale. At Mark's gate the path read as part of the ground, and the
+  fix was the old values back, near enough. Before toning down something the painting does not contain, look at
+  what the reference Mark judges by does with it.
+- **A lifted base under clipped strokes shows its ruled edge.** A face's strokes are dropped where any column leaves
+  the face, so near the camera they stop short of its edges. A dark base hid that. A pale one showed as a flat grey
+  band with straight sides. Inset the base, so the strokes draw the edge.
+- **A gate whose reference reads the build's own constant cannot judge that constant.** The path passed the colour
+  gate at 0.12 and at 0.5. Its distance to the palette's hills (8.5 → 17.7) is the number that moved.
