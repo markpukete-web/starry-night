@@ -156,7 +156,7 @@ export default function Street() {
     const devFogColour = import.meta.env.DEV && typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('fogColour') : null
     const fogColour = devFogColour ? (devFogColour.startsWith('#') ? devFogColour : `#${devFogColour}`) : FOG.colour
     const fog = () => (flags.flat ? fogInjection(fogColour, 100, 200) : fogInjection(fogColour))
-    const ids = flags.ids
+    const ids = flags.ids > 0
     return {
       solid: material('street-solid', null, fog(), false, ids),
       strokes: material('street-strokes', strokeGlslWith(CYPRESS_STROKE_BODY), fog(), true, ids),
@@ -169,16 +169,23 @@ export default function Street() {
 
   const meshes = useMemo(() => {
     if (!build) return null
+    const isSrc = flags.ids === 2
+    const upCls = isSrc ? build.underpaint.src : build.underpaint.cls
+    const strokesCls = isSrc ? build.strokes.src : build.strokes.cls
+    const groundCls = isSrc ? build.ground.src : build.ground.cls
+    const outlinesCls = isSrc ? build.outlines.src : build.outlines.cls
+    const windowsCls = isSrc ? build.windows.src : build.windows.cls
+    const treeCls = isSrc ? 255 : 5
     return {
-      underpaint: plainGeometry(build.underpaint, build.underpaint.cls),
-      strokes: strokeGeometry(build.strokes.arrays, build.strokes.stroke, build.strokes.seed, undefined, build.strokes.cls),
-      ground: strokeGeometry(build.ground.arrays, build.ground.stroke, build.ground.seed, undefined, build.ground.cls),
-      outlines: strokeGeometry(build.outlines.arrays, build.outlines.stroke, build.outlines.seed, undefined, build.outlines.cls),
-      windows: plainGeometry(build.windows, build.windows.cls),
-      treeSolid: plainGeometry(build.trees.solid, 5),
-      treeStrokes: strokeGeometry(build.trees.strokes, build.trees.stroke, build.trees.seed, undefined, 5),
+      underpaint: plainGeometry(build.underpaint, upCls),
+      strokes: strokeGeometry(build.strokes.arrays, build.strokes.stroke, build.strokes.seed, undefined, strokesCls),
+      ground: strokeGeometry(build.ground.arrays, build.ground.stroke, build.ground.seed, undefined, groundCls),
+      outlines: strokeGeometry(build.outlines.arrays, build.outlines.stroke, build.outlines.seed, undefined, outlinesCls),
+      windows: plainGeometry(build.windows, windowsCls),
+      treeSolid: plainGeometry(build.trees.solid, treeCls),
+      treeStrokes: strokeGeometry(build.trees.strokes, build.trees.stroke, build.trees.seed, undefined, treeCls),
     }
-  }, [build])
+  }, [build, flags.ids])
   useEffect(() => () => { if (meshes) for (const g of Object.values(meshes)) g.dispose() }, [meshes])
 
   if (!meshes) return null

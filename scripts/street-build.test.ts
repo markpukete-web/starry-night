@@ -7,7 +7,7 @@ import test from 'node:test'
 import { islandHeightAt } from '../src/scene/islandShape.ts'
 import type { BakedMass } from '../src/scene/landDomes.ts'
 import { buildStreet } from '../src/scene/streetGeometry.ts'
-import { STREET_HOUSES } from '../src/scene/streetLayout.ts'
+import { STREET_CHURCH, STREET_HOUSES } from '../src/scene/streetLayout.ts'
 import type { ImageData2D } from '../src/scene/useImageData.ts'
 import { VILLAGE_CHURCH } from '../src/scene/villageKnot.ts'
 import { decodePNG } from './lib/png.ts'
@@ -74,3 +74,51 @@ test('the church is the knot\'s: the belfry\'s width and the spire\'s height abo
   // the belfry's top above the street's ground, as the knot's stands above the island (Fable R4)
   assert.ok(Math.abs(build.report.church.belfryHeight - (belfry.topY - floor)) < 1e-9)
 })
+
+test('every vertex of underpaint and strokes has a source class, and the church is plaster', () => {
+  assert.ok(build)
+  const upCount = build.underpaint.positions.length / 3
+  const strCount = build.strokes.arrays.positions.length / 3
+  assert.equal(build.underpaint.src?.length, upCount, 'underpaint has src per vertex')
+  assert.equal(build.strokes.src?.length, strCount, 'strokes has src per vertex')
+  for (const s of build.underpaint.src) {
+    assert.ok((s >= 0 && s <= 5) || s === 255, `underpaint src ${s} valid`)
+  }
+  for (const s of build.strokes.src) {
+    assert.ok((s >= 0 && s <= 5) || s === 255, `strokes src ${s} valid`)
+  }
+  const churchNave = STREET_CHURCH.nave
+  const churchBelfry = STREET_CHURCH.belfry
+  let churchWallStrokes = 0
+  for (let i = 0; i < strCount; i++) {
+    const x = build.strokes.arrays.positions[i * 3]
+    const z = build.strokes.arrays.positions[i * 3 + 2]
+    const cls = build.strokes.cls[i]
+    if (cls === 0) {
+      const dNave = Math.hypot(x - churchNave.x, z - churchNave.z)
+      const dBelfry = Math.hypot(x - churchBelfry.cx, z - churchBelfry.cz)
+      if (dNave < 0.35 || dBelfry < 0.35) {
+        churchWallStrokes++
+        assert.equal(build.strokes.src[i], 2, `church wall stroke vertex ${i} must be plaster (2)`)
+      }
+    }
+  }
+  assert.ok(churchWallStrokes > 50, `found church wall strokes: ${churchWallStrokes}`)
+
+  let churchWallUnderpaint = 0
+  for (let i = 0; i < upCount; i++) {
+    const x = build.underpaint.positions[i * 3]
+    const z = build.underpaint.positions[i * 3 + 2]
+    const cls = build.underpaint.cls[i]
+    if (cls === 0) {
+      const dNave = Math.hypot(x - churchNave.x, z - churchNave.z)
+      const dBelfry = Math.hypot(x - churchBelfry.cx, z - churchBelfry.cz)
+      if (dNave < 0.35 || dBelfry < 0.35) {
+        churchWallUnderpaint++
+        assert.equal(build.underpaint.src[i], 2, `church wall underpaint vertex ${i} must be plaster (2)`)
+      }
+    }
+  }
+  assert.ok(churchWallUnderpaint > 10, `found church wall underpaint vertices: ${churchWallUnderpaint}`)
+})
+

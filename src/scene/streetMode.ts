@@ -2,7 +2,7 @@ export type StreetFlags = {
   street: boolean
   station: 0 | 1 | 2 | 3 | 4
   flat: boolean
-  ids: boolean
+  ids: 0 | 1 | 2
   fail: 'painting' | 'flow' | 'masses' | null
   anchor: 'A' | 'B'
   turn: 'lock' | 'world'
@@ -14,7 +14,8 @@ export function readStreetFlags(search: string): StreetFlags {
   const rawStation = parseInt(params.get('station') ?? '0', 10)
   const station = (isNaN(rawStation) ? 0 : Math.max(0, Math.min(4, rawStation))) as 0 | 1 | 2 | 3 | 4
   const flat = params.get('flat') === '1'
-  const ids = params.get('ids') === '1'
+  const rawIds = params.get('ids')
+  const ids = rawIds === '1' ? 1 : rawIds === '2' ? 2 : 0
   const rawFail = params.get('streetFail')
   const fail = rawFail === 'painting' || rawFail === 'flow' || rawFail === 'masses' ? rawFail : null
   // G5 (2026-10-23): the sky follows the camera (B) and holds the painting's arc in the world; A and lock stay as dev params

@@ -12,7 +12,9 @@ export function isStreetMode(search: string): boolean {
  * The street's ID pass (S1 task 7): the sky hidden, the background black, every street fragment drawn in its ID colour.
  */
 export function streetIdsPass(search: string): boolean {
-  return isStreetMode(search) && new URLSearchParams(search).get('ids') === '1'
+  if (!isStreetMode(search)) return false
+  const ids = new URLSearchParams(search).get('ids')
+  return ids === '1' || ids === '2'
 }
 
 /**

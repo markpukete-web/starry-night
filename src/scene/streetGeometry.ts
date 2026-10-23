@@ -18,8 +18,8 @@ import { VILLAGE_CHURCH, type Building, type Pigment } from './villageKnot.ts'
 
 export type StreetCounts = { ribbons: number; triangles: number; builds: number }
 
-export type BrushArraysWithCls = BrushArrays & { cls: number[] }
-export type Strokes = { arrays: BrushArrays; stroke: number[]; seed: number[]; cls: number[] }
+export type BrushArraysWithCls = BrushArrays & { cls: number[]; src: number[] }
+export type Strokes = { arrays: BrushArrays; stroke: number[]; seed: number[]; cls: number[]; src: number[] }
 
 export type StreetBuild = {
   underpaint: BrushArraysWithCls
@@ -60,7 +60,18 @@ function roofSource(pigment: Pigment, index: number): StreetSourceName {
   return index % 3 === 2 ? 'roofStriped' : 'roofBlue'
 }
 
-function append(into: Strokes, from: FaceStrokes, cls: number): void {
+export const SOURCE_CLASSES: Record<StreetSourceName, number> = {
+  wallA: 0,
+  wallB: 1,
+  plaster: 2,
+  roofStriped: 3,
+  roofBlue: 4,
+  roofSienna: 5,
+  field: 255,
+  windowLit: 255,
+}
+
+function append(into: Strokes, from: FaceStrokes, cls: number, src = 255): void {
   const base = into.arrays.positions.length / 3
   into.arrays.positions.push(...from.arrays.positions)
   into.arrays.colors.push(...from.arrays.colors)
@@ -68,15 +79,19 @@ function append(into: Strokes, from: FaceStrokes, cls: number): void {
   into.stroke.push(...from.stroke)
   into.seed.push(...from.seed)
   const count = from.arrays.positions.length / 3
-  for (let i = 0; i < count; i++) into.cls.push(cls)
+  for (let i = 0; i < count; i++) {
+    into.cls.push(cls)
+    into.src.push(src)
+  }
 }
 
-function polygon(arr: BrushArraysWithCls, vertices: Vector3[], colour: Color, cls: number): void {
+function polygon(arr: BrushArraysWithCls, vertices: Vector3[], colour: Color, cls: number, src = 255): void {
   const start = arr.positions.length / 3
   for (const p of vertices) {
     arr.positions.push(p.x, p.y, p.z)
     arr.colors.push(colour.r, colour.g, colour.b)
     arr.cls.push(cls)
+    arr.src.push(src)
   }
   for (let i = 1; i < vertices.length - 1; i++) arr.indices.push(start, start + i, start + i + 1)
 }
@@ -118,9 +133,10 @@ type Context = {
 function clad(ctx: Context, owner: string, name: string, face: StreetFace): void {
   const [r, g, b] = sourceUnderpaint(ctx.painting, face.source)
   const cls = face.kind === 'wall' ? 0 : face.kind === 'roof' ? 1 : face.kind === 'ground' ? 3 : 4
-  polygon(ctx.underpaint, facePolygon(face), new Color().setRGB(r, g, b, SRGBColorSpace), cls)
+  const src = face.kind === 'wall' || face.kind === 'roof' ? (SOURCE_CLASSES[face.source] ?? 255) : 255
+  polygon(ctx.underpaint, facePolygon(face), new Color().setRGB(r, g, b, SRGBColorSpace), cls, src)
   const traced = traceFace(face, ctx.flow, ctx.painting)
-  append(face.kind === 'ground' || face.kind === 'path' ? ctx.ground : ctx.strokes, traced, cls)
+  append(face.kind === 'ground' || face.kind === 'path' ? ctx.ground : ctx.strokes, traced, cls, src)
   ctx.ribbons += traced.ribbons
   ctx.report.faces.push({ owner, name, ribbons: traced.ribbons })
 }
@@ -324,11 +340,11 @@ export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | nu
   const ctx: Context = {
     flow,
     painting,
-    underpaint: Object.assign(makeBrushArrays(), { cls: [] }),
-    strokes: { arrays: makeBrushArrays(), stroke: [], seed: [], cls: [] },
-    ground: { arrays: makeBrushArrays(), stroke: [], seed: [], cls: [] },
-    outlines: { arrays: makeBrushArrays(), stroke: [], seed: [], cls: [] },
-    windows: Object.assign(makeBrushArrays(), { cls: [] }),
+    underpaint: Object.assign(makeBrushArrays(), { cls: [], src: [] }),
+    strokes: { arrays: makeBrushArrays(), stroke: [], seed: [], cls: [], src: [] },
+    ground: { arrays: makeBrushArrays(), stroke: [], seed: [], cls: [], src: [] },
+    outlines: { arrays: makeBrushArrays(), stroke: [], seed: [], cls: [], src: [] },
+    windows: Object.assign(makeBrushArrays(), { cls: [], src: [] }),
     report: { faces: [], outlines: [], windows: [], church: { belfryWidth: 0, belfryHeight: 0, spireHeight: 0 } },
     ribbons: 0,
   }
@@ -370,11 +386,11 @@ export function buildFlatPanel(painting: ImageData2D | null, flow: ImageData2D |
   const ctx: Context = {
     flow,
     painting,
-    underpaint: Object.assign(makeBrushArrays(), { cls: [] }),
-    strokes: { arrays: makeBrushArrays(), stroke: [], seed: [], cls: [] },
-    ground: { arrays: makeBrushArrays(), stroke: [], seed: [], cls: [] },
-    outlines: { arrays: makeBrushArrays(), stroke: [], seed: [], cls: [] },
-    windows: Object.assign(makeBrushArrays(), { cls: [] }),
+    underpaint: Object.assign(makeBrushArrays(), { cls: [], src: [] }),
+    strokes: { arrays: makeBrushArrays(), stroke: [], seed: [], cls: [], src: [] },
+    ground: { arrays: makeBrushArrays(), stroke: [], seed: [], cls: [], src: [] },
+    outlines: { arrays: makeBrushArrays(), stroke: [], seed: [], cls: [], src: [] },
+    windows: Object.assign(makeBrushArrays(), { cls: [], src: [] }),
     report: { faces: [], outlines: [], windows: [], church: { belfryWidth: 0, belfryHeight: 0, spireHeight: 0 } },
     ribbons: 0,
   }

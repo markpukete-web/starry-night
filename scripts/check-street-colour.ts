@@ -37,11 +37,12 @@ const opt = (name: string, fallback: string = ''): string => {
 const station = opt('station', '0')
 const viewport = opt('viewport', 'desktop')
 const control = opt('control', '')
+const sources = args.includes('--sources')
 const fullPrefixOpt = opt('full-prefix', '')
 const idsPrefixOpt = opt('ids-prefix', '')
 
 if (!dirArg) {
-  console.error('Usage: check-street-colour.ts <dir> --station S --viewport V [--control=cyan]')
+  console.error('Usage: check-street-colour.ts <dir> --station S --viewport V [--sources] [--control=cyan]')
   process.exit(1)
 }
 
@@ -56,7 +57,7 @@ function findFile(basePrefix: string, extensions: string[]): string | null {
 }
 
 const fullPrefix = fullPrefixOpt || `full-s${station}-${viewport}`
-const idsPrefix = idsPrefixOpt || `ids-s${station}-${viewport}`
+const idsPrefix = idsPrefixOpt || (sources ? `ids2-s${station}-${viewport}` : `ids-s${station}-${viewport}`)
 
 const fullPngPath = findFile(fullPrefix, ['-t5.png', '.png'])
 const fullJsonPath = findFile(fullPrefix, ['-frames.json', '.json'])
@@ -77,7 +78,7 @@ const idsMeta = JSON.parse(readFileSync(idsJsonPath, 'utf8'))
 
 function cleanUrl(u: string): string {
   return u
-    .replace(/([?&])ids=1(&|$)/, (_, sep, end) => (end === '&' ? sep : ''))
+    .replace(/([?&])ids=\d+(&|$)/, (_, sep, end) => (end === '&' ? sep : ''))
     .replace(/([?&])fogColour=[^&]+(&|$)/, (_, sep, end) => (end === '&' ? sep : ''))
     .replace(/[?&]$/, '')
     .replace(/\?&/, '?')
@@ -221,6 +222,23 @@ const fogG = parseInt(PALETTE.skyHorizon.slice(3, 5), 16)
 const fogB = parseInt(PALETTE.skyHorizon.slice(5, 7), 16)
 const refFog = srgbToLab(fogR, fogG, fogB)
 
+// Source references
+const refWallA = meanLab(rectLabs(workPainting, STREET_SOURCES.wallA))
+const refWallB = meanLab(rectLabs(workPainting, STREET_SOURCES.wallB))
+const refPlaster = meanLab(rectLabs(workPainting, STREET_SOURCES.plaster))
+const refRoofStriped = meanLab(rectLabs(workPainting, STREET_SOURCES.roofStriped))
+const refRoofBlue = meanLab(rectLabs(workPainting, STREET_SOURCES.roofBlue))
+const refRoofSienna = meanLab(rectLabs(workPainting, STREET_SOURCES.roofSienna))
+
+const SOURCES: Record<string, { idR: number; idG: number; idB: number; ref: Lab }> = {
+  wallA: { idR: 255, idG: 0, idB: 0, ref: refWallA },
+  wallB: { idR: 0, idG: 255, idB: 0, ref: refWallB },
+  plaster: { idR: 0, idG: 0, idB: 255, ref: refPlaster },
+  roofStriped: { idR: 255, idG: 255, idB: 0, ref: refRoofStriped },
+  roofBlue: { idR: 0, idG: 255, idB: 255, ref: refRoofBlue },
+  roofSienna: { idR: 255, idG: 0, idB: 255, ref: refRoofSienna },
+}
+
 // Palette regional means
 const diagVillage = regionWeightedMeanLab('village')
 const diagHills = regionWeightedMeanLab('hills')
@@ -245,83 +263,158 @@ const CLASSES: Record<string, ClassDef> = {
   windows: { idR: 0, idG: 0, idB: 255, minArea: 100, ref: refWindows, diag: null },
 }
 
-// Find pixel indices for each class
-const maskIndices: Record<string, number[]> = {
-  walls: [],
-  roofs: [],
-  windows: [],
-  ground: [],
-  path: [],
-  trees: [],
-  fog: [],
-}
+if (sources) {
+  const maskIndices: Record<string, number[]> = {
+    wallA: [],
+    wallB: [],
+    plaster: [],
+    roofStriped: [],
+    roofBlue: [],
+    roofSienna: [],
+  }
 
-for (let i = 0; i < totalPixels; i++) {
-  const o = i * 4
-  const r = idsPng.rgba[o]
-  const g = idsPng.rgba[o + 1]
-  const b = idsPng.rgba[o + 2]
-  if (r === 255 && g === 0 && b === 0) maskIndices.walls.push(i)
-  else if (r === 0 && g === 255 && b === 0) maskIndices.roofs.push(i)
-  else if (r === 0 && g === 0 && b === 255) maskIndices.windows.push(i)
-  else if (r === 255 && g === 255 && b === 0) maskIndices.ground.push(i)
-  else if (r === 0 && g === 255 && b === 255) maskIndices.path.push(i)
-  else if (r === 255 && g === 0 && b === 255) maskIndices.trees.push(i)
-  else if (r === 255 && g === 255 && b === 255) maskIndices.fog.push(i)
-}
+  for (let i = 0; i < totalPixels; i++) {
+    const o = i * 4
+    const r = idsPng.rgba[o]
+    const g = idsPng.rgba[o + 1]
+    const b = idsPng.rgba[o + 2]
+    if (r === 255 && g === 0 && b === 0) maskIndices.wallA.push(i)
+    else if (r === 0 && g === 255 && b === 0) maskIndices.wallB.push(i)
+    else if (r === 0 && g === 0 && b === 255) maskIndices.plaster.push(i)
+    else if (r === 255 && g === 255 && b === 0) maskIndices.roofStriped.push(i)
+    else if (r === 0 && g === 255 && b === 255) maskIndices.roofBlue.push(i)
+    else if (r === 255 && g === 0 && b === 255) maskIndices.roofSienna.push(i)
+  }
 
-// Full image copy in case of control
-const fullRgba = new Uint8Array(fullPng.rgba)
-if (control === 'cyan') {
-  for (const indices of Object.values(maskIndices)) {
-    const nToCyan = Math.floor(indices.length * 0.4)
-    for (let k = 0; k < nToCyan; k++) {
-      const o = indices[k] * 4
-      fullRgba[o] = 0
-      fullRgba[o + 1] = 255
-      fullRgba[o + 2] = 255
+  const fullRgba = new Uint8Array(fullPng.rgba)
+  if (control === 'cyan') {
+    for (const indices of Object.values(maskIndices)) {
+      const nToCyan = Math.floor(indices.length * 0.4)
+      for (let k = 0; k < nToCyan; k++) {
+        const o = indices[k] * 4
+        fullRgba[o] = 0
+        fullRgba[o + 1] = 255
+        fullRgba[o + 2] = 255
+      }
     }
   }
-}
 
-const failures: string[] = []
-console.log(`Street colour check: station ${station}, viewport ${viewport}${control ? ` (control: ${control})` : ''}`)
-console.log(`Files: full="${fullPngPath}", ids="${idsPngPath}"`)
+  const failures: string[] = []
+  console.log(`Street colour check: station ${station}, viewport ${viewport} (sources)${control ? ` (control: ${control})` : ''}`)
+  console.log(`Files: full="${fullPngPath}", ids="${idsPngPath}"`)
 
-for (const [name, def] of Object.entries(CLASSES)) {
-  const indices = maskIndices[name]
-  const area = indices.length
-  if (area < def.minArea) {
-    failures.push(`${name}: area ${area} px < minimum ${def.minArea} px`)
-    console.log(`  ${name.padEnd(8)}: FAIL area ${area} px < min ${def.minArea} px`)
-    continue
+  for (const [name, def] of Object.entries(SOURCES)) {
+    const indices = maskIndices[name]
+    const area = indices.length
+    if (area < 2000) {
+      console.log(`  ${name.padEnd(12)}: not in view (${area} px)`)
+      continue
+    }
+
+    let sumL = 0, sumA = 0, sumB = 0
+    for (const idx of indices) {
+      const o = idx * 4
+      const lab = srgbToLab(fullRgba[o], fullRgba[o + 1], fullRgba[o + 2])
+      sumL += lab.l
+      sumA += lab.a
+      sumB += lab.b
+    }
+    const mean: Lab = { l: sumL / area, a: sumA / area, b: sumB / area }
+    const dE = deltaE76(mean, def.ref)
+
+    if (dE >= 10) {
+      failures.push(`${name}: ΔE76 ${dE.toFixed(2)} >= 10`)
+      console.log(`  ${name.padEnd(12)}: FAIL ΔE76 ${dE.toFixed(2)} (area ${area} px, mean Lab [${mean.l.toFixed(1)}, ${mean.a.toFixed(1)}, ${mean.b.toFixed(1)}])`)
+    } else {
+      console.log(`  ${name.padEnd(12)}: PASS ΔE76 ${dE.toFixed(2)} < 10 (area ${area} px, mean Lab [${mean.l.toFixed(1)}, ${mean.a.toFixed(1)}, ${mean.b.toFixed(1)}])`)
+    }
   }
 
-  let sumL = 0, sumA = 0, sumB = 0
-  for (const idx of indices) {
-    const o = idx * 4
-    const lab = srgbToLab(fullRgba[o], fullRgba[o + 1], fullRgba[o + 2])
-    sumL += lab.l
-    sumA += lab.a
-    sumB += lab.b
-  }
-  const mean: Lab = { l: sumL / area, a: sumA / area, b: sumB / area }
-
-  const dE = deltaE76(mean, def.ref!)
-  const diagDE = def.diag ? deltaE76(mean, def.diag) : null
-  const diagStr = diagDE !== null ? ` (diag to palette: ${diagDE.toFixed(2)})` : ''
-
-  if (dE >= 10) {
-    failures.push(`${name}: ΔE76 ${dE.toFixed(2)} >= 10`)
-    console.log(`  ${name.padEnd(8)}: FAIL ΔE76 ${dE.toFixed(2)} (area ${area} px, mean Lab [${mean.l.toFixed(1)}, ${mean.a.toFixed(1)}, ${mean.b.toFixed(1)}])${diagStr}`)
+  if (failures.length > 0) {
+    console.log(`FAIL: ${failures.length} failure(s):\n  - ${failures.join('\n  - ')}`)
+    process.exit(1)
   } else {
-    console.log(`  ${name.padEnd(8)}: PASS ΔE76 ${dE.toFixed(2)} < 10 (area ${area} px, mean Lab [${mean.l.toFixed(1)}, ${mean.a.toFixed(1)}, ${mean.b.toFixed(1)}])${diagStr}`)
+    console.log('PASS: all in-view sources meet ΔE76 < 10')
   }
-}
-
-if (failures.length > 0) {
-  console.log(`FAIL: ${failures.length} failure(s):\n  - ${failures.join('\n  - ')}`)
-  process.exit(1)
 } else {
-  console.log('PASS: all classes meet minimum area and ΔE76 < 10')
+  // Find pixel indices for each class
+  const maskIndices: Record<string, number[]> = {
+    walls: [],
+    roofs: [],
+    windows: [],
+    ground: [],
+    path: [],
+    trees: [],
+    fog: [],
+  }
+
+  for (let i = 0; i < totalPixels; i++) {
+    const o = i * 4
+    const r = idsPng.rgba[o]
+    const g = idsPng.rgba[o + 1]
+    const b = idsPng.rgba[o + 2]
+    if (r === 255 && g === 0 && b === 0) maskIndices.walls.push(i)
+    else if (r === 0 && g === 255 && b === 0) maskIndices.roofs.push(i)
+    else if (r === 0 && g === 0 && b === 255) maskIndices.windows.push(i)
+    else if (r === 255 && g === 255 && b === 0) maskIndices.ground.push(i)
+    else if (r === 0 && g === 255 && b === 255) maskIndices.path.push(i)
+    else if (r === 255 && g === 0 && b === 255) maskIndices.trees.push(i)
+    else if (r === 255 && g === 255 && b === 255) maskIndices.fog.push(i)
+  }
+
+  // Full image copy in case of control
+  const fullRgba = new Uint8Array(fullPng.rgba)
+  if (control === 'cyan') {
+    for (const indices of Object.values(maskIndices)) {
+      const nToCyan = Math.floor(indices.length * 0.4)
+      for (let k = 0; k < nToCyan; k++) {
+        const o = indices[k] * 4
+        fullRgba[o] = 0
+        fullRgba[o + 1] = 255
+        fullRgba[o + 2] = 255
+      }
+    }
+  }
+
+  const failures: string[] = []
+  console.log(`Street colour check: station ${station}, viewport ${viewport}${control ? ` (control: ${control})` : ''}`)
+  console.log(`Files: full="${fullPngPath}", ids="${idsPngPath}"`)
+
+  for (const [name, def] of Object.entries(CLASSES)) {
+    const indices = maskIndices[name]
+    const area = indices.length
+    if (area < def.minArea) {
+      failures.push(`${name}: area ${area} px < minimum ${def.minArea} px`)
+      console.log(`  ${name.padEnd(8)}: FAIL area ${area} px < min ${def.minArea} px`)
+      continue
+    }
+
+    let sumL = 0, sumA = 0, sumB = 0
+    for (const idx of indices) {
+      const o = idx * 4
+      const lab = srgbToLab(fullRgba[o], fullRgba[o + 1], fullRgba[o + 2])
+      sumL += lab.l
+      sumA += lab.a
+      sumB += lab.b
+    }
+    const mean: Lab = { l: sumL / area, a: sumA / area, b: sumB / area }
+
+    const dE = deltaE76(mean, def.ref!)
+    const diagDE = def.diag ? deltaE76(mean, def.diag) : null
+    const diagStr = diagDE !== null ? ` (diag to palette: ${diagDE.toFixed(2)})` : ''
+
+    if (dE >= 10) {
+      failures.push(`${name}: ΔE76 ${dE.toFixed(2)} >= 10`)
+      console.log(`  ${name.padEnd(8)}: FAIL ΔE76 ${dE.toFixed(2)} (area ${area} px, mean Lab [${mean.l.toFixed(1)}, ${mean.a.toFixed(1)}, ${mean.b.toFixed(1)}])${diagStr}`)
+    } else {
+      console.log(`  ${name.padEnd(8)}: PASS ΔE76 ${dE.toFixed(2)} < 10 (area ${area} px, mean Lab [${mean.l.toFixed(1)}, ${mean.a.toFixed(1)}, ${mean.b.toFixed(1)}])${diagStr}`)
+    }
+  }
+
+  if (failures.length > 0) {
+    console.log(`FAIL: ${failures.length} failure(s):\n  - ${failures.join('\n  - ')}`)
+    process.exit(1)
+  } else {
+    console.log('PASS: all classes meet minimum area and ΔE76 < 10')
+  }
 }
