@@ -400,10 +400,10 @@ function ground(ctx: Context): void {
   }
   // the path, raised a hair over the ground's strokes, in segments along its bend
   const width = 0.08
-  const segments = 24
+  const segments = 12
   for (let s = 0; s < segments; s++) {
     const t0 = -0.2 + (s / segments) * 1.2
-    const t1 = -0.2 + ((s + 1) / segments) * 1.2
+    const t1 = -0.2 + ((s + 1) / segments) * 1.2 + 0.01
     const p0 = new Vector3(...pathPoint(t0))
     const p1 = new Vector3(...pathPoint(t1))
     const normal = new Vector3(...pathTangent((t0 + t1) / 2)).cross(UP).normalize()

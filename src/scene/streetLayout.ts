@@ -8,24 +8,11 @@ import {
 export const MAP = {
   origin: [500, 1210] as const,
   scale: 0.0024,
+  laneHalfWidth: 0.12,
 } as const
 
-export const STREET = {
-  pathLength: 2.3962,
-  eye: 0.09,
-  behind: 0.18,
-  lookAhead: 0.6,
-  lookHeight: 0.06,
-  near: 0.004,
-  far: 48,
-  fov: { landscape: 50, portrait: 75 },
-  originA: [0, 0, 5.0] as const,
-  wallRef: 0.2,
-  frontSetback: 0.2,
-  forward: [-0.1041, 0, -0.9946] as const,
-} as const
-
-const [fx, , fz] = STREET.forward
+const STREET_FORWARD = [-0.1041, 0, -0.9946] as const
+const [fx, , fz] = STREET_FORWARD
 const rx = -fz
 const rz = fx
 const forward = new Vector3(fx, 0, fz)
@@ -47,7 +34,21 @@ lanePath.add(c2)
 lanePath.add(c3)
 
 const measuredLength = lanePath.getLength()
-;(STREET as { pathLength: number }).pathLength = measuredLength
+
+export const STREET = {
+  pathLength: measuredLength,
+  eye: 0.09,
+  behind: 0.18,
+  lookAhead: 0.6,
+  lookHeight: 0.06,
+  near: 0.004,
+  far: 48,
+  fov: { landscape: 50, portrait: 75 },
+  originA: [0, 0, 5.0] as const,
+  wallRef: 0.2,
+  frontSetback: 0.2,
+  forward: STREET_FORWARD,
+} as const
 
 export function pathPoint(t: number): [number, number, number] {
   if (t >= 0 && t <= 1) {
