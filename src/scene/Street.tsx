@@ -18,10 +18,15 @@ type StreetWindow = Window & {
   __streetCamera?: () => { position: number[]; quaternion: number[]; fov: number; near: number; far: number }
 }
 
-function plainGeometry(a: BrushArrays): BufferGeometry {
+function plainGeometry(a: BrushArrays, cls?: number[] | number): BufferGeometry {
   const g = new BufferGeometry()
+  const vertices = a.positions.length / 3
   g.setAttribute('position', new BufferAttribute(new Float32Array(a.positions), 3))
   g.setAttribute('color', new BufferAttribute(new Float32Array(a.colors), 3))
+  if (cls !== undefined) {
+    const clsArr = typeof cls === 'number' ? new Float32Array(vertices).fill(cls) : new Float32Array(cls)
+    g.setAttribute('aClass', new BufferAttribute(clsArr, 1))
+  }
   g.setIndex(a.indices)
   g.computeVertexNormals()
   g.computeBoundingSphere()
@@ -37,9 +42,42 @@ const STREET_GROUND_BODY: StrokeBody = { ...CYPRESS_STROKE_BODY, gaps: null, lan
 
 const NO_INJECTION = { uniforms: {}, vertexHead: '', vertexBody: '', fragmentHead: '', fragmentBody: '' }
 
-function material(key: string, body: Omit<AliveInjection, 'key' | 'uniforms'> | null, fog: Omit<AliveInjection, 'key'>, stroke: boolean): MeshBasicMaterial {
+function idInjection(threshold = FOG.near + 0.6 * (FOG.far - FOG.near)): Omit<AliveInjection, 'key'> {
+  return {
+    uniforms: {
+      uFogThreshold: { value: threshold },
+    },
+    vertexHead: 'attribute float aClass;\nvarying float vClass;',
+    vertexBody: 'vClass = aClass;',
+    fragmentHead: [
+      'uniform float uFogThreshold;',
+      'varying float vClass;',
+    ].join('\n'),
+    fragmentBody: [
+      'if (diffuseColor.a < 0.5) discard;',
+      'int c = int(vClass + 0.5);',
+      'vec3 idCol = vec3(0.0);',
+      'if (c == 0) idCol = vec3(1.0, 0.0, 0.0);',
+      'else if (c == 1) idCol = vec3(0.0, 1.0, 0.0);',
+      'else if (c == 2) idCol = vec3(0.0, 0.0, 1.0);',
+      'else if (c == 3) idCol = vec3(1.0, 1.0, 0.0);',
+      'else if (c == 4) idCol = vec3(0.0, 1.0, 1.0);',
+      'else if (c == 5) idCol = vec3(1.0, 0.0, 1.0);',
+      'else idCol = vec3(0.0, 0.0, 0.0);',
+      'if (vFogDistance > uFogThreshold) {',
+      '  idCol = vec3(1.0, 1.0, 1.0);',
+      '}',
+      'diffuseColor.rgb = idCol;',
+      'diffuseColor.a = 1.0;',
+    ].join('\n'),
+  }
+}
+
+function material(key: string, body: Omit<AliveInjection, 'key' | 'uniforms'> | null, fog: Omit<AliveInjection, 'key'>, stroke: boolean, ids: boolean): MeshBasicMaterial {
   const m = new MeshBasicMaterial(stroke ? { vertexColors: true, toneMapped: false, side: DoubleSide, alphaTest: 0.5 } : { vertexColors: true, toneMapped: false, side: DoubleSide })
-  injectAlive(m, concatInjections(key, body ? { uniforms: {}, ...body } : NO_INJECTION, fog))
+  const parts: Omit<AliveInjection, 'key'>[] = [body ? { uniforms: {}, ...body } : NO_INJECTION, fog]
+  if (ids) parts.push(idInjection())
+  injectAlive(m, concatInjections(ids ? `${key}-ids` : key, ...parts))
   return m
 }
 
@@ -115,27 +153,30 @@ export default function Street() {
   /* eslint-enable react-hooks/immutability */
 
   const materials = useMemo(() => {
-    const fog = () => (flags.flat ? fogInjection(FOG.colour, 100, 200) : fogInjection())
+    const devFogColour = import.meta.env.DEV && typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('fogColour') : null
+    const fogColour = devFogColour ? (devFogColour.startsWith('#') ? devFogColour : `#${devFogColour}`) : FOG.colour
+    const fog = () => (flags.flat ? fogInjection(fogColour, 100, 200) : fogInjection(fogColour))
+    const ids = flags.ids
     return {
-      solid: material('street-solid', null, fog(), false),
-      strokes: material('street-strokes', strokeGlslWith(CYPRESS_STROKE_BODY), fog(), true),
-      ground: material('street-ground', strokeGlslWith(STREET_GROUND_BODY), fog(), true),
+      solid: material('street-solid', null, fog(), false, ids),
+      strokes: material('street-strokes', strokeGlslWith(CYPRESS_STROKE_BODY), fog(), true, ids),
+      ground: material('street-ground', strokeGlslWith(STREET_GROUND_BODY), fog(), true, ids),
       // pass 1: the land's body broke the curls into combs at walking distance; the cypress's (E4) holds them
-      trees: material('street-trees', strokeGlslWith(CYPRESS_STROKE_BODY), fog(), true),
+      trees: material('street-trees', strokeGlslWith(CYPRESS_STROKE_BODY), fog(), true, ids),
     }
-  }, [flags.flat])
+  }, [flags.flat, flags.ids])
   useEffect(() => () => { for (const m of Object.values(materials)) m.dispose() }, [materials])
 
   const meshes = useMemo(() => {
     if (!build) return null
     return {
-      underpaint: plainGeometry(build.underpaint),
-      strokes: strokeGeometry(build.strokes.arrays, build.strokes.stroke, build.strokes.seed),
-      ground: strokeGeometry(build.ground.arrays, build.ground.stroke, build.ground.seed),
-      outlines: strokeGeometry(build.outlines.arrays, build.outlines.stroke, build.outlines.seed),
-      windows: plainGeometry(build.windows),
-      treeSolid: plainGeometry(build.trees.solid),
-      treeStrokes: strokeGeometry(build.trees.strokes, build.trees.stroke, build.trees.seed),
+      underpaint: plainGeometry(build.underpaint, build.underpaint.cls),
+      strokes: strokeGeometry(build.strokes.arrays, build.strokes.stroke, build.strokes.seed, undefined, build.strokes.cls),
+      ground: strokeGeometry(build.ground.arrays, build.ground.stroke, build.ground.seed, undefined, build.ground.cls),
+      outlines: strokeGeometry(build.outlines.arrays, build.outlines.stroke, build.outlines.seed, undefined, build.outlines.cls),
+      windows: plainGeometry(build.windows, build.windows.cls),
+      treeSolid: plainGeometry(build.trees.solid, 5),
+      treeStrokes: strokeGeometry(build.trees.strokes, build.trees.stroke, build.trees.seed, undefined, 5),
     }
   }, [build])
   useEffect(() => () => { if (meshes) for (const g of Object.values(meshes)) g.dispose() }, [meshes])
