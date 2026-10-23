@@ -182,20 +182,12 @@ async function main() {
     const lifeBuilds = state.lifeBuilds
     const fov = state.camera?.fov
 
-    if (builds !== 1) {
-      console.error(`FAIL: expected window.__streetCounts.builds === 1, got ${builds}`)
-      process.exit(1)
-    }
+    // a throw, not process.exit: the exit skipped the finally, and every failing run left its headless Chrome running
+    if (builds !== 1) throw new Error(`FAIL: expected window.__streetCounts.builds === 1, got ${builds}`)
 
-    if (lifeBuilds !== 1) {
-      console.error(`FAIL: expected window.__streetLifeBuilds === 1, got ${lifeBuilds}`)
-      process.exit(1)
-    }
+    if (lifeBuilds !== 1) throw new Error(`FAIL: expected window.__streetLifeBuilds === 1, got ${lifeBuilds}`)
 
-    if (fov !== 75) {
-      console.error(`FAIL: expected window.__streetCamera().fov === 75, got ${fov}`)
-      process.exit(1)
-    }
+    if (fov !== 75) throw new Error(`FAIL: expected window.__streetCamera().fov === 75, got ${fov}`)
 
     console.log(`PASS: street rotation holds builds=${builds}, lifeBuilds=${lifeBuilds} and updates fov=${fov}`)
     await page.close()

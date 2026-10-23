@@ -163,10 +163,8 @@ async function main() {
 
     const elapsedMs = Date.now() - start
 
-    if (!ready) {
-      console.error(`FAIL: window.__streetReady was not ready within 25 s (elapsed ${elapsedMs} ms)`)
-      process.exit(1)
-    }
+    // a throw, not process.exit: the exit skipped the finally and left the headless Chrome running
+    if (!ready) throw new Error(`FAIL: window.__streetReady was not ready within 25 s (elapsed ${elapsedMs} ms)`)
 
     const countsRes = await page.send('Runtime.evaluate', {
       expression: 'window.__streetCounts ? window.__streetCounts.triangles : 0',
@@ -174,10 +172,7 @@ async function main() {
     })
     const triangles = countsRes.result?.value ?? 0
 
-    if (triangles <= 0) {
-      console.error(`FAIL: expected window.__streetCounts.triangles > 0, got ${triangles}`)
-      process.exit(1)
-    }
+    if (triangles <= 0) throw new Error(`FAIL: expected window.__streetCounts.triangles > 0, got ${triangles}`)
 
     console.log(`PASS: street became ready in ${elapsedMs} ms with ${triangles} triangles while cypress held unanswered (${page.interceptedUrl ?? 'intercepted'})`)
     await page.close()
