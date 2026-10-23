@@ -2873,3 +2873,19 @@ image, so the comparison could never see what was missing. Lesson: when the refe
 scene, compare against it live (motion, light, depth) before the first look pass, and show Mark the live view early,
 not montages of stills. The colour gate measures drift from the painting; it says nothing about whether the place
 reads as alive.
+
+## 2026-10-23 (night) — the street S1b plan, revision 2 and 3
+
+- **A sketch map's scale is a decision, and its dots are not footprints.** Revision 1 read the map at about 0.0016 per
+  pixel and kept the table's sizes, so seven house pairs overlapped. Sweeping the scale against the layout tests found
+  the first clean one (0.0024) in a minute. The map's tree dots were drawn at a third of the trees' reach, so the trees
+  had to be placed, not read.
+- **Area does not predict a stroked face's cost.** The Lead scaled S1's triangles by area and count and came in 4% to 6%
+  under at every rung. Fable's probe with the real tracer found why: a wall's ribbon count goes with its width over its
+  eave, so a cottage's 0.09-high walls cost three times a painting house's. Measure with the real builder before a
+  budget decides anything. A probe that first reproduces the shipped count to the triangle is trustworthy.
+- **Check what each camera frames before paying for it.** A plan-view bearing test over every station and orientation
+  found one tree no station ever frames, about 36,000 triangles for nothing.
+- **Keep a decimation's anchors.** "Every k-th sample and the ends" dropped the seed sample the drape anchors on, so 37
+  ribbons vanished at stride 4. Before thinning a list, find every index another function looks up in it.
+
