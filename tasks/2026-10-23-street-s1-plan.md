@@ -114,7 +114,8 @@ worktree on 5181 (`npx vite --port 5181 --strictPort --host 127.0.0.1`). The Lea
 - [ ] **Step 5:** Commit the tools: `chore(capture): --dpr, p50, --wait-for and the village hash (S1 task 0)`.
 
 The street's budget: its scene's `info.triangles` at most the diorama's from Step 4 (the same sky, the foreground
-swapped like for like), desktop p95 ≤ 16.7 ms at DPR 1.5. Mark's phone reading on production
+swapped like for like), desktop p95 at most 0.5 ms above the diorama's at DPR 1.5 (Task 0 measured 17.3 ms: the
+headless browser is locked to 60 Hz, so 16.7 ms is the floor, not a bar). Mark's phone reading on production
 (`starrynight.markma.dev/?perf=1`) is asked for by the Lead. It does not block the build.
 
 ### Task 1: The stroke scale, measured (Lead) — done 2026-10-23
@@ -452,7 +453,7 @@ Modify `src/scene/villageGeometry.ts`.
 | G4 | the flat panels: G4a (CPU, the marks) and G4b (GPU, the material) |
 | G5 | the sky's method chosen from the 16 frames, no gradient band at any station |
 | G6 | the palette gate: ΔE76 < 10 per class, the three controls exit 1 |
-| G7 | perf at DPR 1.5: desktop p95 ≤ 16.7 ms, triangles ≤ the diorama's, then Mark's phone reading |
+| G7 | perf at DPR 1.5, like for like: desktop p95 at most 0.5 ms above Task 0's 17.3 ms, triangles ≤ 1,444,930, then Mark's phone reading |
 | G8 | reduced motion, the fresh-session street, the failed loads, rotation |
 | G9 | the captures opened at 1:1, every defect named, the montages built |
 | G10 | Fable's code review answered, its confirmation read |
