@@ -60,7 +60,7 @@ test('a face maps its crop\'s corners exactly, and mirror swaps the pigment left
   const points = positionsOf(strokes.arrays)
   assert.ok(points.length > 0)
   for (const p of points) {
-    assert.ok(p.x > -0.05 && p.x < 0.65 && p.y > -0.05 && p.y < 0.25 && Math.abs(p.z - 0.002) < 1e-9, `on the face: ${p.toArray()}`)
+    assert.ok(p.x > -0.05 && p.x < 0.65 && p.y > -0.05 && p.y < 0.25 && p.z >= 0.002 - 1e-9 && p.z <= 0.002 + 15 * 0.00015 + 1e-9, `on the face: ${p.toArray()}`)
   }
   // pigment: a source split down its middle; the face's left edge carries the source's left unless mirrored
   const [x0, , x1] = STREET_SOURCES.wallA

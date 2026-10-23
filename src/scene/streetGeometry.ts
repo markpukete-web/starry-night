@@ -130,7 +130,7 @@ function ink(ctx: Context, owner: string, refHeight: number, edges: [Vector3, Ve
 
 /** An opening on a wall face: a dark (or lit) quad over the strokes, framed in a thin ink. */
 function opening(ctx: Context, face: StreetFace, cu: number, cv: number, w: number, h: number, lit: boolean, seed: number): void {
-  const at = (s: number, t: number) => face.origin.clone().addScaledVector(face.u, s).addScaledVector(face.v, t).addScaledVector(face.normal, 0.0035)
+  const at = (s: number, t: number) => face.origin.clone().addScaledVector(face.u, s).addScaledVector(face.v, t).addScaledVector(face.normal, 0.0055)
   const quad = [at(cu - w / 2, cv - h / 2), at(cu + w / 2, cv - h / 2), at(cu + w / 2, cv + h / 2), at(cu - w / 2, cv + h / 2)]
   polygon(ctx.windows, quad, lit ? WINDOW_LIT : WINDOW_DARK)
   const frame: StreetFace = { ...face, refHeight: face.v.length() * FRAME }

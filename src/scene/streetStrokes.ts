@@ -68,7 +68,15 @@ export const SOURCE_STROKES: Record<StreetSourceName, { width: [number, number];
 export const OUTLINE_FRACTION = 0.14
 /** the strokes' lift off the face, the outlines' off the strokes (world units at the street's scale, a house 0.2) */
 export const STROKE_LIFT = 0.002
-export const OUTLINE_LIFT = 0.003
+/**
+ * Each ribbon of a face rides its own level over `STROKE_LIFT`, so overlapping ribbons have an order: at one shared
+ * lift the coplanar ribbons z-fought into rectangular patches close to the camera (the path, passes 3 and 4). Sixteen
+ * levels 0.15 mm apart: the depth buffer resolves 0.15 mm out to about 3 units with the near plane at 0.004.
+ */
+export const LIFT_LEVELS = 16
+export const LIFT_STEP = 0.00015
+/** above the highest ribbon level */
+export const OUTLINE_LIFT = 0.005
 /** the moon's share in a face's value: a face to the moon reads lighter, its back darker (the houses' volume) */
 export const STREET_MOON_LIFT = 0.25
 const COLUMNS = 3
@@ -326,9 +334,10 @@ export function traceFace(face: StreetFace, flow: ImageData2D, painting: ImageDa
   const colour = new Color()
   const pathTone = new Color(PATH_LIFT.toward)
   let emitted = 0
-  const point = (px: number, py: number) =>
-    face.origin.clone().addScaledVector(face.u, px).addScaledVector(face.v, 1 - py).addScaledVector(face.normal, STROKE_LIFT)
-  for (const ribbon of ribbons) {
+  const point = (px: number, py: number, lift: number) =>
+    face.origin.clone().addScaledVector(face.u, px).addScaledVector(face.v, 1 - py).addScaledVector(face.normal, lift)
+  for (const [index, ribbon] of ribbons.entries()) {
+    const lift = STROKE_LIFT + (index % LIFT_LEVELS) * LIFT_STEP
     const columns = ribbonColumns(ribbon, crop.width, crop.height, config.taper, COLUMNS)
     const keep = columns.map((step) => step.every(([px, py]) => distanceToPolygon(px * width, (1 - py) * height, polygon) <= allowance))
     let k = 0
@@ -340,7 +349,7 @@ export function traceFace(face: StreetFace, flow: ImageData2D, painting: ImageDa
       let end = k
       while (end + 1 < columns.length && keep[end + 1]) end++
       if (end - k + 1 >= 3) {
-        const steps = columns.slice(k, end + 1).map((step) => step.map(([px, py]) => point(px, py)))
+        const steps = columns.slice(k, end + 1).map((step) => step.map(([px, py]) => point(px, py, lift)))
         const colours = ribbon.colours.slice(k, end + 1).map(([r, g, b]) => {
           colour.setRGB(r, g, b, SRGBColorSpace)
           if (face.kind === 'path') colour.lerp(pathTone, PATH_LIFT.share)
