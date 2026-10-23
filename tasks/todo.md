@@ -1,6 +1,15 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-23 (evening): the street S1b plan, both reviews in, the revision next
+## Pickup — 2026-10-24 (morning): the street S1b built, gated and reviewed overnight; Mark's gate next
+
+Mark, leaving for the night: "finish all the slices and completed all the visual gates and code gates before present to
+me". S1b (the village lane) is complete through Task 11 on `feat/street-s1b-lead` at `305aefe`, local, not merged, not
+pushed. The Lead's gate G1 to G11 and Fable's two reviews are done (review 1 FIX, fixed; the confirmation read FIX on
+C7, fixed). Start with `tasks/2026-10-23-street-s1b.md`, its Pickup section: the live URL, the sheets, and six
+decisions parked for Mark (does it read as a village, the moonlight's ambient, the gate's fog, stop 4's p95, the
+cottage door, the ground and path within the budget). Slices 2 to 4 wait for his verdict.
+
+## Pickup — 2026-10-23 (evening, superseded): the street S1b plan, both reviews in, the revision next
 
 Slice 1's street failed Mark's gate ("flat and dull", then "cardboard"). The redesign is an invented village lane at
 eye level (the design's last section, Mark approved the map). The plan is `tasks/2026-10-23-street-s1b-plan.md`. Mark
