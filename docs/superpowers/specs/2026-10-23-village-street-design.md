@@ -156,8 +156,9 @@ These are the Lead's, not Mark's words:
   (`?perf=1`). The only phone reading on record predates E1 to E4 (`tasks/todo.md:470`). The street's triangle
   budget is the headroom under 60 fps and 30 fps from that measurement.
 - **Strokes.** A new stroke generator for the houses is allowed: it is new code, not a dependency. It reuses the
-  existing tracer and ribbon code where they fit. The houses and the church are built in code. A modelling tool or
-  any new npm package is a dependency question for Mark.
+  existing tracer and ribbon code where they fit. Everything in the street is built in code: the houses, the church,
+  the trees and Vincent. No Blender (Mark, 2026-10-23: "keep it in code"). Any new npm package is a dependency
+  question for Mark.
 - **The hand** (C8). The hand acts on the grass under the pointer. Unlike D1, the hand's world point is re-cast every
   frame the camera moves, not only when the pointer moves, so it stays under a still mouse or a resting finger while
   Vincent walks. On a phone, a tap inside Vincent's silhouette stops or starts him, and a touch anywhere else is the
