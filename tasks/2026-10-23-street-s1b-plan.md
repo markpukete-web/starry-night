@@ -3,6 +3,10 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or
 > superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+**Revision 3 (2026-10-23, night).** Fable's confirmation read of revision 2 (`plan-confirm-fable.md`) returned CONFIRM
+with N1 and N2 at P2, and measured the street's triangles with the real tracer. Task 0 measured the non-street share.
+Revision 3 answers N1, N2 and Fable's notes. The section "What revision 3 changed" lists each change.
+
 **Revision 2 (2026-10-23, night).** Revision 1 (`a107891`) drew two reviews: the worker's (GAPS, 25 questions) and
 Fable's (REVISE, F1 and F2 at P1, F3 to F9 at P2). Both reports are in `scratch/street-s1b-2026-10-23/`. This revision
 answers every item. The section "What revision 2 changed" at the end maps each finding to its answer. The layout numbers
@@ -63,24 +67,35 @@ Herdr workspace `w4`, tab `w4:t1`. Lead: Claude (Opus 5.5) at `w4:p1`. Reviewer:
 The cap is 1,444,930 drawn triangles at DPR 1.5 (S1's G7, the diorama's own count). The street mode spends it on three
 things. Task 0 measures the first. Tasks 5 and 7 set the other two.
 
-1. **The non-street share.** The sky and the spike's life (hills, fireflies, glows) drawn in street mode. Fable derived
-   658,764 from S1's G7 line (1,322,544 drawn less the street's 663,780). Task 0 measures it: `info.triangles` less
-   `__streetCounts.triangles` at stations 0, 2 and 4 on `2278cc5`, the largest of the three.
+1. **The non-street share: 660,388, measured.** The sky and the spike's life (hills, fireflies, glows) drawn in street
+   mode. Task 0 measured `info.triangles` less `__streetCounts.triangles` (663,780) at stations 0, 2 and 4 on `2278cc5`,
+   desktop and mobile. The largest is station 4's mobile frame, 1,324,168 (`scratch/street-s1b-2026-10-23/t0/`).
 2. **The street's cypress.** The diorama's tree is 537,816 triangles (solid 3,048, strokes 534,768), and `scale` does
-   not change that. Task 5 adds a `stride` prop and the Lead picks the stride at stop 0 from 1:1 captures.
+   not change that. Task 5 adds a `stride` prop and the Lead picks the stride at stop 0 from 1:1 captures. Fable's probe
+   with the seed kept (N1): strokes 271,188 at stride 2, 184,356 at 3, 140,184 at 4.
 3. **The street.** `buildStreet(...).counts.triangles`. `STREET_TRIANGLE_BUDGET` in `streetLayout.ts` is 1,444,930 less
    the two numbers above, written in once both are measured.
 
-The Lead's estimate, for the decision only (not a gate number). Method: S1's components (Fable's probe at `5fc2774`:
-ground 214,836, house and church strokes 319,604, three trees 109,158, the rest 20,182), scaled by area or count. The
-ground grows about 1.2× (the near band runs to 2.86 instead of 1.95, the far band shrinks), the path and the square
-about 3.2×. Ten houses are 1.25× S1's eight. Four trees are 1.33× three. Roof edges and cottage undersides are solid
-underpaint, not strokes, so they cost little. That gives about 839,000 before detail. Half density on the ground
-farther than 0.6 from the lane and on the houses farther than 0.54 from every station camera gives about 712,000. With
-the cypress at stride 4 (about 137,000) the street mode needs about 849,000 against a share of about 786,000. Half
-density at 0.46 brings it to about 805,000. The estimate's error is about ±15%, so the build may fit or miss by a little.
-Task 7 applies the levers in a fixed order and stops for Mark if the last one does not fit. Mark then decides whether to
-raise the triangle cap, with his phone's frame rate as the check.
+At stride 4 the street keeps 1,444,930 − 660,388 − 143,232 = 641,310.
+
+Fable measured the street with the real tracer (`plan-confirm-fable.md`, section 4). Its probe reproduces S1's street
+to the triangle (663,780), then builds revision 2's faces: ground, path and square 309,394, ten houses 435,234, the
+church 45,734, four trees 145,544, in all 935,906 before detail. A cottage costs 58,000 to 64,000 triangles against a
+painting house's 26,000 to 36,000, because a wall's ribbon count scales with its width over its eave, and a cottage's
+walls are 0.09 high. With `DETAIL.house` at 0.54, 0.5 and 0.46, the street measured 740,982, 724,618 and 710,910.
+
+Revision 3 adds two levers, both measured or checked:
+
+- **Cottage walls and gables take `STREET.wallRef` (0.2) as their stroke reference** (Task 2). The painting houses'
+  eaves are 0.18 to 0.3, so one brush size then runs through the village, instead of finer strokes on the low walls.
+  Fable measured it: 696,466 at 0.54 and 666,394 at 0.46.
+- **The olive at map (860, 930) is not built.** A plan-view check of every station's frame, landscape and portrait
+  (`probe-frame.mjs` in the Lead's scratchpad), finds it in no frame. It costs about 36,000 triangles for nothing.
+  Every house is in at least one frame. L1 and R1 are in stop 0's landscape frame only, at its edge.
+
+With both, the Lead's estimate is about 656,000 at 0.54, 641,000 at 0.5 and 626,000 at 0.46 against 641,310. Task 7
+applies the ladder in a fixed order and stops for Mark if the last rung does not fit. Mark then decides whether to raise
+the triangle cap, with his phone's frame rate as the check.
 
 ## Review focus
 
@@ -193,8 +208,9 @@ raise the triangle cap, with his phone's frame rate as the check.
   Each house's centre, `yaw` and `toPath` follow "The map's frame". A storey's height is `eave / storeys`. The door
   and each window row sit on the ground storey as S1 places them on a one-storey wall, and a two-storey house repeats
   the window row on the upper storey. Until Task 2, a cottage is built by `house` with the placeholder `thatch` source.
-- [ ] **Step 5: The trees and the cypress.** `TREE_SPECS` (template, map x, map y): `olive-right` (860, 930),
-  `olive-church` (440, 610), `orchard-lower` (720, 240), `olive-right` (270, 240). Each tree's centre follows "The
+- [ ] **Step 5: The trees and the cypress.** `TREE_SPECS` (template, map x, map y): `olive-church` (440, 610),
+  `orchard-lower` (720, 240), `olive-right` (270, 240). (Revision 2's fourth, `olive-right` at (860, 930), is in no
+  station's frame. See "The triangle budget".) Each tree's centre follows "The
   map's frame". The cypress follows stop 0's composition: from stop 0's camera, 0.9 along the direction 26° left of
   stop 0's landscape heading (Step 6). Height 0.9. The probe puts it at local (0.555, −0.481).
 - [ ] **Step 6: The stations.** Stations stand at `t` 0, 0.23, 0.44, 0.66 and 0.9 (the map's five stops projected onto
@@ -230,6 +246,7 @@ raise the triangle cap, with his phone's frame rate as the check.
   two roof planes, each with an underside parallel to it at `COTTAGE.thickness`, edge faces along the eaves and the
   rakes, the eave overhanging the walls by `COTTAGE.overhang`, four walls and two gables. FAIL.
 - [ ] **Step 3:** `cottage` clads the walls, the gables and the two roof planes with strokes (the roof with `thatch`).
+  The walls and the gables take `STREET.wallRef` as their stroke reference, not the eave.
   The undersides and the edges are solid underpaint polygons: the underside in `OPENING_DARK`, the edges in the thatch's
   mean colour darkened by `OPENING_DARK`. Every stroked face is inked. `buildStreet` calls `cottage` for `type:
   'cottage'` and `house` otherwise. The lean (Task 4) wraps both.
@@ -287,13 +304,14 @@ raise the triangle cap, with his phone's frame rate as the check.
 - Produces: `BrushCypress` props `at?: readonly [number, number, number]` (default `BASE`), `scale?: number` (default
   1), `viewFrom?: readonly [number, number, number]` (default `DIORAMA_CAMERAS.design.position`), `stride?: number`
   (default 1). `cypressViewBearing` takes `at`, not `BASE`. With no new prop the component is today's, bit for bit.
-- `strideSamples(ribbon, k)`: keeps every `k`-th sample of a traced ribbon, its first and last always, before
-  `ribbonColumns` and `drapeRibbon`. `k` 1 returns the ribbon unchanged.
+- `strideSamples(ribbon, k)`: keeps every `k`-th sample of a traced ribbon, its first and last always, and the sample
+  that is `ribbon.seedSample` always (`drapeRibbon` anchors the kept run on it, Fable N1), before `ribbonColumns` and
+  `drapeRibbon`. `k` 1 returns the ribbon unchanged.
 - The dev seam `window.__cypressTriangles` (the solid's and the strokes' index counts over 3, set after the build).
 
-- [ ] **Step 1: Test first.** `strideSamples keeps the ends and every k-th sample`: on a synthetic ribbon of 11
-  samples, `k` 1 returns all 11, `k` 4 returns samples 0, 4, 8 and 10, and every per-sample array keeps its length in
-  step. FAIL.
+- [ ] **Step 1: Test first.** `strideSamples keeps the ends, the seed and every k-th sample`: on a synthetic ribbon of
+  11 samples with its seed at index 5, `k` 1 returns all 11, `k` 4 returns samples 0, 4, 5, 8 and 10, and every
+  per-sample array keeps its length in step. For `k` 1 to 4 the result includes `seedSample`. FAIL.
 - [ ] **Step 2:** Add the props and `strideSamples`. PASS. The street mounts
   `<BrushCypress at={STREET_CYPRESS_AT} scale={0.9 / 2.7} viewFrom={STOP0_CAMERA} stride={…} />` inside its group,
   without `touch`, with `alive={false}`. `STOP0_CAMERA` is one module constant in `streetLayout.ts`.
@@ -320,8 +338,9 @@ raise the triangle cap, with his phone's frame rate as the check.
   reduced: boolean })`, `litWindows(windows): { centre: Vector3; normal: Vector3; width: number }[]`,
   `hillsGeometry(): BufferGeometry`, `lifeTime(pinned: number | undefined, elapsed: number, reduced: boolean): number`,
   `swayInjection(): Omit<AliveInjection, 'key'>` and the life's time uniform (both exported, `Street.tsx` applies the
-  sway to the trees' materials), `LIFE = { sway: 0.06, fireflies: 160, glow: '#f2cf55', pool: [0.16, 0.5], halo: [0.09,
-  0.85] }`, `HILL_PAINT = [990, 858, 1290, 898]`. `window.__streetLifeBuilds` counts builds. `Street` takes
+  sway to the trees' materials), `LIFE = { sway: 0.06, fireflies: 160, fireflyT: [0.05, 1.0], glow: '#f2cf55', pool:
+  [0.16, 0.5], halo: [0.09, 0.85] }` (`fireflyT` is the range of `t` the fireflies stand over: the spike's 0.25 to 1.4
+  was the old 1.2 lane, and on the new lane 1.4 is 0.96 past its end, through the church), `HILL_PAINT = [990, 858, 1290, 898]`. `window.__streetLifeBuilds` counts builds. `Street` takes
   `reduced: boolean` from `DioramaExperience.tsx`, which already holds it.
 
 - [ ] **Step 1: Tests first.**
@@ -366,7 +385,7 @@ raise the triangle cap, with his phone's frame rate as the check.
 - [ ] **Step 2:** Implement. Run the tests.
 - [ ] **Step 3: If the budget test fails,** set `DETAIL.house` to 0.5, then 0.46, and rerun after each. The probe's
   camera distances: L1 0.663, R1 0.650, L4 0.577, L5 0.555, R4 0.550, R3 0.525, R2 0.467, L3 0.448, L2 0.432, R5
-  0.411. No step lands within 0.009 of a house. If it still fails at 0.46, stop and report the street's triangles per mesh to the Lead. The Lead takes the
+  0.411. The nearest house to a step is R2, 0.007 from 0.46. If it still fails at 0.46, stop and report the street's triangles per mesh to the Lead. The Lead takes the
   choice to Mark. Do not lower anything else.
 - [ ] **Step 4:** PASS. Commit: `perf(street): detail falls with distance from the stations (S1b task 7)`.
 
@@ -397,7 +416,9 @@ raise the triangle cap, with his phone's frame rate as the check.
   `info.triangles` ≤ 1,444,930 and desktop p95 ≤ 17.8 ms at each.
 - [ ] **Step 3:** Create `scripts/check-street-cypress-hang.mjs`: open `?street=1&station=0` with Playwright, hold the
   request for `/reference/cypress-flow.png` unanswered (`page.route` with a handler that never responds), and assert
-  `__streetReady` within the street's timeout and the street's meshes present (`__streetCounts.triangles` > 0). Then
+  `__streetReady` within 25 s (the app has no street timeout, and `check-street-rotation.mjs` waits 25 s) and the
+  street's meshes present (`__streetCounts.triangles` > 0). `page.goto` waits for `domcontentloaded`, because the held
+  request keeps `load` from firing. Then
   break the guard on purpose (make `__streetReady` wait for the cypress), run the check again to see it fail, and revert. Write
   both runs to `$E/t10/`.
 - [ ] **Step 4:** `check-reduced-motion.mjs` with `?street=1&station=2`, `check-street-rotation.mjs`, the G3 matrix and
@@ -459,3 +480,19 @@ The worker's gaps (`plan-review-worker.md`):
   test uses `STREET_HOUSES[0]`'s front wall.
 - Task 7: `STREET_TRIANGLE_BUDGET` in `streetLayout.ts`. The report's face lines gain `density`.
 - Task 10: the perf and colour commands are written out.
+
+## What revision 3 changed
+
+Fable's confirmation read (`plan-confirm-fable.md`, CONFIRM) and Task 0's numbers:
+
+- **N1 (P2), `strideSamples` dropped the drape's anchor.** Accepted. It keeps `ribbon.seedSample` too, and the test
+  asserts it at every `k` (Task 5).
+- **N2 (P2), the ladder missed at every rung.** Accepted. "The triangle budget" now carries the measured share, Fable's
+  measured street, and two new levers: cottage walls and gables at `STREET.wallRef` (Task 2) and the unseen olive not
+  built (Task 1). The stop for Mark stays. Fable proposed asking Mark about the cap at Task 8. The Lead keeps the cap
+  and asks only if the ladder's last rung misses, because the levers are expected to close it.
+- **Notes.** The fireflies' range is `LIFE.fireflyT`, 0.05 to 1.0 on the new lane (Task 6). The hang check waits 25 s
+  and loads to `domcontentloaded` (Task 10). The sentence about `DETAIL`'s margins is corrected (R2 is 0.007 from 0.46).
+  The two crowns 0.023 and 0.024 from a wall pass the test and are a look-pass matter.
+- **Task 0.** The non-street share is 660,388 (station 4's mobile frame). The worker's summary took the desktop frames
+  only (660,124).
