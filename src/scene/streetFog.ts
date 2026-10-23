@@ -2,10 +2,11 @@ import { Color } from 'three'
 import type { AliveInjection } from './aliveMaterial.ts'
 import { PALETTE } from './palette.ts'
 
+/** pass 3: near 0.6 and far 1.6 turned the far ground into a flat band of fog at the horizon */
 export const FOG = {
   colour: PALETTE.skyHorizon,
-  near: 0.6,
-  far: 1.6,
+  near: 0.8,
+  far: 3.5,
 } as const
 
 export function fogInjection(

@@ -22,6 +22,8 @@ type Strokes = { arrays: BrushArrays; stroke: number[]; seed: number[] }
 export type StreetBuild = {
   underpaint: BrushArrays
   strokes: Strokes
+  /** the ground's and the path's strokes, drawn in their own calmer body (pass 4) */
+  ground: Strokes
   outlines: Strokes
   windows: BrushArrays
   trees: LandTrees
@@ -100,6 +102,7 @@ type Context = {
   painting: ImageData2D
   underpaint: BrushArrays
   strokes: Strokes
+  ground: Strokes
   outlines: Strokes
   windows: BrushArrays
   report: StreetBuild['report']
@@ -111,7 +114,7 @@ function clad(ctx: Context, owner: string, name: string, face: StreetFace): void
   const [r, g, b] = sourceUnderpaint(ctx.painting, face.source)
   polygon(ctx.underpaint, facePolygon(face), new Color().setRGB(r, g, b, SRGBColorSpace))
   const traced = traceFace(face, ctx.flow, ctx.painting)
-  append(ctx.strokes, traced)
+  append(face.kind === 'ground' || face.kind === 'path' ? ctx.ground : ctx.strokes, traced)
   ctx.ribbons += traced.ribbons
   ctx.report.faces.push({ owner, name, ribbons: traced.ribbons })
 }
@@ -254,6 +257,28 @@ function ground(ctx: Context): void {
       k++
     }
   }
+  // pass 3: the far ground to the horizon, in larger tiles with larger strokes (perspective shrinks them), so no unpainted
+  // band shows between the ground's edge and the painted sky (stations 2 and 3 showed one at 1.95)
+  const farFrom = to
+  const farTo = 6
+  const farSide = 2.5
+  const farAlong = Math.round(farTo - farFrom)
+  const farAcross = 5
+  for (let i = 0; i < farAlong; i++) {
+    for (let j = 0; j < farAcross; j++) {
+      const a = farFrom + (i * (farTo - farFrom)) / farAlong
+      const b = (2 * farSide) / farAcross
+      const origin = forward.clone().multiplyScalar(a).addScaledVector(across, -farSide + j * b)
+      clad(ctx, 'ground', `far ${i},${j}`, orientedFace(origin, across.clone().multiplyScalar(b), forward.clone().multiplyScalar((farTo - farFrom) / farAlong), below, { shape: 'quad', kind: 'ground', source: 'field', refHeight: STREET.wallRef * 2.5, seed: 0x6600 + i * 7 + j, mirror: (i + j) % 2 === 1 }))
+    }
+  }
+  // the near ground's sides beyond the houses, out to the far tiles' width
+  for (const sign of [-1, 1]) {
+    for (let i = 0; i < alongTiles; i++) {
+      const origin = forward.clone().multiplyScalar(from + i * tileAlong).addScaledVector(across, sign > 0 ? side : -farSide)
+      clad(ctx, 'ground', `side ${sign},${i}`, orientedFace(origin, across.clone().multiplyScalar(farSide - side), forward.clone().multiplyScalar(tileAlong), below, { shape: 'quad', kind: 'ground', source: 'field', refHeight: STREET.wallRef * 2, seed: 0x6700 + i * 3 + (sign > 0 ? 1 : 0), mirror: i % 2 === 0 }))
+    }
+  }
   // the path, raised a hair over the ground's strokes, in segments along its bend
   const width = 0.12
   const segments = 8
@@ -275,6 +300,7 @@ export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | nu
     painting,
     underpaint: makeBrushArrays(),
     strokes: { arrays: makeBrushArrays(), stroke: [], seed: [] },
+    ground: { arrays: makeBrushArrays(), stroke: [], seed: [] },
     outlines: { arrays: makeBrushArrays(), stroke: [], seed: [] },
     windows: makeBrushArrays(),
     report: { faces: [], outlines: [], windows: [], church: { belfryWidth: 0, spireHeight: 0 } },
@@ -291,10 +317,11 @@ export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | nu
   })
   ctx.report.church = church(ctx)
   const trees = buildLandTrees(flow, painting, masses, 0x7ee5, STREET_TREES, streetGroundAt, streetMassConfig)
-  const triangles = (ctx.underpaint.indices.length + ctx.strokes.arrays.indices.length + ctx.outlines.arrays.indices.length + ctx.windows.indices.length + trees.solid.indices.length + trees.strokes.indices.length) / 3
+  const triangles = (ctx.underpaint.indices.length + ctx.strokes.arrays.indices.length + ctx.ground.arrays.indices.length + ctx.outlines.arrays.indices.length + ctx.windows.indices.length + trees.solid.indices.length + trees.strokes.indices.length) / 3
   return {
     underpaint: ctx.underpaint,
     strokes: ctx.strokes,
+    ground: ctx.ground,
     outlines: ctx.outlines,
     windows: ctx.windows,
     trees,
@@ -318,6 +345,7 @@ export function buildFlatPanel(painting: ImageData2D | null, flow: ImageData2D |
     painting,
     underpaint: makeBrushArrays(),
     strokes: { arrays: makeBrushArrays(), stroke: [], seed: [] },
+    ground: { arrays: makeBrushArrays(), stroke: [], seed: [] },
     outlines: { arrays: makeBrushArrays(), stroke: [], seed: [] },
     windows: makeBrushArrays(),
     report: { faces: [], outlines: [], windows: [], church: { belfryWidth: 0, spireHeight: 0 } },
@@ -340,6 +368,6 @@ export function buildFlatPanel(painting: ImageData2D | null, flow: ImageData2D |
   })
   const tree = STREET_TREES.find((t) => t.id === 'orchard-lower') ?? STREET_TREES[0]
   const trees = buildLandTrees(flow, painting, masses, 0x7ee5, [{ ...tree, x: 1.35, z: 0 }], streetGroundAt, streetMassConfig)
-  const triangles = (ctx.underpaint.indices.length + ctx.strokes.arrays.indices.length + ctx.outlines.arrays.indices.length + trees.solid.indices.length + trees.strokes.indices.length) / 3
-  return { underpaint: ctx.underpaint, strokes: ctx.strokes, outlines: ctx.outlines, windows: ctx.windows, trees, counts: { ribbons: ctx.ribbons, triangles, builds: 0 }, report: ctx.report }
+  const triangles = (ctx.underpaint.indices.length + ctx.strokes.arrays.indices.length + ctx.ground.arrays.indices.length + ctx.outlines.arrays.indices.length + trees.solid.indices.length + trees.strokes.indices.length) / 3
+  return { underpaint: ctx.underpaint, strokes: ctx.strokes, ground: ctx.ground, outlines: ctx.outlines, windows: ctx.windows, trees, counts: { ribbons: ctx.ribbons, triangles, builds: 0 }, report: ctx.report }
 }

@@ -3,7 +3,7 @@ import { useThree } from '@react-three/fiber'
 import { BufferAttribute, BufferGeometry, DoubleSide, MeshBasicMaterial, type PerspectiveCamera } from 'three'
 import { concatInjections, injectAlive, type AliveInjection } from './aliveMaterial.ts'
 import type { BrushArrays } from './brushForms.ts'
-import { CYPRESS_STROKE_BODY, strokeGlslWith } from './cypressStrokeShader.ts'
+import { CYPRESS_STROKE_BODY, strokeGlslWith, type StrokeBody } from './cypressStrokeShader.ts'
 import type { BakedMass } from './landDomes.ts'
 import { buildFlatPanel, buildStreet, FLAT_VIEW, type StreetBuild, type StreetCounts } from './streetGeometry.ts'
 import { FOG, fogInjection } from './streetFog.ts'
@@ -27,6 +27,13 @@ function plainGeometry(a: BrushArrays): BufferGeometry {
   g.computeBoundingSphere()
   return g
 }
+
+/**
+ * The ground's and the path's body (pass 4): the cypress's (E4) without its gap discards, with soft lanes, the dry brush
+ * only in the last 15% and half the fray. At walking distance E4's hard two-tone lanes and early dry brush cut the
+ * path's strokes into rectangles across them, close to the camera.
+ */
+const STREET_GROUND_BODY: StrokeBody = { ...CYPRESS_STROKE_BODY, gaps: null, laneEdge: null, dryFrom: 0.85, fray: 0.08 }
 
 const NO_INJECTION = { uniforms: {}, vertexHead: '', vertexBody: '', fragmentHead: '', fragmentBody: '' }
 
@@ -112,6 +119,7 @@ export default function Street() {
     return {
       solid: material('street-solid', null, fog(), false),
       strokes: material('street-strokes', strokeGlslWith(CYPRESS_STROKE_BODY), fog(), true),
+      ground: material('street-ground', strokeGlslWith(STREET_GROUND_BODY), fog(), true),
       // pass 1: the land's body broke the curls into combs at walking distance; the cypress's (E4) holds them
       trees: material('street-trees', strokeGlslWith(CYPRESS_STROKE_BODY), fog(), true),
     }
@@ -123,6 +131,7 @@ export default function Street() {
     return {
       underpaint: plainGeometry(build.underpaint),
       strokes: strokeGeometry(build.strokes.arrays, build.strokes.stroke, build.strokes.seed),
+      ground: strokeGeometry(build.ground.arrays, build.ground.stroke, build.ground.seed),
       outlines: strokeGeometry(build.outlines.arrays, build.outlines.stroke, build.outlines.seed),
       windows: plainGeometry(build.windows),
       treeSolid: plainGeometry(build.trees.solid),
@@ -135,6 +144,7 @@ export default function Street() {
   return (
     <group name="street" position={offset}>
       <mesh name="street-underpaint" geometry={meshes.underpaint} material={materials.solid} renderOrder={0} />
+      <mesh name="street-ground" geometry={meshes.ground} material={materials.ground} renderOrder={1} />
       <mesh name="street-strokes" geometry={meshes.strokes} material={materials.strokes} renderOrder={1} />
       <mesh name="street-windows" geometry={meshes.windows} material={materials.solid} renderOrder={2} />
       <mesh name="street-outlines" geometry={meshes.outlines} material={materials.strokes} renderOrder={3} />

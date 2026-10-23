@@ -8,7 +8,7 @@ import { emptyTouchStore, type TouchStore } from './touchSurge'
 import { useTouchInput } from './useTouchInput'
 import { emptyLandStore, type LandStore } from './landTouch'
 import { ARRIVAL, ArrivalClock, arrivalCamera, arrivalFrame, rememberArrived } from './arrival'
-import { isStreetMode, touchEnabled } from './streetEntry'
+import { isStreetMode, streetSkyAnchor, touchEnabled } from './streetEntry'
 // (ARRIVAL.reveal feeds the chrome's fade-in through a custom property; the clock owns every other constant)
 import {
   DIORAMA_CAMERAS,
@@ -227,6 +227,7 @@ function Scene({
   onArrived: () => void
 }) {
   const streetMode = useMemo(() => isStreetMode(typeof window !== 'undefined' ? window.location.search : ''), [])
+  const skyAnchor = useMemo(() => streetSkyAnchor(typeof window !== 'undefined' ? window.location.search : ''), [])
   const debug = readDebugMode()
   const view = readViewMode()
   // R3F's `size` is the canvas size and re-renders on resize. Reading window.inner* here instead
@@ -318,6 +319,7 @@ function Scene({
             debug={debug === 'flow' ? 'flow' : 'final'}
             /* a stable module constant, so the sky's home quaternion memo holds across renders */
             home={streetMode ? skyHome : defaultCamera}
+            anchor={skyAnchor}
           />
         )}
       </Suspense>
