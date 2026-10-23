@@ -62,8 +62,9 @@ the end.
 
 ## Roles
 
-Lead: Claude (`w4:p1`). Reviewer: Codex (`w4:p4`). Worker: Antigravity (`w4:p5`). Consultant: Fable (`w4:p6`), a
-second read when Codex runs low. The Lead builds Tasks 1, 3, 5 and 9 and gates every task. The worker builds Tasks 0,
+Lead: Claude (`w4:p1`). Reviewer: Fable (`w4:p6`, the Consultant tab), from 2026-10-23 when Codex's usage ran low
+(Mark: "please put your review to Fable instead"). Codex (`w4:p4`) read the plan and is held back. Worker:
+Antigravity (`w4:p5`). The Lead builds Tasks 1, 3, 5 and 9 and gates every task. The worker builds Tasks 0,
 2, 4, 6's plumbing, 7 and 8 from briefs, red test first, and reports evidence, not verdicts. The worker serves its
 worktree on 5181 (`npx vite --port 5181 --strictPort --host 127.0.0.1`). The Lead serves on 5182.
 
@@ -430,10 +431,10 @@ Modify `src/scene/villageGeometry.ts`.
 - [ ] **Step 3:** Retune. Re-run Tasks 7 and 8's gates. At most four passes. Stop at the first pass with no defect
   left.
 
-### Task 10: Review, gate and record (Lead, Codex)
+### Task 10: Review, gate and record (Lead, Fable)
 
 - [ ] **Step 1:** The Lead's own suite run in a clean worktree: `test:sky`, `tsc -b`, `build`, `eslint`.
-- [ ] **Step 2:** Codex's code review of the branch from a brief file. Fixes in one round. A confirmation read bounded
+- [ ] **Step 2:** Fable's code review of the branch from a brief file. Fixes in one round. A confirmation read bounded
   to its findings.
 - [ ] **Step 3:** The Lead's gate (G1–G11), the mutants run one at a time with the artefact (diff, red, restore,
   `git diff --exit-code`, green).
@@ -454,7 +455,7 @@ Modify `src/scene/villageGeometry.ts`.
 | G7 | perf at DPR 1.5: desktop p95 ≤ 16.7 ms, triangles ≤ the diorama's, then Mark's phone reading |
 | G8 | reduced motion, the fresh-session street, the failed loads, rotation |
 | G9 | the captures opened at 1:1, every defect named, the montages built |
-| G10 | Codex's code review answered, its confirmation read |
+| G10 | Fable's code review answered, its confirmation read |
 | G11 | the six mutants below, each red in its named test and green after the restore |
 
 The mutants (G11):
