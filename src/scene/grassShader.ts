@@ -41,7 +41,7 @@ varying float vPush;
 ${GRASS_BLADE_GLSL}
 `,
     vertexBody: /* glsl */ `
-vColor = vec4(aBladeColour * mix(${GRASS_BLADE.shade[0].toFixed(3)}, ${GRASS_BLADE.shade[1].toFixed(3)}, position.y), 1.0);
+vColor = vec4(aBladeColour * mix(${GRASS_BLADE.shade[0].toFixed(6)}, ${GRASS_BLADE.shade[1].toFixed(6)}, position.y), 1.0);
 `,
     vertexTransform: /* glsl */ `
 vec3 root = vec3(aRoot.x, 0.0, aRoot.y);
@@ -52,7 +52,7 @@ float lenToCam = length(toCam);
 vec2 dirToCam = lenToCam > 1e-5 ? toCam / lenToCam : vec2(0.0, 1.0);
 vec2 right = vec2(dirToCam.y, -dirToCam.x);
 float d = distance(worldRoot, cameraPosition);
-float widen = max(1.0, d / ${GRASS_BLADE.widenFrom.toFixed(3)});
+float widen = max(1.0, d / ${GRASS_BLADE.widenFrom.toFixed(6)});
 
 vec3 pos = grassBladeVertex(root, position.y, position.x, aHeight, aHalfWidth, aLean, aCurl, aYaw, right, widen);
 
@@ -63,14 +63,15 @@ vPush = length(push);
 float gust = clamp(0.4 + 0.6 * sin(uAliveTime * 0.9 + aRoot.x * 3.0 + aRoot.y * 2.0), 0.0, 1.0);
 float windAngle = uAliveTime * 1.6 + aRoot.x * 5.0 + aRoot.y * 7.0;
 vec2 windDir = vec2(cos(windAngle), sin(windAngle));
-vec2 wind = windDir * (${GRASS_BLADE.wind.toFixed(4)} * gust);
+vec2 wind = windDir * (${GRASS_BLADE.wind.toFixed(6)} * gust);
 
 float a = position.y;
-vec2 offset = (push * ${GRASS_BLADE.push.toFixed(4)} + wind) * (a * a);
+vec2 offset = (push * ${GRASS_BLADE.push.toFixed(6)} + wind) * (a * a);
 // displacement
 pos.xz += offset;
 pos.y = max(0.0, pos.y - 0.7 * length(offset) * a);
 transformed = pos;
+vFogDistance = -(modelViewMatrix * vec4(transformed, 1.0)).z;
 `,
     fragmentHead: /* glsl */ `
 uniform float uLift;
@@ -95,5 +96,12 @@ export function buildGrassMaterial(
     fray: 0.08,
   })
   const injection = grassInjection(trailTexture, trailRect)
-  return material('street-grass', strokeBody, fogInjection(), true, ids, injection)
+  return material(
+    'street-grass',
+    strokeBody,
+    { ...fogInjection(), vertexBody: '' },
+    true,
+    ids,
+    injection,
+  )
 }

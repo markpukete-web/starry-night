@@ -175,6 +175,7 @@ export default function StreetGrass({
       if (handRef.current.isOverride) return
       const rect = canvas.getBoundingClientRect()
       const inside =
+        e.target === canvas &&
         e.clientX >= rect.left &&
         e.clientX <= rect.right &&
         e.clientY >= rect.top &&
@@ -203,6 +204,7 @@ export default function StreetGrass({
       if (handRef.current.isOverride) return
       const rect = canvas.getBoundingClientRect()
       const inside =
+        e.target === canvas &&
         e.clientX >= rect.left &&
         e.clientX <= rect.right &&
         e.clientY >= rect.top &&
@@ -280,6 +282,7 @@ export default function StreetGrass({
     w.__grassCount = totalBlades
     w.__grassStamps = stampsRef.current
     w.__grassPeak = 0
+    w.__grassPeakAt = null
     w.__grassHandLive = 0
     w.__grassHit = null
     w.__grassHand = (x: number | null, y?: number) => {
@@ -298,6 +301,7 @@ export default function StreetGrass({
       delete w.__grassCount
       delete w.__grassStamps
       delete w.__grassPeak
+      delete w.__grassPeakAt
       delete w.__grassHandLive
       delete w.__grassHit
       delete w.__grassHand
@@ -337,14 +341,10 @@ export default function StreetGrass({
     }
 
     // Motion & pause mode
-    const isReducedMotion =
-      still ||
-      (typeof window !== 'undefined' &&
-        window.matchMedia('(prefers-reduced-motion: reduce)').matches)
-    const isPaused = reduced && !isReducedMotion
+    const isPaused = reduced && !still
     const mode: 'swing' | 'settle' | 'frozen' = isPaused
       ? 'frozen'
-      : isReducedMotion
+      : still
         ? 'settle'
         : 'swing'
 
@@ -400,11 +400,8 @@ export default function StreetGrass({
       lastHandHitRef.current = null
     }
 
-    // Vincent's feet (only while walking)
+    // Vincent's feet
     if (flags.vincent && mode === 'swing') {
-      const moved =
-        lastFeetTRef.current !== null &&
-        Math.abs(walkT - lastFeetTRef.current) > 1e-5
       const jumped =
         lastFeetTRef.current !== null &&
         Math.abs(walkT - lastFeetTRef.current) > 0.05
@@ -413,20 +410,18 @@ export default function StreetGrass({
         lastFeetHitRef.current = null
       }
 
-      if (moved) {
-        const { position: vPos } = vincentPlace(walkT)
-        const feetPos: [number, number] = [vPos[0], vPos[2]]
-        stampSegment(
-          trail,
-          lastFeetHitRef.current,
-          feetPos,
-          TRAIL.feet,
-          now,
-          'feet',
-        )
-        lastFeetHitRef.current = feetPos
-        stampsRef.current.feet++
-      }
+      const { position: vPos } = vincentPlace(walkT)
+      const feetPos: [number, number] = [vPos[0], vPos[2]]
+      stampSegment(
+        trail,
+        lastFeetHitRef.current,
+        feetPos,
+        TRAIL.feet,
+        now,
+        'feet',
+      )
+      lastFeetHitRef.current = feetPos
+      stampsRef.current.feet++
       lastFeetTRef.current = walkT
     } else {
       lastFeetHitRef.current = null
@@ -441,16 +436,27 @@ export default function StreetGrass({
 
     // Update seams
     let peak = 0
+    let peakAt: [number, number] | null = null
     let handLive = 0
+    let maxPush = -1
+    const [x0, z0] = trail.rect
+    const cols = trail.size[0]
     for (const [idx, texel] of trail.live) {
       if (texel.source === 'hand') handLive++
       const px = (trail.bytes[idx * 2] - 128) / 127
       const pz = (trail.bytes[idx * 2 + 1] - 128) / 127
       const mag = Math.hypot(px, pz)
       if (mag > peak) peak = mag
+      if (mag > maxPush) {
+        maxPush = mag
+        const c = idx % cols
+        const r = Math.floor(idx / cols)
+        peakAt = [x0 + (c + 0.5) * TRAIL.texel, z0 + (r + 0.5) * TRAIL.texel]
+      }
     }
 
     w.__grassPeak = peak
+    w.__grassPeakAt = peakAt
     w.__grassHandLive = handLive
   }, 0)
   /* eslint-enable react-hooks/immutability */
