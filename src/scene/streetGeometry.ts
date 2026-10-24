@@ -50,6 +50,9 @@ const OPENING_DARK = 0.3
 const WINDOW_DARK = new Color(PALETTE.ground).lerp(new Color(PALETTE.house), 0.12)
 /** the ground's and the path's base: the mean of the field source's darkest share (look pass 1) */
 const GROUND_BASE_SHARE = 0.4
+/** the grass's dark base: the field source's darkest share (S3 look pass 1: 0.2 left the verge's gaps at L 12 against the
+ * field's 22, and the ground's ΔE76 at 11.2) */
+const GRASS_BASE_SHARE = 0.4
 /** Look pass 3: the path's pale base stops this far short of its edges (0.2 of its width), so strokes draw the edge */
 const PATH_BASE_INSET = 0.024
 /** the roofs overhang the walls by this much along both axes */
@@ -562,7 +565,7 @@ function grassBaseStrip(ctx: Context): void {
   const dt = (tRange[1] - tRange[0]) / tSteps
   const dlat = (BANDS[1] - BANDS[0]) / latSteps
 
-  const dark = sourceUnderpaint(ctx.painting, 'field', 0.2)
+  const dark = sourceUnderpaint(ctx.painting, 'field', GRASS_BASE_SHARE)
   const groundBase = sourceUnderpaint(ctx.painting, 'field', GROUND_BASE_SHARE)
   const cDark = new Color().setRGB(dark[0], dark[1], dark[2], SRGBColorSpace)
   const cGround = new Color().setRGB(groundBase[0], groundBase[1], groundBase[2], SRGBColorSpace)
@@ -711,7 +714,7 @@ function flatGrassStrip(ctx: Context): void {
   const [cx, , cz] = FLAT_VIEW.position
   const y = 0.2
   const z = 1.45
-  const dark = new Color().setRGB(...sourceUnderpaint(ctx.painting, 'field', 0.2), SRGBColorSpace)
+  const dark = new Color().setRGB(...sourceUnderpaint(ctx.painting, 'field', GRASS_BASE_SHARE), SRGBColorSpace)
   polygon(ctx.underpaint, [new Vector3(0.56, 0.17, z - 0.05), new Vector3(1.04, 0.17, z - 0.05), new Vector3(1.04, 0.33, z - 0.05), new Vector3(0.56, 0.33, z - 0.05)], dark, 255)
   const rand = mulberry32(1)
   const template = bladeTemplate()

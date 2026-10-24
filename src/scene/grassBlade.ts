@@ -24,14 +24,14 @@ export const GRASS_BLADE = {
   /** rows of the ribbon less one: 2 triangles each */
   segments: 3,
   /** a clump's blade length before the tuft rule (Task 2) and the per-blade factor 0.75–1.25 */
-  height: 0.024,
+  height: 0.036,
   /** a blade's half-width at its widest: 4–7 times as long as wide, fatter than the painting's 8–11 (see above) */
-  halfWidth: [0.0018, 0.0026],
+  halfWidth: [0.0024, 0.0034],
   /** the width along the blade, as a share of the widest: blunt at the root, full from `full`, tapering from `taper` */
   profile: { root: 0.8, full: 0.15, taper: 0.7, tip: 0.4 },
   /** the bend from root to tip (radians), and the tip's largest angle from the vertical, so it arches over and falls */
   curve: [1.0, 2.0],
-  tipMax: 2.2,
+  tipMax: 1.8,
   /** blades a clump, the outermost blade's lean from the vertical (radians), and the roots' spread */
   clump: [5, 9],
   fan: 0.5,

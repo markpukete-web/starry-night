@@ -29,11 +29,11 @@ export const GRASS = {
    * Density starts at 0.22 from Task 1; tuned to 0.21 so the walk's worst point
    * fits inside GRASS.budget (38,515) with the larger bladeReach spheres; the budget test prints the worst point.
    */
-  density: 0.21,
+  density: 0.2,
   full: 82184,
   house: 0.012,
   cypress: 0.07,
-  top: 0.05,
+  top: 0.065,
   baseY: 0.001,
   footprint: { t: [-0.06, 0.97] as const, lat: [0.06, 0.6] as const },
   budget: 38515,
