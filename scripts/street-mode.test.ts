@@ -6,8 +6,36 @@ import { islandHeightAt } from '../src/scene/islandShape.ts'
 import { buildLandTrees, type BakedMass } from '../src/scene/landDomes.ts'
 import { LAND_MASSES } from '../src/scene/landMasses.ts'
 import { buildStreet } from '../src/scene/streetGeometry.ts'
-import { readStreetFlags, streetReadiness, touchEnabled } from '../src/scene/streetMode.ts'
+import { readStreetFlags, streetReadiness, touchEnabled, walkOn } from '../src/scene/streetMode.ts'
 import { decodePNG } from './lib/png.ts'
+
+test('walk flags', () => {
+  // the four defaults
+  const def = readStreetFlags('')
+  assert.equal(def.walk, true)
+  assert.equal(def.walkT, null)
+  assert.equal(def.walkMode, null)
+  assert.equal(def.vincent, true)
+
+  // walk=0, vincent=0
+  assert.equal(readStreetFlags('?street=1&walk=0').walk, false)
+  assert.equal(readStreetFlags('?street=1&vincent=0').vincent, false)
+
+  // walkT clamping and null
+  assert.equal(readStreetFlags('?street=1&walkT=0.55').walkT, 0.55)
+  assert.equal(readStreetFlags('?street=1&walkT=2').walkT, 0.9)
+  assert.equal(readStreetFlags('?street=1&walkT=x').walkT, null)
+
+  // walkMode auto and input, anything else null
+  assert.equal(readStreetFlags('?street=1&walkMode=auto').walkMode, 'auto')
+  assert.equal(readStreetFlags('?street=1&walkMode=input').walkMode, 'input')
+  assert.equal(readStreetFlags('?street=1&walkMode=other').walkMode, null)
+
+  // walkOn false for flat=1 and for walk=0
+  assert.equal(walkOn(readStreetFlags('?street=1&flat=1')), false)
+  assert.equal(walkOn(readStreetFlags('?street=1&walk=0')), false)
+  assert.equal(walkOn(readStreetFlags('?street=1')), true)
+})
 
 test('flags', () => {
   // absent gives street: false

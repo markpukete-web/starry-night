@@ -309,7 +309,7 @@ function Scene({
         {streetMode ? (
           // the street places the camera at its station itself, in its own chunk (the main bundle carries no layout)
           <StreetBoundary>
-            <Street reduced={reduced} />
+            <Street reduced={reduced} still={still} />
           </StreetBoundary>
         ) : (
           debug !== 'flow' && (

@@ -8,6 +8,10 @@ export type StreetFlags = {
   turn: 'lock' | 'world'
   /** S1b task 4: false under `light=0`, the palette gate's unlit captures */
   light: boolean
+  walk: boolean
+  walkT: number | null
+  walkMode: 'auto' | 'input' | null
+  vincent: boolean
 }
 
 export function readStreetFlags(search: string): StreetFlags {
@@ -23,6 +27,15 @@ export function readStreetFlags(search: string): StreetFlags {
   // G5 (2026-10-23): the sky follows the camera (B) and holds the painting's arc in the world; A and lock stay as dev params
   const anchor = params.get('skyAnchor') === 'A' ? 'A' : 'B'
   const turn = params.get('skyTurn') === 'lock' ? 'lock' : 'world'
+  const light = params.get('light') !== '0'
+
+  const walk = params.get('walk') !== '0'
+  const rawWalkT = params.get('walkT')
+  const parsedWalkT = rawWalkT !== null ? parseFloat(rawWalkT) : NaN
+  const walkT = isNaN(parsedWalkT) ? null : Math.max(0, Math.min(0.9, parsedWalkT))
+  const rawWalkMode = params.get('walkMode')
+  const walkMode = rawWalkMode === 'auto' || rawWalkMode === 'input' ? rawWalkMode : null
+  const vincent = params.get('vincent') !== '0'
 
   return {
     street,
@@ -32,8 +45,16 @@ export function readStreetFlags(search: string): StreetFlags {
     fail,
     anchor,
     turn,
-    light: params.get('light') !== '0',
+    light,
+    walk,
+    walkT,
+    walkMode,
+    vincent,
   }
+}
+
+export function walkOn(flags: StreetFlags): boolean {
+  return !flags.flat && flags.walk
 }
 
 export type AssetStatus = 'pending' | 'ok' | 'failed'
