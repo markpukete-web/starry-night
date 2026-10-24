@@ -219,7 +219,9 @@ test('the sphere holds every displaced blade', () => {
   assert.ok(negativeExceeded, 'negative control: at 3x distance bladeReach exceeds reach')
 })
 
-test('the grass fits its room at every point of the walk', () => {
+// sampled, not every point: the count jumps where a chunk leaves the frustum, so a point between two samples can read
+// higher (Codex F05: 35,838 at t 0.31737 against the grid's 35,796). The grid is every 0.001 of t, plus that point.
+test('the grass fits its room at sampled points of the walk', () => {
   const at = (t: number, aspect: number, portrait: boolean, chunkList: typeof chunks) => {
     const p = walkPose(t, portrait)
     const c = new PerspectiveCamera(p.fov, aspect, p.near, p.far)
@@ -242,8 +244,7 @@ test('the grass fits its room at every point of the walk', () => {
   }
 
   let worst = { tris: 0, t: 0, aspect: '' }
-  for (let k = 0; k <= 900; k++) {
-    const t = k / 1000
+  for (const t of [...Array.from({ length: 901 }, (_, k) => k / 1000), 0.31737]) {
     for (const [aspect, portrait, name] of [
       [1600 / 900, false, 'landscape'],
       [390 / 844, true, 'portrait'],
@@ -253,7 +254,7 @@ test('the grass fits its room at every point of the walk', () => {
     }
   }
 
-  console.log(`[budget test] worst point: t=${worst.t.toFixed(3)}, aspect=${worst.aspect}, tris=${worst.tris} (budget ${GRASS.budget}, density ${GRASS.density})`)
+  console.log(`[budget test] worst sampled point: t=${worst.t.toFixed(5)}, aspect=${worst.aspect}, tris=${worst.tris} (budget ${GRASS.budget}, density ${GRASS.density})`)
   assert.ok(worst.tris <= GRASS.budget, `worst ${worst.tris} <= budget ${GRASS.budget}`)
 
   // Negative control: at twice density, budget is exceeded

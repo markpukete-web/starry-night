@@ -13,9 +13,11 @@
  * 8. Reduced motion, vincent=0: hand held bends (> 0.5), peak never rises again after lift, captures 1 s apart byte-identical.
  * 9. The pause (S6), vincent=0: hand lifted mid-swing, Pause motion on: captures byte-identical, new hand sweep adds no stamps, unpaused peak changes.
  * 10. grass=0: __grassCount undefined, canvas cursor is not grab.
+ * 11. Anchor A: cases 1 and 7 again under skyAnchor=A.
+ * 12. Focus loss (Codex F01): a real mouse move stamps, a window blur stops the stamps, the next move restarts them.
  */
 
-import { execSync, spawn } from 'node:child_process'
+import { spawn } from 'node:child_process'
 import { existsSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -46,15 +48,6 @@ if (!chromePath) {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
-function countHeadlessChromes() {
-  try {
-    const out = execSync("pgrep -fl '[C]hrome.*headless' 2>/dev/null | wc -l", { encoding: 'utf8' })
-    return parseInt(out.trim(), 10) || 0
-  } catch {
-    return 0
-  }
-}
-
 function startChrome(port) {
   const userDataDir = mkdtempSync(join(tmpdir(), 'starry-grass-'))
   const child = spawn(
@@ -78,8 +71,17 @@ function startChrome(port) {
   return {
     child,
     userDataDir,
-    cleanup() {
-      child.kill()
+    // stops only the browser this run started: a machine-wide count would signal another agent's Chrome (Codex F02)
+    async cleanup() {
+      if (child.exitCode === null && child.signalCode === null) {
+        const exited = new Promise((resolve) => child.once('exit', () => resolve(true)))
+        child.kill()
+        if (!(await Promise.race([exited, sleep(5000).then(() => false)]))) {
+          child.kill('SIGKILL')
+          console.error(`FAIL: this run's headless Chrome (pid ${child.pid}) did not exit within 5 s of TERM`)
+          process.exitCode = 1
+        }
+      }
       rmSync(userDataDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 300 })
     },
   }
@@ -189,7 +191,6 @@ async function getVergeClientPoint(page) {
 }
 
 async function main() {
-  const chromesBefore = countHeadlessChromes()
   const port = 9555 + Math.floor(Math.random() * 300)
   const chrome = startChrome(port)
 
@@ -890,18 +891,43 @@ async function main() {
       console.log(`PASS: case 11 - anchor A: case 1 hand bends (peak=${c11Peak.toFixed(3)}) and case 7 feet footprint verified (pushAtPlace=${pushP11.toFixed(3)} > 0.1, pushAtPathPoint=0)`)
     }
 
+    // -------------------------------------------------------------
+    // Case 12: Focus loss (Codex F01), vincent=0: a real mouse move over the verge stamps, a window blur stops the
+    // stamps, and the next move starts them again. The real pointer path, not __grassHand.
+    // -------------------------------------------------------------
+    if (shouldRun(12)) {
+      await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=input&vincent=0` })
+      await page.waitForStreetReady()
+      const [vx12, vy12] = await getVergeClientPoint(page)
+      const move12 = ([x, y]) =>
+        document.querySelector('canvas').dispatchEvent(
+          new PointerEvent('pointermove', { clientX: x, clientY: y, pointerType: 'mouse', isPrimary: true, bubbles: true }),
+        )
+      const handStamps = () => page.evaluate(() => window.__grassStamps.hand)
+
+      const s0 = await handStamps()
+      await page.evaluate(move12, [vx12, vy12])
+      await sleep(250)
+      const s1 = await handStamps()
+      if (s1 <= s0) throw new Error(`Case 12 precondition failed: a mouse move over the verge added no stamps (${s0} -> ${s1})`)
+
+      await page.evaluate(() => window.dispatchEvent(new Event('blur')))
+      await sleep(50)
+      const s2 = await handStamps()
+      await sleep(250)
+      const s3 = await handStamps()
+      if (s3 !== s2) throw new Error(`Case 12 failed: the hand kept stamping after a blur (${s2} -> ${s3})`)
+
+      await page.evaluate(move12, [vx12, vy12])
+      await sleep(250)
+      const s4 = await handStamps()
+      if (s4 <= s3) throw new Error(`Case 12 failed: a move after the blur added no stamps (${s3} -> ${s4})`)
+      console.log(`PASS: case 12 - focus loss: stamps ${s0} -> ${s1} over the verge, held at ${s2} -> ${s3} after a blur, ${s4} after the next move`)
+    }
+
     await page.close()
   } finally {
-    chrome.cleanup()
-  }
-
-  const chromesAfter = countHeadlessChromes()
-  if (chromesAfter > chromesBefore) {
-    try {
-      execSync("pkill -fl '[C]hrome.*headless' 2>/dev/null || true")
-    } catch {
-      /* ignore */
-    }
+    await chrome.cleanup()
   }
 }
 

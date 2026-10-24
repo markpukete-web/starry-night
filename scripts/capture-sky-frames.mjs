@@ -15,6 +15,8 @@
 // Env: CHROME_PATH, CHROME_FLAGS (--no-sandbox in a cloud session), CAPTURE_SETTLE_MS (about 10000 there).
 // Each frame is <outDir>/<prefix>-t<time>.png. The self-check: the pinned clock must be read back as finite, and
 // two reads at the same pinned time must be byte-identical, or the hook is not in the page (Codex F2, 2026-10-11).
+// `--moving` skips the byte-identical reads for an --eval that keeps the page moving on its own clock (the grass's hand
+// sweep), and the frames JSON then records `moving: true`.
 import { spawn } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -26,6 +28,9 @@ const opt = (name, fallback) => {
   const i = args.indexOf(`--${name}`)
   return i >= 0 ? args[i + 1] : fallback
 }
+// the boolean flags, read past every option's value: `--prefix --moving` must not switch the self-check off (Codex F03)
+const VALUED = new Set(['--url', '--times', '--viewport', '--prefix', '--eval', '--wait-for', '--arrival-times'])
+const flags = new Set(args.slice(1).filter((a, i, rest) => a.startsWith('--') && !VALUED.has(a) && !VALUED.has(rest[i - 1])))
 if (!outDir || outDir.startsWith('--')) {
   console.error('usage: capture-sky-frames.mjs <outDir> --url <url> --times 0,1,2 [--viewport desktop|mobile] [--prefix p] [--eval js] [--moving]')
   process.exit(1)
@@ -38,7 +43,7 @@ const evalBefore = opt('eval', null)
 const waitFor = opt('wait-for', null)
 // a page the --eval keeps moving on its own clock (the grass's hand sweep, S3 task 5) cannot pass the self-check, so
 // it opts out by name: every other --eval still proves the clock pinned
-const moving = args.includes('--moving')
+const moving = flags.has('--moving')
 // presence and value apart: an empty `--arrival-times ''` (a shell variable that came out empty) must fail, not
 // silently run the sky-only path with the arrival unpinned (Codex, code review F15)
 const hasArrivalTimes = args.includes('--arrival-times')
@@ -48,7 +53,7 @@ if (hasArrivalTimes && (!arrivalRaw || arrivalRaw.startsWith('--'))) {
   process.exit(1)
 }
 const arrivalTimes = hasArrivalTimes ? arrivalRaw.split(',').map(Number) : null
-const screenshot = args.includes('--screenshot')
+const screenshot = flags.has('--screenshot')
 if (arrivalTimes) {
   const bad =
     arrivalTimes.length !== times.length
@@ -217,7 +222,7 @@ async function main() {
       evalResult = ran.result.value ?? null
     }
     // the new fields only when their options are on, so the old path's JSON is the old JSON (code review F14)
-    const summary = { url, viewport, times, ...(arrivalTimes ? { arrivalTimes } : {}), ...(screenshot ? { screenshot } : {}), ...(waitFor ? { waitFor } : {}), evalBefore, evalResult, frames: [], errors: page.errors }
+    const summary = { url, viewport, times, ...(arrivalTimes ? { arrivalTimes } : {}), ...(screenshot ? { screenshot } : {}), ...(waitFor ? { waitFor } : {}), ...(moving ? { moving } : {}), evalBefore, evalResult, frames: [], errors: page.errors }
     const firstMoving = times.find((t) => t > 0)
     for (let i = 0; i < times.length; i++) {
       const t = times[i]

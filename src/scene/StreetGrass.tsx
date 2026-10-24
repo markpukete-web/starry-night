@@ -253,10 +253,24 @@ export default function StreetGrass({
       }
     }
 
+    // a blur or a hidden page ends the real hand: its pointerup may never reach the page, and the last hit would keep
+    // pressing the verge (Codex F01). The capture seam keeps its own state.
+    const onBlurOrHidden = () => {
+      if (handRef.current.isOverride) return
+      handRef.current.active = false
+      handRef.current.client = null
+    }
+
+    const onVisibilityChange = () => {
+      if (document.hidden) onBlurOrHidden()
+    }
+
     window.addEventListener('pointermove', onPointerMove)
     window.addEventListener('pointerdown', onPointerDown)
     window.addEventListener('pointerup', onPointerUp)
     window.addEventListener('pointercancel', onPointerCancel)
+    window.addEventListener('blur', onBlurOrHidden)
+    document.addEventListener('visibilitychange', onVisibilityChange)
     document.documentElement.addEventListener('pointerleave', onMouseLeave)
 
     return () => {
@@ -265,6 +279,8 @@ export default function StreetGrass({
       window.removeEventListener('pointerdown', onPointerDown)
       window.removeEventListener('pointerup', onPointerUp)
       window.removeEventListener('pointercancel', onPointerCancel)
+      window.removeEventListener('blur', onBlurOrHidden)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
       document.documentElement.removeEventListener('pointerleave', onMouseLeave)
     }
   }, [gl.domElement, flags.vincent])

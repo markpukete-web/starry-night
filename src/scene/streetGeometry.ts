@@ -48,11 +48,10 @@ const INK = new Color(PALETTE.ground)
 const OPENING_DARK = 0.3
 // pass 1: 0.35 of the house blue read as flat blue doors
 const WINDOW_DARK = new Color(PALETTE.ground).lerp(new Color(PALETTE.house), 0.12)
-/** the ground's and the path's base: the mean of the field source's darkest share (look pass 1) */
+/** the ground's, the path's and the grass's base: the mean of the field source's darkest share (look pass 1; S3 look
+ * pass 1 moved the grass's from 0.2, which left the verge's gaps at L 12 against the field's 22 and the ground's ΔE76 at
+ * 11.2, so its edge blend into the ground had nothing left to blend, Codex F06) */
 const GROUND_BASE_SHARE = 0.4
-/** the grass's dark base: the field source's darkest share (S3 look pass 1: 0.2 left the verge's gaps at L 12 against the
- * field's 22, and the ground's ΔE76 at 11.2) */
-const GRASS_BASE_SHARE = 0.4
 /** Look pass 3: the path's pale base stops this far short of its edges (0.2 of its width), so strokes draw the edge */
 const PATH_BASE_INSET = 0.024
 /** the roofs overhang the walls by this much along both axes */
@@ -565,10 +564,7 @@ function grassBaseStrip(ctx: Context): void {
   const dt = (tRange[1] - tRange[0]) / tSteps
   const dlat = (BANDS[1] - BANDS[0]) / latSteps
 
-  const dark = sourceUnderpaint(ctx.painting, 'field', GRASS_BASE_SHARE)
-  const groundBase = sourceUnderpaint(ctx.painting, 'field', GROUND_BASE_SHARE)
-  const cDark = new Color().setRGB(dark[0], dark[1], dark[2], SRGBColorSpace)
-  const cGround = new Color().setRGB(groundBase[0], groundBase[1], groundBase[2], SRGBColorSpace)
+  const dark = new Color().setRGB(...sourceUnderpaint(ctx.painting, 'field', GROUND_BASE_SHARE), SRGBColorSpace)
 
   const pt = (t: number, lat: number, side: number): [number, number, number] => {
     const [px, , pz] = pathPoint(t)
@@ -579,15 +575,6 @@ function grassBaseStrip(ctx: Context): void {
 
   const inSq = (p: [number, number, number]) =>
     Math.hypot(p[0] - STREET_SQUARE.x, p[2] - STREET_SQUARE.z) <= STREET_SQUARE.radius
-
-  const colAt = (lat: number): Color => {
-    const c = cDark.clone()
-    if (lat > 0.665) {
-      const u = Math.min(1, (lat - 0.665) / 0.1)
-      c.lerp(cGround, u)
-    }
-    return c
-  }
 
   for (const side of [-1, 1]) {
     for (let i = 0; i < tSteps; i++) {
@@ -604,15 +591,11 @@ function grassBaseStrip(ctx: Context): void {
 
         if (inSq(p0) && inSq(p1) && inSq(p2) && inSq(p3)) continue
 
-        const c0 = colAt(l0)
-        const c1 = colAt(l1)
-
         const start = ctx.underpaint.positions.length / 3
         const verts = [p0, p1, p2, p3]
-        const cols = [c0, c0, c1, c1]
         for (let v = 0; v < 4; v++) {
           ctx.underpaint.positions.push(...verts[v])
-          ctx.underpaint.colors.push(cols[v].r, cols[v].g, cols[v].b)
+          ctx.underpaint.colors.push(dark.r, dark.g, dark.b)
           ctx.underpaint.cls.push(3)
           ctx.underpaint.src.push(255)
         }
@@ -714,7 +697,7 @@ function flatGrassStrip(ctx: Context): void {
   const [cx, , cz] = FLAT_VIEW.position
   const y = 0.2
   const z = 1.45
-  const dark = new Color().setRGB(...sourceUnderpaint(ctx.painting, 'field', GRASS_BASE_SHARE), SRGBColorSpace)
+  const dark = new Color().setRGB(...sourceUnderpaint(ctx.painting, 'field', GROUND_BASE_SHARE), SRGBColorSpace)
   polygon(ctx.underpaint, [new Vector3(0.56, 0.17, z - 0.05), new Vector3(1.04, 0.17, z - 0.05), new Vector3(1.04, 0.33, z - 0.05), new Vector3(0.56, 0.33, z - 0.05)], dark, 255)
   const rand = mulberry32(1)
   const template = bladeTemplate()
