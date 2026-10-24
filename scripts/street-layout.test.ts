@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { PerspectiveCamera, Vector3 } from 'three'
 import { DIORAMA_CAMERAS } from '../src/scene/dioramaContract.ts'
 import {
   STREET,
@@ -12,6 +13,16 @@ import {
   STREET_TREES,
   STREET_CYPRESS,
   laneOffset,
+  STATION_T,
+  WALK_T,
+  LANE_JOINS,
+  WALK_ROUND,
+  walkTangent,
+  walkPose,
+  VINCENT_RIG,
+  vincentPlace,
+  vincentBoxCorners,
+  STREET_SQUARE,
 } from '../src/scene/streetLayout.ts'
 import {
   VILLAGE_CHURCH,
@@ -412,3 +423,207 @@ test('stop 0 composes the painting', () => {
     console.log(`[margin] stop 0 portrait: cypressAngle=${cypressAngle.toFixed(2)}° (<=19.5), naveAngle=${naveAngle.toFixed(2)}° (<=19.5)`)
   }
 })
+
+test('walk pose reproduces the stations', () => {
+  assert.deepEqual(WALK_T, { min: 0, max: 0.9 })
+  for (const portrait of [false, true]) {
+    for (let i = 0; i < 5; i++) {
+      const w = walkPose(STATION_T[i], portrait)
+      const s = stationPose(i as 0 | 1 | 2 | 3 | 4, portrait)
+      for (let k = 0; k < 3; k++) {
+        assert.ok(Math.abs(w.position[k] - s.position[k]) <= 1e-9, `position[${k}] matches at ${i} portrait=${portrait}`)
+        assert.ok(Math.abs(w.target[k] - s.target[k]) <= 1e-9, `target[${k}] matches at ${i} portrait=${portrait}`)
+      }
+      assert.ok(Math.abs(w.fov - s.fov) <= 1e-9, `fov matches at ${i} portrait=${portrait}`)
+      assert.ok(Math.abs(w.near - s.near) <= 1e-9, `near matches at ${i} portrait=${portrait}`)
+      assert.ok(Math.abs(w.far - s.far) <= 1e-9, `far matches at ${i} portrait=${portrait}`)
+    }
+  }
+})
+
+test('the rounding keeps clear of the stations', () => {
+  assert.equal(LANE_JOINS.length, 2)
+  assert.ok(Math.abs(LANE_JOINS[0] - 0.33168) <= 1e-4, `LANE_JOINS[0] within 1e-4 of 0.33168`)
+  assert.ok(Math.abs(LANE_JOINS[1] - 0.68440) <= 1e-4, `LANE_JOINS[1] within 1e-4 of 0.68440`)
+  for (const st of STATION_T) {
+    for (const j of LANE_JOINS) {
+      assert.ok(Math.abs(st - j) > WALK_ROUND, `station ${st} > WALK_ROUND (${WALK_ROUND}) from join ${j}`)
+    }
+  }
+})
+
+test("walkTangent is the lane's tangent outside the rounding", () => {
+  const ts = [0, 0.2, 0.5, 0.8, 0.9, 1, 1 + 1e-6, 0.9 + VINCENT_RIG.ahead / STREET.pathLength]
+  for (const t of ts) {
+    const wt = walkTangent(t)
+    const pt = pathTangent(t)
+    for (let k = 0; k < 3; k++) {
+      assert.ok(Math.abs(wt[k] - pt[k]) <= 1e-12, `walkTangent matches pathTangent at t=${t} component ${k}`)
+    }
+  }
+  const lastT = 0.9 + VINCENT_RIG.ahead / STREET.pathLength
+  const wtLast = walkTangent(lastT)
+  const pt09 = pathTangent(0.9)
+  const diff = Math.hypot(wtLast[0] - pt09[0], wtLast[2] - pt09[2])
+  assert.ok(diff > 0.1, `negative control: diff at ${lastT} vs pathTangent(0.9) is ${diff} > 0.1`)
+})
+
+test('Vincent faces the lane at his own place', () => {
+  const L = STREET.pathLength
+  const smooth = (a: number, b: number, x: number) => {
+    const u = Math.min(1, Math.max(0, (x - a) / (b - a)))
+    return u * u * (3 - 2 * u)
+  }
+  for (let k = 0; k <= 900; k++) {
+    const t = k / 1000
+    const { position, yaw } = vincentPlace(t)
+    const tv = t + VINCENT_RIG.ahead / L
+    const wt = walkTangent(tv)
+    const facing = [Math.sin(yaw), 0, Math.cos(yaw)]
+    for (let i = 0; i < 3; i++) {
+      assert.ok(Math.abs(facing[i] - wt[i]) <= 1e-9, `facing[${i}] matches walkTangent at t=${t}`)
+    }
+    const lat = VINCENT_RIG.lateral + (VINCENT_RIG.lateralEnd - VINCENT_RIG.lateral) * smooth(STATION_T[3], STATION_T[4], t)
+    const [vx, , vz] = pathPoint(tv)
+    const [tx, , tz] = wt
+    const expectedPos = [vx - tz * lat, 0, vz + tx * lat]
+    for (let i = 0; i < 3; i++) {
+      assert.ok(Math.abs(position[i] - expectedPos[i]) <= 1e-9, `position[${i}] matches expected at t=${t}`)
+    }
+  }
+})
+
+test('the walk has no kink', () => {
+  for (let k = 1; k < 900; k++) {
+    const t = k / 1000
+    const offset = (u: number) => {
+      const p = pathPoint(u)
+      const c = walkPose(u, false).position
+      return [c[0] - p[0], c[2] - p[2]]
+    }
+    const a = offset(t - 0.001)
+    const b = offset(t)
+    const c = offset(t + 0.001)
+    const d2 = Math.hypot(a[0] - 2 * b[0] + c[0], a[1] - 2 * b[1] + c[1])
+    assert.ok(d2 <= 0.0001, `second difference at t=${t} is ${d2} <= 0.0001`)
+  }
+})
+
+test('walk pose is smooth', () => {
+  for (let k = 0; k < 900; k++) {
+    const t0 = k / 1000
+    const t1 = (k + 1) / 1000
+    const p0 = walkPose(t0, false)
+    const p1 = walkPose(t1, false)
+    const move = Math.hypot(p1.position[0] - p0.position[0], p1.position[1] - p0.position[1], p1.position[2] - p0.position[2])
+    assert.ok(move <= 0.004, `camera move between ${t0} and ${t1} is ${move} <= 0.004`)
+
+    const h0x = p0.target[0] - p0.position[0]
+    const h0z = p0.target[2] - p0.position[2]
+    const angle0 = Math.atan2(h0x, h0z)
+
+    const h1x = p1.target[0] - p1.position[0]
+    const h1z = p1.target[2] - p1.position[2]
+    const angle1 = Math.atan2(h1x, h1z)
+
+    let dAngle = Math.abs(angle1 - angle0)
+    if (dAngle > Math.PI) dAngle = 2 * Math.PI - dAngle
+    const dDeg = (dAngle * 180) / Math.PI
+    assert.ok(dDeg <= 1.5, `heading turn between ${t0} and ${t1} is ${dDeg}° <= 1.5°`)
+  }
+})
+
+test('the walk stays inside the painted arc', () => {
+  for (const portrait of [false, true]) {
+    for (let k = 0; k <= 900; k++) {
+      const t = k / 1000
+      const pose = walkPose(t, portrait)
+      const dx = pose.target[0] - pose.position[0]
+      const dy = pose.target[1] - pose.position[1]
+      const dz = pose.target[2] - pose.position[2]
+      const horiz = Math.hypot(dx, dz)
+
+      // Heading relative to forward
+      const headingDeg = (Math.atan2(dx * STREET.forward[2] - dz * STREET.forward[0], dx * STREET.forward[0] + dz * STREET.forward[2]) * 180) / Math.PI
+      assert.ok(Math.abs(headingDeg) <= 60, `walk t=${t} portrait=${portrait} heading ${headingDeg} deg within ±60 deg`)
+
+      // Pitch
+      const pitchDeg = (Math.atan2(dy, horiz) * 180) / Math.PI
+      assert.ok(pitchDeg >= -20 && pitchDeg <= 40, `walk t=${t} portrait=${portrait} pitch ${pitchDeg} deg within -20 to +40 deg`)
+      assert.ok(pitchDeg + pose.fov / 2 <= 50, `walk t=${t} portrait=${portrait}: tilt ${pitchDeg.toFixed(1)}° + half the fov ${pose.fov / 2}° within 50°`)
+    }
+  }
+})
+
+test('Vincent stays in frame', () => {
+  for (const [aspect, portrait] of [[1.6, false], [390 / 844, true]] as const) {
+    for (let k = 0; k <= 900; k++) {
+      const t = k / 1000
+      const pose = walkPose(t, portrait)
+      const c = new PerspectiveCamera(pose.fov, aspect, STREET.near, STREET.far)
+      c.position.set(...pose.position)
+      c.lookAt(...pose.target)
+      c.updateMatrixWorld()
+
+      const place = vincentPlace(t)
+      const footPt = new Vector3(place.position[0], 0, place.position[2]).project(c)
+      const headPt = new Vector3(place.position[0], VINCENT_RIG.height, place.position[2]).project(c)
+
+      assert.ok(Math.abs(headPt.x) <= 0.85, `head |x| at t=${t} portrait=${portrait} is ${Math.abs(headPt.x)} <= 0.85`)
+
+      const h = (headPt.y - footPt.y) / 2
+      if (portrait) {
+        assert.ok(h >= 0.08 && h <= 0.13, `portrait height share at t=${t} is ${h} in [0.08, 0.13]`)
+      } else {
+        assert.ok(h >= 0.14 && h <= 0.22, `landscape height share at t=${t} is ${h} in [0.14, 0.22]`)
+      }
+
+      const corners = vincentBoxCorners(t)
+      for (const corner of corners) {
+        const pt = new Vector3(...corner).project(c)
+        assert.ok(Math.abs(pt.x) < 1, `corner |x| at t=${t} portrait=${portrait} is ${Math.abs(pt.x)} < 1`)
+        assert.ok(pt.y >= -0.95, `corner y at t=${t} portrait=${portrait} is ${pt.y} >= -0.95`)
+      }
+    }
+  }
+})
+
+test('Vincent clears the church door at stop 4', () => {
+  const nave = STREET_CHURCH.nave
+  const fx = STREET.forward[0]
+  const fz = STREET.forward[2]
+  const foot = new Vector3(nave.x - fx * (nave.d / 2), 0, nave.z - fz * (nave.d / 2))
+  const side = new Vector3(-fz, 0, fx)
+
+  for (const [aspect, portrait] of [[1.6, false], [390 / 844, true]] as const) {
+    const pose = walkPose(0.9, portrait)
+    const c = new PerspectiveCamera(pose.fov, aspect, STREET.near, STREET.far)
+    c.position.set(...pose.position)
+    c.lookAt(...pose.target)
+    c.updateMatrixWorld()
+
+    const doorCorners = [-1, 1].flatMap((s) =>
+      [0, 0.12].map((y) => foot.clone().addScaledVector(side, 0.025 * s).setY(y).project(c))
+    )
+    const dx0 = Math.min(...doorCorners.map((v) => v.x))
+    const dx1 = Math.max(...doorCorners.map((v) => v.x))
+    const dy0 = Math.min(...doorCorners.map((v) => v.y))
+    const dy1 = Math.max(...doorCorners.map((v) => v.y))
+
+    const vCorners = vincentBoxCorners(0.9).map((pt) => new Vector3(...pt).project(c))
+    const vx0 = Math.min(...vCorners.map((v) => v.x))
+    const vx1 = Math.max(...vCorners.map((v) => v.x))
+    const vy0 = Math.min(...vCorners.map((v) => v.y))
+    const vy1 = Math.max(...vCorners.map((v) => v.y))
+
+    const overlap = !(vx1 < dx0 || vx0 > dx1 || vy1 < dy0 || vy0 > dy1)
+    assert.equal(overlap, false, `Vincent box clears church door on portrait=${portrait}`)
+  }
+})
+
+test('Vincent stands in the square at stop 4', () => {
+  const { position } = vincentPlace(0.9)
+  const dist = Math.hypot(position[0] - STREET_SQUARE.x, position[2] - STREET_SQUARE.z)
+  assert.ok(dist <= STREET_SQUARE.radius, `Vincent distance ${dist} <= square radius ${STREET_SQUARE.radius}`)
+})
+

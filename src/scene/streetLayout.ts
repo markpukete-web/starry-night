@@ -279,7 +279,40 @@ export const STOP0_CAMERA: readonly [number, number, number] = [cam0Pos.x, cam0P
  * tree read the same (`scratch/street-s1b-2026-10-23/t5/stride-sheet-desktop.png`), 143,232 triangles against 537,816. */
 export const STREET_CYPRESS_STRIDE = 4
 
-const STATION_T = [0, 0.23, 0.44, 0.66, 0.9] as const
+export const STATION_T = [0, 0.23, 0.44, 0.66, 0.9] as const
+export const WALK_T = { min: 0, max: 0.9 } as const
+export const LANE_JOINS: readonly number[] = lanePath
+  .getCurveLengths()
+  .slice(0, -1)
+  .map((len) => len / measuredLength)
+export const WALK_ROUND = 0.02
+
+function smoothstep(edge0: number, edge1: number, x: number): number {
+  const k = Math.min(1, Math.max(0, (x - edge0) / (edge1 - edge0)))
+  return k * k * (3 - 2 * k)
+}
+
+export function walkTangent(t: number): [number, number, number] {
+  for (const j of LANE_JOINS) {
+    const d = Math.abs(t - j)
+    if (d < WALK_ROUND) {
+      const p = pathPoint(t + WALK_ROUND)
+      const q = pathPoint(t - WALK_ROUND)
+      const sx = p[0] - q[0]
+      const sz = p[2] - q[2]
+      const sn = Math.hypot(sx, sz)
+      const secX = sx / sn
+      const secZ = sz / sn
+      const weight = 1 - smoothstep(0, WALK_ROUND, d)
+      const [tx, , tz] = pathTangent(t)
+      const vx = tx + (secX - tx) * weight
+      const vz = tz + (secZ - tz) * weight
+      const vn = Math.hypot(vx, vz)
+      return [vx / vn, 0, vz / vn]
+    }
+  }
+  return pathTangent(t)
+}
 
 export function stationPose(
   i: 0 | 1 | 2 | 3 | 4,
@@ -331,6 +364,95 @@ export function stationPose(
     near: STREET.near,
     far: STREET.far,
   }
+}
+
+export type StationPose = ReturnType<typeof stationPose>
+
+export function walkPose(t: number, portrait: boolean): StationPose {
+  const [px, , pz] = pathPoint(t)
+  const [tx, , tz] = walkTangent(t)
+  const position: [number, number, number] = [
+    px - tx * STREET.behind,
+    STREET.eye,
+    pz - tz * STREET.behind,
+  ]
+  const [ax, , az] = pathPoint(t + 0.6 / measuredLength)
+  let target: [number, number, number] = [ax, STREET.lookHeight, az]
+  const s0 = stationPose(0, portrait)
+  const s4 = stationPose(4, portrait)
+  const rel = (s: StationPose): [number, number, number] => [
+    s.target[0] - s.position[0] + position[0],
+    s.target[1],
+    s.target[2] - s.position[2] + position[2],
+  ]
+  const rel0 = rel(s0)
+  const rel4 = rel(s4)
+  const w0 = 1 - smoothstep(STATION_T[0], STATION_T[1], t)
+  target = [
+    target[0] + (rel0[0] - target[0]) * w0,
+    target[1] + (rel0[1] - target[1]) * w0,
+    target[2] + (rel0[2] - target[2]) * w0,
+  ]
+  const w4 = smoothstep(STATION_T[3], STATION_T[4], t)
+  target = [
+    target[0] + (rel4[0] - target[0]) * w4,
+    target[1] + (rel4[1] - target[1]) * w4,
+    target[2] + (rel4[2] - target[2]) * w4,
+  ]
+  return {
+    position,
+    target,
+    fov: portrait ? STREET.fov.portrait : STREET.fov.landscape,
+    near: STREET.near,
+    far: STREET.far,
+  }
+}
+
+export const VINCENT_RIG = {
+  ahead: 0.4,
+  lateral: 0.03,
+  lateralEnd: 0.07,
+  height: 0.085,
+  halfWidth: 0.025,
+  halfDepth: 0.02,
+} as const
+
+export function vincentPlace(t: number): {
+  position: [number, number, number]
+  yaw: number
+} {
+  const tv = t + VINCENT_RIG.ahead / measuredLength
+  const lat =
+    VINCENT_RIG.lateral +
+    (VINCENT_RIG.lateralEnd - VINCENT_RIG.lateral) *
+      smoothstep(STATION_T[3], STATION_T[4], t)
+  const [vx, , vz] = pathPoint(tv)
+  const [tx, , tz] = walkTangent(tv)
+  return {
+    position: [vx - tz * lat, 0, vz + tx * lat],
+    yaw: Math.atan2(tx, tz),
+  }
+}
+
+export function vincentBoxCorners(t: number): [number, number, number][] {
+  const { position } = vincentPlace(t)
+  const tv = t + VINCENT_RIG.ahead / measuredLength
+  const [tx, , tz] = walkTangent(tv)
+  const rx = -tz
+  const rz = tx
+  const corners: [number, number, number][] = []
+  for (const s of [-1, 1]) {
+    for (const f of [-1, 1]) {
+      for (const y of [0, VINCENT_RIG.height]) {
+        corners.push([
+          position[0] + rx * (s * VINCENT_RIG.halfWidth) + tx * (f * VINCENT_RIG.halfDepth),
+          y,
+          position[2] + rz * (s * VINCENT_RIG.halfWidth) + tz * (f * VINCENT_RIG.halfDepth),
+        ])
+      }
+    }
+  }
+  return corners
 }
 
 /**
