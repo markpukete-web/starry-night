@@ -2952,3 +2952,17 @@ reads as alive.
   is unmeasured).
 - **A bent blade must change colour as well as shape.** The parting did not read at station 0 until bent blades turned
   paler, toward the moonlit crest. Jeroen's night trail reads for the same reason.
+
+## Slice 2, Vincent and the walk (2026-10-24, evening)
+
+- **The Lead stays idle while a delegate measures frame times.** Task 0's first perf run had single frames of 1.4 to
+  1.9 s. They lined up with the Lead's own test, tsc and eslint runs on the same machine. The re-run with the Lead
+  idle was clean, at 16.7 ms on every stop.
+- **The canvas writes sRGB, so an ID channel of 128/255 reads back as 188.** S1b's thatch source gate expected 128.
+  Every one of its ten logs says "thatch: not in view (0 px)", while the ID capture holds 4,599 px of (255, 188, 0).
+  A gate that finds nothing must fail, not pass: a class with no pixels is an error.
+- **A "present" check passes while one of two parts loses its class.** The crown and the brim each carried the hat
+  class, so reverting either left the check green. Test each part where it sits on the model.
+- **A dark palette is not a lighting fault.** Vincent's hat rendered near black. Unlit it was (51, 39, 35), and the
+  palette's villageWarm swatch is #262119, so the colour was faithful. The shape was the fault: a straight crown
+  read as a top hat. Measure the unlit colour before tuning the light.
