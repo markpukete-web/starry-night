@@ -19,6 +19,7 @@ import { strokeGeometry } from './strokeGeometry.ts'
 import StreetLife from './streetLife.tsx'
 import { swayInjection } from './streetLife.ts'
 import StreetWalk from './StreetWalk.tsx'
+import StreetGrass from './StreetGrass.tsx'
 import { useImageData } from './useImageData.ts'
 import { material, plainGeometry } from './streetMaterial.ts'
 
@@ -70,7 +71,7 @@ export default function Street({ reduced = false, still = false }: { reduced?: b
 
   const build = useMemo<StreetBuild | null>(() => {
     if (!readiness.render) return null
-    return flags.flat ? buildFlatPanel(paintingData, flowData, massesState.data, flags.grass) : buildStreet(paintingData, flowData, massesState.data, { lit: flags.light })
+    return flags.flat ? buildFlatPanel(paintingData, flowData, massesState.data, flags.grass) : buildStreet(paintingData, flowData, massesState.data, { lit: flags.light, grass: flags.grass })
   }, [readiness.render, flags.flat, flags.light, flags.grass, paintingData, flowData, massesState.data])
 
   useEffect(() => {
@@ -171,6 +172,15 @@ export default function Street({ reduced = false, still = false }: { reduced?: b
         />
       )}
       {!flags.flat && flags.ids === 0 && flags.light && build && paintingData && <StreetLife windows={build.windows} painting={paintingData} reduced={reduced} />}
+      {!flags.flat && flags.grass && paintingData && (
+        <StreetGrass
+          painting={paintingData}
+          flags={flags}
+          offset={offset}
+          reduced={reduced}
+          still={still}
+        />
+      )}
       {!flags.flat && (
         <StreetWalk
           painting={paintingData}
