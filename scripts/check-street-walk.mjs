@@ -400,27 +400,61 @@ async function main() {
       await sleep(100)
     }
 
-    // Second touch while first touch is held
-    const boxLive = await page.evaluate(() => window.__vincentBox?.())
-    const lx = Math.round((boxLive.x0 + boxLive.x1) / 2)
-    const ly = Math.round((boxLive.y0 + boxLive.y1) / 2)
+    // Helper for plain tap and positive control
+    const tapAt = async (x, y) => {
+      await page.send('Input.dispatchTouchEvent', {
+        type: 'touchStart',
+        touchPoints: [{ x, y, id: 0 }],
+      })
+      await sleep(50)
+      await page.send('Input.dispatchTouchEvent', {
+        type: 'touchEnd',
+        touchPoints: [],
+      })
+    }
 
-    await page.send('Input.dispatchTouchEvent', {
-      type: 'touchStart',
-      touchPoints: [{ x: lx, y: ly, id: 0 }],
-    })
+    const positiveControl = async (name) => {
+      const box = await page.evaluate(() => window.__vincentBox?.())
+      if (!box) throw new Error(`Case 3 precondition failed: __vincentBox missing before ${name}`)
+      const x = Math.round((box.x0 + box.x1) / 2)
+      const y = Math.round((box.y0 + box.y1) / 2)
+
+      const autoBefore = await page.evaluate(() => window.__streetWalk?.auto)
+      await tapAt(x, y)
+      const autoToggled = await page.evaluate(() => window.__streetWalk?.auto)
+      if (autoToggled === autoBefore) {
+        throw new Error(`Case 3 failed: positive control before ${name} did not toggle auto`)
+      }
+
+      await tapAt(x, y)
+      const autoRestored = await page.evaluate(() => window.__streetWalk?.auto)
+      if (autoRestored !== autoBefore) {
+        throw new Error(`Case 3 failed: positive control before ${name} did not restore auto`)
+      }
+
+      return { x, y }
+    }
+
+    // Positive control before second touch
+    const pt2 = await positiveControl('second touch')
+
+    // Second touch while first touch is held
     const autoBefore2nd = await page.evaluate(() => window.__streetWalk?.auto)
     await page.send('Input.dispatchTouchEvent', {
       type: 'touchStart',
+      touchPoints: [{ x: pt2.x, y: pt2.y, id: 0 }],
+    })
+    await page.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
       touchPoints: [
-        { x: lx, y: ly, id: 0 },
-        { x: lx + 2, y: ly + 2, id: 1 },
+        { x: pt2.x, y: pt2.y, id: 0 },
+        { x: pt2.x + 2, y: pt2.y + 2, id: 1 },
       ],
     })
     await sleep(50)
     await page.send('Input.dispatchTouchEvent', {
       type: 'touchEnd',
-      touchPoints: [{ x: lx + 2, y: ly + 2, id: 1 }],
+      touchPoints: [{ x: pt2.x + 2, y: pt2.y + 2, id: 1 }],
     })
     const autoAfter2nd = await page.evaluate(() => window.__streetWalk?.auto)
     if (autoAfter2nd !== autoBefore2nd) {
@@ -430,12 +464,19 @@ async function main() {
       type: 'touchEnd',
       touchPoints: [],
     })
+    const autoAfter1stEnd = await page.evaluate(() => window.__streetWalk?.auto)
+    if (autoAfter1stEnd !== autoBefore2nd) {
+      throw new Error(`Case 3 failed: first touch ending after second touch changed auto (before=${autoBefore2nd}, after=${autoAfter1stEnd})`)
+    }
+
+    // Positive control before touchCancel
+    const ptCancel = await positiveControl('touchCancel')
 
     // Touch ended by touchCancel: auto unchanged
     const autoBeforeCancel = await page.evaluate(() => window.__streetWalk?.auto)
     await page.send('Input.dispatchTouchEvent', {
       type: 'touchStart',
-      touchPoints: [{ x: lx, y: ly, id: 0 }],
+      touchPoints: [{ x: ptCancel.x, y: ptCancel.y, id: 0 }],
     })
     await sleep(50)
     await page.send('Input.dispatchTouchEvent', {
@@ -447,16 +488,19 @@ async function main() {
       throw new Error('Case 3 failed: touchCancel changed auto')
     }
 
+    // Positive control before drag
+    const ptDrag = await positiveControl('drag')
+
     // Touch that moves 20 px: auto unchanged
     const autoBeforeMove = await page.evaluate(() => window.__streetWalk?.auto)
     await page.send('Input.dispatchTouchEvent', {
       type: 'touchStart',
-      touchPoints: [{ x: lx, y: ly, id: 0 }],
+      touchPoints: [{ x: ptDrag.x, y: ptDrag.y, id: 0 }],
     })
     await sleep(50)
     await page.send('Input.dispatchTouchEvent', {
       type: 'touchMove',
-      touchPoints: [{ x: lx + 20, y: ly, id: 0 }],
+      touchPoints: [{ x: ptDrag.x + 20, y: ptDrag.y, id: 0 }],
     })
     await sleep(50)
     await page.send('Input.dispatchTouchEvent', {

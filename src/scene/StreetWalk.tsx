@@ -1,16 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import {
-  BufferAttribute,
-  BufferGeometry,
-  DoubleSide,
   MeshBasicMaterial,
   Vector3,
   type Group,
   type PerspectiveCamera,
 } from 'three'
-import { concatInjections, injectAlive, type AliveInjection } from './aliveMaterial.ts'
-import type { BrushArrays } from './brushForms.ts'
 import { FOG, fogInjection } from './streetFog.ts'
 import {
   STATION_T,
@@ -40,6 +35,7 @@ import {
   type WalkInput,
   type WalkState,
 } from './streetWalk.ts'
+import { material, plainGeometry } from './streetMaterial.ts'
 
 export type StreetWalkProps = {
   painting: ImageData2D | null
@@ -57,75 +53,6 @@ type StreetWalkWindow = Window & {
     set(t: number): void
   }
   __vincentBox?: () => { x0: number; y0: number; x1: number; y1: number }
-}
-
-function plainGeometry(a: BrushArrays, cls?: number[] | number): BufferGeometry {
-  const g = new BufferGeometry()
-  const vertices = a.positions.length / 3
-  g.setAttribute('position', new BufferAttribute(new Float32Array(a.positions), 3))
-  g.setAttribute('color', new BufferAttribute(new Float32Array(a.colors), 3))
-  if (cls !== undefined) {
-    const clsArr = typeof cls === 'number' ? new Float32Array(vertices).fill(cls) : new Float32Array(cls)
-    g.setAttribute('aClass', new BufferAttribute(clsArr, 1))
-  }
-  g.setIndex(a.indices)
-  g.computeVertexNormals()
-  g.computeBoundingSphere()
-  return g
-}
-
-const NO_INJECTION = { uniforms: {}, vertexHead: '', vertexBody: '', fragmentHead: '', fragmentBody: '' }
-
-function idInjection(threshold = FOG.near + 0.6 * (FOG.far - FOG.near)): Omit<AliveInjection, 'key'> {
-  return {
-    uniforms: {
-      uFogThreshold: { value: threshold },
-    },
-    vertexHead: 'attribute float aClass;\nvarying float vClass;',
-    vertexBody: 'vClass = aClass;',
-    fragmentHead: [
-      'uniform float uFogThreshold;',
-      'varying float vClass;',
-    ].join('\n'),
-    fragmentBody: [
-      'if (diffuseColor.a < 0.5) discard;',
-      'int c = int(vClass + 0.5);',
-      'vec3 idCol = vec3(0.0);',
-      'if (c == 0) idCol = vec3(1.0, 0.0, 0.0);',
-      'else if (c == 1) idCol = vec3(0.0, 1.0, 0.0);',
-      'else if (c == 2) idCol = vec3(0.0, 0.0, 1.0);',
-      'else if (c == 3) idCol = vec3(1.0, 1.0, 0.0);',
-      'else if (c == 4) idCol = vec3(0.0, 1.0, 1.0);',
-      'else if (c == 5) idCol = vec3(1.0, 0.0, 1.0);',
-      'else if (c == 6) idCol = vec3(1.0, 128.0 / 255.0, 0.0);',
-      'else if (c == 7) idCol = vec3(128.0 / 255.0, 0.0, 1.0);',
-      'else if (c == 8) idCol = vec3(128.0 / 255.0, 1.0, 0.0);',
-      'else idCol = vec3(0.0, 0.0, 0.0);',
-      'if (vFogDistance > uFogThreshold) {',
-      '  idCol = vec3(1.0, 1.0, 1.0);',
-      '}',
-      'diffuseColor.rgb = idCol;',
-      'diffuseColor.a = 1.0;',
-    ].join('\n'),
-  }
-}
-
-function material(
-  key: string,
-  body: Omit<AliveInjection, 'key' | 'uniforms'> | null,
-  fog: Omit<AliveInjection, 'key'>,
-  stroke: boolean,
-  ids: boolean,
-): MeshBasicMaterial {
-  const m = new MeshBasicMaterial(
-    stroke
-      ? { vertexColors: true, toneMapped: false, side: DoubleSide, alphaTest: 0.5 }
-      : { vertexColors: true, toneMapped: false, side: DoubleSide },
-  )
-  const parts: Omit<AliveInjection, 'key'>[] = [body ? { uniforms: {}, ...body } : NO_INJECTION, fog]
-  if (ids) parts.push(idInjection())
-  injectAlive(m, concatInjections(ids ? `${key}-ids` : key, ...parts))
-  return m
 }
 
 export default function StreetWalk({
@@ -245,11 +172,12 @@ export default function StreetWalk({
   const getVincentBox = useCallback(() => {
     const corners = vincentBoxCorners(walkStateRef.current.t)
     const persp = camera as PerspectiveCamera
+    const rect = gl.domElement.getBoundingClientRect()
     const pts = corners.map(([x, y, z]) => {
       const v = new Vector3(x + offset[0], y + offset[1], z + offset[2]).project(persp)
       return {
-        x: ((v.x + 1) / 2) * window.innerWidth,
-        y: ((1 - v.y) / 2) * window.innerHeight,
+        x: rect.left + ((v.x + 1) / 2) * rect.width,
+        y: rect.top + ((1 - v.y) / 2) * rect.height,
       }
     })
     return {
@@ -258,7 +186,7 @@ export default function StreetWalk({
       y0: Math.min(...pts.map((p) => p.y)),
       y1: Math.max(...pts.map((p) => p.y)),
     }
-  }, [camera, offset])
+  }, [camera, offset, gl.domElement])
 
   // Capture seams on window
   useEffect(() => {
@@ -294,8 +222,12 @@ export default function StreetWalk({
   }, [walkOnActive, flags.flat, flags.vincent, getVincentBox])
 
   // Input listeners: only when walkOn is true
+  /* eslint-disable react-hooks/immutability -- canvas touchAction must be none for pointer gestures */
   useEffect(() => {
     if (!walkOnActive) return
+
+    const prevTouchAction = gl.domElement.style.touchAction
+    gl.domElement.style.touchAction = 'none'
 
     const onWheel = (e: WheelEvent) => {
       if (!e.ctrlKey) {
@@ -390,6 +322,7 @@ export default function StreetWalk({
       window.removeEventListener('pointerdown', onPointerDown)
       window.removeEventListener('pointerup', onPointerUp)
       window.removeEventListener('pointercancel', onPointerCancel)
+      gl.domElement.style.touchAction = prevTouchAction
     }
   }, [walkOnActive, flags.vincent, gl.domElement, getVincentBox, still])
 
