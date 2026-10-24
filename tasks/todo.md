@@ -24,8 +24,16 @@ What it showed, from the captures at station 0 and the low view, desktop and pho
 - At 0.014 high the near grass left gaps, and the ground's long strokes read through as planks. At 0.024 (about thigh
   high on a person) it covers them. The verge is shorter, so the lane's edge is soft.
 - 30,000 blades, 120 fps on the M5 Pro at both views. The phone is unmeasured. `&grassN=10000` lightens it.
-- Not yet Van Gogh: the near blades read as smooth flat leaves, not short thick curved strokes, and the colours are grey
-  green with stray yellows and violets. A look pass would start there.
+- Not yet Van Gogh (`vs-painting.png` in the same folder, at 4×): the painting's bushes are fat curved comma strokes
+  that fan out from a clump, dark at the centre with pale yellow-green edges. Ours are thin straight spikes in an even
+  grey green. A look pass would start there: wider curved strokes in fanned clumps, the street trees' dark-centre,
+  lit-edge treatment.
+- Not shown by the captures: the hand cursor (screenshots leave out the system cursor), and the phone. The touch path
+  (finger down is the hand) is untested and the phone's frame rate unmeasured. The orbit controls are not mounted in
+  street mode (`src/scene/DioramaExperience.tsx:292`), so a drag does not turn the camera.
+
+To restart the live test: `git checkout spike/grass-hand && npm run dev -- --host --port 5190`. The Mac's LAN address
+may change between sessions: read it from Vite's "Network" line.
 
 **Open for Mark:** his read of the test live, then where the grass lives (beside the street, a meadow portal, or
 both). Slice 2's plan (Vincent and the walk) follows his answer. Agents this session: Codex reviews, Fable (the
