@@ -4,7 +4,7 @@
  */
 
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import test from 'node:test'
 import { Frustum, Matrix4, PerspectiveCamera, Vector3 } from 'three'
 
@@ -31,12 +31,14 @@ import {
 import type { ImageData2D } from '../src/scene/useImageData.ts'
 import { decodePNG } from './lib/png.ts'
 
-const paintingPng = decodePNG(readFileSync(new URL('../reference/derived/_work-painting.png', import.meta.url)))
-const painting: ImageData2D = {
-  data: new Uint8ClampedArray(paintingPng.rgba),
-  width: paintingPng.width,
-  height: paintingPng.height,
-}
+// every test here samples the painting, which is derived and not in CI (as street-vincent's paint test): CI skips them,
+// and the Lead's gate runs them where the painting is
+const workPainting = new URL('../reference/derived/_work-painting.png', import.meta.url)
+const skip = !existsSync(workPainting) && 'needs reference/derived/_work-painting.png (not in CI)'
+const paintingPng = skip ? null : decodePNG(readFileSync(workPainting))
+const painting: ImageData2D = paintingPng
+  ? { data: new Uint8ClampedArray(paintingPng.rgba), width: paintingPng.width, height: paintingPng.height }
+  : { data: new Uint8ClampedArray(4), width: 1, height: 1 }
 
 const flowPng = decodePNG(readFileSync(new URL('../public/reference/land-flow.png', import.meta.url)))
 const flow: ImageData2D = {
@@ -70,9 +72,9 @@ for (let k = 0; k <= 900; k++) {
   walkCameras.push(walkPose(t, true).position)
 }
 
-const chunks = grassChunks(painting)
+const chunks = skip ? [] : grassChunks(painting)
 
-test('the grass keeps off the houses, the tree, the square and the path', () => {
+test('the grass keeps off the houses, the tree, the square and the path', { skip }, () => {
   assert.ok(chunks.length > 0)
   let count = 0
   for (const ch of chunks) {
@@ -94,7 +96,7 @@ test('the grass keeps off the houses, the tree, the square and the path', () => 
   assert.ok(count > 10000, `found ${count} blades`)
 })
 
-test('the density falls with the distance from the lane', () => {
+test('the density falls with the distance from the lane', { skip }, () => {
   const bandCounts = [0, 0, 0]
   for (const ch of chunks) {
     for (const b of ch.blades) {
@@ -154,7 +156,7 @@ test('the density falls with the distance from the lane', () => {
   }
 })
 
-test("a chunk's prefix is an even sample", () => {
+test("a chunk's prefix is an even sample", { skip }, () => {
   let checked = 0
   for (const ch of chunks) {
     if (ch.blades.length < 40) continue
@@ -175,7 +177,7 @@ test("a chunk's prefix is an even sample", () => {
   assert.ok(checked > 50, `checked ${checked} chunks with >= 40 blades`)
 })
 
-test('the sphere holds every displaced blade', () => {
+test('the sphere holds every displaced blade', { skip }, () => {
   let negativeExceeded = false
   for (const ch of chunks) {
     for (const b of ch.blades) {
@@ -221,7 +223,7 @@ test('the sphere holds every displaced blade', () => {
 
 // sampled, not every point: the count jumps where a chunk leaves the frustum, so a point between two samples can read
 // higher (Codex F05: 35,838 at t 0.31737 against the grid's 35,796). The grid is every 0.001 of t, plus that point.
-test('the grass fits its room at sampled points of the walk', () => {
+test('the grass fits its room at sampled points of the walk', { skip }, () => {
   const at = (t: number, aspect: number, portrait: boolean, chunkList: typeof chunks) => {
     const p = walkPose(t, portrait)
     const c = new PerspectiveCamera(p.fov, aspect, p.near, p.far)
@@ -273,7 +275,7 @@ test('the grass fits its room at sampled points of the walk', () => {
   assert.ok(doubleWorst > GRASS.budget, `negative control: at 2x density, tris ${doubleWorst} > budget ${GRASS.budget}`)
 })
 
-test('a near chunk draws all, a far one a share', () => {
+test('a near chunk draws all, a far one a share', { skip }, () => {
   const ch = chunks.find((c) => c.blades.length >= 50)!
   assert.ok(ch)
   const insideCam: [number, number, number] = [
@@ -289,7 +291,7 @@ test('a near chunk draws all, a far one a share', () => {
   assert.equal(grassDrawCount(ch, farCam), expectedFar, 'seen from 1.0 away draws expected share')
 })
 
-test('the map is small', () => {
+test('the map is small', { skip }, () => {
   const [x0, z0, w, d] = grassRect(chunks)
   assert.ok(w > 0 && d > 0)
   assert.ok(w / 0.005 <= 1024, `width in texels ${w / 0.005} <= 1024`)
@@ -297,13 +299,13 @@ test('the map is small', () => {
   assert.ok(x0 < 2 && z0 < 2)
 })
 
-test("the ground without grass is today's", () => {
+test("the ground without grass is today's", { skip }, () => {
   const bDefault = buildStreet(painting, flow, masses)
   const bExplicit = buildStreet(painting, flow, masses, { lit: true, grass: false })
   assert.deepEqual(bDefault, bExplicit)
 })
 
-test('with grass the ground is clipped to the footprint and nothing else', () => {
+test('with grass the ground is clipped to the footprint and nothing else', { skip }, () => {
   const bNoGrass = buildStreet(painting, flow, masses, { lit: true, grass: false })!
   const bGrass = buildStreet(painting, flow, masses, { lit: true, grass: true })!
   assert.ok(bNoGrass && bGrass)
