@@ -5,7 +5,7 @@
  * 1. The hand bends: stop 0, __grassHand at a verge point: __grassPeak > 0.5 within 0.3 s.
  * 2. The blades move (S8): with ids=1, class-9 pixels within 80 px of held hand differ, none differ beyond 300 px.
  * 3. The sky and the roof: __grassHand at a point above horizon: __grassHit null and __grassStamps.hand unchanged.
- * 4. The walk re-casts (S3, C2): hand held still on verge, ArrowUp for 1 s: __grassHit moves by > 0.1, projected within 1 px.
+ * 4. The walk re-casts (S3, C2): hand held still on verge, ArrowUp for 1 s: __grassHit moves by > 0.1, projected within 0.25 px.
  * 5. The phone: tap on Vincent toggles auto and leaves hand stamps unchanged. Down outside moved inside bends and does not toggle.
  *    Touch-drag bends and leaves auto. Touch canceled stops hand stamps.
  * 6. The swing and its end, vincent=0: hand held for 0.5 s, lifted: __grassPeak falls below 0.05 and rises again, __grassHandLive is 0 by 5.5 s.
@@ -365,7 +365,7 @@ async function main() {
     // -------------------------------------------------------------
     // Case 4: The walk re-casts (S3, C2)
     // the hand held still on the verge, ArrowUp for 1 s: __grassHit moves by > 0.1.
-    // On ten frames during the walk, page projects hit through __walkProject: within 1 px.
+    // On ten frames during the walk, page projects hit through __walkProject: within 0.25 px.
     // Precondition: __grassHit.t advances by >= 0.002 between sampled frames.
     // -------------------------------------------------------------
     if (shouldRun(4)) {
@@ -400,7 +400,9 @@ async function main() {
           { t: hit.t, x: hit.x, z: hit.z, y: castPlaneY },
         )
         const err = Math.hypot(proj[0] - vx4, proj[1] - vy4)
-        if (err > 1.0) {
+        // 0.25 px: correct code reads 0.00, and a ray cast through last frame's matrix (the walk's updateMatrixWorld
+        // deleted) reads 0.90 at the arrow key's pace, which a 1 px bound let through (S3 task 6, G8)
+        if (err > 0.25) {
           throw new Error(`Case 4 frame ${i}: projected [${proj[0].toFixed(1)}, ${proj[1].toFixed(1)}] is ${err.toFixed(2)} px from [${vx4}, ${vy4}]`)
         }
         projErrors.push(err)
@@ -415,7 +417,7 @@ async function main() {
       }
       await page.evaluate(() => window.__grassHand(null))
       console.log(
-        `PASS: case 4 - walk re-casts: hit moved by ${c4Dist.toFixed(3)} > 0.1, all 10 frames projected within 1 px (max error: ${Math.max(...projErrors).toFixed(2)} px)`,
+        `PASS: case 4 - walk re-casts: hit moved by ${c4Dist.toFixed(3)} > 0.1, all 10 frames projected within 0.25 px (max error: ${Math.max(...projErrors).toFixed(2)} px)`,
       )
     }
 
