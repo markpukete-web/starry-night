@@ -16,6 +16,13 @@ pad is proved at the farthest camera, not the nearest, because the widening grow
 projects through a reference camera built from the walk's pose, not through the camera that cast the ray. C3: the dark
 base sits at y = 0.001, between the ground's underpaint and its strokes.
 
+**Revision 4 (2026-10-24, night).** The worker read revision 3 as its builder (`plan-build-worker.md`): GAPS, ten gaps,
+B1–B10, each a missing name, path or command, none a change of design. All ten are closed here. B1: the triangles
+come from `window.__perf` under `&perf=1`. B2: the probes' paths and commands. B3: the footprint is the clip's shape,
+and the base has its own extent. B4: the blades' seed and each clump's height. B5: a texel no stamp reaches is
+released at the next step. B6: a stamp carries its source. B7: `admitGesture`. B8: the seam `__walkProject`. B9: the
+verge point. B10: the sweep's perf script. Codex does not read it again: no decision changed.
+
 **Goal:** Grass stands along both edges of the lane, painted in the painting's strokes, and the visitor's hand moves
 through it: the blades bend away under the hand and swing back after it.
 
@@ -103,10 +110,11 @@ on `feat/street-s3`.
   shorter verge (lesson: 0.014 left gaps), and the half-width widened with the camera's distance in the vertex shader
   (`× max(1, d / 0.3)`, the test's rule, now per frame). The colours come from the test's two sources: the field strip
   (`STREET_SOURCES.field`) and the bushes at the painting's lower right, 1420–1600 × 1110–1267.
-- **The ground under the grass** (S2). The footprint is one shape for the clip and the base: lane `t` −0.06 to 0.97,
-  0.06 to 0.6 off the lane, outside the square. With the grass on, `buildStreet` drops each class-3 ground triangle
+- **The ground under the grass** (S2). The footprint is the clip's shape: lane `t` −0.06 to 0.97, 0.06 to 0.6 off
+  the lane, outside the square. With the grass on, `buildStreet` drops each class-3 ground triangle
   whose three corners lie in the footprint. The path (class 4) and the square are never touched. A dark base strip
-  runs along each side of the lane from 0.052 to 0.765, laid as the path's segments are, at y = 0.001: above the
+  runs along each side of the lane from 0.052 to 0.765, over the footprint's `t` and outside the square, laid as the
+  path's segments are, at y = 0.001: above the
   ground's underpaint at 0 and below its lowest stroke at `STROKE_LIFT` 0.002, as the path's base sits at 0.002 under
   its own strokes (C3). Beyond 0.6 the ground's kept strokes lie over it. Its colour is the field source's darkest 20%, easing to the ground's base over its outer
   0.1, so a gap between blades reads as shadow (Mark's crop: the ground's long strokes read through the grass as
@@ -181,10 +189,14 @@ on `feat/street-s3`.
   and `cmp` the pairs (the test of the capture, not of the code).
 - [ ] **Step 2:** Perf, five rounds, at the same seven poses, `&walkMode=input`, slice 2's command and its `numbers.md`
   table, with the triangles.
-- [ ] **Step 3:** The triangles without grass along the walk (S1): `walkT` 0 to 0.9 every 0.05, both viewports, one
-  read each of `renderer.info.render.triangles` after the street is ready. Record the largest and its pose.
-- [ ] **Step 4:** Run `probe-removal.ts` and `probe-fit.ts` (each segment count at its density in the table) from the
-  worktree, and copy their output into `numbers.md`.
+- [ ] **Step 3:** The triangles without grass along the walk (S1): `walkT` 0 to 0.9 every 0.05, both viewports, with
+  `&perf=1&arrival=0&walkMode=input&walkT=<t>`. Read `window.__perf.info.triangles` once, 1 s after
+  `window.__streetReady`. Record the largest and its pose.
+- [ ] **Step 4:** Copy the four probes (`scratch/street-s3-2026-10-24/probe-*.ts`) into the worktree's `scratch/s3/`.
+  Their `../../` imports then reach the worktree's `src/`, `scripts/`, `public/` and `reference/`. The worktree needs
+  `reference/derived` as a link to the main checkout's, as `s2-lead-wt` has it. Run `node scratch/s3/probe-removal.ts`,
+  then `node scratch/s3/probe-fit.ts segs=1 k=0.68`, `segs=2 k=0.34` and `segs=3 k=0.22`. Copy their output into
+  `numbers.md`.
 
 ### Task 1: The blade's look (Lead)
 
@@ -228,6 +240,11 @@ that camera distance, with the full push and the wind); `GRASS_SOURCES` (the fie
   `grassChunks(painting: ImageData2D): GrassChunk[]`; `grassDrawCount(chunk: GrassChunk, camera: [number, number,
   number]): number`; `grassRect(chunks: GrassChunk[]): [x0: number, z0: number, width: number, depth: number]`;
   `inFootprint(x: number, z: number): boolean`.
+- `grassChunks` draws every random number from one `mulberry32(1)` (`src/scene/brush.ts`, the probe's seed, so the
+  counts match the table), the chunks in lane order. Each clump's `height` is the test's tuft rule:
+  `GRASS_BLADE.height × (0.45 + 1.1 × vnoise(x × 9 + 3.7, z × 9 − 1.3)) × verge`, with
+  `verge = 0.35 + 0.65 × clamp((lat − 0.052) / 0.1, 0, 1)` and `vnoise` from `src/scene/brushForms.ts`. The test's
+  per-blade factor `0.75 + 0.5 × rand()` stays inside `clump`.
 
 - [ ] **Step 1: The failing tests** in `scripts/street-grass.test.ts`:
   - `the grass keeps off the houses, the tree, the square and the path`: every blade's root obeys the exclusions and
@@ -266,9 +283,14 @@ that camera distance, with the full push and the wind); `GRASS_SOURCES` (the fie
 **Interfaces (produces):** `TRAIL = { texel: 0.005, radius: 0.045, feet: 0.03 }` with the timing from `LAND_TOUCH`;
 `type Trail` (the rect, the size, the live texels as `LandTouch`-shaped records with a direction, the clock, `bytes:
 Uint8Array` of RG pairs); `createTrail(rect: [number, number, number, number]): Trail`; `stampSegment(trail: Trail,
-from: [number, number] | null, to: [number, number], radius: number, now: number): void`; `stepTrail(trail: Trail,
-now: number, mode: 'swing' | 'settle' | 'frozen'): boolean` (true when `bytes` changed). `swing` is normal, `settle`
-reduced motion, `frozen` the pause.
+from: [number, number] | null, to: [number, number], radius: number, now: number, source: 'hand' | 'feet'): void`;
+`stepTrail(trail: Trail, now: number, mode: 'swing' | 'settle' | 'frozen'): boolean` (true when `bytes` changed).
+`swing` is normal, `settle` reduced motion, `frozen` the pause.
+
+The release is implicit. A frame stamps first, then steps. `stepTrail` releases every held texel that no stamp reached
+since the previous step: its `release` is that step's `now`. Each live texel keeps the source of the stamp whose push
+it holds. The trail keeps the mode of its last step. While that mode is `frozen`, `stampSegment` does nothing and
+`stepTrail` releases nothing.
 
 - [ ] **Step 1: The failing tests:**
   - `a held stamp rises and pushes away`: stamped each frame at one point, the texel at 0.6 of the radius reaches its
@@ -299,12 +321,17 @@ and `streetGesture`, S3 and S4), `src/scene/streetMaterial.ts` (class 9), `src/s
 boolean`), `scripts/street-mode.test.ts`, `scripts/street-walk.test.ts`, `scripts/check-street-walk.mjs`.
 
 **Interfaces:** Consumes Tasks 1–3 and slice 2's `hitBox`, `classifyGesture` and `__vincentBox`. Produces
-`streetGesture` and the seams `window.__grassHand(x: number | null, y?: number): void` (a client point for the mouse
+`streetGesture`, `admitGesture(box: { x0: number; y0: number; x1: number; y1: number } | null, x: number, y: number):
+'vincent' | 'hand'` in `streetWalk.ts` (the box is Vincent's padded box, `null` while he is hidden), and the seams `window.__grassHand(x: number | null, y?: number): void` (a client point for the mouse
 hand, or `null` to lift it), `window.__grassHit: { x: number; z: number; t: number } | null` (this frame's world hit, and the walk's `t` its
 camera was placed at),
 `window.__grassPeak: number` (the largest |push| in the map), `window.__grassStamps: { hand: number; feet: number }`
 (stamps made, per source), `window.__grassHandLive: number` (live texels last stamped by the hand),
-`window.__grassCount: number` (blades built).
+`window.__grassCount: number` (blades built), `window.__walkProject(t: number, point: [number, number, number]):
+[clientX: number, clientY: number]`. The last builds a `PerspectiveCamera` of its own and places it as the walk's
+frame loop places its camera at that `t`: `walkPose(t, portrait)`, the anchor's offset, the fov and the canvas's
+aspect. It calls that camera's own `updateMatrixWorld()`, projects the point, and maps it to the canvas's client
+rectangle.
 
 - [ ] **Step 1:** Flag tests: `grass` true by default, false for `grass=0`. Run: FAIL. Implement: PASS.
 - [ ] **Step 2:** The walk (S3, S4): after `lookAt`, `persp.updateMatrixWorld()`. The gesture admitted at the down as
@@ -319,7 +346,13 @@ camera was placed at),
 - [ ] **Step 4:** `StreetGrass.tsx`: the chunks as meshes, `instanceCount` per frame, the trail stepped and uploaded
   in one `useFrame` (priority 0), the hand's listeners and cursor, Vincent's feet stamped from `vincentPlace(t)`
   while he shows, the trail's mode `frozen` while paused, else `settle` under reduced motion, else `swing`.
-- [ ] **Step 5:** `check-street-grass.mjs`, after `check-street-walk.mjs`'s pattern, each case its precondition first:
+- [ ] **Step 5:** `check-street-grass.mjs`, after `check-street-walk.mjs`'s pattern, each case its precondition first.
+  The verge point: the script imports `pathPoint` and `pathTangent` from `src/scene/streetLayout.ts` (as
+  `check-sky-transform.mjs` imports from `src/`). It is `pathPoint(0.12)` plus 0.15 × the unit vector `(−tz, 0, tx)`
+  from `pathTangent(0.12)`, at y = `GRASS_BLADE.height / 2` (the cast plane). Its client point is
+  `__walkProject(__streetWalk.t, point)`. The checks run without `skyAnchor`, so the layout's coordinates are the
+  world's. At stop 0 the point lands at (914, 550) on the desktop and (339, 481) on the phone, 0.26 from the nearest
+  house (`scratch/street-s3-2026-10-24/probe-verge-point.ts`).
   1. The hand bends: stop 0, `__grassHand` at a verge point (precondition: `__grassHit` inside the map): `__grassPeak`
      > 0.5 within 0.3 s.
   2. The blades move (S8): with `ids=1`, the class-9 pixels within 80 px of a held hand differ from a capture without
@@ -328,9 +361,8 @@ camera was placed at),
   3. The sky and the roof: `__grassHand` at a point above the horizon: `__grassHit` null and `__grassStamps.hand`
      unchanged.
   4. The walk re-casts (S3, C2): the hand held still on the verge, ArrowUp for 1 s: `__grassHit` moves by > 0.1. On
-     ten frames during the walk, the page builds a reference camera from `walkPose(__grassHit.t, portrait)` at the
-     canvas's aspect, calls that camera's own `updateMatrixWorld()`, and projects the hit through it: within 1 px of
-     the client point. Never project through the camera that cast the ray: a stale matrix round-trips to zero error.
+     ten frames during the walk, the page projects the hit through `__walkProject(__grassHit.t, [x, y, z])`, with y the
+     cast plane's: within 1 px of the client point. Never project through the camera that cast the ray: a stale matrix round-trips to zero error.
      Precondition: `__grassHit.t` advances by ≥ 0.002 between sampled frames, so a camera one frame stale lands
      several pixels off.
   5. The phone (`walkMode=auto`, touch, 390 × 844): a tap on Vincent toggles `auto` and leaves `__grassStamps.hand`
@@ -351,16 +383,26 @@ camera was placed at),
 ### Task 5: The gate's runs (worker; the Lead reads the output)
 
 **Files:** `scripts/check-street-colour.ts` (class 9 as `grass: { idR: 0, idG: 188, idB: 255, minArea: 2000, ref:
-refHills }`, `refHills` the weight-averaged mean of `palette.json`'s `hills` swatches). Output to
+refHills }`, `refHills` the weight-averaged mean of `palette.json`'s `hills` swatches). Create
+`scripts/perf-street-grass.mjs` (the sweep's perf, Step 3). Output to
 `scratch/street-s3-2026-10-24/t5/`.
 
 - [ ] **Step 1:** `grass=0`: the seven poses, both viewports, byte-identical to Task 0's.
 - [ ] **Step 2:** The palette at stops 0 and 2, both viewports, slice 2's commands with the grass on: the grass ΔE76
   < 10, every class that passed in slice 2 still passing.
 - [ ] **Step 3:** Perf, five rounds, the seven poses, `&walkMode=input`: frame time and triangles (≤ 1,444,930). Then
-  one more run at stops 0 and 2 with a scripted sweep of `__grassHand` across the verge, back and forth every 2 s.
+  one more run at stops 0 and 2, both viewports, with `scripts/perf-street-grass.mjs`. It opens
+  `?street=1&station=S&perf=1&arrival=0&walkMode=input`, waits 1 s after `window.__streetReady`, and starts an
+  in-page sweep: each frame, `__grassHand` at a client point moving across the verge, there and back every 2 s. The
+  sweep's two ends are verge points as Task 4's, at `t₀ + 0.16` (`t₀` the stop's), 0.08 and 0.22 off the lane. At
+  stop 0 they lie on the `(−tz, 0, tx)` side and at stop 2 on `(tz, 0, −tx)`: on each stop's other side the phone's
+  frame cuts them off. Both ends are inside both viewports at both stops, the sweep spans 215–245 px on the desktop
+  and 126–139 px on the phone, and each end is at least 0.23 from a house (the probe). It clears `__perf.t`, waits 8 s, and writes the stats
+  `capture-diorama.mjs`'s `readPerf` computes (mean, p50, p95, max) and `__perf.info.triangles` to
+  `t5/perf-sweep-sS-<viewport>.json`.
   The Lead stays idle during perf (`t5/PERF-RUNNING`, as slice 2).
-- [ ] **Step 4:** The triangles with grass along the walk, as Task 0's Step 3: every reading ≤ 1,444,930.
+- [ ] **Step 4:** The triangles with grass along the walk, as Task 0's Step 3 (`&perf=1`, `window.__perf.info.triangles`):
+  every reading ≤ 1,444,930.
 - [ ] **Step 5:** Captures for the Lead: the seven poses, both viewports, and stops 0 and 2 with the hand mid-sweep.
 - [ ] **Step 6:** Commit `test(street): the palette gate measures the grass (S3 task 5)`.
 
