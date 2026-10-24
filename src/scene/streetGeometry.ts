@@ -556,7 +556,7 @@ function ground(ctx: Context): void {
  */
 function grassBaseStrip(ctx: Context): void {
   const tSteps = 80
-  const latSteps = 3
+  const latSteps = 4
   const BANDS = [0.045, 0.775]
   const tRange = [-0.075, 0.985]
   const dt = (tRange[1] - tRange[0]) / tSteps
@@ -591,7 +591,7 @@ function grassBaseStrip(ctx: Context): void {
   for (const side of [-1, 1]) {
     for (let i = 0; i < tSteps; i++) {
       const t0 = tRange[0] + i * dt
-      const t1 = tRange[0] + (i + 1.15) * dt
+      const t1 = tRange[0] + (i + 1) * dt
       for (let j = 0; j < latSteps; j++) {
         const l0 = BANDS[0] + j * dlat
         const l1 = BANDS[0] + (j + 1) * dlat
@@ -615,7 +615,13 @@ function grassBaseStrip(ctx: Context): void {
           ctx.underpaint.cls.push(3)
           ctx.underpaint.src.push(255)
         }
-        ctx.underpaint.indices.push(start, start + 1, start + 2, start, start + 2, start + 3)
+        const ccw1 = (p1[0] - p0[0]) * (p2[2] - p0[2]) - (p1[2] - p0[2]) * (p2[0] - p0[0])
+        const ccw2 = (p2[0] - p0[0]) * (p3[2] - p0[2]) - (p2[2] - p0[2]) * (p3[0] - p0[0])
+        if (ccw1 * ccw2 > 0) {
+          ctx.underpaint.indices.push(start, start + 1, start + 2, start, start + 2, start + 3)
+        } else {
+          ctx.underpaint.indices.push(start, start + 1, start + 3, start + 1, start + 2, start + 3)
+        }
       }
     }
   }
