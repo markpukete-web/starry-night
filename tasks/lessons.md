@@ -2984,3 +2984,8 @@ reads as alive.
 - **Probe a check's fixed screen point at every stop and viewport it runs at.** The grass sweep's side of the lane
   is on screen at stop 0 in both viewports. At stop 2 the phone's frame cuts it off (x −39 on a 390 px canvas), and
   an along-the-lane sweep there moves only 30 px. The sweep now crosses the verge on each stop's own side.
+- **Close the Playwright browser when a capture ends, and read the power state before a perf round.** At 18:15 the
+  Mac was on a 30 W charger and still drained the battery at 21 W, at 28%, with thermal pressure moderate. The
+  session's Playwright browser had run for 5 h 45 min with three street tabs rendering, its background throttling
+  off. Closed, the battery charged at 22.7 W and the pressure fell to nominal. Read `pmset -g batt` and
+  `notifyutil -g com.apple.system.thermalpressurelevel` before you measure frame times.
