@@ -2,6 +2,7 @@ import { Color, SRGBColorSpace, Vector3 } from 'three'
 import { mulberry32 } from './brush.ts'
 import { makeBrushArrays, type BrushArrays } from './brushForms.ts'
 import { bladeTemplate, bladeVertex, clump, GRASS_BLADE } from './grassBlade.ts'
+import { GRASS, inFootprint } from './streetGrass.ts'
 import { islandHeightAt } from './islandShape.ts'
 import { buildLandTrees, type BakedMass, type LandTrees } from './landDomes.ts'
 import { buildStreetTrees } from './streetTrees.ts'
@@ -549,7 +550,78 @@ function ground(ctx: Context): void {
   clad(ctx, 'path', 'square', orientedFace(sqOrigin, across.clone().multiplyScalar(2 * sqRadius), forward.clone().multiplyScalar(2 * sqRadius), below, { shape: 'quad', kind: 'path', source: 'field', refHeight: STREET.wallRef, seed: 0x6530, mirror: false }), 1, [PATH_BASE_INSET, PATH_BASE_INSET])
 }
 
-export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | null, masses: BakedMass[] | null, { lit = true }: { lit?: boolean } = {}): StreetBuild | null {
+/**
+ * The dark grass base strip along both sides of the lane (S3 task 2, S2/C3):
+ * at y = 0.001, above ground underpaint (0) and below strokes (0.002).
+ */
+function grassBaseStrip(ctx: Context): void {
+  const tSteps = 80
+  const latSteps = 3
+  const BANDS = [0.045, 0.775]
+  const tRange = [-0.075, 0.985]
+  const dt = (tRange[1] - tRange[0]) / tSteps
+  const dlat = (BANDS[1] - BANDS[0]) / latSteps
+
+  const dark = sourceUnderpaint(ctx.painting, 'field', 0.2)
+  const groundBase = sourceUnderpaint(ctx.painting, 'field', GROUND_BASE_SHARE)
+  const cDark = new Color().setRGB(dark[0], dark[1], dark[2], SRGBColorSpace)
+  const cGround = new Color().setRGB(groundBase[0], groundBase[1], groundBase[2], SRGBColorSpace)
+  const light = ctx.lit ? 0.95 : 0.6
+
+  const pt = (t: number, lat: number, side: number): [number, number, number] => {
+    const [px, , pz] = pathPoint(t)
+    const [tx, , tz] = pathTangent(t)
+    const n = Math.hypot(tx, tz)
+    return [px + side * lat * (-tz / n), GRASS.baseY, pz + side * lat * (tx / n)]
+  }
+
+  const inSq = (p: [number, number, number]) =>
+    Math.hypot(p[0] - STREET_SQUARE.x, p[2] - STREET_SQUARE.z) <= STREET_SQUARE.radius
+
+  const colAt = (lat: number): Color => {
+    const c = cDark.clone()
+    if (lat > 0.665) {
+      const u = Math.min(1, (lat - 0.665) / 0.1)
+      c.lerp(cGround, u)
+    }
+    if (ctx.lit) c.multiplyScalar(light)
+    return c
+  }
+
+  for (const side of [-1, 1]) {
+    for (let i = 0; i < tSteps; i++) {
+      const t0 = tRange[0] + i * dt
+      const t1 = tRange[0] + (i + 1.15) * dt
+      for (let j = 0; j < latSteps; j++) {
+        const l0 = BANDS[0] + j * dlat
+        const l1 = BANDS[0] + (j + 1) * dlat
+
+        const p0 = pt(t0, l0, side)
+        const p1 = pt(t1, l0, side)
+        const p2 = pt(t1, l1, side)
+        const p3 = pt(t0, l1, side)
+
+        if (inSq(p0) && inSq(p1) && inSq(p2) && inSq(p3)) continue
+
+        const c0 = colAt(l0)
+        const c1 = colAt(l1)
+
+        const start = ctx.underpaint.positions.length / 3
+        const verts = [p0, p1, p2, p3]
+        const cols = [c0, c0, c1, c1]
+        for (let v = 0; v < 4; v++) {
+          ctx.underpaint.positions.push(...verts[v])
+          ctx.underpaint.colors.push(cols[v].r, cols[v].g, cols[v].b)
+          ctx.underpaint.cls.push(3)
+          ctx.underpaint.src.push(255)
+        }
+        ctx.underpaint.indices.push(start, start + 1, start + 2, start, start + 2, start + 3)
+      }
+    }
+  }
+}
+
+export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | null, masses: BakedMass[] | null, { lit = true, grass = false }: { lit?: boolean; grass?: boolean } = {}): StreetBuild | null {
   if (!painting || !flow || !masses) return null
   const ctx: Context = {
     flow,
@@ -564,6 +636,27 @@ export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | nu
     lit,
   }
   ground(ctx)
+  if (grass) {
+    const pos = ctx.ground.arrays.positions
+    const oldIdx = ctx.ground.arrays.indices
+    const cls = ctx.ground.cls
+    const newIdx: number[] = []
+    for (let i = 0; i < oldIdx.length; i += 3) {
+      const i0 = oldIdx[i], i1 = oldIdx[i + 1], i2 = oldIdx[i + 2]
+      if (
+        cls[i0] === 3 &&
+        inFootprint(pos[i0 * 3], pos[i0 * 3 + 2]) &&
+        inFootprint(pos[i1 * 3], pos[i1 * 3 + 2]) &&
+        inFootprint(pos[i2 * 3], pos[i2 * 3 + 2])
+      ) {
+        // dropped
+      } else {
+        newIdx.push(i0, i1, i2)
+      }
+    }
+    ctx.ground.arrays.indices = newIdx
+    grassBaseStrip(ctx)
+  }
   const [fx, , fz] = STREET.forward
   const [rx, rz] = [-fz, fx]
   STREET_HOUSES.forEach((h, index) => {

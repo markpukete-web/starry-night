@@ -87,8 +87,9 @@ for (let i = 0; i <= N_LANE_SAMPLES; i++) {
   laneSamples.push(pathPoint(t))
 }
 
-export function laneOffset(x: number, z: number): number {
+export function laneParam(x: number, z: number): [number, number] {
   let minDistance = Infinity
+  let bestT = 0
   let signedOffset = 0
 
   for (let i = 0; i < N_LANE_SAMPLES; i++) {
@@ -105,6 +106,8 @@ export function laneOffset(x: number, z: number): number {
     const dist = Math.hypot(x - closestX, z - closestZ)
     if (dist < minDistance) {
       minDistance = dist
+      const tA = -0.2 + (1.2 * i) / N_LANE_SAMPLES
+      bestT = tA + (1.2 / N_LANE_SAMPLES) * u
       const vx = x - closestX
       const vz = z - closestZ
       const crossY = dx * vz - dz * vx
@@ -112,7 +115,11 @@ export function laneOffset(x: number, z: number): number {
       signedOffset = sign * dist
     }
   }
-  return signedOffset
+  return [bestT, signedOffset]
+}
+
+export function laneOffset(x: number, z: number): number {
+  return laneParam(x, z)[1]
 }
 
 export function laneDistance(x: number, z: number): number {
