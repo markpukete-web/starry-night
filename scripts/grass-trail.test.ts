@@ -296,3 +296,45 @@ test('the bytes', () => {
   assert.equal(encodePush(0), 128)
   assert.equal(encodePush(1), 255)
 })
+
+test('a sweep parts the grass', () => {
+  const trail = createTrail([0, 0, 0.8, 0.4])
+  stampSegment(trail, [0.1, 0.2], [0.6, 0.2], TRAIL.radius, 0, 'hand')
+  stepTrail(trail, TRAIL.rise, 'swing')
+
+  // At x 0.35, the texel 0.02 toward -z pushes toward -z
+  const [pxNeg, pzNeg] = getTexelPush(trail, 0.35, 0.18)
+  const lenNeg = Math.hypot(pxNeg, pzNeg)
+  assert.ok(lenNeg > 0.1, `push exists at -z (${lenNeg})`)
+  assert.ok(pzNeg < 0, `pushes toward -z (${pzNeg})`)
+  assert.ok(Math.abs(pzNeg) > 0.9 * lenNeg, `z part > 0.9 of length (${Math.abs(pzNeg)} > ${0.9 * lenNeg})`)
+
+  // And the texel 0.02 toward +z pushes toward +z
+  const [pxPos, pzPos] = getTexelPush(trail, 0.35, 0.22)
+  const lenPos = Math.hypot(pxPos, pzPos)
+  assert.ok(lenPos > 0.1, `push exists at +z (${lenPos})`)
+  assert.ok(pzPos > 0, `pushes toward +z (${pzPos})`)
+  assert.ok(pzPos > 0.9 * lenPos, `z part > 0.9 of length (${pzPos} > ${0.9 * lenPos})`)
+})
+
+test('a weaker stamp keeps the stronger push\'s direction and source', () => {
+  const trail = createTrail([0, 0, 0.4, 0.4])
+  const texel: [number, number] = [0.2025, 0.2025]
+
+  // Strong hand stamp (from left, pushing +x)
+  const dStrong = (1 - Math.sqrt(0.8)) * TRAIL.radius
+  stampSegment(trail, null, [texel[0] - dStrong, texel[1]], TRAIL.radius, 0, 'hand')
+
+  // Weak feet stamp (from below, pushing +z) in same frame
+  const dWeak = (1 - Math.sqrt(0.2)) * TRAIL.radius
+  stampSegment(trail, null, [texel[0], texel[1] - dWeak], TRAIL.radius, 0, 'feet')
+
+  const col = Math.floor((texel[0] - trail.rect[0]) / TRAIL.texel)
+  const row = Math.floor((texel[1] - trail.rect[1]) / TRAIL.texel)
+  const idx = row * trail.size[0] + col
+  const liveTexel = trail.live.get(idx)!
+  assert.ok(liveTexel, 'live texel exists')
+  assert.equal(liveTexel.source, 'hand', 'source stays hand')
+  assert.ok(liveTexel.dir[0] > 0.9, `direction stays toward +x (${liveTexel.dir[0]})`)
+  assert.ok(Math.abs(liveTexel.dir[1]) < 0.1, `direction does not take feet +z (${liveTexel.dir[1]})`)
+})

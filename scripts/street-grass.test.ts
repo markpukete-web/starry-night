@@ -375,24 +375,35 @@ test('with grass the ground is clipped to the footprint and nothing else', () =>
     return u >= -1e-3 && v >= -1e-3 && u + v <= 1 + 1e-3
   }
 
-  for (let s = 0; s < 200; s++) {
-    const t = -0.06 + Math.random() * (0.97 - -0.06)
-    const lat = 0.052 + Math.random() * (0.765 - 0.052)
-    const side = Math.random() < 0.5 ? -1 : 1
-    const [px, , pz] = pathPoint(t)
-    const [tx, , tz] = pathTangent(t)
-    const n = Math.hypot(tx, tz)
-    const x = px + side * lat * (-tz / n)
-    const z = pz + side * lat * (tx / n)
-    if (Math.hypot(x - STREET_SQUARE.x, z - STREET_SQUARE.z) <= STREET_SQUARE.radius) continue
+  const tCount = 103
+  const dt = (0.97 - -0.06) / tCount
+  const latCount = 37
+  const dlat = (0.765 - 0.052) / latCount
 
-    let hit = false
-    for (const [i0, i1, i2] of baseTris) {
-      if (ptInTri(x, z, i0, i1, i2)) {
-        hit = true
-        break
+  for (const side of [-1, 1]) {
+    for (let ti = 0; ti < tCount; ti++) {
+      const t = -0.06 + (ti + 0.5) * dt
+      const [px, , pz] = pathPoint(t)
+      const [tx, , tz] = pathTangent(t)
+      const n = Math.hypot(tx, tz)
+      const nx = -tz / n
+      const nz = tx / n
+
+      for (let li = 0; li < latCount; li++) {
+        const lat = 0.052 + (li + 0.5) * dlat
+        const x = px + side * lat * nx
+        const z = pz + side * lat * nz
+        if (Math.hypot(x - STREET_SQUARE.x, z - STREET_SQUARE.z) <= STREET_SQUARE.radius) continue
+
+        let hit = false
+        for (const [i0, i1, i2] of baseTris) {
+          if (ptInTri(x, z, i0, i1, i2)) {
+            hit = true
+            break
+          }
+        }
+        assert.ok(hit, `grid point (side=${side}, t=${t.toFixed(3)}, lat=${lat.toFixed(3)}) meets a base triangle`)
       }
     }
-    assert.ok(hit, `sample point (t=${t.toFixed(3)}, lat=${lat.toFixed(3)}) meets a base triangle`)
   }
 })

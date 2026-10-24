@@ -557,7 +557,7 @@ function ground(ctx: Context): void {
 function grassBaseStrip(ctx: Context): void {
   const tSteps = 80
   const latSteps = 4
-  const BANDS = [0.045, 0.775]
+  const BANDS = [0.052, 0.775]
   const tRange = [-0.075, 0.985]
   const dt = (tRange[1] - tRange[0]) / tSteps
   const dlat = (BANDS[1] - BANDS[0]) / latSteps
@@ -566,7 +566,6 @@ function grassBaseStrip(ctx: Context): void {
   const groundBase = sourceUnderpaint(ctx.painting, 'field', GROUND_BASE_SHARE)
   const cDark = new Color().setRGB(dark[0], dark[1], dark[2], SRGBColorSpace)
   const cGround = new Color().setRGB(groundBase[0], groundBase[1], groundBase[2], SRGBColorSpace)
-  const light = ctx.lit ? 0.95 : 0.6
 
   const pt = (t: number, lat: number, side: number): [number, number, number] => {
     const [px, , pz] = pathPoint(t)
@@ -584,7 +583,6 @@ function grassBaseStrip(ctx: Context): void {
       const u = Math.min(1, (lat - 0.665) / 0.1)
       c.lerp(cGround, u)
     }
-    if (ctx.lit) c.multiplyScalar(light)
     return c
   }
 
@@ -647,13 +645,22 @@ export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | nu
     const oldIdx = ctx.ground.arrays.indices
     const cls = ctx.ground.cls
     const newIdx: number[] = []
+    const footprintCache = new Uint8Array(pos.length / 3)
+    const checkFootprint = (v: number): boolean => {
+      let state = footprintCache[v]
+      if (state === 0) {
+        state = inFootprint(pos[v * 3], pos[v * 3 + 2]) ? 2 : 1
+        footprintCache[v] = state
+      }
+      return state === 2
+    }
     for (let i = 0; i < oldIdx.length; i += 3) {
       const i0 = oldIdx[i], i1 = oldIdx[i + 1], i2 = oldIdx[i + 2]
       if (
         cls[i0] === 3 &&
-        inFootprint(pos[i0 * 3], pos[i0 * 3 + 2]) &&
-        inFootprint(pos[i1 * 3], pos[i1 * 3 + 2]) &&
-        inFootprint(pos[i2 * 3], pos[i2 * 3 + 2])
+        checkFootprint(i0) &&
+        checkFootprint(i1) &&
+        checkFootprint(i2)
       ) {
         // dropped
       } else {

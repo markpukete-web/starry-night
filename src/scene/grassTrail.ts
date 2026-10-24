@@ -3,7 +3,7 @@
  * D1's rise, swing, settle and freeze in every texel of the map.
  */
 
-import { LAND_TOUCH, NO_RELEASE } from './landTouch.ts'
+import { LAND_TOUCH, NO_RELEASE, landAmplitude } from './landTouch.ts'
 
 export function encodePush(push: number): number {
   return Math.round(128 + 127 * Math.max(-1, Math.min(1, push)))
@@ -23,6 +23,7 @@ export const TRAIL = {
 export type LiveTexel = {
   index: number
   x: number
+  y: number
   z: number
   t0: number
   amp: number
@@ -67,23 +68,10 @@ function smoothstep(a: number, b: number, x: number): number {
 }
 
 function calcAmp(texel: LiveTexel, now: number, mode: 'swing' | 'settle' | 'frozen'): number {
-  if (texel.release === NO_RELEASE || now <= texel.release) {
-    // Held
-    const u = smoothstep(0, TRAIL.rise, now - texel.t0)
-    return texel.from + (texel.amp - texel.from) * u
-  }
-
-  // Released
-  if (mode === 'settle') {
+  if (mode === 'settle' && texel.release !== NO_RELEASE && now > texel.release) {
     if (texel.settleT0 === undefined) {
       texel.settleT0 = now
-      const since = now - texel.release
-      const close = 1 - smoothstep(TRAIL.windowStart, TRAIL.windowEnd, since)
-      const held =
-        texel.from +
-        (texel.amp - texel.from) * smoothstep(0, TRAIL.rise, texel.release - texel.t0)
-      const omega = (2 * Math.PI) / TRAIL.period
-      texel.settleFrom = held * Math.exp(-since / TRAIL.tau) * Math.cos(omega * since) * close
+      texel.settleFrom = landAmplitude(texel, now, TRAIL)
     }
     const since = now - texel.settleT0
     if (since >= TRAIL.rise) return 0
@@ -91,16 +79,7 @@ function calcAmp(texel: LiveTexel, now: number, mode: 'swing' | 'settle' | 'froz
     return (texel.settleFrom ?? 0) * (1 - progress)
   }
 
-  // mode === 'swing'
-  const since = now - texel.release
-  if (since >= TRAIL.windowEnd) return 0
-  const close = 1 - smoothstep(TRAIL.windowStart, TRAIL.windowEnd, since)
-  if (close === 0) return 0
-  const held =
-    texel.from +
-    (texel.amp - texel.from) * smoothstep(0, TRAIL.rise, texel.release - texel.t0)
-  const omega = (2 * Math.PI) / TRAIL.period
-  return held * Math.exp(-since / TRAIL.tau) * Math.cos(omega * since) * close
+  return landAmplitude(texel, now, TRAIL)
 }
 
 export function stampSegment(
@@ -155,7 +134,11 @@ export function stampSegment(
         const projZ = from[1] + uClamped * segZ
         dist = Math.hypot(tx - projX, tz - projZ)
         if (dist >= radius) continue
-        dir = [segX / segLen, segZ / segLen]
+        if (dist <= TRAIL.texel) {
+          dir = [segX / segLen, segZ / segLen]
+        } else {
+          dir = [(tx - projX) / dist, (tz - projZ) / dist]
+        }
       }
 
       const q = dist / radius
@@ -164,32 +147,39 @@ export function stampSegment(
 
       const existing = trail.live.get(idx)
       if (existing) {
-        existing.stampedThisStep = true
-        existing.source = source
         if (existing.release !== NO_RELEASE) {
-          // Re-stamping an already released texel
+          // Re-stamping an already released texel: only wins if target >= curr
           const curr = calcAmp(existing, now, trail.mode)
-          existing.from = curr
-          existing.amp = Math.max(curr, target)
-          existing.t0 = now
-          existing.release = NO_RELEASE
-          if (target > 0) existing.dir = dir
-          delete existing.settleFrom
-          delete existing.settleT0
+          if (target >= curr) {
+            existing.stampedThisStep = true
+            existing.from = curr
+            existing.amp = target
+            existing.t0 = now
+            existing.release = NO_RELEASE
+            existing.source = source
+            if (target > 0) existing.dir = dir
+            delete existing.settleFrom
+            delete existing.settleT0
+          }
         } else {
-          // Still held: retarget if new push is stronger
+          // Still held: takes new direction and source only when target > amp
           if (target > existing.amp) {
+            existing.stampedThisStep = true
             const curr = calcAmp(existing, now, trail.mode)
             existing.from = curr
             existing.amp = target
             existing.t0 = now
+            existing.source = source
             if (target > 0) existing.dir = dir
+          } else if (existing.source === source) {
+            existing.stampedThisStep = true
           }
         }
       } else {
         trail.live.set(idx, {
           index: idx,
           x: tx,
+          y: 0,
           z: tz,
           t0: now,
           amp: target,

@@ -27,7 +27,7 @@ export const GRASS = {
   r0: 0.22,
   /**
    * Density starts at 0.22 from Task 1; tuned to 0.21 so the walk's worst point
-   * (37,248 triangles) fits inside GRASS.budget (38,515) with the larger bladeReach spheres.
+   * fits inside GRASS.budget (38,515) with the larger bladeReach spheres; the budget test prints the worst point.
    */
   density: 0.21,
   full: 82184,
@@ -138,13 +138,22 @@ export function grassChunks(painting: ImageData2D, customDensity?: number): Gras
           chunkBlades[j] = tmp
         }
 
-        let chunkReach = 0
-        for (const b of chunkBlades) {
-          let maxCamDist = 0
-          for (const cam of walkCameras) {
-            const d = Math.hypot(b.x - cam[0], cam[1], b.z - cam[2])
+        const corners: [number, number][] = [
+          [minX, minZ],
+          [maxX, minZ],
+          [minX, maxZ],
+          [maxX, maxZ],
+        ]
+        let maxCamDist = 0
+        for (const cam of walkCameras) {
+          for (const [cornerX, cornerZ] of corners) {
+            const d = Math.hypot(cornerX - cam[0], cam[1], cornerZ - cam[2])
             if (d > maxCamDist) maxCamDist = d
           }
+        }
+
+        let chunkReach = 0
+        for (const b of chunkBlades) {
           const r = bladeReach(b, maxCamDist)
           if (r > chunkReach) chunkReach = r
         }

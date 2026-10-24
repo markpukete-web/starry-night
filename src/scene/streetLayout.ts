@@ -88,9 +88,13 @@ for (let i = 0; i <= N_LANE_SAMPLES; i++) {
 }
 
 export function laneParam(x: number, z: number): [number, number] {
-  let minDistance = Infinity
-  let bestT = 0
-  let signedOffset = 0
+  let minDistanceSq = Infinity
+  let bestI = 0
+  let bestU = 0
+  let bestClosestX = 0
+  let bestClosestZ = 0
+  let bestDx = 0
+  let bestDz = 0
 
   for (let i = 0; i < N_LANE_SAMPLES; i++) {
     const pA = laneSamples[i]
@@ -103,18 +107,28 @@ export function laneParam(x: number, z: number): [number, number] {
     const closestX = pA[0] + u * dx
     const closestZ = pA[2] + u * dz
 
-    const dist = Math.hypot(x - closestX, z - closestZ)
-    if (dist < minDistance) {
-      minDistance = dist
-      const tA = -0.2 + (1.2 * i) / N_LANE_SAMPLES
-      bestT = tA + (1.2 / N_LANE_SAMPLES) * u
-      const vx = x - closestX
-      const vz = z - closestZ
-      const crossY = dx * vz - dz * vx
-      const sign = crossY >= 0 ? 1 : -1
-      signedOffset = sign * dist
+    const vx = x - closestX
+    const vz = z - closestZ
+    const distSq = vx * vx + vz * vz
+    if (distSq < minDistanceSq) {
+      minDistanceSq = distSq
+      bestI = i
+      bestU = u
+      bestClosestX = closestX
+      bestClosestZ = closestZ
+      bestDx = dx
+      bestDz = dz
     }
   }
+
+  const tA = -0.2 + (1.2 * bestI) / N_LANE_SAMPLES
+  const bestT = tA + (1.2 / N_LANE_SAMPLES) * bestU
+  const dist = Math.hypot(x - bestClosestX, z - bestClosestZ)
+  const vx = x - bestClosestX
+  const vz = z - bestClosestZ
+  const crossY = bestDx * vz - bestDz * vx
+  const sign = crossY >= 0 ? 1 : -1
+  const signedOffset = sign * dist
   return [bestT, signedOffset]
 }
 
