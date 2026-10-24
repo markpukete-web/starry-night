@@ -5,7 +5,7 @@ import type { ImageData2D } from './useImageData.ts'
 /**
  * The street's grass blade (S3 task 1). The painting's bushes at its lower right are arching strokes: each rises from
  * the clump, bends over and falls outward, 8–11 times as long as it is wide (measured at 8×), keeping its width until
- * a short tip, dark at the clump's centre and pale yellow-green at its edge. The blade is drawn fatter, about 4–7 times
+ * a short tip, dark at the clump's centre and pale yellow-green at its edge. The blade is drawn fatter, about 5–7.5 times
  * along its arch, because the thinner pointed blade read as agave on the flat strip. The grass test's blades were
  * short straight spikes that tapered all along (`tasks/todo.md`, "Not yet Van Gogh"). A blade here is a ribbon in a
  * vertical plane that faces the camera, as a brushstroke faces its viewer, and bends within that plane: its angle from
@@ -25,7 +25,7 @@ export const GRASS_BLADE = {
   segments: 3,
   /** a clump's blade length before the tuft rule (Task 2) and the per-blade factor 0.75–1.25 */
   height: 0.036,
-  /** a blade's half-width at its widest: 4–7 times as long as wide, fatter than the painting's 8–11 (see above) */
+  /** a blade's half-width at its widest: 5–7.5 times as long as wide, fatter than the painting's 8–11 (see above) */
   halfWidth: [0.0024, 0.0034],
   /** the width along the blade, as a share of the widest: blunt at the root, full from `full`, tapering from `taper` */
   profile: { root: 0.8, full: 0.15, taper: 0.7, tip: 0.4 },

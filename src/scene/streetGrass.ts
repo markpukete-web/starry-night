@@ -27,7 +27,8 @@ export const GRASS = {
   r0: 0.22,
   /**
    * Density starts at 0.22 from Task 1; tuned to 0.21 so the walk's worst point
-   * fits inside GRASS.budget (38,515) with the larger bladeReach spheres; the budget test prints the worst point.
+   * fits inside GRASS.budget (38,515) with the larger bladeReach spheres, then to 0.2 for look pass 2's bigger blade
+   * (0.21 and 0.205 overrun the budget, 0.203 fails two tests); the budget test prints the worst point.
    */
   density: 0.2,
   full: 82184,
