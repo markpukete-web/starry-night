@@ -6,6 +6,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
+import { NO_RELEASE } from '../src/scene/landTouch.ts'
 import {
   createTrail,
   stampSegment,
@@ -337,4 +338,75 @@ test('a weaker stamp keeps the stronger push\'s direction and source', () => {
   assert.equal(liveTexel.source, 'hand', 'source stays hand')
   assert.ok(liveTexel.dir[0] > 0.9, `direction stays toward +x (${liveTexel.dir[0]})`)
   assert.ok(Math.abs(liveTexel.dir[1]) < 0.1, `direction does not take feet +z (${liveTexel.dir[1]})`)
+})
+
+test('a held texel stays held under any stamp', () => {
+  const trail = createTrail([0, 0, 0.4, 0.4])
+  const texel: [number, number] = [0.2025, 0.2025]
+  const col = Math.floor((texel[0] - trail.rect[0]) / TRAIL.texel)
+  const row = Math.floor((texel[1] - trail.rect[1]) / TRAIL.texel)
+  const idx = row * trail.size[0] + col
+
+  // Stamp a point that gives the texel at (0.2025, 0.2025) a target of 0.6 at time 0, and step
+  const d06 = (1 - Math.sqrt(0.6)) * TRAIL.radius
+  const pHand: [number, number] = [texel[0] - d06, texel[1]]
+  stampSegment(trail, null, pHand, TRAIL.radius, 0, 'hand')
+  stepTrail(trail, 0, 'swing')
+
+  let live = trail.live.get(idx)!
+  assert.ok(live, 'texel is live after step 0')
+  assert.equal(live.release, NO_RELEASE, 'texel is held after step 0')
+
+  // Stamp the same point at 1/60 and step
+  stampSegment(trail, null, pHand, TRAIL.radius, 1 / 60, 'hand')
+  stepTrail(trail, 1 / 60, 'swing')
+
+  live = trail.live.get(idx)!
+  assert.ok(live, 'texel is live after step 1')
+  assert.equal(live.release, NO_RELEASE, 'texel is held after step 1')
+
+  // Then stamp a weaker feet stamp from another side at 2/60 and step
+  const dWeak = (1 - Math.sqrt(0.2)) * TRAIL.radius
+  const pFeet: [number, number] = [texel[0], texel[1] - dWeak]
+  stampSegment(trail, null, pFeet, TRAIL.radius, 2 / 60, 'feet')
+  stepTrail(trail, 2 / 60, 'swing')
+
+  live = trail.live.get(idx)!
+  assert.ok(live, 'texel is live after step 2')
+  assert.equal(live.release, NO_RELEASE, 'texel is held after step 2')
+  assert.equal(live.source, 'hand', 'direction and source are still the first stamp\'s')
+  assert.ok(live.dir[0] > 0.9, `direction is still toward +x (${live.dir[0]})`)
+  assert.ok(Math.abs(live.dir[1]) < 0.1, `direction does not take feet (${live.dir[1]})`)
+})
+
+test('a sweep\'s end is a point', () => {
+  const trail = createTrail([0, 0, 0.8, 0.4])
+  stampSegment(trail, [0.1025, 0.2025], [0.6025, 0.2025], TRAIL.radius, 0, 'hand')
+  stepTrail(trail, TRAIL.rise, 'swing')
+
+  // The texel at (0.6025, 0.2025) has a push of 0
+  const [pEnd, pEndZ] = getTexelPush(trail, 0.6025, 0.2025)
+  assert.equal(pEnd, 0, `end texel has push of 0 in x (${pEnd})`)
+  assert.equal(pEndZ, 0, `end texel has push of 0 in z (${pEndZ})`)
+
+  // The texel at (0.6225, 0.2025) pushes toward +x
+  const [pAfter, pAfterZ] = getTexelPush(trail, 0.6225, 0.2025)
+  assert.ok(pAfter > 0.1, `pushes toward +x (${pAfter})`)
+  assert.ok(Math.abs(pAfterZ) < 0.1, `z part is small (${pAfterZ})`)
+
+  // And the texel at (0.0825, 0.2025) pushes toward -x
+  const [pBefore, pBeforeZ] = getTexelPush(trail, 0.0825, 0.2025)
+  assert.ok(pBefore < -0.1, `pushes toward -x (${pBefore})`)
+  assert.ok(Math.abs(pBeforeZ) < 0.1, `z part is small (${pBeforeZ})`)
+
+  // Then, for five frames 1/60 s apart, stamp a point at (0.6025, 0.2025) and step
+  let t = TRAIL.rise
+  for (let f = 1; f <= 5; f++) {
+    t += 1 / 60
+    stampSegment(trail, null, [0.6025, 0.2025], TRAIL.radius, t, 'hand')
+    stepTrail(trail, t, 'swing')
+    const [px, pz] = getTexelPush(trail, 0.6025, 0.2025)
+    assert.equal(px, 0, `frame ${f}: center texel keeps push 0 in x`)
+    assert.equal(pz, 0, `frame ${f}: center texel keeps push 0 in z`)
+  }
 })

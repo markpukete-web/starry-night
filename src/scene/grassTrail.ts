@@ -129,15 +129,26 @@ export function stampSegment(
         dir = isCentreTexel || dist < 1e-6 ? [0, 0] : [dx / dist, dz / dist]
       } else {
         const u = ((tx - from[0]) * segX + (tz - from[1]) * segZ) / (segLen * segLen)
-        const uClamped = Math.max(0, Math.min(1, u))
-        const projX = from[0] + uClamped * segX
-        const projZ = from[1] + uClamped * segZ
-        dist = Math.hypot(tx - projX, tz - projZ)
-        if (dist >= radius) continue
-        if (dist <= TRAIL.texel) {
-          dir = [segX / segLen, segZ / segLen]
+        if (u <= 0 || u >= 1) {
+          const endPt = u <= 0 ? from : to
+          const dx = tx - endPt[0]
+          const dz = tz - endPt[1]
+          dist = Math.hypot(dx, dz)
+          if (dist >= radius) continue
+          const isCentreTexel = Math.abs(dx) < TRAIL.texel * 0.5 && Math.abs(dz) < TRAIL.texel * 0.5
+          dir = isCentreTexel || dist < 1e-6 ? [0, 0] : [dx / dist, dz / dist]
         } else {
-          dir = [(tx - projX) / dist, (tz - projZ) / dist]
+          const projX = from[0] + u * segX
+          const projZ = from[1] + u * segZ
+          const dx = tx - projX
+          const dz = tz - projZ
+          dist = Math.hypot(dx, dz)
+          if (dist >= radius) continue
+          if (dist <= TRAIL.texel) {
+            dir = [segX / segLen, segZ / segLen]
+          } else {
+            dir = [dx / dist, dz / dist]
+          }
         }
       }
 
@@ -147,11 +158,11 @@ export function stampSegment(
 
       const existing = trail.live.get(idx)
       if (existing) {
+        existing.stampedThisStep = true
         if (existing.release !== NO_RELEASE) {
-          // Re-stamping an already released texel: only wins if target >= curr
+          // Re-stamping an already released texel: a target at least its current amplitude holds it again
           const curr = calcAmp(existing, now, trail.mode)
-          if (target >= curr) {
-            existing.stampedThisStep = true
+          if (target >= curr - 1e-9) {
             existing.from = curr
             existing.amp = target
             existing.t0 = now
@@ -162,17 +173,17 @@ export function stampSegment(
             delete existing.settleT0
           }
         } else {
-          // Still held: takes new direction and source only when target > amp
-          if (target > existing.amp) {
-            existing.stampedThisStep = true
+          // Held texel: greater target retargets, equal target takes direction and source only
+          if (target > existing.amp + 1e-9) {
             const curr = calcAmp(existing, now, trail.mode)
             existing.from = curr
             existing.amp = target
             existing.t0 = now
             existing.source = source
             if (target > 0) existing.dir = dir
-          } else if (existing.source === source) {
-            existing.stampedThisStep = true
+          } else if (Math.abs(target - existing.amp) <= 1e-9) {
+            existing.source = source
+            if (target > 0) existing.dir = dir
           }
         }
       } else {
