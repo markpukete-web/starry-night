@@ -13,9 +13,13 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 const appUrl = process.env.DIORAMA_CAPTURE_URL || 'http://127.0.0.1:5181/'
-const parsedUrl = new URL(appUrl)
-const portStr = parsedUrl.port || '80'
-const testUrl = `${parsedUrl.origin}/?street=1&station=2`
+const url = new URL(appUrl)
+url.searchParams.set('street', '1')
+url.searchParams.set('station', '2')
+for (const [key, value] of new URLSearchParams(process.env.DIORAMA_CAPTURE_EXTRA || '')) {
+  url.searchParams.set(key, value)
+}
+const testUrl = url.toString()
 
 const chromePath =
   process.env.CHROME_PATH ||
@@ -152,6 +156,22 @@ async function main() {
       if (Date.now() - start > 25000) throw new Error(`Timeout waiting for __streetReady at ${testUrl}`)
     }
 
+    // Check preconditions before rotation
+    const beforeEval = await page.send('Runtime.evaluate', {
+      expression: `(() => ({
+        walkT: typeof window.__streetWalk !== 'undefined' ? window.__streetWalk.t : undefined,
+      }))()`,
+      returnByValue: true,
+    })
+    const beforeState = beforeEval.result?.value
+    const extraParams = new URLSearchParams(process.env.DIORAMA_CAPTURE_EXTRA || '')
+    if (extraParams.has('walkT')) {
+      const expectedT = parseFloat(extraParams.get('walkT'))
+      if (beforeState?.walkT === undefined || Math.abs(beforeState.walkT - expectedT) > 1e-4) {
+        throw new Error(`Precondition failed: expected __streetWalk.t === ${expectedT} before turn, got ${beforeState?.walkT}`)
+      }
+    }
+
     // 2. Rotate to mobile portrait: 390 × 844
     await page.send('Emulation.setDeviceMetricsOverride', {
       width: 390,
@@ -168,7 +188,11 @@ async function main() {
       expression: `(() => ({
         counts: window.__streetCounts,
         lifeBuilds: window.__streetLifeBuilds,
-        camera: typeof window.__streetCamera === 'function' ? window.__streetCamera() : null
+        camera: typeof window.__streetCamera === 'function' ? window.__streetCamera() : null,
+        walkT: typeof window.__streetWalk !== 'undefined' ? window.__streetWalk.t : undefined,
+        vincentBox: typeof window.__vincentBox === 'function' ? window.__vincentBox() : undefined,
+        innerWidth: window.innerWidth,
+        innerHeight: window.innerHeight,
       }))()`,
       returnByValue: true,
     })
@@ -188,6 +212,21 @@ async function main() {
     if (lifeBuilds !== 1) throw new Error(`FAIL: expected window.__streetLifeBuilds === 1, got ${lifeBuilds}`)
 
     if (fov !== 75) throw new Error(`FAIL: expected window.__streetCamera().fov === 75, got ${fov}`)
+
+    if (beforeState?.walkT !== undefined) {
+      if (state.walkT === undefined || Math.abs(state.walkT - beforeState.walkT) > 1e-4) {
+        throw new Error(`FAIL: expected __streetWalk.t === ${beforeState.walkT} after turn, got ${state.walkT}`)
+      }
+    }
+
+    if (state.vincentBox) {
+      const { x0, x1, y0, y1 } = state.vincentBox
+      const w = state.innerWidth ?? 390
+      const h = state.innerHeight ?? 844
+      if (x0 < 0 || x1 > w || y0 < 0 || y1 > h || x1 <= x0 || y1 <= y0) {
+        throw new Error(`FAIL: expected __vincentBox inside viewport (0..${w}, 0..${h}), got [x0=${x0}, x1=${x1}, y0=${y0}, y1=${y1}]`)
+      }
+    }
 
     console.log(`PASS: street rotation holds builds=${builds}, lifeBuilds=${lifeBuilds} and updates fov=${fov}`)
     await page.close()
