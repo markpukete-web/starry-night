@@ -44,6 +44,7 @@ export function idInjection(threshold = FOG.near + 0.6 * (FOG.far - FOG.near)): 
       'else if (c == 6) idCol = vec3(1.0, 128.0 / 255.0, 0.0);',
       'else if (c == 7) idCol = vec3(128.0 / 255.0, 0.0, 1.0);',
       'else if (c == 8) idCol = vec3(128.0 / 255.0, 1.0, 0.0);',
+      'else if (c == 9) idCol = vec3(0.0, 128.0 / 255.0, 1.0);',
       'else idCol = vec3(0.0, 0.0, 0.0);',
       'if (vFogDistance > uFogThreshold) {',
       '  idCol = vec3(1.0, 1.0, 1.0);',

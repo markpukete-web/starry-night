@@ -1,5 +1,8 @@
 import { Color, SRGBColorSpace, Vector3 } from 'three'
+import { mulberry32 } from './brush.ts'
 import { makeBrushArrays, type BrushArrays } from './brushForms.ts'
+import { bladeTemplate, bladeVertex, clump, GRASS_BLADE } from './grassBlade.ts'
+import { GRASS, inFootprint } from './streetGrass.ts'
 import { islandHeightAt } from './islandShape.ts'
 import { buildLandTrees, type BakedMass, type LandTrees } from './landDomes.ts'
 import { buildStreetTrees } from './streetTrees.ts'
@@ -45,7 +48,9 @@ const INK = new Color(PALETTE.ground)
 const OPENING_DARK = 0.3
 // pass 1: 0.35 of the house blue read as flat blue doors
 const WINDOW_DARK = new Color(PALETTE.ground).lerp(new Color(PALETTE.house), 0.12)
-/** the ground's and the path's base: the mean of the field source's darkest share (look pass 1) */
+/** the ground's, the path's and the grass's base: the mean of the field source's darkest share (look pass 1; S3 look
+ * pass 1 moved the grass's from 0.2, which left the verge's gaps at L 12 against the field's 22 and the ground's ΔE76 at
+ * 11.2, so its edge blend into the ground had nothing left to blend, Codex F06) */
 const GROUND_BASE_SHARE = 0.4
 /** Look pass 3: the path's pale base stops this far short of its edges (0.2 of its width), so strokes draw the edge */
 const PATH_BASE_INSET = 0.024
@@ -547,7 +552,66 @@ function ground(ctx: Context): void {
   clad(ctx, 'path', 'square', orientedFace(sqOrigin, across.clone().multiplyScalar(2 * sqRadius), forward.clone().multiplyScalar(2 * sqRadius), below, { shape: 'quad', kind: 'path', source: 'field', refHeight: STREET.wallRef, seed: 0x6530, mirror: false }), 1, [PATH_BASE_INSET, PATH_BASE_INSET])
 }
 
-export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | null, masses: BakedMass[] | null, { lit = true }: { lit?: boolean } = {}): StreetBuild | null {
+/**
+ * The dark grass base strip along both sides of the lane (S3 task 2, S2/C3):
+ * at y = 0.001, above ground underpaint (0) and below strokes (0.002).
+ */
+function grassBaseStrip(ctx: Context): void {
+  const tSteps = 80
+  const latSteps = 4
+  const BANDS = [0.052, 0.775]
+  const tRange = [-0.075, 0.985]
+  const dt = (tRange[1] - tRange[0]) / tSteps
+  const dlat = (BANDS[1] - BANDS[0]) / latSteps
+
+  const dark = new Color().setRGB(...sourceUnderpaint(ctx.painting, 'field', GROUND_BASE_SHARE), SRGBColorSpace)
+
+  const pt = (t: number, lat: number, side: number): [number, number, number] => {
+    const [px, , pz] = pathPoint(t)
+    const [tx, , tz] = pathTangent(t)
+    const n = Math.hypot(tx, tz)
+    return [px + side * lat * (-tz / n), GRASS.baseY, pz + side * lat * (tx / n)]
+  }
+
+  const inSq = (p: [number, number, number]) =>
+    Math.hypot(p[0] - STREET_SQUARE.x, p[2] - STREET_SQUARE.z) <= STREET_SQUARE.radius
+
+  for (const side of [-1, 1]) {
+    for (let i = 0; i < tSteps; i++) {
+      const t0 = tRange[0] + i * dt
+      const t1 = tRange[0] + (i + 1) * dt
+      for (let j = 0; j < latSteps; j++) {
+        const l0 = BANDS[0] + j * dlat
+        const l1 = BANDS[0] + (j + 1) * dlat
+
+        const p0 = pt(t0, l0, side)
+        const p1 = pt(t1, l0, side)
+        const p2 = pt(t1, l1, side)
+        const p3 = pt(t0, l1, side)
+
+        if (inSq(p0) && inSq(p1) && inSq(p2) && inSq(p3)) continue
+
+        const start = ctx.underpaint.positions.length / 3
+        const verts = [p0, p1, p2, p3]
+        for (let v = 0; v < 4; v++) {
+          ctx.underpaint.positions.push(...verts[v])
+          ctx.underpaint.colors.push(dark.r, dark.g, dark.b)
+          ctx.underpaint.cls.push(3)
+          ctx.underpaint.src.push(255)
+        }
+        const ccw1 = (p1[0] - p0[0]) * (p2[2] - p0[2]) - (p1[2] - p0[2]) * (p2[0] - p0[0])
+        const ccw2 = (p2[0] - p0[0]) * (p3[2] - p0[2]) - (p2[2] - p0[2]) * (p3[0] - p0[0])
+        if (ccw1 * ccw2 > 0) {
+          ctx.underpaint.indices.push(start, start + 1, start + 2, start, start + 2, start + 3)
+        } else {
+          ctx.underpaint.indices.push(start, start + 1, start + 3, start + 1, start + 2, start + 3)
+        }
+      }
+    }
+  }
+}
+
+export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | null, masses: BakedMass[] | null, { lit = true, grass = false }: { lit?: boolean; grass?: boolean } = {}): StreetBuild | null {
   if (!painting || !flow || !masses) return null
   const ctx: Context = {
     flow,
@@ -562,6 +626,36 @@ export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | nu
     lit,
   }
   ground(ctx)
+  if (grass) {
+    const pos = ctx.ground.arrays.positions
+    const oldIdx = ctx.ground.arrays.indices
+    const cls = ctx.ground.cls
+    const newIdx: number[] = []
+    const footprintCache = new Uint8Array(pos.length / 3)
+    const checkFootprint = (v: number): boolean => {
+      let state = footprintCache[v]
+      if (state === 0) {
+        state = inFootprint(pos[v * 3], pos[v * 3 + 2]) ? 2 : 1
+        footprintCache[v] = state
+      }
+      return state === 2
+    }
+    for (let i = 0; i < oldIdx.length; i += 3) {
+      const i0 = oldIdx[i], i1 = oldIdx[i + 1], i2 = oldIdx[i + 2]
+      if (
+        cls[i0] === 3 &&
+        checkFootprint(i0) &&
+        checkFootprint(i1) &&
+        checkFootprint(i2)
+      ) {
+        // dropped
+      } else {
+        newIdx.push(i0, i1, i2)
+      }
+    }
+    ctx.ground.arrays.indices = newIdx
+    grassBaseStrip(ctx)
+  }
   const [fx, , fz] = STREET.forward
   const [rx, rz] = [-fz, fx]
   STREET_HOUSES.forEach((h, index) => {
@@ -594,11 +688,48 @@ export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | nu
 export const FLAT_VIEW = { position: [0.8, 0.285, 1.9] as [number, number, number], target: [0.8, 0.285, 0] as [number, number, number], fov: 30 }
 
 /**
+ * S3 task 1: a row of grass clumps standing in front of the board, 0.45 from `FLAT_VIEW`'s camera, so a blade is about
+ * 90 px tall in a desktop capture (the painting's bush strokes are 60–70 px long at 1:1), on a card in the field's
+ * darkest fifth (the dark base the street lays under the grass). Each blade is drawn as the shader will draw it at
+ * that distance, widened by `max(1, d / widenFrom)`. The clumps' heights span the tuft rule's range, short to tall.
+ */
+function flatGrassStrip(ctx: Context): void {
+  const [cx, , cz] = FLAT_VIEW.position
+  const y = 0.2
+  const z = 1.45
+  const dark = new Color().setRGB(...sourceUnderpaint(ctx.painting, 'field', GROUND_BASE_SHARE), SRGBColorSpace)
+  polygon(ctx.underpaint, [new Vector3(0.56, 0.17, z - 0.05), new Vector3(1.04, 0.17, z - 0.05), new Vector3(1.04, 0.33, z - 0.05), new Vector3(0.56, 0.33, z - 0.05)], dark, 255)
+  const rand = mulberry32(1)
+  const template = bladeTemplate()
+  const g = ctx.ground
+  for (let k = 0; k < 7; k++) {
+    for (const b of clump(rand, ctx.painting, 0.62 + 0.06 * k, z, GRASS_BLADE.height * (0.5 + (1.05 * k) / 6))) {
+      const d = Math.hypot(cx - b.x, cz - b.z)
+      const right: [number, number] = [(cz - b.z) / d, -(cx - b.x) / d]
+      const widen = Math.max(1, d / GRASS_BLADE.widenFrom)
+      const base = g.arrays.positions.length / 3
+      for (let v = 0; v < template.positions.length / 3; v++) {
+        const a = template.positions[v * 3 + 1]
+        const [px, py, pz] = bladeVertex(b, a, template.positions[v * 3], right, widen)
+        const shade = GRASS_BLADE.shade[0] + (GRASS_BLADE.shade[1] - GRASS_BLADE.shade[0]) * a
+        g.arrays.positions.push(px, y + py, pz)
+        g.arrays.colors.push(b.colour[0] * shade, b.colour[1] * shade, b.colour[2] * shade)
+        g.stroke.push(template.stroke[v * 2], template.stroke[v * 2 + 1])
+        g.seed.push(b.seed)
+        g.cls.push(255)
+        g.src.push(255)
+      }
+      for (const i of template.indices) g.arrays.indices.push(base + i)
+    }
+  }
+}
+
+/**
  * G4b, the flat panel in the production materials (S1 task 5 step 1): a wall (`wallA`), a gable (`wallB`), a roof
  * (`roofStriped`), the field and a tree mass laid flat facing +z, on a dark board that hides the sky, so the stroke
- * body's lanes, rake, fray and dry tails can be read on a wall before the volumes stand.
+ * body's lanes, rake, fray and dry tails can be read on a wall before the volumes stand. With `grass`, S3's blade strip.
  */
-export function buildFlatPanel(painting: ImageData2D | null, flow: ImageData2D | null, masses: BakedMass[] | null): StreetBuild | null {
+export function buildFlatPanel(painting: ImageData2D | null, flow: ImageData2D | null, masses: BakedMass[] | null, grass = false): StreetBuild | null {
   if (!painting || !flow || !masses) return null
   const ctx: Context = {
     flow,
@@ -627,6 +758,7 @@ export function buildFlatPanel(painting: ImageData2D | null, flow: ImageData2D |
     const corners = facePolygon(face)
     ink(ctx, 'flat', ref, corners.map((p, k) => [p, corners[(k + 1) % corners.length], toward] as [Vector3, Vector3, Vector3]), 0x7200 + i)
   })
+  if (grass) flatGrassStrip(ctx)
   const tree = STREET_TREES.find((t) => t.id === 'orchard-lower') ?? STREET_TREES[0]
   const trees = buildLandTrees(flow, painting, masses, 0x7ee5, [{ ...tree, x: 1.35, z: 0 }], streetGroundAt, streetMassConfig)
   const triangles = (ctx.underpaint.indices.length + ctx.strokes.arrays.indices.length + ctx.ground.arrays.indices.length + ctx.outlines.arrays.indices.length + trees.solid.indices.length + trees.strokes.indices.length) / 3

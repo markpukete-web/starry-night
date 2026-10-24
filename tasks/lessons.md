@@ -3004,3 +3004,56 @@ reads as alive.
   trees clear of houses with 1.19 R. The crowns reached 1.39–1.41 R, and one tree reached into a house. The test now
   measures each tree's reach from its built vertices, so it follows the generator when a look pass changes it (Codex
   T2, 2026-10-24).
+- **Count a source's texels by hue before writing a colour rule for it.** The grass test kept three blades in four green
+  or ochre. The painting's bushes are 65% blue and blue-black, so the rule refused most of the painting, and the pale
+  end of six picks found the canvas's beige instead. A ten-line hue count (`t1/hues.py`) showed both in a second
+  (S3 Task 1, 2026-10-24).
+- **Judge a segment count at the painting's stroke length, not zoomed.** Four segments looked smoother than three at
+  2.5×, and the same at 1:1. Two against three differed at 1:1 only on the longest blades. The zoom answers "can I see
+  a facet", the 1:1 answers "does it read as the stroke" (S3 Task 1, 2026-10-24).
+
+## 2026-10-24 — a check's URL parameter the app never reads passes in silence (street S3, Task 4)
+
+Case 2 of `check-street-grass.mjs` asked for "the same pinned time" and passed `pinnedTime=1.0`. No file in `src`
+reads that parameter. The case passed only because `ids=1` happened to leave the life clock unwritten. A gate reads
+every parameter a check passes and greps `src` for it. A pin also needs a control: two captures without the stimulus
+must be byte-identical before the stimulus's difference means anything.
+
+## 2026-10-25 (overnight) — street S3, Tasks 5 and 6: the gate's runs and the look passes
+
+- **Read the URL in the raw output before you read a perf number.** The worker's perf rounds dropped `&street=1`, so
+  all 35 timed the painting at 1,444,930 triangles. The report's table looked right. The frames file's `url` and the
+  triangle count showed it in one line each (T5-1).
+- **A one-time frame inside the timing window lifts the mean, not the steady state.** `readPerf` keeps the last 599
+  intervals after an 11.8 s wait. The grass made the street's build 0.5–0.8 s longer, so its last frame now falls
+  inside that window, and one 1.6 s interval reads as a mean of 20 ms. Report p50, p95 and the mean without the
+  largest interval beside the mean, and say which frame the max is.
+- **A check's escape hatch must be named, not implied.** The capture tool skipped its pinned-clock self-check for any
+  `--eval`, to let one moving capture through. Every pinned capture with a touch lost the check. A `--moving` flag
+  opts out by name (T5-4).
+- **Two segments fold a curved blade into a chevron.** Pass 1 dropped a segment to afford more blades. At 2× each
+  blade bent once, sharply. A longer blade with three segments covered the verge at lower density.
+- **A dark base under sparse strokes is what the colour gate measures.** The ground's class covers the grass's base.
+  With the blades spread thin, the base was most of the ground that showed, and its ΔE76 went from 1.5 to 11.2. A
+  lighter base (the field's darkest 40%, not 20%) and more coverage closed it, not a change to the ground.
+- **A triangle budget is not monotone in density.** The chunks' placement changes with density. 0.21 and 0.205 failed
+  the budget and 0.203 met it but failed two other tests. Search the density near the bound and run the whole suite at
+  each value.
+- **A wind whose heading turns fast reads as circling, not wind.** A heading of 1.6 rad a second turned each tip in a
+  small circle. One direction with a 0.3 rad wobble and gusts that travel across the verge read as wind.
+- **A bound far above what correct code reads lets a mutant through.** Case 4 allowed 1 px, correct code read 0.00 px,
+  and a stale camera matrix read 0.90 px. Set a bound from what correct code reads and what the mutant reads, not from
+  a round number (G8).
+- **A headed Playwright screenshot can send a pointer move.** It fires at the mouse's last place and wakes a hover
+  effect. Drive a hover test through a page seam, not the real pointer.
+- **A new part in front of an old one changes the old one's colour gate.** The grass hid the walls' dark foot at stop 2,
+  and the walls moved from 9.82 to 10.17 with no wall pixel changed. Compare the old class's mask before and after
+  before you call a colour drift.
+- **A part that borrows another part's input must work when that part is off.** The grass followed a touch through the
+  walk's gesture and relied on the walk's `touch-action: none`. With `?walk=0` it had neither, and a drag bent one spot
+  (Codex, PR #22). Run each flag that turns a part off against the parts that read it.
+- **Answer a review with every route to the fault, not only the one it names.** The fix for that finding needed the
+  pointer and the `touch-action`. A test that removed each half alone showed both were needed.
+- **Read the PR's CI before you call the gate passed.** The grass test read a derived file that only the Lead's
+  worktree links, so every local run passed and every CI run failed with ENOENT. Run the suite once with
+  `reference/derived` hidden before you push a test that reads a file (PR #22, 2026-10-25).

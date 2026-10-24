@@ -26,6 +26,25 @@ The worker then confirmed BUILDABLE (`plan-build-confirm-worker.md`). Its lines 
 suggested fixes, not this text: B4's read "`GRASS_BLADE.height`" where the plan gives the tuft rule. A second read,
 which had to copy the plan's words (`plan-build-confirm2-worker.md`), quotes each one exactly: BUILDABLE.
 
+**Revision 5 (2026-10-24, night, during Task 1).** Task 1 settled the blade's model, and Tasks 2 and 4 read it. The
+blade is a ribbon in a vertical plane that faces the camera, turned off it by `yaw`, and it arches within that plane
+(the painting's bush strokes, `tasks/2026-10-24-street-s3.md`). Task 1 now also produces `bladeWidth`, `bladeVertex`
+and `GRASS_BLADE_GLSL`, the one formula for the flat strip, the reach and the shader, and the `grass` flag (Task 4's
+Step 1 is done). `BladeSpec.height` is the blade's length along its arch. Task 4's shader calls
+`grassBladeVertex` and takes its displacement constants from `GRASS_BLADE`, never retyped. The blade's reach is up to
+0.078, against the probe's pad of 0.04, so Task 2's budget test may lower `density`, as that test already allows.
+
+Task 1's look passes chose **3 segments**, so Task 2's `density` starts at the table's **0.22**. Two segments fold the
+longest arcs into one kink at the painting's stroke length, and a fourth shows only at 2.5×. A blade's colour is a
+texel that passes `grassTexelUsable(r, g, b)`: not a near-white (`r + g + b < 520`, as Step 1 has it), not the
+canvas's light grey or beige, not its warm brown. The grass test's rule that kept three blades in four green or ochre
+is gone: it refused the blues, and the bushes are 31% blue and 34% blue-black. Task 0 measured the most a pose renders
+without grass as 1,435,698 (`walkT` 0.25, the phone), 9,232 under the ceiling, 1,060 more than the probes' 8,172.
+`GRASS.budget` stays 38,515. The bushes source is now 1445–1600 × 1155–1267: the first rectangle took in the hills'
+strokes above the bush and the yellow house at its left. Three segments cost 35% of the blades against two (4,645
+against 7,149 at stop 0), judged at the near verge's distance. Task 6 may change to 2 segments at density 0.34 if the
+verge reads sparse: each is one constant (`GRASS_BLADE.segments`, `GRASS.density`).
+
 **Goal:** Grass stands along both edges of the lane, painted in the painting's strokes, and the visitor's hand moves
 through it: the blades bend away under the hand and swing back after it.
 
@@ -112,7 +131,7 @@ on `feat/street-s3`.
   painting's bushes, and the density follows the table. Fixed before it: height 0.024 with the test's tuft noise and a
   shorter verge (lesson: 0.014 left gaps), and the half-width widened with the camera's distance in the vertex shader
   (`× max(1, d / 0.3)`, the test's rule, now per frame). The colours come from the test's two sources: the field strip
-  (`STREET_SOURCES.field`) and the bushes at the painting's lower right, 1420–1600 × 1110–1267.
+  (`STREET_SOURCES.field`) and the bushes at the painting's lower right, 1445–1600 × 1155–1267 (revision 5).
 - **The ground under the grass** (S2). The footprint is the clip's shape: lane `t` −0.06 to 0.97, 0.06 to 0.6 off
   the lane, outside the square. With the grass on, `buildStreet` drops each class-3 ground triangle
   whose three corners lie in the footprint. The path (class 4) and the square are never touched. A dark base strip
@@ -215,6 +234,17 @@ halfWidth: number; lean: number; curl: number; colour: [number, number, number];
 number, painting: ImageData2D, x: number, z: number, height: number): BladeSpec[]`; `bladeReach(spec: BladeSpec,
 distance: number): number` (the farthest the shader can move any of its vertices from the root across the ground, at
 that camera distance, with the full push and the wind); `GRASS_SOURCES` (the field strip and the bushes).
+Revision 5 adds: `bladeWidth(a: number): number` (the width profile, 0 at the root to 1 at the tip);
+`bladeVertex(spec: BladeSpec, a: number, across: number, right: readonly [number, number], widen?: number): [number,
+number, number]` (a point of the blade above its root's ground; `across` is the template's x, `right` the camera's
+right on the ground as a unit (x, z), `widen` the shader's `max(1, d / GRASS_BLADE.widenFrom)`);
+`GRASS_BLADE_GLSL`, the GLSL `vec3 grassBladeVertex(vec3 root, float a, float across, float height, float halfWidth,
+float lean, float curl, float yaw, vec2 right, float widen)`, the same function; and `GRASS_BLADE`'s `push` 0.03,
+`wind` 0.0025, `widenFrom` 0.3 and `shade` (the colour's multiplier at the root and the tip). `BladeSpec.yaw` is the
+turn of the blade's plane off facing the camera, `height` its length along the arch, `lean` and `curl` signed angles
+from the vertical (positive toward the camera's right), `colour` linear RGB. `src/scene/streetMode.ts` gains `grass`
+(on in the street unless `grass=0`; on the flat panel only under `grass=1`), and `buildFlatPanel` a fourth argument,
+`grass`.
 
 - [ ] **Step 1:** Tests: the template has `segments + 1` rows and `2 × segments` triangles. Its width tapers to the
   tip. `clump` is deterministic for a seed. Every colour comes from a texel of a source (no near-whites, the test's
@@ -338,14 +368,18 @@ frame loop places its camera at that `t`: `walkPose(t, portrait)`, the anchor's 
 aspect. It calls that camera's own `updateMatrixWorld()`, projects the point, and maps it to the canvas's client
 rectangle.
 
-- [ ] **Step 1:** Flag tests: `grass` true by default, false for `grass=0`. Run: FAIL. Implement: PASS.
+- [ ] **Step 1:** Done in Task 1 (revision 5): `grass` in `streetMode.ts` and its tests in `street-mode.test.ts`.
 - [ ] **Step 2:** The walk (S3, S4): after `lookAt`, `persp.updateMatrixWorld()`. The gesture admitted at the down as
   "The decisions" give it, and its tap toggling whatever the box at the up. `street-walk.test.ts` gains the admission
   as a pure function's tests: a down 1 px outside the padded box with an up 1 px inside is a hand gesture. A down
   inside with the box moved away by the up is still Vincent's.
-- [ ] **Step 3:** `grassShader.ts`: the vertex body builds the blade from the template and the per-blade attributes,
-  widens it with the camera's distance, adds the wind on `lifeTimeUniform`, and bends it by the map at its root (the
-  test's `gH = a²` profile, its drop of `0.7 × |offset| × a`). The fragment body turns a bent blade paler, toward
+- [ ] **Step 3:** `grassShader.ts`: the vertex body builds the blade with `GRASS_BLADE_GLSL`'s `grassBladeVertex`,
+  from the template's `position` (x `across`, y `a`) and the per-blade attributes (revision 5). Its `right` is the
+  unit `(dz, −dx)` of `(dx, dz)`, the world root to `cameraPosition` on the ground (the root through `modelMatrix`, so
+  anchor A's offset holds), and its `widen` is `max(1, d / GRASS_BLADE.widenFrom)` at that distance. It adds the wind
+  on `lifeTimeUniform` as a unit direction times `GRASS_BLADE.wind` times a gust of at most 1, and bends it by the map
+  at its root, the push times `GRASS_BLADE.push` (the test's `gH = a²` profile, its drop of `0.7 × |offset| × a`, then
+  y kept ≥ 0). The colour is multiplied along `a` by `GRASS_BLADE.shade`, as `flatGrassStrip` does. The fragment body turns a bent blade paler, toward
   `PALETTE.hillsCrest` (lesson: "A bent blade must change colour as well as shape"). The stroke body is the street
   ground's (`strokeGlslWith({ ...CYPRESS_STROKE_BODY, gaps: null, dryFrom: 0.85, fray: 0.08 })`, the test's).
 - [ ] **Step 4:** `StreetGrass.tsx`: the chunks as meshes, `instanceCount` per frame, the trail stepped and uploaded

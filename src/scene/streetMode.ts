@@ -12,6 +12,8 @@ export type StreetFlags = {
   walkT: number | null
   walkMode: 'auto' | 'input' | null
   vincent: boolean
+  /** S3: the grass along the lane, on unless `grass=0`; on the flat panel, its blade strip under `grass=1` only */
+  grass: boolean
 }
 
 export function readStreetFlags(search: string): StreetFlags {
@@ -36,6 +38,7 @@ export function readStreetFlags(search: string): StreetFlags {
   const rawWalkMode = params.get('walkMode')
   const walkMode = rawWalkMode === 'auto' || rawWalkMode === 'input' ? rawWalkMode : null
   const vincent = params.get('vincent') !== '0'
+  const grass = flat ? params.get('grass') === '1' : params.get('grass') !== '0'
 
   return {
     street,
@@ -50,6 +53,7 @@ export function readStreetFlags(search: string): StreetFlags {
     walkT,
     walkMode,
     vincent,
+    grass,
   }
 }
 

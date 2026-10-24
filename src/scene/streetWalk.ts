@@ -171,3 +171,22 @@ export function hitBox(
   const halfH = Math.max((maxY - minY) / 2, WALK.hitMin / 2)
   return x >= cx - halfW && x <= cx + halfW && y >= cy - halfH && y <= cy + halfH
 }
+
+export type StreetGesture = { pointerId: number; vincent: boolean }
+
+export let streetGesture: StreetGesture | null = null
+
+export function setStreetGesture(g: StreetGesture | null): void {
+  streetGesture = g
+}
+
+export function admitGesture(
+  box: { x0: number; y0: number; x1: number; y1: number } | null,
+  x: number,
+  y: number,
+): 'vincent' | 'hand' {
+  if (box && hitBox(box, x, y)) {
+    return 'vincent'
+  }
+  return 'hand'
+}

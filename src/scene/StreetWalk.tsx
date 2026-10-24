@@ -2,9 +2,9 @@ import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import {
   MeshBasicMaterial,
+  PerspectiveCamera,
   Vector3,
   type Group,
-  type PerspectiveCamera,
 } from 'three'
 import { FOG, fogInjection } from './streetFog.ts'
 import {
@@ -25,11 +25,13 @@ import {
   type VincentBuild,
 } from './vincent.ts'
 import {
+  admitGesture,
   gait,
-  hitBox,
   initialWalk,
+  setStreetGesture,
   stepWalk,
   stopWalk,
+  streetGesture,
   toggleWalk,
   wheelPixels,
   type WalkInput,
@@ -55,6 +57,7 @@ type StreetWalkWindow = Window & {
   __vincentBox?: () => { x0: number; y0: number; x1: number; y1: number }
   /** the rendered figure's own transform, for the checks (Codex K3, K4): his world position, roll and arm swing */
   __vincentPose?: () => { world: [number, number, number]; roll: number; arm: number } | null
+  __walkProject?: (t: number, point: [number, number, number]) => [number, number]
 }
 
 export default function StreetWalk({
@@ -79,7 +82,11 @@ export default function StreetWalk({
   const prevPortraitRef = useRef(portrait)
   const queuedWheelPxRef = useRef(0)
   const heldKeysRef = useRef({ forward: false, back: false })
-  const activeGestureRef = useRef<{ pointerId: number; down: PointerSample } | null>(null)
+  const activeGestureRef = useRef<{
+    pointerId: number
+    down: PointerSample
+    vincent: boolean
+  } | null>(null)
 
   const vincentGroupRef = useRef<Group>(null)
   const armGroupRef = useRef<Group>(null)
@@ -214,6 +221,28 @@ export default function StreetWalk({
           }
         },
       }
+      w.__walkProject = (t: number, point: [number, number, number]) => {
+        const pose = walkPose(t, portrait)
+        const aspect = size.width / size.height
+        const persp = new PerspectiveCamera(pose.fov, aspect, pose.near, pose.far)
+        persp.position.set(
+          pose.position[0] + offset[0],
+          pose.position[1] + offset[1],
+          pose.position[2] + offset[2],
+        )
+        persp.lookAt(
+          pose.target[0] + offset[0],
+          pose.target[1] + offset[1],
+          pose.target[2] + offset[2],
+        )
+        persp.updateMatrixWorld()
+        const v = new Vector3(point[0], point[1], point[2]).project(persp)
+        const rect = gl.domElement.getBoundingClientRect()
+        return [
+          rect.left + ((v.x + 1) / 2) * rect.width,
+          rect.top + ((1 - v.y) / 2) * rect.height,
+        ]
+      }
     }
     if (!flags.flat && flags.vincent) {
       w.__vincentBox = getVincentBox
@@ -228,10 +257,11 @@ export default function StreetWalk({
     }
     return () => {
       delete w.__streetWalk
+      delete w.__walkProject
       delete w.__vincentBox
       delete w.__vincentPose
     }
-  }, [walkOnActive, flags.flat, flags.vincent, getVincentBox])
+  }, [walkOnActive, flags.flat, flags.vincent, getVincentBox, portrait, size, offset, gl.domElement])
 
   // Input listeners: only when walkOn is true
   /* eslint-disable react-hooks/immutability -- canvas touchAction must be none for pointer gestures */
@@ -277,6 +307,7 @@ export default function StreetWalk({
       heldKeysRef.current.forward = false
       heldKeysRef.current.back = false
       activeGestureRef.current = null
+      setStreetGesture(null)
       walkStateRef.current = stopWalk(walkStateRef.current)
       queuedWheelPxRef.current = 0
     }
@@ -286,36 +317,44 @@ export default function StreetWalk({
     }
 
     const onPointerDown = (e: PointerEvent) => {
-      if (!e.isPrimary) {
+      if (!e.isPrimary || (activeGestureRef.current && activeGestureRef.current.pointerId !== e.pointerId)) {
         activeGestureRef.current = null
+        setStreetGesture(null)
         return
       }
       if (e.target !== gl.domElement) return
+      const box = flags.vincent ? getVincentBox() : null
+      const isVincent = admitGesture(box, e.clientX, e.clientY) === 'vincent'
       activeGestureRef.current = {
         pointerId: e.pointerId,
         down: { x: e.clientX, y: e.clientY, ms: performance.now() },
+        vincent: isVincent,
       }
+      setStreetGesture({ pointerId: e.pointerId, vincent: isVincent })
     }
 
     const onPointerCancel = (e: PointerEvent) => {
       if (activeGestureRef.current?.pointerId === e.pointerId) {
         activeGestureRef.current = null
       }
+      if (streetGesture?.pointerId === e.pointerId) {
+        setStreetGesture(null)
+      }
     }
 
     const onPointerUp = (e: PointerEvent) => {
       const gesture = activeGestureRef.current
+      if (streetGesture?.pointerId === e.pointerId) {
+        setStreetGesture(null)
+      }
       if (!gesture || gesture.pointerId !== e.pointerId) return
       activeGestureRef.current = null
       const up: PointerSample = { x: e.clientX, y: e.clientY, ms: performance.now() }
       const res = classifyGesture(gesture.down, up)
-      if (res === 'tap' && flags.vincent) {
-        const box = getVincentBox()
-        if (hitBox(box, e.clientX, e.clientY)) {
-          walkStateRef.current = toggleWalk(walkStateRef.current, still)
-          // a wheel turned before the tap must not move him after it (Codex K1)
-          queuedWheelPxRef.current = 0
-        }
+      if (res === 'tap' && gesture.vincent && flags.vincent) {
+        walkStateRef.current = toggleWalk(walkStateRef.current, still)
+        // a wheel turned before the tap must not move him after it (Codex K1)
+        queuedWheelPxRef.current = 0
       }
     }
 
@@ -329,6 +368,7 @@ export default function StreetWalk({
     window.addEventListener('pointercancel', onPointerCancel)
 
     return () => {
+      setStreetGesture(null)
       window.removeEventListener('wheel', onWheel)
       window.removeEventListener('keydown', onKeyDown)
       window.removeEventListener('keyup', onKeyUp)
@@ -390,6 +430,7 @@ export default function StreetWalk({
       pose.target[1] + offset[1],
       pose.target[2] + offset[2],
     )
+    persp.updateMatrixWorld()
 
     // Vincent sway & placement
     if (flags.vincent && vincentGroupRef.current && armGroupRef.current) {

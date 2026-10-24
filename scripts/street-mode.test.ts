@@ -68,6 +68,12 @@ test('flags', () => {
   assert.equal(readStreetFlags('?street=1&ids=2').ids, 2)
   assert.equal(readStreetFlags('?street=1&ids=3').ids, 0)
 
+  // S3: the grass is on in the street unless `grass=0`; the flat panel shows its blade strip only under `grass=1`
+  assert.equal(readStreetFlags('?street=1').grass, true)
+  assert.equal(readStreetFlags('?street=1&grass=0').grass, false)
+  assert.equal(readStreetFlags('?street=1&flat=1').grass, false)
+  assert.equal(readStreetFlags('?street=1&flat=1&grass=1').grass, true)
+
   // anchors and turns
   assert.equal(readStreetFlags('?street=1&skyAnchor=A').anchor, 'A')
   assert.equal(readStreetFlags('?street=1&skyTurn=lock').turn, 'lock')

@@ -238,6 +238,15 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   0.010–0.035 to clear the houses by 0.025 (Codex T2). At stop 0 on the phone the scene is 1,435,696 of 1,444,930
   triangles. `?walk=0` and `?vincent=0` turn each off, `?walkT=` opens at a point on the lane, `?walkMode=input` or
   `auto` forces a mode. Passed by Mark, 2026-10-24 ("Good, passed").
+- The street's slice 3, the grass and the hand, on with `?street=1` (2026-10-25, `src/scene/grassBlade.ts`
+  `GRASS_BLADE`, `streetGrass.ts` `GRASS`, `grassShader.ts`, `grassTrail.ts` `TRAIL`, `streetGeometry.ts`
+  `GROUND_BASE_SHARE`; the record `tasks/2026-10-24-street-s3.md`, look pass 3 of 4). Clumps of 5–9 blades on the verge,
+  density 0.2, the walk's worst sampled point 35,838 triangles of the grass's 38,515. A blade 0.036 tall (× 0.75–1.25),
+  half-width 0.0024–0.0034, three segments, a bend of 1.0–2.0 rad from root to tip, the tip at most 1.8 rad from the
+  vertical, fan 0.5, spread 0.012, turn 0.5, shade 0.6 at the root to 1.05 at the tip. The chunk box's top 0.065. The
+  dark base under it is the ground's, the field's darkest 40%. The wind 0.0035 at the tip, toward +x, its heading
+  wobbling by 0.3 rad, its gusts travelling across the verge. The hand's push 0.03 at the tip, the trail's texel 0.005,
+  radius 0.045, Vincent's feet 0.03, with D1's rise, swing and window. `?grass=0` builds none. Untuned by Mark.
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)

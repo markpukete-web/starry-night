@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { STREET, WALK_T } from '../src/scene/streetLayout.ts'
 import {
+  admitGesture,
   gait,
   hitBox,
   initialWalk,
@@ -208,4 +209,24 @@ test('the hit box is at least 48 px', () => {
   assert.equal(hitBox(box, 100, 76), true, 'hits (100, 76)')
   assert.equal(hitBox(box, 120, 100), true, 'hits (120, 100)')
   assert.equal(hitBox(box, 100, 70), false, 'misses (100, 70)')
+})
+
+test('admitGesture: down outside with up inside is a hand gesture', () => {
+  const box = { x0: 100, y0: 100, x1: 200, y1: 200 }
+  // Padded boundary for 100x100 box: [100..200, 100..200]
+  // Down 1 px outside: x = 99, y = 150
+  const kind = admitGesture(box, 99, 150)
+  assert.equal(kind, 'hand', 'down 1 px outside is a hand gesture')
+})
+
+test('admitGesture: down inside with box moved away at up is still Vincent\'s', () => {
+  const box = { x0: 100, y0: 100, x1: 200, y1: 200 }
+  // Down inside: x = 150, y = 150
+  const kind = admitGesture(box, 150, 150)
+  assert.equal(kind, 'vincent', 'down inside is Vincent\'s gesture')
+})
+
+test('admitGesture: null box is a hand gesture', () => {
+  const kind = admitGesture(null, 150, 150)
+  assert.equal(kind, 'hand', 'null box is a hand gesture')
 })
