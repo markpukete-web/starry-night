@@ -22,6 +22,9 @@ come from `window.__perf` under `&perf=1`. B2: the probes' paths and commands. B
 and the base has its own extent. B4: the blades' seed and each clump's height. B5: a texel no stamp reaches is
 released at the next step. B6: a stamp carries its source. B7: `admitGesture`. B8: the seam `__walkProject`. B9: the
 verge point. B10: the sweep's perf script. Codex does not read it again: no decision changed.
+The worker then confirmed BUILDABLE (`plan-build-confirm-worker.md`). Its lines for B3, B4, B7 and B8 quoted its own
+suggested fixes, not this text: B4's read "`GRASS_BLADE.height`" where the plan gives the tuft rule. A second read,
+which had to copy the plan's words (`plan-build-confirm2-worker.md`), quotes each one exactly: BUILDABLE.
 
 **Goal:** Grass stands along both edges of the lane, painted in the painting's strokes, and the visitor's hand moves
 through it: the blades bend away under the hand and swing back after it.
