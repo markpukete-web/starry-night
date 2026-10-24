@@ -162,7 +162,8 @@ on `feat/street-s3`.
 - **The ID pass**: class 9, `vec3(0.0, 128.0 / 255.0, 1.0)`, which reads back as (0, 188, 255) (slice 2's C1). It goes
   in `src/scene/streetMaterial.ts` (slice 2's F3 fix), the one copy of the classes.
 - **The flag**: `grass`, on in street mode, `?grass=0` off. The test's URL knobs are not kept.
-- **Not in this slice**, each for Mark:
+- **Not in this slice.** Mark's answers of 2026-10-24: the sky's surge in the street, "No need". The flowers, "Later".
+  A second portal, "Not yet". The low camera: the Lead recommends eye level, Mark to confirm. The items as written:
   - **The sky's surge above the roofs (C19)** (S7). Slice 1 turned all touch off in the street (`touchEnabled` returns
     false there), so B's surge has never run in it. Turning it on needs the touch hook's sky mapping re-keyed for the
     street's world-fixed, following sky (`useTouchInput.ts:95–106` assumes the lock, the design's sky section says

@@ -2989,3 +2989,10 @@ reads as alive.
   session's Playwright browser had run for 5 h 45 min with three street tabs rendering, its background throttling
   off. Closed, the battery charged at 22.7 W and the pressure fell to nominal. Read `pmset -g batt` and
   `notifyutil -g com.apple.system.thermalpressurelevel` before you measure frame times.
+- **Measure a part against its neighbours, not only against its reference.** The smock passed the colour gate at 5.3
+  from its reference, and Mark saw it blend into the ground. Its source was the ground's own grey-blue with pale
+  strokes, so the figure carried the ground's pattern. The gate checks drift from a source. Whether a figure stands out
+  is a second measure: its ΔE and chroma against the pixels around it.
+- **A tree reads by its fork and its gaps, not its trunk's width.** At stop 0 the old trunk was already 13 px wide. It
+  read as a pole because it forked at 1.4 R and its clumps touched. The fix was a low fork, smaller clumps and curls
+  shorter than a clump. Size a part in pixels at the stops before you thicken it.
