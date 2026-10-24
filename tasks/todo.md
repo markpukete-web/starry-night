@@ -1,6 +1,78 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-24 (late morning): Mark at S1b's gate, look pass 3 on the path built
+## Pickup — 2026-10-24 (afternoon, later): Mark read the grass test live; slice 2's plan next
+
+Mark, on the live test: "It actually feels good, but there's room for improvement for sure. This is a throwaway test
+but I think grass in the street would work. but I am still keen to make another portal and try some new things when I
+have time". So the grass stays in the street, as the design has it (slice 3). The branch `spike/grass-hand` stays
+local as slice 3's reference, never merged. Slice 3 rebuilds the grass under its own plan.
+
+**Next: slice 2, Vincent and the walk**: the plan, Codex's review (Fable when Codex runs low), then the build.
+
+For slice 3, from Mark's crop of the left verge at station 0 (near the camera): the near grass is thin, and the street
+ground's long strokes read through it as grey and green planks. Under the grass the ground wants a dark base, so a gap
+reads as shadow, as in Jeroen's clip, and the near blades want more density. With the look pass already noted below
+(curved strokes in fanned clumps).
+
+**Noted, not queued (scope rule): a second portal**, a meadow or another place to try new things, when Mark has time.
+The design's first version rules out a second portal (non-goals). This is his idea for after it.
+
+## Pickup — 2026-10-24 (afternoon): the grass test built; Mark's read next (superseded by the later pickup above)
+
+Mark asked to think the grass and the hand through before slice 2 ("We need to thought it through before we
+implement"). He also floated a meadow by the hills, reached by its own portal, in place of grass along the street. The
+Lead's read: a meadow gives the clip's low, still camera, but the hard question is the same in both places (does grass
+in the painting's strokes feel good under a hand), so test that first. Mark: "Sounds good, let's do it". Vincent is
+settled as code, no Blender (the design, line 171): a straw hat and a long smock that hides the legs, as Simon's
+figure rides on wheels. Swinging legs in code only if the glide reads as sliding.
+
+**The test** is on the local branch `spike/grass-hand` (one commit over `main`), not pushed. It is a throwaway: no plan, no review,
+no tests, and nothing from it is kept without Mark's word. `src/scene/grassSpike.tsx` and four lines in `Street.tsx`.
+Live on the Mac's dev server while it runs: `http://192.168.0.148:5190/?street=1&station=0&grass=1`, and
+`&grassView=low` for the camera in the grass. Captures, the 1:1 trail crop and a 16 s clip:
+`scratch/grass-spike-2026-10-24/` (gitignored).
+
+What it showed, from the captures at station 0 and the low view, desktop and phone:
+- The trail is what makes the hand read. The hand paints a 256 × 256 map that fades with τ 2.5 s, and each blade bends
+  away by what it reads. The trail showed only once bent blades turned paler, toward the moonlit crest.
+- The clip's feeling needs the low camera. At station 0 the grass is a band beside the lane and the trail is small. On
+  the phone in portrait it is a thin strip. From the low view (0.042 high, 6° down) the grass fills the lower two
+  thirds, as in Jeroen's clip, and the trail crosses the screen.
+- At 0.014 high the near grass left gaps, and the ground's long strokes read through as planks. At 0.024 (about thigh
+  high on a person) it covers them. The verge is shorter, so the lane's edge is soft.
+- 30,000 blades, 120 fps on the M5 Pro at both views. The phone is unmeasured. `&grassN=10000` lightens it.
+- Not yet Van Gogh (`vs-painting.png` in the same folder, at 4×): the painting's bushes are fat curved comma strokes
+  that fan out from a clump, dark at the centre with pale yellow-green edges. Ours are thin straight spikes in an even
+  grey green. A look pass would start there: wider curved strokes in fanned clumps, the street trees' dark-centre,
+  lit-edge treatment.
+- Not shown by the captures: the hand cursor (screenshots leave out the system cursor), and the phone. The touch path
+  (finger down is the hand) is untested and the phone's frame rate unmeasured. The orbit controls are not mounted in
+  street mode (`src/scene/DioramaExperience.tsx:292`), so a drag does not turn the camera.
+
+To restart the live test: `git checkout spike/grass-hand && npm run dev -- --host --port 5190`. The Mac's LAN address
+may change between sessions: read it from Vite's "Network" line.
+
+**Open for Mark:** his read of the test live, then where the grass lives (beside the street, a meadow portal, or
+both). Slice 2's plan (Vincent and the walk) follows his answer. Agents this session: Codex reviews, Fable (the
+Consultant tab) when Codex runs low, the worker idle.
+
+## Pickup — 2026-10-24 (end of session): S1b merged and live; slice 2 next (superseded by the afternoon pickup above)
+
+Mark passed S1b's gate ("It does read like a village") and it is merged: PR #20, `b649060`. Codex found nothing at the
+head, CI passed, and production is deployed. The street is live behind
+`https://starrynight.markma.dev/?street=1&station=0` (stations 0 to 4). A plain visit is unchanged. The record:
+`tasks/2026-10-23-street-s1b.md`, Pickup.
+
+**Next: slice 2, Vincent and the walk** (the design `docs/superpowers/specs/2026-10-23-village-street-design.md`,
+"Slices", 1 to 2 sessions): the figure on the path, the camera behind him, the scroll wheel and arrow keys, the phone's
+automatic walk and its tap, the reduced-motion steps. The lane, its stations and the pale path are S1b's. Start with
+the plan, then the two plan reviews (Fable, and the Gemini worker for buildability), then the build.
+
+Carried open from S1b's gate (the record's Pickup has the evidence): the phone reading on a real device (open since S1),
+the near-black walls turned from the moon (ambient 0.4), the cottage door behind its thatch (C2), the sparse ground and
+the path's near slabs (the ground is slice 3's grass), and the village's craft (below, for after slice 3).
+
+## Pickup — 2026-10-24 (late morning): Mark at S1b's gate, superseded
 
 Mark on the live street: "It does read like a village", "keep the fog for now". On the path, after the Lead's sheet
 of Simon's: "Go with your recommendations". Look pass 3 (`1ca5fe3`): a pale lane, 0.12 wide, lift 0.5. Mark: "It has
@@ -53,11 +125,15 @@ The land roadmap (E1, E2, D1, then E3 and E4 on the cypress) is done.
    the plan for slice 1, the street's look. Slice 1 starts with a fresh phone reading (`?perf=1` on the live site).
    - **Proposed to Mark, the locked acceptance criterion on the camera** (Mark, 2026-10-23: "Lift it for the path").
      Today: "Camera stays within the orbit limits in Tunables (polar + distance; no free-fly or panning); the diorama
-     always reads as Starry Night — head-on it is the painting's composition." Proposed: "Camera stays within the
-     orbit limits in Tunables (polar + distance; no free-fly or panning) while the visitor orbits the diorama. An
-     authored camera path (the village street's portal flight and walk, 2026-10-23) may leave them, and the visitor
-     never steers the camera off it. The diorama always reads as Starry Night — head-on it is the painting's
-     composition." Mark applies it in `CLAUDE.md`.
+     always reads as Starry Night — head-on it is the painting's composition." Proposed (revised 2026-10-24, to cover
+     any portal scene and not only the street): "Camera stays within the orbit limits in Tunables (polar + distance;
+     no free-fly or panning) while the visitor orbits the diorama. Inside a portal scene (the village street,
+     2026-10-23), an authored camera path may leave them: the portal's flight, and the walk along the scene's path.
+     The visitor moves the camera only along that path, never off it. The diorama always reads as Starry Night —
+     head-on it is the painting's composition." Mark applies it in `CLAUDE.md`.
+     Status, 2026-10-24: the street reached `main` behind `?street=1` (PR #20) before this edit, although the S1b plan
+     (`tasks/2026-10-23-street-s1b-plan.md:51`) said the edit comes first. Slice 2's walk needs it before it merges.
+     Applied, 2026-10-25: Mark said "Apply the camera edit", and the Lead committed the text above as his edit.
    - **Idea for slice 3, not built** (Mark, 2026-10-23: "some flowers that Vincent drew of other drawings perhaps"):
      flowers beside the path with the grass, for the hand to touch. Their shape and brushwork may follow Vincent's own
      Saint-Rémy flowers. Their colours come from The Starry Night's palette, because the bar locks colour to the

@@ -2928,3 +2928,79 @@ reads as alive.
   band with straight sides. Inset the base, so the strokes draw the edge.
 - **A gate whose reference reads the build's own constant cannot judge that constant.** The path passed the colour
   gate at 0.12 and at 0.5. Its distance to the palette's hills (8.5 → 17.7) is the number that moved.
+- **Check a fix from every view that looks at it.** The Lead checked the square's inset at stop 4 on desktop, where the
+  lane's mouth is off frame. Fable's ID-pass row probe found the gap at stop 3 and on the phone at stop 4 (C8). A change
+  to a shared face needs the stops that face the change, on both viewports, before it is called done.
+- **Replace a section up to its own next heading, never up to a later named one.** The pickup rewrite cut from
+  "Pickup" to "Mark's gate" and took eleven sections with it, the same slip as the night before (`a89e353`). It was
+  caught before the commit by listing the headings. List the headings and read the diff's hunks before every commit of a
+  record.
+
+## The grass and the hand, a throwaway test (2026-10-24, afternoon)
+
+- **A covered Playwright window runs at 1.5 fps.** The MCP browser slowed its frames to 1.5 per second whenever its
+  window was covered, and `page.screenshot` then timed out at 30 s. The street without grass measured the same, so
+  the cause was the window, not the scene. Call `page.bringToFront()` before every capture, and measure the frame
+  rate after it.
+- **The stroke body tapers both ends of a stroke.** Its shape reads `|along − 0.5|`, so a blade with along 0 to 1 was
+  cut to a lens on top of its built taper, and short blades read as slivers. For a stroke that grows from a root,
+  give the shader along 0.5 to 1, so it shapes only the tip.
+- **Short grass seen from eye height does not cover the ground.** At 0.014 high the near blades left gaps, and the
+  ground's long strokes read through them as planks. Twice the count at that height did not fix it. 0.024 did.
+- **A trail needs a map, not touch points.** D1 holds four touches. A sweeping hand needs every point it passed: a
+  256 × 256 map that fades each frame, read once by each blade. The street held 120 fps with it on (the cost itself
+  is unmeasured).
+- **A bent blade must change colour as well as shape.** The parting did not read at station 0 until bent blades turned
+  paler, toward the moonlit crest. Jeroen's night trail reads for the same reason.
+
+## Slice 2, Vincent and the walk (2026-10-24, evening)
+
+- **The Lead stays idle while a delegate measures frame times.** Task 0's first perf run had single frames of 1.4 to
+  1.9 s. They lined up with the Lead's own test, tsc and eslint runs on the same machine. The re-run with the Lead
+  idle was clean, at 16.7 ms on every stop.
+- **The canvas writes sRGB, so an ID channel of 128/255 reads back as 188.** S1b's thatch source gate expected 128.
+  Every one of its ten logs says "thatch: not in view (0 px)", while the ID capture holds 4,599 px of (255, 188, 0).
+  A gate that finds nothing must fail, not pass: a class with no pixels is an error.
+- **A "present" check passes while one of two parts loses its class.** The crown and the brim each carried the hat
+  class, so reverting either left the check green. Test each part where it sits on the model.
+- **A dark palette is not a lighting fault.** Vincent's hat rendered near black. Unlit it was (51, 39, 35), and the
+  palette's villageWarm swatch is #262119, so the colour was faithful. The shape was the fault: a straight crown
+  read as a top hat. Measure the unlit colour before tuning the light.
+- **Read `pmset -g log` before you call a stall or trust a frame time across a gap.** The Lead told Mark the worker
+  was stuck for 1.5 hours. The Mac had slept from 15:11 to 17:04, and the sleep also reset Codex's connection twice.
+  One perf round ran across the sleep (25.6 ms against 16.7 ms on its re-run). A round that spans a sleep is void.
+- **A figure's underpaint takes the street's base-share rule.** The smock's source patch sat 0.41 from the reference,
+  but its base was the patch's darkest 40%, and the gaps between strokes held the render at ΔE 10.5–11.6. With the
+  base at the source's mean, as S1b's walls have it, the smock read 5.3–5.7. Check a new part against S1b's rules
+  before you tune it.
+- **Read a worker's report against its raw files.** Task 5's report named the five mutations under names that are not
+  the script's. The raw `mutations.txt` showed the right five, all red. The report was wrong and the evidence right.
+- **Send two synthetic events in one evaluate to test a same-frame race.** K1's bug is a wheel queued in the same
+  frame as a stop. Between two evaluates a frame can run and consume the wheel, which would hide the bug (reasoned,
+  not run). Case 6 sends each pair in one evaluate, and the two K1 mutants moved him by 0.167 and 0.080.
+- **A builder's read finds what a correctness read does not.** Codex confirmed revision 3 of slice 3's plan. The
+  worker, reading as its builder, then found ten gaps: a seam no task defined, a seed, a release rule, a command.
+  None changed the design, and each would have stopped the build.
+- **Probe a check's fixed screen point at every stop and viewport it runs at.** The grass sweep's side of the lane
+  is on screen at stop 0 in both viewports. At stop 2 the phone's frame cuts it off (x −39 on a 390 px canvas), and
+  an along-the-lane sweep there moves only 30 px. The sweep now crosses the verge on each stop's own side.
+- **Close the Playwright browser when a capture ends, and read the power state before a perf round.** At 18:15 the
+  Mac was on a 30 W charger and still drained the battery at 21 W, at 28%, with thermal pressure moderate. The
+  session's Playwright browser had run for 5 h 45 min with three street tabs rendering, its background throttling
+  off. Closed, the battery charged at 22.7 W and the pressure fell to nominal. Read `pmset -g batt` and
+  `notifyutil -g com.apple.system.thermalpressurelevel` before you measure frame times.
+- **Measure a part against its neighbours, not only against its reference.** The smock passed the colour gate at 5.3
+  from its reference, and Mark saw it blend into the ground. Its source was the ground's own grey-blue with pale
+  strokes, so the figure carried the ground's pattern. The gate checks drift from a source. Whether a figure stands out
+  is a second measure: its ΔE and chroma against the pixels around it.
+- **A tree reads by its fork and its gaps, not its trunk's width.** At stop 0 the old trunk was already 13 px wide. It
+  read as a pole because it forked at 1.4 R and its clumps touched. The fix was a low fork, smaller clumps and curls
+  shorter than a clump. Size a part in pixels at the stops before you thicken it.
+- **A gate's target must not come from the constant the builder reads.** Look pass 3 moved the smock's source and
+  pointed the gate and the unit test at the same rectangle, so both passed whatever the source was. Codex found the
+  smock 18.8 from the palette's nearest blue, past the locked bar of 10. A target read from `palette.json` catches a
+  bad source. A source-fidelity check is a second assertion, not a replacement (Codex T1, 2026-10-24).
+- **A clearance test must bound the geometry the code builds, not a radius written beside it.** The layout test kept
+  trees clear of houses with 1.19 R. The crowns reached 1.39–1.41 R, and one tree reached into a house. The test now
+  measures each tree's reach from its built vertices, so it follows the generator when a look pass changes it (Codex
+  T2, 2026-10-24).

@@ -1,39 +1,31 @@
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { useThree } from '@react-three/fiber'
-import { BufferAttribute, BufferGeometry, DoubleSide, MeshBasicMaterial, type PerspectiveCamera } from 'three'
-import { concatInjections, injectAlive, type AliveInjection } from './aliveMaterial.ts'
-import type { BrushArrays } from './brushForms.ts'
+import type { PerspectiveCamera } from 'three'
 import { CYPRESS_STROKE_BODY, strokeGlslWith, type StrokeBody } from './cypressStrokeShader.ts'
 import type { BakedMass } from './landDomes.ts'
 import { buildFlatPanel, buildStreet, FLAT_VIEW, type StreetBuild, type StreetCounts } from './streetGeometry.ts'
 import { FOG, fogInjection } from './streetFog.ts'
 import { BrushCypress } from './BrushCypress.tsx'
-import { STREET, stationPose, STREET_CYPRESS_AT, STREET_CYPRESS_STRIDE, STOP0_CAMERA } from './streetLayout.ts'
+import {
+  STATION_T,
+  STOP0_CAMERA,
+  STREET,
+  STREET_CYPRESS_AT,
+  STREET_CYPRESS_STRIDE,
+  walkPose,
+} from './streetLayout.ts'
 import { readStreetFlags, streetReadiness, type AssetStatus } from './streetMode.ts'
 import { strokeGeometry } from './strokeGeometry.ts'
 import StreetLife from './streetLife.tsx'
 import { swayInjection } from './streetLife.ts'
+import StreetWalk from './StreetWalk.tsx'
 import { useImageData } from './useImageData.ts'
+import { material, plainGeometry } from './streetMaterial.ts'
 
 type StreetWindow = Window & {
   __streetReady?: boolean
   __streetCounts?: StreetCounts
   __streetCamera?: () => { position: number[]; quaternion: number[]; fov: number; near: number; far: number }
-}
-
-function plainGeometry(a: BrushArrays, cls?: number[] | number): BufferGeometry {
-  const g = new BufferGeometry()
-  const vertices = a.positions.length / 3
-  g.setAttribute('position', new BufferAttribute(new Float32Array(a.positions), 3))
-  g.setAttribute('color', new BufferAttribute(new Float32Array(a.colors), 3))
-  if (cls !== undefined) {
-    const clsArr = typeof cls === 'number' ? new Float32Array(vertices).fill(cls) : new Float32Array(cls)
-    g.setAttribute('aClass', new BufferAttribute(clsArr, 1))
-  }
-  g.setIndex(a.indices)
-  g.computeVertexNormals()
-  g.computeBoundingSphere()
-  return g
 }
 
 /**
@@ -43,56 +35,13 @@ function plainGeometry(a: BrushArrays, cls?: number[] | number): BufferGeometry 
  */
 const STREET_GROUND_BODY: StrokeBody = { ...CYPRESS_STROKE_BODY, gaps: null, laneEdge: null, dryFrom: 0.85, fray: 0.08 }
 
-const NO_INJECTION = { uniforms: {}, vertexHead: '', vertexBody: '', fragmentHead: '', fragmentBody: '' }
-
-function idInjection(threshold = FOG.near + 0.6 * (FOG.far - FOG.near)): Omit<AliveInjection, 'key'> {
-  return {
-    uniforms: {
-      uFogThreshold: { value: threshold },
-    },
-    vertexHead: 'attribute float aClass;\nvarying float vClass;',
-    vertexBody: 'vClass = aClass;',
-    fragmentHead: [
-      'uniform float uFogThreshold;',
-      'varying float vClass;',
-    ].join('\n'),
-    fragmentBody: [
-      'if (diffuseColor.a < 0.5) discard;',
-      'int c = int(vClass + 0.5);',
-      'vec3 idCol = vec3(0.0);',
-      'if (c == 0) idCol = vec3(1.0, 0.0, 0.0);',
-      'else if (c == 1) idCol = vec3(0.0, 1.0, 0.0);',
-      'else if (c == 2) idCol = vec3(0.0, 0.0, 1.0);',
-      'else if (c == 3) idCol = vec3(1.0, 1.0, 0.0);',
-      'else if (c == 4) idCol = vec3(0.0, 1.0, 1.0);',
-      'else if (c == 5) idCol = vec3(1.0, 0.0, 1.0);',
-      'else if (c == 6) idCol = vec3(1.0, 128.0 / 255.0, 0.0);',
-      'else idCol = vec3(0.0, 0.0, 0.0);',
-      'if (vFogDistance > uFogThreshold) {',
-      '  idCol = vec3(1.0, 1.0, 1.0);',
-      '}',
-      'diffuseColor.rgb = idCol;',
-      'diffuseColor.a = 1.0;',
-    ].join('\n'),
-  }
-}
-
-function material(key: string, body: Omit<AliveInjection, 'key' | 'uniforms'> | null, fog: Omit<AliveInjection, 'key'>, stroke: boolean, ids: boolean, extra?: Omit<AliveInjection, 'key'>): MeshBasicMaterial {
-  const m = new MeshBasicMaterial(stroke ? { vertexColors: true, toneMapped: false, side: DoubleSide, alphaTest: 0.5 } : { vertexColors: true, toneMapped: false, side: DoubleSide })
-  const parts: Omit<AliveInjection, 'key'>[] = [body ? { uniforms: {}, ...body } : NO_INJECTION, fog]
-  if (extra) parts.push(extra)
-  if (ids) parts.push(idInjection())
-  injectAlive(m, concatInjections(ids ? `${key}-ids` : key, ...parts))
-  return m
-}
-
 /**
  * The street (S1, tasks/2026-10-23-street-s1-plan.md): built once from the painting, the land flow and the baked
  * masses, all or nothing (`streetReadiness`), drawn in place of the diorama's foreground under the same sky. It places
  * the camera at its station itself, so the layout stays in this lazy chunk. `?flat=1` draws the flat panel instead
  * (G4b: four faces laid flat in the production materials, no fog), facing the camera.
  */
-export default function Street({ reduced = false }: { reduced?: boolean } = {}) {
+export default function Street({ reduced = false, still = false }: { reduced?: boolean; still?: boolean } = {}) {
   const flags = useMemo(() => readStreetFlags(typeof window !== 'undefined' ? window.location.search : ''), [])
   const { camera, size } = useThree()
   const portrait = size.height > size.width
@@ -143,7 +92,8 @@ export default function Street({ reduced = false }: { reduced?: boolean } = {}) 
       persp.near = 0.01
       persp.far = 48
     } else {
-      const pose = stationPose(flags.station, portrait)
+      const initialT = flags.walkT ?? STATION_T[flags.station]
+      const pose = walkPose(initialT, portrait)
       persp.position.set(pose.position[0] + offset[0], pose.position[1] + offset[1], pose.position[2] + offset[2])
       persp.lookAt(pose.target[0] + offset[0], pose.target[1] + offset[1], pose.target[2] + offset[2])
       persp.fov = pose.fov
@@ -154,7 +104,7 @@ export default function Street({ reduced = false }: { reduced?: boolean } = {}) 
     const w = window as StreetWindow
     w.__streetCamera = () => ({ position: persp.position.toArray(), quaternion: persp.quaternion.toArray(), fov: persp.fov, near: persp.near, far: persp.far })
     return () => { delete w.__streetCamera }
-  }, [camera, flags.flat, flags.station, portrait, offset])
+  }, [camera, flags.flat, flags.station, flags.walkT, portrait, offset])
   /* eslint-enable react-hooks/immutability */
 
   const materials = useMemo(() => {
@@ -221,6 +171,15 @@ export default function Street({ reduced = false }: { reduced?: boolean } = {}) 
         />
       )}
       {!flags.flat && flags.ids === 0 && flags.light && build && paintingData && <StreetLife windows={build.windows} painting={paintingData} reduced={reduced} />}
+      {!flags.flat && (
+        <StreetWalk
+          painting={paintingData}
+          flags={flags}
+          offset={offset}
+          reduced={reduced}
+          still={still}
+        />
+      )}
     </group>
   )
 }

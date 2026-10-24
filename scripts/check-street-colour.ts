@@ -19,6 +19,7 @@ import { resolve } from 'node:path'
 import { PALETTE } from '../src/scene/palette.ts'
 import { PATH_LIFT, STREET_SOURCES } from '../src/scene/streetStrokes.ts'
 import { TREE_CURLS } from '../src/scene/streetTrees.ts'
+import { VINCENT_SOURCES } from '../src/scene/vincent.ts'
 import palette from '../public/reference/palette.json' with { type: 'json' }
 import { decodePNG } from './lib/png.ts'
 
@@ -231,6 +232,17 @@ const refRoofBlue = meanLab(rectLabs(workPainting, STREET_SOURCES.roofBlue))
 const refRoofSienna = meanLab(rectLabs(workPainting, STREET_SOURCES.roofSienna))
 const refThatch = meanLab(rectLabs(workPainting, STREET_SOURCES.thatch))
 
+// Vincent references, both from palette.json, never from VINCENT_SOURCES (Codex T1: a target read from the builder's own
+// patch moves with it). refSmock is the village's ultramarine swatch, #2a3f6f: the plan's mean of the village's two
+// blues has chroma 22, the grey-blue that read as the ground. The source patch's mean is the smock's diagnostic.
+// refHat is the weight-averaged mean of all villageWarm swatches
+const villageBlues = (palette.regions as Record<string, { colours: { hex: string; lab: number[] }[] }>).village.colours
+const ultramarine = villageBlues.find((c) => c.hex === '#2a3f6f')
+if (!ultramarine) throw new Error('palette.json has no village swatch #2a3f6f')
+const refSmock: Lab = { l: ultramarine.lab[0], a: ultramarine.lab[1], b: ultramarine.lab[2] }
+const diagSmockSource = meanLab(rectLabs(workPainting, VINCENT_SOURCES.smock))
+const refHat: Lab = regionWeightedMeanLab('villageWarm')
+
 const SOURCES: Record<string, { idR: number; idG: number; idB: number; ref: Lab }> = {
   wallA: { idR: 255, idG: 0, idB: 0, ref: refWallA },
   wallB: { idR: 0, idG: 255, idB: 0, ref: refWallB },
@@ -238,7 +250,7 @@ const SOURCES: Record<string, { idR: number; idG: number; idB: number; ref: Lab 
   roofStriped: { idR: 255, idG: 255, idB: 0, ref: refRoofStriped },
   roofBlue: { idR: 0, idG: 255, idB: 255, ref: refRoofBlue },
   roofSienna: { idR: 255, idG: 0, idB: 255, ref: refRoofSienna },
-  thatch: { idR: 255, idG: 128, idB: 0, ref: refThatch },
+  thatch: { idR: 255, idG: 188, idB: 0, ref: refThatch },
 }
 
 // Palette regional means
@@ -253,6 +265,8 @@ type ClassDef = {
   minArea: number
   ref: Lab | null
   diag: Lab | null
+  /** what `diag` measures, when it is not the palette */
+  diagName?: string
 }
 
 const CLASSES: Record<string, ClassDef> = {
@@ -263,6 +277,8 @@ const CLASSES: Record<string, ClassDef> = {
   trees: { idR: 255, idG: 0, idB: 255, minArea: 1000, ref: refTrees, diag: diagCypress },
   fog: { idR: 255, idG: 255, idB: 255, minArea: 1000, ref: refFog, diag: null },
   windows: { idR: 0, idG: 0, idB: 255, minArea: 100, ref: refWindows, diag: null },
+  smock: { idR: 188, idG: 0, idB: 255, minArea: 800, ref: refSmock, diag: diagSmockSource, diagName: 'source' },
+  hat: { idR: 188, idG: 255, idB: 0, minArea: 80, ref: refHat, diag: null },
 }
 
 if (sources) {
@@ -276,18 +292,23 @@ if (sources) {
     thatch: [],
   }
 
+  const colourCounts = new Map<string, number>()
+
   for (let i = 0; i < totalPixels; i++) {
     const o = i * 4
     const r = idsPng.rgba[o]
     const g = idsPng.rgba[o + 1]
     const b = idsPng.rgba[o + 2]
+    const key = `${r},${g},${b}`
+    colourCounts.set(key, (colourCounts.get(key) || 0) + 1)
+
     if (r === 255 && g === 0 && b === 0) maskIndices.wallA.push(i)
     else if (r === 0 && g === 255 && b === 0) maskIndices.wallB.push(i)
     else if (r === 0 && g === 0 && b === 255) maskIndices.plaster.push(i)
     else if (r === 255 && g === 255 && b === 0) maskIndices.roofStriped.push(i)
     else if (r === 0 && g === 255 && b === 255) maskIndices.roofBlue.push(i)
     else if (r === 255 && g === 0 && b === 255) maskIndices.roofSienna.push(i)
-    else if (r === 255 && g >= 120 && g <= 136 && b === 0) maskIndices.thatch.push(i)
+    else if (r === 255 && g >= 180 && g <= 196 && b === 0) maskIndices.thatch.push(i)
   }
 
   const fullRgba = new Uint8Array(fullPng.rgba)
@@ -306,6 +327,28 @@ if (sources) {
   const failures: string[] = []
   console.log(`Street colour check: station ${station}, viewport ${viewport} (sources)${control ? ` (control: ${control})` : ''}`)
   console.log(`Files: full="${fullPngPath}", ids="${idsPngPath}"`)
+
+  // Guard: exact colour in ID frame covering >= 2000 px that is not black and not a known ID
+  const knownSourcesIds = new Set([
+    '0,0,0',
+    '255,0,0',
+    '0,255,0',
+    '0,0,255',
+    '255,255,0',
+    '0,255,255',
+    '255,0,255',
+    '255,188,0',
+    '255,255,255',
+    '188,0,255',
+    '188,255,0',
+  ])
+  for (const [key, area] of colourCounts.entries()) {
+    if (area >= 2000 && !knownSourcesIds.has(key)) {
+      const [r, g, b] = key.split(',').map(Number)
+      failures.push(`unknown ID colour (${r}, ${g}, ${b}) covers ${area} px (>= 2000 px)`)
+      console.log(`  unknown ID: FAIL (${r}, ${g}, ${b}) covers ${area} px (>= 2000 px)`)
+    }
+  }
 
   for (const [name, def] of Object.entries(SOURCES)) {
     const indices = maskIndices[name]
@@ -350,13 +393,20 @@ if (sources) {
     path: [],
     trees: [],
     fog: [],
+    smock: [],
+    hat: [],
   }
+
+  const colourCounts = new Map<string, number>()
 
   for (let i = 0; i < totalPixels; i++) {
     const o = i * 4
     const r = idsPng.rgba[o]
     const g = idsPng.rgba[o + 1]
     const b = idsPng.rgba[o + 2]
+    const key = `${r},${g},${b}`
+    colourCounts.set(key, (colourCounts.get(key) || 0) + 1)
+
     if (r === 255 && g === 0 && b === 0) maskIndices.walls.push(i)
     else if (r === 0 && g === 255 && b === 0) maskIndices.roofs.push(i)
     else if (r === 0 && g === 0 && b === 255) maskIndices.windows.push(i)
@@ -364,6 +414,8 @@ if (sources) {
     else if (r === 0 && g === 255 && b === 255) maskIndices.path.push(i)
     else if (r === 255 && g === 0 && b === 255) maskIndices.trees.push(i)
     else if (r === 255 && g === 255 && b === 255) maskIndices.fog.push(i)
+    else if (r >= 180 && r <= 196 && g === 0 && b === 255) maskIndices.smock.push(i)
+    else if (r >= 180 && r <= 196 && g === 255 && b === 0) maskIndices.hat.push(i)
   }
 
   // Full image copy in case of control
@@ -383,6 +435,28 @@ if (sources) {
   const failures: string[] = []
   console.log(`Street colour check: station ${station}, viewport ${viewport}${control ? ` (control: ${control})` : ''}`)
   console.log(`Files: full="${fullPngPath}", ids="${idsPngPath}"`)
+
+  // Guard: exact colour in ID frame covering >= 2000 px that is not black and not a known ID
+  const knownClassesIds = new Set([
+    '0,0,0',
+    '255,0,0',
+    '0,255,0',
+    '0,0,255',
+    '255,255,0',
+    '0,255,255',
+    '255,0,255',
+    '255,255,255',
+    '188,0,255',
+    '188,255,0',
+    '21,28,27', // BrushCypress underpaint (0x151c1b), drawn in own colours in ID frame by design (Street.tsx:162, Fable C3)
+  ])
+  for (const [key, area] of colourCounts.entries()) {
+    if (area >= 2000 && !knownClassesIds.has(key)) {
+      const [r, g, b] = key.split(',').map(Number)
+      failures.push(`unknown ID colour (${r}, ${g}, ${b}) covers ${area} px (>= 2000 px)`)
+      console.log(`  unknown ID: FAIL (${r}, ${g}, ${b}) covers ${area} px (>= 2000 px)`)
+    }
+  }
 
   for (const [name, def] of Object.entries(CLASSES)) {
     const indices = maskIndices[name]
@@ -405,7 +479,7 @@ if (sources) {
 
     const dE = deltaE76(mean, def.ref!)
     const diagDE = def.diag ? deltaE76(mean, def.diag) : null
-    const diagStr = diagDE !== null ? ` (diag to palette: ${diagDE.toFixed(2)})` : ''
+    const diagStr = diagDE !== null ? ` (diag to ${def.diagName ?? 'palette'}: ${diagDE.toFixed(2)})` : ''
 
     if (dE >= 10) {
       failures.push(`${name}: ΔE76 ${dE.toFixed(2)} >= 10`)

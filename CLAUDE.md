@@ -92,8 +92,11 @@ wrong; Mark decides what feels right.
 - Colours sampled from `palette.json`; no drift beyond the tolerance in Tunables.
 - Performance: 60 fps desktop, 30 fps mid-tier mobile, devicePixelRatio capped per Tunables.
 - `prefers-reduced-motion` yields a dignified still state — the painting, well lit, no churn.
-- Camera stays within the orbit limits in Tunables (polar + distance; no free-fly or panning); the
-  diorama always reads as Starry Night — head-on it is the painting's composition.
+- Camera stays within the orbit limits in Tunables (polar + distance; no free-fly or panning) while
+  the visitor orbits the diorama. Inside a portal scene (the village street, 2026-10-23), an authored
+  camera path may leave them: the portal's flight, and the walk along the scene's path. The visitor
+  moves the camera only along that path, never off it. The diorama always reads as Starry Night —
+  head-on it is the painting's composition.
 
 ## Stack (decided)
 
@@ -220,6 +223,21 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   base, the base inset 0.024 from each edge (across on the lane, all four sides of the square), the segments' overlap
   0.02 in `t` (look pass 3 of 4, a pale lane like Simon Lee's). The colour gate keeps the fog on (Mark: "keep the fog for
   now"). `?light=0` builds the street unlit for the gate. Passed by Mark, 2026-10-24 ("It does read like a village").
+- The street's slice 2, Vincent and the walk, on with `?street=1` (2026-10-24, `src/scene/streetWalk.ts`, `StreetWalk.tsx`,
+  `vincent.ts`, `streetLayout.ts` `VINCENT_RIG`; the record `tasks/2026-10-24-street-s2.md`): the walk runs `t` 0–0.9
+  along the lane. The wheel 0.001 world units per pixel, eased over τ 0.25 s; the arrow keys 0.15 per second; the
+  automatic walk 0.08 per second, the default where the pointer is coarse and nothing hovers, a tap on him stopping and
+  starting it; every speed capped at 0.5 per second, a snap within 1e-4; the lane's two kinks rounded over 0.02 of `t`
+  (`WALK_ROUND`). The gait from the distance walked: a step every 0.04, a rise of 0.0015 and a roll of ±0.03 rad a step,
+  the left arm ±0.25 rad, all scaled down below 0.05 per second; no legs. Vincent 0.4 ahead of the camera on the lane,
+  0.03 left of its centre, easing to 0.07 over stops 3–4 (the church door), 0.085 tall, his tap target at least 48 px,
+  2,084 triangles. The smock from the blue hill behind the church `[1176, 840, 1208, 872]`, 4.3 from `village`'s
+  ultramarine `#2a3f6f` and gated against it (look pass 4, Codex T1); the hat the thatch, gated against `villageWarm`.
+  The trees, pass 7 (`streetTrees.ts` `STREET_TREE`): the fork at 0.08 + 0.35 R, four limbs each splitting into two
+  twigs, nine clumps of 0.28 R as domes 1.15 × 0.8, 115 curls a clump of 0.3–0.55 R, 108,096 triangles; the three moved
+  0.010–0.035 to clear the houses by 0.025 (Codex T2). At stop 0 on the phone the scene is 1,435,696 of 1,444,930
+  triangles. `?walk=0` and `?vincent=0` turn each off, `?walkT=` opens at a point on the lane, `?walkMode=input` or
+  `auto` forces a mode. Passed by Mark, 2026-10-24 ("Good, passed").
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)
