@@ -3049,3 +3049,8 @@ must be byte-identical before the stimulus's difference means anything.
 - **A new part in front of an old one changes the old one's colour gate.** The grass hid the walls' dark foot at stop 2,
   and the walls moved from 9.82 to 10.17 with no wall pixel changed. Compare the old class's mask before and after
   before you call a colour drift.
+- **A part that borrows another part's input must work when that part is off.** The grass followed a touch through the
+  walk's gesture and relied on the walk's `touch-action: none`. With `?walk=0` it had neither, and a drag bent one spot
+  (Codex, PR #22). Run each flag that turns a part off against the parts that read it.
+- **Answer a review with every route to the fault, not only the one it names.** The fix for that finding needed the
+  pointer and the `touch-action`. A test that removed each half alone showed both were needed.
