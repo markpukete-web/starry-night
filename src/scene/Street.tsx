@@ -8,11 +8,19 @@ import type { BakedMass } from './landDomes.ts'
 import { buildFlatPanel, buildStreet, FLAT_VIEW, type StreetBuild, type StreetCounts } from './streetGeometry.ts'
 import { FOG, fogInjection } from './streetFog.ts'
 import { BrushCypress } from './BrushCypress.tsx'
-import { STREET, stationPose, STREET_CYPRESS_AT, STREET_CYPRESS_STRIDE, STOP0_CAMERA } from './streetLayout.ts'
+import {
+  STATION_T,
+  STOP0_CAMERA,
+  STREET,
+  STREET_CYPRESS_AT,
+  STREET_CYPRESS_STRIDE,
+  walkPose,
+} from './streetLayout.ts'
 import { readStreetFlags, streetReadiness, type AssetStatus } from './streetMode.ts'
 import { strokeGeometry } from './strokeGeometry.ts'
 import StreetLife from './streetLife.tsx'
 import { swayInjection } from './streetLife.ts'
+import StreetWalk from './StreetWalk.tsx'
 import { useImageData } from './useImageData.ts'
 
 type StreetWindow = Window & {
@@ -67,6 +75,8 @@ function idInjection(threshold = FOG.near + 0.6 * (FOG.far - FOG.near)): Omit<Al
       'else if (c == 4) idCol = vec3(0.0, 1.0, 1.0);',
       'else if (c == 5) idCol = vec3(1.0, 0.0, 1.0);',
       'else if (c == 6) idCol = vec3(1.0, 128.0 / 255.0, 0.0);',
+      'else if (c == 7) idCol = vec3(128.0 / 255.0, 0.0, 1.0);',
+      'else if (c == 8) idCol = vec3(128.0 / 255.0, 1.0, 0.0);',
       'else idCol = vec3(0.0, 0.0, 0.0);',
       'if (vFogDistance > uFogThreshold) {',
       '  idCol = vec3(1.0, 1.0, 1.0);',
@@ -92,7 +102,7 @@ function material(key: string, body: Omit<AliveInjection, 'key' | 'uniforms'> | 
  * the camera at its station itself, so the layout stays in this lazy chunk. `?flat=1` draws the flat panel instead
  * (G4b: four faces laid flat in the production materials, no fog), facing the camera.
  */
-export default function Street({ reduced = false }: { reduced?: boolean } = {}) {
+export default function Street({ reduced = false, still = false }: { reduced?: boolean; still?: boolean } = {}) {
   const flags = useMemo(() => readStreetFlags(typeof window !== 'undefined' ? window.location.search : ''), [])
   const { camera, size } = useThree()
   const portrait = size.height > size.width
@@ -143,7 +153,8 @@ export default function Street({ reduced = false }: { reduced?: boolean } = {}) 
       persp.near = 0.01
       persp.far = 48
     } else {
-      const pose = stationPose(flags.station, portrait)
+      const initialT = flags.walkT ?? STATION_T[flags.station]
+      const pose = walkPose(initialT, portrait)
       persp.position.set(pose.position[0] + offset[0], pose.position[1] + offset[1], pose.position[2] + offset[2])
       persp.lookAt(pose.target[0] + offset[0], pose.target[1] + offset[1], pose.target[2] + offset[2])
       persp.fov = pose.fov
@@ -154,7 +165,7 @@ export default function Street({ reduced = false }: { reduced?: boolean } = {}) 
     const w = window as StreetWindow
     w.__streetCamera = () => ({ position: persp.position.toArray(), quaternion: persp.quaternion.toArray(), fov: persp.fov, near: persp.near, far: persp.far })
     return () => { delete w.__streetCamera }
-  }, [camera, flags.flat, flags.station, portrait, offset])
+  }, [camera, flags.flat, flags.station, flags.walkT, portrait, offset])
   /* eslint-enable react-hooks/immutability */
 
   const materials = useMemo(() => {
@@ -221,6 +232,15 @@ export default function Street({ reduced = false }: { reduced?: boolean } = {}) 
         />
       )}
       {!flags.flat && flags.ids === 0 && flags.light && build && paintingData && <StreetLife windows={build.windows} painting={paintingData} reduced={reduced} />}
+      {!flags.flat && (
+        <StreetWalk
+          painting={paintingData}
+          flags={flags}
+          offset={offset}
+          reduced={reduced}
+          still={still}
+        />
+      )}
     </group>
   )
 }
