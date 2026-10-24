@@ -133,6 +133,7 @@ The land roadmap (E1, E2, D1, then E3 and E4 on the cypress) is done.
      head-on it is the painting's composition." Mark applies it in `CLAUDE.md`.
      Status, 2026-10-24: the street reached `main` behind `?street=1` (PR #20) before this edit, although the S1b plan
      (`tasks/2026-10-23-street-s1b-plan.md:51`) said the edit comes first. Slice 2's walk needs it before it merges.
+     Applied, 2026-10-25: Mark said "Apply the camera edit", and the Lead committed the text above as his edit.
    - **Idea for slice 3, not built** (Mark, 2026-10-23: "some flowers that Vincent drew of other drawings perhaps"):
      flowers beside the path with the grass, for the hand to touch. Their shape and brushwork may follow Vincent's own
      Saint-Rémy flowers. Their colours come from The Starry Night's palette, because the bar locks colour to the
