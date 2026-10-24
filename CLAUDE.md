@@ -92,8 +92,11 @@ wrong; Mark decides what feels right.
 - Colours sampled from `palette.json`; no drift beyond the tolerance in Tunables.
 - Performance: 60 fps desktop, 30 fps mid-tier mobile, devicePixelRatio capped per Tunables.
 - `prefers-reduced-motion` yields a dignified still state — the painting, well lit, no churn.
-- Camera stays within the orbit limits in Tunables (polar + distance; no free-fly or panning); the
-  diorama always reads as Starry Night — head-on it is the painting's composition.
+- Camera stays within the orbit limits in Tunables (polar + distance; no free-fly or panning) while
+  the visitor orbits the diorama. Inside a portal scene (the village street, 2026-10-23), an authored
+  camera path may leave them: the portal's flight, and the walk along the scene's path. The visitor
+  moves the camera only along that path, never off it. The diorama always reads as Starry Night —
+  head-on it is the painting's composition.
 
 ## Stack (decided)
 
