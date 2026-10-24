@@ -9,7 +9,7 @@ in the painting's strokes feel good under a hand), so test that first. Mark: "So
 settled as code, no Blender (the design, line 171): a straw hat and a long smock that hides the legs, as Simon's
 figure rides on wheels. Swinging legs in code only if the glide reads as sliding.
 
-**The test** is on the local branch `spike/grass-hand` (`fd55403`), not pushed. It is a throwaway: no plan, no review,
+**The test** is on the local branch `spike/grass-hand` (one commit over `main`), not pushed. It is a throwaway: no plan, no review,
 no tests, and nothing from it is kept without Mark's word. `src/scene/grassSpike.tsx` and four lines in `Street.tsx`.
 Live on the Mac's dev server while it runs: `http://192.168.0.148:5190/?street=1&station=0&grass=1`, and
 `&grassView=low` for the camera in the grass. Captures, the 1:1 trail crop and a 16 s clip:
