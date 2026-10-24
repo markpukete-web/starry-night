@@ -3054,3 +3054,6 @@ must be byte-identical before the stimulus's difference means anything.
   (Codex, PR #22). Run each flag that turns a part off against the parts that read it.
 - **Answer a review with every route to the fault, not only the one it names.** The fix for that finding needed the
   pointer and the `touch-action`. A test that removed each half alone showed both were needed.
+- **Read the PR's CI before you call the gate passed.** The grass test read a derived file that only the Lead's
+  worktree links, so every local run passed and every CI run failed with ENOENT. Run the suite once with
+  `reference/derived` hidden before you push a test that reads a file (PR #22, 2026-10-25).
