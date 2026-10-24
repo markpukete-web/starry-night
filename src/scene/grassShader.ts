@@ -60,8 +60,10 @@ vec2 trailUV = (aRoot - uTrailRect.xy) / uTrailRect.zw;
 vec2 push = (texture2D(uTrailMap, trailUV).rg * 255.0 - 128.0) / 127.0;
 vPush = length(push);
 
-float gust = clamp(0.4 + 0.6 * sin(uAliveTime * 0.9 + aRoot.x * 3.0 + aRoot.y * 2.0), 0.0, 1.0);
-float windAngle = uAliveTime * 1.6 + aRoot.x * 5.0 + aRoot.y * 7.0;
+// the wind blows toward +x (the sky's travel, left to right from stop 0) and its gusts run the same way; the heading
+// only wobbles by 0.3 rad (S3 look pass 3: a heading that turned 1.6 rad/s circled every tip in place)
+float gust = clamp(0.4 + 0.6 * sin(uAliveTime * 0.9 - aRoot.x * 3.0 + aRoot.y * 2.0), 0.0, 1.0);
+float windAngle = 0.3 * sin(uAliveTime * 0.7 + aRoot.x * 5.0 + aRoot.y * 7.0);
 vec2 windDir = vec2(cos(windAngle), sin(windAngle));
 vec2 wind = windDir * (${GRASS_BLADE.wind.toFixed(6)} * gust);
 

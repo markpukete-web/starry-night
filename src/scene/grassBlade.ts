@@ -42,7 +42,7 @@ export const GRASS_BLADE = {
   shade: [0.6, 1.05],
   /** the shader's largest push at the tip under the hand, its wind, and the distance from which it widens a blade */
   push: 0.03,
-  wind: 0.0025,
+  wind: 0.0035,
   widenFrom: 0.3,
 } as const
 
