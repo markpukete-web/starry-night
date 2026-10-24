@@ -159,10 +159,13 @@ export default function StreetGrass({
     client: [number, number] | null
     active: boolean
     isOverride: boolean
+    /** the touch or pen that went down on the verge, for when the walk tracks no gesture (`?walk=0`) */
+    pointerId: number | null
   }>({
     client: null,
     active: false,
     isOverride: false,
+    pointerId: null,
   })
 
   /* eslint-disable react-hooks/immutability -- canvas cursor and pointer handlers */
@@ -170,6 +173,9 @@ export default function StreetGrass({
     const canvas = gl.domElement
     const prevCursor = canvas.style.cursor
     canvas.style.cursor = 'grab'
+    // a touch on the verge is the grass's, not a page pan, also with `?walk=0`, where the walk sets nothing (PR #22)
+    const prevTouchAction = canvas.style.touchAction
+    canvas.style.touchAction = 'none'
 
     const onPointerMove = (e: PointerEvent) => {
       if (handRef.current.isOverride) return
@@ -189,11 +195,10 @@ export default function StreetGrass({
         handRef.current.active = inside
         if (inside) handRef.current.client = [e.clientX, e.clientY]
       } else {
-        if (
-          streetGesture &&
-          !streetGesture.vincent &&
-          streetGesture.pointerId === e.pointerId
-        ) {
+        // the walk's gesture when the walk tracks one, else the grass's own down: with `?walk=0` nothing sets the
+        // street gesture, and a touch-drag bent only its first spot (Codex, PR #22)
+        const owner = streetGesture ? (streetGesture.vincent ? null : streetGesture.pointerId) : handRef.current.pointerId
+        if (owner === e.pointerId) {
           handRef.current.active = inside
           if (inside) handRef.current.client = [e.clientX, e.clientY]
         }
@@ -212,6 +217,7 @@ export default function StreetGrass({
 
       if (!inside || !e.isPrimary) {
         handRef.current.active = false
+        handRef.current.pointerId = null
         return
       }
 
@@ -222,9 +228,11 @@ export default function StreetGrass({
       const isVincent = admitGesture(box, e.clientX, e.clientY) === 'vincent'
       if (isVincent) {
         handRef.current.active = false
+        handRef.current.pointerId = null
       } else {
         handRef.current.active = true
         handRef.current.client = [e.clientX, e.clientY]
+        handRef.current.pointerId = e.pointerType === 'mouse' ? null : e.pointerId
       }
     }
 
@@ -234,6 +242,7 @@ export default function StreetGrass({
         if (streetGesture === null || streetGesture.pointerId === e.pointerId) {
           handRef.current.active = false
           handRef.current.client = null
+          handRef.current.pointerId = null
         }
       }
     }
@@ -243,6 +252,7 @@ export default function StreetGrass({
       if (streetGesture === null || streetGesture.pointerId === e.pointerId) {
         handRef.current.active = false
         handRef.current.client = null
+        handRef.current.pointerId = null
       }
     }
 
@@ -259,6 +269,7 @@ export default function StreetGrass({
       if (handRef.current.isOverride) return
       handRef.current.active = false
       handRef.current.client = null
+      handRef.current.pointerId = null
     }
 
     const onVisibilityChange = () => {
@@ -275,6 +286,7 @@ export default function StreetGrass({
 
     return () => {
       canvas.style.cursor = prevCursor
+      canvas.style.touchAction = prevTouchAction
       window.removeEventListener('pointermove', onPointerMove)
       window.removeEventListener('pointerdown', onPointerDown)
       window.removeEventListener('pointerup', onPointerUp)

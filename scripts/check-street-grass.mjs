@@ -15,6 +15,7 @@
  * 10. grass=0: __grassCount undefined, canvas cursor is not grab.
  * 11. Anchor A: cases 1 and 7 again under skyAnchor=A.
  * 12. Focus loss (Codex F01): a real mouse move stamps, a window blur stops the stamps, the next move restarts them.
+ * 13. walk=0 (Codex, PR #22): a touch-drag across the verge moves __grassHit with the finger.
  */
 
 import { spawn } from 'node:child_process'
@@ -923,6 +924,32 @@ async function main() {
       const s4 = await handStamps()
       if (s4 <= s3) throw new Error(`Case 12 failed: a move after the blur added no stamps (${s3} -> ${s4})`)
       console.log(`PASS: case 12 - focus loss: stamps ${s0} -> ${s1} over the verge, held at ${s2} -> ${s3} after a blur, ${s4} after the next move`)
+    }
+
+    // -------------------------------------------------------------
+    // Case 13: walk=0 (Codex, PR #22), the phone, vincent=0: with the walk off nothing sets the street gesture, so the
+    // grass follows its own touch: a touch-drag across the verge moves __grassHit with it.
+    // -------------------------------------------------------------
+    if (shouldRun(13)) {
+      await page.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true })
+      await page.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 })
+      await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walk=0&vincent=0` })
+      await page.waitForStreetReady()
+
+      await page.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 320, y: 481, id: 0 }] })
+      await sleep(150)
+      const hitA = await page.evaluate(() => window.__grassHit)
+      await page.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: 350, y: 481, id: 0 }] })
+      await sleep(150)
+      const hitB = await page.evaluate(() => window.__grassHit)
+      await page.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+      await page.send('Emulation.setTouchEmulationEnabled', { enabled: false })
+      await page.send('Emulation.setDeviceMetricsOverride', { width: 1600, height: 900, deviceScaleFactor: 1, mobile: false })
+
+      if (!hitA) throw new Error('Case 13 precondition failed: __grassHit is null after a touch down on the verge')
+      const moved = hitB ? Math.hypot(hitB.x - hitA.x, hitB.z - hitA.z) : 0
+      if (moved < 0.01) throw new Error(`Case 13 failed: the hit moved ${moved.toFixed(4)} with a 30 px touch-drag and walk=0`)
+      console.log(`PASS: case 13 - walk=0 touch-drag: the hit moved ${moved.toFixed(3)} with the finger`)
     }
 
     await page.close()
