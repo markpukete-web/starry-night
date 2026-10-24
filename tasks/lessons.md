@@ -3024,7 +3024,7 @@ must be byte-identical before the stimulus's difference means anything.
 - **Read the URL in the raw output before you read a perf number.** The worker's perf rounds dropped `&street=1`, so
   all 35 timed the painting at 1,444,930 triangles. The report's table looked right. The frames file's `url` and the
   triangle count showed it in one line each (T5-1).
-- **A one-time frame inside the timing window lifts the mean, not the steady state.** `readPerf` keeps the last 600
+- **A one-time frame inside the timing window lifts the mean, not the steady state.** `readPerf` keeps the last 599
   intervals after an 11.8 s wait. The grass made the street's build 0.5–0.8 s longer, so its last frame now falls
   inside that window, and one 1.6 s interval reads as a mean of 20 ms. Report p50, p95 and the mean without the
   largest interval beside the mean, and say which frame the max is.
