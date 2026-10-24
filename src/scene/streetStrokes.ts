@@ -308,7 +308,13 @@ function acceptFor(face: StreetFace, painting: ImageData2D): TexelAccept {
 /** The mean of the darkest `share` of the source's texels (sRGB 0..1), a tenth for a face's underpaint; all of them
  * for a lit window's base. */
 export function sourceUnderpaint(painting: ImageData2D, source: StreetSourceName, share = 0.1): [number, number, number] {
-  const [x0, y0, x1, y1] = STREET_SOURCES[source]
+  return rectUnderpaint(painting, STREET_SOURCES[source], share)
+}
+
+/** `sourceUnderpaint` for any rectangle of the painting (1600 × 1267 px): Vincent's sources are not traced faces, so
+ * they are not `STREET_SOURCES` keys (S2 plan review F1). */
+export function rectUnderpaint(painting: ImageData2D, rect: readonly [number, number, number, number], share = 0.1): [number, number, number] {
+  const [x0, y0, x1, y1] = rect
   const sx = painting.width / 1600
   const sy = painting.height / 1267
   const texels: [number, number, number, number][] = []
