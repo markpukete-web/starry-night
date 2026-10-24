@@ -19,6 +19,7 @@ import { resolve } from 'node:path'
 import { PALETTE } from '../src/scene/palette.ts'
 import { PATH_LIFT, STREET_SOURCES } from '../src/scene/streetStrokes.ts'
 import { TREE_CURLS } from '../src/scene/streetTrees.ts'
+import { VINCENT_SOURCES } from '../src/scene/vincent.ts'
 import palette from '../public/reference/palette.json' with { type: 'json' }
 import { decodePNG } from './lib/png.ts'
 
@@ -231,17 +232,10 @@ const refRoofBlue = meanLab(rectLabs(workPainting, STREET_SOURCES.roofBlue))
 const refRoofSienna = meanLab(rectLabs(workPainting, STREET_SOURCES.roofSienna))
 const refThatch = meanLab(rectLabs(workPainting, STREET_SOURCES.thatch))
 
-// Vincent references (Step 2): refSmock is weight-averaged mean of palette.json village swatches 1 and 2,
-// refHat is weight-averaged mean of all villageWarm swatches
-const villageColours = (palette.regions as Record<string, { colours: { lab: number[]; weight: number }[] }>).village.colours
-let smockW = 0, smockL = 0, smockA = 0, smockB = 0
-for (const sw of [villageColours[1], villageColours[2]]) {
-  smockL += sw.lab[0] * sw.weight
-  smockA += sw.lab[1] * sw.weight
-  smockB += sw.lab[2] * sw.weight
-  smockW += sw.weight
-}
-const refSmock: Lab = { l: smockL / smockW, a: smockA / smockW, b: smockB / smockW }
+// Vincent references: refSmock is its source patch's mean, as the walls' and roofs' are (look pass 3 moved the smock to
+// the village's ultramarine, 27 from the village swatches' mean it was measured against); refHat is the
+// weight-averaged mean of all villageWarm swatches
+const refSmock = meanLab(rectLabs(workPainting, VINCENT_SOURCES.smock))
 const refHat: Lab = regionWeightedMeanLab('villageWarm')
 
 const SOURCES: Record<string, { idR: number; idG: number; idB: number; ref: Lab }> = {

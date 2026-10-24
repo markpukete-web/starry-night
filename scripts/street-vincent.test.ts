@@ -8,7 +8,7 @@ import { mulberry32 } from '../src/scene/brush.ts'
 import { VINCENT_RIG } from '../src/scene/streetLayout.ts'
 import { rectUnderpaint, sourceUnderpaint, STREET_SOURCES, type StreetSourceName } from '../src/scene/streetStrokes.ts'
 import type { ImageData2D } from '../src/scene/useImageData.ts'
-import { buildVincent, vincentMoon, vincentStrokeBody, VINCENT_CLASS, type VincentPart } from '../src/scene/vincent.ts'
+import { buildVincent, vincentMoon, vincentStrokeBody, VINCENT_CLASS, VINCENT_SOURCES, type VincentPart } from '../src/scene/vincent.ts'
 import { decodePNG } from './lib/png.ts'
 
 /** A 1600 × 1267 painting of seeded noise: the geometry does not depend on the colours. */
@@ -145,7 +145,15 @@ test('his paint is the painting\'s', { skip: !existsSync(workPainting) && 'needs
     return [0, 1, 2].map((k) => labs.reduce((s, l) => s + l[k], 0) / labs.length) as Lab
   }
   const dE = (a: Lab, b: Lab) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2])
-  const smock = dE(meanOf(VINCENT_CLASS.smock), swatchMean('village', [1, 2]))
+  // the smock against its own source patch, as the street's walls are (look pass 3 moved it to the village's ultramarine)
+  const [x0, y0, x1, y1] = VINCENT_SOURCES.smock
+  const source: Lab[] = []
+  for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+    const i = (Math.floor(y * png.height / 1267) * png.width + Math.floor(x * png.width / 1600)) * 4
+    source.push(srgbToLab(png.rgba[i] / 255, png.rgba[i + 1] / 255, png.rgba[i + 2] / 255))
+  }
+  const sourceMean = [0, 1, 2].map((k) => source.reduce((s, l) => s + l[k], 0) / source.length) as Lab
+  const smock = dE(meanOf(VINCENT_CLASS.smock), sourceMean)
   const hat = dE(meanOf(VINCENT_CLASS.hat), swatchMean('villageWarm'))
   assert.ok(smock < 10, `smock ΔE76 ${smock.toFixed(2)}`)
   assert.ok(hat < 10, `hat ΔE76 ${hat.toFixed(2)}`)

@@ -15,10 +15,11 @@ import type { ImageData2D } from './useImageData.ts'
  * so `−x` is his right (three's handedness). Built once; Task 4 places and sways him.
  */
 
-/** His paint, in the painting's pixels (1600 × 1267). The smock is the blue hills behind the village, 0.3 from the
- * village's blues (the Lead's scan); the hat is the cottages' thatch, 9.2 from `villageWarm`, near the bar of 10. */
+/** His paint, in the painting's pixels (1600 × 1267). The smock is the village's ultramarine at the lower right (look
+ * pass 3, Mark: "vincent's cloth is similar to the ground"; the hills' patch was the ground's own grey-blue, chroma
+ * 16–18 against the ground's 4–7); the hat is the cottages' thatch, 9.2 from `villageWarm`, near the bar of 10. */
 export const VINCENT_SOURCES = {
-  smock: [796, 868, 828, 900],
+  smock: [1312, 832, 1344, 864],
   hat: STREET_SOURCES.thatch,
   hair: STREET_SOURCES.roofSienna,
   canvas: STREET_SOURCES.plaster,
