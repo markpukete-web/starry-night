@@ -53,6 +53,8 @@ type StreetWalkWindow = Window & {
     set(t: number): void
   }
   __vincentBox?: () => { x0: number; y0: number; x1: number; y1: number }
+  /** the rendered figure's own transform, for the checks (Codex K3, K4): his world position, roll and arm swing */
+  __vincentPose?: () => { world: [number, number, number]; roll: number; arm: number } | null
 }
 
 export default function StreetWalk({
@@ -163,6 +165,7 @@ export default function StreetWalk({
   useEffect(() => {
     if ((!prevReducedRef.current && reduced) || (!prevStillRef.current && still)) {
       walkStateRef.current = stopWalk(walkStateRef.current)
+      queuedWheelPxRef.current = 0
     }
     prevReducedRef.current = reduced
     prevStillRef.current = still
@@ -214,10 +217,19 @@ export default function StreetWalk({
     }
     if (!flags.flat && flags.vincent) {
       w.__vincentBox = getVincentBox
+      w.__vincentPose = () => {
+        const body = vincentGroupRef.current
+        const arm = armGroupRef.current
+        if (!body || !arm) return null
+        body.updateWorldMatrix(true, false)
+        const p = new Vector3().setFromMatrixPosition(body.matrixWorld)
+        return { world: [p.x, p.y, p.z], roll: body.rotation.z, arm: arm.rotation.x }
+      }
     }
     return () => {
       delete w.__streetWalk
       delete w.__vincentBox
+      delete w.__vincentPose
     }
   }, [walkOnActive, flags.flat, flags.vincent, getVincentBox])
 
@@ -252,8 +264,8 @@ export default function StreetWalk({
       }
     }
 
+    // a release is never filtered: a key held over the scene and released over an input must still stop (Codex K2)
     const onKeyUp = (e: KeyboardEvent) => {
-      if (isInteractive(e.target)) return
       if (e.code === 'ArrowUp' || e.code === 'KeyW') {
         heldKeysRef.current.forward = false
       } else if (e.code === 'ArrowDown' || e.code === 'KeyS') {
@@ -266,6 +278,7 @@ export default function StreetWalk({
       heldKeysRef.current.back = false
       activeGestureRef.current = null
       walkStateRef.current = stopWalk(walkStateRef.current)
+      queuedWheelPxRef.current = 0
     }
 
     const onVisibilityChange = () => {
@@ -300,6 +313,8 @@ export default function StreetWalk({
         const box = getVincentBox()
         if (hitBox(box, e.clientX, e.clientY)) {
           walkStateRef.current = toggleWalk(walkStateRef.current, still)
+          // a wheel turned before the tap must not move him after it (Codex K1)
+          queuedWheelPxRef.current = 0
         }
       }
     }
@@ -325,6 +340,7 @@ export default function StreetWalk({
       gl.domElement.style.touchAction = prevTouchAction
     }
   }, [walkOnActive, flags.vincent, gl.domElement, getVincentBox, still])
+  /* eslint-enable react-hooks/immutability */
 
   // Frame loop: priority -1 (before sky reads camera)
   /* eslint-disable react-hooks/immutability -- the R3F camera is placed imperatively, as the arrival places it */
@@ -379,11 +395,8 @@ export default function StreetWalk({
     if (flags.vincent && vincentGroupRef.current && armGroupRef.current) {
       const { position: vPos, yaw } = vincentPlace(nextState.t)
       const g = gait(nextState.distance, nextState.speed, still)
-      vincentGroupRef.current.position.set(
-        vPos[0] + offset[0],
-        vPos[1] + g.lift + offset[1],
-        vPos[2] + offset[2],
-      )
+      // his group sits inside the street's, which already carries the anchor's offset (Codex K3): local, not world
+      vincentGroupRef.current.position.set(vPos[0], vPos[1] + g.lift, vPos[2])
       vincentGroupRef.current.rotation.set(0, yaw, g.roll)
       armGroupRef.current.rotation.set(g.arm, 0, 0)
     }
@@ -398,11 +411,7 @@ export default function StreetWalk({
   return (
     <group
       ref={vincentGroupRef}
-      position={[
-        initialPlace.position[0] + offset[0],
-        initialPlace.position[1] + offset[1],
-        initialPlace.position[2] + offset[2],
-      ]}
+      position={initialPlace.position}
       rotation={[0, initialPlace.yaw, 0]}
     >
       <mesh

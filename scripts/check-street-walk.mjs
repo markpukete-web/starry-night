@@ -597,6 +597,113 @@ async function main() {
     }
     console.log('PASS: flat panel camera holds FLAT_VIEW, walk and vincent undefined')
 
+    // -------------------------------------------------------------
+    // Case 6: Codex's review, K1–K4 (the Lead, 2026-10-24). Each event pair is dispatched in one evaluate, so no
+    // frame runs between them, and each check has its positive control first.
+    // -------------------------------------------------------------
+    const tNow = () => page.evaluate(() => window.__streetWalk?.t)
+    const wheelOnCanvas = `document.querySelector('canvas').dispatchEvent(new WheelEvent('wheel', { deltaY: 600, deltaMode: 0, bubbles: true, cancelable: true }))`
+
+    // K1, blur: a wheel turned and a blur before the next frame leave him where he stands
+    await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=input` })
+    await page.waitForStreetReady()
+    await sleep(500)
+    const k1T0 = await tNow()
+    await page.evaluate(wheelOnCanvas)
+    await sleep(800)
+    const k1T1 = await tNow()
+    if (!(k1T1 - k1T0 > 0.01 / L)) throw new Error(`Case 6 precondition failed: a synthetic wheel did not walk (Δt ${k1T1 - k1T0})`)
+    await page.evaluate(`${wheelOnCanvas}; window.dispatchEvent(new Event('blur'))`)
+    await sleep(800)
+    const k1Drift = Math.abs((await tNow()) - k1T1)
+    if (k1Drift >= 0.002 / L) throw new Error(`Case 6 failed (K1): a wheel before a blur moved him by ${k1Drift.toFixed(5)}`)
+
+    // K1, tap: a wheel turned and a tap that stops the automatic walk, before the next frame, leave him where he stands
+    await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=auto` })
+    await page.waitForStreetReady()
+    await sleep(800)
+    const tapOnVincent = `(() => {
+      const b = window.__vincentBox(); const x = (b.x0 + b.x1) / 2, y = (b.y0 + b.y1) / 2
+      const c = document.querySelector('canvas'), o = { pointerId: 1, isPrimary: true, clientX: x, clientY: y, bubbles: true }
+      c.dispatchEvent(new PointerEvent('pointerdown', o)); c.dispatchEvent(new PointerEvent('pointerup', o))
+    })()`
+    await page.evaluate(tapOnVincent)
+    await sleep(200)
+    if ((await page.evaluate(() => window.__streetWalk?.auto)) !== false) throw new Error('Case 6 precondition failed: a synthetic tap on Vincent did not stop the walk')
+    await page.evaluate(tapOnVincent)
+    await sleep(800)
+    if ((await page.evaluate(() => window.__streetWalk?.auto)) !== true) throw new Error('Case 6 precondition failed: a second synthetic tap did not restart the walk')
+    await page.evaluate(`${wheelOnCanvas}; ${tapOnVincent}`)
+    await sleep(800)
+    const k1TapT1 = await tNow()
+    await sleep(800)
+    const k1TapDrift = Math.abs((await tNow()) - k1TapT1)
+    if ((await page.evaluate(() => window.__streetWalk?.auto)) !== false) throw new Error('Case 6 failed (K1): the tap with a queued wheel did not stop the walk')
+    if (k1TapDrift >= 0.002 / L) throw new Error(`Case 6 failed (K1): a wheel before a stopping tap moved him by ${k1TapDrift.toFixed(5)} after it`)
+
+    // K2: a key held over the scene and released over an input stops him
+    await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=input` })
+    await page.waitForStreetReady()
+    await sleep(500)
+    const k2T0 = await tNow()
+    await page.evaluate(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', code: 'ArrowUp' })))
+    await sleep(500)
+    const k2T1 = await tNow()
+    if (!(k2T1 - k2T0 > 0.01 / L)) throw new Error(`Case 6 precondition failed: a synthetic keydown did not walk (Δt ${k2T1 - k2T0})`)
+    await page.evaluate(() => {
+      const input = document.createElement('input')
+      document.body.appendChild(input)
+      input.focus()
+      input.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowUp', code: 'ArrowUp', bubbles: true }))
+      input.remove()
+    })
+    await sleep(800)
+    const k2T2 = await tNow()
+    await sleep(500)
+    const k2Drift = Math.abs((await tNow()) - k2T2)
+    if (k2Drift >= 0.002 / L) throw new Error(`Case 6 failed (K2): a key released over an input left him walking (drift ${k2Drift.toFixed(5)})`)
+
+    // K3: under skyAnchor=A the street, the camera and Vincent move by the anchor's 5 once, so his box does not move
+    const poseAt = async (extra) => {
+      await page.send('Page.navigate', { url: `${origin}/?street=1&station=2&arrival=0&walkMode=input${extra}` })
+      await page.waitForStreetReady()
+      await sleep(500)
+      return page.evaluate(() => ({ pose: window.__vincentPose?.(), box: window.__vincentBox?.() }))
+    }
+    const k3B = await poseAt('')
+    const k3A = await poseAt('&skyAnchor=A')
+    if (!k3B.pose || !k3A.pose || !k3B.box || !k3A.box) throw new Error('Case 6 precondition failed: __vincentPose or __vincentBox missing')
+    const k3D = k3A.pose.world.map((v, i) => v - k3B.pose.world[i])
+    if (Math.abs(k3D[0]) > 1e-4 || Math.abs(k3D[1]) > 1e-4 || Math.abs(k3D[2] - 5) > 1e-4) {
+      throw new Error(`Case 6 failed (K3): anchor A moved Vincent by [${k3D.map((v) => v.toFixed(4))}], expected [0, 0, 5]`)
+    }
+    const k3Box = Math.max(...['x0', 'x1', 'y0', 'y1'].map((k) => Math.abs(k3A.box[k] - k3B.box[k])))
+    if (k3Box > 1) throw new Error(`Case 6 failed (K3): anchor A moved his box by ${k3Box.toFixed(2)} px`)
+
+    // K4: the gait the frame loop applies is on the rendered figure while he walks, and gone once he stands
+    await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=input` })
+    await page.waitForStreetReady()
+    await sleep(500)
+    const k4Rest = await page.evaluate(() => window.__vincentPose?.())
+    if (!k4Rest) throw new Error('Case 6 precondition failed: __vincentPose missing')
+    await page.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'ArrowUp', code: 'ArrowUp', windowsVirtualKeyCode: 38 })
+    let k4Roll = 0
+    let k4Arm = 0
+    for (let i = 0; i < 12; i++) {
+      await sleep(100)
+      const p = await page.evaluate(() => window.__vincentPose?.())
+      k4Roll = Math.max(k4Roll, Math.abs(p.roll))
+      k4Arm = Math.max(k4Arm, Math.abs(p.arm))
+    }
+    await page.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'ArrowUp', code: 'ArrowUp', windowsVirtualKeyCode: 38 })
+    if (k4Roll < 0.005 || k4Arm < 0.05) throw new Error(`Case 6 failed (K4): walking, his largest roll was ${k4Roll.toFixed(4)} and arm ${k4Arm.toFixed(4)}, expected ≥ 0.005 and ≥ 0.05`)
+    await sleep(1500)
+    const k4End = await page.evaluate(() => window.__vincentPose?.())
+    if (Math.abs(k4End.roll) > 1e-6 || Math.abs(k4End.arm) > 1e-6) {
+      throw new Error(`Case 6 failed (K4): standing, his roll ${k4End.roll} and arm ${k4End.arm}, expected 0`)
+    }
+    console.log(`PASS: the review's fixes: a queued wheel dies with a blur and a stopping tap (drift ${k1Drift.toFixed(5)}, ${k1TapDrift.toFixed(5)}), a key released over an input stops him (${k2Drift.toFixed(5)}), anchor A moves him by [${k3D.map((v) => v.toFixed(3))}] and his box by ${k3Box.toFixed(2)} px, his gait shows while he walks (roll ${k4Roll.toFixed(4)}, arm ${k4Arm.toFixed(4)}) and settles to 0`)
+
     await page.close()
   } finally {
     chrome.cleanup()
