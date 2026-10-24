@@ -115,8 +115,8 @@ function texel(painting: ImageData2D, rect: Rect, rand: () => number): Color {
   return new Color().setRGB(painting.data[i] / 255, painting.data[i + 1] / 255, painting.data[i + 2] / 255, SRGBColorSpace)
 }
 
-function underpaintColour(painting: ImageData2D, rect: Rect): Color {
-  return new Color().setRGB(...rectUnderpaint(painting, rect, 0.4), SRGBColorSpace)
+function underpaintColour(painting: ImageData2D, rect: Rect, share = 0.4): Color {
+  return new Color().setRGB(...rectUnderpaint(painting, rect, share), SRGBColorSpace)
 }
 
 function emptyPart(): VincentPart {
@@ -191,7 +191,10 @@ export function buildVincent(painting: ImageData2D): VincentBuild {
   const body = emptyPart()
   const smockCls = VINCENT_CLASS.smock
   const smock = revolve(SMOCK, SMOCK_SCALE.x, SMOCK_SCALE.z)
-  solid(body.underpaint, smock, 16, 8, underpaintColour(painting, VINCENT_SOURCES.smock), smockCls)
+  // the smock's base is its source's mean, as the street's walls are (S1b look passes 1 and 2): on its darkest 40% the
+  // gaps between strokes held the smock at ΔE 10.5–11.6 from the village's blues, with the source itself at 0.4
+  const smockBase = underpaintColour(painting, VINCENT_SOURCES.smock, 1)
+  solid(body.underpaint, smock, 16, 8, smockBase, smockCls)
   // two tiers of strokes, hem to waist and waist over the shoulders, overlapping, so no one stroke runs his full height
   clad(body, smock, 18, 6, painting, VINCENT_SOURCES.smock, smockCls, rand, [0, 1], [0, 0.56])
   clad(body, smock, 16, 6, painting, VINCENT_SOURCES.smock, smockCls, rand, [0.03, 1.03], [0.44, 1])
@@ -211,7 +214,7 @@ export function buildVincent(painting: ImageData2D): VincentBuild {
 
   // the right arm (−x) holds the canvas against him; it does not swing
   const rightArm = tube(new Vector3(-ARM.shoulder[0], ARM.shoulder[1], 0), new Vector3(-ARM.hand[0], ARM.hand[1], 0.004), ARM.r, ARM.rHand)
-  solid(body.underpaint, rightArm, 8, 4, underpaintColour(painting, VINCENT_SOURCES.smock), smockCls)
+  solid(body.underpaint, rightArm, 8, 4, smockBase, smockCls)
   clad(body, rightArm, 3, 5, painting, VINCENT_SOURCES.smock, smockCls, rand)
 
   const roll = tube(
@@ -227,7 +230,7 @@ export function buildVincent(painting: ImageData2D): VincentBuild {
   const pivot: [number, number, number] = [ARM.shoulder[0], ARM.shoulder[1], 0]
   const armLeft = emptyPart()
   const leftArm = tube(new Vector3(0, 0, 0), new Vector3(ARM.hand[0] - ARM.shoulder[0], ARM.hand[1] - ARM.shoulder[1], 0), ARM.r, ARM.rHand)
-  solid(armLeft.underpaint, leftArm, 8, 4, underpaintColour(painting, VINCENT_SOURCES.smock), smockCls)
+  solid(armLeft.underpaint, leftArm, 8, 4, smockBase, smockCls)
   clad(armLeft, leftArm, 3, 5, painting, VINCENT_SOURCES.smock, smockCls, rand)
 
   const shadow = makeBrushArrays()
