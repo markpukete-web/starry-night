@@ -7,13 +7,14 @@ import { PALETTE } from './palette.ts'
 import type { ImageData2D } from './useImageData.ts'
 
 /**
- * The street's trees (pass 6, the design's "trees take Simon's structure"): a dark twisting trunk with branches in the
- * houses' ink, carrying round clumps. Each clump is a sphere in the curls' darkest tenth under curled dabs that wrap
- * around it, in the painting's own tree curls (`TREE_CURLS`): the moonward and outer dabs take the pale crests, the
- * inner and lower the dark. Sizes are fractions of the crown's radius R. The dabs' scale is the village
- * trees' curls at 1:1 (task 1 on `orchard-lower`: arcs 15–25 px wide and 60–120 px long in a 240 px tall box, so
- * 0.5–1.0 R long and 0.12–0.2 R wide). The dabs run 0.4–0.8 R, so a curl stays on its clump. Each dab is a crescent
- * turned its own way, as the painting's curls are.
+ * The street's trees (pass 7, the design's "trees take Simon's structure"): a dark trunk in the houses' ink that twists
+ * up from a flared foot and forks low. Each limb splits into two twigs, one to an outer clump and one to an inner, and
+ * one clump sits on top. Each clump is a dome, wider than tall (`dome`), in the curls' darkest tenth, under curled dabs
+ * that wrap around it in the painting's own tree curls (`TREE_CURLS`): the moonward and outer dabs take the pale crests,
+ * the inner and lower the dark, and the canopy shades its lower clumps (`canopy`). Sizes are fractions of the crown's
+ * radius R. The village trees' curls at 1:1 are 0.5–1.0 R long and 0.12–0.2 R wide (task 1 on `orchard-lower`: arcs
+ * 15–25 px wide and 60–120 px long in a 240 px tall box). The dabs are shorter (`dabLength`, `dabHalfWidth`), so a curl
+ * stays on its clump. Each dab is a crescent turned its own way, as the painting's curls are.
  */
 export const STREET_TREE = {
   /** the crown's radius: half the mass's width, clamped */

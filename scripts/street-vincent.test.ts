@@ -145,7 +145,8 @@ test('his paint is the painting\'s', { skip: !existsSync(workPainting) && 'needs
     return [0, 1, 2].map((k) => labs.reduce((s, l) => s + l[k], 0) / labs.length) as Lab
   }
   const dE = (a: Lab, b: Lab) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2])
-  // the smock against its own source patch, as the street's walls are (look pass 3 moved it to the village's ultramarine)
+  // the smock against the village's ultramarine swatch (#2a3f6f, index 1), a target read from palette.json and never
+  // from VINCENT_SOURCES (Codex T1); its source patch is a second check, that the strokes keep their patch's colour
   const [x0, y0, x1, y1] = VINCENT_SOURCES.smock
   const source: Lab[] = []
   for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
@@ -153,8 +154,11 @@ test('his paint is the painting\'s', { skip: !existsSync(workPainting) && 'needs
     source.push(srgbToLab(png.rgba[i] / 255, png.rgba[i + 1] / 255, png.rgba[i + 2] / 255))
   }
   const sourceMean = [0, 1, 2].map((k) => source.reduce((s, l) => s + l[k], 0) / source.length) as Lab
-  const smock = dE(meanOf(VINCENT_CLASS.smock), sourceMean)
+  const smock = dE(meanOf(VINCENT_CLASS.smock), swatchMean('village', [1]))
+  const fidelity = dE(meanOf(VINCENT_CLASS.smock), sourceMean)
   const hat = dE(meanOf(VINCENT_CLASS.hat), swatchMean('villageWarm'))
-  assert.ok(smock < 10, `smock ΔE76 ${smock.toFixed(2)}`)
+  assert.ok(smock < 10, `smock ΔE76 ${smock.toFixed(2)} from the village's ultramarine`)
+  assert.ok(fidelity < 3, `smock ΔE76 ${fidelity.toFixed(2)} from its source patch`)
   assert.ok(hat < 10, `hat ΔE76 ${hat.toFixed(2)}`)
+  console.log(`[margin] smock ${smock.toFixed(2)} from the ultramarine, ${fidelity.toFixed(2)} from its source; hat ${hat.toFixed(2)}`)
 })

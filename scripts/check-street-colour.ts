@@ -232,10 +232,15 @@ const refRoofBlue = meanLab(rectLabs(workPainting, STREET_SOURCES.roofBlue))
 const refRoofSienna = meanLab(rectLabs(workPainting, STREET_SOURCES.roofSienna))
 const refThatch = meanLab(rectLabs(workPainting, STREET_SOURCES.thatch))
 
-// Vincent references: refSmock is its source patch's mean, as the walls' and roofs' are (look pass 3 moved the smock to
-// the village's ultramarine, 27 from the village swatches' mean it was measured against); refHat is the
-// weight-averaged mean of all villageWarm swatches
-const refSmock = meanLab(rectLabs(workPainting, VINCENT_SOURCES.smock))
+// Vincent references, both from palette.json, never from VINCENT_SOURCES (Codex T1: a target read from the builder's own
+// patch moves with it). refSmock is the village's ultramarine swatch, #2a3f6f: the plan's mean of the village's two
+// blues has chroma 22, the grey-blue that read as the ground. The source patch's mean is the smock's diagnostic.
+// refHat is the weight-averaged mean of all villageWarm swatches
+const villageBlues = (palette.regions as Record<string, { colours: { hex: string; lab: number[] }[] }>).village.colours
+const ultramarine = villageBlues.find((c) => c.hex === '#2a3f6f')
+if (!ultramarine) throw new Error('palette.json has no village swatch #2a3f6f')
+const refSmock: Lab = { l: ultramarine.lab[0], a: ultramarine.lab[1], b: ultramarine.lab[2] }
+const diagSmockSource = meanLab(rectLabs(workPainting, VINCENT_SOURCES.smock))
 const refHat: Lab = regionWeightedMeanLab('villageWarm')
 
 const SOURCES: Record<string, { idR: number; idG: number; idB: number; ref: Lab }> = {
@@ -260,6 +265,8 @@ type ClassDef = {
   minArea: number
   ref: Lab | null
   diag: Lab | null
+  /** what `diag` measures, when it is not the palette */
+  diagName?: string
 }
 
 const CLASSES: Record<string, ClassDef> = {
@@ -270,7 +277,7 @@ const CLASSES: Record<string, ClassDef> = {
   trees: { idR: 255, idG: 0, idB: 255, minArea: 1000, ref: refTrees, diag: diagCypress },
   fog: { idR: 255, idG: 255, idB: 255, minArea: 1000, ref: refFog, diag: null },
   windows: { idR: 0, idG: 0, idB: 255, minArea: 100, ref: refWindows, diag: null },
-  smock: { idR: 188, idG: 0, idB: 255, minArea: 800, ref: refSmock, diag: null },
+  smock: { idR: 188, idG: 0, idB: 255, minArea: 800, ref: refSmock, diag: diagSmockSource, diagName: 'source' },
   hat: { idR: 188, idG: 255, idB: 0, minArea: 80, ref: refHat, diag: null },
 }
 
@@ -472,7 +479,7 @@ if (sources) {
 
     const dE = deltaE76(mean, def.ref!)
     const diagDE = def.diag ? deltaE76(mean, def.diag) : null
-    const diagStr = diagDE !== null ? ` (diag to palette: ${diagDE.toFixed(2)})` : ''
+    const diagStr = diagDE !== null ? ` (diag to ${def.diagName ?? 'palette'}: ${diagDE.toFixed(2)})` : ''
 
     if (dE >= 10) {
       failures.push(`${name}: ΔE76 ${dE.toFixed(2)} >= 10`)

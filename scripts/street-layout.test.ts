@@ -29,6 +29,27 @@ import {
   VILLAGE_NEIGHBOURS,
   VILLAGE_CONTEXT,
 } from '../src/scene/villageKnot.ts'
+import { buildStreetTrees } from '../src/scene/streetTrees.ts'
+
+/** Each tree's reach: the farthest of its built vertices from its foot, flat (Codex T2: the old 1.19 R proxy fell short
+ * of pass 7's crowns). The positions do not depend on the painting, so a plain one stands in for the scan. */
+const TREE_REACH = (() => {
+  const width = 1600, height = 1267
+  const data = new Uint8ClampedArray(width * height * 4)
+  for (let i = 0; i < width * height; i++) data.set([[40, 60, 110, 255], [60, 90, 70, 255], [30, 40, 60, 255], [120, 140, 170, 255]][i % 4], i * 4)
+  const built = buildStreetTrees({ data, width, height }, STREET_TREES)
+  const reach = new Map(STREET_TREES.map((tree) => [tree.id, 0]))
+  for (const p of [built.solid.positions, built.strokes.positions]) {
+    for (let i = 0; i < p.length; i += 3) {
+      // ponytail: each vertex goes to the nearest foot, exact while trees stand 0.61 apart; tag vertices per tree in
+      // buildStreetTrees if one is ever placed inside another's reach
+      const d = STREET_TREES.map((tree) => Math.hypot(p[i] - tree.x, p[i + 2] - tree.z))
+      const k = d.indexOf(Math.min(...d))
+      reach.set(STREET_TREES[k].id, Math.max(reach.get(STREET_TREES[k].id)!, d[k]))
+    }
+  }
+  return reach
+})()
 
 test('the knot moved unchanged', () => {
   assert.equal(VILLAGE_NEIGHBOURS.length, 4, 'four neighbours')
@@ -92,7 +113,7 @@ test('every object lies inside the dome under method A', () => {
 
   // Trees
   for (const tree of STREET_TREES) {
-    const reach = 1.19 * Math.min(0.17, Math.max(0.12, tree.width / 2))
+    const reach = TREE_REACH.get(tree.id)!
     const treeX = tree.x + ox
     const treeY = tree.width + oy
     const treeZ = tree.z + oz
@@ -253,7 +274,7 @@ test('houses and trees do not overlap', () => {
     id: tree.id,
     x: tree.x,
     z: tree.z,
-    r: 1.19 * Math.min(0.17, Math.max(0.12, tree.width / 2)),
+    r: TREE_REACH.get(tree.id)!,
   }))
   circles.push({
     id: 'cypress',
@@ -293,7 +314,7 @@ test('no station camera stands inside anything', () => {
       id: tree.id,
       x: tree.x,
       z: tree.z,
-      reach: 1.19 * Math.min(0.17, Math.max(0.12, tree.width / 2)),
+      reach: TREE_REACH.get(tree.id)!,
     })),
     { id: 'cypress', x: STREET_CYPRESS.x, z: STREET_CYPRESS.z, reach: 0.12 },
   ]

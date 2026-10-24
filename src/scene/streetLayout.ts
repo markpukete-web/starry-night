@@ -223,11 +223,13 @@ export const STREET_CHURCH = {
   },
 } as const
 
-// Three trees (Step 5): olive-church (440, 610), orchard-lower (720, 240), olive-right (270, 240)
+// Three trees (Step 5): olive-church (440, 610), orchard-lower (720, 240), olive-right (270, 240), each moved the fewest
+// whole map pixels that keep its built crown 0.025 clear of every house, over the layout test's floor of 0.02 (Codex
+// T2: pass 7's crowns reach 1.39–1.41 R, and olive-right's reached into L5)
 const TREE_SPECS = [
-  { id: 'olive-church', mapX: 440, mapY: 610 },
-  { id: 'orchard-lower', mapX: 720, mapY: 240 },
-  { id: 'olive-right', mapX: 270, mapY: 240 },
+  { id: 'olive-church', mapX: 451, mapY: 607 },
+  { id: 'orchard-lower', mapX: 721, mapY: 236 },
+  { id: 'olive-right', mapX: 266, mapY: 226 },
 ] as const
 
 export const STREET_TREES: readonly LandMass[] = TREE_SPECS.map((spec) => {

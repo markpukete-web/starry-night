@@ -2996,3 +2996,11 @@ reads as alive.
 - **A tree reads by its fork and its gaps, not its trunk's width.** At stop 0 the old trunk was already 13 px wide. It
   read as a pole because it forked at 1.4 R and its clumps touched. The fix was a low fork, smaller clumps and curls
   shorter than a clump. Size a part in pixels at the stops before you thicken it.
+- **A gate's target must not come from the constant the builder reads.** Look pass 3 moved the smock's source and
+  pointed the gate and the unit test at the same rectangle, so both passed whatever the source was. Codex found the
+  smock 18.8 from the palette's nearest blue, past the locked bar of 10. A target read from `palette.json` catches a
+  bad source. A source-fidelity check is a second assertion, not a replacement (Codex T1, 2026-10-24).
+- **A clearance test must bound the geometry the code builds, not a radius written beside it.** The layout test kept
+  trees clear of houses with 1.19 R. The crowns reached 1.39–1.41 R, and one tree reached into a house. The test now
+  measures each tree's reach from its built vertices, so it follows the generator when a look pass changes it (Codex
+  T2, 2026-10-24).
