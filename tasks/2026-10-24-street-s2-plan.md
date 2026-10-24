@@ -3,8 +3,10 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or
 > superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Revision 2 (2026-10-24, afternoon).** Revision 1 (`8b941f9`) was reviewed by Codex (eight P2 findings, F1–F8, all
-folded, and the record lists each) and by the worker (folded as W-numbers). Every number below comes from the Lead's probes in
+**Revision 3 (2026-10-24, afternoon).** Revision 1 (`8b941f9`) was reviewed by Codex (eight P2 findings, F1–F8, all
+folded, and the record lists each) and by the worker (folded as W-numbers). Revision 2 (`8835bb9`) was confirmed by
+both: the worker BUILDABLE, Codex F1–F8 closed and two new P2s, C1 and C2, folded here. Mark: "Sounds good. We should
+get it built". Every number below comes from the Lead's probes in
 `scratch/street-s2-2026-10-24/` (`probe-rig.ts`, `probe-walk.ts`, `probe-stop4.ts`, `probe-detail.ts`, `probe-f5.ts`,
 `probe-f5-frame.ts`, `probe-joins3.ts`, `probe-smooth2.ts`, gitignored),
 which import `src/scene/streetLayout.ts` and project with three's camera, or from the colour scan
@@ -206,6 +208,11 @@ thatch by the same scan. It does not move the bar.
     within 1e-9 (`near` and `far` are `STREET.near` and `STREET.far`; `probe-walk.ts` omits them, W4).
   - `the rounding keeps clear of the stations`: every `STATION_T` lies more than `WALK_ROUND` from every `LANE_JOINS`
     entry, and `LANE_JOINS` is [0.33168, 0.68440] within 1e-4.
+  - `walkTangent is the lane's tangent outside the rounding` (C2): equal to `pathTangent` within 1e-12 at `t` 0, 0.2,
+    0.5, 0.8, 0.9, 1, 1 + 1e-6 and `0.9 + VINCENT_RIG.ahead / STREET.pathLength`. Negative control: at that last `t` it
+    differs from `pathTangent(0.9)` by more than 0.1 (a clamp to the camera's range would turn him about 30°).
+  - `Vincent faces the lane at his own place` (C2): at the 901 samples, `[sin yaw, 0, cos yaw]` equals
+    `walkTangent(t + ahead / L)` within 1e-9, and his position equals the formula of Step 3 within 1e-9.
   - `the walk has no kink` (W3): over the 901 samples, the second difference of the camera's offset from
     `pathPoint(t)` in the ground plane is ≤ 0.0001 at every sample (the raw tangent gives 0.00307 at 0.685, the
     rounded 0.00004).
@@ -363,7 +370,9 @@ thatch by the same scan. It does not move the bar.
   listener is added, no `useFrame` runs and the automatic walk is off. Street.tsx's layout
   effect still sets `__streetCamera`. The phone test: `walkMode ?? (matchMedia('(hover: none) and (pointer: coarse)').matches ? 'auto' : 'input')`.
 - [ ] **Step 4:** The ID pass: `idInjection` gains class 7 → `vec3(128.0 / 255.0, 0.0, 1.0)` and class 8 →
-  `vec3(128.0 / 255.0, 1.0, 0.0)` (read back as 128, as class 6's orange is). Vincent carries the same classes under
+  `vec3(128.0 / 255.0, 1.0, 0.0)`. The canvas encodes its output to sRGB, so they read back as (188, 0, 255) and
+  (188, 255, 0), as class 6's orange reads (255, 188, 0) in S1b's `t10/ids2-s3-mobile-t5.png` (Codex C1, measured by
+  the Lead). Vincent carries the same classes under
   `ids=1` and `ids=2`. His materials: `material(flags.light ? 'vincent-lit' : 'vincent', vincentStrokeBody(flags.light),
   fog(), true, ids)` for the strokes, `material(flags.light ? 'vincent-solid-lit' : 'vincent-solid',
   vincentMoon(flags.light), fog(), false, ids)` for the underpaint, and a `MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.5, depthWrite: false })` for `shadow`.
@@ -396,15 +405,23 @@ viewport and `__streetWalk.t` is unchanged when the seams exist). Output to `scr
 
 - [ ] **Step 1:** Stations unchanged: stations 0–4, both viewports, `&vincent=0&walk=0`, pinned: byte-identical to
   Task 0's. The plain visit: byte-identical to Task 0's.
-- [ ] **Step 2:** The palette (W9). `check-street-colour.ts`'s `CLASSES` gains `smock: { idR: 128, idG: 0, idB: 255,
-  minArea: 800, ref: refSmock }` and `hat: { idR: 128, idG: 255, idB: 0, minArea: 80, ref: refHat }`, where
+- [ ] **Step 2:** The palette (W9, C1). `check-street-colour.ts`'s `CLASSES` gains `smock: { idR: 188, idG: 0, idB: 255,
+  minArea: 800, ref: refSmock }` and `hat: { idR: 188, idG: 255, idB: 0, minArea: 80, ref: refHat }`, its `SOURCES`
+  thatch becomes `idG: 188` (S1b's gate never measured the thatch: all ten of its source logs say `not in view (0 px)`
+  while the stop 3 phone frame holds 4,599 px of (255, 188, 0)), and both modes gain a guard: an exact colour in the ID
+  frame that is not black and not a known ID, covering 2,000 px or more, fails with its bytes and area (so a wrong ID
+  byte can never pass as "not in view" again). The guard's negative control: run it on S1b's
+  `t10/ids2-s3-mobile-t5.png` with thatch at `idG: 128` and see it fail on (255, 188, 0). where
   `refSmock` is the weight-averaged mean of `palette.json`'s village swatches 1 and 2 and `refHat` that of all
   `villageWarm` swatches (the Lead's estimate of the areas at stop 0: smock about 5,000 px on the desktop and 1,600 on
   the phone, hat about 500 and 150). For `S` 0 and 2 and `V` `desktop` and `mobile`:
   `node scripts/capture-sky-frames.mjs $E/t5/colour --url 'http://127.0.0.1:5191/?street=1&station=S&arrival=0&light=0&walkMode=input' --times 5 --viewport V --prefix full-sS-V --wait-for 'window.__streetReady'`
   and the same URL with `&ids=1` and `--prefix ids-sS-V`, then
-  `node scripts/check-street-colour.ts $E/t5/colour --station S --viewport V`. Expected: smock and hat ΔE76 < 10, and
-  every class that passed in S1b's Task 10 still passing.
+  `node scripts/check-street-colour.ts $E/t5/colour --station S --viewport V`, and at stop 3 the same full capture with
+  `--prefix full-s3-V` plus an `&ids=2` capture with `--prefix ids2-s3-V`, read with
+  `node scripts/check-street-colour.ts $E/t5/colour --station 3 --viewport V --sources`. Expected: smock and hat ΔE76 < 10, every class that passed in S1b's Task 10 still passing, and the
+  thatch measured for the first time. The thatch's result is reported to the Lead as it is, pass or fail: it is S1b's
+  open measurement, not a slice 2 defect.
 - [ ] **Step 3:** Perf, five rounds each, Task 0's command and its `numbers.md` table, at stations 0, 2 and 4 and at
   `walkT` 0.33 and 0.55 (`probe-detail.ts`: the nearest walk cameras to R2 and R4), every URL with `&walkMode=input`
   so the phone configuration does not walk away during the reading (W10).
