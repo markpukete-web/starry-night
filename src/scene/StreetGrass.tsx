@@ -282,7 +282,27 @@ export default function StreetGrass({
     w.__grassCount = totalBlades
     w.__grassStamps = stampsRef.current
     w.__grassPeak = 0
-    w.__grassPeakAt = null
+    w.__grassPushNear = (x: number, z: number, r: number): number => {
+      let maxNear = 0
+      const [x0, z0] = trail.rect
+      const cols = trail.size[0]
+      const rSq = r * r
+      for (const [idx] of trail.live) {
+        const c = idx % cols
+        const row = Math.floor(idx / cols)
+        const cx = x0 + (c + 0.5) * TRAIL.texel
+        const cz = z0 + (row + 0.5) * TRAIL.texel
+        const dx = cx - x
+        const dz = cz - z
+        if (dx * dx + dz * dz <= rSq) {
+          const px = (trail.bytes[idx * 2] - 128) / 127
+          const pz = (trail.bytes[idx * 2 + 1] - 128) / 127
+          const mag = Math.hypot(px, pz)
+          if (mag > maxNear) maxNear = mag
+        }
+      }
+      return maxNear
+    }
     w.__grassHandLive = 0
     w.__grassHit = null
     w.__grassHand = (x: number | null, y?: number) => {
@@ -301,12 +321,12 @@ export default function StreetGrass({
       delete w.__grassCount
       delete w.__grassStamps
       delete w.__grassPeak
-      delete w.__grassPeakAt
+      delete w.__grassPushNear
       delete w.__grassHandLive
       delete w.__grassHit
       delete w.__grassHand
     }
-  }, [totalBlades])
+  }, [totalBlades, trail])
 
   // 7. Raycaster & Planes
   const raycaster = useMemo(() => new Raycaster(), [])
@@ -436,27 +456,16 @@ export default function StreetGrass({
 
     // Update seams
     let peak = 0
-    let peakAt: [number, number] | null = null
     let handLive = 0
-    let maxPush = -1
-    const [x0, z0] = trail.rect
-    const cols = trail.size[0]
     for (const [idx, texel] of trail.live) {
       if (texel.source === 'hand') handLive++
       const px = (trail.bytes[idx * 2] - 128) / 127
       const pz = (trail.bytes[idx * 2 + 1] - 128) / 127
       const mag = Math.hypot(px, pz)
       if (mag > peak) peak = mag
-      if (mag > maxPush) {
-        maxPush = mag
-        const c = idx % cols
-        const r = Math.floor(idx / cols)
-        peakAt = [x0 + (c + 0.5) * TRAIL.texel, z0 + (r + 0.5) * TRAIL.texel]
-      }
     }
 
     w.__grassPeak = peak
-    w.__grassPeakAt = peakAt
     w.__grassHandLive = handLive
   }, 0)
   /* eslint-enable react-hooks/immutability */

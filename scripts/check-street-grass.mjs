@@ -253,7 +253,7 @@ async function main() {
     // the hand at the same pinned time, and none differ beyond 300 px.
     // -------------------------------------------------------------
     if (shouldRun(2)) {
-      await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=input&ids=1` })
+      await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=input&ids=1&vincent=0` })
       await page.waitForStreetReady()
       await page.evaluate(() => {
         window.__skyTime = 1
@@ -619,19 +619,20 @@ async function main() {
       if (peakFeet <= 0) {
         throw new Error('Case 7 failed: no live texels beside Vincent')
       }
-      const peakAt = await page.evaluate(() => window.__grassPeakAt)
-      if (!peakAt) {
-        throw new Error('Case 7 failed: __grassPeakAt is null')
-      }
       const walkT = await page.evaluate(() => window.__streetWalk?.t ?? 0)
-      const vPos = vincentPlace(walkT).position
-      const dist = Math.hypot(peakAt[0] - vPos[0], peakAt[1] - vPos[2])
-      if (dist >= 0.2) {
-        throw new Error(
-          `Case 7 failed: distance from __grassPeakAt ([${peakAt[0].toFixed(3)}, ${peakAt[1].toFixed(3)}]) to vincentPlace ([${vPos[0].toFixed(3)}, ${vPos[2].toFixed(3)}]) is ${dist.toFixed(3)} >= 0.2`,
-        )
+      const p = vincentPlace(walkT).position
+      const q = pathPoint(walkT)
+
+      const pushP = await page.evaluate(([x, z]) => window.__grassPushNear(x, z, 0.06), [p[0], p[2]])
+      if (pushP <= 0.1) {
+        throw new Error(`Case 7 failed: __grassPushNear at Vincent's place was ${pushP.toFixed(3)}, expected > 0.1`)
       }
-      console.log(`PASS: case 7 - Vincent feet: stamps.feet rose (${feet0} -> ${feet1}), texels live, dist to vincentPlace=${dist.toFixed(3)} < 0.2`)
+
+      const pushQ = await page.evaluate(([x, z]) => window.__grassPushNear(x, z, 0.06), [q[0], q[2]])
+      if (pushQ !== 0) {
+        throw new Error(`Case 7 failed: __grassPushNear at pathPoint was ${pushQ.toFixed(3)}, expected 0`)
+      }
+      console.log(`PASS: case 7 - Vincent feet: stamps.feet rose (${feet0} -> ${feet1}), pushNear at place=${pushP.toFixed(3)} > 0.1, pushNear at pathPoint=0`)
     }
 
     // -------------------------------------------------------------
@@ -871,19 +872,20 @@ async function main() {
       if (peakFeet11 <= 0) {
         throw new Error('Case 11 (case 7 under anchor A) failed: no live texels beside Vincent')
       }
-      const peakAt11 = await page.evaluate(() => window.__grassPeakAt)
-      if (!peakAt11) {
-        throw new Error('Case 11 (case 7 under anchor A) failed: __grassPeakAt is null')
-      }
       const walkT11 = await page.evaluate(() => window.__streetWalk?.t ?? 0)
-      const vPos11 = vincentPlace(walkT11).position
-      const dist11 = Math.hypot(peakAt11[0] - vPos11[0], peakAt11[1] - vPos11[2])
-      if (dist11 >= 0.2) {
-        throw new Error(
-          `Case 11 (case 7 under anchor A) failed: distance from __grassPeakAt ([${peakAt11[0].toFixed(3)}, ${peakAt11[1].toFixed(3)}]) to vincentPlace ([${vPos11[0].toFixed(3)}, ${vPos11[2].toFixed(3)}]) is ${dist11.toFixed(3)} >= 0.2`,
-        )
+      const p11 = vincentPlace(walkT11).position
+      const q11 = pathPoint(walkT11)
+
+      const pushP11 = await page.evaluate(([x, z]) => window.__grassPushNear(x, z, 0.06), [p11[0], p11[2]])
+      if (pushP11 <= 0.1) {
+        throw new Error(`Case 11 (case 7 under anchor A) failed: __grassPushNear at Vincent's place was ${pushP11.toFixed(3)}, expected > 0.1`)
       }
-      console.log(`PASS: case 11 - anchor A: case 1 hand bends (peak=${c11Peak.toFixed(3)}) and case 7 Vincent feet tracking verified (dist=${dist11.toFixed(3)} < 0.2)`)
+
+      const pushQ11 = await page.evaluate(([x, z]) => window.__grassPushNear(x, z, 0.06), [q11[0], q11[2]])
+      if (pushQ11 !== 0) {
+        throw new Error(`Case 11 (case 7 under anchor A) failed: __grassPushNear at pathPoint was ${pushQ11.toFixed(3)}, expected 0`)
+      }
+      console.log(`PASS: case 11 - anchor A: case 1 hand bends (peak=${c11Peak.toFixed(3)}) and case 7 feet footprint verified (pushAtPlace=${pushP11.toFixed(3)} > 0.1, pushAtPathPoint=0)`)
     }
 
     await page.close()
