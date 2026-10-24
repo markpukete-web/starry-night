@@ -2935,3 +2935,20 @@ reads as alive.
   "Pickup" to "Mark's gate" and took eleven sections with it, the same slip as the night before (`a89e353`). It was
   caught before the commit by listing the headings. List the headings and read the diff's hunks before every commit of a
   record.
+
+## The grass and the hand, a throwaway test (2026-10-24, afternoon)
+
+- **A covered Playwright window runs at 1.5 fps.** The MCP browser slowed its frames to 1.5 per second whenever its
+  window was covered, and `page.screenshot` then timed out at 30 s. The street without grass measured the same, so
+  the cause was the window, not the scene. Call `page.bringToFront()` before every capture, and measure the frame
+  rate after it.
+- **The stroke body tapers both ends of a stroke.** Its shape reads `|along − 0.5|`, so a blade with along 0 to 1 was
+  cut to a lens on top of its built taper, and short blades read as slivers. For a stroke that grows from a root,
+  give the shader along 0.5 to 1, so it shapes only the tip.
+- **Short grass seen from eye height does not cover the ground.** At 0.014 high the near blades left gaps, and the
+  ground's long strokes read through them as planks. Twice the count at that height did not fix it. 0.024 did.
+- **A trail needs a map, not touch points.** D1 holds four touches. A sweeping hand needs every point it passed: a
+  256 × 256 map that fades each frame, read once by each blade. The street held 120 fps with it on (the cost itself
+  is unmeasured).
+- **A bent blade must change colour as well as shape.** The parting did not read at station 0 until bent blades turned
+  paler, toward the moonlit crest. Jeroen's night trail reads for the same reason.

@@ -1,6 +1,37 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-24 (end of session): S1b merged and live; slice 2 next
+## Pickup — 2026-10-24 (afternoon): the grass test built; Mark's read next
+
+Mark asked to think the grass and the hand through before slice 2 ("We need to thought it through before we
+implement"). He also floated a meadow by the hills, reached by its own portal, in place of grass along the street. The
+Lead's read: a meadow gives the clip's low, still camera, but the hard question is the same in both places (does grass
+in the painting's strokes feel good under a hand), so test that first. Mark: "Sounds good, let's do it". Vincent is
+settled as code, no Blender (the design, line 171): a straw hat and a long smock that hides the legs, as Simon's
+figure rides on wheels. Swinging legs in code only if the glide reads as sliding.
+
+**The test** is on the local branch `spike/grass-hand` (`fd55403`), not pushed. It is a throwaway: no plan, no review,
+no tests, and nothing from it is kept without Mark's word. `src/scene/grassSpike.tsx` and four lines in `Street.tsx`.
+Live on the Mac's dev server while it runs: `http://192.168.0.148:5190/?street=1&station=0&grass=1`, and
+`&grassView=low` for the camera in the grass. Captures, the 1:1 trail crop and a 16 s clip:
+`scratch/grass-spike-2026-10-24/` (gitignored).
+
+What it showed, from the captures at station 0 and the low view, desktop and phone:
+- The trail is what makes the hand read. The hand paints a 256 × 256 map that fades with τ 2.5 s, and each blade bends
+  away by what it reads. The trail showed only once bent blades turned paler, toward the moonlit crest.
+- The clip's feeling needs the low camera. At station 0 the grass is a band beside the lane and the trail is small. On
+  the phone in portrait it is a thin strip. From the low view (0.042 high, 6° down) the grass fills the lower two
+  thirds, as in Jeroen's clip, and the trail crosses the screen.
+- At 0.014 high the near grass left gaps, and the ground's long strokes read through as planks. At 0.024 (about thigh
+  high on a person) it covers them. The verge is shorter, so the lane's edge is soft.
+- 30,000 blades, 120 fps on the M5 Pro at both views. The phone is unmeasured. `&grassN=10000` lightens it.
+- Not yet Van Gogh: the near blades read as smooth flat leaves, not short thick curved strokes, and the colours are grey
+  green with stray yellows and violets. A look pass would start there.
+
+**Open for Mark:** his read of the test live, then where the grass lives (beside the street, a meadow portal, or
+both). Slice 2's plan (Vincent and the walk) follows his answer. Agents this session: Codex reviews, Fable (the
+Consultant tab) when Codex runs low, the worker idle.
+
+## Pickup — 2026-10-24 (end of session): S1b merged and live; slice 2 next (superseded by the afternoon pickup above)
 
 Mark passed S1b's gate ("It does read like a village") and it is merged: PR #20, `b649060`. Codex found nothing at the
 head, CI passed, and production is deployed. The street is live behind
