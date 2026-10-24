@@ -1,6 +1,23 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-24 (afternoon): the grass test built; Mark's read next
+## Pickup — 2026-10-24 (afternoon, later): Mark read the grass test live; slice 2's plan next
+
+Mark, on the live test: "It actually feels good, but there's room for improvement for sure. This is a throwaway test
+but I think grass in the street would work. but I am still keen to make another portal and try some new things when I
+have time". So the grass stays in the street, as the design has it (slice 3). The branch `spike/grass-hand` stays
+local as slice 3's reference, never merged. Slice 3 rebuilds the grass under its own plan.
+
+**Next: slice 2, Vincent and the walk**: the plan, Codex's review (Fable when Codex runs low), then the build.
+
+For slice 3, from Mark's crop of the left verge at station 0 (near the camera): the near grass is thin, and the street
+ground's long strokes read through it as grey and green planks. Under the grass the ground wants a dark base, so a gap
+reads as shadow, as in Jeroen's clip, and the near blades want more density. With the look pass already noted below
+(curved strokes in fanned clumps).
+
+**Noted, not queued (scope rule): a second portal**, a meadow or another place to try new things, when Mark has time.
+The design's first version rules out a second portal (non-goals). This is his idea for after it.
+
+## Pickup — 2026-10-24 (afternoon): the grass test built; Mark's read next (superseded by the later pickup above)
 
 Mark asked to think the grass and the hand through before slice 2 ("We need to thought it through before we
 implement"). He also floated a meadow by the hills, reached by its own portal, in place of grass along the street. The
