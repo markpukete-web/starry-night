@@ -3004,3 +3004,10 @@ reads as alive.
   trees clear of houses with 1.19 R. The crowns reached 1.39–1.41 R, and one tree reached into a house. The test now
   measures each tree's reach from its built vertices, so it follows the generator when a look pass changes it (Codex
   T2, 2026-10-24).
+- **Count a source's texels by hue before writing a colour rule for it.** The grass test kept three blades in four green
+  or ochre. The painting's bushes are 65% blue and blue-black, so the rule refused most of the painting, and the pale
+  end of six picks found the canvas's beige instead. A ten-line hue count (`t1/hues.py`) showed both in a second
+  (S3 Task 1, 2026-10-24).
+- **Judge a segment count at the painting's stroke length, not zoomed.** Four segments looked smoother than three at
+  2.5×, and the same at 1:1. Two against three differed at 1:1 only on the longest blades. The zoom answers "can I see
+  a facet", the 1:1 answers "does it read as the stroke" (S3 Task 1, 2026-10-24).

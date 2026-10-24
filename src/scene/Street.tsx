@@ -70,8 +70,8 @@ export default function Street({ reduced = false, still = false }: { reduced?: b
 
   const build = useMemo<StreetBuild | null>(() => {
     if (!readiness.render) return null
-    return flags.flat ? buildFlatPanel(paintingData, flowData, massesState.data) : buildStreet(paintingData, flowData, massesState.data, { lit: flags.light })
-  }, [readiness.render, flags.flat, flags.light, paintingData, flowData, massesState.data])
+    return flags.flat ? buildFlatPanel(paintingData, flowData, massesState.data, flags.grass) : buildStreet(paintingData, flowData, massesState.data, { lit: flags.light })
+  }, [readiness.render, flags.flat, flags.light, flags.grass, paintingData, flowData, massesState.data])
 
   useEffect(() => {
     const w = window as StreetWindow

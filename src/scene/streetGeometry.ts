@@ -1,5 +1,7 @@
 import { Color, SRGBColorSpace, Vector3 } from 'three'
+import { mulberry32 } from './brush.ts'
 import { makeBrushArrays, type BrushArrays } from './brushForms.ts'
+import { bladeTemplate, bladeVertex, clump, GRASS_BLADE } from './grassBlade.ts'
 import { islandHeightAt } from './islandShape.ts'
 import { buildLandTrees, type BakedMass, type LandTrees } from './landDomes.ts'
 import { buildStreetTrees } from './streetTrees.ts'
@@ -594,11 +596,48 @@ export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | nu
 export const FLAT_VIEW = { position: [0.8, 0.285, 1.9] as [number, number, number], target: [0.8, 0.285, 0] as [number, number, number], fov: 30 }
 
 /**
+ * S3 task 1: a row of grass clumps standing in front of the board, 0.45 from `FLAT_VIEW`'s camera, so a blade is about
+ * 90 px tall in a desktop capture (the painting's bush strokes are 60–70 px long at 1:1), on a card in the field's
+ * darkest fifth (the dark base the street lays under the grass). Each blade is drawn as the shader will draw it at
+ * that distance, widened by `max(1, d / widenFrom)`. The clumps' heights span the tuft rule's range, short to tall.
+ */
+function flatGrassStrip(ctx: Context): void {
+  const [cx, , cz] = FLAT_VIEW.position
+  const y = 0.2
+  const z = 1.45
+  const dark = new Color().setRGB(...sourceUnderpaint(ctx.painting, 'field', 0.2), SRGBColorSpace)
+  polygon(ctx.underpaint, [new Vector3(0.56, 0.17, z - 0.05), new Vector3(1.04, 0.17, z - 0.05), new Vector3(1.04, 0.33, z - 0.05), new Vector3(0.56, 0.33, z - 0.05)], dark, 255)
+  const rand = mulberry32(1)
+  const template = bladeTemplate()
+  const g = ctx.ground
+  for (let k = 0; k < 7; k++) {
+    for (const b of clump(rand, ctx.painting, 0.62 + 0.06 * k, z, GRASS_BLADE.height * (0.5 + (1.05 * k) / 6))) {
+      const d = Math.hypot(cx - b.x, cz - b.z)
+      const right: [number, number] = [(cz - b.z) / d, -(cx - b.x) / d]
+      const widen = Math.max(1, d / GRASS_BLADE.widenFrom)
+      const base = g.arrays.positions.length / 3
+      for (let v = 0; v < template.positions.length / 3; v++) {
+        const a = template.positions[v * 3 + 1]
+        const [px, py, pz] = bladeVertex(b, a, template.positions[v * 3], right, widen)
+        const shade = GRASS_BLADE.shade[0] + (GRASS_BLADE.shade[1] - GRASS_BLADE.shade[0]) * a
+        g.arrays.positions.push(px, y + py, pz)
+        g.arrays.colors.push(b.colour[0] * shade, b.colour[1] * shade, b.colour[2] * shade)
+        g.stroke.push(template.stroke[v * 2], template.stroke[v * 2 + 1])
+        g.seed.push(b.seed)
+        g.cls.push(255)
+        g.src.push(255)
+      }
+      for (const i of template.indices) g.arrays.indices.push(base + i)
+    }
+  }
+}
+
+/**
  * G4b, the flat panel in the production materials (S1 task 5 step 1): a wall (`wallA`), a gable (`wallB`), a roof
  * (`roofStriped`), the field and a tree mass laid flat facing +z, on a dark board that hides the sky, so the stroke
- * body's lanes, rake, fray and dry tails can be read on a wall before the volumes stand.
+ * body's lanes, rake, fray and dry tails can be read on a wall before the volumes stand. With `grass`, S3's blade strip.
  */
-export function buildFlatPanel(painting: ImageData2D | null, flow: ImageData2D | null, masses: BakedMass[] | null): StreetBuild | null {
+export function buildFlatPanel(painting: ImageData2D | null, flow: ImageData2D | null, masses: BakedMass[] | null, grass = false): StreetBuild | null {
   if (!painting || !flow || !masses) return null
   const ctx: Context = {
     flow,
@@ -627,6 +666,7 @@ export function buildFlatPanel(painting: ImageData2D | null, flow: ImageData2D |
     const corners = facePolygon(face)
     ink(ctx, 'flat', ref, corners.map((p, k) => [p, corners[(k + 1) % corners.length], toward] as [Vector3, Vector3, Vector3]), 0x7200 + i)
   })
+  if (grass) flatGrassStrip(ctx)
   const tree = STREET_TREES.find((t) => t.id === 'orchard-lower') ?? STREET_TREES[0]
   const trees = buildLandTrees(flow, painting, masses, 0x7ee5, [{ ...tree, x: 1.35, z: 0 }], streetGroundAt, streetMassConfig)
   const triangles = (ctx.underpaint.indices.length + ctx.strokes.arrays.indices.length + ctx.ground.arrays.indices.length + ctx.outlines.arrays.indices.length + trees.solid.indices.length + trees.strokes.indices.length) / 3
