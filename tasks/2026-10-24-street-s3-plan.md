@@ -11,7 +11,7 @@ reviewed but not built until he reads it. Every number comes from the Lead's pro
 project with three's camera.
 
 **Revision 3 (2026-10-24, evening).** Codex's confirmation of revision 2 (`plan-confirm-codex.md`): S2–S6 and S8
-closed, S7 an acknowledged deferral for Mark, and three new P2 findings, all accepted and fixed here. C1: the culling
+closed, S7 an acknowledged deferral for Mark, and three new P2 findings, all accepted and fixed here (C1's wording tightened after Codex's second read, `plan-confirm2-codex.md`). C1: the culling
 pad is proved at the farthest camera, not the nearest, because the widening grows with distance. C2: the camera check
 projects through a reference camera built from the walk's pose, not through the camera that cast the ray. C3: the dark
 base sits at y = 0.001, between the ground's underpaint and its strokes.
@@ -92,8 +92,9 @@ on `feat/street-s3`.
 - **The chunks** as the probe has them. Each chunk is one `InstancedBufferGeometry`: one blade template and one set of
   per-blade attributes. Its bounding sphere is the chunk's box padded by the chunk's own `reach`, so three never
   culls a blade the shader moved into view (S1). The reach is the largest `bladeReach` of the chunk's blades (lean,
-  curl, widening, wind and the map's full push) at the farthest distance from any walk camera to the chunk's box. The
-  widening grows with distance, so the farthest camera moves a blade most (C1). Its blades are in random order, so a prefix is an even sample. Each frame,
+  curl, widening, wind and the map's full push), each taken at the largest distance from any walk camera to that
+  blade's own root. Not the distance to the box, which three's `Box3.distanceToPoint` measures to the box's nearest
+  point. The widening grows with distance, so the farthest camera moves a blade most (C1). Its blades are in random order, so a prefix is an even sample. Each frame,
   `instanceCount` is set from `grassDrawCount`.
 - **The blade** starts from the test's lesson (`tasks/todo.md`, "Not yet Van Gogh"). The painting's bushes are fat
   curved comma strokes that fan out from a clump, dark at the centre with pale yellow-green edges. The test's were thin
@@ -235,8 +236,8 @@ that camera distance, with the full push and the wind); `GRASS_SOURCES` (the fie
     `full × density × area × mean(min(1, (r0 / lat)²))` less the excluded area.
   - `a chunk's prefix is an even sample`: for every chunk with ≥ 40 blades, the first half's mean `lat` is within 15%
     of the chunk's.
-  - `the sphere holds every displaced blade` (S1, C1): for every blade, `bladeReach` at the farthest distance from any
-    walk camera (the 901 points `t = k / 1000`, both orientations) to its chunk's box is ≤ the chunk's `reach`, and its
+  - `the sphere holds every displaced blade` (S1, C1): for every blade, `bladeReach` at the largest distance from any
+    walk camera (the 901 points `t = k / 1000`, both orientations) to the blade's own root is ≤ the chunk's `reach`, and its
     tallest point is ≤ `GRASS.top`. Each chunk's sphere contains its box grown by `reach` across and up to `top`.
     Negative control: at three times that distance, `bladeReach` exceeds `reach` for some blade (the widening is
     live).
