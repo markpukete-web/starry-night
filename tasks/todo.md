@@ -69,11 +69,14 @@ The land roadmap (E1, E2, D1, then E3 and E4 on the cypress) is done.
    the plan for slice 1, the street's look. Slice 1 starts with a fresh phone reading (`?perf=1` on the live site).
    - **Proposed to Mark, the locked acceptance criterion on the camera** (Mark, 2026-10-23: "Lift it for the path").
      Today: "Camera stays within the orbit limits in Tunables (polar + distance; no free-fly or panning); the diorama
-     always reads as Starry Night — head-on it is the painting's composition." Proposed: "Camera stays within the
-     orbit limits in Tunables (polar + distance; no free-fly or panning) while the visitor orbits the diorama. An
-     authored camera path (the village street's portal flight and walk, 2026-10-23) may leave them, and the visitor
-     never steers the camera off it. The diorama always reads as Starry Night — head-on it is the painting's
-     composition." Mark applies it in `CLAUDE.md`.
+     always reads as Starry Night — head-on it is the painting's composition." Proposed (revised 2026-10-24, to cover
+     any portal scene and not only the street): "Camera stays within the orbit limits in Tunables (polar + distance;
+     no free-fly or panning) while the visitor orbits the diorama. Inside a portal scene (the village street,
+     2026-10-23), an authored camera path may leave them: the portal's flight, and the walk along the scene's path.
+     The visitor moves the camera only along that path, never off it. The diorama always reads as Starry Night —
+     head-on it is the painting's composition." Mark applies it in `CLAUDE.md`.
+     Status, 2026-10-24: the street reached `main` behind `?street=1` (PR #20) before this edit, although the S1b plan
+     (`tasks/2026-10-23-street-s1b-plan.md:51`) said the edit comes first. Slice 2's walk needs it before it merges.
    - **Idea for slice 3, not built** (Mark, 2026-10-23: "some flowers that Vincent drew of other drawings perhaps"):
      flowers beside the path with the grass, for the hand to touch. Their shape and brushwork may follow Vincent's own
      Saint-Rémy flowers. Their colours come from The Starry Night's palette, because the bar locks colour to the
