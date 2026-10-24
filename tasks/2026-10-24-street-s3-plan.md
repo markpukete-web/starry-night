@@ -10,6 +10,12 @@ reviewed but not built until he reads it. Every number comes from the Lead's pro
 (`probe-verge.ts`, `probe-removal.ts`, `probe-fit.ts`, gitignored), which build the street on `feat/street-s2` and
 project with three's camera.
 
+**Revision 3 (2026-10-24, evening).** Codex's confirmation of revision 2 (`plan-confirm-codex.md`): S2–S6 and S8
+closed, S7 an acknowledged deferral for Mark, and three new P2 findings, all accepted and fixed here. C1: the culling
+pad is proved at the farthest camera, not the nearest, because the widening grows with distance. C2: the camera check
+projects through a reference camera built from the walk's pose, not through the camera that cast the ray. C3: the dark
+base sits at y = 0.001, between the ground's underpaint and its strokes.
+
 **Goal:** Grass stands along both edges of the lane, painted in the painting's strokes, and the visitor's hand moves
 through it: the blades bend away under the hand and swing back after it.
 
@@ -53,7 +59,7 @@ on `feat/street-s3`.
 
 - **The ceiling's headroom.** The most a pose renders without grass is 1,434,674 (slice 2's Task 0, stop 0 on the
   phone), and Vincent adds 2,084: 8,172 under the ceiling. Task 0 measures every 0.05 of the walk on slice 2's head to
-  confirm stop 0 is the most (S1).
+  show whether stop 0 is the most (S1).
 - **The ground under the grass** (`probe-removal.ts`, S2). The ground's array holds the ground (class 3, 152,252
   triangles) and the path (class 4, 49,512). Most ground strokes are long and cross the grass's edge. Removing only the
   strokes wholly inside the grass's footprint frees 18,236 triangles. Clipping them, dropping each class-3 triangle
@@ -65,7 +71,8 @@ on `feat/street-s3`.
   (106,713 tries over 1.298 square units for 30,000 blades).
 - **The chunks** (`probe-fit.ts`, S1): per side, per lateral band 0.052–0.2, 0.2–0.4 and 0.4–0.765, per 0.05 of `t`.
   Three culls each chunk by its bounding sphere, so the probe does too, padded by the blades' reach (0.04 across, 0.05
-  up). Each chunk draws `ceil(n × min(1, (max(0.22, latIn) / max(0.22, d))²))` blades, where `d` is the distance from
+  up). The 0.04 is a first figure: Task 2 pads each chunk by its own computed reach (C1), and its budget test runs on
+  those spheres. Each chunk draws `ceil(n × min(1, (max(0.22, latIn) / max(0.22, d))²))` blades, where `d` is the distance from
   the camera to the chunk's unpadded box. The worst of the walk's 901 points, at 1600 / 900 and 390 / 844:
 
   | Segments a blade | Density (share of the test's) | Worst triangles | at `t` | Stop 0 blades | Draw calls (most) |
@@ -83,9 +90,10 @@ on `feat/street-s3`.
   a house, 0.07 of the cypress's trunk, or inside `STREET_SQUARE`. The static density falls with the distance from the
   lane, `min(1, (0.22 / lat)²)`, because the walking camera never comes nearer than that.
 - **The chunks** as the probe has them. Each chunk is one `InstancedBufferGeometry`: one blade template and one set of
-  per-blade attributes. Its bounding sphere is the chunk's box padded by `GRASS.reach`, so three never culls a blade
-  the shader moved into view (S1). A test pins that every blade's displaced extent (lean, curl, widening, wind and the
-  map's full push) stays inside the pad. Its blades are in random order, so a prefix is an even sample. Each frame,
+  per-blade attributes. Its bounding sphere is the chunk's box padded by the chunk's own `reach`, so three never
+  culls a blade the shader moved into view (S1). The reach is the largest `bladeReach` of the chunk's blades (lean,
+  curl, widening, wind and the map's full push) at the farthest distance from any walk camera to the chunk's box. The
+  widening grows with distance, so the farthest camera moves a blade most (C1). Its blades are in random order, so a prefix is an even sample. Each frame,
   `instanceCount` is set from `grassDrawCount`.
 - **The blade** starts from the test's lesson (`tasks/todo.md`, "Not yet Van Gogh"). The painting's bushes are fat
   curved comma strokes that fan out from a clump, dark at the centre with pale yellow-green edges. The test's were thin
@@ -97,8 +105,9 @@ on `feat/street-s3`.
 - **The ground under the grass** (S2). The footprint is one shape for the clip and the base: lane `t` −0.06 to 0.97,
   0.06 to 0.6 off the lane, outside the square. With the grass on, `buildStreet` drops each class-3 ground triangle
   whose three corners lie in the footprint. The path (class 4) and the square are never touched. A dark base strip
-  runs along each side of the lane from 0.052 to 0.765, laid as the path's segments are, at the underpaint's height,
-  under the ground's strokes. Its colour is the field source's darkest 20%, easing to the ground's base over its outer
+  runs along each side of the lane from 0.052 to 0.765, laid as the path's segments are, at y = 0.001: above the
+  ground's underpaint at 0 and below its lowest stroke at `STROKE_LIFT` 0.002, as the path's base sits at 0.002 under
+  its own strokes (C3). Beyond 0.6 the ground's kept strokes lie over it. Its colour is the field source's darkest 20%, easing to the ground's base over its outer
   0.1, so a gap between blades reads as shadow (Mark's crop: the ground's long strokes read through the grass as
   planks). It carries the ground's class, 3. `laneParam(x, z): [t, lat]`, beside `laneOffset` in `streetLayout.ts`,
   places a point on the lane for the clip.
@@ -210,11 +219,11 @@ that camera distance, with the full push and the wind); `GRASS_SOURCES` (the fie
 - Consumes: Task 1's `clump`, `bladeTemplate`, `bladeReach`, `GRASS_BLADE.segments`; `pathPoint`, `pathTangent`,
   `laneOffset`, `STREET_HOUSES`, `STREET_CYPRESS`, `STREET_SQUARE`, `walkPose`.
 - Produces: `GRASS = { t: [-0.06, 0.97], lat: [0.052, 0.765], bands: [0.052, 0.2, 0.4, 0.765], dt: 0.05, r0: 0.22,
-  density, full: 82184, house: 0.012, cypress: 0.07, reach: 0.04, top: 0.05, footprint: { t: [-0.06, 0.97], lat:
+  density, full: 82184, house: 0.012, cypress: 0.07, top: 0.05, baseY: 0.001, footprint: { t: [-0.06, 0.97], lat:
   [0.06, 0.6] }, budget: 38515 }` (`density` from the table for Task 1's segment count);
   `laneParam(x: number, z: number): [t: number, lat: number]` (the nearest point on the lane, sampled as `laneOffset`
   samples it); `type GrassChunk = { blades: BladeSpec[]; latIn: number; box: { min: [number, number, number]; max:
-  [number, number, number] }; sphere: { centre: [number, number, number]; radius: number } }`;
+  [number, number, number] }; reach: number; sphere: { centre: [number, number, number]; radius: number } }`;
   `grassChunks(painting: ImageData2D): GrassChunk[]`; `grassDrawCount(chunk: GrassChunk, camera: [number, number,
   number]): number`; `grassRect(chunks: GrassChunk[]): [x0: number, z0: number, width: number, depth: number]`;
   `inFootprint(x: number, z: number): boolean`.
@@ -226,13 +235,16 @@ that camera distance, with the full push and the wind); `GRASS_SOURCES` (the fie
     `full × density × area × mean(min(1, (r0 / lat)²))` less the excluded area.
   - `a chunk's prefix is an even sample`: for every chunk with ≥ 40 blades, the first half's mean `lat` is within 15%
     of the chunk's.
-  - `the sphere holds every displaced blade` (S1): for every blade, `bladeReach` at its chunk's nearest camera
-    distance on the walk is ≤ `GRASS.reach`, and its tallest point is ≤ `GRASS.top`. Each chunk's sphere contains its
-    box grown by `reach` across and up to `top`.
+  - `the sphere holds every displaced blade` (S1, C1): for every blade, `bladeReach` at the farthest distance from any
+    walk camera (the 901 points `t = k / 1000`, both orientations) to its chunk's box is ≤ the chunk's `reach`, and its
+    tallest point is ≤ `GRASS.top`. Each chunk's sphere contains its box grown by `reach` across and up to `top`.
+    Negative control: at three times that distance, `bladeReach` exceeds `reach` for some blade (the widening is
+    live).
   - `the grass fits its room at every point of the walk` (S1): at the 901 points `t = k / 1000`, at 1600 / 900 and
     390 / 844, the sum over the chunks whose sphere meets the camera's frustum of `grassDrawCount × 2 × segments` is
     ≤ `GRASS.budget`. The test prints the worst point. Negative control: at twice `density` the sum exceeds the budget
-    somewhere.
+    somewhere. If the computed spheres are larger than the probe's and the test fails, lower `density` until it passes
+    and report the value: `density` is this task's tunable, the budget is not.
   - `a near chunk draws all, a far one a share`: a chunk whose box contains the camera's ground point draws every
     blade. The same chunk seen from 1.0 away draws `ceil(n × (max(r0, latIn) / 1.0)²)`.
   - `the map is small`: `grassRect`'s sides over 0.005 are ≤ 1024 each.
@@ -240,8 +252,9 @@ that camera distance, with the full push and the wind); `GRASS_SOURCES` (the fie
     `buildStreet(p, f, m, { lit: true, grass: false })`.
   - `with grass the ground is clipped to the footprint and nothing else` (S2): every dropped triangle is class 3 with
     its three corners `inFootprint`. Every class-4 triangle and every triangle with a corner outside the footprint is
-    kept, in the same order. The drop is 32,343 ± 1% (the probe), printed. The base's triangles are ≤ 2,000, and
-    points sampled across 0.052–0.765 along `t` −0.06 to 0.97 outside the square each meet a base triangle.
+    kept, in the same order. The drop is 32,343 ± 1% (the probe), printed. The base's triangles are ≤ 2,000, every
+    base vertex is at `GRASS.baseY`, and points sampled across 0.052–0.765 along `t` −0.06 to 0.97 outside the square
+    each meet a base triangle.
 - [ ] **Step 2:** Run them: FAIL. Implement. Run `npm run test:sky` and `npx tsc -b`: PASS.
 - [ ] **Step 3:** Commit `feat(street): the grass's blades in chunks along the lane, the ground clipped under them (S3 task 2)`.
 
@@ -286,7 +299,8 @@ boolean`), `scripts/street-mode.test.ts`, `scripts/street-walk.test.ts`, `script
 
 **Interfaces:** Consumes Tasks 1–3 and slice 2's `hitBox`, `classifyGesture` and `__vincentBox`. Produces
 `streetGesture` and the seams `window.__grassHand(x: number | null, y?: number): void` (a client point for the mouse
-hand, or `null` to lift it), `window.__grassHit: [number, number] | null` (this frame's world hit),
+hand, or `null` to lift it), `window.__grassHit: { x: number; z: number; t: number } | null` (this frame's world hit, and the walk's `t` its
+camera was placed at),
 `window.__grassPeak: number` (the largest |push| in the map), `window.__grassStamps: { hand: number; feet: number }`
 (stamps made, per source), `window.__grassHandLive: number` (live texels last stamped by the hand),
 `window.__grassCount: number` (blades built).
@@ -294,7 +308,7 @@ hand, or `null` to lift it), `window.__grassHit: [number, number] | null` (this 
 - [ ] **Step 1:** Flag tests: `grass` true by default, false for `grass=0`. Run: FAIL. Implement: PASS.
 - [ ] **Step 2:** The walk (S3, S4): after `lookAt`, `persp.updateMatrixWorld()`. The gesture admitted at the down as
   "The decisions" give it, and its tap toggling whatever the box at the up. `street-walk.test.ts` gains the admission
-  as a pure function's tests: a down 1 px outside the padded box with an up 1 px inside is a hand gesture; a down
+  as a pure function's tests: a down 1 px outside the padded box with an up 1 px inside is a hand gesture. A down
   inside with the box moved away by the up is still Vincent's.
 - [ ] **Step 3:** `grassShader.ts`: the vertex body builds the blade from the template and the per-blade attributes,
   widens it with the camera's distance, adds the wind on `lifeTimeUniform`, and bends it by the map at its root (the
@@ -306,15 +320,18 @@ hand, or `null` to lift it), `window.__grassHit: [number, number] | null` (this 
   while he shows, the trail's mode `frozen` while paused, else `settle` under reduced motion, else `swing`.
 - [ ] **Step 5:** `check-street-grass.mjs`, after `check-street-walk.mjs`'s pattern, each case its precondition first:
   1. The hand bends: stop 0, `__grassHand` at a verge point (precondition: `__grassHit` inside the map): `__grassPeak`
-     > 0.5 within 0.3 s. In the same frame, `__grassHit` projected through the camera lands within 1 px of the client
-     point (S3).
+     > 0.5 within 0.3 s.
   2. The blades move (S8): with `ids=1`, the class-9 pixels within 80 px of a held hand differ from a capture without
      the hand at the same pinned time, and none differ beyond 300 px. The ID colour is constant, so only geometry
      differs. The gate's negative control: with the displacement deleted from `grassShader.ts`, this case fails.
   3. The sky and the roof: `__grassHand` at a point above the horizon: `__grassHit` null and `__grassStamps.hand`
      unchanged.
-  4. The walk re-casts: the hand held still on the verge, ArrowUp for 1 s: `__grassHit` moves by > 0.1, and case 1's
-     1 px check holds on the last frame.
+  4. The walk re-casts (S3, C2): the hand held still on the verge, ArrowUp for 1 s: `__grassHit` moves by > 0.1. On
+     ten frames during the walk, the page builds a reference camera from `walkPose(__grassHit.t, portrait)` at the
+     canvas's aspect, calls that camera's own `updateMatrixWorld()`, and projects the hit through it: within 1 px of
+     the client point. Never project through the camera that cast the ray: a stale matrix round-trips to zero error.
+     Precondition: `__grassHit.t` advances by ≥ 0.002 between sampled frames, so a camera one frame stale lands
+     several pixels off.
   5. The phone (`walkMode=auto`, touch, 390 × 844): a tap on Vincent toggles `auto` and leaves `__grassStamps.hand`
      unchanged (precondition: a tap elsewhere does not toggle). A down 1 px outside his padded box moved 2 px inside
      by its up bends (hand stamps rise) and does not toggle. A touch-drag across the verge bends and leaves `auto` as
@@ -352,7 +369,7 @@ refHills }`, `refHills` the weight-averaged mean of `palette.json`'s `hills` swa
   and triangles. G5 reduced motion and the pause. G6 the grass at 1:1 beside the painting's bushes at stops 0 and 2,
   the clip's edges at the footprint's ends, and the verge from the phone. G7 a 4 s clip of the hand sweeping the
   verge while Vincent walks, recorded with the Playwright browser at 10 frames a second, `bringToFront` before each.
-  G8 mutations: the displacement deleted (case 2 fails), the `updateMatrixWorld` deleted (case 1 fails), the
+  G8 mutations: the displacement deleted (case 2 fails), the `updateMatrixWorld` deleted (case 4 fails), the
   down-time admission replaced by the up's box (case 5 fails).
 - [ ] **Step 2:** Look passes on what G6 and G7 name, at most four.
 - [ ] **Step 3:** Codex reviews the branch. Answer every finding in the record.
