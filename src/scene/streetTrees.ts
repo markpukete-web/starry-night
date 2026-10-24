@@ -18,22 +18,41 @@ import type { ImageData2D } from './useImageData.ts'
 export const STREET_TREE = {
   /** the crown's radius: half the mass's width, clamped */
   crown: [0.12, 0.17],
-  /** the fork's height, plus `forkPerR` × R */
-  fork: 0.14,
-  forkPerR: 0.3,
-  clumps: 7,
-  /** a clump's radius over the crown's, then × 0.85–1.15 */
-  clump: 0.42,
-  dabs: 150,
+  /** the fork's height, plus `forkPerR` × R (pass 7: was 0.14 + 0.3 R, a bare pole under a ball; Simon's olive forks low) */
+  fork: 0.08,
+  forkPerR: 0.35,
+  /** the fork's lean off the foot, fractions of R */
+  lean: 0.2,
+  /** limbs out of the fork, each splitting into two twigs to two clumps, and one clump on top: 2 × limbs + 1 clumps */
+  limbs: 4,
+  /** where a limb splits: out and up from the fork; its twigs' clumps: the outer out and level, the inner in and up */
+  split: { out: 0.45, up: [0.4, 0.55] },
+  outer: { out: 0.85, up: 0, turn: 0.35 },
+  inner: { out: 0.35, up: 0.7, turn: -0.5 },
+  /** the top clump's height over the fork, so the smallest crown still clears L4's eave of 0.3 */
+  top: 1.6,
+  /** a clump's radius over the crown's, then × 0.85–1.15 (pass 7: was 0.42, which merged seven clumps into one ball) */
+  clump: 0.28,
+  /** a clump is a dome, wider than tall, as Simon's olives' are (pass 7: a sphere read as topiary) */
+  dome: [1.15, 0.8],
+  /** curls per clump: 1,035 a tree, against pass 6's 1,050, so the trees cost no more triangles than before pass 7
+   * (slice 3's grass counts on the headroom) */
+  dabs: 115,
   /** a dab's arc length and half-width, fractions of the crown's radius, and the sweep of its crescent (radians) */
-  dabLength: [0.4, 0.8],
-  dabHalfWidth: [0.06, 0.1],
+  dabLength: [0.3, 0.55],
+  dabHalfWidth: [0.05, 0.08],
   curlSweep: [1.4, 2.4],
-  /** the trunk's radius at the ground and at the fork, a branch's at the fork and at its clump, fractions of R */
-  trunk: [0.09, 0.06],
-  branch: [0.035, 0.015],
-  /** ink strokes along the trunk, each ±0.5 rad round it */
-  barkStrokes: 4,
+  /** radii, fractions of R: the trunk at its flared foot, above the flare and at the fork; a limb at the fork and at
+   * its split; a twig at the split and at its clump (pass 7: the trunk was 0.09 to 0.06, the branches 0.035 to 0.015) */
+  trunk: [0.2, 0.14, 0.1],
+  flare: 0.15,
+  limb: [0.08, 0.05],
+  twig: [0.045, 0.025],
+  /** ink strokes along the trunk, each ±0.5 rad round it, and how far the moon's side lifts toward the curls' middle */
+  barkStrokes: 6,
+  barkLight: 0.75,
+  /** the canopy shades its own lower clumps: a clump's tone shifts by this × (its height in the crown − 0.5) */
+  canopy: 0.2,
 } as const
 
 /**
@@ -74,12 +93,12 @@ function tubeFrame(path: Vector3[], i: number): [Vector3, Vector3] {
   return [side, tangent.clone().cross(side).normalize()]
 }
 
-/** A tapering tube along a polyline, closed rings of `around` points, appended to the solid. */
-function pushTube(arr: BrushArrays, path: Vector3[], r0: number, r1: number, colour: Color, around = 6): void {
+/** A tube along a polyline, its radius a function of the fraction along it, closed rings of `around` points. */
+function pushTube(arr: BrushArrays, path: Vector3[], radius: (f: number) => number, colour: Color, around = 6): void {
   const base = arr.positions.length / 3
   for (let i = 0; i < path.length; i++) {
     const [side, up] = tubeFrame(path, i)
-    const r = r0 + (r1 - r0) * (i / (path.length - 1))
+    const r = radius(i / (path.length - 1))
     for (let k = 0; k < around; k++) {
       const a = (k / around) * Math.PI * 2
       const p = path[i].clone().addScaledVector(side, r * Math.cos(a)).addScaledVector(up, r * Math.sin(a))
@@ -140,26 +159,29 @@ export function buildStreetTrees(painting: ImageData2D, masses: readonly LandMas
     const R = Math.min(T.crown[1], Math.max(T.crown[0], mass.width / 2))
     const forkY = T.fork + T.forkPerR * R
 
-    // the trunk: from the ground to the fork, leaning and twisting
+    // the trunk: from a flared foot to the fork, bent into an S across its lean
     const lean = rand() * Math.PI * 2
     const leanDir = new Vector3(Math.cos(lean), 0, Math.sin(lean))
     const twist = new Vector3(-leanDir.z, 0, leanDir.x)
     const foot = new Vector3(mass.x, 0, mass.z)
-    const fork = foot.clone().addScaledVector(leanDir, 0.25 * R).setY(forkY)
+    const fork = foot.clone().addScaledVector(leanDir, T.lean * R).setY(forkY)
     const trunk = bezier(
       foot,
-      foot.clone().addScaledVector(twist, 0.2 * R).setY(forkY * 0.35),
-      fork.clone().addScaledVector(twist, -0.15 * R).setY(forkY * 0.7),
+      foot.clone().addScaledVector(twist, 0.35 * R).setY(forkY * 0.35),
+      fork.clone().addScaledVector(twist, -0.3 * R).setY(forkY * 0.7),
       fork,
-      8,
+      12,
     )
-    pushTube(solid, trunk, T.trunk[0] * R, T.trunk[1] * R, INK)
+    const trunkRadius = (f: number) => R * (f < T.flare
+      ? T.trunk[0] + (T.trunk[1] - T.trunk[0]) * (f / T.flare)
+      : T.trunk[1] + (T.trunk[2] - T.trunk[1]) * ((f - T.flare) / (1 - T.flare)))
+    pushTube(solid, trunk, trunkRadius, INK, 10)
     // the bark: ink strokes along the trunk, the moon's side lifted toward the curls' middle tone
     for (let k = 0; k < T.barkStrokes; k++) {
       const a0 = (k / T.barkStrokes) * Math.PI * 2 + (rand() - 0.5) * 0.4
       const steps = trunk.map((point, i) => {
         const [side, up] = tubeFrame(trunk, i)
-        const r = (T.trunk[0] + (T.trunk[1] - T.trunk[0]) * (i / (trunk.length - 1))) * R * 1.12
+        const r = trunkRadius(i / (trunk.length - 1)) * 1.12
         return Array.from({ length: COLUMNS }, (_, j) => {
           const a = a0 + 0.5 * (2 * (j / (COLUMNS - 1)) - 1)
           const p = point.clone().addScaledVector(side, r * Math.cos(a)).addScaledVector(up, r * Math.sin(a))
@@ -169,35 +191,43 @@ export function buildStreetTrees(painting: ImageData2D, masses: readonly LandMas
       const [side, up] = tubeFrame(trunk, trunk.length >> 1)
       const facing = side.multiplyScalar(Math.cos(a0)).addScaledVector(up, Math.sin(a0))
       const lit = new Color().setRGB(mid[0], mid[1], mid[2], SRGBColorSpace)
-      pushStroke(steps, INK.clone().lerp(lit, 0.5 * Math.max(0, facing.dot(MOON_DIR))).multiplyScalar(between([0.9, 1.1])))
+      pushStroke(steps, INK.clone().lerp(lit, T.barkLight * Math.max(0, facing.dot(MOON_DIR))).multiplyScalar(between([0.9, 1.1])))
     }
 
-    // the clumps: one on top, the rest in a ring about the crown's centre
-    const crownCentre = fork.clone().setY(forkY + 0.5 * R)
+    // the limbs: out of the fork and up to a split, each splitting into two twigs, an outer clump out and level and an
+    // inner one in and up, so the clumps stand at three heights with the limbs showing between them; one clump on top
+    const up = new Vector3(0, 1, 0)
+    const turned = (dir: Vector3, by: number) => new Vector3(dir.x * Math.cos(by) - dir.z * Math.sin(by), 0, dir.x * Math.sin(by) + dir.z * Math.cos(by))
+    const limbRadius = (f: number) => R * (T.limb[0] + (T.limb[1] - T.limb[0]) * f)
+    const twigRadius = (f: number) => R * (T.twig[0] + (T.twig[1] - T.twig[0]) * f)
     const clumps: { centre: Vector3; r: number }[] = []
-    for (let k = 0; k < T.clumps; k++) {
-      const r = T.clump * R * between([0.85, 1.15])
-      if (k === 0) {
-        clumps.push({ centre: crownCentre.clone().setY(crownCentre.y + 0.5 * R), r })
-        continue
+    const reachTo = (from: Vector3, to: Vector3, radius: (f: number) => number, around: number) => {
+      const d = to.distanceTo(from)
+      pushTube(solid, bezier(from, from.clone().addScaledVector(up, 0.3 * d), to.clone().lerp(from, 0.35), to, 6), radius, INK, around)
+    }
+    for (let k = 0; k < T.limbs; k++) {
+      const dir = turned(leanDir, (k / T.limbs) * Math.PI * 2 + (rand() - 0.5) * 0.5)
+      const split = fork.clone().addScaledVector(dir, T.split.out * R).addScaledVector(up, between(T.split.up) * R)
+      reachTo(fork, split, limbRadius, 6)
+      for (const twin of [T.outer, T.inner]) {
+        const centre = fork.clone().addScaledVector(turned(dir, twin.turn), twin.out * R).setY(split.y + twin.up * R)
+        reachTo(split, centre, twigRadius, 5)
+        clumps.push({ centre, r: T.clump * R * between([0.85, 1.15]) })
       }
-      const a = ((k - 1) / (T.clumps - 1)) * Math.PI * 2 + (rand() - 0.5) * 0.5
-      const reach = (R - 0.6 * r) * between([0.85, 1])
-      const dy = (k % 2 ? -0.2 : 0.15) * R
-      clumps.push({ centre: crownCentre.clone().add(new Vector3(Math.cos(a) * reach, dy, Math.sin(a) * reach)), r })
     }
-
-    // the branches: from the fork to each clump, rising, ending inside it
-    for (const clump of clumps) {
-      const reach = clump.centre.distanceTo(fork)
-      const path = bezier(fork, fork.clone().setY(fork.y + 0.3 * reach), clump.centre.clone().lerp(fork, 0.4), clump.centre, 6)
-      pushTube(solid, path, T.branch[0] * R, T.branch[1] * R, INK, 5)
-    }
+    const topCentre = fork.clone().addScaledVector(leanDir, 0.1 * R).setY(forkY + T.top * R)
+    reachTo(fork, topCentre, limbRadius, 6)
+    clumps.push({ centre: topCentre, r: T.clump * R * between([0.85, 1.15]) })
+    const crownCentre = fork.clone().setY(forkY + 0.75 * R)
+    const lowest = Math.min(...clumps.map((c) => c.centre.y))
+    const highest = Math.max(...clumps.map((c) => c.centre.y))
 
     counts[mass.id] = { front: 0, back: 0 }
     colour.setRGB(under[0], under[1], under[2], SRGBColorSpace)
     for (const clump of clumps) {
-      pushDome(solid, { centre: clump.centre, rx: clump.r, ry: clump.r, rz: clump.r }, colour, 16, 10)
+      pushDome(solid, { centre: clump.centre, rx: T.dome[0] * clump.r, ry: T.dome[1] * clump.r, rz: T.dome[0] * clump.r }, colour, 12, 8)
+      const flatten = new Vector3(T.dome[0], T.dome[1], T.dome[0])
+      const shade = T.canopy * ((clump.centre.y - lowest) / Math.max(1e-6, highest - lowest) - 0.5)
       const outward = clump.centre.clone().sub(crownCentre)
       if (outward.lengthSq() > 1e-8) outward.normalize()
       for (let d = 0; d < T.dabs; d++) {
@@ -226,16 +256,16 @@ export function buildStreetTrees(painting: ImageData2D, masses: readonly LandMas
           const half = (halfWidth / radius) * (0.35 + 0.65 * Math.sin(Math.PI * t))
           steps.push(Array.from({ length: COLUMNS }, (_, j) => {
             const g = beta + half * (2 * (j / (COLUMNS - 1)) - 1)
-            return clump.centre.clone().addScaledVector(
-              m.clone().multiplyScalar(Math.cos(g)).addScaledVector(a, Math.sin(g) * Math.cos(alpha)).addScaledVector(b, Math.sin(g) * Math.sin(alpha)),
-              radius,
+            return clump.centre.clone().add(
+              m.clone().multiplyScalar(Math.cos(g)).addScaledVector(a, Math.sin(g) * Math.cos(alpha)).addScaledVector(b, Math.sin(g) * Math.sin(alpha))
+                .multiplyScalar(radius).multiply(flatten),
             )
           }))
         }
         // the tone: the moon's light and the crown's outside take the pale pigments, its inside the dark
         // (the light term averages about 0.25 over a sphere, so doubled the crown's mean pigment sits near the curls'
         // median; pass 6's first trees took it to the power 1.3, about the 17th percentile, and came out dark)
-        const tone = Math.min(1, Math.max(0, 2 * (0.6 * Math.max(0, n.dot(MOON_DIR)) + 0.4 * Math.max(0, n.dot(outward))) + (rand() - 0.5) * 0.3))
+        const tone = Math.min(1, Math.max(0, 2 * (0.6 * Math.max(0, n.dot(MOON_DIR)) + 0.4 * Math.max(0, n.dot(outward))) + shade + (rand() - 0.5) * 0.3))
         const pigment = palette[Math.floor(tone * (palette.length - 1))]
         const tint = new Color().setRGB(pigment[0], pigment[1], pigment[2], SRGBColorSpace).multiplyScalar(between([0.965, 1.035]))
         pushStroke(steps, tint)
