@@ -132,6 +132,21 @@ test('a stop cancels the queue', () => {
     sTap = stepWalk(sTap, { dt: 1 / 60, wheelPx: 0, keys: 0, autoMode: true, paused: false, still: false })
   }
   assert.equal(sTap.t, tapStopT, 'next 30 steps leave t unchanged')
+
+  // a tap with a scroll still queued: the walking pass above has none, since the automatic walk moves t and target
+  // together (the Lead's gate: dropping the tap's cancel survived it)
+  let sQueued = initialWalk(0.2, true)
+  for (let k = 0; k < 3; k++) {
+    sQueued = stepWalk(sQueued, { dt: 1 / 60, wheelPx: 300, keys: 0, autoMode: true, paused: false, still: false })
+  }
+  assert.ok(sQueued.target - sQueued.t > 0.01 / L, 'precondition: a queue behind the automatic walk')
+  sQueued = toggleWalk(sQueued, false)
+  assert.equal(sQueued.target, sQueued.t, 'the tap cancels the queue')
+  const queuedStopT = sQueued.t
+  for (let k = 0; k < 30; k++) {
+    sQueued = stepWalk(sQueued, { dt: 1 / 60, wheelPx: 0, keys: 0, autoMode: true, paused: false, still: false })
+  }
+  assert.equal(sQueued.t, queuedStopT, 'he stays where the tap stopped him')
 })
 
 test('still has no easing', () => {
@@ -175,6 +190,12 @@ test('the gait settles', () => {
 
   const gMid = gait(0.02, 0.15, false)
   assert.ok(Math.abs(gMid.lift - 0.0015) < 1e-6, `mid-step lift is 0.0015 (got ${gMid.lift})`)
+
+  // the roll leans one way on a step and the other way on the next; the arm is at the end of its swing as a foot lands
+  assert.ok(Math.abs(gMid.roll - 0.03) < 1e-9, `mid-step roll is 0.03 (got ${gMid.roll})`)
+  assert.ok(Math.abs(gait(0.06, 0.15, false).roll + 0.03) < 1e-9, 'the next step rolls the other way')
+  assert.ok(Math.abs(gait(0, 0.15, false).arm - 0.25) < 1e-9, 'the arm at the end of its swing as a foot lands')
+  assert.ok(Math.abs(gMid.arm) < 1e-9, 'the arm passes the body mid-step')
 
   const gStill = gait(0.02, 0.15, true)
   assert.equal(gStill.lift, 0)
