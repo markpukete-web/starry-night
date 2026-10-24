@@ -2966,3 +2966,21 @@ reads as alive.
 - **A dark palette is not a lighting fault.** Vincent's hat rendered near black. Unlit it was (51, 39, 35), and the
   palette's villageWarm swatch is #262119, so the colour was faithful. The shape was the fault: a straight crown
   read as a top hat. Measure the unlit colour before tuning the light.
+- **Read `pmset -g log` before you call a stall or trust a frame time across a gap.** The Lead told Mark the worker
+  was stuck for 1.5 hours. The Mac had slept from 15:11 to 17:04, and the sleep also reset Codex's connection twice.
+  One perf round ran across the sleep (25.6 ms against 16.7 ms on its re-run). A round that spans a sleep is void.
+- **A figure's underpaint takes the street's base-share rule.** The smock's source patch sat 0.41 from the reference,
+  but its base was the patch's darkest 40%, and the gaps between strokes held the render at ΔE 10.5–11.6. With the
+  base at the source's mean, as S1b's walls have it, the smock read 5.3–5.7. Check a new part against S1b's rules
+  before you tune it.
+- **Read a worker's report against its raw files.** Task 5's report named the five mutations under names that are not
+  the script's. The raw `mutations.txt` showed the right five, all red. The report was wrong and the evidence right.
+- **Send two synthetic events in one evaluate to test a same-frame race.** K1's bug is a wheel queued in the same
+  frame as a stop. Between two evaluates a frame can run and consume the wheel, which would hide the bug (reasoned,
+  not run). Case 6 sends each pair in one evaluate, and the two K1 mutants moved him by 0.167 and 0.080.
+- **A builder's read finds what a correctness read does not.** Codex confirmed revision 3 of slice 3's plan. The
+  worker, reading as its builder, then found ten gaps: a seam no task defined, a seed, a release rule, a command.
+  None changed the design, and each would have stopped the build.
+- **Probe a check's fixed screen point at every stop and viewport it runs at.** The grass sweep's side of the lane
+  is on screen at stop 0 in both viewports. At stop 2 the phone's frame cuts it off (x −39 on a 390 px canvas), and
+  an along-the-lane sweep there moves only 30 px. The sweep now crosses the verge on each stop's own side.
