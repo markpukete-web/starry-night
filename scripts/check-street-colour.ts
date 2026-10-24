@@ -256,6 +256,7 @@ const SOURCES: Record<string, { idR: number; idG: number; idB: number; ref: Lab 
 // Palette regional means
 const diagVillage = regionWeightedMeanLab('village')
 const diagHills = regionWeightedMeanLab('hills')
+const refHills = regionWeightedMeanLab('hills')
 const diagCypress = regionWeightedMeanLab('cypress')
 
 type ClassDef = {
@@ -279,6 +280,7 @@ const CLASSES: Record<string, ClassDef> = {
   windows: { idR: 0, idG: 0, idB: 255, minArea: 100, ref: refWindows, diag: null },
   smock: { idR: 188, idG: 0, idB: 255, minArea: 800, ref: refSmock, diag: diagSmockSource, diagName: 'source' },
   hat: { idR: 188, idG: 255, idB: 0, minArea: 80, ref: refHat, diag: null },
+  grass: { idR: 0, idG: 188, idB: 255, minArea: 2000, ref: refHills, diag: null },
 }
 
 if (sources) {
@@ -395,6 +397,7 @@ if (sources) {
     fog: [],
     smock: [],
     hat: [],
+    grass: [],
   }
 
   const colourCounts = new Map<string, number>()
@@ -416,6 +419,7 @@ if (sources) {
     else if (r === 255 && g === 255 && b === 255) maskIndices.fog.push(i)
     else if (r >= 180 && r <= 196 && g === 0 && b === 255) maskIndices.smock.push(i)
     else if (r >= 180 && r <= 196 && g === 255 && b === 0) maskIndices.hat.push(i)
+    else if (r === 0 && g >= 180 && g <= 196 && b === 255) maskIndices.grass.push(i)
   }
 
   // Full image copy in case of control
@@ -448,6 +452,7 @@ if (sources) {
     '255,255,255',
     '188,0,255',
     '188,255,0',
+    '0,188,255',
     '21,28,27', // BrushCypress underpaint (0x151c1b), drawn in own colours in ID frame by design (Street.tsx:162, Fable C3)
   ])
   for (const [key, area] of colourCounts.entries()) {

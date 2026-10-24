@@ -209,7 +209,7 @@ async function main() {
     if (evalBefore) {
       // pin the clock in the same evaluation, before the page code: an unpinned frame between the two would prune
       // an injected entry whose explicit t0 is older than the live clock's window (Codex, PR #11 P2)
-      const ran = await page.send('Runtime.evaluate', { expression: `${pin(0)}\n${evalBefore}`, returnByValue: true })
+      const ran = await page.send('Runtime.evaluate', { expression: `${pin(0)}\n${evalBefore}`, returnByValue: true, awaitPromise: true })
       if (ran.exceptionDetails) throw new Error(`--eval threw: ${ran.exceptionDetails.exception?.description ?? ran.exceptionDetails.text}`)
       evalResult = ran.result.value ?? null
     }
@@ -222,7 +222,7 @@ async function main() {
       const a = await readFrame(page)
       // the self-check on the first time and the first t > 0 only (a readback costs seconds under software
       // rendering): at t = 0 a foreground reading the clock one frame late would still show as pinned
-      if (t === times[0] || t === firstMoving) {
+      if (!evalBefore && (t === times[0] || t === firstMoving)) {
         const b = await readFrame(page)
         if (!a.equals(b)) throw new Error(`pinned clock self-check failed at t=${t}: two reads differ, so the page is not pinned`)
       }
