@@ -65,18 +65,26 @@ function smoothstep(a: number, b: number, x: number): number {
   return t * t * (3 - 2 * t)
 }
 
+export type LandTiming = {
+  rise: number
+  tau: number
+  period: number
+  windowStart: number
+  windowEnd: number
+}
+
 /** 1 − smoothstep over the closing window: exactly 0 from `windowEnd` on. */
-export function closing(sinceRelease: number, T = LAND_TOUCH): number {
+export function closing(sinceRelease: number, T: LandTiming = LAND_TOUCH): number {
   return 1 - smoothstep(T.windowStart, T.windowEnd, sinceRelease)
 }
 
 /** A touch still counts against admission and the shader's list until its swing has closed (F10). */
-export function isLive(touch: LandTouch, now: number, T = LAND_TOUCH): boolean {
+export function isLive(touch: LandTouch, now: number, T: Pick<LandTiming, 'windowEnd'> = LAND_TOUCH): boolean {
   return now < touch.release + T.windowEnd
 }
 
 /** The amplitude at time t: the ramp while held; from the release, a damped cosine from the amplitude it had, closed. */
-export function landAmplitude(touch: LandTouch, t: number, T = LAND_TOUCH): number {
+export function landAmplitude(touch: LandTouch, t: number, T: LandTiming = LAND_TOUCH): number {
   const held = touch.from + (touch.amp - touch.from) * smoothstep(0, T.rise, Math.min(t, touch.release) - touch.t0)
   if (t <= touch.release) return held
   const since = t - touch.release
