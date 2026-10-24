@@ -40,8 +40,10 @@ export type VincentBuild = { body: VincentPart; armLeft: VincentPart & { pivot: 
 const SMOCK: readonly [number, number][] = [[0.001, 0.0155], [0.02, 0.0138], [0.04, 0.0121], [0.056, 0.0109], [0.062, 0.0105], [0.0645, 0.0085], [0.066, 0.004]]
 const SMOCK_SCALE = { x: 1.2, z: 0.8 }
 const HEAD = { y: 0.071, r: 0.0065 }
-const CROWN = { y0: 0.0745, y1: VINCENT_RIG.height, r: 0.0068 }
-const BRIM = { y: 0.0745, r: 0.0145, droop: 0.0015 }
+/** A straw hat: a low crown that tapers into a dome under a brim as wide as his shoulders (look pass 1: a straight
+ * 0.0068 crown under a 0.0145 brim read as a top hat). */
+const CROWN = { y0: 0.0745, y1: VINCENT_RIG.height, r: 0.0074 }
+const BRIM = { y: 0.0745, r: 0.017, droop: 0.0025 }
 /** The arms hang outside the smock: at the plan's (±0.0135, 0.034) the hands sat inside it (the hem is 0.0155 × 1.2). */
 const ARM = { shoulder: [0.0125, 0.059] as const, hand: [0.0185, 0.032] as const, r: 0.0032, rHand: 0.0026 }
 /** The rolled canvas under his right arm: 0.032 long (the plan's 0.034 put its ends past the 0.02 depth bound). */
@@ -199,7 +201,7 @@ export function buildVincent(painting: ImageData2D): VincentBuild {
   // the hair over the back of his head (−z, the side the camera sees), crown to nape
   clad(body, head, 6, 6, painting, VINCENT_SOURCES.hair, VINCENT_CLASS.none, rand, [0.5, 1], [0.15, 0.95])
 
-  const crown = revolve([[CROWN.y0, CROWN.r], [CROWN.y1 - 0.0012, CROWN.r * 0.96], [CROWN.y1, CROWN.r * 0.6], [CROWN.y1, 0]], 1, 1)
+  const crown = revolve([[CROWN.y0, CROWN.r], [CROWN.y1 - 0.0035, CROWN.r * 0.92], [CROWN.y1 - 0.001, CROWN.r * 0.62], [CROWN.y1, CROWN.r * 0.3], [CROWN.y1, 0]], 1, 1)
   const hatColour = underpaintColour(painting, VINCENT_SOURCES.hat)
   solid(body.underpaint, crown, 16, 4, hatColour, VINCENT_CLASS.hat)
   clad(body, crown, 8, 4, painting, VINCENT_SOURCES.hat, VINCENT_CLASS.hat, rand, [0, 1], [0, 0.75])
