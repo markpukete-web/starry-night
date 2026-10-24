@@ -27,7 +27,7 @@ const opt = (name, fallback) => {
   return i >= 0 ? args[i + 1] : fallback
 }
 if (!outDir || outDir.startsWith('--')) {
-  console.error('usage: capture-sky-frames.mjs <outDir> --url <url> --times 0,1,2 [--viewport desktop|mobile] [--prefix p] [--eval js]')
+  console.error('usage: capture-sky-frames.mjs <outDir> --url <url> --times 0,1,2 [--viewport desktop|mobile] [--prefix p] [--eval js] [--moving]')
   process.exit(1)
 }
 const url = opt('url', 'http://127.0.0.1:5179/?mode=diorama&clean=1')
@@ -36,6 +36,9 @@ const viewportName = opt('viewport', 'desktop')
 const prefix = opt('prefix', viewportName)
 const evalBefore = opt('eval', null)
 const waitFor = opt('wait-for', null)
+// a page the --eval keeps moving on its own clock (the grass's hand sweep, S3 task 5) cannot pass the self-check, so
+// it opts out by name: every other --eval still proves the clock pinned
+const moving = args.includes('--moving')
 // presence and value apart: an empty `--arrival-times ''` (a shell variable that came out empty) must fail, not
 // silently run the sky-only path with the arrival unpinned (Codex, code review F15)
 const hasArrivalTimes = args.includes('--arrival-times')
@@ -222,7 +225,7 @@ async function main() {
       const a = await readFrame(page)
       // the self-check on the first time and the first t > 0 only (a readback costs seconds under software
       // rendering): at t = 0 a foreground reading the clock one frame late would still show as pinned
-      if (!evalBefore && (t === times[0] || t === firstMoving)) {
+      if (!moving && (t === times[0] || t === firstMoving)) {
         const b = await readFrame(page)
         if (!a.equals(b)) throw new Error(`pinned clock self-check failed at t=${t}: two reads differ, so the page is not pinned`)
       }
