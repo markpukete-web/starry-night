@@ -3011,3 +3011,10 @@ reads as alive.
 - **Judge a segment count at the painting's stroke length, not zoomed.** Four segments looked smoother than three at
   2.5×, and the same at 1:1. Two against three differed at 1:1 only on the longest blades. The zoom answers "can I see
   a facet", the 1:1 answers "does it read as the stroke" (S3 Task 1, 2026-10-24).
+
+## 2026-10-24 — a check's URL parameter the app never reads passes in silence (street S3, Task 4)
+
+Case 2 of `check-street-grass.mjs` asked for "the same pinned time" and passed `pinnedTime=1.0`. No file in `src`
+reads that parameter. The case passed only because `ids=1` happened to leave the life clock unwritten. A gate reads
+every parameter a check passes and greps `src` for it. A pin also needs a control: two captures without the stimulus
+must be byte-identical before the stimulus's difference means anything.
