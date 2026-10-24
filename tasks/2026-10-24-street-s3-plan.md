@@ -240,8 +240,9 @@ that camera distance, with the full push and the wind); `GRASS_SOURCES` (the fie
   `grassChunks(painting: ImageData2D): GrassChunk[]`; `grassDrawCount(chunk: GrassChunk, camera: [number, number,
   number]): number`; `grassRect(chunks: GrassChunk[]): [x0: number, z0: number, width: number, depth: number]`;
   `inFootprint(x: number, z: number): boolean`.
-- `grassChunks` draws every random number from one `mulberry32(1)` (`src/scene/brush.ts`, the probe's seed, so the
-  counts match the table), the chunks in lane order. Each clump's `height` is the test's tuft rule:
+- `grassChunks` draws every random number from one `mulberry32(1)` (`src/scene/brush.ts`, the probe's seed), the
+  chunks in lane order. The probe draws its numbers in another order, so the counts differ from the table's within
+  the tests' tolerances. Each clump's `height` is the test's tuft rule:
   `GRASS_BLADE.height × (0.45 + 1.1 × vnoise(x × 9 + 3.7, z × 9 − 1.3)) × verge`, with
   `verge = 0.35 + 0.65 × clamp((lat − 0.052) / 0.1, 0, 1)` and `vnoise` from `src/scene/brushForms.ts`. The test's
   per-blade factor `0.75 + 0.5 × rand()` stays inside `clump`.
