@@ -3057,3 +3057,30 @@ must be byte-identical before the stimulus's difference means anything.
 - **Read the PR's CI before you call the gate passed.** The grass test read a derived file that only the Lead's
   worktree links, so every local run passed and every CI run failed with ENOENT. Run the suite once with
   `reference/derived` hidden before you push a test that reads a file (PR #22, 2026-10-25).
+
+## 2026-10-25 — street S3b, Tasks 0 and 1: the baselines and the moon on the blade
+
+- **`__streetReady` never waited for the sky.** On a loaded machine (Codex was running probes) a capture took the
+  street before the sky had built, and a pinned pair differed between runs (`t0/first-try/`, stop 4 on the phone with no
+  sky). A 24-capture retest on a quiet machine passed under both waits, so timing alone proved nothing. The pair with no
+  sky did. The sky now writes `window.__skyReady`, and every capture that draws the sky waits for both.
+- **A seam's consumer must know which pages never produce it.** The ID view does not mount the sky
+  (`DioramaExperience.tsx:327`), so a wait on `__skyReady` timed out on all eight ID captures. Read the producer's mount
+  condition before you add a wait to every caller (Codex C1).
+- **A checker that guesses file names can read the wrong time.** `check-street-colour.ts` looked for `-t5.png` and then
+  `.png`. A time-0 pair was missing to it, and a stale time-5 image beside it would have been read with time-0
+  metadata. `--time T` reads `-tT.png` only and checks the metadata's times (Codex C2).
+- **The blade's texel filter refused the lit edges it was meant to show.** `grassTexelUsable` drops the light grey of the
+  canvas, and the painting's lit bush edges are pale grey-green. Only 7 of the bushes' 347 lightest texels passed it.
+  The top colour has its own rule, which keeps the grey and still refuses near-white and brown (Codex R2).
+- **Register lit, unlit and ID captures at one clock.** At time 5 the lit page's wind moved the blades and the unlit
+  page's did not, so one ID mask could not fit both. At pinned time 0 every page's wind is at 0 (Codex R4).
+- **A numerical test of a shader function does not test its call.** Case 14 checks `grassMoonFacing` by number, but a
+  call with `yaw` 0 would still pass it. The facing takes the vertex function's own argument text, one constant, and a
+  test pins both calls to it (Codex R7). Make the wrong call impossible to write, then test that.
+- **Measure main before you set a bound on a change.** Case 15 asked the hand to raise the mean L* within 80 px by 2.
+  Main's own grass raises it by 0.55, so the bound tested nothing about the moon. Counting the pixels the hand brightens,
+  lit against unlit, gave 1.01 for the build and 0.65 for a mutant with the lift off.
+- **A multisampled ID view has blended edges.** The lit change's "far" pixels were all quarter, half and three-quarter
+  blends of the grass's ID colour with another class, at blades thinner than a pixel. A mask of pure ID colours misses
+  them. Decompose the blend before you call a pixel "not grass".

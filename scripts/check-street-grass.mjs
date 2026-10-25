@@ -16,6 +16,10 @@
  * 11. Anchor A: cases 1 and 7 again under skyAnchor=A.
  * 12. Focus loss (Codex F01): a real mouse move stamps, a window blur stops the stamps, the next move restarts them.
  * 13. walk=0 (Codex, PR #22): a touch-drag across the verge moves __grassHit with the finger.
+ * 14. The moon's GLSL by number (S3b task 1): grassMoonFacing, drawn to pixels at 255 per unit, reads back within 1/255
+ *     of bladeMoonFacing for both curl signs, signed lean, yaw 0 and ±0.4, three right vectors and a straight blade.
+ * 15. The hand against lit tops (S3b task 1), stop 0, vincent=0: the hand held on the verge brightens by more than
+ *     5 L*, within 80 px of it, at least 0.85 as many pixels on the lit page as on the unlit one (main's program).
  */
 
 import { spawn } from 'node:child_process'
@@ -23,7 +27,8 @@ import { existsSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathPoint, pathTangent, STREET, vincentPlace } from '../src/scene/streetLayout.ts'
-import { GRASS_BLADE } from '../src/scene/grassBlade.ts'
+import { bladeMoonFacing, GRASS_BLADE, GRASS_MOON_GLSL } from '../src/scene/grassBlade.ts'
+import { STREET_MOON } from '../src/scene/streetLight.ts'
 import { decodePNG } from './lib/png.ts'
 import { WALK } from '../src/scene/streetWalk.ts'
 
@@ -950,6 +955,123 @@ async function main() {
       const moved = hitB ? Math.hypot(hitB.x - hitA.x, hitB.z - hitA.z) : 0
       if (moved < 0.01) throw new Error(`Case 13 failed: the hit moved ${moved.toFixed(4)} with a 30 px touch-drag and walk=0`)
       console.log(`PASS: case 13 - walk=0 touch-drag: the hit moved ${moved.toFixed(3)} with the finger`)
+    }
+
+    // -------------------------------------------------------------
+    // Case 14: the moon's GLSL by number (S3b task 1). A bare WebGL canvas draws grassMoonFacing for each case into one
+    // pixel at 255 per unit. Each reads back within 1/255 of bladeMoonFacing, plus half a step for the rounding.
+    // -------------------------------------------------------------
+    if (shouldRun(14)) {
+      const moon = [STREET_MOON.x, STREET_MOON.y, STREET_MOON.z]
+      const cases14 = []
+      for (const curl of [1.5, -1.5, 0.8, -0.8]) for (const lean of [0.3, -0.3]) for (const yaw of [0, 0.4, -0.4]) {
+        for (const right of [[1, 0], [0, 1], [Math.SQRT1_2, -Math.SQRT1_2]]) for (const a of [0.25, 0.5, 1]) cases14.push({ a, lean, curl, yaw, right })
+      }
+      for (const lean of [0.3, -0.3]) cases14.push({ a: 0.5, lean, curl: 0, yaw: 0.2, right: [0.6, 0.8] })
+      for (const c of cases14) c.expected = bladeMoonFacing({ lean: c.lean, curl: c.curl, yaw: c.yaw }, c.a, c.right, moon)
+      await page.send('Page.navigate', { url: 'about:blank' })
+      await sleep(200)
+      const got14 = await page.evaluate(({ glsl, cases, moon }) => {
+        const canvas = document.createElement('canvas')
+        canvas.width = 1
+        canvas.height = 1
+        const gl = canvas.getContext('webgl')
+        const compile = (type, src) => {
+          const sh = gl.createShader(type)
+          gl.shaderSource(sh, src)
+          gl.compileShader(sh)
+          if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(sh))
+          return sh
+        }
+        const prog = gl.createProgram()
+        gl.attachShader(prog, compile(gl.VERTEX_SHADER, 'attribute vec2 p; void main() { gl_Position = vec4(p, 0.0, 1.0); }'))
+        gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, `precision highp float;
+uniform float uA, uLean, uCurl, uYaw;
+uniform vec2 uRight;
+uniform vec3 uMoon;
+${glsl}
+void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.003, uLean, uCurl, uYaw, uRight, 1.0, uMoon), 0.0, 0.0, 1.0); }`))
+        gl.linkProgram(prog)
+        gl.useProgram(prog)
+        gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer())
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW)
+        gl.enableVertexAttribArray(0)
+        gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0)
+        const u = (n) => gl.getUniformLocation(prog, n)
+        gl.uniform3fv(u('uMoon'), moon)
+        const px = new Uint8Array(4)
+        return cases.map((c) => {
+          gl.uniform1f(u('uA'), c.a)
+          gl.uniform1f(u('uLean'), c.lean)
+          gl.uniform1f(u('uCurl'), c.curl)
+          gl.uniform1f(u('uYaw'), c.yaw)
+          gl.uniform2fv(u('uRight'), c.right)
+          gl.drawArrays(gl.TRIANGLES, 0, 3)
+          gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px)
+          return px[0] / 255
+        })
+      }, { glsl: GRASS_MOON_GLSL, cases: cases14, moon })
+      let worst14 = 0
+      let lit14 = 0
+      cases14.forEach((c, i) => {
+        const err = Math.abs(got14[i] - c.expected)
+        worst14 = Math.max(worst14, err)
+        if (c.expected > 0.1) lit14++
+        if (err > 1.5 / 255) throw new Error(`Case 14 failed: ${JSON.stringify(c)} read ${got14[i].toFixed(4)}`)
+      })
+      if (lit14 === 0 || lit14 === cases14.length) throw new Error(`Case 14 precondition failed: ${lit14} of ${cases14.length} cases lit`)
+      console.log(`PASS: case 14 - the moon's GLSL: ${cases14.length} cases (${lit14} lit) within ${(worst14 * 255).toFixed(2)}/255 of bladeMoonFacing`)
+    }
+
+    // -------------------------------------------------------------
+    // Case 15: the hand against lit tops (S3b task 1), stop 0, vincent=0, the clock pinned. The hand's lift must read
+    // where the moon lights the tips: within 80 px of the hand, the pixels it brightens by more than 5 L* number at least
+    // 0.85 of the unlit page's, where the grass runs main's program. Measured: lit 1,369 against unlit 1,361 (1.01), and
+    // 891 (0.65) with the lift off in the lit program. The disc's mean L* does not separate them: main's moves by 0.55.
+    // -------------------------------------------------------------
+    if (shouldRun(15)) {
+      const lin = (v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)
+      const lightnessAt = (img, i) => {
+        const Y = 0.2126 * lin(img.rgba[i] / 255) + 0.7152 * lin(img.rgba[i + 1] / 255) + 0.0722 * lin(img.rgba[i + 2] / 255)
+        return Y > 0.008856 ? 116 * Math.cbrt(Y) - 16 : 903.3 * Y
+      }
+      const shot = async () => decodePNG(Buffer.from((await page.send('Page.captureScreenshot', { format: 'png' })).data, 'base64'))
+      const brightened = {}
+      for (const light of ['', '&light=0']) {
+        await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=input&vincent=0${light}` })
+        await page.waitForStreetReady()
+        await page.evaluate(() => {
+          window.__skyTime = 0
+          window.__grassHand(null)
+        })
+        await sleep(300)
+        const [vx15, vy15] = await getVergeClientPoint(page)
+        const before = await shot()
+        await page.evaluate(([x, y]) => window.__grassHand(x, y), [vx15, vy15])
+        let peak15 = 0
+        for (let i = 0; i < 20 && peak15 <= 0.5; i++) {
+          await sleep(20)
+          peak15 = await page.evaluate(() => window.__grassPeak ?? 0)
+        }
+        const after = await shot()
+        await page.evaluate(() => {
+          window.__grassHand(null)
+          delete window.__skyTime
+        })
+        if (peak15 <= 0.5) throw new Error(`Case 15 precondition failed: __grassPeak ${peak15.toFixed(3)} never passed 0.5 (light '${light}')`)
+        let n = 0
+        for (let y = Math.max(0, Math.floor(vy15 - 80)); y <= Math.min(before.height - 1, Math.ceil(vy15 + 80)); y++) {
+          for (let x = Math.max(0, Math.floor(vx15 - 80)); x <= Math.min(before.width - 1, Math.ceil(vx15 + 80)); x++) {
+            const i = (y * before.width + x) * 4
+            if (Math.hypot(x - vx15, y - vy15) <= 80 && lightnessAt(after, i) - lightnessAt(before, i) > 5) n++
+          }
+        }
+        brightened[light ? 'unlit' : 'lit'] = n
+      }
+      if (brightened.unlit < 500) throw new Error(`Case 15 precondition failed: the unlit hand brightened ${brightened.unlit} pixels, under 500`)
+      const ratio15 = brightened.lit / brightened.unlit
+      if (ratio15 < 0.85) throw new Error(`Case 15 failed: the lit hand brightened ${brightened.lit} pixels against the unlit ${brightened.unlit} (${ratio15.toFixed(2)}, under 0.85)`)
+      console.log(`PASS: case 15 - the hand against lit tops: ${brightened.lit} pixels brightened lit, ${brightened.unlit} unlit (${ratio15.toFixed(2)})`)
     }
 
     await page.close()

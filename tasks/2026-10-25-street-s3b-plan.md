@@ -242,8 +242,11 @@ Task 0 re-bases these numbers on the verge mask at pinned time 0, on main.
   - Case 14 of `check-street-grass.mjs`, the moon's GLSL by number: in the page, a fragment shader with
     `GRASS_MOON_GLSL` writes `grassMoonFacing` for the unit test's cases into pixels, at 255 per unit. Each reads back
     within 1/255 of `bladeMoonFacing`.
-  - Case 15, the hand against lit tops: stop 0, `--times 0`, `vincent=0`, lit. With the hand held still on the verge
-    point, the mean L* within 80 px of it is at least 2 above the same capture without the hand.
+  - Case 15, the hand against lit tops: stop 0, the clock pinned, `vincent=0`. With the hand held still on the verge
+    point, the pixels within 80 px that it brightens by more than 5 L* number at least 0.85 of the unlit page's
+    (`light=0`, main's program). Revised in the build: the first bound, the disc's mean L* up by 2, was set without a
+    measurement, and main's own grass moves it by 0.55. Measured: lit 1,369 against unlit 1,361, and 891 (0.65) with the
+    lift off in the lit program.
 - [ ] **Step 2:** Run them: FAIL. Implement. `npm run test:sky` and `npx tsc -b`: PASS.
 - [ ] **Step 3:** Captures at stops 0 and 2, both viewports, `--times 0`. With `light=0`, each is byte-identical to Task
   0's Step 3 unlit capture. With `light` on, at least 1% of the lit ID view's grass pixels differ from Task 0's look,

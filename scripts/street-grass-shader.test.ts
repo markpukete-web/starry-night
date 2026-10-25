@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { DataTexture, RGFormat, ShaderLib, type WebGLProgramParametersWithUniforms } from 'three'
-import { buildGrassMaterial } from '../src/scene/grassShader.ts'
+import { buildGrassMaterial, GRASS_BLADE_ARGS } from '../src/scene/grassShader.ts'
+import { STREET_MOON } from '../src/scene/streetLight.ts'
 
 test('the grass fogs at the blade\'s own depth', () => {
   const texture = new DataTexture(new Uint8Array(2), 1, 1, RGFormat)
   const rect: [number, number, number, number] = [0, 0, 1, 1]
-  const mat = buildGrassMaterial(texture, rect, false)
+  const mat = buildGrassMaterial(texture, rect, false, true)
 
   const shader: WebGLProgramParametersWithUniforms = {
     vertexShader: ShaderLib.basic.vertexShader,
@@ -42,4 +43,32 @@ test('the grass fogs at the blade\'s own depth', () => {
       `expected vFogDistance = (index ${fogIdx}) to come after transformed assignment (index ${m.index!}): ${m[0]}`,
     )
   }
+})
+
+test('the unlit grass compiles to main\'s program, and the moon gets a cache key of its own (S3b)', async () => {
+  const { createHash } = await import('node:crypto')
+  const texture = new DataTexture(new Uint8Array(2), 1, 1, RGFormat)
+  const rect: [number, number, number, number] = [0, 0, 1, 1]
+  const compiled = (ids: boolean, lit: boolean) => {
+    const mat = buildGrassMaterial(texture, rect, ids, lit)
+    const shader: WebGLProgramParametersWithUniforms = { vertexShader: ShaderLib.basic.vertexShader, fragmentShader: ShaderLib.basic.fragmentShader, uniforms: {} }
+    mat.onBeforeCompile(shader, {} as never)
+    return { hash: createHash('sha256').update(`${shader.vertexShader}\n//--\n${shader.fragmentShader}`).digest('hex').slice(0, 16), key: mat.customProgramCacheKey() }
+  }
+  // main 5817279's program, hashed before S3b changed the shader (scratch/hash-grass.ts)
+  assert.equal(compiled(false, false).hash, '4b0b48f47e712dbb')
+  assert.equal(compiled(true, false).hash, '87c32b59ccf433d6')
+  const lit = compiled(false, true)
+  assert.notEqual(lit.hash, '4b0b48f47e712dbb')
+  assert.notEqual(lit.key, compiled(false, false).key)
+})
+
+test("the moon reads the blade's own arguments: both calls take one argument text (Codex R7)", () => {
+  const mat = buildGrassMaterial(new DataTexture(new Uint8Array(2), 1, 1, RGFormat), [0, 0, 1, 1], false, true)
+  const shader: WebGLProgramParametersWithUniforms = { vertexShader: ShaderLib.basic.vertexShader, fragmentShader: ShaderLib.basic.fragmentShader, uniforms: {} }
+  mat.onBeforeCompile(shader, {} as never)
+  const calls = (name: string) => Array.from(shader.vertexShader.matchAll(new RegExp(`\\b${name}\\(([^;]*?)\\)( \\*|;)`, 'g'))).map((m) => m[1])
+  assert.deepEqual(calls('grassBladeVertex'), [GRASS_BLADE_ARGS])
+  assert.deepEqual(calls('grassMoonFacing'), [`${GRASS_BLADE_ARGS}, uMoon`])
+  assert.equal(shader.uniforms.uMoon?.value, STREET_MOON)
 })

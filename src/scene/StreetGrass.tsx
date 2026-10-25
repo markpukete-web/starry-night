@@ -71,8 +71,8 @@ export default function StreetGrass({
 
   // 3. Grass Material
   const grassMat = useMemo(() => {
-    return buildGrassMaterial(texture, rect, flags.ids === 1)
-  }, [texture, rect, flags.ids])
+    return buildGrassMaterial(texture, rect, flags.ids === 1, flags.light && flags.ids === 0)
+  }, [texture, rect, flags.ids, flags.light])
 
   useEffect(() => {
     return () => {
@@ -112,6 +112,7 @@ export default function StreetGrass({
       const aLean = new Float32Array(n)
       const aCurl = new Float32Array(n)
       const aBladeColour = new Float32Array(n * 3)
+      const aTopColour = new Float32Array(n * 3)
       const aSeed = new Float32Array(n)
       const aClass = new Float32Array(n).fill(9)
 
@@ -127,6 +128,7 @@ export default function StreetGrass({
         aBladeColour[i * 3] = b.colour[0]
         aBladeColour[i * 3 + 1] = b.colour[1]
         aBladeColour[i * 3 + 2] = b.colour[2]
+        aTopColour.set(b.topColour, i * 3)
         aSeed[i] = b.seed
       }
 
@@ -137,6 +139,7 @@ export default function StreetGrass({
       geom.setAttribute('aLean', new InstancedBufferAttribute(aLean, 1))
       geom.setAttribute('aCurl', new InstancedBufferAttribute(aCurl, 1))
       geom.setAttribute('aBladeColour', new InstancedBufferAttribute(aBladeColour, 3))
+      geom.setAttribute('aTopColour', new InstancedBufferAttribute(aTopColour, 3))
       geom.setAttribute('aSeed', new InstancedBufferAttribute(aSeed, 1))
       geom.setAttribute('aClass', new InstancedBufferAttribute(aClass, 1))
 
