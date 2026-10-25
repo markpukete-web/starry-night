@@ -75,7 +75,7 @@ A progress bar or a percentage. The 15 s timeout on a slow connection (a first v
 
 The read covered the plan and the code at `71b8c20`. Six findings, five fixed in one commit, one declined.
 
-- **P1, fixed.** The painting was fetched at low priority. The slow-4G frames at `28269b9` confirm it: the painting
+- **P1, fixed.** The painting was fetched at low priority. The slow-4G frames at `28269b9` show it: the painting
   finished at 20.8 s, the bundle at 6.3 s, so the curtain stood without its painting for 20 s. `#boot`'s image is now
   `fetchpriority="high"`, and the painting's preload is gone, since the image in the HTML fetches it on every visit.
   The ready time should not move: the opening waits for the painting anyway, so the bytes before it are the same.
