@@ -3221,3 +3221,10 @@ must be byte-identical before the stimulus's difference means anything.
   and seven began from a claim the code contradicted: the street's windows do not glimmer, R5 is a fourth cottage, the
   plaster's measured width differs, every street layer is one mesh, so the triangle count is global. Each was a value
   written from memory of the diorama or the plan, not from the file (2026-10-25, the Consultant's builder check).
+- **A test file outside `test:sky`'s list never runs in the gate.** `package.json:22` names each test file. A plan
+  that adds one must add it there in the same task, or the gate passes with the new test red (Codex F3 on K1's plan).
+- **An exclusion inside a seeded generator moves everything after it.** `grassChunks` draws every blade from one
+  `mulberry32(1)` stream. Rejecting a candidate earlier changes every later draw, so a local clearing moved blades
+  into the frogs' gaps far from it. A local change to seeded output filters after the generation (Codex F1, the
+  worker agreeing).
+
