@@ -3214,3 +3214,10 @@ must be byte-identical before the stimulus's difference means anything.
   samples `place` from a ref on `requestAnimationFrame`. It caught one `leaving` sample before the driver's first
   leaving frame had written the lens. Filter such samples by what the visitor sees (the layer at 1), not by position
   in the list, and prove the filter with a mutation that must still fail.
+
+## 2026-10-25 (late) — the village craft design
+
+- **Read the code a design names before giving it values.** The craft design's builder check asked eleven questions,
+  and seven began from a claim the code contradicted: the street's windows do not glimmer, R5 is a fourth cottage, the
+  plaster's measured width differs, every street layer is one mesh, so the triangle count is global. Each was a value
+  written from memory of the diorama or the plan, not from the file (2026-10-25, the Consultant's builder check).
