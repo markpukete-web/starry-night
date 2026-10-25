@@ -5,13 +5,13 @@
 **The frogs** are done on `feat/street-frogs` (stacked on the portal), local, no PR. Five, one by each stop, side-on
 to its camera. Gate runs all pass (60 fps, every browser triangle read under the ceiling, 18 grass cases). Codex's
 branch review: FIX twice, both on case 18's reach, then MERGEABLE. The record: `tasks/2026-10-25-street-frogs.md`.
-**For Mark's look:** live at `http://192.168.0.148:5199/?street=1`, the sheets in
-`scratch/street-frogs-2026-10-25/t4/clips/`. His calls: do they read as frogs, and is stop 1's too hidden on the phone.
+**Mark's gate: "frog passed."** The PR next, stacked on the portal's.
 
 **The phone's touch cost (open, found 2026-10-25).** Mark's first real-device reading, iPhone 17 Pro Max, the
 painting page: 60 fps still, 18–50 under a moving finger, near 60 with `touch=0`. The Mac does not reproduce it (4×
-CPU throttle, vsync off: no touch cost measurable), so the phone is the loop. Next: his drags on `?perf=1&bend=0` (the
-sky's surges only) and `?perf=1&surge=0` (the land's ray cast and bend, the surges at zero strength). Suspects: the
+CPU throttle, vsync off: no touch cost measurable), so the phone is the loop. His drags: `?perf=1&bend=0` (the sky's
+surges only) held 60, `?perf=1&surge=0` (the land's ray cast and bend, the surges at zero strength) read 38–60. So the
+land's bend is the cost, not the sky's surge. Mark first suggested removing the surge on phones. Suspects: the
 land's per-frame ray cast against six meshes (`useTouchInput.ts` `landPoint`), and the sky's 16-slot surge loop per
 vertex (`touchSurge.ts` `touchLift`). The bar is 30 fps on a mid-tier phone, so this blocks the pre-release gate.
 

@@ -88,3 +88,7 @@ MERGEABLE.
 - Do they read as frogs? The sheets and the live street: `http://192.168.0.148:5199/?street=1`.
 - Stop 1's frog sits mostly behind blades. It measures 0.88 seen, but on the phone it is the hardest to find.
 - One look pass is left of four.
+
+## Mark's gate (2026-10-25)
+
+"frog passed." Stop 1's frog stays as it is.
