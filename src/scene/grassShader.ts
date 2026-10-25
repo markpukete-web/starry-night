@@ -55,7 +55,8 @@ float moonFacing = grassMoonFacing(${GRASS_BLADE_ARGS}, uMoon);
 vColor.rgb *= ${L.ambient.toFixed(6)};
 vTopColour = aTopColour;
 vMoon = ${L.top.toFixed(6)} * smoothstep(${L.facing[0].toFixed(6)}, ${L.facing[1].toFixed(6)}, moonFacing) * smoothstep(${L.along[0].toFixed(6)}, ${L.along[1].toFixed(6)}, position.y);
-vMoonSide = sign(aCurl);` : ''
+// a straight blade takes \`grassMoonFacing\`'s side, the edge above it (Codex B4)
+vMoonSide = abs(aCurl) < 1e-6 ? (aLean + aCurl * position.y >= 0.0 ? 1.0 : -1.0) : sign(aCurl);` : ''
   return {
     uniforms: {
       uTrailMap: { value: trailTexture },

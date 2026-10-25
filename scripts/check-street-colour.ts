@@ -45,6 +45,13 @@ const sources = args.includes('--sources')
 const fullPrefixOpt = opt('full-prefix', '')
 const idsPrefixOpt = opt('ids-prefix', '')
 const timeOpt = opt('time', '')
+const timeGiven = args.some((a) => a === '--time' || a.startsWith('--time='))
+// one number for the file and the metadata, written as the capture writes it: `--time 0.0` reads `-t0.png` (Codex B5)
+const time = timeGiven ? Number(timeOpt) : null
+if (timeGiven && (timeOpt.trim() === '' || !Number.isFinite(time))) {
+  console.error(`--time takes a number, got "${timeOpt}"`)
+  process.exit(1)
+}
 
 if (!dirArg) {
   console.error('Usage: check-street-colour.ts <dir> --station S --viewport V [--sources] [--control=cyan]')
@@ -64,7 +71,7 @@ function findFile(basePrefix: string, extensions: string[]): string | null {
 const fullPrefix = fullPrefixOpt || `full-s${station}-${viewport}`
 const idsPrefix = idsPrefixOpt || (sources ? `ids2-s${station}-${viewport}` : `ids-s${station}-${viewport}`)
 
-const pngExts = timeOpt ? [`-t${timeOpt}.png`] : ['-t5.png', '.png']
+const pngExts = time !== null ? [`-t${time}.png`] : ['-t5.png', '.png']
 const fullPngPath = findFile(fullPrefix, pngExts)
 const fullJsonPath = findFile(fullPrefix, ['-frames.json', '.json'])
 const idsPngPath = findFile(idsPrefix, pngExts)
@@ -110,7 +117,7 @@ if (JSON.stringify(fullMeta.times) !== JSON.stringify(idsMeta.times)) {
   process.exit(1)
 }
 
-if (timeOpt && JSON.stringify(fullMeta.times) !== JSON.stringify([Number(timeOpt)])) {
+if (time !== null && JSON.stringify(fullMeta.times) !== JSON.stringify([time])) {
   console.error(`FAIL: --time ${timeOpt}, but the captures' times are ${JSON.stringify(fullMeta.times)}`)
   process.exit(1)
 }

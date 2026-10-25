@@ -40,7 +40,8 @@ export function lightness(r: number, g: number, b: number): number {
 /** Grow (`by` > 0) or shrink (`by` < 0) a mask by a square of `|by|` px. */
 function morph(mask: Uint8Array, w: number, h: number, by: number): Uint8Array {
   const r = Math.abs(by)
-  const keep = by > 0 ? 0 : 1
+  // growing spreads the mask's ones, shrinking its zeros (Codex B1: the two were swapped)
+  const keep = by > 0 ? 1 : 0
   const pass = (src: Uint8Array, dx: number, dy: number) => {
     const out = new Uint8Array(src)
     for (let y = 0; y < h; y++) {
@@ -59,9 +60,10 @@ function morph(mask: Uint8Array, w: number, h: number, by: number): Uint8Array {
   return pass(pass(mask, 1, 0), 0, 1)
 }
 
-/** The verge: grass pixels of the ID view and the ground within 12 px of them. */
-export function vergeMask(ids: DecodedPNG): Uint8Array {
+/** The verge: grass pixels of the ID view and the ground within 12 px of them. The ID view must be `size`'s shape. */
+export function vergeMask(ids: DecodedPNG, size: { width: number; height: number }): Uint8Array {
   const { width: w, height: h, rgba } = ids
+  if (w !== size.width || h !== size.height) throw new Error(`grass-look: the ID view is ${w} × ${h}, the size ${size.width} × ${size.height}`)
   const grass = new Uint8Array(w * h)
   const ground = new Uint8Array(w * h)
   for (let i = 0; i < w * h; i++) {
@@ -105,6 +107,7 @@ function blur(src: Float64Array, w: number, h: number, sigma: number): Float64Ar
 
 export function measure(img: DecodedPNG, mask: Uint8Array): Look {
   const { width: w, height: h, rgba } = img
+  if (mask.length !== w * h) throw new Error(`grass-look: the mask has ${mask.length} pixels, the image's size ${w} × ${h}`)
   const grey = new Float64Array(w * h)
   const L: [number, number][] = []
   for (let i = 0; i < w * h; i++) {
@@ -198,7 +201,7 @@ if (import.meta.main) {
     process.exit(1)
   }
   const colour = decodePNG(readFileSync(colourPath))
-  const mask = second === '--rect' ? rectMask(colour.width, colour.height, rect.split(',').map(Number)) : vergeMask(decodePNG(readFileSync(second)))
+  const mask = second === '--rect' ? rectMask(colour.width, colour.height, rect.split(',').map(Number)) : vergeMask(decodePNG(readFileSync(second)), colour)
   const look = measure(colour, mask)
   console.log(formatLook(colourPath, look))
   console.log(JSON.stringify(look))

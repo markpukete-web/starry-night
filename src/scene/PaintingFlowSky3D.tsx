@@ -1246,6 +1246,10 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
     const w = window as Window & { __skyReady?: boolean }
     w.__skyReady = ready
   }, [readyRef, ribbons.geometry, awaitingMoving])
+  // the seam is the mounted sky's: a sky that unmounts is not ready (Codex B6)
+  useLayoutEffect(() => () => {
+    ;(window as Window & { __skyReady?: boolean }).__skyReady = false
+  }, [])
 
   return (
     <group ref={skyRoot}>
