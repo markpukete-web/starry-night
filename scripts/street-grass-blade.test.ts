@@ -64,15 +64,16 @@ test('every colour is a texel of a source, never a near-white, the canvas or a b
   }
 })
 
-test('a clump fans out: the outer blades lean further and are paler than the inner', () => {
+test('a clump fans out from its lean: the outer blades lean further from it and are paler than the inner', () => {
   const p = painting()
   const rand = mulberry32(11)
   let inner = 0, outer = 0, innerL = 0, outerL = 0
   const lum = (c: readonly number[]) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+  const centre = clumpSide(0, 0) * GRASS_BLADE.leanToSide
   for (let k = 0; k < 300; k++) {
     for (const b of clump(rand, p, 0, 0, 0.024)) {
-      if (Math.abs(b.lean) < 0.25 * GRASS_BLADE.fan) { inner++; innerL += lum(b.colour) }
-      else if (Math.abs(b.lean) > 0.75 * GRASS_BLADE.fan) { outer++; outerL += lum(b.colour) }
+      if (Math.abs(b.lean - centre) < 0.25 * GRASS_BLADE.fan) { inner++; innerL += lum(b.colour) }
+      else if (Math.abs(b.lean - centre) > 0.75 * GRASS_BLADE.fan) { outer++; outerL += lum(b.colour) }
     }
   }
   assert.ok(inner > 0 && outer > 0)

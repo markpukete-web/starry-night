@@ -38,7 +38,9 @@ attribute vec3 aTopColour;
 uniform vec3 uMoon;
 ${GRASS_MOON_GLSL}` : ''
   const moonColour = lit ? `
-vColor.rgb = mix(vColor.rgb * ${L.ambient.toFixed(6)}, aTopColour, ${L.top.toFixed(6)} * grassMoonFacing(${GRASS_BLADE_ARGS}, uMoon) * smoothstep(${L.from.toFixed(6)}, 1.0, position.y));` : ''
+// the outer edge has across of the curl's opposite sign (\`bladeMoonFacing\`'s derivation)
+float moonEdge = mix(1.0, 0.5 - 0.5 * sign(aCurl) * sign(position.x), ${L.edge.toFixed(6)});
+vColor.rgb = mix(vColor.rgb * ${L.ambient.toFixed(6)}, aTopColour, ${L.top.toFixed(6)} * grassMoonFacing(${GRASS_BLADE_ARGS}, uMoon) * moonEdge * smoothstep(${L.from.toFixed(6)}, 1.0, position.y));` : ''
   return {
     uniforms: {
       uTrailMap: { value: trailTexture },

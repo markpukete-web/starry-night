@@ -3093,3 +3093,7 @@ must be byte-identical before the stimulus's difference means anything.
 - **A chunk that is partly in view draws all its blades.** At the walk's worst point 46% of the drawn blades were off
   screen. Halving the chunks' length cut the triangles by 15% at the cost of about twice the draw calls.
 
+- **A blade that leans one way and curls the other stands up.** After Task 2 about half the blades read upright: the
+  fan's lean was signed at random and the curl followed the clump's side. Leaning the whole clump toward its side
+  (`leanToSide` 0.35, `fan` 0.5 → 0.3, `turn` 0.5 → 0.3, `GRASS_LIGHT.top` 0.6 → 0.75, `edge` 1) laid the clumps
+  over in low arcs (S3b look pass 1).

@@ -38,14 +38,16 @@ export const GRASS_BLADE = {
   tipMax: 1.8,
   /** blades a clump, the outermost blade's lean from the vertical (radians), and the roots' spread */
   clump: [5, 9],
-  fan: 0.5,
+  fan: 0.3,
+  /** the whole clump leans this far toward its side, so its strokes lie over in low arcs (S3b look pass 1) */
+  leanToSide: 0.35,
   /** a clump's blades curl to its side (`clumpSide`), but this share of them the other way */
   against: 0.15,
   /** the side field's frequency per world unit: neighbours 0.03 apart mostly agree */
   sideScale: 5,
   spread: 0.012,
   /** how far a blade's plane turns off facing the camera, either way (radians) */
-  turn: 0.5,
+  turn: 0.3,
   /** the colour's multiplier at the root and at the tip */
   shade: [0.6, 1.05],
   /** the shader's largest push at the tip under the hand, its wind, and the distance from which it widens a blade */
@@ -58,9 +60,10 @@ export const GRASS_BLADE = {
  * The street's moon on the blade (S3b task 1). The painting's bush strokes are lit along their outer arch: a pale
  * grey-green edge on a dark body. A blade takes its top colour where its arch faces `STREET_MOON`, from `from` along it
  * to the tip, at most `top` of the way. `ambient` scales the pigment. The top colour is one of the lightest `topShare` of
- * the bushes' texels that `grassTopUsable` keeps.
+ * the bushes' texels that `grassTopUsable` keeps. `edge` 1 lights the arch's outer edge and fades across to none on its
+ * inner edge, 0 lights the blade's whole width (S3b look pass 1: the whole width read as a grey veil).
  */
-export const GRASS_LIGHT = { ambient: 1.0, top: 0.6, from: 0.4, topShare: 0.05 } as const
+export const GRASS_LIGHT = { ambient: 1.0, top: 0.75, from: 0.4, topShare: 0.05, edge: 1 } as const
 
 export type BladeSpec = {
   x: number
@@ -267,8 +270,8 @@ export function clumpSide(x: number, z: number): -1 | 1 {
 }
 
 /**
- * A clump at (x, z): blades fanned from upright at its centre to `fan` at its edge, all but `against` of them arching
- * to the clump's side, the outer ones bent furthest and pale, the inner dark. `height` is the clump's (Task 2's tuft rule); each blade takes 0.75–1.25
+ * A clump at (x, z): leaning `leanToSide` toward its side, its blades fanned `fan` either way from that, all but
+ * `against` of them arching to the side, the outer ones bent furthest and pale, the inner dark. `height` is the clump's (Task 2's tuft rule); each blade takes 0.75–1.25
  * of it.
  */
 export function clump(rand: () => number, painting: ImageData2D, x: number, z: number, height: number): BladeSpec[] {
@@ -283,7 +286,7 @@ export function clump(rand: () => number, painting: ImageData2D, x: number, z: n
     const seed = rand() * 1000
     const paint = mulberry32(Math.floor(seed * 1e6))
     const f = Math.max(-1, Math.min(1, (i / (n - 1)) * 2 - 1 + (rand() - 0.5) / n))
-    const lean = f * T.fan
+    const lean = side * T.leanToSide + f * T.fan
     const dir = rand() < T.against ? -side : side
     const bend = (T.curve[0] + rand() * (T.curve[1] - T.curve[0])) * (0.7 + 0.3 * Math.abs(f))
     const curl = dir * Math.min(dir === Math.sign(lean) ? Math.min(bend, T.tipMax - Math.abs(lean)) : bend, T.jointMax * T.segments)
