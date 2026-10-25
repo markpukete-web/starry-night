@@ -1,5 +1,29 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-10-25 (afternoon): Mark read S3b live; his answers and three ideas
+
+S3b is gated by the Lead and committed on `feat/street-s3b` (`cb34463`), local, no PR. Mark on the live street: the far
+arch tops at stop 0 are fine, the stripes are fine, the grass's direction is right. The bare base between the clumps
+"bother me a bit". Proposed to Mark, waiting for his word (it passes the four-pass cap): one more S3b pass that paints the
+base in the bushes' darkest colours, broken up, and gives the hand a press (the closed-hand cursor while the button is
+down, a hover at 0.6 and a press at 1, as `landTouch.ts` does). Then the PR.
+
+**Noted, not queued (scope rule), Mark's ideas, 2026-10-25:**
+- The hand with a touching motion on a click. The small version is in the proposed pass above. A drawn hand that pats
+  the grass is the larger version, for later if the small one reads as plain.
+- Fences "so that it feels more real". They go in the village's craft slice (below, 2026-10-24). The Lead's read: low
+  dry-stone walls along the lane and a wooden rail round a cottage garden, not white pickets.
+- The church at stop 4 "looks pretty flat" (his capture beside the painting's church and two reworks by other artists,
+  ideas only). The cause: `streetLayout.ts:218` turns the diorama's church square to the lane, so stop 4 sees one wall.
+  The Lead's proposal, most effect first: turn it to show two walls and the roof's slope (stop 4's framing changes), build
+  it from the nave, a porch gable and a tower with a belfry, give the eaves, the door and a step depth, light the moonlit
+  side near white, shorter strokes per wall. Its own slice, next after S3b. The walk has about 6,700 triangles spare at
+  its worst point, so the church and the walls need a budget from elsewhere.
+- Frogs or other animals in the village. The Lead's read: frogs fit poorly (no water, too small and dark to read).
+  Moths at the lit windows fit best: Vincent painted a giant peacock moth at Saint-Rémy in May 1889. Then a cat on a wall
+  or an owl on a ridge. One or two, quiet. Borrowing a motif from his other work is near the "other paintings" line, so
+  it is Mark's call. Not a fix for the bare base.
+
 ## Pickup — 2026-10-24 (afternoon, later): Mark read the grass test live; slice 2's plan next
 
 Mark, on the live test: "It actually feels good, but there's room for improvement for sure. This is a throwaway test
