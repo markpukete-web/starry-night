@@ -28,7 +28,22 @@ REVISE, nine findings, R1–R8 at P2 and R9 at P3, no P0 or P1. All nine are acc
 - R9: "scale-safe" is gone. The median is the one aim. The tails and the coherence are diagnostics.
 
 Task 0 also found that `__streetReady` never waited for the sky. A loaded machine captured the street with no sky
-(`t0/first-try/`). Task 0 adds a `__skyReady` seam, and every capture waits for both.
+(`t0/first-try/`). Task 0 adds a `__skyReady` seam. Every capture that draws the sky waits for both. The ID view draws
+no sky and waits for the street alone.
+
+**Revision 3 (2026-10-25, midday).** Codex confirmed revision 2 (`scratch/street-s3b-2026-10-25/plan-confirm-codex.md`):
+REVISE. R1–R6 and R8–R9 are closed. Three P2s remain, and all three are folded here:
+
+- C1: the ID view never mounts the sky, so it cannot wait for `__skyReady`. It waits for `__streetReady` alone (Task 0
+  found this first: eight ID captures timed out).
+- C2: `check-street-colour.ts` looked only for `-t5.png` and `.png`, so it missed a time-0 pair or could match a stale
+  time-5 image. It gains `--time T`, which reads `-tT.png` only and requires both captures' times to be `[T]`.
+- R7: case 14 tested the GLSL function, not its call in the material. A call with `yaw` 0 or a fixed `right` would have
+  passed. The fix makes that call impossible to write: `grassMoonFacing` takes `grassBladeVertex`'s own arguments, and
+  the lit shader passes it the same argument text, one constant in `grassShader.ts`. A shader test pins the call. Codex
+  also asked for an anchor A comparison of the lighting. It is not added: the facing's only position-dependent input is
+  `right`, the vector that already places the vertex, and case 11 checks anchor A's geometry. A translation does not
+  change a direction.
 
 **Goal:** The verge reads as the painting's bushes: arching strokes that curve together, dark between them and lit on
 top by the street's moon.
@@ -66,8 +81,9 @@ of its own on `feat/street-s3b`, served at `http://127.0.0.1:5196/`.
   motion.
 - The bar: the grass's colours come from the painting, and its blades are strokes in the painting's style.
 - Retune cap: 4 look passes for this slice.
-- Captures use the scripts' own viewports (desktop 1600 × 900, mobile 390 × 844) and wait for
-  `window.__streetReady && window.__skyReady`.
+- Captures use the scripts' own viewports (desktop 1600 × 900, mobile 390 × 844). They wait for
+  `window.__streetReady && window.__skyReady`, except the ID view, which draws no sky
+  (`DioramaExperience.tsx:327`) and waits for `window.__streetReady`.
 
 ## The probes
 
@@ -164,17 +180,18 @@ Task 0 re-bases these numbers on the verge mask at pinned time 0, on main.
 ### Task 0: Baselines and the look's numbers (Lead)
 
 **Files:** Create `scripts/grass-look.ts`, `scripts/grass-look.test.ts`. Change `src/scene/PaintingFlowSky3D.tsx` (the
-`__skyReady` seam beside the ready ref), `package.json` (`test:sky`). Output to `scratch/street-s3b-2026-10-25/t0/`.
+`__skyReady` seam beside the ready ref), `scripts/check-street-colour.ts` (`--time T`, Codex C2), `package.json`
+(`test:sky`). Output to `scratch/street-s3b-2026-10-25/t0/`.
 
-- [ ] **Step 1:** The seam: the sky's ready layout effect also writes `window.__skyReady`. Every capture waits for
-  `window.__streetReady && window.__skyReady`.
+- [ ] **Step 1:** The seam: the sky's ready layout effect also writes `window.__skyReady`. Every capture that draws
+  the sky waits for `window.__streetReady && window.__skyReady`.
 - [ ] **Step 2:** Capture the seven poses of the S3 plan's Task 0 (stations 0–4, `walkT` 0.33 and 0.55), both
   viewports, `--times 5`, with `&arrival=0&walkMode=input`, once with `grass=0` and once with the grass on. Use
   `scripts/capture-sky-frames.mjs`. Capture each twice and `cmp` the pairs. Compare the `grass=0` set with slice 3's
   `t6/final/grass0b/`.
 - [ ] **Step 3:** At stops 0 and 2, both viewports, at `--times 0`: the look (`light` on), the unlit view (`light=0`),
   the ID view (`light=0&ids=1`) and the lit ID view (`ids=1`). At time 0 every page's wind is at 0, so one mask fits all
-  four (Codex R4). Run `scripts/check-street-colour.ts` on each unlit and ID pair. Capture the flat strip
+  four (Codex R4). Run `scripts/check-street-colour.ts --time 0` on each unlit and ID pair. Capture the flat strip
   (`?street=1&flat=1&grass=1`) as a geometry check: it draws the blades with the ground's shader.
 - [ ] **Step 4:** `scripts/grass-look.ts <colour.png> <ids.png | --rect x0,y0,x1,y1>`. Grey is Rec. 601 luma. The verge
   mask is every grass pixel of the ID view (0, 188, 255) and every ground pixel (255, 255, 0) within 12 px of one. It
@@ -201,20 +218,27 @@ Task 0 re-bases these numbers on the verge mask at pinned time 0, on main.
 - `grassTopUsable(r: number, g: number, b: number): boolean`.
 - `bladeMoonFacing(spec: BladeSpec, a: number, right: readonly [number, number], moon: readonly [number, number,
   number]): number` in `grassBlade.ts`.
-- `GRASS_MOON_GLSL`, the same function in GLSL: `float grassMoonFacing(float a, float lean, float curl, float yaw, vec2
-  right, vec3 moon)`.
+- `GRASS_MOON_GLSL`, the same function in GLSL: `float grassMoonFacing(vec3 root, float a, float across, float
+  height, float halfWidth, float lean, float curl, float yaw, vec2 right, float widen, vec3 moon)`. Its first ten
+  arguments are `grassBladeVertex`'s. The lit shader passes both functions one argument string (Codex R7).
 - The attribute `aTopColour` and the uniform `uMoon` (`STREET_MOON`).
 
 - [ ] **Step 1: The failing tests:**
   - `the moon lights the outer arch` (street-grass-blade): for `curl` ±1.5, `lean` ±0.3, `yaw` 0 and ±0.4, three
-    `right` vectors, and `a` 0.25, 0.5 and 1, `bladeMoonFacing` equals `max(0, n · STREET_MOON)` within 1e-9, where `n`
+    `right` vectors, and `a` 0.25, 0.5 and 1, `bladeMoonFacing` equals `max(0, n · STREET_MOON)` within 1e-6, where `n`
     is the unit normal of `bladeVertex`'s centreline by finite differences, on the side away from its second
-    difference. For `curl` 0 and 1e-8 it is the upper side, and the two agree within 1e-6.
+    difference. A straight blade (`curl` 0) takes its upper side. Near `curl` 0 the sign convention can flip when
+    `lean` and `curl` differ in sign, so `every blade curls by at least 0.5 rad` (street-grass-blade) pins that `clump`
+    never makes such a blade.
   - `a top colour is a lit bush texel` (street-grass-blade): every `topColour` from `clump` is a texel of the bushes
     source, `grassTopUsable` accepts it, and its luma is in the eligible pool's lightest `topShare`. The test's painting
     gains one pale grey swatch that `grassTopUsable` keeps and `grassTexelUsable` refuses. A painting with no eligible
     texel in the bushes throws.
-  - `the unlit program is main's` (street-grass-shader): `grassInjection` under `lit` false hashes to main's text.
+  - `the unlit program is main's` (street-grass-shader): `buildGrassMaterial` under `lit` false compiles to main's
+    text, hashes `4b0b48f47e712dbb` (colour) and `87c32b59ccf433d6` (ID). The lit program differs and has its own
+    cache key.
+  - `the moon reads the blade's own arguments` (street-grass-shader): the lit vertex shader calls `grassMoonFacing(`
+    with the text of `grassBladeVertex(`'s arguments and `uMoon`.
   - Case 14 of `check-street-grass.mjs`, the moon's GLSL by number: in the page, a fragment shader with
     `GRASS_MOON_GLSL` writes `grassMoonFacing` for the unit test's cases into pixels, at 255 per unit. Each reads back
     within 1/255 of `bladeMoonFacing`.

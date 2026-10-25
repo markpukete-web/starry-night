@@ -11,7 +11,10 @@
  *   - fog: PALETTE.skyHorizon
  *
  * Usage:
- *   node scripts/check-street-colour.ts <dir> --station S --viewport V [--control=cyan]
+ *   node scripts/check-street-colour.ts <dir> --station S --viewport V [--time T] [--control=cyan]
+ *
+ * `--time T` reads `<prefix>-tT.png` only and requires both captures' times to be [T] (S3b: the time-0 pairs, which the
+ * default `-t5.png`, `.png` lookup missed or matched to a stale time-5 image).
  */
 
 import { existsSync, readFileSync } from 'node:fs'
@@ -41,6 +44,7 @@ const control = opt('control', '')
 const sources = args.includes('--sources')
 const fullPrefixOpt = opt('full-prefix', '')
 const idsPrefixOpt = opt('ids-prefix', '')
+const timeOpt = opt('time', '')
 
 if (!dirArg) {
   console.error('Usage: check-street-colour.ts <dir> --station S --viewport V [--sources] [--control=cyan]')
@@ -60,16 +64,17 @@ function findFile(basePrefix: string, extensions: string[]): string | null {
 const fullPrefix = fullPrefixOpt || `full-s${station}-${viewport}`
 const idsPrefix = idsPrefixOpt || (sources ? `ids2-s${station}-${viewport}` : `ids-s${station}-${viewport}`)
 
-const fullPngPath = findFile(fullPrefix, ['-t5.png', '.png'])
+const pngExts = timeOpt ? [`-t${timeOpt}.png`] : ['-t5.png', '.png']
+const fullPngPath = findFile(fullPrefix, pngExts)
 const fullJsonPath = findFile(fullPrefix, ['-frames.json', '.json'])
-const idsPngPath = findFile(idsPrefix, ['-t5.png', '.png'])
+const idsPngPath = findFile(idsPrefix, pngExts)
 const idsJsonPath = findFile(idsPrefix, ['-frames.json', '.json'])
 
 if (!fullPngPath || !fullJsonPath || !idsPngPath || !idsJsonPath) {
   console.error(`Missing input files in ${dir}:`)
-  if (!fullPngPath) console.error(`  full PNG: ${fullPrefix}{ -t5.png, .png }`)
+  if (!fullPngPath) console.error(`  full PNG: ${fullPrefix}{ ${pngExts.join(', ')} }`)
   if (!fullJsonPath) console.error(`  full JSON: ${fullPrefix}{ -frames.json, .json }`)
-  if (!idsPngPath) console.error(`  ids PNG: ${idsPrefix}{ -t5.png, .png }`)
+  if (!idsPngPath) console.error(`  ids PNG: ${idsPrefix}{ ${pngExts.join(', ')} }`)
   if (!idsJsonPath) console.error(`  ids JSON: ${idsPrefix}{ -frames.json, .json }`)
   process.exit(1)
 }
@@ -102,6 +107,11 @@ if (
 
 if (JSON.stringify(fullMeta.times) !== JSON.stringify(idsMeta.times)) {
   console.error(`FAIL: Times differ: full ${JSON.stringify(fullMeta.times)} vs ids ${JSON.stringify(idsMeta.times)}`)
+  process.exit(1)
+}
+
+if (timeOpt && JSON.stringify(fullMeta.times) !== JSON.stringify([Number(timeOpt)])) {
+  console.error(`FAIL: --time ${timeOpt}, but the captures' times are ${JSON.stringify(fullMeta.times)}`)
   process.exit(1)
 }
 
