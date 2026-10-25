@@ -7,7 +7,7 @@ import { islandHeightAt } from './islandShape.ts'
 import { buildLandTrees, type BakedMass, type LandTrees } from './landDomes.ts'
 import { buildStreetTrees } from './streetTrees.ts'
 import { PALETTE } from './palette.ts'
-import { leanOf, lightOf, shadeNew } from './streetLight.ts'
+import { CHURCH_LIGHT, leanOf, lightOf, shadeNew, STREET_LIGHT, type StreetLight } from './streetLight.ts'
 import { DETAIL, STREET, STREET_CHURCH, STREET_HOUSES, STREET_SQUARE, STREET_TREES, detailOf, laneDistance, pathPoint, pathTangent, streetGroundAt } from './streetLayout.ts'
 import { outlineFace, PATH_LIFT, sourceUnderpaint, streetMassConfig, traceFace, type FaceStrokes, type StreetFace, type StreetSourceName } from './streetStrokes.ts'
 import type { ImageData2D } from './useImageData.ts'
@@ -38,7 +38,8 @@ export type StreetBuild = {
   counts: StreetCounts
   /** the gates' read of the build: ribbons per face, inked edges per volume, the windows, the church's measures */
   report: {
-    faces: { owner: string; name: string; ribbons: number; density: number }[]
+    /** each face's polygon and outward normal, for the church's face probe (`scripts/street-church.test.ts`) */
+    faces: { owner: string; name: string; ribbons: number; density: number; corners: Vector3[]; normal: Vector3; light: number; refHeight: number }[]
     outlines: { owner: string; edges: number }[]
     windows: { owner: string; lit: boolean }[]
     church: { belfryWidth: number; belfryHeight: number; spireHeight: number }
@@ -143,6 +144,8 @@ type Context = {
   ribbons: number
   /** false under the dev flag `light=0` */
   lit: boolean
+  /** the walls' light: the street's, the church's while `church()` clads its own */
+  wallLight: StreetLight
 }
 
 /** Clad one face: its underpaint, its strokes, its report line. */
@@ -158,7 +161,7 @@ function clad(ctx: Context, owner: string, name: string, face: StreetFace, densi
   const [r, g, b] = sourceUnderpaint(ctx.painting, face.source, share)
   const cls = face.kind === 'wall' ? 0 : face.kind === 'roof' ? 1 : face.kind === 'ground' ? 3 : 4
   const src = face.kind === 'wall' || face.kind === 'roof' ? (SOURCE_CLASSES[face.source] ?? 255) : 255
-  const light = lightOf(face, ctx.lit)
+  const light = lightOf(face, ctx.lit, face.kind === 'wall' ? ctx.wallLight : STREET_LIGHT)
   const underFrom = ctx.underpaint.positions.length
   const base = new Color().setRGB(r, g, b, SRGBColorSpace)
   if (face.kind === 'path') base.lerp(new Color(PATH_LIFT.toward), PATH_LIFT.share)
@@ -171,7 +174,7 @@ function clad(ctx: Context, owner: string, name: string, face: StreetFace, densi
   shadeNew(traced.arrays, 0, face, ctx.lit)
   append(face.kind === 'ground' || face.kind === 'path' ? ctx.ground : ctx.strokes, traced, cls, src)
   ctx.ribbons += traced.ribbons
-  ctx.report.faces.push({ owner, name, ribbons: traced.ribbons, density })
+  ctx.report.faces.push({ owner, name, ribbons: traced.ribbons, density, corners: facePolygon(face), normal: face.normal.clone(), light, refHeight: face.refHeight })
 }
 
 /** Ink a volume's edges, each with the normal of the face it belongs to. */
@@ -441,6 +444,7 @@ function buildCottage(ctx: Context, owner: string, index: number, shape: StreetS
 
 /** The church: the nave as a house (its door end toward the path), the belfry behind it, the spire on the belfry. */
 function church(ctx: Context): StreetBuild['report']['church'] {
+  ctx.wallLight = CHURCH_LIGHT
   const { nave, belfry, spireTip } = STREET_CHURCH
   const along = new Vector3(Math.cos(nave.yaw), 0, Math.sin(nave.yaw))
   const toPath = new Vector3(-Math.sin(nave.yaw), 0, Math.cos(nave.yaw))
@@ -484,6 +488,7 @@ function church(ctx: Context): StreetBuild['report']['church'] {
     edges.push([at, bt, face.normal], [a, at, face.normal], [at, tip, face.normal])
   }
   ink(ctx, 'belfry', VILLAGE_CHURCH.nave.eave, edges, 0x6300)
+  ctx.wallLight = STREET_LIGHT
   return { belfryWidth: belfry.width, belfryHeight: top - floor, spireHeight: tipY - floor }
 }
 
@@ -628,6 +633,7 @@ export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | nu
     report: { faces: [], outlines: [], windows: [], church: { belfryWidth: 0, belfryHeight: 0, spireHeight: 0 } },
     ribbons: 0,
     lit,
+    wallLight: STREET_LIGHT,
   }
   ground(ctx)
   if (grass) {
@@ -748,6 +754,7 @@ export function buildFlatPanel(painting: ImageData2D | null, flow: ImageData2D |
     report: { faces: [], outlines: [], windows: [], church: { belfryWidth: 0, belfryHeight: 0, spireHeight: 0 } },
     ribbons: 0,
     lit: true,
+    wallLight: STREET_LIGHT,
   }
   polygon(ctx.underpaint, [new Vector3(-0.3, -0.3, -0.05), new Vector3(1.9, -0.3, -0.05), new Vector3(1.9, 0.9, -0.05), new Vector3(-0.3, 0.9, -0.05)], new Color(0x111111), 255)
   const toward = new Vector3(0, 0, 1)
