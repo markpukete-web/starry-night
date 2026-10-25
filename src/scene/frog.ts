@@ -4,8 +4,9 @@ import { makeBrushArrays, type BrushArrays } from './brushForms.ts'
 import { baseHue } from './grassBase.ts'
 import { GRASS_SOURCES, grassTexelUsable } from './grassBlade.ts'
 import { PALETTE } from './palette.ts'
-import { STREET_SOURCES } from './streetStrokes.ts'
-import { pathPoint, pathTangent, STOP0_CAMERA } from './streetLayout.ts'
+import { GRASS } from './streetGrass.ts'
+import { LIFT_LEVELS, LIFT_STEP, STREET_SOURCES, STROKE_LIFT } from './streetStrokes.ts'
+import { pathPoint, pathTangent, STATION_T, walkPose } from './streetLayout.ts'
 import type { ImageData2D } from './useImageData.ts'
 import {
   clad,
@@ -22,24 +23,22 @@ import {
 } from './vincent.ts'
 
 /**
- * A frog at the lane's edge (S3b pass 5, `tasks/2026-10-25-street-s3b-plan.md` Task 6), rebuilt to read as a frog
- * (Mark: "the frog doesn't seem like a frog"). Built as Vincent is, a few shapes clad in the painting's strokes. Its own
+ * The frog at the lane's edge (S3b pass 5, `tasks/2026-10-25-street-s3b-plan.md` Task 6), rebuilt to read as a frog
+ * (Mark: "the frog doesn't seem like a frog") and drawn by each stop (`FROGS`). Built as Vincent is, a few shapes clad in the painting's strokes. Its own
  * frame: feet at the origin, `+y` up, `+z` the way it faces. The shape is set out in frog lengths (`size`, snout to
  * vent) as a frog sits: the back sloping up from the rump on the ground to a flat head, the front legs propping the
  * chest, each back leg folded beside the body with the knee forward and out and the long foot flat on the ground.
  */
 export const FROG = {
-  place: {
-    t: 0.022,
-    lateral: -0.076,
-    /** its heading from facing stop 0's camera: a quarter turn shows its side, less shows its face as well */
-    turn: -1.15,
-  },
-  /** its feet on the base under the grass (`GRASS.baseY`) */
-  y: 0.001,
-  /** no blade root lies within this of its centre: its spot is a gap the grass leaves, ringed by 13 blades that arch
-   * over its flanks (look pass 4), and `street-frog.test.ts` fails if a change to the grass fills it */
+  /** no blade root lies within this (times its scale) of a frog in the grass: its spot is a gap the grass leaves,
+   * ringed by blades, and `street-frog.test.ts` fails if a change to the grass fills it */
   clear: 0.008,
+  /**
+   * A frog is drawn only within this of the camera, so the walk draws one at most: at 0.55 stop 2's would be drawn at
+   * `t` 0.33, 475 triangles under the ceiling, and its 1,212 would break it (`tasks/2026-10-25-street-frogs-plan.md`,
+   * Fact 9). Every stop's own frog is 0.25 to 0.40 from its camera.
+   */
+  draw: 0.5,
   /** snout to vent, in world units (Vincent is 0.085 tall, so a frog of about 17 cm) */
   size: 0.0086,
   /** a stroke stands this far proud of its shape (Vincent's 0.0004 would thicken a leg to twice its width) */
@@ -240,15 +239,49 @@ export function buildFrog(painting: ImageData2D): FrogBuild {
   return { body, eye, glints, shadow, triangles: triangles(body) + (2 * eye.indices.length + glints.right.indices.length + glints.left.indices.length + shadow.indices.length) / 3 }
 }
 
-/** Where it sits, in the street's frame, and its yaw (its +z turned to `(sin yaw, cos yaw)`). */
-export function frogPlace(): { position: [number, number, number]; yaw: number } {
-  const P = FROG.place
-  const [px, , pz] = pathPoint(P.t)
-  const [tx, , tz] = pathTangent(P.t)
+/**
+ * One frog: its stop, its spot on the lane (`t`, lateral, positive to the walker's right) and the height of its feet,
+ * which way its nose turns from its stop's camera (to the lane's centre or away), how much of its face shows (`face`
+ * radians short of a quarter turn) and its size (its group's uniform scale: a non-uniform one would bend the lit
+ * material's normals).
+ */
+export type FrogSpec = {
+  stop: 0 | 1 | 2 | 3 | 4
+  t: number
+  lateral: number
+  y: number
+  toward: 'lane' | 'away'
+  face: number
+  scale: number
+}
+
+/** The square's strokes reach this high: its face at 0.002 (`streetGeometry.ts`), the strokes' top level over it. */
+const SQUARE_TOP = 0.002 + STROKE_LIFT + (LIFT_LEVELS - 1) * LIFT_STEP
+
+/**
+ * One frog by each stop, from the spots measured in the render (`tasks/2026-10-25-street-frogs-plan.md` Task 2). Stop 1's
+ * sits on the right verge, where the phone's frame finds no gap on the left. Stop 4's sits on the square's edge past
+ * the grass's end (Mark's choice), on the square's strokes.
+ */
+export const FROGS: readonly FrogSpec[] = [
+  { stop: 0, t: 0.035, lateral: -0.086, y: GRASS.baseY, toward: 'lane', face: 0.35, scale: 1.0 },
+  { stop: 1, t: 0.283, lateral: 0.086, y: GRASS.baseY, toward: 'away', face: 0.3, scale: 0.94 },
+  { stop: 2, t: 0.466, lateral: -0.098, y: GRASS.baseY, toward: 'lane', face: 0.4, scale: 1.06 },
+  { stop: 3, t: 0.677, lateral: -0.098, y: GRASS.baseY, toward: 'away', face: 0.3, scale: 0.97 },
+  { stop: 4, t: 0.975, lateral: -0.08, y: SQUARE_TOP + 0.00025, toward: 'lane', face: 0.35, scale: 1.02 },
+]
+
+/** Where a frog sits, in the street's frame, and its yaw (its +z turned to `(sin yaw, cos yaw)`). */
+export function frogPlace(spec: FrogSpec): { position: [number, number, number]; yaw: number } {
+  const [px, , pz] = pathPoint(spec.t)
+  const [tx, , tz] = pathTangent(spec.t)
   const n = Math.hypot(tx, tz)
   const [nx, nz] = [-tz / n, tx / n]
-  const [x, z] = [px + P.lateral * nx, pz + P.lateral * nz]
-  return { position: [x, FROG.y, z], yaw: Math.atan2(STOP0_CAMERA[0] - x, STOP0_CAMERA[2] - z) + P.turn }
+  const [x, z] = [px + spec.lateral * nx, pz + spec.lateral * nz]
+  const camera = walkPose(STATION_T[spec.stop], false).position
+  // facing its camera, which is behind it on the lane, a turn against its own side points its nose to the lane's centre
+  const sign = (spec.toward === 'lane' ? -1 : 1) * Math.sign(spec.lateral)
+  return { position: [x, spec.y, z], yaw: Math.atan2(camera[0] - x, camera[2] - z) + sign * (Math.PI / 2 - spec.face) }
 }
 
 const BLINKS = (() => {

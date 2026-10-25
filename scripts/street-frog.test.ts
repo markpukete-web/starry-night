@@ -1,17 +1,19 @@
 /**
- * The frog (S3b pass 5, tasks/2026-10-25-street-s3b-plan.md Task 6): its blink on the sky's clock, its size, its place
- * in the verge and its clearing in the grass, and stop 0's view of it.
+ * The frogs (S3b pass 5, then `tasks/2026-10-25-street-frogs-plan.md`): the blink on the sky's clock, the shape, and the
+ * five spots, one by each stop: in a gap of the grass or on the square, side-on to the stop's camera, in its frame,
+ * clear of Vincent and the path, and never two drawn at once.
  */
 
 import assert from 'node:assert/strict'
 import { existsSync, readFileSync } from 'node:fs'
 import test from 'node:test'
-import { PerspectiveCamera, Vector3 } from 'three'
+import { Frustum, Matrix4, PerspectiveCamera, Sphere, Vector3 } from 'three'
 
-import { buildFrog, FROG, FROG_EYES, frogBlink, frogPlace } from '../src/scene/frog.ts'
-import { GRASS, grassChunks } from '../src/scene/streetGrass.ts'
+import { buildFrog, FROG, frogBlink, frogPlace, FROGS, type FrogSpec } from '../src/scene/frog.ts'
+import { GRASS, grassChunks, inFootprint } from '../src/scene/streetGrass.ts'
 import { lifeTime } from '../src/scene/streetLife.ts'
-import { laneParam, STATION_T, VINCENT_RIG, vincentPlace, walkPose } from '../src/scene/streetLayout.ts'
+import { laneParam, pathTangent, STATION_T, vincentBoxCorners, walkPose } from '../src/scene/streetLayout.ts'
+import { LIFT_LEVELS, LIFT_STEP, STROKE_LIFT } from '../src/scene/streetStrokes.ts'
 import { buildVincent } from '../src/scene/vincent.ts'
 import { decodePNG } from './lib/png.ts'
 
@@ -73,8 +75,8 @@ const painting = () => {
   return { data: new Uint8ClampedArray(png.rgba), width: png.width, height: png.height }
 }
 
-// the walk's tightest point with a frog in view is t 0.295 on the desktop, stop 1's frog 0.2 away: 1,631 under the
-// ceiling without it (the grass counted offline, the rest from the church's sweep)
+// the walk's tightest point with a frog drawn is t 0.295 on the desktop, stop 1's frog 0.2 away: 1,643 under the
+// ceiling without it (the plan's Fact 9). The cap holds only while one frog at most is drawn (`FROG.draw`, below)
 test('the frog fits the walk: at most 1,250 triangles', { skip }, () => {
   const frog = buildFrog(painting())
   assert.ok(frog.triangles <= 1250, `${frog.triangles} triangles`)
@@ -111,57 +113,172 @@ test('Vincent keeps his strokes: the lift parameter defaults to his 0.0004', { s
   assert.equal(h.digest('hex').slice(0, 16), '79338a361cd6b11c')
 })
 
-/** The frog's frame to the street's. */
-function toStreet(local: Vector3): Vector3 {
-  const { position, yaw } = frogPlace()
-  return new Vector3(
-    position[0] + local.x * Math.cos(yaw) + local.z * Math.sin(yaw),
-    position[1] + local.y,
-    position[2] - local.x * Math.sin(yaw) + local.z * Math.cos(yaw),
-  )
+/** A frog's frame to the street's: its group's uniform scale, then its yaw, then its place. */
+function toStreet(spec: FrogSpec, local: Vector3): Vector3 {
+  const { position, yaw } = frogPlace(spec)
+  const [x, y, z] = [local.x * spec.scale, local.y * spec.scale, local.z * spec.scale]
+  return new Vector3(position[0] + x * Math.cos(yaw) + z * Math.sin(yaw), position[1] + y, position[2] - x * Math.sin(yaw) + z * Math.cos(yaw))
 }
 
-test("the frog sits in the verge on the grass's base, past the path's edge and clear of Vincent's side", () => {
-  assert.equal(FROG.y, GRASS.baseY, 'its feet on the base')
-  const { position } = frogPlace()
-  const [t, lateral] = laneParam(position[0], position[2])
-  assert.ok(Math.abs(t - FROG.place.t) < 0.002, `along the lane at ${t.toFixed(4)}`)
-  assert.ok(Math.abs(lateral - FROG.place.lateral) < 0.001, `lateral ${lateral.toFixed(4)}`)
-  // the widest of it: the knees, the toes, the shadow
-  const reach = Math.max(FROG.knee[0] + FROG.thighR[1], FROG.toe[0] + FROG.toes.length, FROG.shadow.across) * FROG.size
-  const v = vincentPlace(STATION_T[0]).position
-  const [, vLat] = laneParam(v[0], v[2])
-  for (let k = 0; k < 16; k++) {
-    const th = (k / 16) * Math.PI * 2
-    const p = toStreet(new Vector3(Math.cos(th) * reach, 0, Math.sin(th) * Math.max(reach, FROG.shadow.along * FROG.size)))
-    const [, lat] = laneParam(p.x, p.z)
-    // the path is 0.12 wide (`streetGeometry.ts`), and over it the frog would stand on its strokes, not the base
-    assert.ok(Math.abs(lat) > 0.06 && Math.abs(lat) < GRASS.lat[1], `a point of its edge at lateral ${lat.toFixed(4)}, off the verge`)
-    assert.ok(Math.abs(lat - vLat) > VINCENT_RIG.halfWidth + 0.02, `${Math.abs(lat - vLat).toFixed(4)} from Vincent's line`)
+/** Every vertex of the frog's body, in its own frame. */
+function bodyVertices(): Vector3[] {
+  const frog = buildFrog(painting())
+  const out: Vector3[] = []
+  for (const arrays of [frog.body.underpaint, frog.body.strokes.arrays]) {
+    for (let i = 0; i < arrays.positions.length; i += 3) out.push(new Vector3(arrays.positions[i], arrays.positions[i + 1], arrays.positions[i + 2]))
+  }
+  return out
+}
+
+/** The camera of a pose on the walk, at an aspect. */
+function camera(t: number, aspect: number, portrait: boolean): PerspectiveCamera {
+  const pose = walkPose(t, portrait)
+  const cam = new PerspectiveCamera(pose.fov, aspect, pose.near, pose.far)
+  cam.position.set(...pose.position)
+  cam.lookAt(...pose.target)
+  cam.updateMatrixWorld()
+  cam.updateProjectionMatrix()
+  return cam
+}
+
+const ASPECTS = [[1600 / 900, false, '16:9'], [1280 / 800, false, '16:10'], [390 / 844, true, 'phone']] as const
+/** The square's strokes reach this high: its face at 0.002 (`streetGeometry.ts`), the strokes' top level over it. */
+const SQUARE_TOP = 0.002 + STROKE_LIFT + (LIFT_LEVELS - 1) * LIFT_STEP
+
+test('one frog per stop, in stop order', () => {
+  assert.deepEqual(FROGS.map((f) => f.stop), [0, 1, 2, 3, 4])
+})
+
+test("each frog keeps clear of Vincent's walk: 0.02 from his box at every point of it", { skip }, () => {
+  const feet = bodyVertices().filter((v) => v.y < 0.0006)
+  const boxes = Array.from({ length: 901 }, (_, k) => {
+    const c = vincentBoxCorners(k / 1000).filter((p) => p[1] === 0)
+    return [c[0], c[1], c[3], c[2]]
+  })
+  const toQuad = (x: number, z: number, quad: [number, number, number][]) => {
+    let inside = true
+    let best = Infinity
+    for (let i = 0; i < 4; i++) {
+      const [p, q] = [quad[i], quad[(i + 1) % 4]]
+      const [vx, vz] = [q[0] - p[0], q[2] - p[2]]
+      if (vx * (z - p[2]) - vz * (x - p[0]) < 0) inside = false
+      const s = Math.max(0, Math.min(1, ((x - p[0]) * vx + (z - p[2]) * vz) / (vx * vx + vz * vz)))
+      best = Math.min(best, Math.hypot(x - p[0] - s * vx, z - p[2] - s * vz))
+    }
+    return inside ? 0 : best
+  }
+  for (const f of FROGS) {
+    const points = feet.map((v) => toStreet(f, v))
+    let gap = Infinity
+    for (const quad of boxes) for (const p of points) gap = Math.min(gap, toQuad(p.x, p.z, quad))
+    assert.ok(gap >= 0.02, `stop ${f.stop}: ${gap.toFixed(4)} from his box`)
   }
 })
 
-test('no blade comes up through the frog, and blades stand round it', { skip }, () => {
-  const png = decodePNG(readFileSync(workPainting))
-  const blades = grassChunks({ data: new Uint8ClampedArray(png.rgba), width: png.width, height: png.height }).flatMap((c) => c.blades)
-  const [x, , z] = frogPlace().position
-  const near = blades.map((b) => Math.hypot(b.x - x, b.z - z))
-  assert.ok(near.every((d) => d >= FROG.clear), `a root ${Math.min(...near).toFixed(4)} from its centre`)
-  const round = near.filter((d) => d < 2 * FROG.clear).length
-  assert.ok(round >= 4, `${round} blades within ${2 * FROG.clear} of it`)
+test('each frog in the grass sits in a gap ringed by blades, and stop 4 stands on the square', { skip }, () => {
+  const blades = grassChunks(painting()).flatMap((c) => c.blades)
+  for (const f of FROGS) {
+    const [x, , z] = frogPlace(f).position
+    if (f.stop === 4) {
+      assert.ok(!inFootprint(x, z), 'stop 4 is past the grass')
+      assert.ok(Math.abs(f.y - (SQUARE_TOP + 0.00025)) < 1e-12, `stop 4 at y ${f.y}, the square's strokes at ${SQUARE_TOP}`)
+      continue
+    }
+    assert.equal(f.y, GRASS.baseY, `stop ${f.stop} on the grass's base`)
+    const near = blades.map((b) => Math.hypot(b.x - x, b.z - z))
+    const clear = FROG.clear * f.scale
+    assert.ok(near.every((d) => d >= clear), `stop ${f.stop}: a root ${Math.min(...near).toFixed(4)} from its centre`)
+    // within three clearances, about three frog lengths: stop 0's spot has 1 blade within two and 10 within three
+    const round = near.filter((d) => d < 3 * clear).length
+    assert.ok(round >= 4, `stop ${f.stop}: ${round} blades within ${(3 * clear).toFixed(4)}`)
+  }
 })
 
-test('stop 0 sees the frog and both eyes, on the desktop and the phone', () => {
-  for (const [portrait, aspect] of [[false, 1280 / 800], [true, 390 / 844]] as const) {
-    const pose = walkPose(STATION_T[0], portrait)
-    const cam = new PerspectiveCamera(pose.fov, aspect, pose.near, pose.far)
-    cam.position.set(...pose.position)
-    cam.lookAt(...pose.target)
-    cam.updateMatrixWorld()
-    cam.updateProjectionMatrix()
-    for (const local of [new Vector3(), ...FROG_EYES.map((e) => new Vector3(...e))]) {
-      const ndc = toStreet(local).project(cam)
-      assert.ok(Math.abs(ndc.x) < 0.95 && Math.abs(ndc.y) < 0.95 && ndc.z < 1, `${portrait ? 'phone' : 'desktop'}: (${ndc.x.toFixed(2)}, ${ndc.y.toFixed(2)})`)
+test('each frog is off the path', { skip }, () => {
+  const feet = bodyVertices().filter((v) => v.y < 0.0006)
+  for (const f of FROGS) {
+    for (const v of feet) {
+      const p = toStreet(f, v)
+      const [, lat] = laneParam(p.x, p.z)
+      // the path is 0.12 wide (`streetGeometry.ts`)
+      assert.ok(Math.abs(lat) > 0.06, `stop ${f.stop}: a foot at lateral ${lat.toFixed(4)}`)
     }
   }
+})
+
+test('each frog is side-on to its stop, its nose to the lane or away as its spec says', () => {
+  for (const f of FROGS) {
+    assert.ok(f.face >= 0.25 && f.face <= 0.5, `stop ${f.stop}: face ${f.face}`)
+    const { position, yaw } = frogPlace(f)
+    const cam = walkPose(STATION_T[f.stop], false).position
+    const bearing = Math.atan2(cam[0] - position[0], cam[2] - position[2])
+    const turn = Math.abs(Math.atan2(Math.sin(yaw - bearing), Math.cos(yaw - bearing)))
+    assert.ok(Math.abs(turn - (Math.PI / 2 - f.face)) < 1e-9, `stop ${f.stop}: turned ${turn.toFixed(4)} from its camera`)
+    const [tx, , tz] = pathTangent(f.t)
+    const n = Math.hypot(tx, tz)
+    // the walker's right is (−tz, tx): toward the lane's centre is against the frog's own side
+    const toCentre = -(Math.sin(yaw) * (-tz / n) + Math.cos(yaw) * (tx / n)) * Math.sign(f.lateral)
+    assert.ok(f.toward === 'lane' ? toCentre > 0 : toCentre < 0, `stop ${f.stop}: ${f.toward}, its nose ${toCentre.toFixed(2)} toward the centre`)
+  }
+})
+
+test('each frog is in frame at its stop: 16:9, 16:10 and the phone', { skip }, () => {
+  const body = bodyVertices()
+  for (const f of FROGS) {
+    const points = body.map((v) => toStreet(f, v))
+    for (const [aspect, portrait, name] of ASPECTS) {
+      const cam = camera(STATION_T[f.stop], aspect, portrait)
+      // stop 4's desktop frame meets the ground at its lower edge, so its frog sits lower in it
+      const edge = f.stop === 4 && !portrait ? 0.95 : 0.9
+      for (const p of points) {
+        const ndc = p.clone().project(cam)
+        assert.ok(Math.abs(ndc.x) <= edge && Math.abs(ndc.y) <= edge && ndc.z < 1, `stop ${f.stop} ${name}: (${ndc.x.toFixed(3)}, ${ndc.y.toFixed(3)})`)
+      }
+    }
+  }
+})
+
+test('no frog crowds a camera: 0.15 from every station camera', () => {
+  for (const f of FROGS) {
+    const p = new Vector3(...frogPlace(f).position)
+    for (const t of STATION_T) {
+      for (const portrait of [false, true]) {
+        const d = p.distanceTo(new Vector3(...walkPose(t, portrait).position))
+        assert.ok(d >= 0.15, `stop ${f.stop}'s frog ${d.toFixed(3)} from station ${t}`)
+      }
+    }
+  }
+})
+
+test('the sizes vary a little', () => {
+  for (const f of FROGS) assert.ok(f.scale >= 0.9 && f.scale <= 1.1, `stop ${f.stop}: scale ${f.scale}`)
+  assert.equal(new Set(FROGS.map((f) => f.scale)).size, FROGS.length, 'no two the same size')
+})
+
+test('each stop draws its own frog', () => {
+  for (const f of FROGS) {
+    for (const portrait of [false, true]) {
+      const d = new Vector3(...frogPlace(f).position).distanceTo(new Vector3(...walkPose(STATION_T[f.stop], portrait).position))
+      assert.ok(d < FROG.draw, `stop ${f.stop}: ${d.toFixed(3)} from its camera, beyond ${FROG.draw}`)
+    }
+  }
+})
+
+// one frog drawn at a time keeps the triangle room (the plan's Fact 9) and hides that the five share one blink
+test('at most one frog is drawn at any walk pose', () => {
+  for (const [aspect, portrait, name] of ASPECTS) {
+    for (let k = 0; k <= 900; k++) {
+      const cam = camera(k / 1000, aspect, portrait)
+      const frustum = new Frustum().setFromProjectionMatrix(new Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse))
+      const drawn = FROGS.filter((f) => {
+        const p = new Vector3(...frogPlace(f).position)
+        return p.distanceTo(cam.position) < FROG.draw && frustum.intersectsSphere(new Sphere(p.clone().setY(p.y + 0.002), 0.008))
+      })
+      assert.ok(drawn.length <= 1, `${name} at t ${k / 1000}: stops ${drawn.map((f) => f.stop).join(', ')} drawn`)
+    }
+  }
+})
+
+test('reduced motion keeps the eyes open', () => {
+  for (let k = 0; k <= 1200; k++) assert.equal(frogBlink(lifeTime(k * 0.05, 99, true)), 0, `open at ${(k * 0.05).toFixed(2)} s`)
 })
