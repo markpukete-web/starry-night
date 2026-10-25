@@ -5,8 +5,9 @@ import type { ImageData2D } from './useImageData.ts'
 
 /**
  * The paint under the grass (S3b pass 5, `tasks/2026-10-25-street-s3b-plan.md` Task 6). Mark, on the flat base between
- * the clumps: "It bother me a bit". The strip keeps its flat colour, and the fragment lays a dab of the bushes' dark
- * paint over it in every cell, so the gaps read as paint in shadow and cost no triangles. A dab is a comma: an ellipse
+ * the clumps: "It bother me a bit". The strip keeps its flat colour, and the fragment lays a dab over it in every cell,
+ * so the gaps read as paint in shadow and cost no triangles. The dabs' paints are hue means, up to four, over the
+ * bushes' darkest 80% (`grassBasePalette`). A dab is a comma: an ellipse
  * bent across its length, narrowing to its tail. Its angle is read once per cell from a slow field, so the dabs turn
  * across the verge as the bushes' strokes do, without the swirl a per-fragment rotation gives.
  */

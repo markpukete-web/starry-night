@@ -166,7 +166,7 @@ export default function StreetGrass({
     pointerId: number | null
     /** a press, not a hover: a mouse button the grass took the down of, a touch or a pen (S3b pass 5) */
     pressed: boolean
-    /** a press ended: the next frame that is not frozen lets go of the hand's texels (Codex F1) */
+    /** a press ended: the next frame the trail is not frozen lets go of the hand's texels (Codex F1, Consultant F3) */
     lifted: boolean
   }>({
     client: null,
@@ -186,12 +186,15 @@ export default function StreetGrass({
     const prevTouchAction = canvas.style.touchAction
     canvas.style.touchAction = 'none'
     // the hand closes while it presses (Mark, 2026-10-25: "if user click the mouse can the little hand with touching
-    // motion"), and opens on any end of the press: an up anywhere, a cancel, a blur, or a move with no button down
+    // motion"), and opens on any end of the press: an up anywhere, a cancel, a blur, or a move with no primary button
     const lift = () => {
       if (handRef.current.pressed) handRef.current.lifted = true
       handRef.current.pressed = false
       canvas.style.cursor = 'grab'
     }
+    // only the pointer that pressed ends the press: a mouse press keeps no pointerId (Consultant F2)
+    const pressedBy = (e: PointerEvent) =>
+      e.pointerType === 'mouse' ? handRef.current.pointerId === null : e.pointerId === handRef.current.pointerId
 
     const onPointerMove = (e: PointerEvent) => {
       if (handRef.current.isOverride) return
@@ -224,6 +227,9 @@ export default function StreetGrass({
 
     const onPointerDown = (e: PointerEvent) => {
       if (handRef.current.isOverride) return
+      // a right or middle button neither presses nor ends a hover: macOS opens the context menu and keeps the up
+      // (Consultant F1)
+      if (e.pointerType === 'mouse' && e.button !== 0) return
       const rect = canvas.getBoundingClientRect()
       const inside =
         e.target === canvas &&
@@ -257,7 +263,7 @@ export default function StreetGrass({
 
     const onPointerUp = (e: PointerEvent) => {
       if (handRef.current.isOverride) return
-      if (e.pointerType === 'mouse' || e.pointerId === handRef.current.pointerId) lift()
+      if (pressedBy(e)) lift()
       if (e.pointerType !== 'mouse') {
         if (streetGesture === null || streetGesture.pointerId === e.pointerId) {
           handRef.current.active = false
@@ -269,7 +275,7 @@ export default function StreetGrass({
 
     const onPointerCancel = (e: PointerEvent) => {
       if (handRef.current.isOverride) return
-      lift()
+      if (pressedBy(e)) lift()
       if (streetGesture === null || streetGesture.pointerId === e.pointerId) {
         handRef.current.active = false
         handRef.current.client = null
@@ -457,7 +463,7 @@ export default function StreetGrass({
 
     w.__grassHit = hitRecorded
 
-    if (handRef.current.lifted && mode !== 'frozen') {
+    if (handRef.current.lifted && mode !== 'frozen' && trail.mode !== 'frozen') {
       releaseSource(trail, 'hand', now)
       handRef.current.lifted = false
     }

@@ -165,7 +165,7 @@ export default function Street({ reduced = false, still = false }: { reduced?: b
   return (
     <group name="street" position={offset}>
       <mesh name="street-underpaint" geometry={meshes.underpaint} material={materials.solid} renderOrder={0} />
-      {/* after the underpaint, as it drew inside that mesh until pass 5, so a tie in depth still goes to the ground */}
+      {/* after the underpaint, as it drew inside that mesh until pass 5, and before `street-ground` (order 1), so a tie in depth with the ground mesh still goes to the ground */}
       {meshes.grassBase && baseMaterial && <mesh name="street-grass-base" geometry={meshes.grassBase} material={baseMaterial} renderOrder={0.5} />}
       <mesh name="street-ground" geometry={meshes.ground} material={materials.ground} renderOrder={1} />
       <mesh name="street-strokes" geometry={meshes.strokes} material={materials.strokes} renderOrder={1} />

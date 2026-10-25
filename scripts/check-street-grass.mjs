@@ -1123,7 +1123,21 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
         await end()
         if ((await cursor16()) !== 'grab') throw new Error(`Case 16 failed: the cursor was "${await cursor16()}" after a ${name}, expected grab`)
       }
-      console.log(`PASS: case 16 - the press: hover ${hover16.most.toFixed(3)}, press ${press16.most.toFixed(3)}, ${after16.last.toFixed(3)} after 3 s of hover past the lift, grab again after an up, a cancel, a blur and a move with no button`)
+      // a right button does not press (Consultant F1), and a touch's up or cancel does not end a mouse's press (F2)
+      const other16 = ([type, x, y, pointerType, button, buttons]) => {
+        const e = new PointerEvent(type, { clientX: x, clientY: y, pointerType, pointerId: pointerType === 'mouse' ? 1 : 7, isPrimary: true, button, buttons, bubbles: true })
+        document.querySelector('canvas').dispatchEvent(e)
+      }
+      await page.evaluate(other16, ['pointerdown', vx16, vy16, 'mouse', 2, 2])
+      if ((await cursor16()) !== 'grab') throw new Error(`Case 16 failed: the cursor was "${await cursor16()}" after a right button's down, expected grab`)
+      await page.evaluate(fire16, ['pointerdown', vx16, vy16, 1, false])
+      for (const type of ['pointerup', 'pointercancel']) {
+        await page.evaluate(other16, [type, vx16, vy16, 'touch', 0, 0])
+        if ((await cursor16()) !== 'grabbing') throw new Error(`Case 16 failed: a touch's ${type} ended the mouse's press`)
+      }
+      await page.evaluate(fire16, ['pointerup', 5, 5, 0, true])
+      if ((await cursor16()) !== 'grab') throw new Error(`Case 16 failed: the mouse's own up did not end its press`)
+      console.log(`PASS: case 16 - the press: hover ${hover16.most.toFixed(3)}, press ${press16.most.toFixed(3)}, ${after16.last.toFixed(3)} after 3 s of hover past the lift, grab again after an up, a cancel, a blur and a move with no button; no press on a right button, and a touch's up or cancel leaves the mouse's press`)
     }
 
     // -------------------------------------------------------------

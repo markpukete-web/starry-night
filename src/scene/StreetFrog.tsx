@@ -22,9 +22,10 @@ export default function StreetFrog({ painting, flags, reduced }: { painting: Ima
 
   const materials = useMemo(() => {
     const ids = flags.ids > 0
+    // Vincent's keys: the same sources as his (`StreetWalk.tsx`), so the street compiles them once (Consultant F9)
     return {
-      strokes: material(flags.light ? 'frog-lit' : 'frog', vincentStrokeBody(flags.light), fogInjection(FOG.colour), true, ids),
-      solid: material(flags.light ? 'frog-solid-lit' : 'frog-solid', vincentMoon(flags.light), fogInjection(FOG.colour), false, ids),
+      strokes: material(flags.light ? 'vincent-lit' : 'vincent', vincentStrokeBody(flags.light), fogInjection(FOG.colour), true, ids),
+      solid: material(flags.light ? 'vincent-solid-lit' : 'vincent-solid', vincentMoon(flags.light), fogInjection(FOG.colour), false, ids),
       // the glint is a point of light, so the moon does not shade it
       glint: material('frog-glint', null, fogInjection(FOG.colour), false, ids),
       shadow: new MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.5, depthWrite: false }),
