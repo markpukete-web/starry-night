@@ -141,7 +141,8 @@ test("the church's faces take the shorter brush, and the houses keep theirs", ()
   assert.equal(front.refHeight, h.type === 'cottage' ? STREET.wallRef : h.eave)
 })
 
-// every pose the street has: the walk by 0.01 and the five stations, both aspects
+// the poses the walk reaches, sampled: `t` by 0.01 and the five stations, at 1600 × 900 and 390 × 844 (the branch
+// review sampled `t` by 0.001 at five more aspects, 21:9 to 32:9 and a tablet in portrait, and found no more)
 const PROBE_POSES: [StationPose, number][] = ASPECTS.flatMap(([aspect, portrait]) => [
   ...Array.from({ length: 91 }, (_, k) => [walkPose(k / 100, portrait), aspect] as [StationPose, number]),
   ...([0, 1, 2, 3, 4] as const).map((i) => [stationPose(i, portrait), aspect] as [StationPose, number]),
@@ -154,7 +155,8 @@ const PROBE = PROBE_POSES.map(([p, aspect]) => {
   return { eye: c.position.clone(), frustum: new Frustum().setFromProjectionMatrix(new Matrix4().multiplyMatrices(c.projectionMatrix, c.matrixWorldInverse)) }
 })
 
-/** The poses a face faces with a point of a 9 × 9 grid over it in frame. No occlusion: a face it calls unseen is unseen. */
+/** The sampled poses a face faces with a point of a 9 × 9 grid over it in frame. No occlusion, so it errs toward seen: a
+ * face it calls unseen faces away from every sampled pose or lies outside its frame. */
 function posesSeeing(corners: Vector3[], normal: Vector3): number {
   const points: Vector3[] = []
   for (let i = 0; i <= 8; i++) {
@@ -169,7 +171,7 @@ function posesSeeing(corners: Vector3[], normal: Vector3): number {
   return PROBE.filter(({ eye, frustum }) => normal.dot(eye.clone().sub(centre)) > 0 && points.some((p) => frustum.containsPoint(p))).length
 }
 
-test('the faces no pose sees are thinned, and only they', () => {
+test('the faces no sampled pose sees are thinned, and only they', () => {
   for (const f of churchFaces) {
     const hidden = (CHURCH.hidden as readonly string[]).includes(`${f.owner}/${f.name}`)
     const seen = posesSeeing(f.corners, f.normal)

@@ -162,7 +162,7 @@ type Context = {
 
 /** Clad one face: its underpaint, its strokes, its report line. */
 function clad(ctx: Context, owner: string, name: string, face: StreetFace, faceDensity = 1, [insetU, insetV] = [0, 0], shadeAs = face): void {
-  // the church's faces no pose sees are thin, kept for the portal's flight (the church plan (f))
+  // the church's faces no sampled pose of the walk sees are thin, not removed (the church plan (f))
   const density = (CHURCH.hidden as readonly string[]).includes(`${owner}/${name}`) ? CHURCH.thin : faceDensity
   // a roof's base is its source's mean, not its darkest tenth: the street's eye meets the roofs at a grazing angle,
   // where the strokes thin out, and 46–99% of a roof's pixels showed the dark base (the per-source gate, `t12/`)

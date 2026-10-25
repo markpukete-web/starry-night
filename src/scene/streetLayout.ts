@@ -216,7 +216,7 @@ export const STREET_SQUARE = {
  * so the gable's normal swings to the walker's left and the +along side, moonlit, opens toward stop 4's camera, which
  * stands right of the axis. `setback` keeps the turned front corners outside the square's circle (0.234 from its
  * centre, against 0.215 without it). `stroke` is the church's brush, `recess` the door's depth, and `hidden` the faces
- * no pose sees, clad thin.
+ * no sampled pose of the walk sees, clad thin.
  */
 export const CHURCH = {
   turn: 0.45,
@@ -227,7 +227,7 @@ export const CHURCH = {
   recess: 0.02,
   /** the +along side's windows, their centres across the wall */
   windows: [0.25, 0.5, 0.75],
-  /** the density of the faces no pose sees (the face probe, `scripts/street-church.test.ts`), kept for the portal */
+  /** the density of the faces no sampled pose of the walk sees (the face probe, `scripts/street-church.test.ts`) */
   thin: 0.25,
   hidden: [
     'church/back',
