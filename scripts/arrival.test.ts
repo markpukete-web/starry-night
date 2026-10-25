@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { PerspectiveCamera } from 'three'
-import { ARRIVAL, ARRIVAL_CUE, ARRIVAL_END, ARRIVAL_START_INSIDE_ORBIT, ArrivalClock, VINCENTS_CITE, VINCENTS_LINE, arrivalCamera, arrivalFrame, boundedDt } from '../src/scene/arrival.ts'
+import { ARRIVAL, ARRIVAL_CUE, ARRIVED_KEY, ARRIVAL_END, ARRIVAL_START_INSIDE_ORBIT, ArrivalClock, VINCENTS_CITE, VINCENTS_LINE, arrivalCamera, arrivalFrame, boundedDt } from '../src/scene/arrival.ts'
 import { DIORAMA_CAMERAS, DIORAMA_ORBIT } from '../src/scene/dioramaContract.ts'
 import { homeInverseQuaternion } from '../src/scene/dioramaSkyProjection.ts'
 
@@ -189,6 +189,13 @@ test('A11 the loading curtain: the hold counts from the painting, with afterRead
   // the painting not yet shown: no credit
   const unseen = waitThenReady(6, false)
   assert.ok(Math.abs(unseen.a - 1 / 60) < 1e-12, `a with no painting ${unseen.a}`)
+  // a slow build: 2 s at 4 fps with the painting up credits the whole 2 s, not maxDt's 0.2; a 30 s gap counts seenDt
+  const slow = new ArrivalClock()
+  for (let i = 0; i < 8; i++) slow.tick({ dt: 0.25, ready: false, skipRequested: false, shown: true })
+  assert.ok(Math.abs(slow.tick({ dt: 1 / 60, ready: true, skipRequested: false, shown: true }) - (2 + 1 / 60)) < 1e-9, 'slow frames credit their time')
+  const gap = new ArrivalClock()
+  gap.tick({ dt: 30, ready: false, skipRequested: false, shown: true })
+  assert.ok(Math.abs(gap.tick({ dt: 1 / 60, ready: true, skipRequested: false, shown: true }) - (ARRIVAL.seenDt + 1 / 60)) < 1e-9, 'a hidden tab credits seenDt')
   // the credit never shows: every frame up to the cap is the first frame
   for (const a of GRID.filter((t) => t <= cap)) assert.deepEqual(arrivalFrame(a), arrivalFrame(0), `frame at ${a}`)
   // waiting is the clock's own state: true while it holds for the scene, false after
@@ -212,6 +219,32 @@ test('A12 the loading curtain in index.html carries the opening\'s words, so the
   const boot = html.slice(html.indexOf('id="boot"'), html.indexOf('</div>', html.indexOf('id="boot"')))
   assert.ok(boot.length > 0, 'index.html has #boot')
   for (const words of [VINCENTS_LINE, VINCENTS_CITE, ARRIVAL_CUE]) assert.ok(boot.includes(`>${words}</p>`), `#boot lacks: ${words}`)
+})
+
+test('A13 the curtain\'s script in index.html removes it on every page that will not play the opening', () => {
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8')
+  const after = html.indexOf('<script>', html.indexOf('id="boot"'))
+  assert.ok(after > 0 && after < html.indexOf('<script type="module"'), 'the script follows #boot, before the bundle')
+  const body = html.slice(after + '<script>'.length, html.indexOf('</script>', after))
+  const run = (search: string, { arrived = false, reduced = false, blocked = false } = {}) => {
+    let removed = false
+    const storage = { getItem: (key: string) => { if (blocked) throw new Error('SecurityError'); return key === ARRIVED_KEY && arrived ? '1' : null } }
+    const doc = { getElementById: (id: string) => (id === 'boot' ? { remove: () => { removed = true } } : null) }
+    new Function('location', 'sessionStorage', 'matchMedia', 'document', body)({ search }, storage, () => ({ matches: reduced }), doc)
+    return removed
+  }
+  // App.tsx: arrival = !street && (arrival === '1' || (arrival !== '0' && !arrivedThisSession())), in mode diorama, not reduced
+  assert.equal(run(''), false, 'a first plain visit keeps it')
+  assert.equal(run('?mode=diorama&sky=light'), false)
+  assert.equal(run('', { blocked: true }), false, 'a blocked store plays the opening, as arrivedThisSession does')
+  assert.equal(run('?arrival=1', { arrived: true }), false, 'the link always plays it')
+  assert.equal(run('', { arrived: true }), true, 'a repeat visit in the session')
+  assert.equal(run('?arrival=0'), true)
+  assert.equal(run('?street=1'), true)
+  assert.equal(run('?street=1&arrival=1'), true)
+  assert.equal(run('?mode=relief'), true)
+  assert.equal(run('', { reduced: true }), true)
+  assert.equal(run('?arrival=1', { reduced: true }), true)
 })
 
 test('A10 the sky step: held, then the rate times the bounded delta, kept through the frame that ends it, then null', () => {

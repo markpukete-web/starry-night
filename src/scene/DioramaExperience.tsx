@@ -232,7 +232,8 @@ function ArrivalDriver({
       dt,
       ready: skyReadyRef.current && cypressReadyRef.current && landReadyRef.current && scanReadyRef.current,
       skipRequested: skipRequestedRef.current,
-      shown: scanReadyRef.current,
+      // loaded, not failed: a painting that never drew credits nothing (the loading read's P3)
+      shown: Boolean(scanRef.current?.complete && scanRef.current.naturalWidth > 0),
       pinned,
       reduced,
     })

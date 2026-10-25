@@ -70,3 +70,28 @@ them, and a test reads `index.html` and finds both strings in `#boot`.
 
 A progress bar or a percentage. The 15 s timeout on a slow connection (a first visit at 1.6 Mbps needs about 48 s for
 9.6 MB): noted for Mark with the timings. Making the downloads smaller.
+
+## Revision 1: the Consultant's correctness read (`scratch/loading-2026-10-25/plan-review-consultant.md`, REVISE)
+
+The read covered the plan and the code at `71b8c20`. Six findings, five fixed in one commit, one declined.
+
+- **P1, fixed.** The painting was fetched at low priority. The slow-4G frames at `28269b9` confirm it: the painting
+  finished at 20.8 s, the bundle at 6.3 s, so the curtain stood without its painting for 20 s. `#boot`'s image is now
+  `fetchpriority="high"`, and the painting's preload is gone, since the image in the HTML fetches it on every visit.
+  The ready time should not move: the opening waits for the painting anyway, so the bytes before it are the same.
+  The worker's re-timing checks that.
+- **P2, fixed.** A page that will not play the opening showed the curtain until the bundle ran. A classic script
+  after `#boot` removes it at parse time on `?street=1`, a mode other than the diorama, `?arrival=0`, a repeat visit
+  in the session (not with `?arrival=1`) and reduced motion. Lead's call: reduced motion hides it, as (b) says.
+  A13 runs the script against eleven cases. `ARRIVED_KEY` is exported, so the test holds the key equal.
+- **P2, fixed in part.** A page that fails after the keep (no WebGL, a throw in the first render) kept the curtain for
+  ever. `keepBootCurtain` now drops it after `readyTimeout + 5` s of real time. React's layer looks the same, so on a
+  page that still runs the drop is not seen. **Declined:** an inline timer for a bundle that never runs. It would cut
+  the curtain on a link that is only slow, and a broken deploy is broken either way.
+- **P3, fixed.** The painting's credit counted at most `maxDt` per frame, a fifth of the real time at 2 to 5 fps.
+  `seen` now counts up to `seenDt` (1 s) per frame. **Lead's call:** the timeout keeps `maxDt`, so its real length on
+  a slow device is unchanged. Whether to lengthen it is Mark's question with the timings.
+- **P3, fixed.** A painting that failed to load gave credit. `shown` is now the React image loaded and not failed
+  (`complete` and `naturalWidth > 0`).
+- **P3, declined.** The time before the driver's first frame is not credited. On a slow link the wait itself fills
+  the 2.5 s cap. With no throttle the gap from the curtain's first paint to React's first commit is under a second.

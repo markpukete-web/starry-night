@@ -40,6 +40,12 @@ export const ARRIVAL = {
    * would collapse the opening into one frame and advance the sky by the whole gap (review F3)
    */
   maxDt: 0.1,
+  /**
+   * the longest frame the painting's credit accepts while the opening waits (the loading read's P3): the scene's
+   * build runs at 2 to 5 fps, where `maxDt` would credit a fifth of the time the painting was up. The timeout keeps
+   * `maxDt`, so its real length is unchanged
+   */
+  seenDt: 1,
   /** how long the opening waits for the scene before it opens anyway: a failed asset cannot hold the curtain (review F5) */
   readyTimeout: 15,
   /**
@@ -126,7 +132,8 @@ export function arrivalCamera(home: Home, progress: number): readonly [number, n
 export const ARRIVAL_START_INSIDE_ORBIT =
   ARRIVAL.startDistance > DIORAMA_ORBIT.minDistance && ARRIVAL.startDistance < DIORAMA_ORBIT.maxDistance
 
-const ARRIVED_KEY = 'starry-night:arrived'
+/** `index.html`'s curtain script reads the same key, and `scripts/arrival.test.ts` holds the two equal */
+export const ARRIVED_KEY = 'starry-night:arrived'
 
 /**
  * Once per session: a plain visit plays the opening the first time only, so a reload or a return within the tab's
@@ -149,9 +156,9 @@ export function rememberArrived(): void {
   }
 }
 
-/** The frame delta the arrival accepts: a hidden tab's 30 s becomes `maxDt`, a NaN becomes 0. */
-export function boundedDt(dt: number): number {
-  return Number.isFinite(dt) ? Math.min(Math.max(0, dt), ARRIVAL.maxDt) : 0
+/** The frame delta the arrival accepts: a hidden tab's 30 s becomes `max` (`maxDt` unless given), a NaN becomes 0. */
+export function boundedDt(dt: number, max = ARRIVAL.maxDt): number {
+  return Number.isFinite(dt) ? Math.min(Math.max(0, dt), max) : 0
 }
 
 export type ArrivalInputs = {
@@ -203,7 +210,7 @@ export class ArrivalClock {
     } else {
       if (!reduced && !ready && this.waited < ARRIVAL.readyTimeout) {
         this.waited += bounded
-        if (shown) this.seen += bounded
+        if (shown) this.seen += boundedDt(dt, ARRIVAL.seenDt)
         this.step = 0
         return this.a
       }
