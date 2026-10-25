@@ -30,10 +30,10 @@ export const VINCENT_SOURCES = {
 /** The ID classes the palette gate reads (`check-street-colour.ts`): the smock and his sleeves, the hat. */
 export const VINCENT_CLASS = { smock: 7, hat: 8, none: 255 } as const
 
-type Rect = readonly [number, number, number, number]
-type Point = { p: Vector3; n: Vector3 }
+export type Rect = readonly [number, number, number, number]
+export type Point = { p: Vector3; n: Vector3 }
 /** A surface by two coordinates in 0..1: `a` round it (or across), `s` along it. */
-type Surface = (a: number, s: number) => Point
+export type Surface = (a: number, s: number) => Point
 
 export type VincentStrokes = { arrays: BrushArrays; stroke: number[]; seed: number[]; cls: number[] }
 export type VincentPart = { strokes: VincentStrokes; underpaint: BrushArraysWithCls }
@@ -76,7 +76,7 @@ function revolve(profile: readonly [number, number][], sx: number, sz: number): 
   }
 }
 
-function sphere(centre: Vector3, r: number): Surface {
+export function sphere(centre: Vector3, r: number): Surface {
   return (a, s) => {
     const th = a * Math.PI * 2
     const ph = Math.PI * (1 - s) // s 0 at the bottom, 1 at the top
@@ -86,7 +86,7 @@ function sphere(centre: Vector3, r: number): Surface {
 }
 
 /** A tapered tube from `from` to `to`; `s` runs along it, `a` round it. */
-function tube(from: Vector3, to: Vector3, r0: number, r1: number): Surface {
+export function tube(from: Vector3, to: Vector3, r0: number, r1: number): Surface {
   const axis = to.clone().sub(from)
   const u = new Vector3(1, 0, 0).cross(axis).lengthSq() > 1e-9 ? new Vector3(1, 0, 0) : new Vector3(0, 1, 0)
   const e1 = u.clone().addScaledVector(axis, -u.dot(axis) / axis.lengthSq()).normalize()
@@ -109,7 +109,7 @@ function brim(): Surface {
   }
 }
 
-function texel(painting: ImageData2D, rect: Rect, rand: () => number): Color {
+export function texel(painting: ImageData2D, rect: Rect, rand: () => number): Color {
   const sx = painting.width / 1600
   const sy = painting.height / 1267
   const x = Math.min(painting.width - 1, Math.floor((rect[0] + rand() * (rect[2] - rect[0])) * sx))
@@ -118,18 +118,18 @@ function texel(painting: ImageData2D, rect: Rect, rand: () => number): Color {
   return new Color().setRGB(painting.data[i] / 255, painting.data[i + 1] / 255, painting.data[i + 2] / 255, SRGBColorSpace)
 }
 
-function underpaintColour(painting: ImageData2D, rect: Rect, share = 0.4): Color {
+export function underpaintColour(painting: ImageData2D, rect: Rect, share = 0.4): Color {
   return new Color().setRGB(...rectUnderpaint(painting, rect, share), SRGBColorSpace)
 }
 
-function emptyPart(): VincentPart {
+export function emptyPart(): VincentPart {
   return { strokes: { arrays: makeBrushArrays(), stroke: [], seed: [], cls: [] }, underpaint: { ...makeBrushArrays(), cls: [], src: [] } }
 }
 
 const COLUMNS = 3
 
 /** One stroke draped on a surface over [a0, a1] × [s0, s1], `steps` along it, lifted off the surface. */
-function stroke(into: VincentStrokes, surface: Surface, a0: number, a1: number, s0: number, s1: number, steps: number, colour: Color, cls: number, seed: number): void {
+export function stroke(into: VincentStrokes, surface: Surface, a0: number, a1: number, s0: number, s1: number, steps: number, colour: Color, cls: number, seed: number): void {
   const rows: Vector3[][] = []
   for (let k = 0; k < steps; k++) {
     const s = s0 + ((s1 - s0) * k) / (steps - 1)
@@ -151,7 +151,7 @@ function stroke(into: VincentStrokes, surface: Surface, a0: number, a1: number, 
 }
 
 /** A closed grid over the surface, `na` round and `ns` along, in one colour. */
-function solid(into: BrushArraysWithCls, surface: Surface, na: number, ns: number, colour: Color, cls: number, s0 = 0, s1 = 1): void {
+export function solid(into: BrushArraysWithCls, surface: Surface, na: number, ns: number, colour: Color, cls: number, s0 = 0, s1 = 1): void {
   const base = into.positions.length / 3
   for (let k = 0; k <= ns; k++) {
     for (let j = 0; j <= na; j++) {
@@ -173,19 +173,20 @@ function solid(into: BrushArraysWithCls, surface: Surface, na: number, ns: numbe
   }
 }
 
-/** Strokes round a surface: `count` of them, each a little wider than its share so the underpaint shows only between. */
-function clad(part: VincentPart, surface: Surface, count: number, steps: number, painting: ImageData2D, rect: Rect, cls: number, rand: () => number, around: [number, number] = [0, 1], along: [number, number] = [0, 1]): void {
+/** Strokes round a surface: `count` of them, each a little wider than its share so the underpaint shows only between.
+ * Each takes a texel of `paint`, a rectangle of the painting, or the colour a picker gives (the frog's, S3b pass 5). */
+export function clad(part: VincentPart, surface: Surface, count: number, steps: number, painting: ImageData2D, paint: Rect | (() => Color), cls: number, rand: () => number, around: [number, number] = [0, 1], along: [number, number] = [0, 1]): void {
   const span = (around[1] - around[0]) / count
   for (let i = 0; i < count; i++) {
     const centre = around[0] + span * (i + 0.5 + (rand() - 0.5) * 0.3)
     const half = span * (0.6 + rand() * 0.15)
     const s0 = along[0] + rand() * 0.06 * (along[1] - along[0])
     const s1 = along[1] - rand() * 0.06 * (along[1] - along[0])
-    stroke(part.strokes, surface, centre - half, centre + half, s0, s1, steps, texel(painting, rect, rand), cls, rand())
+    stroke(part.strokes, surface, centre - half, centre + half, s0, s1, steps, typeof paint === 'function' ? paint() : texel(painting, paint, rand), cls, rand())
   }
 }
 
-function triangles(part: VincentPart): number {
+export function triangles(part: VincentPart): number {
   return (part.strokes.arrays.indices.length + part.underpaint.indices.length) / 3
 }
 

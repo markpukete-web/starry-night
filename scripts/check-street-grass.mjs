@@ -31,6 +31,7 @@ import { bladeMoonFacing, GRASS_BLADE, GRASS_MOON_GLSL } from '../src/scene/gras
 import { STREET_MOON } from '../src/scene/streetLight.ts'
 import { decodePNG } from './lib/png.ts'
 import { WALK } from '../src/scene/streetWalk.ts'
+import { FROG } from '../src/scene/frog.ts'
 
 const appUrl = process.env.DIORAMA_CAPTURE_URL || 'http://127.0.0.1:5191/'
 const parsedUrl = new URL(appUrl)
@@ -1123,6 +1124,53 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
         if ((await cursor16()) !== 'grab') throw new Error(`Case 16 failed: the cursor was "${await cursor16()}" after a ${name}, expected grab`)
       }
       console.log(`PASS: case 16 - the press: hover ${hover16.most.toFixed(3)}, press ${press16.most.toFixed(3)}, ${after16.last.toFixed(3)} after 3 s of hover past the lift, grab again after an up, a cancel, a blur and a move with no button`)
+    }
+
+    // -------------------------------------------------------------
+    // Case 17: the frog's blink (S3b pass 5). The sky's clock pinned in the middle of the first blink holds both eyes
+    // shut, shrunk and sunk, frame after frame. Pinned at 0 they are open, and under reduced motion the pinned blink
+    // stays open. Unpinned, the live clock blinks within one longest gap.
+    // -------------------------------------------------------------
+    if (shouldRun(17)) {
+      const B = FROG.blink
+      const shutAt = B.first + B.down + B.hold / 2
+      const frog17 = () => page.evaluate(() => window.__frog?.() ?? null)
+      // the clock pinned at `t`, three reads 100 ms apart, each within 1e-6 of what the blink expects
+      const pinned17 = async (t, shut, label) => {
+        await page.evaluate((v) => { window.__skyTime = v }, t)
+        await sleep(200)
+        for (let i = 0; i < 3; i++) {
+          const f = await frog17()
+          if (!f) throw new Error(`Case 17 failed: no __frog ${label}`)
+          const sink = B.sink * FROG.eye.r * shut
+          const scale = 1 - (1 - B.shrink) * shut
+          if (f.shut !== shut || Math.abs(f.sink - sink) > 1e-6 || Math.abs(f.scale - scale) > 1e-6) {
+            throw new Error(`Case 17 failed: ${label}, shut ${f.shut}, sink ${f.sink}, scale ${f.scale}; expected ${shut}, ${sink}, ${scale}`)
+          }
+          await sleep(100)
+        }
+      }
+      await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=input` })
+      await page.waitForStreetReady()
+      await pinned17(shutAt, 1, `pinned at ${shutAt}`)
+      await pinned17(0, 0, 'pinned at 0')
+      await page.evaluate(() => { delete window.__skyTime })
+      let live17 = 0
+      const t17 = Date.now()
+      while (live17 === 0 && Date.now() - t17 < (B.gap[1] + 1) * 1000) {
+        live17 = (await frog17())?.shut ?? 0
+        await sleep(15)
+      }
+      if (live17 === 0) throw new Error(`Case 17 failed: the live clock did not blink in ${B.gap[1] + 1} s`)
+      await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] })
+      await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=input` })
+      await page.waitForStreetReady()
+      await pinned17(shutAt, 0, `pinned at ${shutAt} under reduced motion`)
+      await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: '' }] })
+      await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=input&grass=0` })
+      await page.waitForStreetReady()
+      if ((await page.evaluate(() => typeof window.__frog)) !== 'undefined') throw new Error('Case 17 failed: a frog with grass=0')
+      console.log(`PASS: case 17 - the blink: shut, shrunk and sunk pinned at ${shutAt}, open at 0 and under reduced motion, blinked live (${live17.toFixed(2)}), absent with grass=0`)
     }
 
     await page.close()

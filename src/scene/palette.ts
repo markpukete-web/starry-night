@@ -36,4 +36,5 @@ export const PALETTE = {
   villageUmber: hex('villageWarm', 1), // #343327 — distributed warm wall/roof strokes
   roofSienna: hex('villageWarm', 3), //   #4b3222 — the red-brown roof landmark
   windowOchre: hex('villageWarm', 4), //  #656b27 — window glow paint (olive-gold)
+  star: hex('stars', 0), //               #c8cabd — the brightest warm points (the frog's wet eye, S3b pass 5)
 }

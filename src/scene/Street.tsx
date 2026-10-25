@@ -21,6 +21,7 @@ import StreetLife from './streetLife.tsx'
 import { swayInjection } from './streetLife.ts'
 import StreetWalk from './StreetWalk.tsx'
 import StreetGrass from './StreetGrass.tsx'
+import StreetFrog from './StreetFrog.tsx'
 import { useImageData } from './useImageData.ts'
 import { material, plainGeometry } from './streetMaterial.ts'
 
@@ -193,6 +194,8 @@ export default function Street({ reduced = false, still = false }: { reduced?: b
           still={still}
         />
       )}
+      {/* the frog lives at the verge's edge, so only with the grass (S3b pass 5) */}
+      {!flags.flat && flags.grass && paintingData && <StreetFrog painting={paintingData} flags={flags} reduced={reduced} />}
       {!flags.flat && (
         <StreetWalk
           painting={paintingData}
