@@ -170,3 +170,11 @@ through the build: `t8/mark/portal-desktop.mp4` and `t8/mark/portal-phone.mp4`, 
 2. **The flight and the drift.** 2.4 s to v2, then the held frame drifts in from the flight's last speed while the
    street builds, about 2 s on this Mac. Untuned by you.
 3. **The flag.** The portal is behind `?portal=1`. Turning it on for every visitor is your release call.
+
+## Mark's gate (2026-10-25)
+
+Passed on the live portal: "It looks good, gate passed." His one doubt is in the street, not the portal: "the frog
+doesn't seem like a frog and I think we should put multipule frogs in different location instead of just stop 0".
+The frog is S3b's (`frog.ts`). The Lead's read at true scale (`street-s3b-2026-10-25/t6/frog-p4b/`): about 15 px on
+desktop and 6 px on the phone, turned head-on to stop 0's camera, so the sitting outline and the folded back leg are
+hidden and only the eyes read, dark on the dark grass base. Next: frogs as their own slice on the portal's head.
