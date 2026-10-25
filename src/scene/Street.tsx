@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useThree } from '@react-three/fiber'
 import type { PerspectiveCamera } from 'three'
 import { CYPRESS_STROKE_BODY, strokeGlslWith, type StrokeBody } from './cypressStrokeShader.ts'
@@ -43,8 +43,17 @@ const STREET_GROUND_BODY: StrokeBody = { ...CYPRESS_STROKE_BODY, gaps: null, lan
  * masses, all or nothing (`streetReadiness`), drawn in place of the diorama's foreground under the same sky. It places
  * the camera at its station itself, so the layout stays in this lazy chunk. `?flat=1` draws the flat panel instead
  * (G4b: four faces laid flat in the production materials, no fog), facing the camera.
+ *
+ * Through the portal (tasks/2026-10-25-street-portal-plan.md): `onReady` reports once per mount, `ok` false when an asset
+ * failed, since `__streetReady` stays set after an unmount; `hold` keeps Vincent at his station while the layer covers
+ * the street (plan review F4).
  */
-export default function Street({ reduced = false, still = false }: { reduced?: boolean; still?: boolean } = {}) {
+export default function Street({
+  reduced = false,
+  still = false,
+  hold = false,
+  onReady,
+}: { reduced?: boolean; still?: boolean; hold?: boolean; onReady?: (ok: boolean) => void } = {}) {
   const flags = useMemo(() => readStreetFlags(typeof window !== 'undefined' ? window.location.search : ''), [])
   const { camera, size } = useThree()
   const portrait = size.height > size.width
@@ -82,6 +91,12 @@ export default function Street({ reduced = false, still = false }: { reduced?: b
     if (build) w.__streetCounts = { ...build.counts, builds: (w.__streetCounts?.builds ?? 0) + 1 }
     else delete w.__streetCounts
   }, [readiness.ready, build])
+  const reportedRef = useRef(false)
+  useEffect(() => {
+    if (!readiness.ready || reportedRef.current) return
+    reportedRef.current = true
+    onReady?.(readiness.render)
+  }, [readiness.ready, readiness.render, onReady])
 
   // the station: the street group sits at `STREET.originA` under anchor A, the camera with it
   const offset = useMemo<[number, number, number]>(() => (!flags.flat && flags.anchor === 'A' ? [...STREET.originA] : [0, 0, 0]), [flags.flat, flags.anchor])
@@ -201,7 +216,7 @@ export default function Street({ reduced = false, still = false }: { reduced?: b
           painting={paintingData}
           flags={flags}
           offset={offset}
-          reduced={reduced}
+          reduced={reduced || hold}
           still={still}
         />
       )}

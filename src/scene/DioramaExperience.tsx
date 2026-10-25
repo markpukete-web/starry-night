@@ -21,15 +21,17 @@ const Street = lazy(() => import('./Street'))
 
 /**
  * A street chunk that fails to load leaves the sky alone, settled, as a failed asset does (`streetReadiness`), rather
- * than unmounting the page through the canvas (Fable R11).
+ * than unmounting the page through the canvas (Fable R11). Through the portal, `onFailed` turns the portal off for the
+ * page's life: `React.lazy` keeps the rejection, so every later entry would fail at once (plan review F7).
  */
-class StreetBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+class StreetBoundary extends Component<{ children: ReactNode; onFailed?: () => void }, { failed: boolean }> {
   state = { failed: false }
   static getDerivedStateFromError() {
     return { failed: true }
   }
   componentDidCatch() {
     ;(window as Window & { __streetReady?: boolean }).__streetReady = true
+    this.props.onFailed?.()
   }
   render() {
     return this.state.failed ? null : this.props.children
@@ -305,24 +307,26 @@ function Scene({
       )}
       {measurePerformance && <PerfProbe />}
       {!streetMode && arrival && <ArrivalDriver home={defaultCamera} reduced={still} onDone={onArrived} {...refs} />}
-      <Suspense fallback={null}>
-        {streetMode ? (
-          // the street places the camera at its station itself, in its own chunk (the main bundle carries no layout)
+      {streetMode && (
+        // the street places the camera at its station itself, in its own chunk (the main bundle carries no layout); its
+        // own Suspense, so a chunk still loading never hides the sky (the portal's decision (e))
+        <Suspense fallback={null}>
           <StreetBoundary>
             <Street reduced={reduced} still={still} />
           </StreetBoundary>
-        ) : (
-          debug !== 'flow' && (
-            <Diorama
-              debug={debug === 'stage' ? 'stage' : 'final'}
-              clock={skyClock}
-              alive={alive}
-              tuning={aliveTuning}
-              cypressReady={arrival ? refs.cypressReadyRef : undefined}
-              landReady={arrival ? refs.landReadyRef : undefined}
-              touch={landTouch}
-            />
-          )
+        </Suspense>
+      )}
+      <Suspense fallback={null}>
+        {!streetMode && debug !== 'flow' && (
+          <Diorama
+            debug={debug === 'stage' ? 'stage' : 'final'}
+            clock={skyClock}
+            alive={alive}
+            tuning={aliveTuning}
+            cypressReady={arrival ? refs.cypressReadyRef : undefined}
+            landReady={arrival ? refs.landReadyRef : undefined}
+            touch={landTouch}
+          />
         )}
         {debug !== 'stage' && !idsPass && (
           <PaintingFlowSky3D

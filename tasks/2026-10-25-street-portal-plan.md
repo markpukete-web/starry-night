@@ -3,6 +3,17 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or
 > superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+**Deviations found in the build (the Lead, 2026-10-25, evening).** Three, each smaller than what it replaces:
+
+- (b): `DioramaExperience` holds the place, not `App`. The dock is its child already (`children`), so it reads the
+  place and the two actions from a `PortalContext` that `VisitorChrome.tsx` exports. `App` passes only the flag.
+- (c) and (f): the lens is not saved. The diorama's camera always has its default camera's fov, near and far, so the
+  driver writes the current default camera's lens during the flight and puts it back on the return. After a rotation
+  in the street the lens is the new aspect's, which a saved lens would get wrong.
+- (h) and (i): the portal's cast lives as long as the scene, and only its listeners follow `enabled`. The tap that
+  enters commits `flying` between the two window listeners. A cast torn down with the listeners would tell the touch
+  hook's listener "not the village", and the sky would surge.
+
 **Revision 2 (2026-10-25, evening).** The Consultant read revision 1 (`scratch/street-portal-2026-10-25/plan-review.md`):
 APPROVE with nine P2s, no P0 or P1. Each is folded where it lands and named there (F1 to F9).
 
