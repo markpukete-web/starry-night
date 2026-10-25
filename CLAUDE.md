@@ -151,6 +151,14 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   arrival ends within 1.1 s; a frame counts at most 0.1 s (`maxDt`); the opening waits for the sky, the cypress and
   the scan, at most 15 s (`readyTimeout`); the chrome fades in over 600 ms (`reveal`). Reduced motion: no layer, no
   push, the line as a static caption until the first pointer or key. Untuned by Mark.
+- The loading curtain (2026-10-25, `index.html` `#boot`, `src/bootCurtain.ts`; the record
+  `tasks/2026-10-25-loading-curtain.md`): C's first frame is in the page, with the cue "Painting the night sky…" under the
+  citation at 0.6 of the line's opacity, faded over 0.5 s (`CUE_FADE`) once the wait ends. The hold counts from the
+  painting: the time it was shown while waiting, at most 1 s per frame (`seenDt`), capped so 1.5 s of the hold is left
+  once the scene is ready (`afterReady`). A skip no longer ends the wait: it runs the clock at 8× from the moment the
+  scene is ready. `readyTimeout` stays 15 s, and slow 4G is out of scope (Mark, 2026-10-25). The curtain goes
+  `readyTimeout + 5` s after the keep on a page that failed. Passed by Mark on his phone, 2026-10-25 ("it works well
+  in terms with landing").
 - Default sky: moving strokes (Mark, 2026-10-20, after C's gate); `?sky=light` opens on painted light. Reduced motion
   still forces the painted-light still.
 - Flags on for every visitor (Mark, 2026-10-20, "go for your recommendation"): A (`alive`), B (`touch`) and C
