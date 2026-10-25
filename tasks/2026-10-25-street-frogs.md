@@ -76,7 +76,12 @@ The studio stashed and `git status --short` empty first.
 - **F2, P3: the plan and the test header still promised one frog at every pose.** Fixed in `9bc05b8`: one before `t`
   0.45, and a second later only at 0.8 or more, where its eyes are a pixel or two.
 
-Codex's bounded re-read of the fixes: `branch-rereview-codex.md`.
+Codex's bounded re-read (`branch-rereview-codex.md`): FIX. F1 was still open for a cull that runs on its first frame
+and stops, because case 18 loaded a fresh page at each pose: in a live walk that leaves stop 2's frog drawn at `t` 0.33,
+737 triangles over the ceiling. F2 left two sentences in the plan's revision note. Fixed in `eca68c4`: one page walks
+0.4, 0.33, 0.4, 0.45, 0.6, 0.45 by `__streetWalk.set`, and stop 2's and stop 4's frogs must flip both ways. That
+mutant fails at `t` 0.33 (`fix/mutants.txt`). Codex's second read (`branch-reread2-codex.md`): both closed,
+MERGEABLE.
 
 ## Open for Mark
 

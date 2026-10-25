@@ -1,6 +1,30 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-25 (night): the portal (slice 4) built, gated and reviewed; Mark out
+## Pickup — 2026-10-25 (late night): the frogs built, gated and reviewed; the phone's touch cost open
+
+**The frogs** are done on `feat/street-frogs` (stacked on the portal), local, no PR. Five, one by each stop, side-on
+to its camera. Gate runs all pass (60 fps, every browser triangle read under the ceiling, 18 grass cases). Codex's
+branch review: FIX twice, both on case 18's reach, then MERGEABLE. The record: `tasks/2026-10-25-street-frogs.md`.
+**For Mark's look:** live at `http://192.168.0.148:5199/?street=1`, the sheets in
+`scratch/street-frogs-2026-10-25/t4/clips/`. His calls: do they read as frogs, and is stop 1's too hidden on the phone.
+
+**The phone's touch cost (open, found 2026-10-25).** Mark's first real-device reading, iPhone 17 Pro Max, the
+painting page: 60 fps still, 18–50 under a moving finger, near 60 with `touch=0`. The Mac does not reproduce it (4×
+CPU throttle, vsync off: no touch cost measurable), so the phone is the loop. Next: his drags on `?perf=1&bend=0` (the
+sky's surges only) and `?perf=1&surge=0` (the land's ray cast and bend, the surges at zero strength). Suspects: the
+land's per-frame ray cast against six meshes (`useTouchInput.ts` `landPoint`), and the sky's 16-slot surge loop per
+vertex (`touchSurge.ts` `touchLift`). The bar is 30 fps on a mid-tier phone, so this blocks the pre-release gate.
+
+**Next on the roadmap (Mark, 2026-10-25: "go with your recommendation"):** the real-phone check (started above), then
+the village's craft slice (door frames, shutters, steps, eaves, fences, lamps, and surfaces that read as solid paint).
+The PRs #23 → #24 → #25, then the frogs', on Mark's word. #23's Codex review sat at "running" from 08:37 UTC; Mark:
+"No need" to re-request.
+
+**Routing (Mark, 2026-10-25):** all mechanical work to the Gemini 3.8 worker (`w4:p5`); visual and reasoning work
+stays with the Lead. New review work to the Consultant (`w4:p6`) while Codex is low; a short read of a fix stays with
+the reviewer that found it.
+
+## Pickup — 2026-10-25 (night): the portal (slice 4) built, gated and reviewed; Mark out (superseded by the late-night pickup above)
 
 The portal is done on `feat/street-portal` (stacked on the church), local, no PR. Behind `?portal=1`, a hover over a
 house shows the hand and "Enter the village". A tap flies the camera down to the village in 2.4 s. The street builds
