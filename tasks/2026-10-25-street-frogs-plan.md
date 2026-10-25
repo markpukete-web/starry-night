@@ -26,8 +26,8 @@ with the grass, as the frog does today.
 
 **Architecture:** One frog shape, built once from the painting and drawn five times. A table holds each frog's spot
 (`t`, lateral, `y`), its stop, its turn from side-on and its size (its group's uniform scale). A frog is drawn only
-within `FROG.draw` of the camera, so the walk never draws two at once and never draws one where the triangle budget
-has no room. The spots come from a search that measures in the render how much of a frog each stop's camera sees.
+within its own draw distance of the camera, so the walk never draws two near ones at once and never draws one where
+the triangle budget has no room. The spots come from a search that measures in the render how much of a frog each stop's camera sees.
 
 **Tech stack:** three.js, Vincent's builders (`clad`, `solid`, `stroke`, `sphere`, `tube`), R3F, `node --test`, the
 check scripts. No new dependency.
@@ -141,9 +141,10 @@ Nothing is pushed before Mark has seen it.
   find. Look pass 1 tries `FROG.size` up to 0.0108 (about 23 cm, a large frog beside Vincent) and a lighter back (the
   bushes' greens from luma share 0.6). Every spot is measured again after a size change. Size does not change the
   triangle count.
-- **(i) The draw distance.** A frog is drawn only when its group is within `FROG.draw` = 0.5 of the camera. At 0.5 a
-  frog first shows at about 17 px long on the desktop and 9 px on the phone, in the grass. Every stop's own frog is
-  within it (0.25 to 0.40). Task 3 looks at that pop in a frame pair.
+- **(i) The draw distance.** A frog is drawn only when its group is within its spec's `draw` of the camera. In the
+  grass 0.5: the blades hide each frog where it first draws (`t3/pop/`). On the open square 0.5 showed stop 4's frog
+  appearing from nothing at about 20 px, so its `draw` is 1.1 (look pass 3): it first draws at `t` 0.51 behind a near
+  blade, past the walk's tight stretch (`t3/pop2/`). Every stop's own frog is within its `draw` (0.25 to 0.40).
 
 ## Global constraints
 
@@ -161,8 +162,9 @@ Nothing is pushed before Mark has seen it.
    99, true))` is 0 at every `t` in 0 to 60 s by 0.05.
 2. A frog in the frame of a stop that is not its own, close to the camera. Test: every frog at least 0.15 from every
    station camera, both orientations.
-3. Two frogs drawn at once: the shared blink would show, and the triangle room is for one. Test: at every walk `t` from
-   0 to 0.9 by 0.001, on 16:9, 16:10 and the phone, at most one frog is inside the frustum and within `FROG.draw`.
+3. Two frogs drawn at once: the shared blink would show, and the triangle room is for one. Tests, at every walk `t` by
+   0.001 on 16:9, 16:10 and the phone, a frog counting when it is in the frustum and within its `draw`: before `t` 0.45
+   at most one is drawn, and when two are drawn the farther is at least 0.8 away (its eyes a pixel or two).
 4. A resize between portrait and landscape at a stop: the spots were picked for both frames. Test: each frog is in
    frame on 16:9, 16:10 and the phone at its stop.
 5. The grass changing later: a denser grass fills a gap. Test: the gap test per frog. A blade arching over a frog from
@@ -193,7 +195,7 @@ Nothing is pushed before Mark has seen it.
     `FROG.knee[0] > FROG.torso.radii[0]`.
   - `'its eyes stand on its head'`: `FROG.eye.centre[1] − FROG.eye.r > FROG.head.centre[1]`, and the eye is in the
     head's front half: `FROG.eye.centre[2] >= FROG.head.centre[2]`.
-  - `'the frog fits the walk: at most 1,250 triangles'`, its comment naming Fact 9 and `FROG.draw`.
+  - `'the frog fits the walk: at most 1,250 triangles'`, its comment naming Fact 9 and the draw distance.
   - `'Vincent keeps his strokes'`: `buildVincent`'s stroke and underpaint positions hash to `79338a361cd6b11c` (the
     first 16 hex of their SHA-256, read at `cc56207` before the change).
 - [ ] **Step 2: Run them**: `node --test scripts/street-frog.test.ts`. Expected: the shape tests FAIL, Vincent's PASS.
@@ -209,7 +211,7 @@ Nothing is pushed before Mark has seen it.
 ### Task 2: five frogs
 
 **Files:**
-- Change: `src/scene/frog.ts` (`FROG.draw`, `FrogSpec`, `FROGS`, `frogPlace(spec)`)
+- Change: `src/scene/frog.ts` (`FrogSpec` with its `draw`, `FROGS`, `frogPlace(spec)`)
 - Change: `src/scene/StreetFrog.tsx` (five groups, the draw distance)
 - Test: `scripts/street-frog.test.ts`
 - Spike tools, not committed: `src/scene/FrogStudio.tsx`, its mount in `Street.tsx`, and `frog-studio.mjs`,
@@ -217,8 +219,8 @@ Nothing is pushed before Mark has seen it.
 
 **Interfaces:**
 - Consumes: Task 1's `FROG`, `buildFrog`, `FROG_EYES`.
-- Produces: `FROG.draw` (0.5), `type FrogSpec = { stop: 0 | 1 | 2 | 3 | 4; t: number; lateral: number; y: number;
-  toward: 'lane' | 'away'; face: number; scale: number }`, `FROGS: readonly FrogSpec[]` (one per stop, in stop order),
+- Produces: `type FrogSpec = { stop: 0 | 1 | 2 | 3 | 4; t: number; lateral: number; y: number;
+  toward: 'lane' | 'away'; face: number; scale: number; draw: number }`, `FROGS: readonly FrogSpec[]` (one per stop, in stop order),
   `frogPlace(spec: FrogSpec): { position: [number, number, number]; yaw: number }`. `frogBlink(t)` and `__frog`
   unchanged.
 
@@ -239,14 +241,15 @@ Nothing is pushed before Mark has seen it.
     except stop 4's frog on the desktop, within 0.95 (its frame meets the ground at its lower edge).
   - `'no frog crowds a camera'`: every frog at least 0.15 from every station camera, both orientations.
   - `'the sizes vary a little'`: `scale` in [0.9, 1.1], no two equal.
-  - `'each stop draws its own frog'`: at each station, both orientations, its frog is within `FROG.draw` of the camera.
-  - `'at most one frog is drawn at any walk pose'`: Review focus 3. A frog counts when its centre (`y` + 0.002) with a
-    sphere of radius 0.008 meets the frustum and lies within `FROG.draw` of the camera.
+  - `'each stop draws its own frog'`: at each station, both orientations, its frog is within its `draw` of the camera.
+  - `'at most one frog is drawn on the walk before t 0.45'` and `'when two frogs are drawn, the farther is at least 0.8
+    away'`: Review focus 3. A frog counts when its centre (`y` + 0.002) with a sphere of radius 0.008 meets the frustum
+    and lies within its `draw` of the camera.
   - `'reduced motion keeps the eyes open'`: Review focus 1.
 - [ ] **Step 2: Run them**: `node --test scripts/street-frog.test.ts`. Expected: FAIL (no `FROGS`).
-- [ ] **Step 3: Implement** `FROG.draw`, `FrogSpec`, `FROGS` and `frogPlace(spec)` in `frog.ts` from the table in
+- [ ] **Step 3: Implement** `FrogSpec`, `FROGS` and `frogPlace(spec)` in `frog.ts` from the table in
   step 6, and five groups in `StreetFrog.tsx`: each
-  `<group name={`street-frog-${stop}`} position rotation scale={scale}>` over the shared geometries. Each frame, a group is visible when its distance to the camera is below `FROG.draw`. The eyes and
+  `<group name={`street-frog-${stop}`} position rotation scale={scale}>` over the shared geometries. Each frame, a group is visible when its distance to the camera is below its spec's `draw`. The eyes and
   `__frog` stay as they are.
 - [ ] **Step 4: Run the tests**: `npm run -s test:sky`. Expected: all PASS.
 - [ ] **Step 5: Stage the studio for five frogs.** Now that the groups exist, port `FrogStudio.tsx`: it reads
@@ -281,6 +284,13 @@ questions, in order: does each read as a frog, is any one hidden or crowded by a
 (Decision (h)), and does the pop at the draw distance show (the two frames either side of each frog's first draw on
 the walk). Each pass retunes the shape, the paint or a spot, then re-runs the tests and `frog-vis.mjs`. Cap: four
 passes.
+
+**Done, three passes** (`scratch/street-frogs-2026-10-25/t3/`). Pass 1: `FROG.size` 0.0108 and the back from luma
+share 0.6. The size helped both viewports. The lighter back turned the frogs blue-grey among the blades, because the
+bushes' lightest greens are pale blue-greens, and lost the yellow-green stripes that found them. Pass 2: the size kept,
+the back as before (`p3/cmp-*.png`). Pass 3: stop 4's `draw` 1.1 (Decision (i)). Seen and whole at size 0.0108
+(`t3/p3-vis.json`): stop 0 0.99 / 0.98 and 803 / 234 px, stop 1 0.88 / 0.89 and 449 / 158, stop 2 0.96 / 0.95 and 794
+/ 270, stop 3 0.95 / 0.94 and 799 / 278, stop 4 0.99 / 0.99 and 398 / 137 (desktop / phone). No crop cut a frog.
 
 ### Task 4: the gate's runs
 
