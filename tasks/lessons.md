@@ -3110,3 +3110,5 @@ must be byte-identical before the stimulus's difference means anything.
 - **Probe the last pass's values before you spend it.** Four throwaway captures at two stops (A–D) bracketed the
   painting's L > 60 share. Pass 4 then took one value (S3b: `facing` [0.55, 0.75], `edge` 0.5, `along` [0.2, 0.5],
   `top` 1.0, `topShare` 0.02).
+- **zsh reads `$V:c` in a string as a modifier.** `"colour/full-s$S-$V:colour/ids-s$S-$V"` lost a character, so the
+  unlit look lines never reached `look.txt` and nothing failed. Brace every variable next to a colon: `${V}:`.

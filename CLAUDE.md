@@ -247,6 +247,15 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   dark base under it is the ground's, the field's darkest 40%. The wind 0.0035 at the tip, toward +x, its heading
   wobbling by 0.3 rad, its gusts travelling across the verge. The hand's push 0.03 at the tip, the trail's texel 0.005,
   radius 0.045, Vincent's feet 0.03, with D1's rise, swing and window. `?grass=0` builds none. Untuned by Mark.
+- The grass's paint and the moon on it, S3b (2026-10-25, `src/scene/grassBlade.ts` `GRASS_BLADE` and `GRASS_LIGHT`,
+  `streetGrass.ts` `GRASS`, `grassShader.ts`; the record `tasks/2026-10-25-street-s3b.md`, look pass 4 of 4). Four
+  segments, no joint turning more than 0.38 rad. A clump leans 0.35 toward its side, `clumpSide`'s value noise at 5 per
+  world unit, its blades fanned 0.3 either way from that, 15% curling against it; turn 0.3. Density 0.165, the chunks 0.025
+  long in `t`, the walk's worst refined point 35,696 triangles of the grass's 38,515 (92.7%). The paint comes from each
+  blade's own seed, apart from the layout. The moon: the top colour one of the lightest 2% of the bushes' lit texels,
+  mixed up to all the way where the arch faces `STREET_MOON` (the facing eased over 0.55–0.75), rising from 0.2 to 0.5
+  along the blade and full to the tip, over the outer quarter of the blade's width at full strength and the next quarter fading. `?light=0` draws the grass
+  unlit, slice 3's program byte for byte. Untuned by Mark.
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)
