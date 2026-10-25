@@ -33,7 +33,9 @@ import {
  * released and swings. With `landMasksSky`, a hand on the tree moves the tree and does not surge the sky behind
  * it (F9: at bend 0 there is no land touch and no masking, so B is exactly today's). A leave, a cancel or a hidden
  * tab releases the held touch (F3). The land meshes are looked up by name when needed, since the tree and the
- * land mount after their loads; `__landState().found` says which are there.
+ * land mount after their loads; `__landState().found` says which are there. A finger touches no land (2026-10-25:
+ * on Mark's phone the land's cast under a moving finger cost the frame rate, 38–60 fps against 60 with the bend off),
+ * so on a touch screen a finger turns the view and lights the sky, and a mouse or a pen still bends the land.
  */
 type TouchWindow = Window & {
   __touchState?: () => unknown
@@ -126,7 +128,7 @@ export function useTouchInput({
     const raycaster = new Raycaster()
     const ndc2 = new Vector2()
     const byName = (name: string): Object3D | undefined => scene.getObjectByName(name)
-    const landActive = () => landStore !== undefined && bendRef.current > 0
+    const landActive = () => landStore !== undefined && bendRef.current > 0 && !p.finger
     /** The world point under a client position when the nearest opaque body there is land, else null. */
     const landPoint = (clientX: number, clientY: number): [number, number, number] | null => {
       if (!landActive()) return null
