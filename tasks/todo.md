@@ -1,6 +1,23 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-25 (afternoon): Mark read S3b live; his answers and three ideas
+## Pickup — 2026-10-25 (late afternoon): S3b pass 5 built, gated and reviewed; the church next, Mark out
+
+S3b pass 5 is done on `feat/street-s3b` (head `22b00fc`), local, no PR. Mark is out and gates on his return. What it
+holds, against his words: the base between the clumps painted in the bushes' dark paint, the hand closing on a press,
+and a frog with blinking eyes, in a gap of the left verge's grass ("Why not under the grass"). The record:
+`tasks/2026-10-25-street-s3b.md`, Task 6. The Consultant's branch review: MERGEABLE, ten P3s, each answered there, six
+fixed in `22b00fc`.
+
+**For Mark's gate.** Live at `http://192.168.0.148:5196/?street=1` (or `localhost:5196`). The frog is at stop 0, low
+left. The clips: `scratch/street-s3b-2026-10-25/t6/clips/blink/` and `t6/clips/press/`. His calls: the frog's place,
+size and blink speed, the base's darker verge, and whether the press reads. Perf holds 60 fps at every pose. The p95
+rose about 1 ms (the record says where). Then the PR, on his word.
+
+**The church (slice 3c) is next, then the portal.** Mark: "agree, church first then portal". The plan is
+`tasks/2026-10-25-street-church-plan.md` on `feat/street-church` (stacked on S3b), in review. Two deviations from the
+design need Mark's word at the gate: stop 4 frames the spire, and a church-only light lifts its plaster.
+
+## Pickup — 2026-10-25 (afternoon): Mark read S3b live; his answers and three ideas (superseded by the pickup above)
 
 S3b is gated by the Lead and committed on `feat/street-s3b` (`cb34463`), local, no PR. Mark on the live street: the far
 arch tops at stop 0 are fine, the stripes are fine, the grass's direction is right. The bare base between the clumps
@@ -20,6 +37,7 @@ down, a hover at 0.6 and a press at 1, as `landTouch.ts` does). Then the PR.
   side near white, shorter strokes per wall. Its own slice, next after S3b. The walk has about 6,700 triangles spare at
   its worst point, so the church and the walls need a budget from elsewhere.
 - Frogs or other animals in the village. The Lead's read: frogs fit poorly (no water, too small and dark to read).
+  Mark asked for a frog anyway, in pass 5, and it is built (the pickup above). The rest of this note stands.
   Moths at the lit windows fit best: Vincent painted a giant peacock moth at Saint-Rémy in May 1889. Then a cat on a wall
   or an owl on a ridge. One or two, quiet. Borrowing a motif from his other work is near the "other paintings" line, so
   it is Mark's call. Not a fix for the bare base.
