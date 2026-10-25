@@ -34,7 +34,7 @@ About 9.6 MB, then the sky's 25,600 strokes are built. The largest files are `pa
 Before, the first paint was a blank dark-blue page. After, it is Vincent's line and the cue. On fast 4G the painting
 fades in at 3.3 s and the scene is ready at about 9.6 s. On slow 4G the painting arrives at 20.7 s and the opening
 times out at 15 s after React's first commit (21.5 s). It then opens onto an empty dark scene, as the base did. That
-is open for Mark: `readyTimeout` (15 s) and whether slow 4G is a target.
+was open for Mark: he put slow 4G out of scope (below).
 
 ## The Consultant's correctness read: REVISE, six findings
 
