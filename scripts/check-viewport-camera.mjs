@@ -291,6 +291,9 @@ async function main() {
     for (const [name, from, to] of [
       ['landscape-to-portrait', LANDSCAPE, PORTRAIT],
       ['portrait-to-landscape', PORTRAIT, LANDSCAPE],
+      // the portrait lens follows the aspect (portraitFov, 2026-10-25): Safari's bars going away mid-visit must reach
+      // the framing of a fresh load at the taller size
+      ['bars-collapse', { width: 440, height: 735 }, { width: 440, height: 956 }],
     ]) {
       let page = await newPage(port, to, errors)
       const fresh = await shot(page, join(outDir, `${name}-fresh.png`))

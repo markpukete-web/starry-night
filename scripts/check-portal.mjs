@@ -28,7 +28,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { DIORAMA_CAMERAS } from '../src/scene/dioramaContract.ts'
+import { DIORAMA_CAMERAS, portraitFov } from '../src/scene/dioramaContract.ts'
 
 const appUrl = process.env.DIORAMA_CAPTURE_URL || 'http://127.0.0.1:5198/'
 const origin = new URL(appUrl).origin
@@ -470,8 +470,8 @@ async function main() {
     await page.send('Emulation.setDeviceMetricsOverride', { ...DESKTOP, width: 900, height: 1600 })
     await sleep(800)
     const rec10 = await record(page, () => page.key('Escape'), `window.__portal().place === 'diorama'`)
-    // a portrait aspect takes the portrait lens
-    const r10 = assertReturn(rec10, 'case 10', view10, DIORAMA_CAMERAS.mobile)
+    // a portrait aspect takes the portrait lens, fitted to that aspect (portraitFov, 2026-10-25)
+    const r10 = assertReturn(rec10, 'case 10', view10, { ...DIORAMA_CAMERAS.mobile, fov: portraitFov(900 / 1600) })
     console.log(`PASS 10: after a rotation in the street the return holds the saved pose (${r10.now}, ${r10.after}), its rotation and the portrait lens`)
 
     // ---- case 2, the phone: Vincent held at stop 0 under the layer, then walking

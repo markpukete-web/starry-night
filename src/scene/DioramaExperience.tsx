@@ -43,6 +43,7 @@ import { PortalContext, type PortalControl } from './portalContext'
 import {
   DIORAMA_CAMERAS,
   DIORAMA_ORBIT,
+  portraitFov,
   type DioramaDebugMode,
   type DioramaViewMode,
 } from './dioramaContract'
@@ -455,9 +456,18 @@ function Scene({
   // R3F's `size` is the canvas size and re-renders on resize. Reading window.inner* here instead
   // left the camera stale until reload, so rotating a device kept the previous orientation's
   // framing — landscape→portrait held the desktop close-up (Codex, 2026-07-28).
-  const { size } = useThree()
+  const { size, camera } = useThree()
   const isPortrait = size.height > size.width
   const defaultCamera = isPortrait && view === 'design' ? DIORAMA_CAMERAS.mobile : DIORAMA_CAMERAS[view]
+  // the portrait lens follows the canvas's aspect (`portraitFov`), on the diorama only: the street's walk and the
+  // portal's flights own the lens while they run, and the walk writes it only when the orientation flips
+  useLayoutEffect(() => {
+    if (!isPortrait || view !== 'design' || place !== 'diorama') return
+    const persp = camera as PerspectiveCameraImpl
+    // eslint-disable-next-line react-hooks/immutability -- the R3F camera's lens is set imperatively, as the portal sets it
+    persp.fov = portraitFov(size.width / size.height)
+    persp.updateProjectionMatrix()
+  }, [camera, isPortrait, view, place, size.width, size.height])
   const skyHome = isPortrait ? DIORAMA_CAMERAS.mobile : DIORAMA_CAMERAS.design
 
 
