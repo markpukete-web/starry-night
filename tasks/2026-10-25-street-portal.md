@@ -148,7 +148,9 @@ after (`t8/perf/table.md`). On the phone, the rise from 20 to 21 also follows a 
 The gate again on the fixed tree (`t9/summary.txt`, `t9/church/summary.txt`): check-portal passes all cases, 3b and
 6b among them (fourteen lines). The church's gate frames and the diorama's home frames are byte-identical, 8 of 8 each.
 `check-reduced-motion.mjs`, the build, tsc, lint and the suite (346 of 346) pass. The main chunk is 1,383,589 bytes,
-255 more than at `4556d29`.
+255 more than at `4556d29`. The summaries name `4556d29` because the gate ran on the working tree before the commit.
+That tree's four code files are `b0a34d0`'s byte for byte: the diff saved before the mutants matches the tree after
+them, and matches `4556d29..b0a34d0` file by file, so the gate covers `b0a34d0`.
 
 Codex's confirmation read of `b0a34d0` (`branch-rereview-codex.md`): MERGEABLE. F1 to F5 are fixed, and the fix diff
 adds no P0, P1 or P2 defect. Codex re-ran its own counterexamples against the fixed code: the late fade frame, the
