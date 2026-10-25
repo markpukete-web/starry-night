@@ -186,7 +186,7 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
 - D1, touch the land (2026-10-21, `src/scene/landTouch.ts`, rides B's flag; `?touch=0` turns both off): radius 0.55 world
   units, push 0.14 on the cypress and 0.035 on the trees and bushes (a full-weight vertex where the lateral field peaks,
   at 0.447 of the radius), dip 0.35 of the push, rise 0.12 s, swing τ 0.9 s and period 1.3 s, closed between 4 and 5 s
-  after the release, 4 live touches, hover amplitude 0.6, a hand on the land masks the sky's surge behind it; the bend
+  after the release, 4 live touches, hover amplitude 0.6, a mouse or a pen on the land masks the sky's surge behind it; the bend
   weight is the vertex's local height over 2.7 on the cypress and its height over the terrain over the mass's height on
   the trees; the ground does not bend. Knob `bend` 0–1.5, shipped 1 (`sky-tuning.json` `touchBend`), untuned by Mark.
   A finger touches no land, only a mouse or a pen (2026-10-25, Mark's choice, `useTouchInput.ts` `landActive`): on his
