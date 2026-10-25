@@ -4,7 +4,9 @@ Mark asked whether the site counts as a heavy WebGL site, and whether a loading 
 letter, should say that the site is loading. Mark then said: "go with your recommendation on the loading screen". The
 recommendation was no separate card. The opening's painting and Vincent's line become the loading screen. The plan is
 `tasks/2026-10-25-loading-curtain-plan.md`. The branch is `feat/loading-curtain`, stacked on `fix/finger-no-bend`. The
-evidence is in `/Users/markma/Projects/starry-night/scratch/loading-2026-10-25/`.
+evidence is in `/Users/markma/Projects/starry-night/scratch/loading-2026-10-25/`. The hashes here are after the
+rebase onto `04294e6`. The evidence files and the Consultant's reads name the earlier ones: `71b8c20` is `a84b9ea`,
+`28269b9` is `18cd8e4`, `d6d82ad` is `c0e6807`, `dc509a4` is `d12eaae`, `01ff0a9` is `98ad144`.
 
 ## What a first visit fetches
 
@@ -18,7 +20,7 @@ About 9.6 MB, then the sky's 25,600 strokes are built. The largest files are `pa
 - React's layer renders underneath. The driver drops `#boot` on the first frame that is not waiting.
 - The hold counts from the painting, capped so 1.5 s of it is left after the scene is ready.
 - A tap no longer ends the wait. It speeds up the opening once the scene is ready.
-- The curtain's painting fades in whole (`28269b9`). On slow 4G it drew in strips from the top before.
+- The curtain's painting fades in whole (`18cd8e4`). On slow 4G it drew in strips from the top before.
 
 ## Before and after (production build, the Mac, headless Chrome, medians of three runs, seconds)
 
@@ -36,7 +38,7 @@ is open for Mark: `readyTimeout` (15 s) and whether slow 4G is a target.
 
 ## The Consultant's correctness read: REVISE, six findings
 
-The dispositions are in the plan's "Revision 1" (`d6d82ad`). Five fixed, one declined, one declined in part.
+The dispositions are in the plan's "Revision 1" (`c0e6807`). Five fixed, one declined, one declined in part.
 
 - **P1, the painting at high priority: not closed, and undone.** The re-timing matched the earlier run to within a
   few milliseconds. The rig is HTTP/1.1 under a shared throttle, so a priority cannot show there. Its effect in
@@ -45,18 +47,18 @@ The dispositions are in the plan's "Revision 1" (`d6d82ad`). Five fixed, one dec
   mounted, and a throw in the first render never commits, so a timer armed by the keep could not cover either. The
   curtain's script marks the page `arrival-failed` on an uncaught error, a failed load or an unhandled rejection, and
   a style rule hides both copies of the cue. React's copy also starts hidden until the driver's first frame
-  (`01ff0a9`). Checked in the browser: no WebGL, marked by 3 s. The bundle a 404, marked. Normal openings on desktop
+  (`98ad144`). Checked in the browser: no WebGL, marked by 3 s. The bundle a 404, marked. Normal openings on desktop
   and phone, never marked.
 
 The Consultant's closing read (`fix-read-consultant.md`) said REVISE on P1. The plan's "Revision 2" records it.
 
 ## The Lead's gate
 
-At `01ff0a9` and the closing read's commit, against the dev server on port 5203:
+At `98ad144` and the closing read's commit, against the dev server on port 5203:
 
-- `npm run test:sky`: 362 of 362 at `dc509a4`. `scripts/arrival.test.ts`: 13 of 13 at `01ff0a9`.
+- `npm run test:sky`: 362 of 362 at `d12eaae`. `scripts/arrival.test.ts`: 13 of 13 at `98ad144`.
 - `tsc -b` and `eslint .`: exit 0.
-- `check-reduced-motion.mjs`: PASS. `check-portal.mjs`: ALL PASS, cases 1 to 12. Both ran at `dc509a4`. `01ff0a9`
+- `check-reduced-motion.mjs`: PASS. `check-portal.mjs`: ALL PASS, cases 1 to 12. Both ran at `d12eaae`. `98ad144`
   changes one style rule under `.arrival`, and both checks open with `arrival=0`, which never renders that layer.
 - Mutations: the credit counted with `maxDt` fails A11, and the curtain's script without its reduced-motion test
   fails A13.

@@ -5,7 +5,7 @@
 **The loading curtain** is done on `feat/loading-curtain` (stacked on `fix/finger-no-bend`), local, no PR. The opening's
 first frame is in the page, so a first visit shows Vincent's line and "Painting the night sky…" at once, and the
 painting fades in as it arrives. The Consultant's correctness read: REVISE, six findings, five fixed, one declined.
-The gate found one more (no WebGL left React's cue up for ever), fixed in `01ff0a9`. The record:
+The gate found one more (no WebGL left React's cue up for ever), fixed in `98ad144`. The record:
 `tasks/2026-10-25-loading-curtain.md`. **Mark on his phone: "it works well in terms with landing". Slow 4G is out of
 scope.** The PR next, on the finger fix's.
 

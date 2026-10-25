@@ -73,9 +73,9 @@ A progress bar or a percentage. The 15 s timeout on a slow connection (a first v
 
 ## Revision 1: the Consultant's correctness read (`scratch/loading-2026-10-25/plan-review-consultant.md`, REVISE)
 
-The read covered the plan and the code at `71b8c20`. Six findings, five fixed in one commit, one declined.
+The read covered the plan and the code at `a84b9ea`. Six findings, five fixed in one commit, one declined.
 
-- **P1, fixed.** The painting was fetched at low priority. The slow-4G frames at `28269b9` show it: the painting
+- **P1, fixed.** The painting was fetched at low priority. The slow-4G frames at `18cd8e4` show it: the painting
   finished at 20.8 s, the bundle at 6.3 s, so the curtain stood without its painting for 20 s. `#boot`'s image is now
   `fetchpriority="high"`, and the painting's preload is gone, since the image in the HTML fetches it on every visit.
   The ready time should not move: the opening waits for the painting anyway, so the bytes before it are the same.
@@ -98,7 +98,7 @@ The read covered the plan and the code at `71b8c20`. Six findings, five fixed in
 
 ## Revision 2: the Consultant's closing read (`scratch/loading-2026-10-25/fix-read-consultant.md`, REVISE)
 
-The read covered `d6d82ad`. The Lead's gate had already found its no-WebGL case (`01ff0a9`).
+The read covered `c0e6807`. The Lead's gate had already found its no-WebGL case (`98ad144`).
 
 - **P1, not closed, and the change undone.** The painting finished at the same second with and without
   `fetchpriority="high"`: slow 4G 20,708–20,749 ms against 20,712–20,759, fast 4G 3,240–3,285 against 3,261–3,270.
