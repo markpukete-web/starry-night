@@ -121,7 +121,8 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
 - Portrait lens (2026-10-25, `src/scene/dioramaContract.ts` `PORTRAIT_FIT`, the record `tasks/2026-10-25-phone-framing.md`):
   candidate C's pose with the horizontal field of 360 × 800 (vertical fov 88 at aspect 0.45) held up to aspect 0.65,
   the vertical fov narrowing to keep it (72.0° at Mark's 440 × 735, 86.5° at 390 × 844); 88 below 0.45; the lens at
-  0.65 above it (a tablet). Set on the diorama only. Mark: "take the lead, get it fix"; untuned by Mark.
+  0.65 above it (a tablet). Set on the diorama only. Mark: "take the lead, get it fix"; passed on his phone, 2026-10-25
+  ("It reads right on the phone").
 - Make-it-alive A, behind `?alive=1` until Mark's gate (2026-10-13, `src/scene/skyAlive.ts`): gust periods
   9.7 / 5.9 / 16.3 s, amplitudes 0.46 / 0.28 / 0.16 (sum 0.90; tempo 0.1×–1.9× in the band, mean 1; pass 1 raised
   them from 0.36 / 0.22 / 0.12), travel 3 s per canvas width left to right, brightness lift 0.15 (was 0.06),

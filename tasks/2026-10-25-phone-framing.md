@@ -50,4 +50,6 @@ On the framing branch, against its dev server on port 5204:
 - Mutations: the tablet cap removed fails the lens test, and `aspect < referenceAspect` in place of the NaN-safe guard
   fails it.
 
-Then Mark's look on his phone.
+## Mark's look
+
+On his phone, the branch's dev server on port 5204, 2026-10-25: "It reads right on the phone, push it".
