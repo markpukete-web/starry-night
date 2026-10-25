@@ -22,15 +22,18 @@ import type { ImageData2D } from './useImageData.ts'
 export const GRASS = {
   t: [-0.06, 0.97] as const,
   lat: [0.052, 0.765] as const,
+  /** the chunks' lateral bands and their length along the lane. S3b halved the length: a chunk draws all its blades
+   * when any of it is in view, and at the walk's worst point 46% of them were not (splitting the outer band did not help) */
   bands: [0.052, 0.2, 0.4, 0.765] as const,
-  dt: 0.05,
+  dt: 0.025,
   r0: 0.22,
   /**
    * Density starts at 0.22 from Task 1; tuned to 0.21 so the walk's worst point
    * fits inside GRASS.budget (38,515) with the larger bladeReach spheres, then to 0.2 for look pass 2's bigger blade
-   * (0.21 and 0.205 overrun the budget, 0.203 fails two tests); the budget test prints the worst point.
+   * (0.21 and 0.205 overrun the budget, 0.203 fails two tests), then to 0.165 for S3b's fourth segment with the shorter
+   * chunks; the budget test prints the worst point.
    */
-  density: 0.2,
+  density: 0.165,
   full: 82184,
   house: 0.012,
   cypress: 0.07,
@@ -95,7 +98,7 @@ export function grassChunks(painting: ImageData2D, customDensity?: number): Gras
 
   for (let t0 = GRASS.t[0]; t0 < GRASS.t[1] - 1e-9; t0 += DT) {
     for (const side of [-1, 1]) {
-      for (let bi = 0; bi < 3; bi++) {
+      for (let bi = 0; bi < BANDS.length - 1; bi++) {
         const [l0, l1] = [BANDS[bi], BANDS[bi + 1]]
         const tries = Math.round((FULL * density * DT * STREET.pathLength * (l1 - l0) * 3) / meanClump)
         const chunkBlades: BladeSpec[] = []

@@ -1,5 +1,6 @@
 import { Color, SRGBColorSpace } from 'three'
 import { mulberry32 } from './brush.ts'
+import { vnoise } from './brushForms.ts'
 import { STREET_SOURCES } from './streetStrokes.ts'
 import type { ImageData2D } from './useImageData.ts'
 
@@ -10,9 +11,9 @@ import type { ImageData2D } from './useImageData.ts'
  * along its arch, because the thinner pointed blade read as agave on the flat strip. The grass test's blades were
  * short straight spikes that tapered all along (`tasks/todo.md`, "Not yet Van Gogh"). A blade here is a ribbon in a
  * vertical plane that faces the camera, as a brushstroke faces its viewer, and bends within that plane: its angle from
- * the vertical grows from `lean` at the root by `curl` at the tip. Three segments: at the painting's stroke length two
- * fold the longest arcs into one kink, and a fourth shows only at 2.5× (Task 1's look passes,
- * `tasks/2026-10-24-street-s3.md`).
+ * the vertical grows from `lean` at the root by `curl` at the tip. Four segments, and no joint turns more than
+ * `jointMax`: with three, a joint turned up to 38° and the near arches read as a V at 2× (S3b task 2; two segments
+ * folded every arc into one kink, S3).
  */
 
 /**
@@ -23,7 +24,9 @@ export const GRASS_SOURCES = { field: STREET_SOURCES.field, bushes: [1445, 1155,
 
 export const GRASS_BLADE = {
   /** rows of the ribbon less one: 2 triangles each */
-  segments: 3,
+  segments: 4,
+  /** the largest turn at a joint (radians, about 22°): six segments' 19° read as a curve at 4×, three's 38° as a V */
+  jointMax: 0.38,
   /** a clump's blade length before the tuft rule (Task 2) and the per-blade factor 0.75–1.25 */
   height: 0.036,
   /** a blade's half-width at its widest: 5–7.5 times as long as wide, fatter than the painting's 8–11 (see above) */
@@ -36,6 +39,10 @@ export const GRASS_BLADE = {
   /** blades a clump, the outermost blade's lean from the vertical (radians), and the roots' spread */
   clump: [5, 9],
   fan: 0.5,
+  /** a clump's blades curl to its side (`clumpSide`), but this share of them the other way */
+  against: 0.15,
+  /** the side field's frequency per world unit: neighbours 0.03 apart mostly agree */
+  sideScale: 5,
   spread: 0.012,
   /** how far a blade's plane turns off facing the camera, either way (radians) */
   turn: 0.5,
@@ -252,22 +259,35 @@ function pigment(rand: () => number, painting: ImageData2D, out: number): [numbe
 }
 
 /**
- * A clump at (x, z): blades fanned from upright at its centre to `fan` at its edge, each arching outward, the outer
- * ones bent furthest and pale, the inner dark. `height` is the clump's (Task 2's tuft rule); each blade takes 0.75–1.25
+ * Which way a clump at (x, z) curls, toward the camera's right (1) or its left (−1): a slow field along the verge, so
+ * the painting's bush strokes, which curve together side by side, come in groups (S3b task 2).
+ */
+export function clumpSide(x: number, z: number): -1 | 1 {
+  return vnoise(x * GRASS_BLADE.sideScale + 11.3, z * GRASS_BLADE.sideScale - 7.1) < 0.5 ? -1 : 1
+}
+
+/**
+ * A clump at (x, z): blades fanned from upright at its centre to `fan` at its edge, all but `against` of them arching
+ * to the clump's side, the outer ones bent furthest and pale, the inner dark. `height` is the clump's (Task 2's tuft rule); each blade takes 0.75–1.25
  * of it.
  */
 export function clump(rand: () => number, painting: ImageData2D, x: number, z: number, height: number): BladeSpec[] {
   const T = GRASS_BLADE
   const tops = topPool(painting)
+  const side = clumpSide(x, z)
   const n = T.clump[0] + Math.floor(rand() * (T.clump[1] - T.clump[0] + 1))
   const blades: BladeSpec[] = []
   for (let i = 0; i < n; i++) {
+    // the seed first, and the paint from it: `pigment` refuses texels in a loop, so paint drawn from `rand` made the
+    // layout depend on the image (S3b, Codex R6)
+    const seed = rand() * 1000
+    const paint = mulberry32(Math.floor(seed * 1e6))
     const f = Math.max(-1, Math.min(1, (i / (n - 1)) * 2 - 1 + (rand() - 0.5) / n))
     const lean = f * T.fan
-    const dir = Math.abs(f) < 0.15 ? (rand() < 0.5 ? -1 : 1) : Math.sign(f)
+    const dir = rand() < T.against ? -side : side
     const bend = (T.curve[0] + rand() * (T.curve[1] - T.curve[0])) * (0.7 + 0.3 * Math.abs(f))
-    const curl = dir * (dir === Math.sign(lean) ? Math.min(bend, T.tipMax - Math.abs(lean)) : bend)
-    const blade = {
+    const curl = dir * Math.min(dir === Math.sign(lean) ? Math.min(bend, T.tipMax - Math.abs(lean)) : bend, T.jointMax * T.segments)
+    blades.push({
       x: x + (rand() - 0.5) * T.spread,
       z: z + (rand() - 0.5) * T.spread,
       yaw: (rand() - 0.5) * 2 * T.turn,
@@ -275,11 +295,10 @@ export function clump(rand: () => number, painting: ImageData2D, x: number, z: n
       halfWidth: T.halfWidth[0] + rand() * (T.halfWidth[1] - T.halfWidth[0]),
       lean,
       curl,
-      colour: pigment(rand, painting, Math.abs(f)),
-      seed: rand() * 1000,
-    }
-    // the top colour draws from the blade's own seed, so `rand` and every field above are slice 3's
-    blades.push({ ...blade, topColour: tops[Math.floor(mulberry32(Math.floor(blade.seed * 1e6))() * tops.length)] })
+      colour: pigment(paint, painting, Math.abs(f)),
+      topColour: tops[Math.floor(paint() * tops.length)],
+      seed,
+    })
   }
   return blades
 }

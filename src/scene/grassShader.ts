@@ -5,13 +5,19 @@ import {
   Vector4,
 } from 'three'
 import type { AliveInjection } from './aliveMaterial.ts'
-import { CYPRESS_STROKE_BODY, strokeGlslWith } from './cypressStrokeShader.ts'
+import { CYPRESS_STROKE_BODY, type StrokeBody, strokeGlslWith } from './cypressStrokeShader.ts'
 import { GRASS_BLADE, GRASS_BLADE_GLSL, GRASS_LIGHT, GRASS_MOON_GLSL } from './grassBlade.ts'
 import { PALETTE } from './palette.ts'
 import { fogInjection } from './streetFog.ts'
 import { lifeTimeUniform } from './streetLife.ts'
 import { STREET_MOON } from './streetLight.ts'
 import { material } from './streetMaterial.ts'
+
+/**
+ * The grass's own stroke body (S3b decision (d)): the cypress's, without its gaps, its dry brush from 0.85 and a finer
+ * fray, as slice 3 drew it. The look passes set its lanes, edge and rake, and the cypress's text does not change.
+ */
+export const GRASS_STROKE_BODY: StrokeBody = { ...CYPRESS_STROKE_BODY, gaps: null, dryFrom: 0.85, fray: 0.08 }
 
 /** `grassBladeVertex`'s arguments in the shader. `grassMoonFacing` takes the same text, so both read one blade (Codex R7). */
 export const GRASS_BLADE_ARGS = 'root, position.y, position.x, aHeight, aHalfWidth, aLean, aCurl, aYaw, right, widen'
@@ -110,12 +116,7 @@ export function buildGrassMaterial(
   ids: boolean,
   lit: boolean,
 ): MeshBasicMaterial {
-  const strokeBody = strokeGlslWith({
-    ...CYPRESS_STROKE_BODY,
-    gaps: null,
-    dryFrom: 0.85,
-    fray: 0.08,
-  })
+  const strokeBody = strokeGlslWith(GRASS_STROKE_BODY)
   const moon = lit && !ids
   const injection = grassInjection(trailTexture, trailRect, moon)
   return material(

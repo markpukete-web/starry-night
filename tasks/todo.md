@@ -2677,7 +2677,10 @@ only the historical record of what was closed along the way.
 
 ## Parked ideas (scope-growth — do NOT build without Mark)
 
-- (none yet)
+- A per-frame cap on the grass's triangles (S3b, 2026-10-25). Today the budget is a test over 901 sampled poses plus a
+  refinement and a 2% margin, and the density is set to pass it (0.165). A cap in `StreetGrass`'s frame loop, thinning
+  the far chunks first, would hold the ceiling at every pose and let the density go back up (0.18 is 10% more blades).
+  It changes the frame loop, so it waits for Mark (`tasks/2026-10-25-street-s3b.md`, Task 2).
 
 ## Course-correction — 2D flat is the FOUNDATION, not the final form (Mark, 2026-06-23)
 

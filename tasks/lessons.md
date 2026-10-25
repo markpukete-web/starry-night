@@ -3084,3 +3084,12 @@ must be byte-identical before the stimulus's difference means anything.
 - **A multisampled ID view has blended edges.** The lit change's "far" pixels were all quarter, half and three-quarter
   blends of the grass's ID colour with another class, at blades thinner than a pixel. A mask of pure ID colours misses
   them. Decompose the blend before you call a pixel "not grass".
+- **A hard-coded loop count hides a changed list.** `grassChunks` looped over three bands with `bi < 3`. A probe that
+  split the outer band built only three of four, and its triangle counts looked like a saving. The loop now follows
+  `GRASS.bands`. Count the chunks a probe builds before you trust its totals.
+- **A new draw in the layout's random stream moves the budget by several percent.** Drawing the curl's side for every
+  blade changed every later draw, and the walk's worst point at density 0.18 went from 95% to 104%. Rerun the budget
+  test after any change to what `clump` draws, not only after a change of density.
+- **A chunk that is partly in view draws all its blades.** At the walk's worst point 46% of the drawn blades were off
+  screen. Halving the chunks' length cut the triangles by 15% at the cost of about twice the draw calls.
+

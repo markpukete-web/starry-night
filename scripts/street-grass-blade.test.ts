@@ -5,7 +5,8 @@ import test from 'node:test'
 import { Color, SRGBColorSpace } from 'three'
 
 import { mulberry32 } from '../src/scene/brush.ts'
-import { bladeMoonFacing, bladeReach, bladeTemplate, bladeVertex, clump, GRASS_BLADE, GRASS_LIGHT, GRASS_SOURCES, grassTexelUsable, grassTopUsable } from '../src/scene/grassBlade.ts'
+import { bladeMoonFacing, bladeReach, bladeTemplate, bladeVertex, clump, clumpSide, GRASS_BLADE, GRASS_LIGHT, GRASS_SOURCES, grassTexelUsable, grassTopUsable } from '../src/scene/grassBlade.ts'
+import { inFootprint } from '../src/scene/streetGrass.ts'
 import { STREET_MOON } from '../src/scene/streetLight.ts'
 import type { ImageData2D } from '../src/scene/useImageData.ts'
 
@@ -194,4 +195,45 @@ test("a clump is the same twice, and a painting with no lit bush texel throws", 
   const [x0, y0, x1, y1] = GRASS_SOURCES.bushes
   for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) bare.data.set([240, 240, 235, 255], (y * bare.width + x) * 4)
   assert.throws(() => clump(mulberry32(1), bare, 0, 0, 0.024), /no lit texel/)
+})
+
+test('a clump curls with its side: at least 75% of its blades, where the fountain gave half (S3b task 2)', () => {
+  const p = painting()
+  const rand = mulberry32(23)
+  for (const side of [1, -1] as const) {
+    let clumps = 0
+    let blades = 0
+    let along = 0
+    for (let i = 0; clumps < 200 && i < 100000; i++) {
+      const x = -2 + rand() * 4
+      const z = -2 + rand() * 4
+      if (clumpSide(x, z) !== side) continue
+      clumps++
+      for (const b of clump(rand, p, x, z, 0.024)) {
+        blades++
+        if (Math.sign(b.curl) === side) along++
+      }
+    }
+    assert.equal(clumps, 200)
+    assert.ok(along / blades >= 0.75, `side ${side}: ${along} of ${blades} blades curl with it`)
+  }
+})
+
+test('neighbours agree: two clumps 0.03 apart on the verge take the same side at least 80% of the time', () => {
+  const rand = mulberry32(29)
+  let pairs = 0
+  let same = 0
+  let sides = 0
+  for (let i = 0; pairs < 2000 && i < 200000; i++) {
+    const x = -3 + rand() * 6
+    const z = -3 + rand() * 6
+    if (!inFootprint(x, z)) continue
+    const a = rand() * 2 * Math.PI
+    pairs++
+    if (clumpSide(x, z) === clumpSide(x + 0.03 * Math.cos(a), z + 0.03 * Math.sin(a))) same++
+    if (clumpSide(x, z) === 1) sides++
+  }
+  assert.equal(pairs, 2000)
+  assert.ok(same / pairs >= 0.8, `${same} of ${pairs} pairs agree`)
+  assert.ok(sides > 0.2 * pairs && sides < 0.8 * pairs, `${sides} of ${pairs} take side 1: both sides must occur`)
 })
