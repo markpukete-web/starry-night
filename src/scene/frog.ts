@@ -33,14 +33,9 @@ export const FROG = {
   /** no blade root lies within this (times its scale) of a frog in the grass: its spot is a gap the grass leaves,
    * ringed by blades, and `street-frog.test.ts` fails if a change to the grass fills it */
   clear: 0.008,
-  /**
-   * A frog is drawn only within this of the camera, so the walk draws one at most: at 0.55 stop 2's would be drawn at
-   * `t` 0.33, 475 triangles under the ceiling, and its 1,212 would break it (`tasks/2026-10-25-street-frogs-plan.md`,
-   * Fact 9). Every stop's own frog is 0.25 to 0.40 from its camera.
-   */
-  draw: 0.5,
-  /** snout to vent, in world units (Vincent is 0.085 tall, so a frog of about 17 cm) */
-  size: 0.0086,
+  /** snout to vent, in world units: beside Vincent (0.085 tall) a large frog of about 22 cm, so the phone finds it (the
+   * frogs plan, look pass 1: at 0.0086 it was 15 px there) */
+  size: 0.0108,
   /** a stroke stands this far proud of its shape (Vincent's 0.0004 would thicken a leg to twice its width) */
   lift: 0.00012,
   /** the rest in frog lengths: ellipsoids by centre, radii (x, y, z) and the nose raised by `pitch` radians */
@@ -242,8 +237,8 @@ export function buildFrog(painting: ImageData2D): FrogBuild {
 /**
  * One frog: its stop, its spot on the lane (`t`, lateral, positive to the walker's right) and the height of its feet,
  * which way its nose turns from its stop's camera (to the lane's centre or away), how much of its face shows (`face`
- * radians short of a quarter turn) and its size (its group's uniform scale: a non-uniform one would bend the lit
- * material's normals).
+ * radians short of a quarter turn), its size (its group's uniform scale: a non-uniform one would bend the lit
+ * material's normals), and how near the camera must be to draw it (`draw`).
  */
 export type FrogSpec = {
   stop: 0 | 1 | 2 | 3 | 4
@@ -253,6 +248,7 @@ export type FrogSpec = {
   toward: 'lane' | 'away'
   face: number
   scale: number
+  draw: number
 }
 
 /** The square's strokes reach this high: its face at 0.002 (`streetGeometry.ts`), the strokes' top level over it. */
@@ -262,13 +258,18 @@ const SQUARE_TOP = 0.002 + STROKE_LIFT + (LIFT_LEVELS - 1) * LIFT_STEP
  * One frog by each stop, from the spots measured in the render (`tasks/2026-10-25-street-frogs-plan.md` Task 2). Stop 1's
  * sits on the right verge, where the phone's frame finds no gap on the left. Stop 4's sits on the square's edge past
  * the grass's end (Mark's choice), on the square's strokes.
+ *
+ * A frog is drawn only within `draw` of the camera. In the grass 0.5: the blades hide it when it first draws, and at
+ * 0.55 stop 2's would be drawn at `t` 0.33, 475 triangles under the ceiling, where its 1,212 would break it (the plan's
+ * Fact 9). On the open square 1.1: at 0.5 it appeared from nothing at about 20 px (look pass 2), at 1.1 it is about
+ * 10 px and first draws at `t` 0.51, past the walk's tight stretch.
  */
 export const FROGS: readonly FrogSpec[] = [
-  { stop: 0, t: 0.035, lateral: -0.086, y: GRASS.baseY, toward: 'lane', face: 0.35, scale: 1.0 },
-  { stop: 1, t: 0.283, lateral: 0.086, y: GRASS.baseY, toward: 'away', face: 0.3, scale: 0.94 },
-  { stop: 2, t: 0.466, lateral: -0.098, y: GRASS.baseY, toward: 'lane', face: 0.4, scale: 1.06 },
-  { stop: 3, t: 0.677, lateral: -0.098, y: GRASS.baseY, toward: 'away', face: 0.3, scale: 0.97 },
-  { stop: 4, t: 0.975, lateral: -0.08, y: SQUARE_TOP + 0.00025, toward: 'lane', face: 0.35, scale: 1.02 },
+  { stop: 0, t: 0.035, lateral: -0.086, y: GRASS.baseY, toward: 'lane', face: 0.35, scale: 1.0, draw: 0.5 },
+  { stop: 1, t: 0.283, lateral: 0.086, y: GRASS.baseY, toward: 'away', face: 0.3, scale: 0.94, draw: 0.5 },
+  { stop: 2, t: 0.466, lateral: -0.098, y: GRASS.baseY, toward: 'lane', face: 0.4, scale: 1.06, draw: 0.5 },
+  { stop: 3, t: 0.677, lateral: -0.098, y: GRASS.baseY, toward: 'away', face: 0.3, scale: 0.97, draw: 0.5 },
+  { stop: 4, t: 0.975, lateral: -0.08, y: SQUARE_TOP + 0.00025, toward: 'lane', face: 0.35, scale: 1.02, draw: 1.1 },
 ]
 
 /** Where a frog sits, in the street's frame, and its yaw (its +z turned to `(sin yaw, cos yaw)`). */

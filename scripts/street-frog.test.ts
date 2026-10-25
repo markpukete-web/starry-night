@@ -76,7 +76,7 @@ const painting = () => {
 }
 
 // the walk's tightest point with a frog drawn is t 0.295 on the desktop, stop 1's frog 0.2 away: 1,643 under the
-// ceiling without it (the plan's Fact 9). The cap holds only while one frog at most is drawn (`FROG.draw`, below)
+// ceiling without it (the plan's Fact 9). The cap holds only while one frog at most is drawn there (`draw`, below)
 test('the frog fits the walk: at most 1,250 triangles', { skip }, () => {
   const frog = buildFrog(painting())
   assert.ok(frog.triangles <= 1250, `${frog.triangles} triangles`)
@@ -259,22 +259,41 @@ test('each stop draws its own frog', () => {
   for (const f of FROGS) {
     for (const portrait of [false, true]) {
       const d = new Vector3(...frogPlace(f).position).distanceTo(new Vector3(...walkPose(STATION_T[f.stop], portrait).position))
-      assert.ok(d < FROG.draw, `stop ${f.stop}: ${d.toFixed(3)} from its camera, beyond ${FROG.draw}`)
+      assert.ok(d < f.draw, `stop ${f.stop}: ${d.toFixed(3)} from its camera, beyond ${f.draw}`)
     }
   }
 })
 
-// one frog drawn at a time keeps the triangle room (the plan's Fact 9) and hides that the five share one blink
-test('at most one frog is drawn at any walk pose', () => {
+/** The frogs drawn at a walk pose: in the frustum and within their `draw`, with their distances. */
+function drawnAt(t: number, aspect: number, portrait: boolean): { stop: number; d: number }[] {
+  const cam = camera(t, aspect, portrait)
+  const frustum = new Frustum().setFromProjectionMatrix(new Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse))
+  return FROGS.flatMap((f) => {
+    const p = new Vector3(...frogPlace(f).position)
+    const d = p.distanceTo(cam.position)
+    return d < f.draw && frustum.intersectsSphere(new Sphere(p.clone().setY(p.y + 0.002), 0.008)) ? [{ stop: f.stop, d }] : []
+  })
+}
+
+// the walk's tight stretch ends by t 0.45, where the diorama leaves the frame: before it the room is under 2,000
+// triangles, for one frog (the plan's Fact 9)
+test('at most one frog is drawn on the walk before t 0.45', () => {
+  for (const [aspect, portrait, name] of ASPECTS) {
+    for (let k = 0; k < 450; k++) {
+      const drawn = drawnAt(k / 1000, aspect, portrait)
+      assert.ok(drawn.length <= 1, `${name} at t ${k / 1000}: stops ${drawn.map((f) => f.stop).join(', ')} drawn`)
+    }
+  }
+})
+
+// the five share one blink: a second frog drawn is at least 0.8 away, its eyes a pixel or two, so nobody sees two
+// blink together
+test('when two frogs are drawn, the farther is at least 0.8 away', () => {
   for (const [aspect, portrait, name] of ASPECTS) {
     for (let k = 0; k <= 900; k++) {
-      const cam = camera(k / 1000, aspect, portrait)
-      const frustum = new Frustum().setFromProjectionMatrix(new Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse))
-      const drawn = FROGS.filter((f) => {
-        const p = new Vector3(...frogPlace(f).position)
-        return p.distanceTo(cam.position) < FROG.draw && frustum.intersectsSphere(new Sphere(p.clone().setY(p.y + 0.002), 0.008))
-      })
-      assert.ok(drawn.length <= 1, `${name} at t ${k / 1000}: stops ${drawn.map((f) => f.stop).join(', ')} drawn`)
+      const drawn = drawnAt(k / 1000, aspect, portrait)
+      assert.ok(drawn.length <= 2, `${name} at t ${k / 1000}: ${drawn.length} drawn`)
+      if (drawn.length === 2) assert.ok(Math.max(...drawn.map((f) => f.d)) >= 0.8, `${name} at t ${k / 1000}: two drawn within 0.8`)
     }
   }
 })

@@ -15,8 +15,8 @@ type FrogWindow = Window & { __skyTime?: number; __frog?: () => { shut: number; 
 /**
  * The frogs (S3b pass 5, `frog.ts`), one by each stop over one build: lit by the moon as Vincent is, their eyes sinking
  * on the sky's clock, which the captures pin, so a capture at time 0 has them open and a capture at a blink is exact.
- * Reduced motion keeps them open. A frog is drawn only within `FROG.draw` of the camera, so the walk draws one at most
- * and nobody sees two blink together.
+ * Reduced motion keeps them open. A frog is drawn only within its `draw` of the camera, so the walk's tight stretch
+ * draws one at most, and a second frog drawn is far enough that nobody sees the two blink together.
  */
 export default function StreetFrog({ painting, flags, reduced }: { painting: ImageData2D; flags: StreetFlags; reduced: boolean }) {
   const build = useMemo(() => buildFrog(painting), [painting])
@@ -58,7 +58,9 @@ export default function StreetFrog({ painting, flags, reduced }: { painting: Ima
       eye.position.y = FROG_EYES[i % 2][1] - FROG.blink.sink * FROG.eye.r * FROG.size * shut
       eye.scale.setScalar(1 - (1 - FROG.blink.shrink) * shut)
     })
-    for (const frog of frogRefs.current) if (frog) frog.visible = frog.getWorldPosition(at).distanceTo(state.camera.position) < FROG.draw
+    frogRefs.current.forEach((frog, k) => {
+      if (frog) frog.visible = frog.getWorldPosition(at).distanceTo(state.camera.position) < FROGS[k].draw
+    })
   })
   // the check's seam (`check-street-grass.mjs` case 17): how shut, and how far stop 0's right eye and its glint have sunk
   useEffect(() => {
