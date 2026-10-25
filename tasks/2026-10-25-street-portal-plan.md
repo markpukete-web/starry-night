@@ -186,7 +186,9 @@ the diorama changes. After Mark's gate the default flips, with `?portal=0` to tu
    disabled.
 3. A resize or a rotation in the street or during the flight: the saved pose is the diorama's, so the return restores
    the pose for the aspect the visitor left from, and the controls' home for the new aspect is today's rule.
-4. A hidden tab during the flight: the step cap holds, the flight ends in at most 25 frames after return.
+4. A hidden tab during the flight: the step cap holds, the flight ends in at most 25 frames after return. (Corrected
+   at the gate, 2026-10-25: only the first frame after the return hits the 0.1 s cap. The flight resumes where it was
+   and runs its remainder at normal speed, up to 2.4 s. The record's "Codex's branch review" has the reasoning.)
 5. A street that fails (`?streetFail=painting`): the visitor is back on the diorama at the saved pose, not left on the
    flight's last frame.
 

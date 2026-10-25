@@ -149,3 +149,22 @@ The gate again on the fixed tree (`t9/summary.txt`, `t9/church/summary.txt`): ch
 6b among them (fourteen lines). The church's gate frames and the diorama's home frames are byte-identical, 8 of 8 each.
 `check-reduced-motion.mjs`, the build, tsc, lint and the suite (346 of 346) pass. The main chunk is 1,383,589 bytes,
 255 more than at `4556d29`.
+
+Codex's confirmation read of `b0a34d0` (`branch-rereview-codex.md`): MERGEABLE. F1 to F5 are fixed, and the fix diff
+adds no P0, P1 or P2 defect. Codex re-ran its own counterexamples against the fixed code: the late fade frame, the
+mid-flight change and the lens all pass, and the out-and-back drag is refused for mouse and touch while a real tap
+still enters. Both declined notes hold. On its two remarks: the plan's line now carries the correction, and the
+desktop's 23 geometries before and after a trip are now in `t8/perf/table.md`.
+
+## Open for Mark
+
+Live at `http://192.168.0.148:5198/?portal=1` (or `localhost:5198/?portal=1`). Hover a house for the hand, tap it to
+enter, press Escape or "Back to the painting" to return. The clips, real time from the compositor, so the drift shows
+through the build: `t8/mark/portal-desktop.mp4` and `t8/mark/portal-phone.mp4`, with contact sheets beside them.
+
+1. **The phone's held frame.** The flight ends at v2 on both viewports. On the portrait lens the island's underside
+   fills the lower 40% of the held frame, and the fade dissolves it into the lane (`t7/p0/phone-sheet.png`, frames 4
+   to 7). A phone end pose is a design change, so it waits for your eye.
+2. **The flight and the drift.** 2.4 s to v2, then the held frame drifts in from the flight's last speed while the
+   street builds, about 2 s on this Mac. Untuned by you.
+3. **The flag.** The portal is behind `?portal=1`. Turning it on for every visitor is your release call.

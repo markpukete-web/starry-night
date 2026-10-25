@@ -275,6 +275,16 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   panel at tint 0.3 × 0.6 (`REVEAL_SHADE`), a step 0.012 high and 0.03 deep, three windows down the moonlit side,
   centred at 0.55 of the wall's height, each 0.08 of its run wide and 0.3 of its height tall. The church 875 ribbons,
   the walk's worst point 1,442,727 triangles. Untuned by Mark.
+- The portal, slice 4, behind `?portal=1` (2026-10-25, `src/scene/portal.ts`, `usePortalPointer.ts`, `portalContext.ts`,
+  the driver in `DioramaExperience.tsx`; the record `tasks/2026-10-25-street-portal.md`): the flight 2.4 s, one
+  smoothstep on position and target from the visitor's orbit pose to v2 (position [0.9, 0.35, 1.5], target
+  [0.4, 0.1, 0.2]), the default camera's lens written every frame. The flight's last frame is copied to a 2D layer
+  that drifts toward the centre, 4 s to scale 1.045 on `cubic-bezier(0.2, 0.4, 0.5, 1)`, from 2.2% a second, the
+  flight's last-frame push-in (look pass 2). The layer fades off the street 1.0 s after 2 settle frames, and off the
+  diorama 0.8 s on the way back. The street gets 15 s to be ready (the arrival's `readyTimeout`). The hover casts once
+  per move against the village with the land and the island in front: the hand, and the hint "Enter the village" 16 px
+  right and 18 px below the pointer. A tap on a house enters, and the sky's surge is masked there. Escape and the
+  dock's "Back to the painting" return. Reduced motion cuts both ways. Untuned by Mark.
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)

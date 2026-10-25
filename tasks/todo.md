@@ -1,6 +1,20 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-25 (evening): the church (slice 3c) built, gated and reviewed; the portal in build, Mark out
+## Pickup — 2026-10-25 (night): the portal (slice 4) built, gated and reviewed; Mark out
+
+The portal is done on `feat/street-portal` (stacked on the church), local, no PR. Behind `?portal=1`, a hover over a
+house shows the hand and "Enter the village". A tap flies the camera down to the village in 2.4 s. The street builds
+under the flight's last frame, which keeps drifting in, then fades in. Escape or the dock's "Back to the painting"
+fades back to the visitor's own pose. 60 fps on every page. Codex's branch review: FIX, five findings, all fixed and
+pinned, then MERGEABLE on the confirmation read. The record: `tasks/2026-10-25-street-portal.md`.
+
+**For Mark's gate.** Live at `http://192.168.0.148:5198/?portal=1`. The clips:
+`scratch/street-portal-2026-10-25/t8/mark/portal-desktop.mp4` and `portal-phone.mp4`. Three calls, in the record's
+"Open for Mark": the phone's held frame shows the island's underside, the flight and the drift are untuned, and the
+flag stays off until he says. The gates still waiting, in stack order: S3b, the church, the portal. The PRs go in that
+order, on his word.
+
+## Pickup — 2026-10-25 (evening): the church (slice 3c) built, gated and reviewed; the portal in build, Mark out (superseded by the night pickup above)
 
 The church is done on `feat/street-church` (stacked on S3b), local, no PR. It turns on the square to show its moonlit
 side, takes a shorter brush and its own light, and has a recessed door over a step and three side windows. Codex's
