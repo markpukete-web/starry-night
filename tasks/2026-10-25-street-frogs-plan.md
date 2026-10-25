@@ -122,11 +122,14 @@ Nothing is pushed before Mark has seen it.
 - **(d) Side-on.** A frog's heading is its stop camera's bearing turned by `±(π/2 − face)`, `face` 0.25 to 0.5 rad, so
   it shows its side with a little of its face. `toward` picks the sign: `'lane'` turns its nose toward the lane's
   centre, `'away'` from it.
-- **(e) The blink.** One clock for all five: `frogBlink(t)` as today, on the sky's clock. At most one frog is drawn at
-  any pose (Decision (i)), so nobody sees two blink together. Reduced motion keeps every eye open, as today (`frogBlink`
+- **(e) The blink.** One clock for all five: `frogBlink(t)` as today, on the sky's clock. At most one frog is drawn
+  before `t` 0.45, and a second drawn later is at least 0.8 away, where its eyes are a pixel or two (Decision (i)), so
+  nobody sees two blink together. Reduced motion keeps every eye open, as today (`frogBlink`
   returns 0 for any `t` that is not a positive number). Codex F1 showed five phases cannot keep the blinks apart within
   [0, 1.6] s, and with one frog drawn they need not.
-- **(f) The seam.** `window.__frog()` stays as it is: the shared blink's `{ shut, sink, scale }`. No new seam.
+- **(f) The seam.** `window.__frog()` stays as it is: the shared blink's `{ shut, sink, scale }`. The branch review
+  added `window.__frogsDrawn()` (Codex F1): each group's `visible` as the frame's cull left it, its world place and the
+  camera's, for case 18.
 - **(g) Visibility is measured, not gated.** The spike's `frog-vis.mjs` measures each spot at its stop on both
   viewports, and its numbers go in the record. Its definition: three frames with the camera, the clock (0.5) and every
   other object fixed. In `all` the scene is as shipped. In `hideFrog` the target frog is hidden. In `onlyFrog` every
@@ -151,8 +154,8 @@ Nothing is pushed before Mark has seen it.
 - No new dependency. Only the frog's code, its tests, case 17's sink and `stroke`'s lift parameter change.
 - Vincent's build is byte-identical: `stroke` and `clad` keep 0.0004 by default, and his shader does not change.
 - The grass, the walk, Vincent, the cameras and the stops do not change.
-- The triangle ceiling is 1,444,930 at every pose, both orientations. A frog is at most 1,250 triangles and at most one
-  is drawn at any walk pose. The model in Fact 9 is the estimate. The browser sweep in Task 4 is the gate.
+- The triangle ceiling is 1,444,930 at every pose, both orientations. A frog is at most 1,250 triangles. At most one is
+  drawn before `t` 0.45, and when two are drawn the farther is at least 0.8 away. The model in Fact 9 is the estimate. The browser sweep in Task 4 is the gate.
 - `FrogStudio.tsx` and its mount in `Street.tsx` are spike tools. They are never committed (Task 2, step 1).
 - Retune cap: four look passes.
 
