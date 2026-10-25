@@ -58,7 +58,8 @@ const SIDE_WINDOW = { cv: 0.55, w: 0.08, h: 0.3 }
 
 export type HouseReport = {
   door?: { plane: { origin: Vector3; normal: Vector3 }; panel: Vector3[]; jambs: Vector3[][]; lintel: Vector3[]; step: Vector3[][] }
-  windows?: { cu: number; cv: number; w: number; h: number }[]
+  /** the side windows' quads, as `opening` drew them */
+  windows?: Vector3[][]
 }
 // pass 1: 0.35 of the house blue read as flat blue doors
 const WINDOW_DARK = new Color(PALETTE.ground).lerp(new Color(PALETTE.house), 0.12)
@@ -199,8 +200,9 @@ function ink(ctx: Context, owner: string, refHeight: number, edges: [Vector3, Ve
   ctx.report.outlines.push({ owner, edges: edges.length })
 }
 
-/** An opening on a wall face: a dark (or lit) quad over the strokes, framed in a thin ink. */
-function opening(ctx: Context, face: StreetFace, cu: number, cv: number, w: number, h: number, lit: boolean, seed: number, recess = 0): void {
+/** An opening on a wall face: a dark (or lit) quad over the strokes, framed in a thin ink. Returns the quad it drew, so a
+ * report reads the drawn opening, not a second account of it (code review C1). */
+function opening(ctx: Context, face: StreetFace, cu: number, cv: number, w: number, h: number, lit: boolean, seed: number, recess = 0): Vector3[] {
   // a recessed door (the church plan (e)) sits behind the wall in the recess's shadow, and its frame is the hole's
   // edge, inked at the wall's plane by `recessedDoor`: a second frame at the panel read as a double outline
   const at = (s: number, t: number) => face.origin.clone().addScaledVector(face.u, s).addScaledVector(face.v, t).addScaledVector(face.normal, recess > 0 ? -recess : 0.0055)
@@ -224,9 +226,10 @@ function opening(ctx: Context, face: StreetFace, cu: number, cv: number, w: numb
     mirror: false,
   }
   append(ctx.strokes, traceFace(opening, ctx.flow, ctx.painting, { tint: lit ? 1 : recess > 0 ? OPENING_DARK * REVEAL_SHADE : OPENING_DARK }), lit ? 2 : 255)
-  if (recess > 0) return
+  if (recess > 0) return quad
   const frame: StreetFace = { ...face, refHeight: face.v.length() * FRAME }
   append(ctx.outlines, outlineFace(frame, quad.map((p, i) => [p, quad[(i + 1) % 4]] as const), INK, seed), 255)
+  return quad
 }
 
 export type StreetShape = {
@@ -340,9 +343,8 @@ function buildHouse(ctx: Context, owner: string, index: number, shape: StreetSha
   }
   if (shape.sideWindows) {
     report.windows = shape.sideWindows.map((cu, k) => {
-      opening(ctx, wallFaces[1], cu, SIDE_WINDOW.cv, SIDE_WINDOW.w, SIDE_WINDOW.h, false, seed + 19 + k)
       ctx.report.windows.push({ owner, lit: false })
-      return { cu, ...SIDE_WINDOW }
+      return opening(ctx, wallFaces[1], cu, SIDE_WINDOW.cv, SIDE_WINDOW.w, SIDE_WINDOW.h, false, seed + 19 + k)
     })
   }
   return report
@@ -368,7 +370,7 @@ function cladRound(ctx: Context, owner: string, face: StreetFace, door: { cu: nu
 function recessedDoor(ctx: Context, owner: string, face: StreetFace, door: { cu: number; w: number; h: number }, depth: number, seed: number): NonNullable<HouseReport['door']> {
   const [s0, s1] = [door.cu - door.w / 2, door.cu + door.w / 2]
   const at = (s: number, t: number, n = 0) => face.origin.clone().addScaledVector(face.u, s).addScaledVector(face.v, t).addScaledVector(face.normal, n)
-  opening(ctx, face, door.cu, door.h / 2, door.w, door.h, false, seed, depth)
+  const panel = opening(ctx, face, door.cu, door.h / 2, door.w, door.h, false, seed, depth)
   const plaster = sourceColour(ctx, face.source)
   const lit = (corners: Vector3[], normal: Vector3, shade: number) => {
     polygon(ctx.underpaint, corners, plaster.clone().multiplyScalar(lightOf({ ...face, normal }, ctx.lit, ctx.wallLight) * shade), 255)
@@ -389,7 +391,7 @@ function recessedDoor(ctx: Context, owner: string, face: StreetFace, door: { cu:
     lit([foot(s1, 0, 0), foot(s1, 0, h), foot(s1, d, h), foot(s1, d, 0)], across, 1),
   ]
   ink(ctx, owner, face.v.length(), [[at(s0, 0), at(s0, door.h), face.normal], [at(s0, door.h), at(s1, door.h), face.normal], [at(s1, door.h), at(s1, 0), face.normal]], seed + 1)
-  return { plane: { origin: face.origin.clone(), normal: face.normal.clone() }, panel: [at(s0, 0, -depth), at(s1, 0, -depth), at(s1, door.h, -depth), at(s0, door.h, -depth)], jambs, lintel, step }
+  return { plane: { origin: face.origin.clone(), normal: face.normal.clone() }, panel, jambs, lintel, step }
 }
 
 /** A roof's edge band (S1b task 3): this deep, square to the roof plane, under its eave and its rakes. */
