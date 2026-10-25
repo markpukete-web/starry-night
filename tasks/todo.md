@@ -11,9 +11,14 @@ branch review: FIX twice, both on case 18's reach, then MERGEABLE. The record: `
 painting page: 60 fps still, 18–50 under a moving finger, near 60 with `touch=0`. The Mac does not reproduce it (4×
 CPU throttle, vsync off: no touch cost measurable), so the phone is the loop. His drags: `?perf=1&bend=0` (the sky's
 surges only) held 60, `?perf=1&surge=0` (the land's ray cast and bend, the surges at zero strength) read 38–60. So the
-land's bend is the cost, not the sky's surge. Mark first suggested removing the surge on phones. Suspects: the
+land's bend is the cost, not the sky's surge. Mark first suggested removing the surge on phones, then chose "No land
+bend on a finger". **Fixed** on `fix/finger-no-bend` (`dccdd9a`, stacked on the frogs): `landActive` is false for a
+finger, so a finger turns the view and lights the sky, and a mouse or a pen still bends the land. `check-portal.mjs`
+case 12 pins both, and fails with the fix reverted (the worker's runs, `scratch/finger-no-bend-2026-10-25/`). Mark on
+his phone, 5202: "The frame rate stays near 60. All points you mentioned achieved". The Consultant's review next, then
+its PR on the frogs'. Suspects: the
 land's per-frame ray cast against six meshes (`useTouchInput.ts` `landPoint`), and the sky's 16-slot surge loop per
-vertex (`touchSurge.ts` `touchLift`). The bar is 30 fps on a mid-tier phone, so this blocks the pre-release gate.
+vertex (`touchSurge.ts` `touchLift`). The bar is 30 fps on a mid-tier phone. A mid-tier phone is still unmeasured.
 
 **Next on the roadmap (Mark, 2026-10-25: "go with your recommendation"):** the real-phone check (started above), then
 the village's craft slice (door frames, shutters, steps, eaves, fences, lamps, and surfaces that read as solid paint).

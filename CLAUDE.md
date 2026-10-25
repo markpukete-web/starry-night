@@ -189,6 +189,8 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   after the release, 4 live touches, hover amplitude 0.6, a hand on the land masks the sky's surge behind it; the bend
   weight is the vertex's local height over 2.7 on the cypress and its height over the terrain over the mass's height on
   the trees; the ground does not bend. Knob `bend` 0–1.5, shipped 1 (`sky-tuning.json` `touchBend`), untuned by Mark.
+  A finger touches no land, only a mouse or a pen (2026-10-25, Mark's choice, `useTouchInput.ts` `landActive`): on his
+  iPhone 17 Pro Max the land's cast under a moving finger held 18–50 fps, and with the finger kept off the land, 60.
 - E3, the cypress's medium (2026-10-22, `src/scene/cypressStrokes.ts` `sampleColours`, `cypressStrokeShader.ts`
   `CYPRESS_STROKE_BODY`): the colour along the stroke, one source pigment per kept step (the texel under each sample,
   sky samples filled from the nearest accepted, a box of ±3 samples in linear RGB; `perSampleColours`, off for the
