@@ -58,3 +58,27 @@ pose 1.93 off). A fading cut fails case 6 (60 part-faded frames). No hint fails 
 The rest of Task 6 (`t6/summary.txt`): the diorama's home with `?portal=1` and without it, both viewports, times 0
 and 5, against Task 0's frames: 8 of 8 byte-identical. `check-reduced-motion.mjs` passes. The main chunk grew from
 1,375,607 to 1,383,173 bytes (7,566, the portal's own code), the street's from 97,003 to 97,144 (`t6/chunks.txt`).
+
+## Task 7: the look passes (`t7/`)
+
+Pass 0, the captures (`t7/p0/`). The flight pinned at 0, 0.25, 0.5, 0.75 and 1 by a new seam, `__portalFlight`, then
+the held frame, the fade in, the street, the fade out and the return, on both viewports (`desktop-sheet.png`,
+`phone-sheet.png`). One defect on both: the frame froze for about 2 s after the flight. The street's build is one long
+task of about 1.5 s, and the layer showed a still copy through it.
+
+Pass 1: the layer drifts. The flight's end copies the frame with the class `is-drifting`, a CSS scale animation. A
+transform animation runs on the compositor, so it keeps moving while the main thread builds the street. A CDP
+screencast proved it: 155 frames arrived inside the 1,552 ms long task, and all 155 differ (`t7/p1/screencast-sheet.png`).
+Screenshots cannot show this, because they wait for the main thread. Pass 1's curve started at rest (6 s, ease-in-out,
+scale 1.12), on the reasoning that the flight ends at rest.
+
+Pass 2: that reasoning was wrong. The flight reaches zero speed only at its last instant. By its pose, its push-in is
+10% a second at s 0.98 and 2.2% on its last frame at 60 fps. A motion profile across the hand-off
+(`t7/p1/motion-profile.txt`) showed pass 1's stop: the change per 100 ms fell from 14 to 0.7, and it took 1.4 s to
+reach 4 again. Pass 2 starts at the flight's last-frame rate and slows to rest: 4 s, `cubic-bezier(0.2, 0.4, 0.5, 1)`,
+scale 1.045. Its profile reads 14, then 4.2, then 4.4 down to 2.9 through the build, with no stop. tsc, lint, 346 of
+346 tests and check-portal pass on it (`t7/p2/summary.txt`). Two passes of the four used.
+
+Open for Mark: the phone's held frame. The flight ends at v2 on both viewports. On the portrait lens the island's
+underside fills the lower 40% of the held frame, and the fade dissolves it into the lane (`t7/p0/phone-sheet.png`,
+frames 4 to 7). A phone end pose is a design change, not a retune, so it waits for his eye.

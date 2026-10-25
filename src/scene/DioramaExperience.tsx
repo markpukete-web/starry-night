@@ -287,7 +287,8 @@ type ScenePortal = {
   hintRef: RefObject<HTMLDivElement | null>
   enter: () => void
   prefetch: () => void
-  copyToLayer: () => void
+  /** `drift` starts the layer's slow push-in: the flight's end only, never the cut or the way back */
+  copyToLayer: (drift?: boolean) => void
   onStreetReady: (ok: boolean) => void
   onStreetFailed: () => void
 }
@@ -353,10 +354,13 @@ function PortalDriver({
       layer.style.opacity = String(opacity)
       if (opacity > 0) return false
       layer.style.visibility = 'hidden'
+      layer.classList.remove('is-drifting')
       return true
     }
     if (place === 'flying') {
-      d.s = flightStep(d.s, dt)
+      // the capture seam: a finite `__portalFlight` pins the flight's progress, as `__arrivalTime` pins the arrival
+      const pinned = (window as PortalWindow).__portalFlight
+      d.s = pinned !== undefined && Number.isFinite(pinned) ? Math.min(1, Math.max(0, pinned)) : flightStep(d.s, dt)
       const pose = flightPose(d.from, PORTAL.flightEnd, d.s)
       camera.position.set(...pose.position)
       camera.lookAt(...pose.target)
@@ -364,7 +368,7 @@ function PortalDriver({
       // the copy holds the frame drawn before this one, where the ease's slope is zero
       if (d.s >= 1 && !d.sent) {
         d.sent = true
-        copyToLayer()
+        copyToLayer(true)
         send('flown')
       }
     } else if (place === 'entering' && !d.sent) {
@@ -567,6 +571,7 @@ type PortalWindow = Window & {
   __portal?: () => { place: PortalPlace; on: boolean; layer: number; saved: Pose | null; pose: Pose | null }
   __portalEnter?: () => void
   __portalLeave?: () => void
+  __portalFlight?: number
 }
 
 export function DioramaExperience({ clean = false, reduced = false, sky = 'light', still = false, alive = false, aliveTuning, touch = false, arrival = false, portal = false, children }: Props) {
@@ -593,7 +598,9 @@ export function DioramaExperience({ clean = false, reduced = false, sky = 'light
     setPlace((current) => portalStep(current, event, { still: live.current.still, arriving: live.current.arriving }))
   }, [])
   // a drawImage is synchronous, so the copy shows on the frame it is made (decision (d))
-  const copyToLayer = useCallback(() => {
+  // The drift is a CSS animation, so it runs on the compositor through the street's build, which holds the main
+  // thread for about 1.5 s (look pass 1): the held frame keeps moving into the village instead of freezing.
+  const copyToLayer = useCallback((drift = false) => {
     const source = glRef.current
     const layer = portalLayerRef.current
     if (!source || !layer) return
@@ -604,6 +611,7 @@ export function DioramaExperience({ clean = false, reduced = false, sky = 'light
     layer.getContext('2d')?.drawImage(source, 0, 0)
     layer.style.opacity = '1'
     layer.style.visibility = 'visible'
+    layer.classList.toggle('is-drifting', drift)
   }, [])
   // a failed prefetch is not reported here: the lazy import tries again at the mount, and its boundary reports
   const prefetch = useCallback(() => {

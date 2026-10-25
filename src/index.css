@@ -485,6 +485,22 @@ button {
   pointer-events: none;
 }
 
+/* The flight's last frame keeps moving while the street builds, toward the centre, where the flight's target sits. It
+   starts at the flight's last-frame push-in, 2.2% a second (the curve's first slope 2 × 0.045 / 4 s), and slows to rest
+   at 4 s, so a slower build ends on a settle, not a stop (look pass 2). */
+.portal-layer.is-drifting {
+  animation: portal-drift 4s cubic-bezier(0.2, 0.4, 0.5, 1) forwards;
+}
+
+@keyframes portal-drift {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.045);
+  }
+}
+
 /* The hint beside the pointer over the village. It never takes the pointer, so the hover and the click stay on the
    canvas (plan review F5). */
 .portal-hint {
