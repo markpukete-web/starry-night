@@ -10,7 +10,7 @@ import { Frustum, Matrix4, PerspectiveCamera, Vector3 } from 'three'
 
 import { bladeReach, bladeVertex, GRASS_BLADE } from '../src/scene/grassBlade.ts'
 import type { BakedMass } from '../src/scene/landDomes.ts'
-import { buildStreet } from '../src/scene/streetGeometry.ts'
+import { buildFlatPanel, buildStreet } from '../src/scene/streetGeometry.ts'
 import {
   GRASS,
   grassChunks,
@@ -352,9 +352,13 @@ test('with grass the ground is clipped to the footprint and nothing else', { ski
   console.log(`[clipped triangles] drop = ${drop} (probe: 32343)`)
   assert.ok(Math.abs(drop - 32343) / 32343 <= 0.01, `drop ${drop} within 1% of 32343`)
 
-  // Base triangles in underpaint
-  const upPos = bGrass.underpaint.positions
-  const upIdx = bGrass.underpaint.indices
+  // Base triangles, in their own arrays since S3b pass 5, none left in the underpaint
+  assert.deepEqual(bGrass.underpaint.indices, bNoGrass.underpaint.indices, 'the underpaint is the same with grass')
+  assert.equal(bNoGrass.grassBase.indices.length, 0, 'no base without grass')
+  assert.equal(buildFlatPanel(painting, flow, masses, true)!.grassBase.indices.length, 0, 'no base on the flat panel')
+  assert.ok(bGrass.grassBase.cls.every((c) => c === 3) && bGrass.grassBase.src.every((c) => c === 255), "the base is the ground's class, source 255 (Codex F2)")
+  const upPos = bGrass.grassBase.positions
+  const upIdx = bGrass.grassBase.indices
   let baseTriangles = 0
   const baseTris: [number, number, number][] = []
   for (let i = 0; i < upIdx.length; i += 3) {

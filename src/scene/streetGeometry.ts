@@ -32,6 +32,8 @@ export type StreetBuild = {
   ground: Strokes
   outlines: Strokes
   windows: BrushArraysWithCls
+  /** the dark base under the grass, its own mesh so its dabs (`grassBase.ts`) touch no other program; empty without grass */
+  grassBase: BrushArraysWithCls
   trees: LandTrees
   counts: StreetCounts
   /** the gates' read of the build: ribbons per face, inked edges per volume, the windows, the church's measures */
@@ -136,6 +138,7 @@ type Context = {
   ground: Strokes
   outlines: Strokes
   windows: BrushArraysWithCls
+  grassBase: BrushArraysWithCls
   report: StreetBuild['report']
   ribbons: number
   /** false under the dev flag `light=0` */
@@ -554,7 +557,7 @@ function ground(ctx: Context): void {
 
 /**
  * The dark grass base strip along both sides of the lane (S3 task 2, S2/C3):
- * at y = 0.001, above ground underpaint (0) and below strokes (0.002).
+ * at y = 0.001, above ground underpaint (0) and below strokes (0.002). Its own arrays since S3b pass 5, for its dabs.
  */
 function grassBaseStrip(ctx: Context): void {
   const tSteps = 80
@@ -591,20 +594,20 @@ function grassBaseStrip(ctx: Context): void {
 
         if (inSq(p0) && inSq(p1) && inSq(p2) && inSq(p3)) continue
 
-        const start = ctx.underpaint.positions.length / 3
+        const start = ctx.grassBase.positions.length / 3
         const verts = [p0, p1, p2, p3]
         for (let v = 0; v < 4; v++) {
-          ctx.underpaint.positions.push(...verts[v])
-          ctx.underpaint.colors.push(dark.r, dark.g, dark.b)
-          ctx.underpaint.cls.push(3)
-          ctx.underpaint.src.push(255)
+          ctx.grassBase.positions.push(...verts[v])
+          ctx.grassBase.colors.push(dark.r, dark.g, dark.b)
+          ctx.grassBase.cls.push(3)
+          ctx.grassBase.src.push(255)
         }
         const ccw1 = (p1[0] - p0[0]) * (p2[2] - p0[2]) - (p1[2] - p0[2]) * (p2[0] - p0[0])
         const ccw2 = (p2[0] - p0[0]) * (p3[2] - p0[2]) - (p2[2] - p0[2]) * (p3[0] - p0[0])
         if (ccw1 * ccw2 > 0) {
-          ctx.underpaint.indices.push(start, start + 1, start + 2, start, start + 2, start + 3)
+          ctx.grassBase.indices.push(start, start + 1, start + 2, start, start + 2, start + 3)
         } else {
-          ctx.underpaint.indices.push(start, start + 1, start + 3, start + 1, start + 2, start + 3)
+          ctx.grassBase.indices.push(start, start + 1, start + 3, start + 1, start + 2, start + 3)
         }
       }
     }
@@ -621,6 +624,7 @@ export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | nu
     ground: { arrays: makeBrushArrays(), stroke: [], seed: [], cls: [], src: [] },
     outlines: { arrays: makeBrushArrays(), stroke: [], seed: [], cls: [], src: [] },
     windows: Object.assign(makeBrushArrays(), { cls: [], src: [] }),
+    grassBase: Object.assign(makeBrushArrays(), { cls: [], src: [] }),
     report: { faces: [], outlines: [], windows: [], church: { belfryWidth: 0, belfryHeight: 0, spireHeight: 0 } },
     ribbons: 0,
     lit,
@@ -671,13 +675,14 @@ export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | nu
   })
   ctx.report.church = church(ctx)
   const trees = buildStreetTrees(painting, STREET_TREES)
-  const triangles = (ctx.underpaint.indices.length + ctx.strokes.arrays.indices.length + ctx.ground.arrays.indices.length + ctx.outlines.arrays.indices.length + ctx.windows.indices.length + trees.solid.indices.length + trees.strokes.indices.length) / 3
+  const triangles = (ctx.underpaint.indices.length + ctx.grassBase.indices.length + ctx.strokes.arrays.indices.length + ctx.ground.arrays.indices.length + ctx.outlines.arrays.indices.length + ctx.windows.indices.length + trees.solid.indices.length + trees.strokes.indices.length) / 3
   return {
     underpaint: ctx.underpaint,
     strokes: ctx.strokes,
     ground: ctx.ground,
     outlines: ctx.outlines,
     windows: ctx.windows,
+    grassBase: ctx.grassBase,
     trees,
     counts: { ribbons: ctx.ribbons, triangles, builds: 0 },
     report: ctx.report,
@@ -739,6 +744,7 @@ export function buildFlatPanel(painting: ImageData2D | null, flow: ImageData2D |
     ground: { arrays: makeBrushArrays(), stroke: [], seed: [], cls: [], src: [] },
     outlines: { arrays: makeBrushArrays(), stroke: [], seed: [], cls: [], src: [] },
     windows: Object.assign(makeBrushArrays(), { cls: [], src: [] }),
+    grassBase: Object.assign(makeBrushArrays(), { cls: [], src: [] }),
     report: { faces: [], outlines: [], windows: [], church: { belfryWidth: 0, belfryHeight: 0, spireHeight: 0 } },
     ribbons: 0,
     lit: true,
@@ -762,5 +768,5 @@ export function buildFlatPanel(painting: ImageData2D | null, flow: ImageData2D |
   const tree = STREET_TREES.find((t) => t.id === 'orchard-lower') ?? STREET_TREES[0]
   const trees = buildLandTrees(flow, painting, masses, 0x7ee5, [{ ...tree, x: 1.35, z: 0 }], streetGroundAt, streetMassConfig)
   const triangles = (ctx.underpaint.indices.length + ctx.strokes.arrays.indices.length + ctx.ground.arrays.indices.length + ctx.outlines.arrays.indices.length + trees.solid.indices.length + trees.strokes.indices.length) / 3
-  return { underpaint: ctx.underpaint, strokes: ctx.strokes, ground: ctx.ground, outlines: ctx.outlines, windows: ctx.windows, trees, counts: { ribbons: ctx.ribbons, triangles, builds: 0 }, report: ctx.report }
+  return { underpaint: ctx.underpaint, strokes: ctx.strokes, ground: ctx.ground, outlines: ctx.outlines, windows: ctx.windows, grassBase: ctx.grassBase, trees, counts: { ribbons: ctx.ribbons, triangles, builds: 0 }, report: ctx.report }
 }

@@ -23,7 +23,7 @@ import {
   grassRect,
   type GrassChunk,
 } from './streetGrass.ts'
-import { createTrail, stampSegment, stepTrail, TRAIL } from './grassTrail.ts'
+import { createTrail, releaseSource, stampSegment, stepTrail, TRAIL } from './grassTrail.ts'
 import { STATION_T, vincentPlace } from './streetLayout.ts'
 import type { StreetFlags } from './streetMode.ts'
 import { admitGesture, streetGesture } from './streetWalk.ts'
@@ -164,11 +164,17 @@ export default function StreetGrass({
     isOverride: boolean
     /** the touch or pen that went down on the verge, for when the walk tracks no gesture (`?walk=0`) */
     pointerId: number | null
+    /** a press, not a hover: a mouse button the grass took the down of, a touch or a pen (S3b pass 5) */
+    pressed: boolean
+    /** a press ended: the next frame that is not frozen lets go of the hand's texels (Codex F1) */
+    lifted: boolean
   }>({
     client: null,
     active: false,
     isOverride: false,
     pointerId: null,
+    pressed: false,
+    lifted: false,
   })
 
   /* eslint-disable react-hooks/immutability -- canvas cursor and pointer handlers */
@@ -179,6 +185,13 @@ export default function StreetGrass({
     // a touch on the verge is the grass's, not a page pan, also with `?walk=0`, where the walk sets nothing (PR #22)
     const prevTouchAction = canvas.style.touchAction
     canvas.style.touchAction = 'none'
+    // the hand closes while it presses (Mark, 2026-10-25: "if user click the mouse can the little hand with touching
+    // motion"), and opens on any end of the press: an up anywhere, a cancel, a blur, or a move with no button down
+    const lift = () => {
+      if (handRef.current.pressed) handRef.current.lifted = true
+      handRef.current.pressed = false
+      canvas.style.cursor = 'grab'
+    }
 
     const onPointerMove = (e: PointerEvent) => {
       if (handRef.current.isOverride) return
@@ -191,6 +204,7 @@ export default function StreetGrass({
         e.clientY <= rect.bottom
 
       if (e.pointerType === 'mouse') {
+        if (handRef.current.pressed && (e.buttons & 1) === 0) lift()
         if (streetGesture && streetGesture.vincent) {
           handRef.current.active = false
           return
@@ -236,11 +250,14 @@ export default function StreetGrass({
         handRef.current.active = true
         handRef.current.client = [e.clientX, e.clientY]
         handRef.current.pointerId = e.pointerType === 'mouse' ? null : e.pointerId
+        handRef.current.pressed = true
+        if (e.pointerType === 'mouse') canvas.style.cursor = 'grabbing'
       }
     }
 
     const onPointerUp = (e: PointerEvent) => {
       if (handRef.current.isOverride) return
+      if (e.pointerType === 'mouse' || e.pointerId === handRef.current.pointerId) lift()
       if (e.pointerType !== 'mouse') {
         if (streetGesture === null || streetGesture.pointerId === e.pointerId) {
           handRef.current.active = false
@@ -252,6 +269,7 @@ export default function StreetGrass({
 
     const onPointerCancel = (e: PointerEvent) => {
       if (handRef.current.isOverride) return
+      lift()
       if (streetGesture === null || streetGesture.pointerId === e.pointerId) {
         handRef.current.active = false
         handRef.current.client = null
@@ -270,6 +288,7 @@ export default function StreetGrass({
     // pressing the verge (Codex F01). The capture seam keeps its own state.
     const onBlurOrHidden = () => {
       if (handRef.current.isOverride) return
+      lift()
       handRef.current.active = false
       handRef.current.client = null
       handRef.current.pointerId = null
@@ -336,15 +355,19 @@ export default function StreetGrass({
     }
     w.__grassHandLive = 0
     w.__grassHit = null
-    w.__grassHand = (x: number | null, y?: number) => {
+    // the seam presses unless told to hover, so the cases written before the hover (1, 11, 15) read a press
+    w.__grassHand = (x: number | null, y?: number, pressed = true) => {
       if (x === null || y === undefined) {
         handRef.current.isOverride = false
         handRef.current.active = false
         handRef.current.client = null
+        handRef.current.pressed = false
       } else {
         handRef.current.isOverride = true
         handRef.current.active = true
         handRef.current.client = [x, y]
+        if (handRef.current.pressed && !pressed) handRef.current.lifted = true
+        handRef.current.pressed = pressed
       }
     }
 
@@ -434,6 +457,10 @@ export default function StreetGrass({
 
     w.__grassHit = hitRecorded
 
+    if (handRef.current.lifted && mode !== 'frozen') {
+      releaseSource(trail, 'hand', now)
+      handRef.current.lifted = false
+    }
     if (currentHandHit) {
       if (mode !== 'frozen') {
         stampSegment(
@@ -443,6 +470,7 @@ export default function StreetGrass({
           TRAIL.radius,
           now,
           'hand',
+          handRef.current.pressed ? 1 : TRAIL.hoverAmp,
         )
         stampsRef.current.hand++
       }

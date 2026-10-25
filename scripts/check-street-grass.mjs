@@ -1074,6 +1074,57 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
       console.log(`PASS: case 15 - the hand against lit tops: ${brightened.lit} pixels brightened lit, ${brightened.unlit} unlit (${ratio15.toFixed(2)})`)
     }
 
+    // -------------------------------------------------------------
+    // Case 16: the hand's press (S3b pass 5, Codex F1), vincent=0, the real pointer path. A hover pushes at TRAIL's
+    // hoverAmp of a press, a down closes the hand (`grabbing`), and every end of the press opens it again: an up on the
+    // window, a cancel, a blur, a move with no button down. A press lifted under a hover settles to the hover's push.
+    // -------------------------------------------------------------
+    if (shouldRun(16)) {
+      await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=input&vincent=0` })
+      await page.waitForStreetReady()
+      const [vx16, vy16] = await getVergeClientPoint(page)
+      const fire16 = ([type, x, y, buttons, onWindow]) => {
+        const e = new PointerEvent(type, { clientX: x, clientY: y, pointerType: 'mouse', isPrimary: true, buttons, bubbles: true })
+        ;(onWindow ? window : document.querySelector('canvas')).dispatchEvent(e)
+      }
+      const cursor16 = () => page.evaluate(() => document.querySelector('canvas')?.style.cursor)
+      // moves at the point for `ms`, the largest push seen and the last
+      const hold16 = async (buttons, ms) => {
+        let most = 0
+        let last = 0
+        const t0 = Date.now()
+        while (Date.now() - t0 < ms) {
+          await page.evaluate(fire16, ['pointermove', vx16, vy16, buttons, false])
+          await sleep(40)
+          last = await page.evaluate(() => window.__grassPeak ?? 0)
+          most = Math.max(most, last)
+        }
+        return { most, last }
+      }
+      const hover16 = await hold16(0, 1000)
+      if (hover16.most < 0.3 || hover16.most > 0.62) throw new Error(`Case 16 failed: a hover pushed ${hover16.most.toFixed(3)}, expected 0.3 to 0.62`)
+      await page.evaluate(fire16, ['pointerdown', vx16, vy16, 1, false])
+      if ((await cursor16()) !== 'grabbing') throw new Error(`Case 16 failed: the cursor was "${await cursor16()}" on a down, expected grabbing`)
+      const press16 = await hold16(1, 1000)
+      if (press16.most < hover16.most + 0.2) throw new Error(`Case 16 failed: a press pushed ${press16.most.toFixed(3)}, a hover ${hover16.most.toFixed(3)}`)
+      await page.evaluate(fire16, ['pointerup', 5, 5, 0, true])
+      if ((await cursor16()) !== 'grab') throw new Error(`Case 16 failed: the cursor was "${await cursor16()}" after an up on the window, expected grab`)
+      const after16 = await hold16(0, 3000)
+      if (after16.last > hover16.most + 0.05) throw new Error(`Case 16 failed: 3 s of hover after the lift still pushed ${after16.last.toFixed(3)} (a hover ${hover16.most.toFixed(3)})`)
+      const ends16 = {
+        cancel: () => page.evaluate(fire16, ['pointercancel', vx16, vy16, 0, false]),
+        blur: () => page.evaluate(() => window.dispatchEvent(new Event('blur'))),
+        'a move with no button': () => page.evaluate(fire16, ['pointermove', vx16, vy16, 0, false]),
+      }
+      for (const [name, end] of Object.entries(ends16)) {
+        await page.evaluate(fire16, ['pointerdown', vx16, vy16, 1, false])
+        if ((await cursor16()) !== 'grabbing') throw new Error(`Case 16 precondition failed: no grabbing before the ${name}`)
+        await end()
+        if ((await cursor16()) !== 'grab') throw new Error(`Case 16 failed: the cursor was "${await cursor16()}" after a ${name}, expected grab`)
+      }
+      console.log(`PASS: case 16 - the press: hover ${hover16.most.toFixed(3)}, press ${press16.most.toFixed(3)}, ${after16.last.toFixed(3)} after 3 s of hover past the lift, grab again after an up, a cancel, a blur and a move with no button`)
+    }
+
     await page.close()
   } finally {
     await chrome.cleanup()
