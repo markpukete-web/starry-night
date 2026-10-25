@@ -3,6 +3,9 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or
 > superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+**Revision 2 (2026-10-25, evening).** The Consultant read revision 1 (`scratch/street-portal-2026-10-25/plan-review.md`):
+APPROVE with nine P2s, no P0 or P1. Each is folded where it lands and named there (F1 to F9).
+
 **Revision 1 (2026-10-25, evening).** Mark, on the order: "agree, church first then portal". He is out, and asked the
 Lead to carry on through the church and the portal and to gate both when he is home. The Lead builds every task.
 Mark's gate is the end of the slice.
@@ -47,7 +50,8 @@ Nothing is pushed before Mark has seen it.
    error boundary sets the same flag to true on a failed chunk (`DioramaExperience.tsx:32`). After an unmount the flag
    stays as it was.
 4. The canvas keeps its drawing buffer (`preserveDrawingBuffer: true`, `DioramaExperience.tsx:419`), so a 2D canvas
-   can copy the last frame with `drawImage` at any time, synchronously.
+   can copy the last frame with `drawImage` at any time, synchronously. Inside a `useFrame` callback it copies the
+   frame drawn before this one, because R3F renders after every callback.
 5. drei's `OrbitControls` calls `update()` only while `enabled` (`node_modules/@react-three/drei/core/OrbitControls.js:29–31`).
    three-stdlib's `reset()` restores `target`, `position` and `zoom` from `saveState()` and calls `update()`
    (`node_modules/three-stdlib/controls/OrbitControls.js:159–172`). It does not clear the damping's residual
@@ -79,10 +83,12 @@ reducer `portalStep(place, event, { still })`:
 | street | `leave` | leaving |
 | leaving | `left` | diorama |
 
-Every other pair returns the same place. The street is mounted in `entering` and `street`. The diorama is visible in
-`diorama`, `flying` and `leaving`, and hidden (a group with `visible={false}`) in the other two. The controls are
-enabled only in `diorama`. The touch hook runs only in `diorama`, as today's rules allow. The portal's pointer runs only
-in `diorama`, once the arrival is done.
+Every other pair returns the same place, and `enter` while the arrival runs returns `diorama` (F2: the arrival's
+driver and the flight's would both write the camera). The reducer takes `{ still, arriving }`. The street is mounted in
+`entering` and `street`. The diorama is visible in `diorama`, `flying` and `leaving`, and hidden (a group with
+`visible={false}`) in the other two. The controls are enabled in `diorama` when the arrival is not running
+(`controlsEnabled(place) && !arriving`, F2). The touch hook runs only in `diorama`, as today's rules allow. The portal's
+pointer runs only in `diorama`, once the arrival is done.
 
 (b) **Where the place lives.** `App` holds it with `useReducer(portalStep)` beside the flag, because the dock (in
 `VisitorChrome`) and the scene both need it. `DioramaExperience` takes `place` and `dispatch` as props. `?street=1`
@@ -91,14 +97,18 @@ street gate's frames as they are.
 
 (c) **The flight.** The driver saves the pose at the first `flying` frame (`controls.saveState()` plus the camera's fov,
 near and far), then moves the camera from that pose to `PORTAL.flightEnd` (v2's camera and target) over
-`PORTAL.flight` 2.4 s, position and target eased by one smoothstep, fov held. The sky stays camera-locked, as on the
-diorama. At the flight's end the driver copies the canvas into the layer and sends `flown`. The end pose is v2 itself,
+`PORTAL.flight` 2.4 s, position and target eased by one smoothstep. The driver writes the saved fov, near and far every
+flight frame, as it writes the position: a rotation mid-flight re-applies the default camera's fov through R3F's prop
+diff (F3). The sky stays camera-locked, as on the diorama. At the flight's end the driver copies the canvas into the
+layer and sends `flown`. The copy holds the frame one step before the end, where the ease's slope is zero.
+The driver reaches the controls through a ref on `<OrbitControls>` that `Scene` passes it (F8). No `makeDefault`. The end pose is v2 itself,
 the closest the design allows. Look pass 1 may move it back along the path, never closer.
 
 (d) **The layer.** A 2D `<canvas>` over the WebGL canvas, the size of its drawing buffer, filled with `drawImage` from
 the WebGL canvas. A `drawImage` is synchronous, so the copy shows on the frame it is made. An `<img>` from `toDataURL`
 decodes later and would let one frame of the swap show. The layer is shown at the copy and hidden when its opacity
-reaches 0. The leave copies in the event handler, before the place changes.
+reaches 0. The leave copies in the event handler, before the place changes. The layer canvas is rendered after R3F's
+`Canvas` in `<main>`, so every script's `document.querySelector('canvas')` still reads the WebGL canvas (F6).
 
 (e) **The swap and the timeout.** `Street` gains `onReady?: (ok: boolean) => void`, called once per mount when
 `streetReadiness` is ready, with `ok` its `render`. The boundary calls it with `false` on a failed chunk. `Street` gets
@@ -106,20 +116,28 @@ its own `Suspense`, so a chunk still loading never hides the sky or the diorama.
 `PORTAL.settleFrames` 2 frames drawn, the driver sends `ready` and fades the layer over `PORTAL.fadeIn` 1.0 s. On
 `false`, or after `ARRIVAL.readyTimeout` 15 s, it sends `failed` or `timeout`. In `leaving`, the driver restores the
 diorama under the layer, then fades it over `PORTAL.fadeOut` 0.8 s and sends `left`. The hint is still there after a
-failed entry, because the pointer runs again in `diorama`. The frame step is capped at `ARRIVAL.maxDt` 0.1 s.
+failed entry, because the pointer runs again in `diorama`. A failed chunk is different: `React.lazy` keeps the
+rejection, so every later entry would fail at once. On a failure from the boundary the portal goes off for the page's
+life: no hint, no dock control (F7). The frame step is capped at `ARRIVAL.maxDt` 0.1 s. `Street` gains
+`hold?: boolean`, true in `entering`, and passes `StreetWalk` `reduced || hold`, so on a phone Vincent does not walk
+off stop 0 under the layer (F4).
 
 (f) **The way back, exact.** On the first `leaving` frame, before the render: with the controls' damping off, one
 `update()` applies and clears the residual delta, then `reset()` puts back the saved target and position, the camera's
 fov, near and far are put back and the projection updated, and damping is turned on again. The controls are enabled
 again on `left`. The test reads the pose the frame after `left` and 0.5 s later: both equal the saved pose within 1e-6.
 
-(g) **The sky.** While the street is mounted, the sky takes `home = skyHome` and the street's anchor, the same values as
-`?street=1`. In every other place it takes today's diorama values. The swap happens under the layer.
+(g) **The sky.** While the street is mounted, the sky takes the street's anchor, as `?street=1` does. Its other props
+(`touch`, `home`, `arrivalStep`, `ready`) and the diorama's `touch` keep the diorama's values in every place: a change
+of the sky's `touch` rebuilds the light ribbons and restarts the moving sky's worker, and the land's shader variants
+recompile (F1). In the design view `skyHome` and the diorama's camera are one object, so `home` does not change. Only
+the touch hook's `enabled` and the sky's `anchor` follow the place. The swap happens under the layer.
 
 (h) **The pointer.** A hook `usePortalPointer` with its own listeners on the element R3F connects events to. A move
-marks the pointer, and one cast per frame tests it against the village's three meshes with the land's targets and
-occluders (`landPick` with the village meshes as the targets). Over the village the canvas's cursor is `pointer` (the
-hand) and a DOM hint, "Enter the village", sits beside the pointer. The first hover over the village starts
+marks the pointer, and the frame after a move casts once against the village's three meshes with the land's targets
+and occluders (`landPick` with the village meshes as the targets). A still pointer casts nothing (F5). Over the village
+the canvas's cursor is `pointer` (the hand) and a DOM hint, "Enter the village", sits beside the pointer with
+`pointer-events: none`, so it never takes the hover or the click (F5). The first hover over the village starts
 `import('./Street')`, so the chunk loads before the click. A tap (`classifyGesture`) whose cast lands on the village
 sends `enter`. A drag never enters. A touch has no hover: the tap alone enters.
 
@@ -175,11 +193,12 @@ the diorama changes. After Mark's gate the default flips, with `?portal=0` to tu
 
 **Interfaces:** `PORTAL = { flight: 2.4, fadeIn: 1.0, fadeOut: 0.8, settleFrames: 2, flightEnd: { position: [0.9, 0.35,
 1.5], target: [0.4, 0.1, 0.2] } }`. `type PortalPlace`, `type PortalEvent = 'enter' | 'flown' | 'ready' | 'failed' |
-'timeout' | 'leave' | 'left'`, `portalStep(place, event, { still }): PortalPlace`, `flightPose(from: Pose, to: Pose, s:
+'timeout' | 'leave' | 'left'`, `portalStep(place, event, { still, arriving }): PortalPlace`, `boundedDt(dt): number`, `flightPose(from: Pose, to: Pose, s:
 number): Pose` with `Pose = { position: [x, y, z], target: [x, y, z] }`, `streetMounted(place)`,
 `dioramaVisible(place)`, `controlsEnabled(place)`.
 
-- [ ] Tests first: every row of decision (a)'s table, every other pair unchanged, `enter` under `still` to `entering`.
+- [ ] Tests first: every row of decision (a)'s table, every other pair unchanged, `enter` under `still` to `entering`,
+  `enter` while arriving unchanged (F2). The step cap: a 30 s frame advances the flight 0.1 s (F9).
   `flightPose` at `s` 0 and 1 equals the two poses exactly, and its path is monotone in distance to the end.
   Clearance: from each corner of the orbit's limits (azimuth −15° and 45°, polar 0.58 and 1.62, distance 3.25 and 5.6,
   about each home's target) and from both homes, every sample of the path stays at least 0.15 above
@@ -188,8 +207,8 @@ number): Pose` with `Pose = { position: [x, y, z], target: [x, y, z] }`, `street
 
 ### Task 2: the street's readiness, per mount
 
-**Files:** `src/scene/Street.tsx` (`onReady`), `src/scene/DioramaExperience.tsx` (`StreetBoundary` takes `onFailed`, the
-street's own `Suspense`).
+**Files:** `src/scene/Street.tsx` (`onReady`, `hold`), `src/scene/DioramaExperience.tsx` (`StreetBoundary` takes
+`onFailed`, the street's own `Suspense`).
 
 - [ ] `onReady` fires once per mount. `__streetReady` is written as today. With `?street=1` no caller passes `onReady`.
 - [ ] Check: the church's gate frames at stops 0 and 4 on both viewports are byte-identical to `t5/gate/frames/`.
@@ -224,9 +243,10 @@ diorama in a group, the controls by place, the sky's home and anchor by place, t
 **Files:** create `scripts/check-portal.mjs`.
 
 - [ ] The cases:
-  1. A hover over a house gives the `pointer` cursor and the hint. A hover over the sky gives neither.
+  1. A hover over a house gives the `pointer` cursor and the hint, and the street's chunk appears in
+     `performance.getEntriesByType('resource')` after it (F9). A hover over the sky gives neither.
   2. A tap on a house goes `flying`, `entering`, `street` within 15 s. The camera is at stop 0's pose, and the sky's
-     anchor is the street's.
+     anchor is the street's. On both viewports, the phone's with its automatic walk (F4).
   3. Escape goes back to `diorama`. The pose equals the saved one within 1e-6 the frame after and 0.5 s later.
   4. The dock's control does the same both ways.
   5. `?streetFail=painting`: the visitor ends on `diorama` at the saved pose.
@@ -234,8 +254,9 @@ diorama in a group, the controls by place, the sky's home and anchor by place, t
   7. With touch on, a tap on a house enters and adds no sky surge. A tap on a tree adds a land touch and does not
      enter. A drag over a house does not enter.
   8. Escape and the dock during `flying` change nothing.
-  9. The street through the portal at stop 0 against `?street=1` at stop 0, clocks pinned. The check reports the
-     differing pixels, and the record names the cause of any above 0.
+  9. The street through the portal at stop 0 against `?street=1` at stop 0, clocks pinned: byte-identical (F9).
+  10. A rotation in the street: enter, resize to the other aspect, leave. The pose equals the saved one within 1e-6
+      (F9). A hidden tab during the flight stays a hand check, with Task 1's step-cap test.
 - [ ] The diorama with `?portal=1` and no pointer against Task 0's home captures: byte-identical.
   `check-reduced-motion.mjs` passes. The main chunk's size against Task 0's.
 - [ ] Commit.
