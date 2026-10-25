@@ -8,7 +8,7 @@ import { buildLandTrees, type BakedMass, type LandTrees } from './landDomes.ts'
 import { buildStreetTrees } from './streetTrees.ts'
 import { PALETTE } from './palette.ts'
 import { CHURCH_LIGHT, leanOf, lightOf, shadeNew, STREET_LIGHT, type StreetLight } from './streetLight.ts'
-import { DETAIL, STREET, STREET_CHURCH, STREET_HOUSES, STREET_SQUARE, STREET_TREES, detailOf, laneDistance, pathPoint, pathTangent, streetGroundAt } from './streetLayout.ts'
+import { CHURCH, DETAIL, STREET, STREET_CHURCH, STREET_HOUSES, STREET_SQUARE, STREET_TREES, detailOf, laneDistance, pathPoint, pathTangent, streetGroundAt } from './streetLayout.ts'
 import { outlineFace, PATH_LIFT, sourceUnderpaint, streetMassConfig, traceFace, type FaceStrokes, type StreetFace, type StreetSourceName } from './streetStrokes.ts'
 import type { ImageData2D } from './useImageData.ts'
 import { VILLAGE_CHURCH, type Pigment } from './villageKnot.ts'
@@ -149,7 +149,9 @@ type Context = {
 }
 
 /** Clad one face: its underpaint, its strokes, its report line. */
-function clad(ctx: Context, owner: string, name: string, face: StreetFace, density = 1, [insetU, insetV] = [0, 0]): void {
+function clad(ctx: Context, owner: string, name: string, face: StreetFace, faceDensity = 1, [insetU, insetV] = [0, 0]): void {
+  // the church's faces no pose sees are thin, kept for the portal's flight (the church plan (f))
+  const density = (CHURCH.hidden as readonly string[]).includes(`${owner}/${name}`) ? CHURCH.thin : faceDensity
   // a roof's base is its source's mean, not its darkest tenth: the street's eye meets the roofs at a grazing angle,
   // where the strokes thin out, and 46–99% of a roof's pixels showed the dark base (the per-source gate, `t12/`)
   // S1b look passes 1 and 2: a face's base is its source's mean. On the darkest tenth the gaps between strokes read as
@@ -221,6 +223,8 @@ export type StreetShape = {
   storeys: 1 | 2
   wallSource: StreetSourceName
   roofSource: StreetSourceName
+  /** the brush's `refHeight` for every face, in place of the eave and the slope (the church) */
+  brush?: number
 }
 
 /**
@@ -260,20 +264,20 @@ function buildHouse(ctx: Context, owner: string, index: number, shape: StreetSha
   const upE = UP.clone().multiplyScalar(eave)
   const walls: [string, Vector3, Vector3][] = [['front', fl, fr], ['right', fr, br], ['back', br, bl], ['left', bl, fl]]
   const wallFaces = walls.map(([name, a, z], i) => {
-    const face = orientedFace(a, z.clone().sub(a), upE, inside, { shape: 'quad', kind: 'wall', source: wall, refHeight: eave, seed: seed + i, mirror: i % 2 === 1 })
+    const face = orientedFace(a, z.clone().sub(a), upE, inside, { shape: 'quad', kind: 'wall', source: wall, refHeight: shape.brush ?? eave, seed: seed + i, mirror: i % 2 === 1 })
     clad(ctx, owner, name, face, density)
     return face
   })
   // the gables over the front and the back
   const upP = UP.clone().multiplyScalar(pitch)
   for (const [name, a, z, i] of [['front gable', fl, fr, 4], ['back gable', br, bl, 5]] as const) {
-    clad(ctx, owner, name, orientedFace(a.clone().setY(eave), z.clone().sub(a), upP, inside, { shape: 'triangle', kind: 'wall', source: wall, refHeight: eave, seed: seed + i, mirror: i === 5 }), density)
+    clad(ctx, owner, name, orientedFace(a.clone().setY(eave), z.clone().sub(a), upP, inside, { shape: 'triangle', kind: 'wall', source: wall, refHeight: shape.brush ?? eave, seed: seed + i, mirror: i === 5 }), density)
   }
   // the roof planes, from the eave (overhung) to the ridge; the ridge runs along the depth at the width's middle
   const planes = houseRoofPlanes(shape, centre, along, toPath)
   planes.forEach(([side, [eaveF, eaveB, , ridgeF]], k) => {
     const slope = ridgeF.clone().sub(eaveF)
-    clad(ctx, owner, `${side} roof`, orientedFace(eaveF, eaveB.clone().sub(eaveF), slope, inside, { shape: 'quad', kind: 'roof', source: roof, refHeight: slope.length(), seed: seed + 6 + k, mirror: side === 'right' }), density)
+    clad(ctx, owner, `${side} roof`, orientedFace(eaveF, eaveB.clone().sub(eaveF), slope, inside, { shape: 'quad', kind: 'roof', source: roof, refHeight: shape.brush ?? slope.length(), seed: seed + 6 + k, mirror: side === 'right' }), density)
   })
   const [ridgeB, ridgeF] = [planes[0][1][2], planes[0][1][3]]
   // S1b task 3: the roof's thickness shown at its eave and rakes, a dark band under each edge
@@ -456,6 +460,7 @@ function church(ctx: Context): StreetBuild['report']['church'] {
     storeys: 1,
     wallSource: wallSource(nave.wall, 100),
     roofSource: roofSource(nave.roof, 100),
+    brush: CHURCH.stroke,
   }
   // the painting's church has no chimney (Fable R9)
   house(ctx, 'church', 100, churchShape, new Vector3(nave.x, 0, nave.z), along, toPath, false, false)
@@ -477,14 +482,14 @@ function church(ctx: Context): StreetBuild['report']['church'] {
   for (let k = 0; k < 4; k++) {
     const a = foot[k]
     const b = foot[(k + 1) % 4]
-    const face = orientedFace(a, b.clone().sub(a), height, inside, { shape: 'quad', kind: 'wall', source: 'plaster', refHeight: VILLAGE_CHURCH.nave.eave, seed: 0x6100 + k, mirror: k % 2 === 1 })
+    const face = orientedFace(a, b.clone().sub(a), height, inside, { shape: 'quad', kind: 'wall', source: 'plaster', refHeight: CHURCH.stroke, seed: 0x6100 + k, mirror: k % 2 === 1 })
     clad(ctx, 'belfry', `wall ${k}`, face)
     opening(ctx, face, 0.5, 0.82, 0.32, 0.2, false, 0x6110 + k)
     const at = a.clone().setY(top)
     const bt = b.clone().setY(top)
     const mid = at.clone().lerp(bt, 0.5)
     const spireInside = centre.clone().setY(top + (tipY - top) * 0.3)
-    clad(ctx, 'spire', `side ${k}`, orientedFace(at, bt.clone().sub(at), tip.clone().sub(mid), spireInside, { shape: 'triangle', kind: 'wall', source: 'plaster', refHeight: VILLAGE_CHURCH.nave.eave, seed: 0x6200 + k, mirror: k % 2 === 1 }))
+    clad(ctx, 'spire', `side ${k}`, orientedFace(at, bt.clone().sub(at), tip.clone().sub(mid), spireInside, { shape: 'triangle', kind: 'wall', source: 'plaster', refHeight: CHURCH.stroke, seed: 0x6200 + k, mirror: k % 2 === 1 }))
     edges.push([at, bt, face.normal], [a, at, face.normal], [at, tip, face.normal])
   }
   ink(ctx, 'belfry', VILLAGE_CHURCH.nave.eave, edges, 0x6300)

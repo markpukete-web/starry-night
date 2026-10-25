@@ -3,11 +3,11 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
-import { PerspectiveCamera, Vector3 } from 'three'
+import { Frustum, Matrix4, PerspectiveCamera, Vector3 } from 'three'
 import { islandHeightAt } from '../src/scene/islandShape.ts'
 import type { BakedMass } from '../src/scene/landDomes.ts'
 import { buildStreet } from '../src/scene/streetGeometry.ts'
-import { churchFront, laneDistance, STREET_CHURCH, STREET_HOUSES, STREET_SQUARE, stationPose, vincentPlace } from '../src/scene/streetLayout.ts'
+import { CHURCH, churchFront, laneDistance, STREET, STREET_CHURCH, STREET_HOUSES, STREET_SQUARE, stationPose, vincentPlace, walkPose, type StationPose } from '../src/scene/streetLayout.ts'
 import type { ImageData2D } from '../src/scene/useImageData.ts'
 import { VILLAGE_CHURCH } from '../src/scene/villageKnot.ts'
 import { decodePNG } from './lib/png.ts'
@@ -25,6 +25,8 @@ function plainPainting(): ImageData2D {
   return { data, width, height }
 }
 
+const build = buildStreet(plainPainting(), flow, masses, { lit: true })!
+const churchFaces = build.report.faces.filter((f) => ['church', 'belfry', 'spire'].includes(f.owner))
 const { nave, belfry, spireTip } = STREET_CHURCH
 const along = new Vector3(Math.cos(nave.yaw), 0, Math.sin(nave.yaw))
 const toPath = new Vector3(-Math.sin(nave.yaw), 0, Math.cos(nave.yaw))
@@ -58,7 +60,6 @@ test('stop 4 sees the gable and the moonlit side', () => {
 })
 
 test("the church's walls take the church's light, its roofs the street's", () => {
-  const build = buildStreet(plainPainting(), flow, masses, { lit: true })!
   const face = (owner: string, name: string) => {
     const f = build.report.faces.find((x) => x.owner === owner && x.name === name)
     assert.ok(f, `${owner} ${name} is clad`)
@@ -69,7 +70,7 @@ test("the church's walls take the church's light, its roofs the street's", () =>
   assert.ok(side >= 0.85 && side <= 0.92, `the moonlit side reads ${side.toFixed(3)}`)
   const roof = face('church', 'right roof').light
   assert.ok(roof >= 0.8 && roof <= 0.95, `the roof stop 4 sees reads ${roof.toFixed(3)}`)
-  for (const f of build.report.faces.filter((x) => ['church', 'belfry', 'spire'].includes(x.owner))) {
+  for (const f of churchFaces) {
     assert.ok(f.light <= 1, `${f.owner} ${f.name} reads ${f.light}, above its paint`)
   }
   assert.ok(Math.abs(face('house-0', 'front').light - 0.7) > 0.05, 'a house keeps the street light')
@@ -128,4 +129,48 @@ test("the belfry follows the nave (a guard: it fails if the turn reaches the nav
   const street = local(belfry.cx, belfry.cz, nave.x, nave.z, nave.yaw)
   assert.ok(Math.abs(knot[0] - street[0]) < 1e-9 && Math.abs(knot[1] - street[1]) < 1e-9)
   assert.equal(belfry.yaw, nave.yaw)
+})
+
+test("the church's faces take the shorter brush, and the houses keep theirs", () => {
+  for (const f of churchFaces) assert.equal(f.refHeight, CHURCH.stroke, `${f.owner} ${f.name}`)
+  const h = STREET_HOUSES[0]
+  const front = build.report.faces.find((f) => f.owner === 'house-0' && f.name === 'front')!
+  assert.equal(front.refHeight, h.type === 'cottage' ? STREET.wallRef : h.eave)
+})
+
+// every pose the street has: the walk by 0.01 and the five stations, both aspects
+const PROBE_POSES: [StationPose, number][] = ASPECTS.flatMap(([aspect, portrait]) => [
+  ...Array.from({ length: 91 }, (_, k) => [walkPose(k / 100, portrait), aspect] as [StationPose, number]),
+  ...([0, 1, 2, 3, 4] as const).map((i) => [stationPose(i, portrait), aspect] as [StationPose, number]),
+])
+const PROBE = PROBE_POSES.map(([p, aspect]) => {
+  const c = new PerspectiveCamera(p.fov, aspect, p.near, p.far)
+  c.position.set(...p.position)
+  c.lookAt(...p.target)
+  c.updateMatrixWorld()
+  return { eye: c.position.clone(), frustum: new Frustum().setFromProjectionMatrix(new Matrix4().multiplyMatrices(c.projectionMatrix, c.matrixWorldInverse)) }
+})
+
+/** The poses a face faces with a point of a 9 × 9 grid over it in frame. No occlusion: a face it calls unseen is unseen. */
+function posesSeeing(corners: Vector3[], normal: Vector3): number {
+  const points: Vector3[] = []
+  for (let i = 0; i <= 8; i++) {
+    for (let j = 0; j <= 8; j++) {
+      const [a, b] = [i / 8, j / 8]
+      if (corners.length === 3) {
+        if (a + b <= 1) points.push(corners[0].clone().multiplyScalar(1 - a - b).addScaledVector(corners[1], a).addScaledVector(corners[2], b))
+      } else points.push(corners[0].clone().lerp(corners[1], a).lerp(corners[3].clone().lerp(corners[2], a), b))
+    }
+  }
+  const centre = points.reduce((sum, p) => sum.add(p), new Vector3()).divideScalar(points.length)
+  return PROBE.filter(({ eye, frustum }) => normal.dot(eye.clone().sub(centre)) > 0 && points.some((p) => frustum.containsPoint(p))).length
+}
+
+test('the faces no pose sees are thinned, and only they', () => {
+  for (const f of churchFaces) {
+    const hidden = (CHURCH.hidden as readonly string[]).includes(`${f.owner}/${f.name}`)
+    const seen = posesSeeing(f.corners, f.normal)
+    assert.equal(seen === 0, hidden, `${f.owner} ${f.name}: seen by ${seen} poses, hidden ${hidden}`)
+    assert.equal(f.density, hidden ? CHURCH.thin : 1, `${f.owner} ${f.name} clad at ${f.density}`)
+  }
 })

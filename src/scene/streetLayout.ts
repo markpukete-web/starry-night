@@ -221,6 +221,20 @@ export const STREET_SQUARE = {
 export const CHURCH = {
   turn: 0.45,
   setback: 0.02,
+  /** the church's brush: every face's `refHeight`, against the nave's eave 0.24 */
+  stroke: 0.16,
+  /** the density of the faces no pose sees (the face probe, `scripts/street-church.test.ts`), kept for the portal */
+  thin: 0.25,
+  hidden: [
+    'church/back',
+    'church/left',
+    'church/back gable',
+    'church/left roof',
+    'belfry/wall 2',
+    'belfry/wall 3',
+    'spire/side 2',
+    'spire/side 3',
+  ],
 } as const
 
 // The church: nave centre = square centre + (0.25 + nave.d / 2 + setback) * forward
