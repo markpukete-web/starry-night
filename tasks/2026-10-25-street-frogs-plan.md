@@ -10,20 +10,29 @@ it side-on, their poses varied a little. A spike on this branch rebuilt the frog
 render (`scratch/street-frogs-2026-10-25/spike/`). Its numbers are the plan's starting values. The Lead builds every
 task. Mark's gate is the end of the slice.
 
-**Goal:** At each of the five stops a frog sits in a gap of the left verge's grass, side-on to that stop's camera. At
-true scale on the desktop and the phone it reads as a frog: a sitting outline, a back leg folded with the knee forward,
-eyes high on a flat head, a pale throat and lip. Each blinks on its own clock. The frogs show with the grass, as the
-frog does today.
+**Revision 2 (2026-10-25, night).** Folds in Codex's plan review (`scratch/street-frogs-2026-10-25/plan-review-codex.md`,
+F1 to F6 and its shape note, all P2) and two facts found since. Mark chose the square's edge for stop 4. The walk has
+no room for five frogs of 2,000 triangles: at `t` 0.33 on the desktop it is 463 under the ceiling. So the frog is cut to
+1,212 triangles and drawn only within 0.5 of the camera, and at most one frog is ever drawn (F2). With one frog drawn,
+the frogs share one blink and the phases go (F1). The crouch goes, because a non-uniform scale bends the lit
+material's normals (F4). Stop 4's frog rises to the square's strokes (F3). Case 18 goes: the spots' visibility is a
+measurement in the record, with its definition stated (F5). The spike's studio stays out of the app, staged and removed
+by named steps (F6).
+
+**Goal:** At each of the five stops a frog sits side-on to that stop's camera: in a gap of the grass at stops 0 to 3,
+on the square's edge at stop 4. At true scale on the desktop it reads as a frog: a sitting outline, a back leg folded
+with the knee forward, eyes high on a flat head, a pale throat and lip. It blinks as today's frog does. The frogs show
+with the grass, as the frog does today.
 
 **Architecture:** One frog shape, built once from the painting and drawn five times. A table holds each frog's spot
-(`t`, lateral), its stop, its turn from side-on, its size and crouch (its group's scale) and its blink phase. The
-spots come from a search that measures in the render how much of a frog each stop's camera sees. A check case keeps
-that measure at the gate.
+(`t`, lateral, `y`), its stop, its turn from side-on and its size (its group's uniform scale). A frog is drawn only
+within `FROG.draw` of the camera, so the walk never draws two at once and never draws one where the triangle budget
+has no room. The spots come from a search that measures in the render how much of a frog each stop's camera sees.
 
 **Tech stack:** three.js, Vincent's builders (`clad`, `solid`, `stroke`, `sphere`, `tube`), R3F, `node --test`, the
 check scripts. No new dependency.
 
-**Spec:** Mark's words and his choice above (the portal's record, "Mark's gate"), S3b's frog
+**Spec:** Mark's words and his choices above (the portal's record, "Mark's gate"), S3b's frog
 (`tasks/2026-10-25-street-s3b-plan.md`, Task 6, and its record), and the facts below.
 
 ## Session mapping
@@ -43,7 +52,8 @@ Nothing is pushed before Mark has seen it.
    (`:1144–1189`) reads it. `street-frog.test.ts` pins the blink, the size, the place, the gap and stop 0's frame.
 3. The stops are `STATION_T` = [0, 0.23, 0.44, 0.66, 0.9]. Each camera is `walkPose(t, portrait)`: eye height 0.09,
    0.18 behind the lane point, field 50° landscape and 75° portrait. The phone's horizontal half-field is about 19.5°,
-   so the verge's inner edge (|lateral| 0.066) comes into the phone's frame only about 0.2 ahead of its camera.
+   so the verge's inner edge (|lateral| 0.066) comes into the phone's frame only about 0.2 ahead of its camera. The
+   camera always looks along the lane: the walk's gestures move `t` and nothing turns the view (`StreetWalk.tsx`).
 4. The grass draws a share of each chunk's blades by its distance from the camera (`grassDrawCount`), so what hides a
    frog depends on the stop.
 5. Vincent walks 0.4 ahead of the camera at lateral 0.03, moving to 0.07 between stops 3 and 4, half-width 0.025
@@ -53,84 +63,113 @@ Nothing is pushed before Mark has seen it.
 7. `stroke` lifts every stroke 0.0004 off its shape (`vincent.ts:56`). On a frog's leg of radius 0.0004 that doubles
    its width.
 8. From the spike: the rebuilt shape reads as a frog at about 30 px on the desktop at stop 0
-   (`spike/show-a/s0-desktop-crop-x.png`). On the phone it is about 18 px and reads only just. A geometric
+   (`spike/show-a/s0-desktop-crop-x.png`). On the phone it is about 15 to 18 px and reads only just. A geometric
    line-of-sight test against the blades said "all seen" where the render showed a blade across the frog, so the spots
-   are measured in the render: the frame with the frog, the frame without it, and the frog drawn over everything.
+   are measured in the render (Decision (g)).
+9. **The triangle room.** The walk's count is the street, the diorama and Vincent, which do not change along
+   `t` < 0.43, plus the grass, which does. A model of the grass's count at every 0.001 of `t` (the grass test's own
+   count, `scratch/.../frog-room.mts`) plus a constant read from the church's sweep matches the browser to 12
+   triangles at `t` 0.33. The browser on this branch reads 1,444,455 at `t` 0.33 on the desktop, 475 under the ceiling,
+   and 1,443,287 at `t` 0.295, 1,643 under it. With all five frogs drawn when in the frustum, four are drawn at `t`
+   0.295 (Codex F2). With a frog drawn only within 0.5 of the camera, one is drawn there (stop 1's, 0.2 away) and none
+   at 0.33 (stop 2's is 0.54 away). A draw distance of 0.55 or more puts stop 2's frog into `t` 0.33.
+10. **The square's height.** The square's face is at `y` 0.002 (`streetGeometry.ts:643–644`). Its strokes ride
+   `STROKE_LIFT` + (`index` % `LIFT_LEVELS`) × `LIFT_STEP` over it (`streetStrokes.ts:366`), at most 0.002 + 15 ×
+   0.00015 = 0.00425. So the square's strokes reach 0.00625 (Codex F3 sampled 0.00595 under stop 4's spot).
 
 ## Decisions
 
-- **(a) The shape**, in frog lengths (`FROG.size` 0.0086, snout to vent, about 17 cm beside Vincent's 0.085), built
-  in the spike (`spike/a3/close-threeq.png`):
+- **(a) The shape**, in frog lengths (`FROG.size` 0.0086, snout to vent, about 17 cm beside Vincent's 0.085), as the
+  spike's `frog.ts` builds it at 1,212 triangles (`spike/slim-a/cmp-desktop.png`: at 4× on the desktop it reads as the
+  3,824-triangle draft did):
   - The torso is an ellipsoid at (0, 0.22, −0.1), radii (0.24, 0.17, 0.33), its nose raised 0.42 rad. The back slopes
-    up from the rump on the ground.
-  - The head is an ellipsoid at (0, 0.37, 0.28), radii (0.27, 0.14, 0.27), its nose down 0.2 rad. Its top is flat.
-  - The throat is a pale ellipsoid under the head, at (0, 0.28, 0.29), radii (0.22, 0.08, 0.22).
-  - The back leg folds: hip (0.15, 0.17, −0.3), knee (0.35, 0.2, 0.06), heel (0.3, 0.05, −0.36), toe (0.42, 0.02, 0.1).
-    The thigh's radius runs 0.11 to 0.07, the shin's 0.065 to 0.04, the foot's 0.04 to 0.03. Three toes fan 0.5 rad,
-    0.16 long.
-  - The front leg: shoulder (0.16, 0.25, 0.18), elbow (0.25, 0.13, 0.12), hand (0.23, 0.015, 0.3). Its radii run 0.05
-    to 0.04 and 0.04 to 0.03. Three fingers fan 0.9 rad, 0.08 long.
-  - A sphere sits at the knee, the heel, the elbow and the hand, so no tube shows its cut end.
-  - The eyes sit at (±0.14, 0.48, 0.3), radius 0.075, in sockets 0.035 lower.
-  - The paint: the back from the bushes' greens, the lighter half (luma share 0.45 to 0.95). Seven dark spots, and dark
-    bands across each thigh and shin (share 0.02 to 0.2). Two pale ridges along the back. The belly, the throat and a
-    stripe above the lip in the street's plaster, warmed 0.35 toward the lightest green. A dark line along the jaw.
+    up from the rump on the ground. Its grid is 8 round by 5 along.
+  - The head is an ellipsoid at (0, 0.37, 0.28), radii (0.27, 0.14, 0.27), its nose down 0.2 rad, its top flat. Grid
+    8 by 5.
+  - The throat is a pale ellipsoid under the head, at (0, 0.28, 0.29), radii (0.22, 0.08, 0.22). Grid 6 by 3.
+  - The back leg folds: hip (0.15, 0.17, −0.3), knee (0.35, 0.2, 0.06), heel (0.3, 0.05, −0.36), toe (0.42, 0.035,
+    0.1). The thigh's radius runs 0.11 to 0.07, the shin's 0.065 to 0.04, the foot's 0.04 to 0.03. Grids 6 × 3, 5 × 3
+    and 4 × 2. Three toes fan 0.5 rad, 0.16 long, each a 3 × 1 tube.
+  - The front leg: shoulder (0.16, 0.25, 0.18), elbow (0.25, 0.13, 0.12), hand (0.23, 0.035, 0.3). Its radii run 0.05
+    to 0.04 and 0.04 to 0.03, grids 4 × 2. No fingers: at 0.08 frog lengths they are under 3 px at the nearest stop.
+  - A sphere caps the knee and the heel (5 × 3), so neither tube shows its cut end. The arm's ends are under a pixel at
+    true scale and get no cap.
+  - The eyes sit at (±0.14, 0.48, 0.3), radius 0.075 (8 × 4), in sockets 0.035 lower (5 × 3). A glint of radius 0.025
+    (4 × 2) on each.
+  - The paint: the back from the bushes' greens, the lighter half (luma share 0.45 to 0.95), six strokes of 4 steps.
+    Five dark spots, and one dark band across each thigh and shin (share 0.02 to 0.2). Two pale ridges along the back.
+    The belly (three strokes), the throat and a stripe above the lip in the street's plaster, warmed 0.35 toward the
+    lightest green. A dark line along the jaw. Each limb part one or two strokes.
   - The strokes stand `FROG.lift` = 0.00012 off the shape. `stroke` and `clad` take an optional `lift` that defaults to
     today's 0.0004, so Vincent does not change.
-- **(b) One build, five frogs.** Each frog is a group over the same geometries and materials. Its size and crouch are
-  the group's scale: x and z by `scale`, y by `scale × crouch`. The poses vary by these two, by the turn and by which
-  way it faces. The five share their strokes: at 15 to 40 px nobody can tell them apart by stroke. If Mark asks, a
-  second build with its own seed is the fallback.
-- **(c) The spots.** Each spot was chosen by the search (Task 2, step 1) from those that pass six tests: in a gap of
+  - The shadow is 12 segments.
+- **(b) One build, five frogs.** Each frog is a group over the same geometries and materials, named
+  `street-frog-<stop>`. Its size is the group's uniform scale. The poses vary by the size, by the turn and by which way
+  it faces. No crouch: a non-uniform scale bends the lit material's normals (`vincentMoon` uses `mat3(modelMatrix)`,
+  4.3° off at a crouch of 0.92, Codex F4), and Vincent's shader does not change. The five share their strokes: at 15 to
+  40 px nobody can tell them apart by stroke.
+- **(c) The spots.** Each spot was chosen by the search (Task 2, step 2) from those that pass six tests: in a gap of
   the grass, off the path, clear of Vincent's walk, in frame on the desktop (16:9 and 16:10) and on the phone at its
-  stop, and at least 0.85 of the frog seen on both. Of those, the one with the most pixels on the phone. Three
+  stop, and at least 0.85 of the frog seen on both. Of those, the one with the most pixels on the phone. Two
   departures, each forced by the frames:
   - Stop 1's frog sits on the right verge, Vincent's side. No left spot nearer than 0.78 is in the phone's frame there
     (the lane bends right). It stays at least 0.02 from his box's footprint at every walk `t`.
-  - Stop 4's frog sits on the square's open ground, just past the grass's end. At stop 4 no grass is in both frames:
-    the desktop sees grass only at `t` 0.96 to 0.97 far left, the phone only at `t` 0.90 to 0.92 on Vincent's line
-    (`spike/s4-probe.mjs`). **For Mark:** this is the one frog not in the grass ("Why not under the grass", S3b).
-  - Stop 4's frog stands on the ground's strokes, not the grass's base: the strokes rise to `STROKE_LIFT` +
-    `LIFT_LEVELS` × `LIFT_STEP` = 0.00425, and at the base's 0.001 they hid 27% of it. So `FrogSpec` carries its `y`.
+  - Stop 4's frog sits on the square's edge, just past the grass's end. At stop 4 no grass is in both frames: the
+    desktop sees grass only at `t` 0.96 to 0.97 far left, the phone only at `t` 0.90 to 0.92 on Vincent's line
+    (`spike/s4-probe.mjs`). Mark chose this spot on 2026-10-25 ("Square's edge"). It is the one frog not in the grass.
+    It stands on the square's strokes: `y` = 0.00625 (Fact 10) + 0.00025 = 0.0065. So `FrogSpec` carries its `y`.
   The table is in Task 2.
 - **(d) Side-on.** A frog's heading is its stop camera's bearing turned by `±(π/2 − face)`, `face` 0.25 to 0.5 rad, so
   it shows its side with a little of its face. `toward` picks the sign: `'lane'` turns its nose toward the lane's
   centre, `'away'` from it.
-- **(e) The blink.** Each frog's clock is the sky's clock plus its `phase`. `frogBlink(t, phase)` returns 0 for any
-  `t` that is not a positive number, before the phase is added, so reduced motion (clock 0) keeps every eye open.
-- **(f) The seam.** `window.__frogs()` returns one `{ stop, shut, sink, scale }` per frog, in the table's order.
-  `window.__frogsShow(mode)` sets `'normal'`, `'hidden'` (no frog drawn) or `'onTop'` (every frog drawn with no depth
-  test, over everything). Both are set on mount and deleted on unmount, as `__frog` is today. `__frog` goes.
-- **(g) The visibility gate.** Case 18 of `check-street-grass.mjs`, at each stop on both viewports: three frames
-  clipped round that stop's frog, `normal`, `hidden` and `onTop`, the clock pinned at 0.5. Seen is the pixels that
-  differ between `normal` and `hidden`, the whole is those that differ between `onTop` and `hidden`. Seen over whole
-  is at least 0.85, and the whole is at least the floor in Task 2's table.
-- **(h) Two levers for the phone.** At 15 to 20 px on the phone (`spike/show-b/phone-sheet.png`) the frogs are hard to
+- **(e) The blink.** One clock for all five: `frogBlink(t)` as today, on the sky's clock. At most one frog is drawn at
+  any pose (Decision (i)), so nobody sees two blink together. Reduced motion keeps every eye open, as today (`frogBlink`
+  returns 0 for any `t` that is not a positive number). Codex F1 showed five phases cannot keep the blinks apart within
+  [0, 1.6] s, and with one frog drawn they need not.
+- **(f) The seam.** `window.__frog()` stays as it is: the shared blink's `{ shut, sink, scale }`. No new seam.
+- **(g) Visibility is measured, not gated.** The spike's `frog-vis.mjs` measures each spot at its stop on both
+  viewports, and its numbers go in the record. Its definition: three frames with the camera, the clock (0.5) and every
+  other object fixed. In `all` the scene is as shipped. In `hideFrog` the target frog is hidden. In `onlyFrog` every
+  object but the target frog is hidden, the frog keeps its own depth test, and its shadow is hidden in all three. A
+  pixel counts when the sum of its absolute RGB differences is above 6. Seen is the pixels that differ between `all`
+  and `hideFrog`. The whole is the pixels of `onlyFrog` that differ from its corner pixel (the empty scene's
+  background). The crop is 100 px square about the frog's projected centre, cut by the frame. A measure fails when a
+  pixel of the whole lies on the crop's edge, because then the crop has cut the frog.
+  No check case keeps it (Codex F5 named five things such a case needs). For an 18 px frog that Mark judges by eye,
+  the gap test and Mark's look guard the spots, and the record holds the measure.
+- **(h) Two levers for the phone.** At 15 to 18 px on the phone (`spike/slim-a/phone-sheet.png`) the frogs are hard to
   find. Look pass 1 tries `FROG.size` up to 0.0108 (about 23 cm, a large frog beside Vincent) and a lighter back (the
-  bushes' greens from luma share 0.6). Every spot is measured again after a size change.
+  bushes' greens from luma share 0.6). Every spot is measured again after a size change. Size does not change the
+  triangle count.
+- **(i) The draw distance.** A frog is drawn only when its group is within `FROG.draw` = 0.5 of the camera. At 0.5 a
+  frog first shows at about 17 px long on the desktop and 9 px on the phone, in the grass. Every stop's own frog is
+  within it (0.25 to 0.40). Task 3 looks at that pop in a frame pair.
 
 ## Global constraints
 
-- No new dependency. Only the frog's code, its seam, its tests and case 17 change, with case 18 and `stroke`'s lift
-  parameter added.
-- Vincent's build is byte-identical: `stroke` and `clad` keep 0.0004 by default.
+- No new dependency. Only the frog's code, its tests, case 17's sink and `stroke`'s lift parameter change.
+- Vincent's build is byte-identical: `stroke` and `clad` keep 0.0004 by default, and his shader does not change.
 - The grass, the walk, Vincent, the cameras and the stops do not change.
-- The triangle ceiling is 1,444,930 at every pose, both orientations. Five frogs add about 13,000.
+- The triangle ceiling is 1,444,930 at every pose, both orientations. A frog is at most 1,250 triangles and at most one
+  is drawn at any walk pose. The model in Fact 9 is the estimate. The browser sweep in Task 4 is the gate.
+- `FrogStudio.tsx` and its mount in `Street.tsx` are spike tools. They are never committed (Task 2, step 1).
 - Retune cap: four look passes.
 
 ## Review focus
 
-1. Reduced motion with a phase: a phase added before the "not positive" test would shut a frog's eyes under reduced
-   motion. Test: under reduced motion, every frog's eyes are open at every pinned time.
-2. A frog in the frame of a stop that is not its own, close to the camera: at stop 1 the frog of stop 0 may stand at
-   the frame's edge. Test: every frog's distance from every station camera is at least 0.15, so none fills the frame.
-3. Two frogs blinking together: equal phases read as one creature twice. Test: over the first 60 s no two frogs are
-   shut at the same millisecond.
+1. Reduced motion: the blink must stay open under reduced motion at every pinned time. Test: `frogBlink(lifeTime(t,
+   99, true))` is 0 at every `t` in 0 to 60 s by 0.05.
+2. A frog in the frame of a stop that is not its own, close to the camera. Test: every frog at least 0.15 from every
+   station camera, both orientations.
+3. Two frogs drawn at once: the shared blink would show, and the triangle room is for one. Test: at every walk `t` from
+   0 to 0.9 by 0.001, on 16:9, 16:10 and the phone, at most one frog is inside the frustum and within `FROG.draw`.
 4. A resize between portrait and landscape at a stop: the spots were picked for both frames. Test: each frog is in
-   frame on 16:9, 16:10 and the phone at its stop (the unit test), and case 18 runs both viewports.
-5. The grass changing later: a denser grass fills a gap or covers a frog. Tests: the gap test per frog, and case 18.
-6. Vincent walking past stop 1's frog on his side of the lane: 0.031 at the nearest. Test: the clearance test over his
+   frame on 16:9, 16:10 and the phone at its stop.
+5. The grass changing later: a denser grass fills a gap. Test: the gap test per frog. A blade arching over a frog from
+   outside its gap is caught only by the measure in the record and by Mark's eye.
+6. Vincent walking past stop 1's frog on his side of the lane: 0.026 at the nearest. Test: the clearance test over his
    whole walk, from his box, not his centre line.
+7. The pop at the draw distance. Task 3 looks at the frames either side of each frog's first draw.
 
 ---
 
@@ -140,6 +179,7 @@ Nothing is pushed before Mark has seen it.
 - Change: `src/scene/vincent.ts` (`stroke`, `clad`: an optional `lift`)
 - Change: `src/scene/frog.ts` (`FROG`'s shape in frog lengths, `buildFrog`)
 - Change: `src/scene/StreetFrog.tsx` (the eye's sink in world units)
+- Change: `scripts/check-street-grass.mjs` (case 17: the sink in world units)
 - Test: `scripts/street-frog.test.ts`
 
 **Interfaces:**
@@ -153,56 +193,60 @@ Nothing is pushed before Mark has seen it.
     `FROG.knee[0] > FROG.torso.radii[0]`.
   - `'its eyes stand on its head'`: `FROG.eye.centre[1] − FROG.eye.r > FROG.head.centre[1]`, and the eye is in the
     head's front half: `FROG.eye.centre[2] >= FROG.head.centre[2]`.
-  - `'the frog is small: 2,000 to 3,200 triangles'`.
-  - `'Vincent keeps his strokes'`: `buildVincent`'s stroke positions hash to the value read at `cc56207` before the
-    change (the step records it).
+  - `'the frog fits the walk: at most 1,250 triangles'`, its comment naming Fact 9 and `FROG.draw`.
+  - `'Vincent keeps his strokes'`: `buildVincent`'s stroke and underpaint positions hash to `79338a361cd6b11c` (the
+    first 16 hex of their SHA-256, read at `cc56207` before the change).
 - [ ] **Step 2: Run them**: `node --test scripts/street-frog.test.ts`. Expected: the shape tests FAIL, Vincent's PASS.
 - [ ] **Step 3: Build the shape** from Decision (a), as the spike's `frog.ts` has it.
 - [ ] **Step 4: Run the tests**: `npm run -s test:sky`. Expected: all PASS.
-- [ ] **Step 5: Look.** Close-ups from four sides and stop 0 at true scale, both viewports (the spike's
-  `frog-studio.mjs`, which drives the camera through R3F's root with `walk=0`, so the app takes no studio code).
-- [ ] **Step 6: Commit**: `feat(street): the frog rebuilt to read as a frog: a sitting outline, a folded back leg, a
-  flat head`.
+- [ ] **Step 5: Look.** With the studio staged (Task 2, step 1 describes it): close-ups from four sides (`frog-studio.mjs`) and
+  stop 0 at true scale on both viewports (`frog-show.mjs`). Record `frog.ts`'s SHA-256 beside the close-ups.
+- [ ] **Step 6: Commit** only the files above: `feat(street): the frog rebuilt to read as a frog: a sitting outline,
+  a folded back leg, a flat head`.
 
 ### Task 2: five frogs
 
 **Files:**
-- Change: `src/scene/frog.ts` (`FROGS`, `frogPlace(spec)`, `frogBlink(t, phase)`)
-- Change: `src/scene/StreetFrog.tsx` (five groups, the seam)
-- Test: `scripts/street-frog.test.ts`, `scripts/check-street-grass.mjs` (case 17, case 18)
+- Change: `src/scene/frog.ts` (`FROG.draw`, `FrogSpec`, `FROGS`, `frogPlace(spec)`)
+- Change: `src/scene/StreetFrog.tsx` (five groups, the draw distance)
+- Test: `scripts/street-frog.test.ts`
+- Spike tools, not committed: `src/scene/FrogStudio.tsx`, its mount in `Street.tsx`, and `frog-studio.mjs`,
+  `frog-show.mjs`, `frog-vis.mjs`, `frog-spots.mjs`, `s4-pick.mjs` in the session's scratchpad.
 
 **Interfaces:**
 - Consumes: Task 1's `FROG`, `buildFrog`, `FROG_EYES`.
-- Produces: `type FrogSpec = { stop: 0 | 1 | 2 | 3 | 4; t: number; lateral: number; y: number; toward: 'lane' |
-  'away'; face: number; scale: number; crouch: number; phase: number }`, `FROGS: readonly FrogSpec[]` (one per stop,
-  in stop order),
-  `frogPlace(spec: FrogSpec): { position: [number, number, number]; yaw: number }`,
-  `frogBlink(t: number, phase = 0): number`, and the seams of Decision (f).
+- Produces: `FROG.draw` (0.5), `type FrogSpec = { stop: 0 | 1 | 2 | 3 | 4; t: number; lateral: number; y: number;
+  toward: 'lane' | 'away'; face: number; scale: number }`, `FROGS: readonly FrogSpec[]` (one per stop, in stop order),
+  `frogPlace(spec: FrogSpec): { position: [number, number, number]; yaw: number }`. `frogBlink(t)` and `__frog`
+  unchanged.
 
-- [ ] **Step 1: The search.** Run the spike's `frog-spots.mjs` (the static tests) and `frog-vis.mjs` (the render
-  measure) on the Task 1 shape. Record each stop's best spot in the table below and its numbers in the record. The
-  starting table, from the spike:
+- [ ] **Step 1: Stage the studio.** `FrogStudio.tsx` reads `window.__frogCam` (a camera) and `window.__frogVis`
+  (`{ mode, stop }`: `mode` is `all`, `hideFrog` or `onlyFrog`, `stop` picks the group `street-frog-<stop>`). It is
+  mounted last in `Street.tsx`'s group, so its frame runs after `StreetFrog`'s. Port the five scripts to `FROGS`,
+  `frogPlace(spec)` and `__frog`. Before every commit, `git status --short` shows ` M src/scene/Street.tsx` and
+  `?? src/scene/FrogStudio.tsx` unstaged, and `git diff --cached` holds neither.
+- [ ] **Step 2: The search.** Run `frog-spots.mjs` (the static tests) and `frog-vis.mjs` (Decision (g)) on the Task 1
+  shape. Record each stop's spot in the table below and its numbers in the record. The starting table, from the spike
+  (seen and whole at stops 0 to 3 measured on the 3,824-triangle draft, stop 4 at `y` 0.0045, all to be measured again):
 
-  | stop | t | lateral | y | toward | face | scale | crouch | seen | whole px (desktop, phone) | Vincent's gap |
-  | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-  | 0 | 0.035 | −0.086 | 0.001 | lane | 0.35 | 1.0 | 1.0 | 0.98 | 562, 166 | 0.30 |
-  | 1 | 0.283 | +0.086 | 0.001 | lane | 0.3 | 0.94 | 1.04 | 0.86 | 351, 124 | 0.031 |
-  | 2 | 0.466 | −0.098 | 0.001 | lane | 0.4 | 1.06 | 0.92 | 0.96 | 491, 166 | 0.10 |
-  | 3 | 0.677 | −0.098 | 0.001 | away | 0.3 | 0.97 | 1.0 | 0.95 | 593, 205 | 0.10 |
-  | 4 | 0.975 | −0.08 | 0.0045 | lane | 0.35 | 1.02 | 0.96 | 0.93 | 262, 92 | 0.29 |
+  | stop | t | lateral | y | toward | face | scale | seen | whole px (desktop, phone) | Vincent's gap |
+  | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+  | 0 | 0.035 | −0.086 | 0.001 | lane | 0.35 | 1.0 | 0.98 | 562, 166 | 0.298 |
+  | 1 | 0.283 | +0.086 | 0.001 | lane | 0.3 | 0.94 | 0.86 | 351, 124 | 0.026 |
+  | 2 | 0.466 | −0.098 | 0.001 | lane | 0.4 | 1.06 | 0.96 | 491, 166 | 0.098 |
+  | 3 | 0.677 | −0.098 | 0.001 | away | 0.3 | 0.97 | 0.95 | 593, 205 | 0.099 |
+  | 4 | 0.975 | −0.08 | 0.0065 | lane | 0.35 | 1.02 | 0.93 | 262, 92 | 0.104 |
 
-  Stop 4's frog sits at the desktop frame's lower edge (NDC y about −0.88) and about 18 px long, the smallest of the
-  five (`spike/show-s4c/`). It is Mark's call whether stop 4 keeps it (Decision (c)). The phases start at 0, 1.3,
-  0.4, 0.9 and 1.6 s. Step 4 moves them by hand until "no two frogs blink at once" passes, each in [0, 1.6] so its
-  first blink comes after time 0. The case 18 floor for each stop is 0.8 of its whole px on each viewport.
-- [ ] **Step 2: Write the failing tests** in `street-frog.test.ts`, replacing today's place, gap and frame tests with
+  Vincent's gap is the least distance from the frog's footprint to his box over the walk (Codex's check on the draft).
+  Stop 4's frog sits at the desktop frame's lower edge (NDC y about −0.88), about 18 px long, the smallest of the five.
+- [ ] **Step 3: Write the failing tests** in `street-frog.test.ts`, replacing today's place, gap and frame tests with
   one loop over `FROGS`:
   - `'one frog per stop, in stop order'`: `FROGS.map((f) => f.stop)` is [0, 1, 2, 3, 4].
   - `'each frog keeps clear of Vincent's walk'`: every footprint point is at least 0.02 from his box's footprint
     (`vincentBoxCorners`) at every walk `t` from 0 to 0.9 by 0.001.
   - `'each frog in the grass sits in a gap, ringed by blades'`: for every frog with `y` = `GRASS.baseY`, no root within
     `FROG.clear` and at least 4 within twice it. Stop 4's frog is outside the grass (`inFootprint` false) at
-    `y` = `STROKE_LIFT + LIFT_LEVELS × LIFT_STEP` + 0.00025.
+    `y` = 0.002 + `STROKE_LIFT` + (`LIFT_LEVELS` − 1) × `LIFT_STEP` + 0.00025.
   - `'each frog is off the path'`: every footprint point (the build's vertices with `y < 0.0006`, scaled and turned)
     has |lateral| > 0.06.
   - `'each frog is side-on to its stop'`: the angle between its heading and the bearing to its stop's camera is
@@ -210,41 +254,44 @@ Nothing is pushed before Mark has seen it.
   - `'each frog is in frame at its stop'`: every vertex within |NDC| 0.9 on 1600 × 900, 1280 × 800 and 390 × 844,
     except stop 4's frog on the desktop, within 0.95 (its frame meets the ground at its lower edge).
   - `'no frog crowds a camera'`: every frog at least 0.15 from every station camera, both orientations.
-  - `'the poses vary a little'`: `scale` in [0.9, 1.1], `crouch` in [0.9, 1.05], and no two frogs share both.
-  - `'reduced motion keeps every eye open'`: `frogBlink(lifeTime(t, 99, true), f.phase)` is 0 for every frog at every
-    `t` in 0 to 60 s by 0.05.
-  - `'no two frogs blink at once'`: for every millisecond of the first 60 s, at most one frog's `frogBlink` is above 0.
-- [ ] **Step 3: Run them**: `node --test scripts/street-frog.test.ts`. Expected: FAIL (no `FROGS`).
-- [ ] **Step 4: Implement** `FrogSpec`, `FROGS`, `frogPlace(spec)` and `frogBlink(t, phase)` in `frog.ts`, and five
-  groups in `StreetFrog.tsx`: each `<group position rotation scale={[s, s × crouch, s]}>` over the shared geometries,
-  each frog's eyes on `frogBlink(lifeTime(...), phase)`. Add the seams of Decision (f). `'onTop'` sets `depthTest`
-  false on the frog's materials and a `renderOrder` of 20 on its meshes. `'hidden'` sets the groups invisible.
-- [ ] **Step 5: Run the tests**: `npm run -s test:sky`. Expected: all PASS.
-- [ ] **Step 6: Case 17 for five.** It reads `__frogs()`. Pinned at each frog's first shut moment (`FROG.blink.first`
-  + `down` + `hold`/2 − its phase, the phases chosen so that is positive), that frog is shut and the others are open.
-  Pinned at 0 all are open. Under reduced motion all are open. With `grass=0`, `__frogs` is undefined.
-- [ ] **Step 7: Case 18**, Decision (g), both viewports at each stop. Expected: PASS on the table's spots.
-- [ ] **Step 8: Run** `node scripts/check-street-grass.mjs --cases 17,18` against the worktree's server. Expected: PASS.
-- [ ] **Step 9: Commit**: `feat(street): five frogs, one by each stop, side-on to its camera, each on its own blink`.
+  - `'the sizes vary a little'`: `scale` in [0.9, 1.1], no two equal.
+  - `'each stop draws its own frog'`: at each station, both orientations, its frog is within `FROG.draw` of the camera.
+  - `'at most one frog is drawn at any walk pose'`: Review focus 3. A frog counts when its centre (`y` + 0.002) with a
+    sphere of radius 0.008 meets the frustum and lies within `FROG.draw` of the camera.
+  - `'reduced motion keeps the eyes open'`: Review focus 1.
+- [ ] **Step 4: Run them**: `node --test scripts/street-frog.test.ts`. Expected: FAIL (no `FROGS`).
+- [ ] **Step 5: Implement** `FROG.draw`, `FrogSpec`, `FROGS` and `frogPlace(spec)` in `frog.ts`, and five groups in
+  `StreetFrog.tsx`: each `<group name={`street-frog-${stop}`} position rotation scale={scale}>` over the shared
+  geometries. Each frame, a group is visible when its distance to the camera is below `FROG.draw`. The eyes and
+  `__frog` stay as they are.
+- [ ] **Step 6: Run the tests**: `npm run -s test:sky`. Expected: all PASS.
+- [ ] **Step 7: Case 17** runs unchanged against five frogs: `node scripts/check-street-grass.mjs --cases 17` against
+  the worktree's server. Expected: PASS.
+- [ ] **Step 8: Commit** only the files above: `feat(street): five frogs, one by each stop, side-on to its camera`.
 
 ### Task 3: the look passes
 
 At true scale, each stop on both viewports (1:1 crops and 4× and 6× nearest-neighbour), plus the close-ups. The
-questions, in order: does each read as a frog, is any one hidden or crowded by a blade, does the crouch read as a pose
-or as a squash, and does a frog at another stop's frame edge distract. Each pass retunes the shape, the paint or a
-spot, then re-runs the tests and case 18. Cap: four passes.
+questions, in order: does each read as a frog, is any one hidden or crowded by a blade, does the phone find it
+(Decision (h)), and does the pop at the draw distance show (the two frames either side of each frog's first draw on
+the walk). Each pass retunes the shape, the paint or a spot, then re-runs the tests and `frog-vis.mjs`. Cap: four
+passes.
 
 ### Task 4: the gate's runs
 
+- [ ] Unstage the studio: `git stash push --include-untracked -- src/scene/Street.tsx src/scene/FrogStudio.tsx`,
+  then `git status --short` is empty.
 - [ ] `npx tsc -b`, `npm run -s lint`, `npm run -s test:sky`, `npm run -s build`.
 - [ ] `check-street-grass.mjs` (every case), `check-street-walk.mjs`.
 - [ ] The frame time at stops 0 and 3 on both viewports (the perf marker made first).
-- [ ] The triangles at the walk's worst point, both orientations, under 1,444,930.
+- [ ] The triangles in the browser, both viewports: every 0.01 of `t` from 0.25 to 0.40, every 0.05 elsewhere, and
+  0.295. Each under 1,444,930.
 - [ ] A clip of each stop's frog blinking for Mark.
+- [ ] `git stash pop` to stage the studio again, if Task 5 needs captures.
 
 ### Task 5: review and the record
 
 - [ ] Codex's branch review (brief file, one-line pointer), its findings answered in the record.
-- [ ] The record `tasks/2026-10-25-street-frogs.md`, the Tunables entry, `tasks/lessons.md`, the pickup in
-  `tasks/todo.md`.
+- [ ] The record `tasks/2026-10-25-street-frogs.md` (with Decision (g)'s numbers), the Tunables entry,
+  `tasks/lessons.md`, the pickup in `tasks/todo.md`.
 - [ ] Present to Mark with the live URL and the crops.
