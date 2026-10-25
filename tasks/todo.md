@@ -1,5 +1,17 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-10-26 (just after midnight): K1's plan in review
+
+**The village's craft, K1 the houses.** Mark approved the design ("go with your recommendation, start the plan"). The
+plan is `tasks/2026-10-25-village-craft-k1-plan.md` (`23ed2be` on `feat/village-craft`, rebased onto
+`feat/phone-framing`), local. Codex reads it for correctness (`w4:p4`) and the worker for buildability (`w4:p5`), both
+into `scratch/village-craft-2026-10-25/`. Then the Lead folds both in as revision 1 and shows Mark. Tasks 1 to 3 go to
+the worker, the look passes and the gate stay with the Lead. The base: 603,641 triangles, build 646 ms, hash
+`71114298aa85575a`.
+
+**PR #29 (the phone framing):** Codex's P2 fixed in `32c71f0` and answered on the thread. No re-review requested.
+Merges in stack order #23 to #29, on Mark's word.
+
 ## Pickup — 2026-10-25 (near midnight): the loading curtain passed on Mark's phone; the phone framing reopened
 
 **The loading curtain** is done on `feat/loading-curtain` (stacked on `fix/finger-no-bend`), local, no PR. The opening's
