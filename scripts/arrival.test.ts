@@ -228,9 +228,17 @@ test('A13 the curtain\'s script in index.html removes it on every page that will
   const body = html.slice(after + '<script>'.length, html.indexOf('</script>', after))
   const run = (search: string, { arrived = false, reduced = false, blocked = false } = {}) => {
     let removed = false
+    const failed: string[] = []
     const storage = { getItem: (key: string) => { if (blocked) throw new Error('SecurityError'); return key === ARRIVED_KEY && arrived ? '1' : null } }
-    const doc = { getElementById: (id: string) => (id === 'boot' ? { remove: () => { removed = true } } : null) }
-    new Function('location', 'sessionStorage', 'matchMedia', 'document', body)({ search }, storage, () => ({ matches: reduced }), doc)
+    const doc = { getElementById: (id: string) => (id === 'boot' ? { remove: () => { removed = true } } : null), documentElement: { classList: { add: (name: string) => failed.push(name) } } }
+    const listeners: Record<string, () => void> = {}
+    const listen = (type: string, fn: () => void, capture?: boolean) => { listeners[`${type}${capture ? ':capture' : ''}`] = fn }
+    new Function('location', 'sessionStorage', 'matchMedia', 'document', 'addEventListener', body)({ search }, storage, () => ({ matches: reduced }), doc, listen)
+    // a failure anywhere marks the page, so neither copy of the cue promises a scene that will not come
+    assert.equal(failed.length, 0)
+    listeners['error:capture']?.()
+    listeners.unhandledrejection?.()
+    assert.deepEqual(failed, ['arrival-failed', 'arrival-failed'], 'the script listens for errors in the capture phase and for rejections')
     return removed
   }
   // App.tsx: arrival = !street && (arrival === '1' || (arrival !== '0' && !arrivedThisSession())), in mode diorama, not reduced

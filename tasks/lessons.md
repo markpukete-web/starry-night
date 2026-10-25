@@ -3192,7 +3192,8 @@ must be byte-identical before the stimulus's difference means anything.
 - **A page with no WebGL keeps React's tree.** R3F's context error does not unmount the root, so a fix that assumed
   "the root unmounts" (the Consultant's P2) left React's copy of the loading cue up for ever. The gate's browser
   check with `getContext` stubbed to null found it. A failure path gets its own browser run at the gate, not a
-  reading of what the framework should do.
+  reading of what the framework should do. The same run showed R3F's context failure reaches the page as an unhandled
+  rejection, not a window `error`: a listener on `error` alone never fired.
 - **A test of an inline script can run the script itself.** A13 slices the classic script out of `index.html` and
   runs it with `new Function` over stubbed `location`, `sessionStorage`, `matchMedia` and `document`. The rule then
   lives in one place, the page, and a change to it fails the test.

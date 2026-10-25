@@ -95,3 +95,23 @@ The read covered the plan and the code at `71b8c20`. Six findings, five fixed in
   (`complete` and `naturalWidth > 0`).
 - **P3, declined.** The time before the driver's first frame is not credited. On a slow link the wait itself fills
   the 2.5 s cap. With no throttle the gap from the curtain's first paint to React's first commit is under a second.
+
+## Revision 2: the Consultant's closing read (`scratch/loading-2026-10-25/fix-read-consultant.md`, REVISE)
+
+The read covered `d6d82ad`. The Lead's gate had already found its no-WebGL case (`01ff0a9`).
+
+- **P1, not closed, and the change undone.** The painting finished at the same second with and without
+  `fetchpriority="high"`: slow 4G 20,708–20,749 ms against 20,712–20,759, fast 4G 3,240–3,285 against 3,261–3,270.
+  The rig cannot show a priority: `vite preview` serves HTTP/1.1, and all nine requests are in flight within the
+  first second under a shared throttle. The hint's effect in production is unmeasured either way, and it would apply
+  to every page, `?street=1` and reduced motion included. So the painting's preload and its low priority are back as
+  they were. Slow 4G is out of scope (Mark, 2026-10-25). What would close it is fewer bytes ahead of the painting, or
+  a smaller curtain image: noted for Mark, not built.
+- **P2, the timer, replaced.** With no WebGL R3F leaves React's tree mounted, and a throw in the first render never
+  commits, so the keep and its timer never run. The timer is gone. The curtain's script now marks the page
+  `arrival-failed` on an uncaught error or failed load (a capturing `error` listener) and on an unhandled rejection
+  (R3F's, with no WebGL). A style rule then hides both copies of the cue. The painting and the line stay, as on the
+  base. Checked in a browser: no WebGL, marked by 3 s. The bundle a 404, marked. Two normal openings, desktop and
+  phone, never marked. A13 calls both listeners.
+- **The rest, closed:** the parse-time script, the two P3s, both declines and both Lead's calls.
+

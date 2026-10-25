@@ -38,20 +38,21 @@ is open for Mark: `readyTimeout` (15 s) and whether slow 4G is a target.
 
 The dispositions are in the plan's "Revision 1" (`d6d82ad`). Five fixed, one declined, one declined in part.
 
-- **P1, the painting at high priority: fixed, its effect not measured.** The re-timing at `dc509a4` matches the
-  earlier run to within a few milliseconds: the painting still finishes at 20.7 s on slow 4G. The preview server is
-  HTTP/1.1, and Chrome's network emulation divides the throughput evenly between open requests. So a priority cannot
-  show an effect there once the scene's own downloads start at 6.3 s. Production serves HTTP/2, where the server can
-  act on the priority. That is not measured.
-- **P2, a failed page kept the curtain: fixed at the gate.** `d6d82ad` drops `#boot` after `readyTimeout + 5` s. The
-  gate's browser check with WebGL turned off found the fix incomplete: R3F's context error leaves React's tree
-  mounted, so React's copy of the layer read "Painting the night sky…" for ever. `01ff0a9` starts React's cue at
-  opacity 0, and the driver writes 1 on each waiting frame. Checked in the browser: 1.00 while `#boot` stands, then
-  0.80 to 0 over 0.5 s on a normal opening. With no WebGL, 0 at 22 s, the painting and the line left as on the base.
+- **P1, the painting at high priority: not closed, and undone.** The re-timing matched the earlier run to within a
+  few milliseconds. The rig is HTTP/1.1 under a shared throttle, so a priority cannot show there. Its effect in
+  production is unmeasured either way, so the base's low preload is back.
+- **P2, a failed page kept the curtain: closed by a failure signal, not a clock.** With no WebGL, React's tree stays
+  mounted, and a throw in the first render never commits, so a timer armed by the keep could not cover either. The
+  curtain's script marks the page `arrival-failed` on an uncaught error, a failed load or an unhandled rejection, and
+  a style rule hides both copies of the cue. React's copy also starts hidden until the driver's first frame
+  (`01ff0a9`). Checked in the browser: no WebGL, marked by 3 s. The bundle a 404, marked. Normal openings on desktop
+  and phone, never marked.
+
+The Consultant's closing read (`fix-read-consultant.md`) said REVISE on P1. The plan's "Revision 2" records it.
 
 ## The Lead's gate
 
-At `01ff0a9`, against the dev server on port 5203:
+At `01ff0a9` and the closing read's commit, against the dev server on port 5203:
 
 - `npm run test:sky`: 362 of 362 at `dc509a4`. `scripts/arrival.test.ts`: 13 of 13 at `01ff0a9`.
 - `tsc -b` and `eslint .`: exit 0.
@@ -63,8 +64,6 @@ At `01ff0a9`, against the dev server on port 5203:
   a visit, removed on `?street=1`, `?arrival=0`, a repeat visit, reduced motion and `?mode=relief`.
 - The frames (`sheet-r2-fast4g.png`, `sheet-r2-slow4g.png`, `sheet-fade-slow4g.png`): looked at. Fast 4G reads as
   intended. Slow 4G shows the words alone for 20 s, then the painting, then the dissolve onto an empty scene.
-
-CONSULTANT
 
 ## Mark's look
 

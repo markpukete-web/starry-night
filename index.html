@@ -11,9 +11,8 @@
     />
     <link rel="canonical" href="https://starrynight.markma.dev/" />
     <!-- the land's three assets start at parse time instead of at the island's mount (Codex, PR #16 P2): on a visit
-         without the opening the island drew bare for the load; low priority keeps the bundle first. The painting is
-         the third: `#boot`'s image fetches it at high priority on every visit, since on a slow link a low one arrived
-         after the bundle and the curtain stood without its painting (the Consultant, the loading read's P1) -->
+         without the opening the island drew bare for the load; low priority keeps the bundle first -->
+    <link rel="preload" as="image" href="/reference/painting.jpg" fetchpriority="low" />
     <link rel="preload" as="image" href="/reference/land-flow.png" fetchpriority="low" />
     <link rel="preload" as="fetch" href="/reference/land-masses.json" crossorigin fetchpriority="low" />
 
@@ -85,6 +84,9 @@
          falls back to the painting and the line, with no promise of loading (the gate, after the loading read's P2) */
       .arrival .arrival-cue {
         opacity: 0;
+      }
+      .arrival-failed .arrival-cue {
+        display: none;
       }
 
       .arrival-boot {
@@ -164,7 +166,7 @@
          its words are `src/scene/arrival.ts`'s, and `scripts/arrival.test.ts` holds them equal -->
     <div class="arrival-boot" id="boot">
       <figure class="arrival-painting">
-        <img src="/reference/painting.jpg" alt="The Starry Night, Vincent van Gogh, 1889" draggable="false" fetchpriority="high" onload="this.classList.add('is-loaded')" />
+        <img src="/reference/painting.jpg" alt="The Starry Night, Vincent van Gogh, 1889" draggable="false" fetchpriority="low" onload="this.classList.add('is-loaded')" />
         <figcaption>
           <p class="arrival-line">“This morning, long before sunrise, I looked out at the countryside from my window, with nothing but the morning star, which seemed very large.”</p>
           <p class="arrival-cite">Vincent to Theo, Saint-Rémy, June 1889 · letter 777</p>
@@ -174,7 +176,8 @@
     </div>
     <!-- a page that will not play the opening never shows its curtain (the loading read's P2): App.tsx's rule, read
          before the code arrives. A disagreement costs only the old dark page or a cut on React's first commit, and
-         `scripts/arrival.test.ts` runs this against the rule's cases -->
+         `scripts/arrival.test.ts` runs this against the rule's cases. A page that fails keeps the painting and the
+         line, with no cue (the closing read) -->
     <script>
       ;(function () {
         var q = new URLSearchParams(location.search)
@@ -183,6 +186,11 @@
         try { arrived = sessionStorage.getItem('starry-night:arrived') === '1' } catch (e) {}
         var plays = q.get('street') !== '1' && (q.get('mode') ?? 'diorama') === 'diorama' && (a === '1' || (a !== '0' && !arrived))
         if (!plays || matchMedia('(prefers-reduced-motion: reduce)').matches) document.getElementById('boot').remove()
+        // an uncaught error, a failed load (the bundle, a throw in a render) or an unhandled rejection (R3F's, with no
+        // WebGL), and the cue stops promising
+        var fail = function () { document.documentElement.classList.add('arrival-failed') }
+        addEventListener('error', fail, true)
+        addEventListener('unhandledrejection', fail)
       })()
     </script>
     <script type="module" src="/src/main.tsx"></script>
