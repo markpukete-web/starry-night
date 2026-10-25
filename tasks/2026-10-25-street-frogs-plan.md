@@ -228,7 +228,8 @@ Nothing is pushed before Mark has seen it.
   - `'each frog keeps clear of Vincent's walk'`: every footprint point is at least 0.02 from his box's footprint
     (`vincentBoxCorners`) at every walk `t` from 0 to 0.9 by 0.001.
   - `'each frog in the grass sits in a gap, ringed by blades'`: for every frog with `y` = `GRASS.baseY`, no root within
-    `FROG.clear` and at least 4 within twice it. Stop 4's frog is outside the grass (`inFootprint` false) at
+    `FROG.clear` × its scale and at least 4 within three times it (the spike's search kept no ring: stop 0's spot has 1
+    blade within twice the clearance and 10 within three times it). Stop 4's frog is outside the grass (`inFootprint` false) at
     `y` = 0.002 + `STROKE_LIFT` + (`LIFT_LEVELS` − 1) × `LIFT_STEP` + 0.00025.
   - `'each frog is off the path'`: every footprint point (the build's vertices with `y < 0.0006`, scaled and turned)
     has |lateral| > 0.06.
@@ -254,19 +255,19 @@ Nothing is pushed before Mark has seen it.
   `frogPlace(spec)` and `__frog`. Before every commit, `git status --short` shows ` M src/scene/Street.tsx` and
   `?? src/scene/FrogStudio.tsx` unstaged, and `git diff --cached` holds neither.
 - [ ] **Step 6: The search.** Run `frog-spots.mjs` (the static tests) and `frog-vis.mjs` (Decision (g)) on the five
-  frogs. If a spot moves, change `FROGS` and the table below. Write each spot's numbers in the record. The table, from
-  the spike
-  (seen and whole at stops 0 to 3 measured on the 3,824-triangle draft, stop 4 at `y` 0.0045, all to be measured again):
+  frogs. If a spot moves, change `FROGS` and the table below. Write each spot's numbers in the record. The table as
+  measured on the built frogs (`scratch/street-frogs-2026-10-25/t2/vis-frogs.json`, Decision (g)):
 
-  | stop | t | lateral | y | toward | face | scale | seen | whole px (desktop, phone) | Vincent's gap |
+  | stop | t | lateral | y | toward | face | scale | seen (desktop, phone) | whole px (desktop, phone) | Vincent's gap |
   | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-  | 0 | 0.035 | −0.086 | 0.001 | lane | 0.35 | 1.0 | 0.98 | 562, 166 | 0.298 |
-  | 1 | 0.283 | +0.086 | 0.001 | lane | 0.3 | 0.94 | 0.86 | 351, 124 | 0.026 |
-  | 2 | 0.466 | −0.098 | 0.001 | lane | 0.4 | 1.06 | 0.96 | 491, 166 | 0.098 |
-  | 3 | 0.677 | −0.098 | 0.001 | away | 0.3 | 0.97 | 0.95 | 593, 205 | 0.099 |
-  | 4 | 0.975 | −0.08 | 0.0065 | lane | 0.35 | 1.02 | 0.93 | 262, 92 | 0.104 |
+  | 0 | 0.035 | −0.086 | 0.001 | lane | 0.35 | 1.0 | 0.98, 0.96 | 519, 156 | 0.298 |
+  | 1 | 0.283 | +0.086 | 0.001 | away | 0.3 | 0.94 | 0.89, 0.89 | 294, 103 | 0.027 |
+  | 2 | 0.466 | −0.098 | 0.001 | lane | 0.4 | 1.06 | 0.97, 0.96 | 517, 179 | 0.100 |
+  | 3 | 0.677 | −0.098 | 0.001 | away | 0.3 | 0.97 | 0.96, 0.93 | 517, 180 | 0.099 |
+  | 4 | 0.975 | −0.08 | 0.0065 | lane | 0.35 | 1.02 | 0.99, 0.99 | 256, 92 | 0.106 |
 
-  Vincent's gap is the least distance from the frog's footprint to his box over the walk (Codex's check on the draft).
+  Stop 1 turned from `'lane'` to `'away'`: with its nose to the lane a blade crossed it, 0.82 and 0.80 seen
+  (`t2/vis-s1-facings.json`). Vincent's gap is the least distance from the frog's footprint to his box over the walk.
   Stop 4's frog sits at the desktop frame's lower edge (NDC y about −0.88), about 18 px long, the smallest of the five.
 - [ ] **Step 7: Run the tests again**: `npm run -s test:sky`. Expected: all PASS on the measured table.
 - [ ] **Step 8: Case 17** runs unchanged against five frogs: `node scripts/check-street-grass.mjs --cases 17` against
