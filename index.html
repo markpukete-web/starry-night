@@ -81,6 +81,11 @@
         font-style: normal;
         letter-spacing: 0.06em;
       }
+      /* React's copy starts hidden: only the driver's frames show it, so a page that never draws a frame (no WebGL)
+         falls back to the painting and the line, with no promise of loading (the gate, after the loading read's P2) */
+      .arrival .arrival-cue {
+        opacity: 0;
+      }
 
       .arrival-boot {
         position: fixed;
