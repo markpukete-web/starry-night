@@ -3,6 +3,11 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or
 > superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+**Revision 2.1 (2026-10-25, evening).** The Consultant's confirmation read (`plan-rereview.md`): F1 to F10 closed, one
+new P1. (g)'s byte test could not pass: stop 4's frame turns 4.6° by design, and the church's ground shadow
+(`streetLife.tsx`) reaches past a box of the church's corners. Folded in (a), (g), Task 3 and Task 5, with F6's note
+(the sweep runs again after Task 3).
+
 **Revision 2 (2026-10-25, late afternoon).** Revision 1 drew REVISE from the Consultant
 (`scratch/street-church-2026-10-25/plan-review.md`: three P1s, seven P2s). Each is folded in and named where it lands.
 The Lead recomputed F1, F2 and F3 before folding them (`scratch/church-turn.ts`, `scratch/church-frame.ts` in the
@@ -71,7 +76,7 @@ rebase onto them.
   +along side 66° off its own (F1). The nave stands `CHURCH.setback` = 0.02 further from the square, because at the turn
   its front corner swings to 0.215 from the square's centre, inside the 0.25 circle. Set back, the nearest corner is
   0.234 (F2). The belfry follows through the knot's local offset, as now. Stop 0's heading keeps aiming at the nave's
-  place before the setback, so stop 0 moves by no pixel outside the church.
+  place before the setback, so stop 0 moves by no pixel outside the church's box, which holds its ground shadow.
 - **(b) Stop 4 aims at the turned gable.** Its target is the front wall's centre from `nave.yaw` (`nave + toPath·d/2`,
   the door's foot), at today's height rule: halfway by angle between the door's foot and the gable's peak (F5). On the
   phone the tip stays inside at NDC (0.46, 0.91). On the desktop it is at y 1.49: the needle and about 9° of spire stay
@@ -100,9 +105,13 @@ rebase onto them.
   brush and the thinning, runs the walk's triangle sweep, and keeps 0.16 only if the worst point stays under the
   ceiling. Otherwise 0.18.
 - **(g) The gate's identity.** For each gate pose, a box: the church's projected corners, gable peaks, belfry corners
-  and spire tip in that pose's camera, padded by 16 px and clipped to the frame. Inside it any change is allowed.
-  Outside it the colour and ID frames are byte-identical to the baselines (F8). A pose whose box is empty must be
-  byte-identical whole. The look set adds stops 3 and 4.
+  and spire tip, and the four corners of its ground shadow's plane (`streetLife.tsx`: the nave's `w` and `d` over
+  `FOOT_FILL`, turned by its yaw), at today's place and the new one, in that pose's camera, padded by 16 px and clipped
+  to the frame. Inside it any change is allowed. Outside it the colour and ID frames are byte-identical to the
+  baselines (F8). A pose whose box is empty must be byte-identical whole. **Stop 4 is not in the byte test**: its target
+  moves by design, and every pixel of its frame with it. The walk's last stretch, `t` 0.66 to 0.9, blends toward that
+  target and is not a gate pose either. Stop 4 is gated by the palette and the 1:1 crops. The look set adds stops 3
+  and 4.
 
 ## Global constraints
 
@@ -209,6 +218,8 @@ Vector3[] }` and `windows: { cu: number; cv: number; w: number; h: number }[]` f
   - "the long side has three windows": three openings on the +along side, none overlapping, all between 0.25 and 0.85
     of the eave.
 - [ ] Build (e). Run the tests.
+- [ ] Run the walk's triangle sweep again (F6's note). The worst point must stay under the ceiling. If it does not,
+  `CHURCH.stroke` 0.18.
 - [ ] Capture stops 3 and 4. Read them 1:1.
 - [ ] Commit: `feat(street): the church's door set into its wall over a step, three windows down its side`.
 
@@ -221,8 +232,9 @@ and record the pass in the record with its captures.
 ### Task 5: the gate's runs
 
 - [ ] `test:sky`, `tsc -b`, `lint`, `build`.
-- [ ] (g): stops 0 to 4 and `walkT` 0.33 and 0.55, both viewports, the grass on, lit and ID, against `t0/base/`. A box per
-  pose from the church's projected points; outside it byte-identical.
+- [ ] (g): stops 0 to 3 and `walkT` 0.33 and 0.55, both viewports, the grass on, lit and ID, against `t0/base/`. A box
+  per pose from the church's projected points and its ground shadow's corners, old and new; outside it byte-identical.
+  Stop 4 by the palette and the crops.
 - [ ] `grass=0` at the same poses against S3b's gate captures, by the same box.
 - [ ] The palette at stops 0, 2, 3 and 4 (`check-street-colour.ts --time 0`). Every class keeps its verdict at
   `t0/base/`, the walls' failures included, or the change is named.
