@@ -62,7 +62,7 @@ export type ArrivalFrame = {
   done: boolean
 }
 
-function smoothstep(x: number): number {
+export function smoothstep(x: number): number {
   const t = Math.min(1, Math.max(0, x))
   return t * t * (3 - 2 * t)
 }
