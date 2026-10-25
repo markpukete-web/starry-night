@@ -256,7 +256,8 @@ function ArrivalDriver({
     }
     if (scanRef.current) {
       scanRef.current.style.transform = `scale(${f.scale})`
-      scanRef.current.style.opacity = String(f.overlay)
+      // never a half-loaded scan: after a timeout the curtain can open while it still draws in strips
+      scanRef.current.style.opacity = String(scanReadyRef.current ? f.overlay : 0)
     }
     if (lineRef.current) lineRef.current.style.opacity = String(f.line)
     if (f.done) {
