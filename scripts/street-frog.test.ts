@@ -1,7 +1,8 @@
 /**
  * The frogs (S3b pass 5, then `tasks/2026-10-25-street-frogs-plan.md`): the blink on the sky's clock, the shape, and the
  * five spots, one by each stop: in a gap of the grass or on the square, side-on to the stop's camera, in its frame,
- * clear of Vincent and the path, and never two drawn at once.
+ * clear of Vincent and the path. One frog drawn at most before `t` 0.45, and a second drawn later only at 0.8 or more,
+ * where its eyes are a pixel or two. Case 18 of `check-street-grass.mjs` checks the component's own cull.
  */
 
 import assert from 'node:assert/strict'

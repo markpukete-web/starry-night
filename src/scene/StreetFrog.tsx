@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react'
-import { useFrame } from '@react-three/fiber'
+import { useFrame, useThree } from '@react-three/fiber'
 import { MeshBasicMaterial, Vector3, type Group } from 'three'
 import { buildFrog, FROG, FROG_EYES, frogBlink, frogPlace, FROGS } from './frog.ts'
 import { FOG, fogInjection } from './streetFog.ts'
@@ -10,7 +10,11 @@ import { strokeGeometry } from './strokeGeometry.ts'
 import type { ImageData2D } from './useImageData.ts'
 import { vincentMoon, vincentStrokeBody } from './vincent.ts'
 
-type FrogWindow = Window & { __skyTime?: number; __frog?: () => { shut: number; sink: number; scale: number } }
+type FrogWindow = Window & {
+  __skyTime?: number
+  __frog?: () => { shut: number; sink: number; scale: number }
+  __frogsDrawn?: () => { camera: number[]; frogs: { stop: number; visible: boolean; at: number[] }[] }
+}
 
 /**
  * The frogs (S3b pass 5, `frog.ts`), one by each stop over one build: lit by the moon as Vincent is, their eyes sinking
@@ -49,6 +53,7 @@ export default function StreetFrog({ painting, flags, reduced }: { painting: Ima
   const frogRefs = useRef<(Group | null)[]>([])
   const shutRef = useRef(0)
   const at = useMemo(() => new Vector3(), [])
+  const camera = useThree((s) => s.camera)
   useFrame((state) => {
     const w = window as FrogWindow
     const shut = frogBlink(lifeTime(w.__skyTime, state.clock.elapsedTime, reduced))
@@ -69,8 +74,17 @@ export default function StreetFrog({ painting, flags, reduced }: { painting: Ima
       const eye = eyeRefs.current[0]
       return { shut: shutRef.current, sink: eye ? FROG_EYES[0][1] - eye.position.y : 0, scale: eye?.scale.x ?? 1 }
     }
-    return () => { delete w.__frog }
-  }, [])
+    // case 18's seam: what the frame's cull left drawn, with each group's world place and the camera's, so the check
+    // judges the cull by distances of its own (the frogs' branch review, Codex F1)
+    w.__frogsDrawn = () => ({
+      camera: camera.position.toArray(),
+      frogs: frogRefs.current.map((g, k) => ({ stop: FROGS[k].stop, visible: g?.visible ?? false, at: g ? g.getWorldPosition(new Vector3()).toArray() : [] })),
+    })
+    return () => {
+      delete w.__frog
+      delete w.__frogsDrawn
+    }
+  }, [camera])
 
   return (
     <>
