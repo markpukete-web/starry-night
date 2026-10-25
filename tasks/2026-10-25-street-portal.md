@@ -82,3 +82,70 @@ scale 1.045. Its profile reads 14, then 4.2, then 4.4 down to 2.9 through the bu
 Open for Mark: the phone's held frame. The flight ends at v2 on both viewports. On the portrait lens the island's
 underside fills the lower 40% of the held frame, and the fade dissolves it into the lane (`t7/p0/phone-sheet.png`,
 frames 4 to 7). A phone end pose is a design change, not a retune, so it waits for his eye.
+
+## Task 8: the gate (`t8/`)
+
+At the head `4556d29`: tsc, lint and the suite pass, 346 of 346. check-portal passes all eleven cases (twelve lines,
+case 2 also on the phone). The church's gate frames at stops 0 and 4, lit and ID, on both viewports: 8 of 8
+byte-identical (`t8/church/summary.txt`). The diorama's home with `?portal=1` and without, both viewports, times 0 and
+5, against Task 0's frames: 8 of 8 byte-identical. `check-reduced-motion.mjs` passes. The build passes. The main chunk
+is 1,383,334 bytes, 161 more than Task 6 (the drift's class and the flight's seam), and the street's is unchanged at
+97,144 (`t8/chunks.txt`).
+
+The frame rate (`t8/perf/table.md`, five rounds, the four pages beside each other in each round): p50 16.7 ms on
+every page and viewport, 60 fps. The p95 reads 17.5 to 18.2 ms. The street through the portal draws exactly the direct
+street's triangles (1,436,467 desktop, 1,430,437 phone) at the same frame times. The home after a return draws the
+plain home's on desktop (1,444,930). To measure the portal's street after its fade, `capture-diorama.mjs` gained one
+hook, `DIORAMA_CAPTURE_EVAL`, an expression awaited before the wait (`4556d29`).
+
+The phone's home after a return read 2 triangles fewer than the plain home, in all five rounds. That was checked
+before the return was called clean. Through R3F's `_roots` store on the dev server, the camera before and after a
+phone round trip is identical to the last digit, and the same 31 objects are visible with the same counts. Over 300
+frames, the plain home before any trip reads both counts (26 calls in 112 frames, 27 in 188): one draw at the narrow
+portrait frustum's edge comes and goes with time. The five rounds read it at different phases. The phone's GPU
+geometries rise from 20 to 21 after a trip, and a plain orbit with no portal does the same: a diorama geometry
+uploaded the first time it is in view.
+
+## Codex's branch review (`branch-review-codex.md`)
+
+At `4556d29`: FIX, five findings, no P0 or P1. All five hold. Each is fixed in the fix commit and pinned by a check
+that turns red without its fix (`t9/mutants.txt`), except F5, which is checked by hand.
+
+- **F1, P2: a leave at the end of the entry's fade can lose the return's fade.** It holds. Task 3's once-only guard
+  covered a fade that had finished, not one still running. The canvas sees `leaving` a frame or more after the page,
+  and its street frames in between ran the entry's fade on the leave's new copy. Fixed: `leave` ends the street's fade
+  (`drive.sent`) before it copies. New case 3b leaves while the entry's layer is under 0.7: the return starts from
+  full and only falls. Without the fix, case 3b fails with the layer at 0.60, then 1.00, then falling.
+- **F2, P2: a drag out and back over a house enters.** It holds. The portal read only the press and the release.
+  Fixed: the portal's own move listener marks a press as a drag once it moves past `TOUCH_SURGE.tapPx`, for touch too,
+  before the touch return. The sky's surge keeps its own classifier, as Codex advised. Case 7 now drags 24 px out and
+  back within 300 ms over a house, with no entry. Without the latch, case 7 fails on that drag.
+- **F3, P2: system reduced motion turned on mid-flight leaves the flight and the drift running.** It holds. Fixed: the
+  flying branch takes `still` as the flight's end. It copies the frame on screen with no drift and sends `flown`. A
+  media rule pauses a held frame's drift where it is, so it does not jump back. `still` is the system preference only
+  (`App.tsx:123`). The visitor's pause still lets a requested flight finish, as Codex noted. New case 6b: the flight
+  ends 102 ms after the change, with no drift, and the rule reads `paused` under reduce and `running` without it.
+  Without either fix, case 6b fails.
+- **F4, P3: the return checks accept a wrong lens.** It holds. Fixed: `__portal()` reports `view`, the camera's
+  rotation and lens, and the type's comment says `pose` is the orbit pose. `assertReturn` checks the rotation against
+  the one before the entry and the lens against the aspect's default (`DIORAMA_CAMERAS`), at both samples. Case 10
+  checks the portrait lens after the rotation. Without the leave's `writeLens`, case 3 fails on the street's near
+  plane, 0.004.
+- **F5, P3: a resize while the frame is held stretches it.** It holds. Fixed: `object-fit: cover` on the layer, so a
+  resize crops the held frame from its centre. Checked by hand (`t9/f5-compare.png`): a 1,600 × 900 copy in a
+  900 × 1,600 box keeps its moon round under `cover` and squeezes it under the old fill. No check pins it: it is one
+  CSS declaration, and a check would need a resize inside the build's long task.
+- **The `record` helper** stopped at its deadline without failing. It now throws when its wait never holds, so every
+  caller's settled state is proven.
+
+Two of Codex's notes are not code changes. The plan's Review Focus 4 says a flight hidden mid-way "ends in at most 25
+frames after return". That number assumed every frame after the return hits the 0.1 s cap. Only the first one does.
+The flight then resumes where it was and runs its remainder at normal speed, up to 2.4 s, which is the right
+behaviour: the visitor sees the rest of the flight, not a jump. The plan's line is wrong, not the code. Case 11 counts
+from the first return, so it cannot see a one-time leak. On desktop, the home reads 23 geometries before any trip and
+after (`t8/perf/table.md`). On the phone, the rise from 20 to 21 also follows a plain orbit.
+
+The gate again on the fixed tree (`t9/summary.txt`, `t9/church/summary.txt`): check-portal passes all cases, 3b and
+6b among them (fourteen lines). The church's gate frames and the diorama's home frames are byte-identical, 8 of 8 each.
+`check-reduced-motion.mjs`, the build, tsc, lint and the suite (346 of 346) pass. The main chunk is 1,383,589 bytes,
+255 more than at `4556d29`.

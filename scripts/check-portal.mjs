@@ -5,13 +5,16 @@
  * 1. A hover over a house gives the hand and the hint and loads the street's chunk; a hover over the sky gives neither.
  * 2. A tap on a house goes flying, entering, street; the camera is at stop 0's pose. On the phone, with the automatic
  *    walk, Vincent is still at stop 0 when the layer starts to fade (F4), and walks after.
- * 3. Escape goes back to the diorama, the pose the saved one within 1e-6 the frame after and 0.5 s later.
+ * 3. Escape goes back to the diorama, the pose the saved one within 1e-6 the frame after and 0.5 s later, the camera's
+ *    rotation the one before the entry and its lens the aspect's default. 3b: Escape while the entry's fade runs still
+ *    fades the return from full, never down then up (Codex branch review F1).
  * 4. The dock's control does the same both ways.
  * 5. `?streetFail=painting` ends on the diorama at the saved pose, the portal still on. A failed chunk ends there too,
  *    with the portal off for the page's life (F7).
- * 6. Reduced motion: no flight, no pose between the two, the layer cut at `ready` with no fade.
+ * 6. Reduced motion: no flight, no pose between the two, the layer cut at `ready` with no fade. 6b: reduced motion
+ *    turned on mid-flight ends the flight at once with no drift, and it pauses a held frame's drift (Codex F3).
  * 7. A tap on a house enters and adds no sky surge (a tap on the sky does: the control). A tap on a tree adds a land
- *    touch and does not enter. A drag over a house does not enter.
+ *    touch and does not enter. A drag over a house does not enter, nor one that goes out and comes back (Codex F2).
  * 8. Escape, the dock and the seam during the flight change nothing.
  * 9. The street through the portal at stop 0 against `?street=1` at stop 0, clocks pinned: byte-identical.
  * 10. A rotation in the street: enter, resize to the other aspect, leave; the pose is the saved one within 1e-6.
@@ -23,6 +26,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { DIORAMA_CAMERAS } from '../src/scene/dioramaContract.ts'
 
 const appUrl = process.env.DIORAMA_CAPTURE_URL || 'http://127.0.0.1:5198/'
 const origin = new URL(appUrl).origin
@@ -170,7 +174,7 @@ const PAGE_HELPERS = `(() => {
     const tick = () => {
       if (!window.__recOn) return
       const s = window.__portal()
-      window.__rec.push({ ms: performance.now(), place: s.place, layer: s.layer, pose: s.pose, saved: s.saved, walk: window.__streetWalk?.t ?? null })
+      window.__rec.push({ ms: performance.now(), place: s.place, layer: s.layer, pose: s.pose, saved: s.saved, view: s.view, walk: window.__streetWalk?.t ?? null })
       requestAnimationFrame(tick)
     }
     requestAnimationFrame(tick)
@@ -193,13 +197,16 @@ async function open(page, query, viewport = DESKTOP, { reduced = false } = {}) {
 
 const placeOf = (page) => page.evaluate('window.__portal().place')
 
-/** Records every frame from now until `until` holds, at most `ms`; returns the frames. */
+/** Records every frame from now until `until` holds, then 0.6 s more; returns the frames. Throws if it never holds in `ms`. */
 async function record(page, action, until, ms = 20000) {
   await page.evaluate('window.__startRec()')
   await action()
   const start = Date.now()
-  while (Date.now() - start < ms) {
-    if (await page.evaluate(`Boolean(${until})`)) break
+  while (!(await page.evaluate(`Boolean(${until})`))) {
+    if (Date.now() - start > ms) {
+      const rec = await page.evaluate('window.__stopRec()')
+      throw new Error(`timed out after ${ms} ms waiting for ${until}: [${placesOf(rec)}]`)
+    }
     await sleep(50)
   }
   await sleep(600)
@@ -209,8 +216,14 @@ async function record(page, action, until, ms = 20000) {
 /** The places in order, each once. */
 const placesOf = (rec) => rec.map((f) => f.place).filter((p, i, a) => i === 0 || a[i - 1] !== p)
 
-/** Asserts a return: the frame after `left` and the frame 0.5 s later hold the saved pose. */
-function assertReturn(rec, name) {
+/** The rotation's gap, either sign of the quaternion. */
+const turnGap = (a, b) => Math.min(Math.max(...a.map((v, i) => Math.abs(v - b[i]))), Math.max(...a.map((v, i) => Math.abs(v + b[i]))))
+
+/**
+ * Asserts a return: the frame after `left` and the frame 0.5 s later hold the saved pose, the camera's rotation before
+ * the entry (`view`, read from `__portal().view` in the diorama) and `lens`, the aspect's default (Codex F4).
+ */
+function assertReturn(rec, name, view, lens = DIORAMA_CAMERAS.design) {
   const i = rec.findIndex((f, k) => k > 0 && f.place === 'diorama' && rec[k - 1].place === 'leaving')
   if (i < 0) throw new Error(`${name}: no return in [${placesOf(rec)}]`)
   const later = rec.find((f) => f.ms >= rec[i].ms + 500)
@@ -218,8 +231,16 @@ function assertReturn(rec, name) {
   const now = poseGap(rec[i].pose, rec[i].saved)
   const after = poseGap(later.pose, later.saved)
   if (now > 1e-6 || after > 1e-6) throw new Error(`${name}: the pose is ${now} from the saved one the frame after and ${after} 0.5 s later`)
+  for (const [when, f] of [['the frame after', rec[i]], ['0.5 s later', later]]) {
+    const turn = turnGap(f.view.quaternion, view.quaternion)
+    if (turn > 1e-6) throw new Error(`${name}: ${when} the camera's rotation is ${turn} from the one before the entry`)
+    if (f.view.lens.fov !== lens.fov || f.view.lens.near !== lens.near || f.view.lens.far !== lens.far)
+      throw new Error(`${name}: ${when} the lens is ${JSON.stringify(f.view.lens)}, not the aspect's ${JSON.stringify({ fov: lens.fov, near: lens.near, far: lens.far })}`)
+  }
   return { now, after }
 }
+
+const viewNow = (page) => page.evaluate('window.__portal().view')
 
 async function enterAndSettle(page, action) {
   const rec = await record(page, action, `window.__portal().place === 'street' && window.__portal().layer === 0`)
@@ -262,6 +283,7 @@ async function main() {
     console.log(`PASS 1: the hover at ${house.map(Math.round)} shows the hand and the hint and loads the chunk; the sky shows neither`)
 
     // ---- case 2: the tap, desktop
+    const view2 = await viewNow(page)
     const rec2 = await enterAndSettle(page, () => page.tap(house[0], house[1]))
     const order2 = placesOf(rec2).join(',')
     if (order2 !== 'diorama,flying,entering,street' && order2 !== 'flying,entering,street') throw new Error(`case 2: the places ran ${order2}`)
@@ -273,10 +295,21 @@ async function main() {
 
     // ---- case 3: Escape
     const rec3 = await record(page, () => page.key('Escape'), `window.__portal().place === 'diorama'`)
-    const r3 = assertReturn(rec3, 'case 3')
+    const r3 = assertReturn(rec3, 'case 3', view2)
     const fade3 = rec3.filter((f) => f.place === 'leaving' && f.layer > 0 && f.layer < 1).length
     if (!fade3) throw new Error('case 3: the return did not fade')
-    console.log(`PASS 3: Escape returns, the pose ${r3.now} then ${r3.after} from the saved one, ${fade3} fade frames`)
+    console.log(`PASS 3: Escape returns, the pose ${r3.now} then ${r3.after} from the saved one, its rotation and lens, ${fade3} fade frames`)
+
+    // ---- case 3b: Escape while the entry's fade runs (Codex F1)
+    await page.evaluate('window.__portalEnter()')
+    await page.waitFor(`window.__portal().place === 'street' && window.__portal().layer > 0 && window.__portal().layer < 0.7`, 20000, 'the entry fade under way')
+    const rec3b = await record(page, () => page.key('Escape'), `window.__portal().place === 'diorama'`)
+    assertReturn(rec3b, 'case 3b', view2)
+    const fade3b = rec3b.filter((f) => f.place === 'leaving').map((f) => f.layer)
+    const rises = fade3b.filter((v, k) => k > 0 && v > fade3b[k - 1] + 1e-9).length
+    // the bug's copy reads the entry fade's own value, under 0.7, before the return fade restarts it at 1
+    if (fade3b[0] < 0.85 || rises || !fade3b.some((v) => v > 0 && v < 1)) throw new Error(`case 3b: the return's layer ran ${fade3b.map((v) => v.toFixed(2)).join(' ')}`)
+    console.log(`PASS 3b: Escape during the entry's fade returns from full and fades down only (${fade3b.length} frames, from ${fade3b[0].toFixed(2)})`)
 
     // ---- case 4: the dock both ways, from an orbited pose
     await page.mouse('mouseMoved', 1300, 250)
@@ -287,26 +320,31 @@ async function main() {
     }
     await page.mouse('mouseReleased', 1060, 290)
     if ((await placeOf(page)) !== 'diorama') throw new Error('case 4: the drag entered')
+    // the drag's damping settles before the pose and the rotation are read
+    await sleep(1500)
+    const view4 = await viewNow(page)
     await enterAndSettle(page, () => page.evaluate(`document.querySelector('button[aria-label="Enter the village"]').click()`))
     const rec4 = await record(page, () => page.evaluate(`document.querySelector('button[aria-label="Back to the painting"]').click()`), `window.__portal().place === 'diorama'`)
-    const r4 = assertReturn(rec4, 'case 4')
+    const r4 = assertReturn(rec4, 'case 4', view4)
     console.log(`PASS 4: the dock enters and returns, the pose ${r4.now} then ${r4.after} from the saved one`)
 
     // ---- case 5: a street that fails, then a chunk that fails
     await open(page, `${BASE}&streetFail=painting`)
+    const view5 = await viewNow(page)
     const rec5 = await record(page, () => page.evaluate('window.__portalEnter()'), `window.__portal().place === 'diorama' && window.__rec.some((f) => f.place === 'leaving')`)
     const order5 = placesOf(rec5).join(',')
     if (!order5.includes('entering,leaving,diorama') || order5.includes('street')) throw new Error(`case 5: the places ran ${order5}`)
-    const r5 = assertReturn(rec5, 'case 5')
+    const r5 = assertReturn(rec5, 'case 5', view5)
     if (!(await page.evaluate('window.__portal().on'))) throw new Error('case 5: a failed asset turned the portal off')
     await page.send('Network.setBlockedURLs', { urls: ['*/src/scene/Street.tsx*', '*/assets/Street-*.js'] })
     await page.send('Network.setCacheDisabled', { cacheDisabled: true })
     await open(page, BASE)
+    const view5b = await viewNow(page)
     const errorsBefore = page.errors.length
     const rec5b = await record(page, () => page.evaluate('window.__portalEnter()'), `window.__portal().place === 'diorama' && window.__rec.some((f) => f.place === 'leaving')`)
     await page.send('Network.setBlockedURLs', { urls: [] })
     await page.send('Network.setCacheDisabled', { cacheDisabled: false })
-    assertReturn(rec5b, 'case 5, the chunk')
+    assertReturn(rec5b, 'case 5, the chunk', view5b)
     // R3F's root reports an error its boundary caught through reportError (`onCaughtError`), so the injected failure
     // shows as a page error: exactly that one is expected here, and any other still fails the run
     const injected = page.errors.splice(errorsBefore)
@@ -317,6 +355,7 @@ async function main() {
 
     // ---- case 6: reduced motion
     await open(page, BASE, DESKTOP, { reduced: true })
+    const view6 = await viewNow(page)
     const rec6 = await enterAndSettle(page, () => page.evaluate('window.__portalEnter()'))
     if (rec6.some((f) => f.place === 'flying')) throw new Error('case 6: reduced motion flew')
     const saved6 = rec6[rec6.length - 1].saved
@@ -326,9 +365,32 @@ async function main() {
     const partial = rec6.filter((f) => f.layer > 0 && f.layer < 1)
     if (partial.length) throw new Error(`case 6: ${partial.length} frames show the layer part faded`)
     const rec6b = await record(page, () => page.key('Escape'), `window.__portal().place === 'diorama'`)
-    assertReturn(rec6b, 'case 6')
+    assertReturn(rec6b, 'case 6', view6)
     if (rec6b.some((f) => f.layer > 0 && f.layer < 1)) throw new Error('case 6: the return faded')
     console.log(`PASS 6: reduced motion cuts both ways: no flight, no pose between, no part-faded layer (${rec6.length} + ${rec6b.length} frames)`)
+
+    // ---- case 6b: reduced motion turned on during the flight, then while the frame is held (Codex F3)
+    const reduceNow = () => page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] })
+    await open(page, BASE)
+    await page.evaluate('window.__portalEnter()')
+    await sleep(600)
+    if ((await placeOf(page)) !== 'flying') throw new Error(`case 6b: 0.6 s after the entry the place is ${await placeOf(page)}`)
+    const turnedOn = Date.now()
+    await reduceNow()
+    await page.waitFor(`window.__portal().place !== 'flying'`, 1000, 'the flight to end under reduced motion')
+    const cut6 = Date.now() - turnedOn
+    const drift6 = await page.evaluate(`document.querySelector('.portal-layer').classList.contains('is-drifting')`)
+    if (drift6) throw new Error('case 6b: the flight cut by reduced motion left the layer drifting')
+    await page.waitFor(`window.__portal().place === 'street' && window.__portal().layer === 0`, 20000, 'the street under reduced motion')
+    // the held frame: the street's build holds the main thread, so a read there races its ready. The rule itself is
+    // read on the drifting class instead, under reduce and under no preference (the control)
+    const driftState = `(() => { const l = document.querySelector('.portal-layer'); l.classList.add('is-drifting'); const state = getComputedStyle(l).animationPlayState; l.classList.remove('is-drifting'); return state })()`
+    await open(page, BASE)
+    const running6 = await page.evaluate(driftState)
+    await reduceNow()
+    const paused6 = await page.evaluate(driftState)
+    if (running6 !== 'running' || paused6 !== 'paused') throw new Error(`case 6b: the drift reads ${running6} with no preference and ${paused6} under reduce`)
+    console.log(`PASS 6b: reduced motion mid-flight ends the flight in ${cut6} ms with no drift; on a held frame the drift is ${paused6}`)
 
     // ---- case 7: touch
     await open(page, BASE)
@@ -355,7 +417,17 @@ async function main() {
     await page.mouse('mouseReleased', house7[0] + 48, house7[1])
     await sleep(300)
     if ((await placeOf(page)) !== 'diorama') throw new Error('case 7: a drag over a house entered')
-    // the drag orbited the camera: find a house again once the damping has settled
+    // the drag orbited the camera: find a house again once the damping has settled, then drag out 24 px and back
+    // within the tap's 300 ms (Codex F2)
+    await sleep(1500)
+    const house7a = await page.evaluate(`window.__findPick('village', 16)`)
+    await page.mouse('mouseMoved', house7a[0], house7a[1])
+    await page.mouse('mousePressed', house7a[0], house7a[1])
+    await page.mouse('mouseMoved', house7a[0] + 24, house7a[1], { buttons: 1 })
+    await page.mouse('mouseMoved', house7a[0], house7a[1], { buttons: 1 })
+    await page.mouse('mouseReleased', house7a[0], house7a[1])
+    await sleep(300)
+    if ((await placeOf(page)) !== 'diorama') throw new Error('case 7: a drag out and back over a house entered')
     await sleep(1500)
     const house7b = await page.evaluate(`window.__findPick('village', 16)`)
     const k1 = await page.evaluate(kicks)
@@ -365,7 +437,7 @@ async function main() {
     const place7 = await placeOf(page)
     if (k2 !== k1 || place7 === 'diorama') throw new Error(`case 7: a tap on a house took the kicks from ${k1} to ${k2} and the place to ${place7}`)
     await page.waitFor(`window.__portal().place === 'street' && window.__portal().layer === 0`, 20000, 'the street after the tap')
-    console.log(`PASS 7: a tap on a house enters with no surge (kicks ${k1} to ${k2}); a tree bends (${l0} to ${l1}) and does not enter; a drag does not enter`)
+    console.log(`PASS 7: a tap on a house enters with no surge (kicks ${k1} to ${k2}); a tree bends (${l0} to ${l1}) and does not enter; a drag does not enter, nor one out and back`)
 
     // ---- case 8: the flight ignores the way back
     await open(page, BASE)
@@ -388,12 +460,14 @@ async function main() {
 
     // ---- case 10: a rotation in the street
     await open(page, BASE)
+    const view10 = await viewNow(page)
     await enterAndSettle(page, () => page.evaluate('window.__portalEnter()'))
     await page.send('Emulation.setDeviceMetricsOverride', { ...DESKTOP, width: 900, height: 1600 })
     await sleep(800)
     const rec10 = await record(page, () => page.key('Escape'), `window.__portal().place === 'diorama'`)
-    const r10 = assertReturn(rec10, 'case 10')
-    console.log(`PASS 10: after a rotation in the street the return holds the saved pose (${r10.now}, ${r10.after})`)
+    // a portrait aspect takes the portrait lens
+    const r10 = assertReturn(rec10, 'case 10', view10, DIORAMA_CAMERAS.mobile)
+    console.log(`PASS 10: after a rotation in the street the return holds the saved pose (${r10.now}, ${r10.after}), its rotation and the portrait lens`)
 
     // ---- case 2, the phone: Vincent held at stop 0 under the layer, then walking
     await open(page, '?portal=1&arrival=0&walkMode=auto', PHONE)

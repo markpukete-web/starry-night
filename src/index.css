@@ -483,6 +483,8 @@ button {
   height: 100%;
   visibility: hidden;
   pointer-events: none;
+  /* a resize while the frame is held crops it instead of stretching it (Codex branch review F5) */
+  object-fit: cover;
 }
 
 /* The flight's last frame keeps moving while the street builds, toward the centre, where the flight's target sits. It
@@ -490,6 +492,13 @@ button {
    at 4 s, so a slower build ends on a settle, not a stop (look pass 2). */
 .portal-layer.is-drifting {
   animation: portal-drift 4s cubic-bezier(0.2, 0.4, 0.5, 1) forwards;
+}
+
+/* system reduced motion turned on while the frame is held: the drift stops where it is (Codex branch review F3) */
+@media (prefers-reduced-motion: reduce) {
+  .portal-layer.is-drifting {
+    animation-play-state: paused;
+  }
 }
 
 @keyframes portal-drift {

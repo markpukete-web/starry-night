@@ -2,7 +2,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
 import { Raycaster, Vector2, type Object3D } from 'three'
 import { LAND_MESHES, landPick } from './landTouch'
-import { classifyGesture, type PointerSample } from './touchSurge'
+import { classifyGesture, TOUCH_SURGE, type PointerSample } from './touchSurge'
 
 /** The village's meshes (`Village.tsx`): what the portal enters by. */
 export const VILLAGE_MESHES = ['village-solid', 'village-skin', 'village-paint'] as const
@@ -14,7 +14,8 @@ type PortalPointerWindow = Window & { __portalPick?: (clientX: number, clientY: 
  * asks, so it runs whatever `touch`, `alive` and reduced motion are. A move marks the pointer, and the frame after a move
  * casts once against the village with the land's trees and the island in front of it (`landPick`): a still pointer
  * casts nothing (plan review F5). Over the village the cursor is the hand and the hint sits beside it. The first hover
- * calls `onFirstHover` (the street's chunk loads). A tap on the village calls `onEnter`; a drag never does.
+ * calls `onFirstHover` (the street's chunk loads). A tap on the village calls `onEnter`; a drag never does, even one that
+ * comes back to where it started: a move past the tap's distance makes the press a drag (Codex branch review F2).
  *
  * Returns the cast, for the touch hook's `skyMasked`: a tap that enters does not also surge the sky (decision (i)). The
  * cast lives as long as the scene, not as long as `enabled`: the tap that enters commits `flying` between the two
@@ -74,8 +75,9 @@ export function usePortalPointer({
     if (!enabled) return
     const element = (events.connected as HTMLElement | null | undefined) ?? gl.domElement
     const p = pointer.current
-    let down: (PointerSample & { id: number }) | null = null
+    let down: (PointerSample & { id: number; dragged: boolean }) | null = null
     const onMove = (event: PointerEvent) => {
+      if (down && event.pointerId === down.id && Math.hypot(event.clientX - down.x, event.clientY - down.y) > TOUCH_SURGE.tapPx) down.dragged = true
       // a finger has no hover: only the tap enters on a touch screen
       if (event.pointerType === 'touch') return
       p.x = event.clientX
@@ -84,13 +86,13 @@ export function usePortalPointer({
     }
     const onDown = (event: PointerEvent) => {
       if (!event.isPrimary || down || (event.pointerType === 'mouse' && event.button !== 0)) return
-      down = { x: event.clientX, y: event.clientY, ms: event.timeStamp, id: event.pointerId }
+      down = { x: event.clientX, y: event.clientY, ms: event.timeStamp, id: event.pointerId, dragged: false }
     }
     const onUp = (event: PointerEvent) => {
       if (!down || event.pointerId !== down.id) return
       const start = down
       down = null
-      if (classifyGesture(start, { x: event.clientX, y: event.clientY, ms: event.timeStamp }) !== 'tap') return
+      if (start.dragged || classifyGesture(start, { x: event.clientX, y: event.clientY, ms: event.timeStamp }) !== 'tap') return
       if (cast(event.clientX, event.clientY) === 'village') enterRef.current()
     }
     const onCancel = () => {

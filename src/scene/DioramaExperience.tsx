@@ -301,6 +301,9 @@ function writeLens(camera: Camera, lens: Lens) {
   c.updateProjectionMatrix()
 }
 
+type CameraView = { quaternion: number[]; lens: Lens }
+const viewOf = (c: PerspectiveCameraImpl): CameraView => ({ quaternion: c.quaternion.toArray(), lens: { fov: c.fov, near: c.near, far: c.far } })
+
 /**
  * The portal (tasks/2026-10-25-street-portal-plan.md, decisions (c) to (f) and (k)). Flying, it moves the camera from
  * the saved pose to v2's and writes the default camera's lens every frame, since a rotation re-applies it through the
@@ -358,17 +361,20 @@ function PortalDriver({
       return true
     }
     if (place === 'flying') {
-      // the capture seam: a finite `__portalFlight` pins the flight's progress, as `__arrivalTime` pins the arrival
-      const pinned = (window as PortalWindow).__portalFlight
-      d.s = pinned !== undefined && Number.isFinite(pinned) ? Math.min(1, Math.max(0, pinned)) : flightStep(d.s, dt)
-      const pose = flightPose(d.from, PORTAL.flightEnd, d.s)
-      camera.position.set(...pose.position)
-      camera.lookAt(...pose.target)
-      writeLens(camera, lens)
-      // the copy holds the frame drawn before this one, where the ease's slope is zero
-      if (d.s >= 1 && !d.sent) {
+      if (!still) {
+        // the capture seam: a finite `__portalFlight` pins the flight's progress, as `__arrivalTime` pins the arrival
+        const pinned = (window as PortalWindow).__portalFlight
+        d.s = pinned !== undefined && Number.isFinite(pinned) ? Math.min(1, Math.max(0, pinned)) : flightStep(d.s, dt)
+        const pose = flightPose(d.from, PORTAL.flightEnd, d.s)
+        camera.position.set(...pose.position)
+        camera.lookAt(...pose.target)
+        writeLens(camera, lens)
+      }
+      // the copy holds the frame drawn before this one, where the ease's slope is zero. System reduced motion turned
+      // on mid-flight ends the flight here, on the frame on screen, with no drift (Codex branch review F3)
+      if ((still || d.s >= 1) && !d.sent) {
         d.sent = true
-        copyToLayer(true)
+        copyToLayer(!still)
         send('flown')
       }
     } else if (place === 'entering' && !d.sent) {
@@ -383,8 +389,8 @@ function PortalDriver({
         send('timeout')
       }
     } else if (place === 'street' && !d.sent) {
-      // once only: the canvas's root commits a new place a frame or more after the page's, so a fade still running
-      // when the leave copies would hide the copy before the driver sees `leaving`
+      // once only, and `leave` ends it: the canvas's root commits a new place a frame or more after the page's, so a
+      // street frame that runs after the leave's copy must not fade it (Codex branch review F1)
       d.sent = fade(PORTAL.fadeIn)
     } else if (place === 'leaving' && !d.sent && fade(PORTAL.fadeOut)) {
       d.sent = true
@@ -568,7 +574,11 @@ function VincentsLine() {
 
 /** The portal's seams for the checks: the place, the layer's opacity and the saved pose; enter and leave as the dock does. */
 type PortalWindow = Window & {
-  __portal?: () => { place: PortalPlace; on: boolean; layer: number; saved: Pose | null; pose: Pose | null }
+  /**
+   * `pose` is the controls' orbit pose: during the flight the camera aims past its target, so `view` reads the camera
+   * itself, its rotation and its lens (Codex branch review F4)
+   */
+  __portal?: () => { place: PortalPlace; on: boolean; layer: number; saved: Pose | null; pose: Pose | null; view: CameraView | null }
   __portalEnter?: () => void
   __portalLeave?: () => void
   __portalFlight?: number
@@ -634,9 +644,11 @@ export function DioramaExperience({ clean = false, reduced = false, sky = 'light
     prefetch()
     send('enter')
   }, [copyToLayer, prefetch, send])
-  // the leave copies in the handler, before the place changes (decision (d))
+  // the leave copies in the handler, before the place changes (decision (d)). It ends the street's fade first: the canvas
+  // sees `leaving` a frame or more later, and its street frames in between must not touch the copy (Codex F1)
   const leave = useCallback(() => {
     if (live.current.place !== 'street') return
+    drive.current.sent = true
     copyToLayer()
     send('leave')
   }, [copyToLayer, send])
@@ -680,6 +692,7 @@ export function DioramaExperience({ clean = false, reduced = false, sky = 'light
         pose: controls
           ? { position: [controls.object.position.x, controls.object.position.y, controls.object.position.z], target: [controls.target.x, controls.target.y, controls.target.z] }
           : null,
+        view: controls ? viewOf(controls.object as PerspectiveCameraImpl) : null,
       }
     }
     w.__portalEnter = enter
