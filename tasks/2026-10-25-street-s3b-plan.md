@@ -332,3 +332,57 @@ Output to `scratch/street-s3b-2026-10-25/t4/`.
 - [ ] **Step 3:** Mark's gate: the live link on the Mac's LAN, the sheets and the clip. The branch stays local until he
   has seen it.
 - [ ] **Step 4:** On Mark's word: the PR, Codex's PR review read from the timeline, every thread answered, the merge.
+
+### Task 6: Pass 5, the base, the hand's press and a frog (Lead, on Mark's word)
+
+Mark read S3b live on 2026-10-25. The bare base between the clumps "bother me a bit". He asked for the hand to move
+on a click, and for a frog "with blinking eyes so it looks more real". He passed the four-pass cap for this pass ("Yes,
+go ahead with the extra pass"). The base under the grass changes, which reverses his earlier "the base does not change".
+
+**The base.**
+- `grassBaseStrip` (`src/scene/streetGeometry.ts:559`) writes into its own arrays, `build.grassBase`, not
+  `ctx.underpaint`. It still runs only inside `if (grass)`, so `grass=0` is unchanged. `counts.triangles` adds it.
+- Each vertex carries `aLane` = (distance along the lane, signed lateral), both in world units.
+- `Street.tsx` draws it as `street-grass-base` with `material('street-grass-base', BASE_BODY, fog, false, ids)`. The
+  pattern is the body, so it runs before the fog and the ID injection overwrites it. `street-solid` and the two pinned
+  grass programs do not change.
+- The pattern: cells of 0.01 along × 0.01 across in `aLane` space. Each cell holds one dab, jittered inside it. The dab
+  is an ellipse, half-length 0.009 and half-width 0.003, bent into a comma. Its angle is read once per cell from a slow
+  noise field, never per fragment. A fragment takes the dab with the highest hash of the 3 × 3 cells round it, else the
+  vertex colour. Three colours, from the field source: the mean of its darkest 15%, of its darkest 40% (today's base),
+  and of its 40–60% band.
+- Pass: the ID captures at stops 0 and 2 byte-identical to Task 4's. The ground class's palette verdict holds. The
+  look's L < 15 share moves toward the painting's 30.0% (Task 5: 42.8% and 40.9% on the desktop).
+
+**The hand's press.**
+- `stampSegment(trail, from, to, radius, now, source, amp = 1)`: the target is `amp × (1 − q)²`.
+  `TRAIL.hoverAmp = LAND_TOUCH.hoverAmp` (0.6).
+- A mouse that moves with no button down stamps at `hoverAmp`. A mouse button down, a touch or a pen stamps at 1.
+- The cursor is `grabbing` from a down that is not admitted as Vincent's until the up, and `grab` after it. A blur, a
+  hidden page or a cancel also returns it to `grab`.
+- `__grassHand(x, y, pressed = true)`: the seam stays a press, so cases 1, 11 and 15 do not move.
+- Tests: a hover stamp's peak is 0.6 of a press's (`scripts/grass-trail.test.ts`). Case 16 in
+  `check-street-grass.mjs`: a mouse down over the verge gives `grabbing`, the up gives `grab`.
+
+**The frog.** `src/scene/frog.ts` and `src/scene/StreetFrog.tsx`, mounted only with `flags.grass` and not with `flat`.
+- Built as Vincent is: `sphere`, `solid`, `clad`, `texel` and `underpaintColour` exported from `vincent.ts`, not copied.
+  A squat body, two haunches, two front legs, a pale throat, two eyes in sockets, a glint on each eye, a shadow disc.
+  About 0.012 long. The body's paint from the bushes, the throat from their lightest texels, the eyes near black, the
+  glint the moon's pale yellow.
+- Materials `vincentStrokeBody(lit)` and `vincentMoon(lit)` under their own keys. The glint unlit. Class 255, as
+  Vincent's hair, so the ID view paints it black and the colour gate ignores it.
+- The place: the lane's left edge at `t` 0.03, lateral −0.048, facing the lane, on the pale path's stroked edge outside
+  the grass's footprint (|lateral| ≥ 0.052) and away from Vincent's side (+0.03). A dark frog on the dark base would
+  not show. At stop 0 it projects to about (380, 660) on 1280 × 800, 0.01 to 32 px, and (108, 585) on 390 × 844.
+- The blink: a frog pulls its eyes into its head. Each eye sinks by 0.8 of its radius into the socket for a blink of
+  0.06 s down, 0.06 s held and 0.10 s up, both eyes together. The gaps between blinks 2.5–6 s from a fixed hash
+  sequence, one in five a double blink. The clock is `lifeTime(__skyTime, elapsed, reduced)`, so both eyes are open at
+  time 0 and a pinned capture is exact. Reduced motion: the eyes stay open.
+- Tests (`scripts/street-frog.test.ts`): open at time 0, every blink closed for at most 0.22 s, the gaps within
+  2.5–6 s, reduced always open. The build under 2,500 triangles. The place outside the footprint and at least 0.05
+  from Vincent's lateral band at stop 0. Projected inside the frame at stop 0 on both aspects.
+
+**Run** (as Task 4): `test:sky`, `tsc -b`, `lint`, `build`. `grass=0` byte-identical to Task 0. The palette at time 0.
+The walk's triangles (the worst point may move toward `walkT` 0–0.1, where the frog is in view). `check-street-grass`.
+The lit captures at stops 0 and 2 against Task 4's, read as 1:1 crops of the base and the frog. A clip of a hover and
+a press. A clip of the frog blinking at 1:1. The look with B1's fix. Then the record and Mark's look.
