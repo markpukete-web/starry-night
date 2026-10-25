@@ -255,7 +255,16 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   blade's own seed, apart from the layout. The moon: the top colour one of the lightest 2% of the bushes' lit texels,
   mixed up to all the way where the arch faces `STREET_MOON` (the facing eased over 0.55–0.75), rising from 0.2 to 0.5
   along the blade and full to the tip, over the outer quarter of the blade's width at full strength and the next quarter fading. `?light=0` draws the grass
-  unlit, slice 3's program byte for byte. Untuned by Mark.
+  unlit, slice 3's program byte for byte. Read live by Mark, 2026-10-25: the far arch tops "okay", the stripes "fine",
+  the direction right, the bare base between the clumps "It bother me a bit".
+- S3b pass 5, past the cap on Mark's word (2026-10-25, "Yes, go ahead with the extra pass"; `src/scene/grassBase.ts`
+  `GRASS_BASE`, `grassTrail.ts` `TRAIL.hoverAmp`, `frog.ts` `FROG`). The base under the grass lays one comma dab per
+  0.01 cell in its own mesh: half-size 0.009 × 0.003, bent 0.8, the tail 0.55 of the head, the angle from a field at 6
+  per world unit, the value ± 0.15, the paint the bushes' darkest 80% split by hue in their own shares. The hand: a
+  hover pushes at 0.6 of a press (`LAND_TOUCH.hoverAmp`), a press closes the cursor (`grabbing`), and a lift lets the
+  press's texels settle to the hover's push. The frog at `t` 0.022, lateral −0.076 (a gap ringed by 13 blades), 1,944
+  triangles; a blink shrinks each eye to 0.3 and sinks it 0.6 of its radius, 0.06 s down, 0.06 s shut, 0.1 s up, the
+  gaps 2.5–6 s, one double in five, the first at 1.7 s. Untuned by Mark.
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)

@@ -3120,3 +3120,23 @@ must be byte-identical before the stimulus's difference means anything.
 - **A hash test that only says "differs" protects nothing.** The lit program's test required its text to differ from
   the unlit one, so a mutant that inverted the moon's edge passed. Pin the behaviour: evaluate the compiled expression
   against what the geometry says (Codex B3).
+- **A weaker stamp does not release a held press.** The trail keeps a held texel at the stronger of its targets, so
+  scaling a stamp's amplitude made a hover weaker only on fresh texels. A press lifted under a hover stayed at full
+  strength until the hand left. A change of strength needs its own release (`releaseSource`; Codex F1, S3b pass 5).
+- **An identity gate holds only in the right order.** The base alone could be proven against Task 4's ID frames, and
+  the frog then makes those frames differ by design. Prove each change's identity before the next visible one lands,
+  then compare the rest of the frame (Codex F3).
+- **A frog that only sinks its eyes shows them below the socket.** Shrink and sink together, each eye about its own
+  pivot, so the closed eye hides inside the head (S3b pass 5, look pass 3).
+- **Place a creature where it would live, then find the spot there that the camera sees.** Visibility put the frog on
+  the pale path, and Mark asked why it was not in the grass. A search of the verge for gaps the grass already leaves,
+  with each gap's screen position on both viewports, found one in frame on the phone with 13 blades round it.
+- **Read a capture's size before projecting into it.** A helper that assumed 1280 × 800 cropped empty grass. The
+  desktop captures are 1600 × 900 and the phone's 390 × 844 at a scale of 1.
+- **`git checkout` cannot restore an untracked file.** A mutation run backed a new file up with `cp a || cp b`, then
+  restored with `git checkout || cp b`. Both restores missed and two mutants stayed in the file. Back up to one fixed
+  path and restore from it.
+- **A screenshot of a visible browser reports the real cursor.** Mid-press, Playwright's screenshot made Chrome send a
+  `pointerleave` and a move to the Mac's own cursor, with no button down, so the scripted press ended. A fix for a
+  move in place went in before the event's position was logged, and it guarded nothing real. Log the event's position
+  and target before you name its cause. Drive a recorded hand through the seam, which ignores the real pointer.
