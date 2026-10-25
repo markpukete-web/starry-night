@@ -18,8 +18,10 @@ export type StreetLight = { ambient: number; key: number; max?: number }
  * The church's walls (`tasks/2026-10-25-street-church-plan.md` (c)): the painting's church is its palest building, and
  * the street's light left its gable at 0.4 from stop 4, the stop built to look at it. The key is the street's, so its
  * faces keep their order. `max` keeps a moonlit face at its paint and no brighter. Its roofs keep the street's light.
+ * Look pass 1: 0.7 → 0.8, the plaster's L p50 41 → 44 at stop 4 against the painting's 52. Above about 0.81 the
+ * moonlit side reaches `max` and the two walls stop 4 sees lose their step.
  */
-export const CHURCH_LIGHT: StreetLight = { ambient: 0.7, key: 0.9, max: 1 }
+export const CHURCH_LIGHT: StreetLight = { ambient: 0.8, key: 0.9, max: 1 }
 
 export function lightOf(face: StreetFace, lit = true, light: StreetLight = STREET_LIGHT): number {
   if (!lit || (face.kind !== 'wall' && face.kind !== 'roof')) return 1

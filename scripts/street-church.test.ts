@@ -7,6 +7,7 @@ import { Frustum, Matrix4, PerspectiveCamera, Vector3 } from 'three'
 import { islandHeightAt } from '../src/scene/islandShape.ts'
 import type { BakedMass } from '../src/scene/landDomes.ts'
 import { buildStreet } from '../src/scene/streetGeometry.ts'
+import { CHURCH_LIGHT } from '../src/scene/streetLight.ts'
 import { CHURCH, churchFront, laneDistance, STREET, STREET_CHURCH, STREET_HOUSES, STREET_SQUARE, stationPose, vincentPlace, walkPose, type StationPose } from '../src/scene/streetLayout.ts'
 import type { ImageData2D } from '../src/scene/useImageData.ts'
 import { VILLAGE_CHURCH } from '../src/scene/villageKnot.ts'
@@ -65,15 +66,17 @@ test("the church's walls take the church's light, its roofs the street's", () =>
     assert.ok(f, `${owner} ${name} is clad`)
     return f
   }
-  assert.ok(Math.abs(face('church', 'front gable').light - 0.7) < 1e-9, `the gable reads ${face('church', 'front gable').light}`)
+  const gable = face('church', 'front gable').light
+  assert.ok(Math.abs(gable - CHURCH_LIGHT.ambient) < 1e-9, `the gable reads ${gable}, the street's ambient is 0.4`)
+  // the two walls stop 4 sees keep the moon's step between them: 0.9 × n·moon 0.207
   const side = face('church', 'right').light
-  assert.ok(side >= 0.85 && side <= 0.92, `the moonlit side reads ${side.toFixed(3)}`)
+  assert.ok(side - gable >= 0.15 && side - gable <= 0.2, `the moonlit side reads ${side.toFixed(3)} against the gable's ${gable}`)
   const roof = face('church', 'right roof').light
   assert.ok(roof >= 0.8 && roof <= 0.95, `the roof stop 4 sees reads ${roof.toFixed(3)}`)
   for (const f of churchFaces) {
     assert.ok(f.light <= 1, `${f.owner} ${f.name} reads ${f.light}, above its paint`)
   }
-  assert.ok(Math.abs(face('house-0', 'front').light - 0.7) > 0.05, 'a house keeps the street light')
+  assert.ok(Math.abs(face('house-0', 'front').light - CHURCH_LIGHT.ambient) > 0.05, 'a house keeps the street light')
 })
 
 test('stop 4 frames the church: the whole spire on the phone', () => {
