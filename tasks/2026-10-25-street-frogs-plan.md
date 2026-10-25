@@ -199,8 +199,10 @@ Nothing is pushed before Mark has seen it.
 - [ ] **Step 2: Run them**: `node --test scripts/street-frog.test.ts`. Expected: the shape tests FAIL, Vincent's PASS.
 - [ ] **Step 3: Build the shape** from Decision (a), as the spike's `frog.ts` has it.
 - [ ] **Step 4: Run the tests**: `npm run -s test:sky`. Expected: all PASS.
-- [ ] **Step 5: Look.** With the studio staged (Task 2, step 1 describes it): close-ups from four sides (`frog-studio.mjs`) and
-  stop 0 at true scale on both viewports (`frog-show.mjs`). Record `frog.ts`'s SHA-256 beside the close-ups.
+- [ ] **Step 5: Look.** With the spike's single-frog studio staged as the spike left it (`FrogStudio.tsx` finding the
+  group `street-frog`, mounted last in `Street.tsx`): close-ups from four sides (`frog-studio.mjs`) and stop 0 at true
+  scale on both viewports (`frog-show.mjs`). Record `frog.ts`'s SHA-256 beside the close-ups. The studio is never
+  committed (Task 2, step 5).
 - [ ] **Step 6: Commit** only the files above: `feat(street): the frog rebuilt to read as a frog: a sitting outline,
   a folded back leg, a flat head`.
 
@@ -220,27 +222,8 @@ Nothing is pushed before Mark has seen it.
   `frogPlace(spec: FrogSpec): { position: [number, number, number]; yaw: number }`. `frogBlink(t)` and `__frog`
   unchanged.
 
-- [ ] **Step 1: Stage the studio.** `FrogStudio.tsx` reads `window.__frogCam` (a camera) and `window.__frogVis`
-  (`{ mode, stop }`: `mode` is `all`, `hideFrog` or `onlyFrog`, `stop` picks the group `street-frog-<stop>`). It is
-  mounted last in `Street.tsx`'s group, so its frame runs after `StreetFrog`'s. Port the five scripts to `FROGS`,
-  `frogPlace(spec)` and `__frog`. Before every commit, `git status --short` shows ` M src/scene/Street.tsx` and
-  `?? src/scene/FrogStudio.tsx` unstaged, and `git diff --cached` holds neither.
-- [ ] **Step 2: The search.** Run `frog-spots.mjs` (the static tests) and `frog-vis.mjs` (Decision (g)) on the Task 1
-  shape. Record each stop's spot in the table below and its numbers in the record. The starting table, from the spike
-  (seen and whole at stops 0 to 3 measured on the 3,824-triangle draft, stop 4 at `y` 0.0045, all to be measured again):
-
-  | stop | t | lateral | y | toward | face | scale | seen | whole px (desktop, phone) | Vincent's gap |
-  | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-  | 0 | 0.035 | −0.086 | 0.001 | lane | 0.35 | 1.0 | 0.98 | 562, 166 | 0.298 |
-  | 1 | 0.283 | +0.086 | 0.001 | lane | 0.3 | 0.94 | 0.86 | 351, 124 | 0.026 |
-  | 2 | 0.466 | −0.098 | 0.001 | lane | 0.4 | 1.06 | 0.96 | 491, 166 | 0.098 |
-  | 3 | 0.677 | −0.098 | 0.001 | away | 0.3 | 0.97 | 0.95 | 593, 205 | 0.099 |
-  | 4 | 0.975 | −0.08 | 0.0065 | lane | 0.35 | 1.02 | 0.93 | 262, 92 | 0.104 |
-
-  Vincent's gap is the least distance from the frog's footprint to his box over the walk (Codex's check on the draft).
-  Stop 4's frog sits at the desktop frame's lower edge (NDC y about −0.88), about 18 px long, the smallest of the five.
-- [ ] **Step 3: Write the failing tests** in `street-frog.test.ts`, replacing today's place, gap and frame tests with
-  one loop over `FROGS`:
+- [ ] **Step 1: Write the failing tests** in `street-frog.test.ts`, replacing today's place, gap and frame tests with
+  one loop over `FROGS`. `FROGS` is the table in step 6, as it stands:
   - `'one frog per stop, in stop order'`: `FROGS.map((f) => f.stop)` is [0, 1, 2, 3, 4].
   - `'each frog keeps clear of Vincent's walk'`: every footprint point is at least 0.02 from his box's footprint
     (`vincentBoxCorners`) at every walk `t` from 0 to 0.9 by 0.001.
@@ -259,15 +242,36 @@ Nothing is pushed before Mark has seen it.
   - `'at most one frog is drawn at any walk pose'`: Review focus 3. A frog counts when its centre (`y` + 0.002) with a
     sphere of radius 0.008 meets the frustum and lies within `FROG.draw` of the camera.
   - `'reduced motion keeps the eyes open'`: Review focus 1.
-- [ ] **Step 4: Run them**: `node --test scripts/street-frog.test.ts`. Expected: FAIL (no `FROGS`).
-- [ ] **Step 5: Implement** `FROG.draw`, `FrogSpec`, `FROGS` and `frogPlace(spec)` in `frog.ts`, and five groups in
-  `StreetFrog.tsx`: each `<group name={`street-frog-${stop}`} position rotation scale={scale}>` over the shared
-  geometries. Each frame, a group is visible when its distance to the camera is below `FROG.draw`. The eyes and
+- [ ] **Step 2: Run them**: `node --test scripts/street-frog.test.ts`. Expected: FAIL (no `FROGS`).
+- [ ] **Step 3: Implement** `FROG.draw`, `FrogSpec`, `FROGS` and `frogPlace(spec)` in `frog.ts` from the table in
+  step 6, and five groups in `StreetFrog.tsx`: each
+  `<group name={`street-frog-${stop}`} position rotation scale={scale}>` over the shared geometries. Each frame, a group is visible when its distance to the camera is below `FROG.draw`. The eyes and
   `__frog` stay as they are.
-- [ ] **Step 6: Run the tests**: `npm run -s test:sky`. Expected: all PASS.
-- [ ] **Step 7: Case 17** runs unchanged against five frogs: `node scripts/check-street-grass.mjs --cases 17` against
+- [ ] **Step 4: Run the tests**: `npm run -s test:sky`. Expected: all PASS.
+- [ ] **Step 5: Stage the studio for five frogs.** Now that the groups exist, port `FrogStudio.tsx`: it reads
+  `window.__frogCam` (a camera) and `window.__frogVis` (`{ mode, stop }`: `mode` is `all`, `hideFrog` or
+  `onlyFrog`, `stop` picks the group `street-frog-<stop>`). It is mounted last in `Street.tsx`'s group, so its frame runs after `StreetFrog`'s. Port the five scripts to `FROGS`,
+  `frogPlace(spec)` and `__frog`. Before every commit, `git status --short` shows ` M src/scene/Street.tsx` and
+  `?? src/scene/FrogStudio.tsx` unstaged, and `git diff --cached` holds neither.
+- [ ] **Step 6: The search.** Run `frog-spots.mjs` (the static tests) and `frog-vis.mjs` (Decision (g)) on the five
+  frogs. If a spot moves, change `FROGS` and the table below. Write each spot's numbers in the record. The table, from
+  the spike
+  (seen and whole at stops 0 to 3 measured on the 3,824-triangle draft, stop 4 at `y` 0.0045, all to be measured again):
+
+  | stop | t | lateral | y | toward | face | scale | seen | whole px (desktop, phone) | Vincent's gap |
+  | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+  | 0 | 0.035 | −0.086 | 0.001 | lane | 0.35 | 1.0 | 0.98 | 562, 166 | 0.298 |
+  | 1 | 0.283 | +0.086 | 0.001 | lane | 0.3 | 0.94 | 0.86 | 351, 124 | 0.026 |
+  | 2 | 0.466 | −0.098 | 0.001 | lane | 0.4 | 1.06 | 0.96 | 491, 166 | 0.098 |
+  | 3 | 0.677 | −0.098 | 0.001 | away | 0.3 | 0.97 | 0.95 | 593, 205 | 0.099 |
+  | 4 | 0.975 | −0.08 | 0.0065 | lane | 0.35 | 1.02 | 0.93 | 262, 92 | 0.104 |
+
+  Vincent's gap is the least distance from the frog's footprint to his box over the walk (Codex's check on the draft).
+  Stop 4's frog sits at the desktop frame's lower edge (NDC y about −0.88), about 18 px long, the smallest of the five.
+- [ ] **Step 7: Run the tests again**: `npm run -s test:sky`. Expected: all PASS on the measured table.
+- [ ] **Step 8: Case 17** runs unchanged against five frogs: `node scripts/check-street-grass.mjs --cases 17` against
   the worktree's server. Expected: PASS.
-- [ ] **Step 8: Commit** only the files above: `feat(street): five frogs, one by each stop, side-on to its camera`.
+- [ ] **Step 9: Commit** only the files above: `feat(street): five frogs, one by each stop, side-on to its camera`.
 
 ### Task 3: the look passes
 
