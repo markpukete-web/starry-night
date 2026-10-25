@@ -4,6 +4,7 @@ import { makeBrushArrays, type BrushArrays } from './brushForms.ts'
 import { baseHue } from './grassBase.ts'
 import { GRASS_SOURCES, grassTexelUsable } from './grassBlade.ts'
 import { PALETTE } from './palette.ts'
+import { STREET_SOURCES } from './streetStrokes.ts'
 import { pathPoint, pathTangent, STOP0_CAMERA } from './streetLayout.ts'
 import type { ImageData2D } from './useImageData.ts'
 import {
@@ -21,37 +22,55 @@ import {
 } from './vincent.ts'
 
 /**
- * A frog at the lane's edge (S3b pass 5, `tasks/2026-10-25-street-s3b-plan.md` Task 6). Mark: "put the frog with
- * blinking eyes so it looks more real". Built as Vincent is, a few shapes clad in the painting's strokes. Its own frame:
- * feet at the origin, `+y` up, `+z` the way it faces. It sits in the grass at the verge's inner edge, across the lane
- * from Vincent (Mark: "Why not under the grass"; look pass 3 had it on the pale path so a dark frog would show). The
- * verge's blades are short, so they hide its feet and flanks and leave its back and eyes in the moonlight.
+ * A frog at the lane's edge (S3b pass 5, `tasks/2026-10-25-street-s3b-plan.md` Task 6), rebuilt to read as a frog
+ * (Mark: "the frog doesn't seem like a frog"). Built as Vincent is, a few shapes clad in the painting's strokes. Its own
+ * frame: feet at the origin, `+y` up, `+z` the way it faces. The shape is set out in frog lengths (`size`, snout to
+ * vent) as a frog sits: the back sloping up from the rump on the ground to a flat head, the front legs propping the
+ * chest, each back leg folded beside the body with the knee forward and out and the long foot flat on the ground.
  */
 export const FROG = {
   place: {
-    /** along the lane, and its lateral: the left verge, across from Vincent's +0.03, its edge past the path's 0.06,
-     * as deep in the grass as the phone's frame allows (look pass 4: at -0.068 the path showed beside it) */
     t: 0.022,
     lateral: -0.076,
-    /** it faces stop 0's camera, turned this much toward the lane's centre (look pass 1: 0.6 showed its side) */
-    across: 0.2,
+    /** its heading from facing stop 0's camera: a quarter turn shows its side, less shows its face as well */
+    turn: -1.15,
   },
   /** its feet on the base under the grass (`GRASS.baseY`) */
   y: 0.001,
   /** no blade root lies within this of its centre: its spot is a gap the grass leaves, ringed by 13 blades that arch
    * over its flanks (look pass 4), and `street-frog.test.ts` fails if a change to the grass fills it */
   clear: 0.008,
-  /** an ellipsoid round its length: centre, radii (x, y, z), the nose raised by `pitch` radians, as a frog sits */
-  body: { centre: [0, 0.003, -0.0002], radii: [0.004, 0.0027, 0.0043], pitch: 0.3 },
-  haunch: { centre: [0.004, 0.0018, -0.0026], radii: [0.0022, 0.0018, 0.0028] },
-  arm: { shoulder: [0.0026, 0.0022, 0.0028], hand: [0.0034, 0.0003, 0.004], r: [0.0007, 0.00055] },
-  throat: { centre: [0, 0.0017, 0.0038], radii: [0.0025, 0.0011, 0.0015] },
+  /** snout to vent, in world units (Vincent is 0.085 tall, so a frog of about 17 cm) */
+  size: 0.0086,
+  /** a stroke stands this far proud of its shape (Vincent's 0.0004 would thicken a leg to twice its width) */
+  lift: 0.00012,
+  /** the rest in frog lengths: ellipsoids by centre, radii (x, y, z) and the nose raised by `pitch` radians */
+  torso: { centre: [0, 0.22, -0.1], radii: [0.24, 0.17, 0.33], pitch: 0.42 },
+  head: { centre: [0, 0.37, 0.28], radii: [0.27, 0.14, 0.27], pitch: -0.2 },
+  /** the pale throat under the jaw */
+  throat: { centre: [0, 0.28, 0.29], radii: [0.22, 0.08, 0.22], pitch: -0.2 },
+  /** the back leg, folded: hip to knee forward and out, knee to heel back, heel to toes forward on the ground */
+  hip: [0.15, 0.17, -0.3],
+  knee: [0.35, 0.2, 0.06],
+  heel: [0.3, 0.05, -0.36],
+  toe: [0.42, 0.035, 0.1],
+  thighR: [0.11, 0.07],
+  shinR: [0.065, 0.04],
+  footR: [0.04, 0.03],
+  /** three toes fanned from the foot's end, each this long */
+  toes: { spread: 0.5, length: 0.16, r: [0.022, 0.012] },
+  /** the front leg: shoulder to the elbow out and back, elbow to the hand on the ground ahead */
+  shoulder: [0.16, 0.25, 0.18],
+  elbow: [0.25, 0.13, 0.12],
+  hand: [0.23, 0.035, 0.3],
+  upperArmR: [0.05, 0.04],
+  forearmR: [0.04, 0.03],
   /** the eyes stand proud of the head in their sockets; the socket is the body's paint, a little lower */
-  eye: { centre: [0.0022, 0.0054, 0.0026], r: 0.0012 },
-  socket: { drop: 0.0006, r: 0.00125 },
+  eye: { centre: [0.14, 0.48, 0.3], r: 0.075 },
+  socket: { drop: 0.035, r: 0.08 },
   /** a wet eye's glint, toward the camera and up */
-  glint: { r: 0.0003, toward: [0.25, 0.7, 0.67] },
-  shadow: { across: 0.0055, along: 0.0075, y: 0.0004, segments: 20 },
+  glint: { r: 0.025, toward: [0.25, 0.7, 0.67] },
+  shadow: { across: 0.55, along: 0.62, z: 0.02, y: 0.0004, segments: 12 },
   /**
    * A frog blinks by pulling its eyes into its head: each eye shrinks to `shrink` of its size and sinks `sink` of its
    * radius into its socket, both together, `down` s going, `hold` s shut, `up` s coming back (look pass 1: an eye that
@@ -64,6 +83,8 @@ export const FROG = {
 
 type Vec3 = readonly [number, number, number]
 const v3 = (a: Vec3) => new Vector3(a[0], a[1], a[2])
+/** frog lengths to world units */
+const m = (a: Vec3): Vec3 => [a[0] * FROG.size, a[1] * FROG.size, a[2] * FROG.size]
 
 /** An ellipsoid round its own length (z): `a` round it from the right side over the top, `s` from the tail to the nose. */
 function ellipsoid(centre: Vec3, radii: Vec3, pitch = 0): Surface {
@@ -114,59 +135,104 @@ export type FrogBuild = {
   triangles: number
 }
 
-/** The eyes' centres in the frog's frame, its right (+x) then its left. */
-export const FROG_EYES: readonly [Vec3, Vec3] = [FROG.eye.centre, mirror(FROG.eye.centre)]
+/** The eyes' centres in the frog's frame, its right (+x) then its left, in world units. */
+export const FROG_EYES: readonly [Vec3, Vec3] = [m(FROG.eye.centre), m(mirror(FROG.eye.centre))]
 
 export function buildFrog(painting: ImageData2D): FrogBuild {
   const rand = mulberry32(0xf20c)
   const cls = VINCENT_CLASS.none
+  const k = FROG.size
+  const lift = FROG.lift
   const pool = greens(painting)
   const band = (lo: number, hi: number) => pool.slice(Math.floor(lo * pool.length), Math.max(Math.floor(lo * pool.length) + 1, Math.floor(hi * pool.length)))
-  const skin = band(0.3, 0.85)
+  const skin = band(0.45, 0.95)
   const pick = (from: [number, number, number][]) => () => srgb(from[Math.floor(rand() * from.length)])
-  const under = mean(band(0.15, 0.6))
-  const ridge = mean(band(0.88, 1))
+  const under = mean(band(0.3, 0.7))
+  const dark = band(0.02, 0.2)
+  const ridge = mean(band(0.9, 1))
+  // its belly and lip: the painting's pale plaster, warmed toward the lightest green
+  const pale = underpaintColour(painting, STREET_SOURCES.plaster, 1).lerp(ridge, 0.35)
+  const shape = (centre: Vec3, radii: Vec3, pitch = 0) => ellipsoid(m(centre), m(radii), pitch)
+  const limb = (from: Vec3, to: Vec3, r: readonly [number, number]) => tube(v3(m(from)), v3(m(to)), r[0] * k, r[1] * k)
 
   const body = emptyPart()
-  const trunk = ellipsoid(FROG.body.centre, FROG.body.radii, FROG.body.pitch)
-  solid(body.underpaint, trunk, 16, 10, under, cls)
-  // strokes along its length over the back and down the flanks; two pale ridges either side of the spine
-  clad(body, trunk, 10, 6, painting, pick(skin), cls, rand, [0.02, 0.48], [0.06, 0.96])
-  clad(body, trunk, 6, 5, painting, pick(band(0.15, 0.6)), cls, rand, [0.52, 0.98], [0.1, 0.9])
-  for (const a of [0.17, 0.33]) stroke(body.strokes, trunk, a - 0.02, a + 0.02, 0.2, 0.85, 6, ridge, cls, rand())
+  const torso = shape(FROG.torso.centre, FROG.torso.radii, FROG.torso.pitch)
+  const head = shape(FROG.head.centre, FROG.head.radii, FROG.head.pitch)
+  solid(body.underpaint, torso, 8, 5, under, cls)
+  solid(body.underpaint, head, 8, 5, under, cls)
+  solid(body.underpaint, shape(FROG.throat.centre, FROG.throat.radii, FROG.throat.pitch), 6, 3, pale, cls)
+  // strokes along its length over the back and down the flanks, the belly pale
+  clad(body, torso, 6, 4, painting, pick(skin), cls, rand, [-0.04, 0.54], [0.06, 0.96], lift)
+  clad(body, torso, 3, 3, painting, () => pale, cls, rand, [0.6, 0.9], [0.15, 0.85], lift)
+  clad(body, head, 5, 4, painting, pick(skin), cls, rand, [0.02, 0.48], [0.05, 0.97], lift)
+  // two pale ridges either side of the spine, from behind the eyes to the rump
+  for (const a of [0.17, 0.33]) stroke(body.strokes, torso, a - 0.018, a + 0.018, 0.2, 0.9, 4, ridge, cls, rand(), lift)
+  // dark spots on the back
+  for (let i = 0; i < 5; i++) {
+    const a = 0.08 + rand() * 0.34
+    const s0 = 0.15 + rand() * 0.6
+    stroke(body.strokes, torso, a - 0.025, a + 0.025, s0, s0 + 0.09, 2, pick(dark)(), cls, rand(), lift * 1.6)
+  }
 
   for (const side of [1, -1]) {
     const at = (p: Vec3) => (side > 0 ? p : mirror(p))
-    const haunch = ellipsoid(at(FROG.haunch.centre), FROG.haunch.radii)
-    solid(body.underpaint, haunch, 12, 6, under, cls)
-    clad(body, haunch, 4, 5, painting, pick(skin), cls, rand, [0.02, 0.48], [0.1, 0.9])
-    const arm = tube(v3(at(FROG.arm.shoulder)), v3(at(FROG.arm.hand)), FROG.arm.r[0], FROG.arm.r[1])
-    solid(body.underpaint, arm, 8, 4, under, cls)
-    clad(body, arm, 2, 4, painting, pick(skin), cls, rand)
-    const socket = v3(at(FROG.eye.centre)).add(new Vector3(0, -FROG.socket.drop, 0))
-    solid(body.underpaint, sphere(socket, FROG.socket.r), 10, 6, under, cls)
+    // the lip: a dark line along the jaw and the pale stripe above it, snout to the jaw's hinge
+    const lip = (a0: number, a1: number) => (side > 0 ? [a0, a1] : [0.5 - a1, 0.5 - a0])
+    const [m0, m1] = lip(-0.02, 0.004)
+    stroke(body.strokes, head, m0, m1, 0.3, 0.97, 4, pick(dark)(), cls, rand(), lift * 1.6)
+    const [p0, p1] = lip(0.006, 0.05)
+    stroke(body.strokes, head, p0, p1, 0.25, 0.92, 4, pale, cls, rand(), lift * 1.3)
+
+    const thigh = limb(at(FROG.hip), at(FROG.knee), FROG.thighR)
+    const shin = limb(at(FROG.knee), at(FROG.heel), FROG.shinR)
+    const foot = limb(at(FROG.heel), at(FROG.toe), FROG.footR)
+    const upper = limb(at(FROG.shoulder), at(FROG.elbow), FROG.upperArmR)
+    const fore = limb(at(FROG.elbow), at(FROG.hand), FROG.forearmR)
+    for (const [part, na, ns, count, steps] of [[thigh, 6, 3, 2, 3], [shin, 5, 3, 2, 3], [foot, 4, 2, 1, 2], [upper, 4, 2, 1, 2], [fore, 4, 2, 1, 2]] as const) {
+      solid(body.underpaint, part, na, ns, under, cls)
+      clad(body, part, count, steps, painting, pick(skin), cls, rand, [0, 1], [0, 1], lift)
+    }
+    // round joints at the knee and the heel, so neither tube shows its cut end (the arm's ends are under a pixel)
+    for (const [p, r] of [[FROG.knee, FROG.thighR[1]], [FROG.heel, FROG.shinR[1]]] as const) {
+      solid(body.underpaint, sphere(v3(m(at(p))), r * k), 5, 3, under, cls)
+    }
+    // dark bands across the thigh and the shin
+    for (const [part, at0] of [[thigh, 0.5], [shin, 0.45]] as const) {
+      for (const a0 of [0, 0.5]) stroke(body.strokes, part, a0, a0 + 0.5, at0, at0 + 0.13, 3, pick(dark)(), cls, rand(), lift * 1.6)
+    }
+    // the toes fan out from the foot's end
+    const fan = (from: Vec3, back: Vec3, d: { spread: number; length: number; r: readonly [number, number] }) => {
+      const root = v3(from)
+      const along = root.clone().sub(v3(back)).setY(0).normalize()
+      for (const f of [-1, 0, 1]) {
+        const dir = along.clone().applyAxisAngle(new Vector3(0, 1, 0), f * d.spread * 0.5)
+        const tip = root.clone().addScaledVector(dir, d.length).setY(0.008)
+        solid(body.underpaint, tube(root.clone().multiplyScalar(k), tip.multiplyScalar(k), d.r[0] * k, d.r[1] * k), 3, 1, under, cls)
+      }
+    }
+    fan(at(FROG.toe), at(FROG.heel), FROG.toes)
+    const socket = v3(m(at(FROG.eye.centre))).add(new Vector3(0, -FROG.socket.drop * k, 0))
+    solid(body.underpaint, sphere(socket, FROG.socket.r * k), 5, 3, under, cls)
   }
-  const pale = mean(pool.slice(Math.floor(0.95 * pool.length)))
-  solid(body.underpaint, ellipsoid(FROG.throat.centre, FROG.throat.radii), 10, 5, pale, cls)
 
   const arrays = () => Object.assign(makeBrushArrays(), { cls: [] as number[], src: [] as number[] })
   const eye = arrays()
-  solid(eye, sphere(new Vector3(), FROG.eye.r), 10, 6, underpaintColour(painting, GRASS_SOURCES.bushes, 0.15), cls)
+  solid(eye, sphere(new Vector3(), FROG.eye.r * k), 8, 4, underpaintColour(painting, GRASS_SOURCES.bushes, 0.15), cls)
   const toward = v3(FROG.glint.toward).normalize()
   const glint = (side: number) => {
     const into = arrays()
-    solid(into, sphere(new Vector3(side * toward.x, toward.y, toward.z).multiplyScalar(FROG.eye.r * 0.9), FROG.glint.r), 6, 4, new Color(PALETTE.star), cls)
+    solid(into, sphere(new Vector3(side * toward.x, toward.y, toward.z).multiplyScalar(FROG.eye.r * k * 0.9), FROG.glint.r * k), 4, 2, new Color(PALETTE.star), cls)
     return into
   }
   const glints = { right: glint(1), left: glint(-1) }
 
   const shadow = makeBrushArrays()
   const S = FROG.shadow
-  shadow.positions.push(0, S.y, 0)
+  shadow.positions.push(0, S.y, S.z * k)
   shadow.colors.push(0, 0, 0)
   for (let i = 0; i < S.segments; i++) {
     const th = (i / S.segments) * Math.PI * 2
-    shadow.positions.push(Math.cos(th) * S.across, S.y, Math.sin(th) * S.along)
+    shadow.positions.push(Math.cos(th) * S.across * k, S.y, (S.z + Math.sin(th) * S.along) * k)
     shadow.colors.push(0, 0, 0)
     shadow.indices.push(0, 1 + ((i + 1) % S.segments), 1 + i)
   }
@@ -182,11 +248,7 @@ export function frogPlace(): { position: [number, number, number]; yaw: number }
   const n = Math.hypot(tx, tz)
   const [nx, nz] = [-tz / n, tx / n]
   const [x, z] = [px + P.lateral * nx, pz + P.lateral * nz]
-  const [cx, cz] = [STOP0_CAMERA[0] - x, STOP0_CAMERA[2] - z]
-  const c = Math.hypot(cx, cz)
-  const toLane = -Math.sign(P.lateral)
-  const [fx, fz] = [cx / c + P.across * toLane * nx, cz / c + P.across * toLane * nz]
-  return { position: [x, FROG.y, z], yaw: Math.atan2(fx, fz) }
+  return { position: [x, FROG.y, z], yaw: Math.atan2(STOP0_CAMERA[0] - x, STOP0_CAMERA[2] - z) + P.turn }
 }
 
 const BLINKS = (() => {

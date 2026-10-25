@@ -1156,7 +1156,7 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
         for (let i = 0; i < 3; i++) {
           const f = await frog17()
           if (!f) throw new Error(`Case 17 failed: no __frog ${label}`)
-          const sink = B.sink * FROG.eye.r * shut
+          const sink = B.sink * FROG.eye.r * FROG.size * shut
           const scale = 1 - (1 - B.shrink) * shut
           if (f.shut !== shut || Math.abs(f.sink - sink) > 1e-6 || Math.abs(f.scale - scale) > 1e-6) {
             throw new Error(`Case 17 failed: ${label}, shut ${f.shut}, sink ${f.sink}, scale ${f.scale}; expected ${shut}, ${sink}, ${scale}`)

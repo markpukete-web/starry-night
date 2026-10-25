@@ -12,6 +12,7 @@ import { buildFrog, FROG, FROG_EYES, frogBlink, frogPlace } from '../src/scene/f
 import { GRASS, grassChunks } from '../src/scene/streetGrass.ts'
 import { lifeTime } from '../src/scene/streetLife.ts'
 import { laneParam, STATION_T, VINCENT_RIG, vincentPlace, walkPose } from '../src/scene/streetLayout.ts'
+import { buildVincent } from '../src/scene/vincent.ts'
 import { decodePNG } from './lib/png.ts'
 
 const workPainting = new URL('../reference/derived/_work-painting.png', import.meta.url)
@@ -67,10 +68,47 @@ test('the frog blinks: each blink shut for its hold, none longer than down, hold
   }
 })
 
-test('the frog is small: under 2,500 triangles', { skip }, () => {
+const painting = () => {
   const png = decodePNG(readFileSync(workPainting))
-  const frog = buildFrog({ data: new Uint8ClampedArray(png.rgba), width: png.width, height: png.height })
-  assert.ok(frog.triangles > 1000 && frog.triangles < 2500, `${frog.triangles} triangles`)
+  return { data: new Uint8ClampedArray(png.rgba), width: png.width, height: png.height }
+}
+
+// the walk's tightest point with a frog in view is t 0.295 on the desktop, stop 1's frog 0.2 away: 1,631 under the
+// ceiling without it (the grass counted offline, the rest from the church's sweep)
+test('the frog fits the walk: at most 1,250 triangles', { skip }, () => {
+  const frog = buildFrog(painting())
+  assert.ok(frog.triangles <= 1250, `${frog.triangles} triangles`)
+})
+
+test('the frog sits on the ground: its lowest point within 0.0002 of its feet', { skip }, () => {
+  const frog = buildFrog(painting())
+  let low = Infinity
+  for (const arrays of [frog.body.underpaint, frog.body.strokes.arrays]) {
+    for (let i = 1; i < arrays.positions.length; i += 3) low = Math.min(low, arrays.positions[i])
+  }
+  assert.ok(low >= -0.0001 && low <= 0.0002, `its lowest point at ${low.toFixed(6)}`)
+})
+
+test('its back leg folds, the knee forward and out', () => {
+  assert.ok(FROG.knee[2] > FROG.hip[2] && FROG.knee[2] > FROG.heel[2], 'the knee ahead of the hip and the heel')
+  assert.ok(FROG.knee[0] > FROG.torso.radii[0], 'the knee out past the torso')
+})
+
+test('its eyes stand on its head', () => {
+  assert.ok(FROG.eye.centre[1] - FROG.eye.r > FROG.head.centre[1], 'the eye above the head\'s middle')
+  assert.ok(FROG.eye.centre[2] >= FROG.head.centre[2], "the eye in the head's front half")
+})
+
+test('Vincent keeps his strokes: the lift parameter defaults to his 0.0004', { skip }, async () => {
+  const { createHash } = await import('node:crypto')
+  const v = buildVincent(painting())
+  const h = createHash('sha256')
+  for (const part of [v.body, v.armLeft]) {
+    h.update(JSON.stringify(part.strokes.arrays.positions))
+    h.update(JSON.stringify(part.underpaint.positions))
+  }
+  // read at cc56207, before `stroke` and `clad` took a lift
+  assert.equal(h.digest('hex').slice(0, 16), '79338a361cd6b11c')
 })
 
 /** The frog's frame to the street's. */
@@ -89,13 +127,13 @@ test("the frog sits in the verge on the grass's base, past the path's edge and c
   const [t, lateral] = laneParam(position[0], position[2])
   assert.ok(Math.abs(t - FROG.place.t) < 0.002, `along the lane at ${t.toFixed(4)}`)
   assert.ok(Math.abs(lateral - FROG.place.lateral) < 0.001, `lateral ${lateral.toFixed(4)}`)
-  // the widest of it: the haunches, the shadow, the arms
-  const reach = Math.max(FROG.haunch.centre[0] + FROG.haunch.radii[0], FROG.shadow.across, FROG.arm.hand[0])
+  // the widest of it: the knees, the toes, the shadow
+  const reach = Math.max(FROG.knee[0] + FROG.thighR[1], FROG.toe[0] + FROG.toes.length, FROG.shadow.across) * FROG.size
   const v = vincentPlace(STATION_T[0]).position
   const [, vLat] = laneParam(v[0], v[2])
   for (let k = 0; k < 16; k++) {
     const th = (k / 16) * Math.PI * 2
-    const p = toStreet(new Vector3(Math.cos(th) * reach, 0, Math.sin(th) * Math.max(reach, FROG.shadow.along)))
+    const p = toStreet(new Vector3(Math.cos(th) * reach, 0, Math.sin(th) * Math.max(reach, FROG.shadow.along * FROG.size)))
     const [, lat] = laneParam(p.x, p.z)
     // the path is 0.12 wide (`streetGeometry.ts`), and over it the frog would stand on its strokes, not the base
     assert.ok(Math.abs(lat) > 0.06 && Math.abs(lat) < GRASS.lat[1], `a point of its edge at lateral ${lat.toFixed(4)}, off the verge`)

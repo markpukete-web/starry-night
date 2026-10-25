@@ -50,7 +50,7 @@ export default function StreetFrog({ painting, flags, reduced }: { painting: Ima
     shutRef.current = shut
     eyeRefs.current.forEach((eye, i) => {
       if (!eye) return
-      eye.position.y = FROG_EYES[i][1] - FROG.blink.sink * FROG.eye.r * shut
+      eye.position.y = FROG_EYES[i][1] - FROG.blink.sink * FROG.eye.r * FROG.size * shut
       eye.scale.setScalar(1 - (1 - FROG.blink.shrink) * shut)
     })
   })
