@@ -13,8 +13,9 @@ task. Mark's gate is the end of the slice.
 **Revision 2 (2026-10-25, night).** Folds in Codex's plan review (`scratch/street-frogs-2026-10-25/plan-review-codex.md`,
 F1 to F6 and its shape note, all P2) and two facts found since. Mark chose the square's edge for stop 4. The walk has
 no room for five frogs of 2,000 triangles: at `t` 0.33 on the desktop it is 463 under the ceiling. So the frog is cut to
-1,212 triangles and drawn only within 0.5 of the camera, and at most one frog is ever drawn (F2). With one frog drawn,
-the frogs share one blink and the phases go (F1). The crouch goes, because a non-uniform scale bends the lit
+1,212 triangles and drawn only within 0.5 of the camera, and at most one frog is drawn at a time (F2). With one frog
+drawn, the frogs share one blink and the phases go (F1). Task 3 later gave stop 4 a draw of 1.1, so a second frog is
+drawn after `t` 0.45, at 0.8 or more (Decision (i)). The crouch goes, because a non-uniform scale bends the lit
 material's normals (F4). Stop 4's frog rises to the square's strokes (F3). Case 18 goes: the spots' visibility is a
 measurement in the record, with its definition stated (F5). The spike's studio stays out of the app, staged and removed
 by named steps (F6).
@@ -126,7 +127,7 @@ Nothing is pushed before Mark has seen it.
   before `t` 0.45, and a second drawn later is at least 0.8 away, where its eyes are a pixel or two (Decision (i)), so
   nobody sees two blink together. Reduced motion keeps every eye open, as today (`frogBlink`
   returns 0 for any `t` that is not a positive number). Codex F1 showed five phases cannot keep the blinks apart within
-  [0, 1.6] s, and with one frog drawn they need not.
+  [0, 1.6] s, and with one frog near the camera they need not.
 - **(f) The seam.** `window.__frog()` stays as it is: the shared blink's `{ shut, sink, scale }`. The branch review
   added `window.__frogsDrawn()` (Codex F1): each group's `visible` as the frame's cull left it, its world place and the
   camera's, for case 18.
