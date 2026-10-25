@@ -472,3 +472,35 @@ button {
     max-height: calc(100vh - 278px);
   }
 }
+
+/* The portal (slice 4): the last frame, copied with drawImage, held over the WebGL canvas while the scene swaps under
+   it. After R3F's canvas in the DOM, so every script's first `canvas` is still the WebGL one (plan review F6). */
+.portal-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  width: 100%;
+  height: 100%;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* The hint beside the pointer over the village. It never takes the pointer, so the hover and the click stay on the
+   canvas (plan review F5). */
+.portal-hint {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 13;
+  padding: 6px 12px;
+  border: 1px solid rgba(244, 234, 211, 0.2);
+  border-radius: 14px;
+  background: rgba(12, 24, 55, 0.72);
+  color: #f7e7b5;
+  font-size: 13px;
+  font-weight: 620;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+  visibility: hidden;
+}

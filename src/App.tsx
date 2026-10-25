@@ -68,6 +68,8 @@ export default function App() {
   const street = isStreetMode(typeof window !== 'undefined' ? window.location.search : '')
   // The opening plays once per session on a plain visit; `?arrival=1` always plays it, that being the link's point
   const arrival = !street && (params.get('arrival') === '1' || (!off('arrival') && !arrivedThisSession()))
+  // The portal into the village street (slice 4), behind `?portal=1` until Mark's gate; never with `?street=1`
+  const portal = !street && params.get('portal') === '1'
   // The shipped defaults for A's knobs live in sky-tuning.json (the tuner's "set as default" writes them);
   // a URL knob overrides them, and with the tuner open the last slider positions are remembered per browser.
   const [aliveTuning, setAliveTuning] = useState<AliveTuning>(() => {
@@ -118,7 +120,7 @@ export default function App() {
 
   if (mode === 'diorama') {
     return (
-      <DioramaExperience clean={clean} reduced={motionPaused} sky={sky} still={reduced} alive={alive} aliveTuning={aliveTuning} touch={touch} arrival={arrival}>
+      <DioramaExperience clean={clean} reduced={motionPaused} sky={sky} still={reduced} alive={alive} aliveTuning={aliveTuning} touch={touch} arrival={arrival} portal={portal}>
         {chrome}
       </DioramaExperience>
     )

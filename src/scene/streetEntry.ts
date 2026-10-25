@@ -18,13 +18,14 @@ export function streetIdsPass(search: string): boolean {
 }
 
 /**
- * The street's sky anchor (S1 task 6), undefined outside street mode so the diorama's sky is today's. `skyAnchor`: A
+ * The street's sky anchor (S1 task 6), undefined outside street mode so the diorama's sky is today's, unless the street
+ * is entered through the portal (`portal`, slice 4), which takes the same anchor `?street=1` would. `skyAnchor`: A
  * keeps the dome at the origin (the street placed inside it), B follows the camera. `skyTurn`: lock turns the sky with
  * the camera, world fixes the painting's arc in the world. G5 chose B and world from the 16 frames: the only pair that
  * neither grows as the camera walks nor shows an unpainted band once the stations' tilt is capped.
  */
-export function streetSkyAnchor(search: string): SkyAnchor | undefined {
-  if (!isStreetMode(search)) return undefined
+export function streetSkyAnchor(search: string, portal = false): SkyAnchor | undefined {
+  if (!portal && !isStreetMode(search)) return undefined
   const params = new URLSearchParams(search)
   // G5: B (follow) and world by default, as `readStreetFlags` reads them
   return { follow: params.get('skyAnchor') !== 'A', worldFixed: params.get('skyTurn') !== 'lock' }

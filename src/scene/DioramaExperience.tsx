@@ -1,14 +1,43 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei'
-import { Component, lazy, Suspense, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react'
+import {
+  Component,
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentRef,
+  type CSSProperties,
+  type ReactNode,
+  type RefObject,
+} from 'react'
+import type { Camera, PerspectiveCamera as PerspectiveCameraImpl } from 'three'
 import { Diorama } from './Diorama'
 import { PaintingFlowSky3D, type SkyStyle } from './PaintingFlowSky3D'
 import type { AliveTuning } from './skyAlive'
 import { emptyTouchStore, type TouchStore } from './touchSurge'
 import { useTouchInput } from './useTouchInput'
 import { emptyLandStore, type LandStore } from './landTouch'
-import { ARRIVAL, ArrivalClock, arrivalCamera, arrivalFrame, rememberArrived } from './arrival'
+import { ARRIVAL, ArrivalClock, arrivalCamera, arrivalFrame, boundedDt, rememberArrived } from './arrival'
 import { isStreetMode, streetIdsPass, streetSkyAnchor, touchEnabled } from './streetEntry'
+import {
+  controlsEnabled,
+  dioramaVisible,
+  flightPose,
+  flightStep,
+  PORTAL,
+  portalStep,
+  streetMounted,
+  type PortalEvent,
+  type PortalPlace,
+  type Pose,
+} from './portal'
+import { usePortalPointer } from './usePortalPointer'
+import { PortalContext, type PortalControl } from './portalContext'
 // (ARRIVAL.reveal feeds the chrome's fade-in through a custom property; the clock owns every other constant)
 import {
   DIORAMA_CAMERAS,
@@ -17,7 +46,8 @@ import {
   type DioramaViewMode,
 } from './dioramaContract'
 
-const Street = lazy(() => import('./Street'))
+const loadStreet = () => import('./Street')
+const Street = lazy(loadStreet)
 
 /**
  * A street chunk that fails to load leaves the sky alone, settled, as a failed asset does (`streetReadiness`), rather
@@ -53,6 +83,8 @@ type Props = {
   touch?: boolean
   /** C behind `?arrival=1` (implies nothing): the painting, Vincent's line, the dissolve, the push (arrival.ts). */
   arrival?: boolean
+  /** The portal behind `?portal=1` (slice 4): the village enters the street, and the street returns. */
+  portal?: boolean
   /** Visitor chrome (attribution, original placard, control dock) — rendered over the canvas. */
   children?: ReactNode
 }
@@ -223,6 +255,144 @@ function ArrivalDriver({
   return null
 }
 
+type ControlsRef = RefObject<ComponentRef<typeof OrbitControls> | null>
+type Lens = { fov: number; near: number; far: number }
+
+/** The portal's state for one entry, written by the handlers and the driver; plain refs, so no render runs per frame. */
+type PortalDrive = {
+  /** the place the driver last ran in: a new place starts its clock and may send its one event again */
+  seen: PortalPlace
+  /** the flight's progress, 0 to 1 */
+  s: number
+  /** the pose the flight leaves from */
+  from: Pose
+  /** seconds in this place, at most `ARRIVAL.maxDt` from a frame */
+  t: number
+  /** frames run since the street reported ready */
+  settled: number
+  /** the street's report for this entry: null until it comes */
+  ok: boolean | null
+  /** this place's one event has been sent */
+  sent: boolean
+}
+
+/** What the scene needs from the portal, given while `?portal=1` is on, even after a failed chunk turns it off. */
+type ScenePortal = {
+  /** the pointer, the hint and the sky's mask: off for the page's life after a failed chunk (plan review F7) */
+  on: boolean
+  send: (event: PortalEvent) => void
+  drive: RefObject<PortalDrive>
+  controlsRef: ControlsRef
+  layerRef: RefObject<HTMLCanvasElement | null>
+  hintRef: RefObject<HTMLDivElement | null>
+  enter: () => void
+  prefetch: () => void
+  copyToLayer: () => void
+  onStreetReady: (ok: boolean) => void
+  onStreetFailed: () => void
+}
+
+function writeLens(camera: Camera, lens: Lens) {
+  const c = camera as PerspectiveCameraImpl
+  c.fov = lens.fov
+  c.near = lens.near
+  c.far = lens.far
+  c.updateProjectionMatrix()
+}
+
+/**
+ * The portal (tasks/2026-10-25-street-portal-plan.md, decisions (c) to (f) and (k)). Flying, it moves the camera from
+ * the saved pose to v2's and writes the default camera's lens every frame, since a rotation re-applies it through the
+ * prop diff (plan review F3); at the end it copies the canvas into the layer and sends `flown`. Entering, it waits for
+ * the street's report and two drawn frames, or the timeout. In the street it fades the layer. Leaving, it restores the
+ * diorama's pose and lens before the first frame, fades the layer and sends `left`. Under system reduced motion
+ * (`still`) there is no flight and every fade is a cut. Priority −2, as the arrival's driver: before drei's controls
+ * (−1, off outside the diorama) and the sky (0).
+ */
+function PortalDriver({
+  place,
+  still,
+  lens,
+  portal: { send, drive, controlsRef, layerRef, copyToLayer },
+}: {
+  place: PortalPlace
+  still: boolean
+  lens: Lens
+  portal: ScenePortal
+}) {
+  const { camera } = useThree()
+  /* eslint-disable react-hooks/immutability -- R3F render-loop writes: the camera, the controls, the layer's style */
+  useFrame((_, dt) => {
+    const d = drive.current
+    if (d.seen !== place) {
+      d.seen = place
+      d.t = 0
+      d.settled = 0
+      d.sent = false
+      if (place === 'leaving') {
+        // with damping off, one update applies and clears the residual delta before the reset puts the pose back
+        // (plan decision (f)); the reset recomputes the orbit from a pose inside the limits, so it holds
+        const controls = controlsRef.current
+        if (controls) {
+          const damping = controls.enableDamping
+          controls.enableDamping = false
+          controls.update()
+          controls.reset()
+          controls.enableDamping = damping
+        }
+        writeLens(camera, lens)
+      }
+    } else {
+      d.t += boundedDt(dt)
+    }
+    const layer = layerRef.current
+    // true once the layer is gone
+    const fade = (seconds: number) => {
+      if (!layer || layer.style.visibility !== 'visible') return true
+      const opacity = still ? 0 : Math.max(0, 1 - d.t / seconds)
+      layer.style.opacity = String(opacity)
+      if (opacity > 0) return false
+      layer.style.visibility = 'hidden'
+      return true
+    }
+    if (place === 'flying') {
+      d.s = flightStep(d.s, dt)
+      const pose = flightPose(d.from, PORTAL.flightEnd, d.s)
+      camera.position.set(...pose.position)
+      camera.lookAt(...pose.target)
+      writeLens(camera, lens)
+      // the copy holds the frame drawn before this one, where the ease's slope is zero
+      if (d.s >= 1 && !d.sent) {
+        d.sent = true
+        copyToLayer()
+        send('flown')
+      }
+    } else if (place === 'entering' && !d.sent) {
+      if (d.ok === true && ++d.settled > PORTAL.settleFrames) {
+        d.sent = true
+        send('ready')
+      } else if (d.ok === false) {
+        d.sent = true
+        send('failed')
+      } else if (d.t > ARRIVAL.readyTimeout) {
+        d.sent = true
+        send('timeout')
+      }
+    } else if (place === 'street' && !d.sent) {
+      // once only: the canvas's root commits a new place a frame or more after the page's, so a fade still running
+      // when the leave copies would hide the copy before the driver sees `leaving`
+      d.sent = fade(PORTAL.fadeIn)
+    } else if (place === 'leaving' && !d.sent && fade(PORTAL.fadeOut)) {
+      d.sent = true
+      send('left')
+    }
+  }, -2)
+  /* eslint-enable react-hooks/immutability */
+  return null
+}
+
+const noop = () => {}
+
 function Scene({
   reduced,
   sky,
@@ -233,6 +403,9 @@ function Scene({
   arrival,
   arriving,
   onArrived,
+  place,
+  portal,
+  hintRef,
   ...refs
 }: ArrivalRefs & {
   reduced: boolean
@@ -244,10 +417,15 @@ function Scene({
   arrival: boolean
   arriving: boolean
   onArrived: () => void
+  place: PortalPlace
+  portal?: ScenePortal
+  hintRef: RefObject<HTMLDivElement | null>
 }) {
   const streetMode = useMemo(() => isStreetMode(typeof window !== 'undefined' ? window.location.search : ''), [])
   const idsPass = useMemo(() => streetIdsPass(typeof window !== 'undefined' ? window.location.search : ''), [])
-  const skyAnchor = useMemo(() => streetSkyAnchor(typeof window !== 'undefined' ? window.location.search : ''), [])
+  // the street's sky anchor, the same whether the street opened from the URL or through the portal
+  const streetAnchor = useMemo(() => streetSkyAnchor(typeof window !== 'undefined' ? window.location.search : '', true), [])
+  const showStreet = streetMounted(place)
   const debug = readDebugMode()
   const view = readViewMode()
   // R3F's `size` is the canvas size and re-renders on resize. Reading window.inner* here instead
@@ -270,14 +448,22 @@ function Scene({
   // D1: the land-touch store the hook writes and prunes; the cypress and the trees read it
   const landStore = useRef<LandStore>(emptyLandStore())
   const bendGain = aliveTuning?.bend ?? 1
-  // C: no touch until the arrival is done; a tap during it is the skip
+  // the portal's pointer: on the diorama once the arrival is done; its cast masks the sky's surge under a tap that enters
+  const villageAt = usePortalPointer({
+    enabled: Boolean(portal?.on) && place === 'diorama' && !arriving,
+    onEnter: portal?.enter ?? noop,
+    onFirstHover: portal?.prefetch ?? noop,
+    hintRef,
+  })
+  // C: no touch until the arrival is done; a tap during it is the skip. The portal: only on the diorama (decision (a))
   useTouchInput({
-    enabled: touchEnabled({ touch, reduced, arriving, street: streetMode }),
+    enabled: touchEnabled({ touch, reduced, arriving, street: streetMode }) && place === 'diorama',
     store: touchStore,
     clock: skyClock,
     home: streetMode ? skyHome : defaultCamera,
     knob: aliveTuning?.surge ?? 1,
     land: touch && !streetMode ? { store: landStore, bendGain } : undefined,
+    skyMasked: portal?.on ? villageAt : undefined,
   })
   const landTouch = useMemo(() => (touch && !streetMode ? { store: landStore, clock: skyClock, bendGain } : undefined), [touch, streetMode, bendGain])
 
@@ -293,7 +479,8 @@ function Scene({
       />
       {!streetMode && (
         <OrbitControls
-          enabled={!arriving}
+          ref={portal?.controlsRef}
+          enabled={controlsEnabled(place) && !arriving}
           target={[...defaultCamera.target]}
           minDistance={DIORAMA_ORBIT.minDistance}
           maxDistance={DIORAMA_ORBIT.maxDistance}
@@ -307,26 +494,31 @@ function Scene({
       )}
       {measurePerformance && <PerfProbe />}
       {!streetMode && arrival && <ArrivalDriver home={defaultCamera} reduced={still} onDone={onArrived} {...refs} />}
-      {streetMode && (
+      {portal && <PortalDriver place={place} still={still} lens={defaultCamera} portal={portal} />}
+      {showStreet && (
         // the street places the camera at its station itself, in its own chunk (the main bundle carries no layout); its
-        // own Suspense, so a chunk still loading never hides the sky (the portal's decision (e))
+        // own Suspense, so a chunk still loading never hides the sky or the diorama (the portal's decision (e)). Through
+        // the portal it holds Vincent while the layer covers it (F4) and reports per mount.
         <Suspense fallback={null}>
-          <StreetBoundary>
-            <Street reduced={reduced} still={still} />
+          <StreetBoundary onFailed={portal?.onStreetFailed}>
+            <Street reduced={reduced} still={still} hold={place === 'entering'} onReady={portal?.onStreetReady} />
           </StreetBoundary>
         </Suspense>
       )}
       <Suspense fallback={null}>
+        {/* the diorama stays mounted while the street shows, hidden, so the way back draws it at once */}
         {!streetMode && debug !== 'flow' && (
-          <Diorama
-            debug={debug === 'stage' ? 'stage' : 'final'}
-            clock={skyClock}
-            alive={alive}
-            tuning={aliveTuning}
-            cypressReady={arrival ? refs.cypressReadyRef : undefined}
-            landReady={arrival ? refs.landReadyRef : undefined}
-            touch={landTouch}
-          />
+          <group visible={dioramaVisible(place)}>
+            <Diorama
+              debug={debug === 'stage' ? 'stage' : 'final'}
+              clock={skyClock}
+              alive={alive}
+              tuning={aliveTuning}
+              cypressReady={arrival ? refs.cypressReadyRef : undefined}
+              landReady={arrival ? refs.landReadyRef : undefined}
+              touch={landTouch}
+            />
+          </group>
         )}
         {debug !== 'stage' && !idsPass && (
           <PaintingFlowSky3D
@@ -343,7 +535,7 @@ function Scene({
             debug={debug === 'flow' ? 'flow' : 'final'}
             /* a stable module constant, so the sky's home quaternion memo holds across renders */
             home={streetMode ? skyHome : defaultCamera}
-            anchor={skyAnchor}
+            anchor={showStreet ? streetAnchor : undefined}
           />
         )}
       </Suspense>
@@ -370,11 +562,126 @@ function VincentsLine() {
   )
 }
 
-export function DioramaExperience({ clean = false, reduced = false, sky = 'light', still = false, alive = false, aliveTuning, touch = false, arrival = false, children }: Props) {
+/** The portal's seams for the checks: the place, the layer's opacity and the saved pose; enter and leave as the dock does. */
+type PortalWindow = Window & {
+  __portal?: () => { place: PortalPlace; on: boolean; layer: number; saved: Pose | null; pose: Pose | null }
+  __portalEnter?: () => void
+  __portalLeave?: () => void
+}
+
+export function DioramaExperience({ clean = false, reduced = false, sky = 'light', still = false, alive = false, aliveTuning, touch = false, arrival = false, portal = false, children }: Props) {
   const streetMode = useMemo(() => isStreetMode(typeof window !== 'undefined' ? window.location.search : ''), [])
   const effectiveArrival = !streetMode && arrival
   const [arrived, setArrived] = useState(false)
   const arriving = effectiveArrival && !arrived
+
+  // The portal (tasks/2026-10-25-street-portal-plan.md). `?street=1` opens in the street for the page's life, as before.
+  const portalFlag = portal && !streetMode
+  const [place, setPlace] = useState<PortalPlace>(streetMode ? 'street' : 'diorama')
+  const [portalFailed, setPortalFailed] = useState(false)
+  const portalOn = portalFlag && !portalFailed
+  const live = useRef({ place, still, arriving, portalOn })
+  useLayoutEffect(() => {
+    live.current = { place, still, arriving, portalOn }
+  }, [place, still, arriving, portalOn])
+  const controlsRef: ControlsRef = useRef(null)
+  const glRef = useRef<HTMLCanvasElement | null>(null)
+  const portalLayerRef = useRef<HTMLCanvasElement>(null)
+  const hintRef = useRef<HTMLDivElement>(null)
+  const drive = useRef<PortalDrive>({ seen: 'diorama', s: 0, from: PORTAL.flightEnd, t: 0, settled: 0, ok: null, sent: false })
+  const send = useCallback((event: PortalEvent) => {
+    setPlace((current) => portalStep(current, event, { still: live.current.still, arriving: live.current.arriving }))
+  }, [])
+  // a drawImage is synchronous, so the copy shows on the frame it is made (decision (d))
+  const copyToLayer = useCallback(() => {
+    const source = glRef.current
+    const layer = portalLayerRef.current
+    if (!source || !layer) return
+    if (layer.width !== source.width || layer.height !== source.height) {
+      layer.width = source.width
+      layer.height = source.height
+    }
+    layer.getContext('2d')?.drawImage(source, 0, 0)
+    layer.style.opacity = '1'
+    layer.style.visibility = 'visible'
+  }, [])
+  // a failed prefetch is not reported here: the lazy import tries again at the mount, and its boundary reports
+  const prefetch = useCallback(() => {
+    loadStreet().catch(noop)
+  }, [])
+  const enter = useCallback(() => {
+    const { place: current, still: cut, arriving: held, portalOn: on } = live.current
+    const controls = controlsRef.current
+    if (!on || !controls || portalStep(current, 'enter', { still: cut, arriving: held }) === current) return
+    controls.saveState()
+    const d = drive.current
+    d.from = {
+      position: [controls.object.position.x, controls.object.position.y, controls.object.position.z],
+      target: [controls.target.x, controls.target.y, controls.target.z],
+    }
+    d.s = 0
+    d.ok = null
+    // under reduced motion there is no flight: the layer takes the frame on screen now
+    if (cut) copyToLayer()
+    prefetch()
+    send('enter')
+  }, [copyToLayer, prefetch, send])
+  // the leave copies in the handler, before the place changes (decision (d))
+  const leave = useCallback(() => {
+    if (live.current.place !== 'street') return
+    copyToLayer()
+    send('leave')
+  }, [copyToLayer, send])
+  const onStreetReady = useCallback((ok: boolean) => {
+    drive.current.ok = ok
+  }, [])
+  const onStreetFailed = useCallback(() => {
+    drive.current.ok = false
+    setPortalFailed(true)
+  }, [])
+  const scenePortal = useMemo<ScenePortal | undefined>(
+    () =>
+      portalFlag
+        ? { on: portalOn, send, drive, controlsRef, layerRef: portalLayerRef, hintRef, enter, prefetch, copyToLayer, onStreetReady, onStreetFailed }
+        : undefined,
+    [portalFlag, portalOn, send, enter, prefetch, copyToLayer, onStreetReady, onStreetFailed],
+  )
+  const portalControl = useMemo<PortalControl | null>(() => (portalOn ? { place, enter, leave, prefetch } : null), [portalOn, place, enter, leave, prefetch])
+  // Escape in the street goes back, as the dock's control does (decision (j))
+  useEffect(() => {
+    if (!portalFlag || place !== 'street') return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') leave()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [portalFlag, place, leave])
+  useEffect(() => {
+    if (!portalFlag) return
+    const w = window as PortalWindow
+    w.__portal = () => {
+      const layer = portalLayerRef.current
+      const controls = controlsRef.current
+      return {
+        place: live.current.place,
+        on: live.current.portalOn,
+        layer: layer && layer.style.visibility === 'visible' ? Number(layer.style.opacity) : 0,
+        saved: controls
+          ? { position: [controls.position0.x, controls.position0.y, controls.position0.z], target: [controls.target0.x, controls.target0.y, controls.target0.z] }
+          : null,
+        pose: controls
+          ? { position: [controls.object.position.x, controls.object.position.y, controls.object.position.z], target: [controls.target.x, controls.target.y, controls.target.z] }
+          : null,
+      }
+    }
+    w.__portalEnter = enter
+    w.__portalLeave = leave
+    return () => {
+      delete w.__portal
+      delete w.__portalEnter
+      delete w.__portalLeave
+    }
+  }, [portalFlag, enter, leave])
   // reduced motion: the line is a static caption with its own life, gone on the first pointer or key (review F1)
   const [captionShown, setCaptionShown] = useState(effectiveArrival && still)
   const layerRef = useRef<HTMLDivElement>(null)
@@ -420,7 +727,14 @@ export function DioramaExperience({ clean = false, reduced = false, sky = 'light
       style={arrival ? ({ '--arrival-reveal': `${ARRIVAL.reveal}ms` } as CSSProperties) : undefined}
       onPointerDown={arriving && !still ? skip : undefined}
     >
-      <Canvas frameloop="always" dpr={[1, 1.5]} gl={{ preserveDrawingBuffer: true, antialias: true }}>
+      <Canvas
+        frameloop="always"
+        dpr={[1, 1.5]}
+        gl={{ preserveDrawingBuffer: true, antialias: true }}
+        onCreated={({ gl }) => {
+          glRef.current = gl.domElement
+        }}
+      >
         <Scene
           reduced={reduced}
           sky={sky}
@@ -443,8 +757,19 @@ export function DioramaExperience({ clean = false, reduced = false, sky = 'light
           scanReadyRef={scanReadyRef}
           skipRequestedRef={skipRequestedRef}
           arrivalStepRef={arrivalStepRef}
+          place={place}
+          portal={scenePortal}
+          hintRef={hintRef}
         />
       </Canvas>
+      {/* the portal's layer comes after R3F's canvas, so every script's first canvas is still the WebGL one (F6); it
+          stays after a failed chunk, since the return still fades through it */}
+      {portalFlag && <canvas className="portal-layer" ref={portalLayerRef} aria-hidden="true" />}
+      {portalOn && (
+        <div className="portal-hint" ref={hintRef} aria-hidden="true">
+          Enter the village
+        </div>
+      )}
       {/* the layer lives exactly as long as the arrival: mounted later (a reduced-motion toggle after the end) it
           would be a fresh opaque curtain with no driver to fade it (code review F11) */}
       {arriving && !still && (
@@ -474,7 +799,7 @@ export function DioramaExperience({ clean = false, reduced = false, sky = 'light
         </div>
       )}
       {readPerfMode() && <PerfReadout />}
-      {children}
+      <PortalContext.Provider value={portalControl}>{children}</PortalContext.Provider>
     </main>
   )
 }

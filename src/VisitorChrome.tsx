@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import type { SkyStyle } from './scene/PaintingFlowSky3D'
+import { PortalContext } from './scene/portalContext'
 
 function VisitorButton({
   active,
@@ -8,6 +9,7 @@ function VisitorButton({
   label,
   text,
   onClick,
+  onPrefetch,
 }: {
   active?: boolean
   disabled?: boolean
@@ -17,6 +19,8 @@ function VisitorButton({
   /** Visible pill text; defaults to `label`. Kept short so the dock stays bounded on a phone. */
   text?: string
   onClick: () => void
+  /** A pointer over the control or focus on it: the portal loads the street's chunk before the click. */
+  onPrefetch?: () => void
 }) {
   return (
     <button
@@ -26,6 +30,8 @@ function VisitorButton({
       aria-pressed={active}
       disabled={disabled}
       onClick={onClick}
+      onPointerEnter={onPrefetch}
+      onFocus={onPrefetch}
     >
       <span aria-hidden="true">{icon}</span>
       <span className="visitor-control-label">{text ?? label}</span>
@@ -60,6 +66,8 @@ export function VisitorChrome({
   sky = 'light',
   onToggleSky,
 }: Props) {
+  const portal = useContext(PortalContext)
+  const inStreet = portal?.place === 'street'
   const [fullscreen, setFullscreen] = useState(false)
   const fullscreenSupported = typeof document !== 'undefined' && Boolean(document.fullscreenEnabled)
   const motionPaused = reduced || visitorPaused
@@ -115,6 +123,16 @@ export function VisitorChrome({
         </aside>
       )}
       <nav className="visitor-dock" aria-label="Artwork controls">
+        {/* Disabled while the camera flies or the scenes swap: the control acts only in the diorama and the street */}
+        {portal && (
+          <VisitorButton
+            disabled={portal.place !== 'diorama' && !inStreet}
+            icon={inStreet ? '↩' : '⌂'}
+            label={inStreet ? 'Back to the painting' : 'Enter the village'}
+            onClick={inStreet ? portal.leave : portal.enter}
+            onPrefetch={inStreet ? undefined : portal.prefetch}
+          />
+        )}
         {/* Under system reduced motion the sky is the painted still, so the choice is disabled, like the
             pause button: removing it dropped keyboard focus to the page (review F8). The choice is kept. */}
         {onToggleSky && (
