@@ -53,3 +53,18 @@ On the framing branch, against its dev server on port 5204:
 ## Mark's look
 
 On his phone, the branch's dev server on port 5204, 2026-10-25: "It reads right on the phone, push it".
+
+## Codex's PR review
+
+PR #29, one finding, P2: with `?portal=1` on a portrait phone wider than aspect 0.45, the diorama drew the fitted lens
+but `PortalDriver` still got the fixed 88°. The flights to and from the street and the leaving frames used 88°, so the
+home jumped at each end of a flight. Fixed in the next commit: `lens` is one memo in `Scene`, the layout effect writes
+it on the diorama and the driver gets it. The camera element keeps the fixed default, for the street's reason above.
+
+Case 2b in `check-portal.mjs` records the phone's flight and the way back. Every flying, leaving and diorama frame must
+carry the fitted lens wherever the scene shows. Before the fix it failed on 196 frames (`gate/portal-red.log`). After
+it, ALL PASS (`gate/portal-f1.log`). The mutation that gives the driver the fixed default again fails it on 193
+frames (`gate/portal-f1-mutant.log`). One leaving frame stays off the fitted lens, with the layer at 1: the probe's
+own frame callback can sample `leaving` after React's commit and before the driver's first leaving frame writes the
+lens. The layer covers the whole screen there, so the case exempts only frames under the whole layer. `tsc -b` and
+`eslint .`: exit 0. `check-viewport-camera.mjs` and `check-reduced-motion.mjs`: PASS. `npm run test:sky`: 363 of 363.

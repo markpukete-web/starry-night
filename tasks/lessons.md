@@ -3210,4 +3210,7 @@ must be byte-identical before the stimulus's difference means anything.
 - **A lens prop reaches every camera user.** The street's walk writes its lens only when the orientation flips. A
   diorama lens on the camera element's prop, re-applied on every resize, would have reached the street on a resize
   that keeps the orientation. A per-place value belongs in an effect gated on the place.
-
+- **A probe on its own frame callback sees React's state before the frame loop acts on it.** Case 2b's recorder
+  samples `place` from a ref on `requestAnimationFrame`. It caught one `leaving` sample before the driver's first
+  leaving frame had written the lens. Filter such samples by what the visitor sees (the layer at 1), not by position
+  in the list, and prove the filter with a mutation that must still fail.
