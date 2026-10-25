@@ -1,7 +1,8 @@
 # The village's craft: design, 2026-10-25
 
 Status: draft for Mark. Nothing is built. Each decision is marked **Mark** (his words) or **Lead** (my call, open to
-him).
+him). The Consultant's builder check (`scratch/village-craft-2026-10-25/builder-check-consultant.md`, eleven questions,
+seven of them claims the code contradicted) is folded in: each answer is a Lead's call below.
 
 ## Why
 
@@ -33,7 +34,8 @@ stop 0 the village still reads as the painting's village.
 - New house types, interiors, doors that open.
 - Real-time lights or shadows. A lamp is painted light, as a lit window is.
 - The church. It passed in its own slice and keeps its door. The diorama's village is unchanged.
-- New motion, other than the glimmer the lit windows already have.
+- New motion. The street's lit windows are steady (only the diorama's village glimmers, `villageGlow.ts`), so the
+  lamps are steady too.
 
 ## Anti-goals (a failure even if every check passes)
 
@@ -54,11 +56,17 @@ stop 0 the village still reads as the painting's village.
   the scan at 1:1 (S1 Task 1, `SOURCE_STROKES` in `src/scene/streetStrokes.ts`). This slice may move a value inside its
   measured range. A value outside that range needs a new 1:1 measurement of the scan's village first. The measurement
   goes in the slice's record before the value is used.
-- **The palette gate (C5).** Walls, roofs, door frames, shutters, stone walls and the rail are measured against
-  `village`. Lamps are measured against `villageWarm`. The tolerance is the one in Tunables.
+- **The palette gate (C5).** **Lead:** the new parts ride the gate's existing ID classes, since all ten are taken
+  (`streetMaterial.ts:37-48`, `check-street-colour.ts:279-290`). Door frames, shutters, stone walls, the rail and the
+  posts ride the walls' class. A lamp's core rides the lit windows' class, measured against the `windowLit` source as
+  the lit windows are. The gate reports how far the new parts move the walls' mean.
+- **Parts the scan does not show.** Flat parts under the ink (shutter leaves, louvres, the rail, the posts, the frame
+  band) take no stroke scale: they are flat colours, and the ink keeps its measured `OUTLINE_FRACTION`. The stone
+  walls' dabs are strokes. They use an existing source's measured row, with the wall's own height as the reference.
 - **The triangle ceiling,** 1,444,930 at every pose. The constraint is the browser's count, not the unit test's
   budget. The walk's tightest point (desktop, `t` 0.295) has 431 to spare (`scratch/street-frogs-2026-10-25/t4/tri-sweep.log`).
-  So every triangle the craft adds in view at a pose is paid for at that pose.
+  The street is one mesh per layer (`Street.tsx:182-190`), and a layer draws whole once any of it is in view. So the
+  accounting is global: the craft's triangles may not exceed the triangles saved plus 431, read at that point.
 - **Frame rate** (locked): 60 fps desktop, 30 fps mid-tier phone, the devicePixelRatio caps in Tunables.
 - **Reduced motion** (locked): the lamps hold steady, as the lit windows do.
 - **The build.** The street builds under the last frame of the portal's flight. The craft must not lengthen the build
@@ -84,9 +92,9 @@ A ribbon costs about 100 triangles. My rough estimate for the craft is 15,000 tr
 replaces that estimate in the plan.
 
 **Lead:** the walls' strokes pay. Solid paint means a base that carries the colour, with fewer strokes on it. Each 0.1
-of the walls' cover (3.5 today) is worth about 5,000 triangles. If a lower cover over a stronger base reads as solid,
-one change meets both goals. If it does not, the next payers are, in order, the ground strokes outside the grass and
-the trees' strokes. The payer must be in view where the craft is. The houses' own walls meet that condition.
+of the houses' cover (3.5 today) is worth a little under 5,000 triangles, since the church keeps its own (below). If a
+lower cover over a stronger base reads as solid, one change meets both goals. If it does not, the next payers are, in
+order, the far ground at half density and the trees' strokes. Any street triangle can pay, since the count is global.
 
 ## What each part is
 
@@ -100,27 +108,34 @@ to try them:
 1. The base, today the source's mean, raised toward the strokes' lit mean.
 2. The walls' cover.
 3. The dry brush and the gaps of the stroke body on walls only. The land keeps E4's body unchanged.
-4. The stroke width, inside its measured 0.12–0.2 of the eave.
+4. The stroke width, inside each source's measured range (`wallA` and `wallB` 0.12–0.2 of the eave, `plaster`
+   0.1–0.15). No re-measurement in K1.
 5. The street's ambient light (0.4), only if the walls turned from the moon still read near-black after 1 to 4. That
    one is open from S1b's gate, so a change goes to Mark.
 
 The look passes find the values. The cap is four passes.
 
+**Lead:** the church keeps its paint. It passed in its own slice, and its walls are `kind: 'wall'` faces that knobs 1
+to 4 would reach, so the build gives it an owner-level exemption in `clad`. K1's gate shows it beside the new houses.
+If it then reads out of place, Mark decides whether it follows.
+
 ### Doors
 
 **Lead:** every house's front door gets the church's treatment (`recessedDoor` and `cladRound` in
 `src/scene/streetGeometry.ts`). The door is set 0.02 into the wall. Its jambs and lintel are in the recess's shadow, and
-a step sits at its foot. A frame band runs round the opening on the wall's face, 0.15 of the door's width wide. It is
-painted in the `plaster` source's paint on a dark wall, and the wall's own paint darkened on a pale wall, under the
-existing ink line.
+a step sits at its foot. A house's door takes the opening's ink (`FRAME`), not the church's wall-height ink, which is
+wider than a house's door can carry. A frame band runs round the opening on the wall's face, from the hole's edge out
+to 0.3 of the door's width, so about two thirds of it shows beyond the ink. It is painted in the `plaster` source's
+paint on a dark wall, and the wall's own paint darkened on a pale wall.
 
-The three cottages (L2, L5, R1) get the step and the frame, but no recess. Their door under the thatch stays as it is
+The four cottages (L2, L5, R1, R5) get the step and the frame, but no recess. Their door under the thatch stays as it is
 (S1b's C2, open since S1b). A recess under a thatch eave needs the thatch cut over the door, which is its own job.
 
 ### Shutters
 
 **Lead:** two open leaves beside each front window of every house and cottage. Each leaf is a flat panel the window's
-height and half its width, 0.003 proud of the wall. It is painted a muted blue-green from the `village` region, with
+height and half its width. It sits above the stroke stack and the window's pane (0.0055 off the face), and its ink and
+louvres sit above the leaf. The plan sets the levels. It is painted a muted blue-green from the `village` region, with
 one ink outline and three thin dark strokes across it for the louvres. A lit window keeps its shutters open, so the
 light shows.
 
@@ -133,13 +148,15 @@ has its own thickness and overhang, so it does not change.
 ### Low dry-stone walls
 
 **Lead:** three to five stretches along the lane's verges, where no house fronts the lane. Each stretch is 0.3–0.8
-long, 0.035–0.05 high and 0.03 thick. For scale, a door is about 0.11 high. The Lead places them by hand from captures,
+long, 0.05–0.06 high and 0.03 thick. For scale, a door is about 0.11 high. A wall's inner face stands at lateral 0.09 or
+more from the lane's centre, in the short grass inside 0.152, where blades reach about 0.035 (past it they reach 0.07
+and would bury the wall). It stays 0.03 or more clear of Vincent's walk line (lateral 0.03, out to 0.07 by stop 4). The Lead places them by hand from captures,
 as identity objects (the rule: authored assets for identity, procedural for fill).
 
 Each face is clad in short broad dabs, one per stone, over a darker base. Here the gaps are wanted: they read as the
 joints. The paint comes from a source picked from rendered candidates, as the thatch's was (S1b Task 2). The candidates
-are `wallB`, `plaster` and the hills' paint (`HILL_PAINT`). The grass is cleared under each wall, as it is under a
-house.
+are the existing sources `wallA`, `wallB` and `plaster`, so no new measurement is needed. The grass is cleared under
+each wall with the houses' margin (0.012).
 
 ### The wooden rail
 
@@ -149,10 +166,12 @@ house.
 ### Lamps
 
 **Lead:** about seven lanterns on short wooden posts at the lane's edge. They alternate sides, spaced so that one is
-always ahead in view on the walk. The last one stands at the square's edge by the church. A post is a dark ink stroke
+always ahead in view on the walk. A post keeps the stone walls' lateral rule: 0.03 or more clear of Vincent's line. The last one stands at the square's edge by the church. A post is a dark ink stroke
 about 1.2 doors high. The lantern is a small box with a warm core in the `windowLit` source's paint. Each lamp takes
-the lit windows' halo and ground pool (`LIFE.halo` and `LIFE.pool` in `src/scene/streetLife.ts`), so lamps and windows
-read as one kind of light. It glimmers as the lit windows do, and holds steady under reduced motion.
+the lit windows' halo and ground pool sizes (`LIFE.halo` and `LIFE.pool` in `src/scene/streetLife.ts`), so lamps and
+windows read as one kind of light. A window's halo is a plane turned to its wall's normal. A post has no wall, so a
+lamp's halo is a billboard that faces the camera, and its pool is centred on the post's foot. Lamps get their own list
+and meshes, not the windows' path. They are steady, as the windows are.
 
 The alternative was lanterns on house walls by the doors. That leaves the lane dark between houses, so the lamps
 would not lead the walk.
@@ -186,5 +205,6 @@ order of the knob trials inside a pass. The test seams.
 ## Open for Mark at the gates, not now
 
 - Lamps on posts, or on the house walls.
+- The church's paint, if it reads out of place beside the new houses.
 - The shutters' colour.
 - The ambient light, if solid paint needs it.
