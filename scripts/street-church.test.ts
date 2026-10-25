@@ -174,3 +174,52 @@ test('the faces no pose sees are thinned, and only they', () => {
     assert.equal(f.density, hidden ? CHURCH.thin : 1, `${f.owner} ${f.name} clad at ${f.density}`)
   }
 })
+
+test('the door is set into the wall', () => {
+  const door = build.report.church.door
+  assert.ok(door, 'the church reports its door')
+  const { origin, normal } = door.plane
+  const depth = (p: Vector3) => p.clone().sub(origin).dot(normal)
+  for (const p of door.panel) assert.ok(Math.abs(depth(p) + CHURCH.recess) < 1e-9, `the panel at ${depth(p).toFixed(4)}`)
+  for (const quad of [...door.jambs, door.lintel]) {
+    const depths = quad.map(depth)
+    assert.ok(Math.abs(Math.max(...depths)) < 1e-9 && Math.abs(Math.min(...depths) + CHURCH.recess) < 1e-9, 'a reveal spans the wall to the panel')
+  }
+  // the hole: no face of the front wall covers the door's centre, and the three faces hold the wall less the door
+  const front = churchFaces.filter((f) => f.owner === 'church' && f.name.startsWith('front ') && f.name !== 'front gable')
+  assert.equal(front.length, 3)
+  const centre = door.panel.reduce((s, p) => s.add(p), new Vector3()).divideScalar(4).addScaledVector(normal, CHURCH.recess)
+  const area = (c: Vector3[]) => c[1].clone().sub(c[0]).cross(c[3].clone().sub(c[0])).length()
+  for (const f of front) {
+    const [a, b, , d] = f.corners
+    const [u, v] = [b.clone().sub(a), d.clone().sub(a)]
+    const s = centre.clone().sub(a).dot(u) / u.lengthSq()
+    const t = centre.clone().sub(a).dot(v) / v.lengthSq()
+    assert.ok(!(s > 0 && s < 1 && t > 0 && t < 1), `${f.name} covers the door`)
+  }
+  const wall = nave.w * nave.eave
+  const hole = area(door.panel)
+  assert.ok(Math.abs(front.reduce((s, f) => s + area(f.corners), 0) - (wall - hole)) < 1e-9)
+})
+
+test("the step stands at the door's foot", () => {
+  const door = build.report.church.door!
+  const { origin, normal } = door.plane
+  const points = door.step.flat()
+  const top = Math.max(...points.map((p) => p.y))
+  const out = Math.max(...points.map((p) => p.clone().sub(origin).dot(normal)))
+  assert.ok(top > 0 && top <= 0.015, `the step's top at ${top}`)
+  assert.ok(out >= 0.02 && out <= 0.04, `the step's front ${out} beyond the wall`)
+  assert.ok(Math.abs(door.panel[0].distanceTo(door.panel[1]) - door.step[0][0].distanceTo(door.step[0][1])) < 1e-9, "the step is the door's width")
+})
+
+test('the long side has three windows', () => {
+  const windows = build.report.church.windows
+  assert.ok(windows && windows.length === 3)
+  const sorted = [...windows].sort((a, b) => a.cu - b.cu)
+  for (let i = 0; i < 3; i++) {
+    const w = sorted[i]
+    assert.ok(w.cv - w.h / 2 >= 0.25 && w.cv + w.h / 2 <= 0.85, `window ${i} spans ${w.cv - w.h / 2} to ${w.cv + w.h / 2} of the eave`)
+    if (i > 0) assert.ok(sorted[i - 1].cu + sorted[i - 1].w / 2 < w.cu - w.w / 2, `windows ${i - 1} and ${i} overlap`)
+  }
+})

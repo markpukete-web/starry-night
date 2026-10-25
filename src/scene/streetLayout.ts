@@ -223,6 +223,10 @@ export const CHURCH = {
   setback: 0.02,
   /** the church's brush: every face's `refHeight`, against the nave's eave 0.24 */
   stroke: 0.16,
+  /** the door's depth into the front wall (the church plan (e)) */
+  recess: 0.02,
+  /** the +along side's windows, their centres across the wall */
+  windows: [0.25, 0.5, 0.75],
   /** the density of the faces no pose sees (the face probe, `scripts/street-church.test.ts`), kept for the portal */
   thin: 0.25,
   hidden: [
