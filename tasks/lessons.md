@@ -3097,3 +3097,7 @@ must be byte-identical before the stimulus's difference means anything.
   fan's lean was signed at random and the curl followed the clump's side. Leaning the whole clump toward its side
   (`leanToSide` 0.35, `fan` 0.5 → 0.3, `turn` 0.5 → 0.3, `GRASS_LIGHT.top` 0.6 → 0.75, `edge` 1) laid the clumps
   over in low arcs (S3b look pass 1).
+- **A colour mixed in the vertex shader cannot be shaped across a two-column ribbon.** The moon's edge ramp ran linearly
+  over the blade's whole width. The mix moved to the fragment, before the stroke body, on `vStroke.y` (S3b look pass 2).
+- **Draw the weight in a loud colour before you tune its strength.** Pass 2's light was invisible. One capture with the
+  weight drawn in red showed it on the right place and at most 0.65 strong, so pass 3 tuned the strength, not the place.

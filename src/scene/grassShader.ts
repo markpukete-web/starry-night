@@ -19,6 +19,17 @@ import { material } from './streetMaterial.ts'
  */
 export const GRASS_STROKE_BODY: StrokeBody = { ...CYPRESS_STROKE_BODY, gaps: null, dryFrom: 0.85, fray: 0.08 }
 
+const MOON_VARYINGS = 'varying vec3 vTopColour;\nvarying float vMoon;\nvarying float vMoonSide;'
+
+/**
+ * The moon's colour, before the stroke body so the bristles shade it. `vStroke.y` is 0 at across −1, and the outer edge
+ * has across of the curl's opposite sign (`bladeMoonFacing`'s derivation).
+ */
+const MOON_FRAGMENT = `
+float moonOuter = vMoonSide > 0.0 ? 1.0 - vStroke.y : vStroke.y;
+diffuseColor.rgb = mix(diffuseColor.rgb, vTopColour, vMoon * smoothstep(${(1 - GRASS_LIGHT.edge).toFixed(6)}, 1.0, moonOuter));
+`
+
 /** `grassBladeVertex`'s arguments in the shader. `grassMoonFacing` takes the same text, so both read one blade (Codex R7). */
 export const GRASS_BLADE_ARGS = 'root, position.y, position.x, aHeight, aHalfWidth, aLean, aCurl, aYaw, right, widen'
 
@@ -36,11 +47,15 @@ export function grassInjection(
   const moonHead = lit ? `
 attribute vec3 aTopColour;
 uniform vec3 uMoon;
+${MOON_VARYINGS}
 ${GRASS_MOON_GLSL}` : ''
+  // the colour is mixed in the fragment (\`MOON_FRAGMENT\`), which shapes it across the blade's two columns
   const moonColour = lit ? `
-// the outer edge has across of the curl's opposite sign (\`bladeMoonFacing\`'s derivation)
-float moonEdge = mix(1.0, 0.5 - 0.5 * sign(aCurl) * sign(position.x), ${L.edge.toFixed(6)});
-vColor.rgb = mix(vColor.rgb * ${L.ambient.toFixed(6)}, aTopColour, ${L.top.toFixed(6)} * grassMoonFacing(${GRASS_BLADE_ARGS}, uMoon) * moonEdge * smoothstep(${L.from.toFixed(6)}, 1.0, position.y));` : ''
+float moonFacing = grassMoonFacing(${GRASS_BLADE_ARGS}, uMoon);
+vColor.rgb *= ${L.ambient.toFixed(6)};
+vTopColour = aTopColour;
+vMoon = ${L.top.toFixed(6)} * smoothstep(${L.facing[0].toFixed(6)}, ${L.facing[1].toFixed(6)}, moonFacing) * smoothstep(${L.from.toFixed(6)}, 1.0, position.y);
+vMoonSide = sign(aCurl);` : ''
   return {
     uniforms: {
       uTrailMap: { value: trailTexture },
@@ -118,8 +133,11 @@ export function buildGrassMaterial(
   ids: boolean,
   lit: boolean,
 ): MeshBasicMaterial {
-  const strokeBody = strokeGlslWith(GRASS_STROKE_BODY)
+  const stroke = strokeGlslWith(GRASS_STROKE_BODY)
   const moon = lit && !ids
+  const strokeBody = moon
+    ? { ...stroke, fragmentHead: `${stroke.fragmentHead}\n${MOON_VARYINGS}`, fragmentBody: MOON_FRAGMENT + stroke.fragmentBody }
+    : stroke
   const injection = grassInjection(trailTexture, trailRect, moon)
   return material(
     moon ? 'street-grass-moon' : 'street-grass',
