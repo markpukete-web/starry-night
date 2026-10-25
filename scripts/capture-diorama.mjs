@@ -305,6 +305,9 @@ async function main() {
         ['mobile-viewport-final', `${base}&debug=final&perf=1`, mobile],
       ]) {
         const { page } = await newPage(port, url, viewport, errors)
+        // DIORAMA_CAPTURE_EVAL: an expression awaited before the wait, so the 600 frames read come after it (the portal's
+        // street, entered through the village, tasks/2026-10-25-street-portal.md Task 8)
+        if (process.env.DIORAMA_CAPTURE_EVAL) await page.send('Runtime.evaluate', { expression: process.env.DIORAMA_CAPTURE_EVAL, awaitPromise: true })
         await sleep(10000)
         metrics.push({ name, url, viewport, metrics: await readPerf(page) })
         await page.close()
