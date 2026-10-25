@@ -42,6 +42,11 @@ export const ARRIVAL = {
   maxDt: 0.1,
   /** how long the opening waits for the scene before it opens anyway: a failed asset cannot hold the curtain (review F5) */
   readyTimeout: 15,
+  /**
+   * the loading curtain (tasks/2026-10-25-loading-curtain-plan.md (d)): the hold counts from the painting's
+   * appearance, but this much of it is left once the scene is ready, at least the line's whole fade
+   */
+  afterReady: 1.5,
   /** milliseconds: the title and the dock fade in once the arrival is done (CSS reads it as `--arrival-reveal`) */
   reveal: 600,
 }
@@ -142,8 +147,10 @@ export type ArrivalInputs = {
   dt: number
   /** the scene can be revealed: the sky's ribbons, the cypress and the scan are all there */
   ready: boolean
-  /** a tap, click or key has asked to move on */
+  /** a tap, click or key has asked to move on: the clock runs faster once the scene is ready */
   skipRequested: boolean
+  /** the painting is on screen, so the wait counts toward the hold */
+  shown?: boolean
   /** a capture's pin: an absolute time, taken as is */
   pinned?: number
   /** system reduced motion: the end state at once, no wait */
@@ -151,13 +158,19 @@ export type ArrivalInputs = {
 }
 
 /**
- * The arrival clock. It waits for the scene with `a` at 0 (the layer opaque), opens anyway after `readyTimeout`
- * or on a skip, accepts at most `maxDt` per frame, runs `skipSpeed` times faster after a skip, and latches at the
- * end. A pin is absolute: a capture's pins go up only, and a lower pin reads as the caller's error.
+ * The arrival clock. It waits for the scene with `a` at 0 (the layer opaque) and opens anyway after `readyTimeout`.
+ * The time the painting was shown while it waited counts toward the hold, up to `hold − afterReady`. It accepts at
+ * most `maxDt` per frame, runs `skipSpeed` times faster after a skip once the scene is ready (a skip does not end the
+ * wait: the curtain says the scene is loading), and latches at the end. A pin is absolute: a capture's pins go up
+ * only, and a lower pin reads as the caller's error.
  */
 export class ArrivalClock {
   a = 0
   waited = 0
+  /** the seconds of the wait with the painting on screen */
+  seen = 0
+  /** true while it holds for the scene */
+  waiting = true
   done = false
   /**
    * The sky's advance this frame: the rate times the bounded delta while the arrival runs, including the frame that
@@ -166,20 +179,25 @@ export class ArrivalClock {
    * jump the sky by the whole gap (Codex, code review F12).
    */
   step: number | null = 0
-  tick({ dt, ready, skipRequested, pinned, reduced = false }: ArrivalInputs): number {
+  tick({ dt, ready, skipRequested, shown = false, pinned, reduced = false }: ArrivalInputs): number {
     if (this.done) {
       this.step = null
       return this.a
     }
     const bounded = boundedDt(dt)
     if (typeof pinned === 'number' && Number.isFinite(pinned)) {
+      this.waiting = false
       this.a = pinned
     } else {
-      if (!reduced && !ready && !skipRequested && this.waited < ARRIVAL.readyTimeout) {
+      if (!reduced && !ready && this.waited < ARRIVAL.readyTimeout) {
         this.waited += bounded
+        if (shown) this.seen += bounded
         this.step = 0
         return this.a
       }
+      // the first frame out of the wait: nothing in the frame changes before `hold − lineFade`, so the credit is unseen
+      if (this.waiting) this.a = Math.min(this.seen, ARRIVAL.hold - ARRIVAL.afterReady)
+      this.waiting = false
       this.a += bounded * (skipRequested ? ARRIVAL.skipSpeed : 1)
     }
     const frame = arrivalFrame(this.a, reduced)

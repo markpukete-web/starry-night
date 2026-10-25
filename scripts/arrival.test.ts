@@ -147,9 +147,12 @@ test('A8 the clock: waits for the scene, bounds a frame, skips within 1.1 s, ope
     }
     assert.ok(sinceSkip <= 1.1 + 1 / 60, `skip at ${skipAt}: ${sinceSkip.toFixed(3)} s`)
   }
-  // not ready, but a skip: opens
+  // not ready, but a skip: still waits for the scene (the loading curtain, decision (e)), then runs at the skip's speed
   const skippedWait = new ArrivalClock()
-  assert.ok(skippedWait.tick({ dt: 1 / 60, ready: false, skipRequested: true }) > 0)
+  for (let i = 0; i < 300; i++) assert.equal(skippedWait.tick({ dt: 1 / 60, ready: false, skipRequested: true }), 0)
+  assert.equal(skippedWait.waiting, true)
+  assert.ok(Math.abs(skippedWait.tick({ dt: 1 / 60, ready: true, skipRequested: true }) - ARRIVAL.skipSpeed / 60) < 1e-12)
+  assert.equal(skippedWait.waiting, false)
   // not ready for readyTimeout: opens
   const timedOut = new ArrivalClock()
   let a = 0
@@ -165,6 +168,42 @@ test('A8 the clock: waits for the scene, bounds a frame, skips within 1.1 s, ope
   while (!finished.done) finished.tick({ dt: 0.1, ...live })
   const end = finished.a
   for (let i = 0; i < 10; i++) assert.equal(finished.tick({ dt: 0.1, ...live }), end)
+})
+
+test('A11 the loading curtain: the hold counts from the painting, with afterReady left once the scene is ready', () => {
+  const cap = ARRIVAL.hold - ARRIVAL.afterReady
+  const waitThenReady = (seconds: number, shown: boolean) => {
+    const clock = new ArrivalClock()
+    for (let t = 0; t < seconds - 1e-9; t += 0.05) assert.equal(clock.tick({ dt: 0.05, ready: false, skipRequested: false, shown }), 0)
+    return { clock, a: clock.tick({ dt: 1 / 60, ready: true, skipRequested: false, shown }) }
+  }
+  // a long wait with the painting up: the credit is capped, so afterReady of the hold is left and the line is still whole
+  const long = waitThenReady(6, true)
+  assert.ok(Math.abs(long.a - (cap + 1 / 60)) < 1e-9, `a after a long wait ${long.a}`)
+  assert.equal(arrivalFrame(long.a).line, 1)
+  assert.ok(ARRIVAL.afterReady >= ARRIVAL.lineFade, 'the line keeps its whole fade')
+  // a short wait: the whole credit, no cap
+  const short = waitThenReady(0.4, true)
+  assert.ok(Math.abs(short.a - (0.4 + 1 / 60)) < 1e-6, `a after a short wait ${short.a}`)
+  // the painting not yet shown: no credit
+  const unseen = waitThenReady(6, false)
+  assert.ok(Math.abs(unseen.a - 1 / 60) < 1e-12, `a with no painting ${unseen.a}`)
+  // the credit never shows: every frame up to the cap is the first frame
+  for (const a of GRID.filter((t) => t <= cap)) assert.deepEqual(arrivalFrame(a), arrivalFrame(0), `frame at ${a}`)
+  // waiting is the clock's own state: true while it holds for the scene, false after
+  assert.equal(long.clock.waiting, false)
+  const held = new ArrivalClock()
+  held.tick({ dt: 1 / 60, ready: false, skipRequested: false, shown: true })
+  assert.equal(held.waiting, true)
+  // the timeout still opens, with the same capped credit
+  const timedOut = new ArrivalClock()
+  let opened = 0
+  for (let t = 0; t <= ARRIVAL.readyTimeout + 0.05; t += 0.05) opened = timedOut.tick({ dt: 0.05, ready: false, skipRequested: false, shown: true })
+  assert.ok(opened > cap && opened <= cap + 0.05 + 1e-9, `a at the timeout ${opened}`)
+  // a pin never waits
+  const pinned = new ArrivalClock()
+  pinned.tick({ dt: 1 / 60, ready: false, skipRequested: false, pinned: 1 })
+  assert.equal(pinned.waiting, false)
 })
 
 test('A10 the sky step: held, then the rate times the bounded delta, kept through the frame that ends it, then null', () => {
