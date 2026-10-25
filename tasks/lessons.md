@@ -3112,3 +3112,11 @@ must be byte-identical before the stimulus's difference means anything.
   `top` 1.0, `topShare` 0.02).
 - **zsh reads `$V:c` in a string as a modifier.** `"colour/full-s$S-$V:colour/ids-s$S-$V"` lost a character, so the
   unlit look lines never reached `look.txt` and nothing failed. Brace every variable next to a colon: `${V}:`.
+- **Test a morphology helper on a mask with an edge.** `grass-look.ts` grew the zeros and shrank the ones, and its only
+  tests used masks that were all ones or all zeros. Every look figure in S3b's Task 3 measured the blades alone. One test
+  with a single pixel in a field would have shown it (Codex B1).
+- **`tsc --noEmit -p .` checks nothing in this repo.** The root `tsconfig.json` only references the others, so a
+  backtick that ended a GLSL template string passed it. Use `npx tsc -b`.
+- **A hash test that only says "differs" protects nothing.** The lit program's test required its text to differ from
+  the unlit one, so a mutant that inverted the moon's edge passed. Pin the behaviour: evaluate the compiled expression
+  against what the geometry says (Codex B3).
