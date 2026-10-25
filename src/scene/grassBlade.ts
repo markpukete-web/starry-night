@@ -58,13 +58,14 @@ export const GRASS_BLADE = {
 
 /**
  * The street's moon on the blade (S3b task 1). The painting's bush strokes are lit along their outer arch: a pale
- * grey-green edge on a dark body. A blade takes its top colour where its arch faces `STREET_MOON`, from `from` along it
- * to the tip, at most `top` of the way, the facing eased through `facing`. `ambient` scales the pigment. The top colour
+ * grey-green edge on a dark body. A blade takes its top colour where its arch faces `STREET_MOON`, the facing eased
+ * through `facing` and the length through `along`, at most `top` of the way. `ambient` scales the pigment. The top colour
  * is one of the lightest `topShare` of the bushes' texels that `grassTopUsable` keeps. The light reaches `edge` of the
- * blade's width in from its outer edge (S3b look passes 1 and 2: the whole width read as a grey veil, and a ramp across
- * the whole width as a dim one).
+ * blade's width in from its outer edge, at full strength over the outer half of that (S3b look passes 1–4: the whole
+ * width read as a grey veil, a ramp across it as a dim one, and the band's strongest part fell where the stroke's edge
+ * is cut away). The facing's narrow range lights the arches that face the moon best, not every arch top.
  */
-export const GRASS_LIGHT = { ambient: 1.0, top: 0.95, from: 0.4, topShare: 0.02, edge: 0.5, facing: [0.25, 0.8] } as const
+export const GRASS_LIGHT = { ambient: 1.0, top: 1.0, along: [0.2, 0.5], topShare: 0.02, edge: 0.5, facing: [0.55, 0.75] } as const
 
 export type BladeSpec = {
   x: number

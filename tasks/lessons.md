@@ -3101,3 +3101,12 @@ must be byte-identical before the stimulus's difference means anything.
   over the blade's whole width. The mix moved to the fragment, before the stroke body, on `vStroke.y` (S3b look pass 2).
 - **Draw the weight in a loud colour before you tune its strength.** Pass 2's light was invisible. One capture with the
   weight drawn in red showed it on the right place and at most 0.65 strong, so pass 3 tuned the strength, not the place.
+- **A light band at a stroke's edge falls where the alpha test cuts the stroke.** Pass 3's light was strongest at the
+  outer edge, and that edge is the part of the shaped stroke that is discarded. Reach full strength inside the band
+  (S3b look pass 4).
+- **Ramps that multiply leave the light under half.** The facing, the length and the width each eased from 0 to 1, and
+  their product rarely passed 0.5. Measure what the change adds, lit against unlit, before you raise any one of them:
+  pass 3 raised `top` and moved nothing.
+- **Probe the last pass's values before you spend it.** Four throwaway captures at two stops (A–D) bracketed the
+  painting's L > 60 share. Pass 4 then took one value (S3b: `facing` [0.55, 0.75], `edge` 0.5, `along` [0.2, 0.5],
+  `top` 1.0, `topShare` 0.02).

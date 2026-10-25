@@ -27,7 +27,7 @@ const MOON_VARYINGS = 'varying vec3 vTopColour;\nvarying float vMoon;\nvarying f
  */
 const MOON_FRAGMENT = `
 float moonOuter = vMoonSide > 0.0 ? 1.0 - vStroke.y : vStroke.y;
-diffuseColor.rgb = mix(diffuseColor.rgb, vTopColour, vMoon * smoothstep(${(1 - GRASS_LIGHT.edge).toFixed(6)}, 1.0, moonOuter));
+diffuseColor.rgb = mix(diffuseColor.rgb, vTopColour, vMoon * smoothstep(${(1 - GRASS_LIGHT.edge).toFixed(6)}, ${(1 - 0.5 * GRASS_LIGHT.edge).toFixed(6)}, moonOuter));
 `
 
 /** `grassBladeVertex`'s arguments in the shader. `grassMoonFacing` takes the same text, so both read one blade (Codex R7). */
@@ -54,7 +54,7 @@ ${GRASS_MOON_GLSL}` : ''
 float moonFacing = grassMoonFacing(${GRASS_BLADE_ARGS}, uMoon);
 vColor.rgb *= ${L.ambient.toFixed(6)};
 vTopColour = aTopColour;
-vMoon = ${L.top.toFixed(6)} * smoothstep(${L.facing[0].toFixed(6)}, ${L.facing[1].toFixed(6)}, moonFacing) * smoothstep(${L.from.toFixed(6)}, 1.0, position.y);
+vMoon = ${L.top.toFixed(6)} * smoothstep(${L.facing[0].toFixed(6)}, ${L.facing[1].toFixed(6)}, moonFacing) * smoothstep(${L.along[0].toFixed(6)}, ${L.along[1].toFixed(6)}, position.y);
 vMoonSide = sign(aCurl);` : ''
   return {
     uniforms: {
