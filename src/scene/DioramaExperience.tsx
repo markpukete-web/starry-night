@@ -459,15 +459,16 @@ function Scene({
   const { size, camera } = useThree()
   const isPortrait = size.height > size.width
   const defaultCamera = isPortrait && view === 'design' ? DIORAMA_CAMERAS.mobile : DIORAMA_CAMERAS[view]
-  // the portrait lens follows the canvas's aspect (`portraitFov`), on the diorama only: the street's walk and the
-  // portal's flights own the lens while they run, and the walk writes it only when the orientation flips
+  // the home's lens: the portrait one follows the canvas's aspect (`portraitFov`). The diorama writes it here and the
+  // portal's flights write it as they run (Codex PR #29 P2). The camera element keeps the fixed default, since the
+  // street's walk writes its own lens only when the orientation flips and a prop re-applied on resize would reach it
+  const lens = useMemo(
+    () => (isPortrait && view === 'design' ? { ...defaultCamera, fov: portraitFov(size.width / size.height) } : defaultCamera),
+    [defaultCamera, isPortrait, view, size.width, size.height],
+  )
   useLayoutEffect(() => {
-    if (!isPortrait || view !== 'design' || place !== 'diorama') return
-    const persp = camera as PerspectiveCameraImpl
-    // eslint-disable-next-line react-hooks/immutability -- the R3F camera's lens is set imperatively, as the portal sets it
-    persp.fov = portraitFov(size.width / size.height)
-    persp.updateProjectionMatrix()
-  }, [camera, isPortrait, view, place, size.width, size.height])
+    if (place === 'diorama') writeLens(camera, lens)
+  }, [camera, lens, place])
   const skyHome = isPortrait ? DIORAMA_CAMERAS.mobile : DIORAMA_CAMERAS.design
 
 
@@ -528,7 +529,7 @@ function Scene({
       )}
       {measurePerformance && <PerfProbe />}
       {!streetMode && arrival && <ArrivalDriver home={defaultCamera} reduced={still} onDone={onArrived} {...refs} />}
-      {portal && <PortalDriver place={place} still={still} lens={defaultCamera} portal={portal} />}
+      {portal && <PortalDriver place={place} still={still} lens={lens} portal={portal} />}
       {showStreet && (
         // the street places the camera at its station itself, in its own chunk (the main bundle carries no layout); its
         // own Suspense, so a chunk still loading never hides the sky or the diorama (the portal's decision (e)). Through
