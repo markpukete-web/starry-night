@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { PerspectiveCamera } from 'three'
-import { ARRIVAL, ARRIVAL_END, ARRIVAL_START_INSIDE_ORBIT, ArrivalClock, arrivalCamera, arrivalFrame, boundedDt } from '../src/scene/arrival.ts'
+import { ARRIVAL, ARRIVAL_CUE, ARRIVAL_END, ARRIVAL_START_INSIDE_ORBIT, ArrivalClock, VINCENTS_CITE, VINCENTS_LINE, arrivalCamera, arrivalFrame, boundedDt } from '../src/scene/arrival.ts'
 import { DIORAMA_CAMERAS, DIORAMA_ORBIT } from '../src/scene/dioramaContract.ts'
 import { homeInverseQuaternion } from '../src/scene/dioramaSkyProjection.ts'
 
@@ -204,6 +205,13 @@ test('A11 the loading curtain: the hold counts from the painting, with afterRead
   const pinned = new ArrivalClock()
   pinned.tick({ dt: 1 / 60, ready: false, skipRequested: false, pinned: 1 })
   assert.equal(pinned.waiting, false)
+})
+
+test('A12 the loading curtain in index.html carries the opening\'s words, so the hand-over does not change them', () => {
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8')
+  const boot = html.slice(html.indexOf('id="boot"'), html.indexOf('</div>', html.indexOf('id="boot"')))
+  assert.ok(boot.length > 0, 'index.html has #boot')
+  for (const words of [VINCENTS_LINE, VINCENTS_CITE, ARRIVAL_CUE]) assert.ok(boot.includes(`>${words}</p>`), `#boot lacks: ${words}`)
 })
 
 test('A10 the sky step: held, then the rate times the bounded delta, kept through the frame that ends it, then null', () => {

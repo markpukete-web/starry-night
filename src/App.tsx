@@ -11,6 +11,7 @@ import { ALIVE_DEFAULTS, ALIVE_KNOBS, clampAliveKnob, hasAliveKnobs, readAliveTu
 import { tuned } from './scene/tuning'
 import { AliveTuner } from './AliveTuner'
 import { arrivedThisSession } from './scene/arrival'
+import { dropBootCurtainUnlessKept } from './bootCurtain'
 import { isStreetMode } from './scene/streetEntry'
 import { ReliefExperience } from './scene/ReliefExperience'
 import { VisitorChrome } from './VisitorChrome'
@@ -45,6 +46,8 @@ function usePrefersReducedMotion() {
 
 export default function App() {
   const reduced = usePrefersReducedMotion()
+  // the loading curtain: a page that does not play the opening drops it on its first commit (`src/bootCurtain.ts`)
+  useEffect(() => dropBootCurtainUnlessKept(), [])
   const [visitorPaused, setVisitorPaused] = useState(false)
   const [showOriginal, setShowOriginal] = useState(false)
   // The visitor's sky: moving strokes by default (Mark, 2026-10-20: "switch the default painting when user join to

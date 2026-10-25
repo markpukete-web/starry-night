@@ -51,6 +51,18 @@ export const ARRIVAL = {
   reveal: 600,
 }
 
+/**
+ * The opening's words, in one place: React's layer renders them and `index.html`'s `#boot` copies them, so the curtain
+ * reads the same before and after the code arrives (`scripts/arrival.test.ts` finds them in `#boot`).
+ */
+export const VINCENTS_LINE =
+  '“This morning, long before sunrise, I looked out at the countryside from my window, with nothing but the morning star, which seemed very large.”'
+export const VINCENTS_CITE = 'Vincent to Theo, Saint-Rémy, June 1889 · letter 777'
+/** the loading cue under the citation, shown while the opening waits for the scene */
+export const ARRIVAL_CUE = 'Painting the night sky…'
+/** clock seconds over which the cue fades once the opening stops waiting */
+export const CUE_FADE = 0.5
+
 export type ArrivalFrame = {
   /** the scan's opacity */
   overlay: number
