@@ -180,20 +180,21 @@ class CdpPage {
   }
 }
 
-function getVerge3DPoint() {
-  const [px, , pz] = pathPoint(0.12)
-  const [tx, , tz] = pathTangent(0.12)
+/** S3's verge point by default, `laneAt(0.12, 0.15)`: 0.29 along the lane from stop 0's camera, 0.15 to the right */
+function getVerge3DPoint(t = 0.12, lat = 0.15) {
+  const [px, , pz] = pathPoint(t)
+  const [tx, , tz] = pathTangent(t)
   const len = Math.hypot(tx, tz)
   const utx = tx / len
   const utz = tz / len
-  const x = px + 0.15 * (-utz)
-  const z = pz + 0.15 * utx
+  const x = px + lat * (-utz)
+  const z = pz + lat * utx
   const y = GRASS_BLADE.height / 2
   return [x, y, z]
 }
 
-async function getVergeClientPoint(page) {
-  const vergePoint = getVerge3DPoint()
+async function getVergeClientPoint(page, t, lat) {
+  const vergePoint = getVerge3DPoint(t, lat)
   return await page.evaluate((pt) => {
     return window.__walkProject(window.__streetWalk?.t ?? 0, pt)
   }, vergePoint)
@@ -1031,8 +1032,14 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
     // where the moon lights the tips: within 80 px of the hand, the pixels it brightens by more than 5 L* number at least
     // 0.85 of the unlit page's, where the grass runs main's program. Measured: lit 1,369 against unlit 1,361 (1.01), and
     // 891 (0.65) with the lift off in the lit program. The disc's mean L* does not separate them: main's moves by 0.55.
+    // K2 (2026-10-27) moved this case's point out to lateral 0.32: S3's point is 0.063 from lamp 1's foot, inside its
+    // pool, where a bent blade over the pale ground darkens the pixel, and the count fell to 0.74 with the lift still
+    // showing (0.57 without it). At 0.32 the lane changes nothing: 1,039 lit against 935 unlit (1.11), K1 1,039 against
+    // 941 (1.10), 524 (0.56) with the lift off. The other cases keep S3's point: they read the hit and the push, not the
+    // sign of the light.
     // -------------------------------------------------------------
     if (shouldRun(15)) {
+      const VERGE_15 = { t: 0.12, lat: 0.32 }
       const lin = (v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)
       const lightnessAt = (img, i) => {
         const Y = 0.2126 * lin(img.rgba[i] / 255) + 0.7152 * lin(img.rgba[i + 1] / 255) + 0.0722 * lin(img.rgba[i + 2] / 255)
@@ -1048,7 +1055,7 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
           window.__grassHand(null)
         })
         await sleep(300)
-        const [vx15, vy15] = await getVergeClientPoint(page)
+        const [vx15, vy15] = await getVergeClientPoint(page, VERGE_15.t, VERGE_15.lat)
         const before = await shot()
         await page.evaluate(([x, y]) => window.__grassHand(x, y), [vx15, vy15])
         let peak15 = 0
