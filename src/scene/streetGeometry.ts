@@ -1,5 +1,5 @@
 import { Color, SRGBColorSpace, Vector3 } from 'three'
-import { mulberry32 } from './brush.ts'
+import { mulberry32, sampleColour } from './brush.ts'
 import { makeBrushArrays, moonShade, type BrushArrays } from './brushForms.ts'
 import { bladeTemplate, bladeVertex, clump, GRASS_BLADE } from './grassBlade.ts'
 import { GRASS, inFootprint } from './streetGrass.ts'
@@ -8,8 +8,8 @@ import { buildLandTrees, type BakedMass, type LandTrees } from './landDomes.ts'
 import { buildStreetTrees } from './streetTrees.ts'
 import { PALETTE } from './palette.ts'
 import { CHURCH_LIGHT, leanOf, lightOf, shadeNew, STREET_LIGHT, type StreetLight } from './streetLight.ts'
-import { CHURCH, DETAIL, doorOf, houseFrame, STEP, STREET, STREET_CHURCH, STREET_HOUSES, STREET_SQUARE, STREET_TREES, detailOf, laneDistance, pathPoint, pathTangent, streetGroundAt, type StreetHouse } from './streetLayout.ts'
-import { outlineFace, PATH_LIFT, sourceUnderpaint, streetMassConfig, STREET_MOON_LIFT, traceFace, type FaceStrokes, type StreetFace, type StreetSourceName } from './streetStrokes.ts'
+import { CHURCH, DETAIL, doorOf, houseFrame, STEP, STREET, STREET_CHURCH, STREET_HOUSES, STREET_SQUARE, STREET_TREES, detailOf, laneDistance, pathPoint, pathTangent, streetGroundAt, type StreetHouse, laneAt, STREET_WALLS } from './streetLayout.ts'
+import { outlineFace, PATH_LIFT, sourceUnderpaint, streetMassConfig, STREET_MOON_LIFT, traceFace, type FaceStrokes, type StreetFace, type StreetSourceName, stoneDab, STREET_SOURCES, STROKE_LIFT } from './streetStrokes.ts'
 import type { ImageData2D } from './useImageData.ts'
 import { VILLAGE_CHURCH, type Pigment } from './villageKnot.ts'
 
@@ -76,8 +76,49 @@ export type StreetBuild = {
     windows: { owner: string; lit: boolean }[]
     church: { belfryWidth: number; belfryHeight: number; spireHeight: number } & HouseReport
     craft: CraftReport[]
+    lane: {
+      walls: {
+        side: -1 | 1
+        t0: number
+        t1: number
+        segments: { t0: number; t1: number; corners: Vector3[] }[]
+        underpaint: [number, number]
+        strokes: [number, number]
+        dabs: { face: 'lane' | 'top'; t: number; lateral: number; y: number; length: number; width: number }[]
+      }[]
+      rail: { house: string; posts: Vector3[]; opening: [Vector3, Vector3]; underpaint: [number, number] } | null
+      lamps: { foot: Vector3; lantern: Vector3; underpaint: [number, number] }[]
+    }
   }
 }
+
+export const LANE_CRAFT = {
+  wall: {
+    inner: 0.135,
+    thickness: 0.03,
+    height: 0.055,
+    segment: 0.02,
+    courses: 5,
+    rows: 2,
+    length: [0.61, 0.89] as [number, number],
+    joint: 0.88,
+    cover: 0.85,
+    source: 'wallA' as StreetSourceName,
+  },
+  rail: {
+    post: 0.005,
+    height: 0.05,
+    rails: [0.02, 0.042] as [number, number],
+    bar: 0.004,
+    spacing: 0.12,
+  },
+  lamp: {
+    post: 0.004,
+    height: 0.13,
+    lantern: [0.012, 0.016] as [number, number],
+    cap: [0.016, 0.008] as [number, number],
+  },
+} as const
 
 export const CRAFT = {
   door: { recess: 0.02, band: 0.3, lift: 0.001, paleDark: 0.7 },
@@ -1010,7 +1051,334 @@ function grassBaseStrip(ctx: Context): void {
   }
 }
 
-export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | null, masses: BakedMass[] | null, { lit = true, grass = false, paint = WALL_PAINT }: { lit?: boolean; grass?: boolean; paint?: WallPaint } = {}): StreetBuild | null {
+function laneWalls(ctx: Context): void {
+  const H = LANE_CRAFT.wall.height
+  const source = LANE_CRAFT.wall.source
+  const src = SOURCE_CLASSES[source]
+  const baseColorRGB = sourceUnderpaint(ctx.painting, source, 0.4)
+  const baseColor = new Color().setRGB(...baseColorRGB, SRGBColorSpace)
+
+  const speed = (t: number, lat: number) => {
+    const p1 = laneAt(t + 1e-4, lat)
+    const p0 = laneAt(t - 1e-4, lat)
+    return Math.hypot(p1.x - p0.x, p1.z - p0.z) / 2e-4
+  }
+
+  for (const run of STREET_WALLS) {
+    const side = run.side
+    const t0 = run.t0
+    const t1 = run.t1
+    const n = Math.ceil((t1 - t0) / 0.02)
+    const dt = (t1 - t0) / n
+
+    const underpaintStart = ctx.underpaint.positions.length / 3
+    const strokesStart = ctx.strokes.arrays.positions.length / 3
+
+    const segments: { t0: number; t1: number; corners: Vector3[] }[] = []
+
+    for (let i = 0; i < n; i++) {
+      const ta = t0 + i * dt
+      const tb = t0 + (i + 1) * dt
+      const q0 = laneAt(ta, side * 0.135)
+      const q1 = laneAt(tb, side * 0.135)
+      const q2 = laneAt(tb, side * 0.165)
+      const q3 = laneAt(ta, side * 0.165)
+
+      const corners = [
+        new Vector3(q0.x, 0, q0.z),
+        new Vector3(q1.x, 0, q1.z),
+        new Vector3(q2.x, 0, q2.z),
+        new Vector3(q3.x, 0, q3.z),
+      ]
+      segments.push({ t0: ta, t1: tb, corners })
+
+      // Lane face
+      const p0 = new Vector3(q0.x, 0, q0.z)
+      const p1 = new Vector3(q1.x, 0, q1.z)
+      const p2 = new Vector3(q1.x, H, q1.z)
+      const p3 = new Vector3(q0.x, H, q0.z)
+      const midT = (ta + tb) / 2
+      const midPt = laneAt(midT, side * 0.135)
+      const nLane = new Vector3(-side * midPt.nx, 0, -side * midPt.nz)
+
+      const faceLane: StreetFace = {
+        origin: p0,
+        u: p1.clone().sub(p0),
+        v: new Vector3(0, H, 0),
+        normal: nLane,
+        shape: 'quad',
+        kind: 'wall',
+        source,
+        refHeight: H,
+        seed: 0x4100 + i * 17,
+        mirror: false,
+      }
+      const lightLane = lightOf(faceLane, ctx.lit, ctx.wallLight)
+      const litColourLane = baseColor.clone().multiplyScalar(lightLane)
+      const fromLane = ctx.underpaint.positions.length
+      polygon(ctx.underpaint, [p0, p1, p2, p3], litColourLane, 0, src)
+      shadeNew(ctx.underpaint, fromLane, faceLane, ctx.lit)
+
+      // Top face
+      const pTop0 = new Vector3(q0.x, H, q0.z)
+      const pTop1 = new Vector3(q1.x, H, q1.z)
+      const pTop2 = new Vector3(q2.x, H, q2.z)
+      const pTop3 = new Vector3(q3.x, H, q3.z)
+      const nTop = new Vector3(0, 1, 0)
+
+      const faceTop: StreetFace = {
+        origin: pTop0,
+        u: pTop1.clone().sub(pTop0),
+        v: pTop3.clone().sub(pTop0),
+        normal: nTop,
+        shape: 'quad',
+        kind: 'wall',
+        source,
+        refHeight: H,
+        seed: 0x4200 + i * 17,
+        mirror: false,
+      }
+      const lightTop = lightOf(faceTop, ctx.lit, ctx.wallLight)
+      const litColourTop = baseColor.clone().multiplyScalar(lightTop)
+      const fromTop = ctx.underpaint.positions.length
+      polygon(ctx.underpaint, [pTop0, pTop1, pTop2, pTop3], litColourTop, 0, src)
+      shadeNew(ctx.underpaint, fromTop, faceTop, ctx.lit)
+
+      // Back face
+      const pBack0 = new Vector3(q3.x, 0, q3.z)
+      const pBack1 = new Vector3(q2.x, 0, q2.z)
+      const pBack2 = new Vector3(q2.x, H, q2.z)
+      const pBack3 = new Vector3(q3.x, H, q3.z)
+      const nBack = new Vector3(side * midPt.nx, 0, side * midPt.nz)
+
+      const faceBack: StreetFace = {
+        origin: pBack0,
+        u: pBack1.clone().sub(pBack0),
+        v: new Vector3(0, H, 0),
+        normal: nBack,
+        shape: 'quad',
+        kind: 'wall',
+        source,
+        refHeight: H,
+        seed: 0x4300 + i * 17,
+        mirror: false,
+      }
+      const lightBack = lightOf(faceBack, ctx.lit, ctx.wallLight)
+      const litColourBack = baseColor.clone().multiplyScalar(lightBack)
+      const fromBack = ctx.underpaint.positions.length
+      polygon(ctx.underpaint, [pBack0, pBack1, pBack2, pBack3], litColourBack, 0, src)
+      shadeNew(ctx.underpaint, fromBack, faceBack, ctx.lit)
+
+      // Start cap at t0
+      if (i === 0) {
+        const cStart0 = new Vector3(q0.x, 0, q0.z)
+        const cStart1 = new Vector3(q3.x, 0, q3.z)
+        const cStart2 = new Vector3(q3.x, H, q3.z)
+        const cStart3 = new Vector3(q0.x, H, q0.z)
+        const tan0 = pathTangent(t0)
+        const nCap0 = new Vector3(-tan0[0], 0, -tan0[2]).normalize()
+        const faceCap0: StreetFace = {
+          origin: cStart0,
+          u: cStart1.clone().sub(cStart0),
+          v: new Vector3(0, H, 0),
+          normal: nCap0,
+          shape: 'quad',
+          kind: 'wall',
+          source,
+          refHeight: H,
+          seed: 0x4400,
+          mirror: false,
+        }
+        const lightCap0 = lightOf(faceCap0, ctx.lit, ctx.wallLight)
+        const fromCap0 = ctx.underpaint.positions.length
+        polygon(ctx.underpaint, [cStart0, cStart1, cStart2, cStart3], baseColor.clone().multiplyScalar(lightCap0), 0, src)
+        shadeNew(ctx.underpaint, fromCap0, faceCap0, ctx.lit)
+      }
+
+      // End cap at t1
+      if (i === n - 1) {
+        const cEnd0 = new Vector3(q1.x, 0, q1.z)
+        const cEnd1 = new Vector3(q2.x, 0, q2.z)
+        const cEnd2 = new Vector3(q2.x, H, q2.z)
+        const cEnd3 = new Vector3(q1.x, H, q1.z)
+        const tan1 = pathTangent(t1)
+        const nCap1 = new Vector3(tan1[0], 0, tan1[2]).normalize()
+        const faceCap1: StreetFace = {
+          origin: cEnd0,
+          u: cEnd1.clone().sub(cEnd0),
+          v: new Vector3(0, H, 0),
+          normal: nCap1,
+          shape: 'quad',
+          kind: 'wall',
+          source,
+          refHeight: H,
+          seed: 0x4500,
+          mirror: false,
+        }
+        const lightCap1 = lightOf(faceCap1, ctx.lit, ctx.wallLight)
+        const fromCap1 = ctx.underpaint.positions.length
+        polygon(ctx.underpaint, [cEnd0, cEnd1, cEnd2, cEnd3], baseColor.clone().multiplyScalar(lightCap1), 0, src)
+        shadeNew(ctx.underpaint, fromCap1, faceCap1, ctx.lit)
+      }
+    }
+
+    // Now dabs
+    const dabs: { face: 'lane' | 'top'; t: number; lateral: number; y: number; length: number; width: number }[] = []
+    const wallStrokes: FaceStrokes = {
+      arrays: makeBrushArrays(),
+      stroke: [],
+      seed: [],
+      ribbons: 0,
+    }
+    const [x0, y0, x1, y1] = STREET_SOURCES[source]
+
+    // 5 courses on lane face
+    for (let c = 0; c < 5; c++) {
+      const courseY = (c + 0.5) * (H / 5)
+      const width = 0.17 * H
+      const lat = side * (0.135 - STROKE_LIFT)
+      const rng = mulberry32(0x5100 + (side === -1 ? 0 : 50) + c * 31 + Math.round(t0 * 100))
+      let tCurr = t0 + rng() * 0.5 * ((H * 0.75) / 0.88 / speed(t0, lat))
+
+      while (tCurr < t1) {
+        const L = H * (0.61 + 0.28 * rng())
+        const cell = L / 0.88
+        const sp = speed(tCurr, lat)
+        const dtCell = cell / sp
+        if (tCurr + dtCell > t1) break
+
+        const tMid = tCurr + dtCell / 2
+        let dt0 = L / 2 / speed(tMid, lat)
+        let dt2 = L / 2 / speed(tMid, lat)
+        const ptMid = laneAt(tMid, lat)
+        const tangent = new Vector3(ptMid.nz, 0, -ptMid.nx)
+
+        for (let iter = 0; iter < 4; iter++) {
+          const c0 = laneAt(tMid - dt0, lat)
+          const c2 = laneAt(tMid + dt2, lat)
+          const dot0 = (ptMid.x - c0.x) * tangent.x + (ptMid.z - c0.z) * tangent.z
+          const dot2 = (c2.x - ptMid.x) * tangent.x + (c2.z - ptMid.z) * tangent.z
+          dt0 += (L / 2 - dot0) / speed(tMid - dt0, lat)
+          dt2 += (L / 2 - dot2) / speed(tMid + dt2, lat)
+        }
+
+        const pt0 = laneAt(tMid - dt0, lat)
+        const pt2 = laneAt(tMid + dt2, lat)
+        const p0 = new Vector3(pt0.x, courseY, pt0.z)
+        const p1 = new Vector3(ptMid.x, courseY, ptMid.z)
+        const p2 = new Vector3(pt2.x, courseY, pt2.z)
+
+        const across = new Vector3(0, 1, 0)
+        const normal = new Vector3(-side * ptMid.nx, 0, -side * ptMid.nz)
+
+        const uTex = (x0 + rng() * (x1 - x0)) / ctx.painting.width
+        const vTex = (y0 + rng() * (y1 - y0)) / ctx.painting.height
+        const rgb = sampleColour(ctx.painting, uTex, vTex)
+        const col = new Color().setRGB(rgb[0], rgb[1], rgb[2], SRGBColorSpace)
+        const dabFace: StreetFace = {
+          origin: p1,
+          u: across,
+          v: normal,
+          normal,
+          shape: 'quad',
+          kind: 'wall',
+          source,
+          refHeight: H,
+          seed: 0,
+          mirror: false,
+        }
+        col.multiplyScalar(lightOf(dabFace, ctx.lit, ctx.wallLight))
+
+        stoneDab(wallStrokes, [p0, p1, p2], across, width, col, Math.round(rng() * 10000))
+        dabs.push({ face: 'lane', t: tMid, lateral: lat, y: courseY, length: L, width })
+
+        tCurr += dtCell
+      }
+    }
+
+    // 2 rows on top
+    for (let r = 0; r < 2; r++) {
+      const lat = side * (0.135 + (r === 0 ? 0.25 : 0.75) * 0.03)
+      const rowY = H + STROKE_LIFT
+      const width = 0.17 * H
+      const rng = mulberry32(0x6100 + (side === -1 ? 0 : 50) + r * 31 + Math.round(t0 * 100))
+      let tCurr = t0 + rng() * 0.5 * ((H * 0.75) / 0.88 / speed(t0, lat))
+
+      while (tCurr < t1) {
+        const L = H * (0.61 + 0.28 * rng())
+        const cell = L / 0.88
+        const sp = speed(tCurr, lat)
+        const dtCell = cell / sp
+        if (tCurr + dtCell > t1) break
+
+        const tMid = tCurr + dtCell / 2
+        let dt0 = L / 2 / speed(tMid, lat)
+        let dt2 = L / 2 / speed(tMid, lat)
+        const ptMid = laneAt(tMid, lat)
+        const tangent = new Vector3(ptMid.nz, 0, -ptMid.nx)
+
+        for (let iter = 0; iter < 4; iter++) {
+          const c0 = laneAt(tMid - dt0, lat)
+          const c2 = laneAt(tMid + dt2, lat)
+          const dot0 = (ptMid.x - c0.x) * tangent.x + (ptMid.z - c0.z) * tangent.z
+          const dot2 = (c2.x - ptMid.x) * tangent.x + (c2.z - ptMid.z) * tangent.z
+          dt0 += (L / 2 - dot0) / speed(tMid - dt0, lat)
+          dt2 += (L / 2 - dot2) / speed(tMid + dt2, lat)
+        }
+
+        const pt0 = laneAt(tMid - dt0, lat)
+        const pt2 = laneAt(tMid + dt2, lat)
+        const p0 = new Vector3(pt0.x, rowY, pt0.z)
+        const p1 = new Vector3(ptMid.x, rowY, ptMid.z)
+        const p2 = new Vector3(pt2.x, rowY, pt2.z)
+
+        const across = new Vector3(side * ptMid.nx, 0, side * ptMid.nz)
+        const normal = new Vector3(0, 1, 0)
+
+        const uTex = (x0 + rng() * (x1 - x0)) / ctx.painting.width
+        const vTex = (y0 + rng() * (y1 - y0)) / ctx.painting.height
+        const rgb = sampleColour(ctx.painting, uTex, vTex)
+        const col = new Color().setRGB(rgb[0], rgb[1], rgb[2], SRGBColorSpace)
+        const dabFace: StreetFace = {
+          origin: p1,
+          u: across,
+          v: normal,
+          normal,
+          shape: 'quad',
+          kind: 'wall',
+          source,
+          refHeight: H,
+          seed: 0,
+          mirror: false,
+        }
+        col.multiplyScalar(lightOf(dabFace, ctx.lit, ctx.wallLight))
+
+        stoneDab(wallStrokes, [p0, p1, p2], across, width, col, Math.round(rng() * 10000))
+        dabs.push({ face: 'top', t: tMid, lateral: lat, y: rowY, length: L, width })
+
+        tCurr += dtCell
+      }
+    }
+
+    append(ctx.strokes, wallStrokes, 0, src)
+    ctx.ribbons += wallStrokes.ribbons
+
+    const underpaintEnd = ctx.underpaint.positions.length / 3
+    const strokesEnd = ctx.strokes.arrays.positions.length / 3
+
+    ctx.report.lane.walls.push({
+      side,
+      t0,
+      t1,
+      segments,
+      underpaint: [underpaintStart, underpaintEnd],
+      strokes: [strokesStart, strokesEnd],
+      dabs,
+    })
+  }
+}
+
+export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | null, masses: BakedMass[] | null, { lit = true, grass = false, paint = WALL_PAINT, lane = true }: { lit?: boolean; grass?: boolean; paint?: WallPaint; lane?: boolean } = {}): StreetBuild | null {
   if (!painting || !flow || !masses) return null
   const ctx: Context = {
     flow,
@@ -1021,7 +1389,7 @@ export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | nu
     outlines: { arrays: makeBrushArrays(), stroke: [], seed: [], cls: [], src: [] },
     windows: Object.assign(makeBrushArrays(), { cls: [], src: [] }),
     grassBase: Object.assign(makeBrushArrays(), { cls: [], src: [] }),
-    report: { faces: [], outlines: [], windows: [], church: { belfryWidth: 0, belfryHeight: 0, spireHeight: 0 }, craft: [] },
+    report: { faces: [], outlines: [], windows: [], church: { belfryWidth: 0, belfryHeight: 0, spireHeight: 0 }, craft: [], lane: { walls: [], rail: null, lamps: [] } },
     ribbons: 0,
     lit,
     wallLight: STREET_LIGHT,
@@ -1065,6 +1433,7 @@ export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | nu
     ;(h.type === 'cottage' ? cottage : house)(ctx, `house-${index}`, index, shape, new Vector3(h.x, 0, h.z), along, toPath, h.lit, h.chimney, density)
   })
   ctx.report.church = church(ctx)
+  if (lane) laneWalls(ctx)
   const trees = buildStreetTrees(painting, STREET_TREES)
   const triangles = (ctx.underpaint.indices.length + ctx.grassBase.indices.length + ctx.strokes.arrays.indices.length + ctx.ground.arrays.indices.length + ctx.outlines.arrays.indices.length + ctx.windows.indices.length + trees.solid.indices.length + trees.strokes.indices.length) / 3
   return {
@@ -1136,7 +1505,7 @@ export function buildFlatPanel(painting: ImageData2D | null, flow: ImageData2D |
     outlines: { arrays: makeBrushArrays(), stroke: [], seed: [], cls: [], src: [] },
     windows: Object.assign(makeBrushArrays(), { cls: [], src: [] }),
     grassBase: Object.assign(makeBrushArrays(), { cls: [], src: [] }),
-    report: { faces: [], outlines: [], windows: [], church: { belfryWidth: 0, belfryHeight: 0, spireHeight: 0 }, craft: [] },
+    report: { faces: [], outlines: [], windows: [], church: { belfryWidth: 0, belfryHeight: 0, spireHeight: 0 }, craft: [], lane: { walls: [], rail: null, lamps: [] } },
     ribbons: 0,
     lit: true,
     wallLight: STREET_LIGHT,

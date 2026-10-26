@@ -445,6 +445,44 @@ export function outlineFace(face: StreetFace, edges: readonly (readonly [Vector3
 }
 
 /**
+ * A dry-stone wall dab: 3 samples along, 3 columns across, 8 triangles.
+ * centres are already lifted. across is the unit vector in the face's plane across the stone.
+ */
+export function stoneDab(
+  into: FaceStrokes,
+  centres: readonly [Vector3, Vector3, Vector3],
+  across: Vector3,
+  width: number,
+  colour: Color,
+  seed: number,
+): void {
+  const steps: Vector3[][] = []
+  const colours: Color[] = []
+  for (let k = 0; k < 3; k++) {
+    const s = k / 2
+    const taper = 1 - 0.4 * Math.abs(2 * s - 1) ** 2
+    const half = (width * taper) / 2
+    const wobble = (vnoise(seed + s * 3.1, 0.7) - 0.5) * 0.5 * width
+    const centre = centres[k].clone().addScaledVector(across, wobble)
+    steps.push([
+      centre.clone().addScaledVector(across, -half),
+      centre.clone(),
+      centre.clone().addScaledVector(across, half),
+    ])
+    colours.push(colour)
+  }
+  pushDrapedRibbon(into.arrays, steps, colours)
+  for (let k = 0; k < 3; k++) {
+    const s = k / 2
+    for (let j = 0; j < 3; j++) {
+      into.stroke.push(s, j / 2)
+      into.seed.push(seed)
+    }
+  }
+  into.ribbons += 1
+}
+
+/**
  * The trees' curls at walking distance: the land's mass config (E2, built for the diorama's distance) with the
  * curls the village's own trees carry at 1:1 (task 1 on `orchard-lower` at 3840: arcs 15–25 px wide and 60–120 px long
  * in a 403 × 240 box, so half-widths 0.02–0.03 of the box's width and lengths 0.25–0.5 of its height), three times

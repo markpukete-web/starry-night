@@ -9,9 +9,11 @@ import {
   pathTangent,
   STEP,
   STREET,
+  streetClearings,
   STREET_CYPRESS,
   STREET_HOUSES,
   STREET_SQUARE,
+  type OrientedBox,
   walkPose,
 } from './streetLayout.ts'
 import type { ImageData2D } from './useImageData.ts'
@@ -65,7 +67,7 @@ export type GrassChunk = {
   sphere: { centre: [number, number, number]; radius: number }
 }
 
-export function grassChunks(painting: ImageData2D, customDensity?: number): GrassChunk[] {
+export function grassChunks(painting: ImageData2D, customDensity?: number, clearings: readonly OrientedBox[] = streetClearings()): GrassChunk[] {
   const density = customDensity ?? GRASS.density
   const rand = mulberry32(1)
   const DT = GRASS.dt
@@ -97,8 +99,6 @@ export function grassChunks(painting: ImageData2D, customDensity?: number): Gras
     Math.hypot(x - STREET_SQUARE.x, z - STREET_SQUARE.z) < STREET_SQUARE.radius
 
   const chunks: GrassChunk[] = []
-
-  const stepFeet = STREET_HOUSES.map((h, i) => doorStepFrame(h, i))
 
   for (let t0 = GRASS.t[0]; t0 < GRASS.t[1] - 1e-9; t0 += DT) {
     for (const side of [-1, 1]) {
@@ -139,14 +139,14 @@ export function grassChunks(painting: ImageData2D, customDensity?: number): Gras
         }
 
         chunkBlades = chunkBlades.filter((b) => {
-          for (let s = 0; s < stepFeet.length; s++) {
-            const { ox, oz, ux, uz, nx, nz, ws0, ws1 } = stepFeet[s]
+          for (let s = 0; s < clearings.length; s++) {
+            const { ox, oz, ux, uz, nx, nz, u0, u1, k0, k1 } = clearings[s]
             const dx = b.x - ox
             const dz = b.z - oz
             const a = dx * ux + dz * uz
             const k = dx * nx + dz * nz
-            const da = Math.max(ws0 - a, 0, a - ws1)
-            const dk = Math.max(-k, 0, k - STEP.depth)
+            const da = Math.max(u0 - a, 0, a - u1)
+            const dk = Math.max(k0 - k, 0, k - k1)
             if (Math.hypot(da, dk) < GRASS.house) return false
           }
           return true
