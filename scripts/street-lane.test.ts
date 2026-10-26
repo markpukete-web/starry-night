@@ -11,7 +11,7 @@ import { PerspectiveCamera, Vector3 } from 'three'
 import { buildFrog, FROG, frogPlace, FROGS, SQUARE_TOP } from '../src/scene/frog.ts'
 import type { BakedMass } from '../src/scene/landDomes.ts'
 import { buildStreet, LANE_CRAFT } from '../src/scene/streetGeometry.ts'
-import { grassChunks, inFootprint } from '../src/scene/streetGrass.ts'
+import { GRASS, grassChunks, inFootprint } from '../src/scene/streetGrass.ts'
 import {
   doorOf,
   doorStepFoot,
@@ -30,6 +30,7 @@ import {
   STREET_WALL,
   vincentBoxCorners,
   walkPose,
+  wallClearings,
 } from '../src/scene/streetLayout.ts'
 import { LAMP_LIGHT, lampHaloScale, LIFE, litWindows } from '../src/scene/streetLife.ts'
 import { SOURCE_STROKES, STROKE_LIFT } from '../src/scene/streetStrokes.ts'
@@ -116,9 +117,34 @@ test('every wall is drawn', { skip }, () => {
     const [s0, s1] = w.strokes
     assert.ok(u1 > u0, 'underpaint range non-empty')
     assert.ok(u1 <= pos.length / 3, 'underpaint range within bounds')
+    assert.equal(u1 - u0, 4 * (3 * w.segments.length + 2), 'underpaint range holds exactly 4 * (3 * segs + 2) vertices')
     assert.ok(s1 > s0, 'strokes range non-empty')
     assert.ok(s1 <= build.strokes.arrays.positions.length / 3, 'strokes range within bounds')
     assert.equal(s1 - s0, 9 * w.dabs.length, 'strokes range length is 9 * dab count')
+
+    for (const seg of w.segments) {
+      const pa = laneAt(seg.t0, w.side * STREET_WALL.inner)
+      const pb = laneAt(seg.t1, w.side * STREET_WALL.inner)
+      const requiredCorners = [
+        { x: pa.x, y: 0, z: pa.z },
+        { x: pb.x, y: 0, z: pb.z },
+        { x: pb.x, y: H, z: pb.z },
+        { x: pa.x, y: H, z: pa.z },
+      ]
+      for (const rc of requiredCorners) {
+        let found = false
+        for (let i = u0; i < u1; i++) {
+          const vx = pos[i * 3]
+          const vy = pos[i * 3 + 1]
+          const vz = pos[i * 3 + 2]
+          if (Math.abs(vy - rc.y) < 1e-6 && Math.hypot(vx - rc.x, vz - rc.z) < 1e-6) {
+            found = true
+            break
+          }
+        }
+        assert.ok(found, `lane face vertex at (${rc.x}, ${rc.y}, ${rc.z}) in underpaint`)
+      }
+    }
 
     for (let i = u0; i < u1; i++) {
       const vx = pos[i * 3]
@@ -230,13 +256,22 @@ test("no wall touches a house, a step, the lane, Vincent, the cypress or a frog'
 
       // lane face past lateral 0.06 + 0.03 = 0.09
       assert.ok(STREET_WALL.inner >= 0.06 + 0.03 - 1e-9)
+    }
+  }
 
-      for (const f of FROGS.filter((fr) => fr.stop < 4)) {
-        const [fx, , fz] = frogPlace(f).position
-        const d = ptDist([fx, fz], foot)
-        const gap = d - 0.012 - 3 * FROG.clear * f.scale
-        assert.ok(gap >= 0.0015 - 1e-6, `wall to frog ${f.stop} ring gap: ${gap} >= 0.0015`)
-      }
+  const rects = wallClearings()
+  for (const rect of rects) {
+    for (const f of FROGS.filter((fr) => fr.stop < 4)) {
+      const [fx, , fz] = frogPlace(f).position
+      const rx = fx - rect.ox
+      const rz = fz - rect.oz
+      const pu = rx * rect.ux + rz * rect.uz
+      const pk = rx * rect.nx + rz * rect.nz
+      const cu = Math.max(rect.u0, Math.min(rect.u1, pu))
+      const ck = Math.max(rect.k0, Math.min(rect.k1, pk))
+      const dist = Math.hypot(pu - cu, pk - ck)
+      const gap = dist - GRASS.house - 3 * FROG.clear * f.scale
+      assert.ok(gap >= 0.0015 - 1e-9, `clearing rectangle to frog ${f.stop} ring gap: ${gap} >= 0.0015`)
     }
   }
 })
