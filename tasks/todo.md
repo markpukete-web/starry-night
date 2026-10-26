@@ -1,6 +1,40 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-26 (night, 21:00): K2's Task 1 built, amendment A1 for a test the plan missed; K3's design drafted; Mark's two questions
+## Pickup — 2026-10-26 (night, 21:30): K2's Tasks 1 to 3 built, K3's design at revision 1 with both reads folded, three calls for Mark
+
+**K2's build.** Tasks 1 to 3 are committed: `a19c983` the walls, `30564f5` amendment A1, `9f1d52d` the rail, `38e221a`
+the lamps. Codex's bounded read of A1 is GO (`k2/review-a1-codex.md`): the density test still catches a wrong falloff,
+and no other test in the suite leans on the shared chunks in a way the clearings break. The worker is on the nine
+mutation proofs and its report (`k2/t3/report-worker.md`). The Lead's gate follows.
+
+**K3's design, revision 1** (`docs/superpowers/specs/2026-10-26-village-lived-in-design.md`). Codex: REVISE, four P2 and
+two P3 (`k2/design-review-k3-codex.md`). The Consultant's builder check: six questions
+(`k2/builder-check-k3-consultant.md`). The Lead ran both reviewers' probes again (they reproduce) and two of its own
+(`k2/probe/lead-k3-r2gap.mjs`, `lead-k3-paint-ref.mjs`). What changed: the paths' ends are checked over every leg's
+full width. R2's recommendation moves to W2 ending at `t` 0.41 (the path 0.344 long), because the route to 0.50 crossed
+the wall. The budget was wrong by three: the ten paths at the lane's stroke size and full cover cost about 50,000
+triangles on the real tracer, so a path takes a reference height scaled to its width and a cover of 0.25 (28,700).
+L5's and R5's paths end at the square's rim. L2's path is the door's width wide, through the gate. The plant is a clump
+of the grass's blades. The objects ride the walls' class as the rail does. The bucket is a wooden pail. A shorter
+plaster row would reach the church, so it reaches the four houses only, through `WALL_PAINT`, the ribbon count held.
+The measurement crop runs to the scan's bottom. The table at the design's top lists every row.
+
+**Mark's three calls (the design's last section):** R2 against W2 (the recommendation: W2 ends at `t` 0.41), the bucket
+or a woodpile, the far paths at full length or fading short of the lane.
+
+**Mark asked (21:05) why the Consultant, Codex and the worker ran at once.** The Lead's answer: the worker was building,
+not reviewing. Codex's two reads were both due. The Consultant was the builder's leg, which the design process asks for
+before Mark reads a design. Two gaps owned: no Quota Finch check before three dispatches, and the Consultant was set as
+Codex's fallback, not a parallel reader. The recommendation: both legs for plans, Codex alone for designs. Mark's answer
+is pending.
+
+**Next:** Mark reads revision 1 and makes the three calls. Then the K3 plan (`superpowers:writing-plans`), both plan
+reviews (Codex's correctness read, the worker's buildability read), and the build on `feat/village-lived-in` after K2's
+gate. In parallel: the worker's K2 report, the Lead's gate on K2, Codex's branch review, the push and Mark's preview
+link.
+
+
+## Pickup — 2026-10-26 (night, 21:00): K2's Task 1 built, amendment A1 for a test the plan missed; K3's design drafted; Mark's two questions (superseded by the 21:30 pickup above)
 
 **K2's build.** Task 1 is committed at `a19c983` (the walls, 1,964 triangles, both `LANE=0` hashes K1's). The worker
 stopped there, rightly: `street-grass.test.ts:99` (the density falloff by band) fails at 17.9% because its expected
