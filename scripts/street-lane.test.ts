@@ -27,10 +27,8 @@ import {
   STREET_CYPRESS,
   STREET_HOUSES,
   STREET_LAMPS,
-  STREET_WALLS,
   vincentBoxCorners,
   walkPose,
-  wallClearings,
 } from '../src/scene/streetLayout.ts'
 import { LAMP_LIGHT, lampHaloScale, LIFE, litWindows } from '../src/scene/streetLife.ts'
 import { STROKE_LIFT } from '../src/scene/streetStrokes.ts'

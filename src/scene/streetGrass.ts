@@ -3,11 +3,9 @@ import { mulberry32 } from './brush.ts'
 import { vnoise } from './brushForms.ts'
 import { bladeReach, type BladeSpec, clump, GRASS_BLADE } from './grassBlade.ts'
 import {
-  doorStepFrame,
   laneParam,
   pathPoint,
   pathTangent,
-  STEP,
   STREET,
   streetClearings,
   STREET_CYPRESS,
