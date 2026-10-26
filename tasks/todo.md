@@ -37,6 +37,17 @@ Its one cross-slice call for Mark: R2's door path crosses K2's wall W2 whichever
   way: steer Vincent off the path onto the verge within the grass's footprint, the camera following, bounded by the
   houses, walls, rail and lamps. After K3 and after the village opens to visitors.
 
+**Mark's decision (2026-10-26, 21:00): "I will go with your recommendations."** No robot. The roadmap after K2:
+K3 (the lived-in houses, the design as drafted, R2's path past W2's end), then Vincent's form (a throwaway spike with
+the lantern for his eye, then its slice), then **Vincent's wander with the camera kept**. Mark's version of exploration:
+"the free exploration would be under Vincent walk through the grass etc but keep the camera." The Lead's read: it works
+and is one slice, two with the phone's steering. The camera stays on the path (so the hidden faces, `detailOf`, the
+frogs' draw distance and the ceiling checks hold) and yaws to keep him in frame (on the phone he leaves the frame at
+about 0.2 off the path otherwise, and the grass budget is re-measured across the yaw). Vincent gets a lateral control,
+bounded by the grass's footprint and the parts' footprints, and the grass parts under his feet off the path as it does
+on it. It changes the street design's non-goal ("Vincent stays on one path"), not the locked camera rule: the visitor
+still moves the camera only along the path. His form comes first: once he is steered, he is looked at.
+
 **Next:** the worker's K2 report, then the Lead's gate on K2 (Task 4's look passes, Task 5's runs), Codex's branch
 review, the push and Mark's preview link. Mark reads K3's design with both reads folded in.
 
