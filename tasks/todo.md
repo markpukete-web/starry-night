@@ -1,6 +1,6 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-26 (night, 22:40): K2 in its Lead gate, Codex's seven findings confirmed, the fix round's brief at revision 3 with Codex, the worker next
+## Pickup — 2026-10-26 (night, 22:20): K2 in its Lead gate, Codex's seven findings confirmed, the fix round's brief at revision 3 with Codex, the worker next
 
 **K2's gate so far** (the record `tasks/2026-10-26-village-craft-k2.md`, the evidence `scratch/village-craft-2026-10-25/k2/`).
 The suite, the hashes, the diff read and the nine mutation proofs re-run by the Lead all pass. Look pass 1: the lamps
@@ -29,7 +29,7 @@ and 80% week (resets 06:59).
 **K3** waits on Mark's three calls (below, the 21:30 pickup). Mark's answer on the three-agent question is pending.
 
 
-## Pickup — 2026-10-26 (night, 21:30): K2's Tasks 1 to 3 built, K3's design at revision 1 with both reads folded, three calls for Mark (superseded by the 22:40 pickup above)
+## Pickup — 2026-10-26 (night, 21:30): K2's Tasks 1 to 3 built, K3's design at revision 1 with both reads folded, three calls for Mark (superseded by the 22:20 pickup above)
 
 **K2's build.** Tasks 1 to 3 are committed: `a19c983` the walls, `30564f5` amendment A1, `9f1d52d` the rail, `38e221a`
 the lamps. Codex's bounded read of A1 is GO (`k2/review-a1-codex.md`): the density test still catches a wrong falloff,

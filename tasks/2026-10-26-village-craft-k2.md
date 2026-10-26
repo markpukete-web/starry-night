@@ -141,8 +141,11 @@ pins the stone's length and width to the plan's literals, and wallB's measured s
 2.0 of the reference height) starts above pass 3's 0.4. Revision 3: the test takes its targets from the controls and
 checks the painting's measured range on its own, and pass 3's length stays inside that range (recipe D, probed at
 stop 3 like the others: B's body and texel floor with the build's length).
-Recipe D (`E2/t4/p3/D-wall.png`, 22:35): B's body and texel floor with the build's length 0.61 to 0.89. It reads as a
+Recipe D (`E2/t4/p3/D-wall.png`, 22:20): B's body and texel floor with the build's length 0.61 to 0.89. It reads as a
 grey painted wall with long pale strokes along its courses, the top lit by the moon. B's shorter stones read more as
 stones, but they sit under the painting's measured stroke length for this source, and the bar is the painting's
 hand, so D is pass 3's recipe: `LANE_CRAFT.wall` base 1, pale 0.5, joint 0.92, width 0.19, length unchanged. Whether
 the strokes should read stonier is Mark's call at the gate.
+Codex's third read: GO (`E2/review-fix1-plan-codex-r3.md`): the dab test's targets follow the controls, the
+independent measured-range check stands apart from them, and D's numbers sit inside wallB's measured ranges (length
+0.0336 to 0.0490 of 0.033 to 0.11, width 0.01045 of 0.0066 to 0.011). The worker was dispatched at 22:24.
