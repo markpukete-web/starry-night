@@ -27,8 +27,8 @@ export type Strokes = { arrays: BrushArrays; stroke: number[]; seed: number[]; c
 
 export type WallPaint = { base: number; light: number; cover: number }
 export const KEPT_PAINT: WallPaint = { base: 0, light: 0.5, cover: 1 }
-/** look pass 2: the base at the lightest half, a fifth fewer strokes */
-export const WALL_PAINT: WallPaint = { base: 1, light: 0.5, cover: 0.8 }
+/** look pass 3: a fifth fewer strokes; the base stays the mean (toward the lightest half it lifted the dark houses, wallB by L 16, and the walls' ΔE by 3 to 6) */
+export const WALL_PAINT: WallPaint = { base: 0, light: 0.5, cover: 0.8 }
 
 export type CraftPart = { name: string; buffer: 'underpaint' | 'outlines' | 'windows'; from: number; to: number }
 export type CraftReport = {
