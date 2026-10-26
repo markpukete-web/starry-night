@@ -3,7 +3,22 @@
 ## Pickup — 2026-10-26 (night, 20:15): K1 passed; K2's build running on the worker
 
 **K1, the houses: passed by Mark on the preview** ("K1 passed, start K2's build. In fact I don't feel much
-differences."). The change read as small to him. K1's PR follows the stack #23 to #29, on his word.
+differences."). The change read as small to him.
+
+**The stack #23 to #30 merged to `main`** on Mark's word, 2026-10-26 ("merge the stack #23 to #30"), merge commits,
+`main` at `3fd5b2e`, production built (Vercel success). K1 is PR #30, Codex's review there: no findings (+1 at
+`ca102c7`). #23's Codex review never left "running". Mark had declined a re-request on 2026-10-25, and #23's thread
+says so.
+
+**The branches, tidied** (Mark: "can you also tidy up our branches?"). Local: 27 branches deleted, each contained in
+`main`, or in `feat/village-lane` for `feat/village-craft`. Left: `main` (the main checkout is on it now), `feat/village-lane`
+(K2) and `spike/grass-hand` (one unique commit, `1bfb8c2`, the throwaway grass test, kept for Mark's word). The worktree
+`framing-wt` is removed. `craft-wt` is detached at `96f246e` and serves K1 on port 5205 for K2's gate. The 20 remote
+branches other than `main` are all contained in `main`. The permission rule refused their delete, so Mark runs it:
+`git push origin --delete feat/arrival-c feat/cypress-e1 feat/cypress-medium feat/cypress-paint-e4 feat/flags-on
+feat/land-e2 feat/loading-curtain feat/phone-framing feat/street-church feat/street-frogs feat/street-portal
+feat/street-s1b-lead feat/street-s2-vincent feat/street-s3 feat/street-s3b feat/touch-land-d1 feat/village-craft
+fix/finger-no-bend fix/moving-first-paint record/2d-streamline-flow`.
 
 **K2's build: Tasks 1 to 3 with the worker** (`w4:p5`), from `c9fd0cd` on `feat/village-lane`, brief
 `scratch/village-craft-2026-10-25/k2/brief-k2-build.md`, the report due at `k2/t3/report-worker.md`. The dev server for
