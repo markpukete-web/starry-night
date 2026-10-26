@@ -22,7 +22,8 @@ import type { AliveTuning } from './skyAlive'
 import { emptyTouchStore, type TouchStore } from './touchSurge'
 import { useTouchInput } from './useTouchInput'
 import { emptyLandStore, type LandStore } from './landTouch'
-import { ARRIVAL, ArrivalClock, arrivalCamera, arrivalFrame, boundedDt, rememberArrived } from './arrival'
+import { ARRIVAL, ARRIVAL_CUE, ArrivalClock, CUE_FADE, VINCENTS_CITE, VINCENTS_LINE, arrivalCamera, arrivalFrame, boundedDt, rememberArrived } from './arrival'
+import { dropBootCurtain, keepBootCurtain } from '../bootCurtain'
 import { isStreetMode, streetIdsPass, streetSkyAnchor, touchEnabled } from './streetEntry'
 import {
   controlsEnabled,
@@ -182,6 +183,8 @@ type ArrivalRefs = {
   layerRef: RefObject<HTMLDivElement | null>
   scanRef: RefObject<HTMLImageElement | null>
   lineRef: RefObject<HTMLElement | null>
+  /** the loading cue under the citation */
+  cueRef: RefObject<HTMLParagraphElement | null>
   skyReadyRef: RefObject<boolean>
   cypressReadyRef: RefObject<boolean>
   /** E2: the ground's strokes, which wait on the land's flow */
@@ -207,6 +210,7 @@ function ArrivalDriver({
   layerRef,
   scanRef,
   lineRef,
+  cueRef,
   skyReadyRef,
   cypressReadyRef,
   landReadyRef,
@@ -221,14 +225,23 @@ function ArrivalDriver({
   const { camera } = useThree()
   const [clock] = useState(() => new ArrivalClock())
   const finishedRef = useRef(false)
+  const cueLevelRef = useRef(1)
   useFrame((_, dt) => {
+    const pinned = (window as ArrivalWindow).__arrivalTime
     const a = clock.tick({
       dt,
       ready: skyReadyRef.current && cypressReadyRef.current && landReadyRef.current && scanReadyRef.current,
       skipRequested: skipRequestedRef.current,
-      pinned: (window as ArrivalWindow).__arrivalTime,
+      // loaded, not failed: a painting that never drew credits nothing (the loading read's P3)
+      shown: Boolean(scanRef.current?.complete && scanRef.current.naturalWidth > 0),
+      pinned,
       reduced,
     })
+    // the loading curtain: `#boot` stands in for this layer until the wait ends, then this layer holds and dissolves;
+    // the cue fades over the clock's own seconds, and at once under a pin, so a capture is exact
+    if (!clock.waiting) dropBootCurtain()
+    cueLevelRef.current = clock.waiting ? 1 : Number.isFinite(pinned) ? 0 : Math.max(0, cueLevelRef.current - boundedDt(dt) / CUE_FADE)
+    if (cueRef.current) cueRef.current.style.opacity = String(cueLevelRef.current)
     // every frame, done included: the clock keeps the bounded step through the frame that ends the arrival and
     // hands the sky its own `dt` back from the frame after (code review F12)
     arrivalStepRef.current = clock.step
@@ -244,7 +257,8 @@ function ArrivalDriver({
     }
     if (scanRef.current) {
       scanRef.current.style.transform = `scale(${f.scale})`
-      scanRef.current.style.opacity = String(f.overlay)
+      // never a half-loaded scan: after a timeout the curtain can open while it still draws in strips
+      scanRef.current.style.opacity = String(scanReadyRef.current ? f.overlay : 0)
     }
     if (lineRef.current) lineRef.current.style.opacity = String(f.line)
     if (f.done) {
@@ -563,11 +577,8 @@ function Scene({
 function VincentsLine() {
   return (
     <>
-      <p className="arrival-line">
-        “This morning, long before sunrise, I looked out at the countryside from my window, with nothing but the
-        morning star, which seemed very large.”
-      </p>
-      <p className="arrival-cite">Vincent to Theo, Saint-Rémy, June 1889 · letter 777</p>
+      <p className="arrival-line">{VINCENTS_LINE}</p>
+      <p className="arrival-cite">{VINCENTS_CITE}</p>
     </>
   )
 }
@@ -708,6 +719,7 @@ export function DioramaExperience({ clean = false, reduced = false, sky = 'light
   const layerRef = useRef<HTMLDivElement>(null)
   const scanRef = useRef<HTMLImageElement>(null)
   const lineRef = useRef<HTMLElement>(null)
+  const cueRef = useRef<HTMLParagraphElement>(null)
   const skyReadyRef = useRef(false)
   const cypressReadyRef = useRef(false)
   const landReadyRef = useRef(false)
@@ -717,6 +729,12 @@ export function DioramaExperience({ clean = false, reduced = false, sky = 'light
   const skip = () => {
     skipRequestedRef.current = true
   }
+  // the loading curtain (`src/bootCurtain.ts`): kept while this page's opening waits; the driver drops it when the wait
+  // ends. A layout effect, so it runs before App's passive effect drops a curtain nobody kept; no cleanup, so
+  // StrictMode's second run cannot drop it early
+  useLayoutEffect(() => {
+    if (arriving && !still) keepBootCurtain()
+  }, [arriving, still])
   useEffect(() => {
     if (!arriving || still) return
     const onKey = (e: KeyboardEvent) => {
@@ -772,6 +790,7 @@ export function DioramaExperience({ clean = false, reduced = false, sky = 'light
           layerRef={layerRef}
           scanRef={scanRef}
           lineRef={lineRef}
+          cueRef={cueRef}
           skyReadyRef={skyReadyRef}
           cypressReadyRef={cypressReadyRef}
           landReadyRef={landReadyRef}
@@ -810,6 +829,9 @@ export function DioramaExperience({ clean = false, reduced = false, sky = 'light
             />
             <figcaption ref={lineRef}>
               <VincentsLine />
+              <p className="arrival-cue" ref={cueRef}>
+                {ARRIVAL_CUE}
+              </p>
             </figcaption>
           </figure>
         </div>

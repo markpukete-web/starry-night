@@ -16,6 +16,121 @@
     <link rel="preload" as="image" href="/reference/land-flow.png" fetchpriority="low" />
     <link rel="preload" as="fetch" href="/reference/land-masses.json" crossorigin fetchpriority="low" />
 
+    <style>
+      /* C (arrival, tasks/2026-10-20-arrival-c-plan.md): the painting on a dark ground with Vincent's line, then it
+         dissolves into the diorama. The driver writes the ground's alpha, the scan's opacity and scale, the line's and the
+         cue's opacity and the layer's visibility per frame. No CSS transition here, so a pinned capture is exact. Inline,
+         so the loading curtain `#boot` (tasks/2026-10-25-loading-curtain-plan.md) paints before the code arrives; it sits
+         over React's layer until the opening stops waiting. */
+      .arrival,
+      .arrival-boot {
+        position: absolute;
+        inset: 0;
+        z-index: 9;
+        display: grid;
+        place-items: center;
+        background: rgba(6, 17, 42, 1);
+        pointer-events: none;
+      }
+
+      .arrival-painting {
+        margin: 0;
+        width: min(86vw, 78vh * 1.263);
+      }
+
+      .arrival-painting img {
+        display: block;
+        width: 100%;
+        aspect-ratio: 1600 / 1267;
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+        transform-origin: center;
+        will-change: transform;
+        user-select: none;
+      }
+
+      .arrival figcaption,
+      .arrival-boot figcaption,
+      .arrival-caption {
+        margin: 22px auto 0;
+        max-width: 56ch;
+        color: rgba(244, 234, 211, 0.92);
+        font-family: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+        font-size: 17px;
+        font-style: italic;
+        line-height: 1.45;
+        text-align: center;
+      }
+
+      .arrival-line {
+        margin: 0;
+      }
+
+      .arrival-cite {
+        margin: 8px 0 0;
+        font-size: 12px;
+        font-style: normal;
+        letter-spacing: 0.02em;
+        opacity: 0.7;
+      }
+
+      .arrival-cue {
+        margin: 14px 0 0;
+        color: rgba(244, 234, 211, 0.6);
+        font-size: 12px;
+        font-style: normal;
+        letter-spacing: 0.06em;
+      }
+      /* React's copy starts hidden: only the driver's frames show it, so a page that never draws a frame (no WebGL)
+         falls back to the painting and the line, with no promise of loading (the gate, after the loading read's P2) */
+      .arrival .arrival-cue {
+        opacity: 0;
+      }
+      .arrival-failed .arrival-cue {
+        display: none;
+      }
+
+      .arrival-boot {
+        position: fixed;
+        z-index: 10;
+      }
+
+      /* the curtain's painting shows whole: a slow connection draws a JPEG in strips, so it fades in once loaded */
+      .arrival-boot img {
+        opacity: 0;
+        transition: opacity 600ms ease;
+      }
+
+      .arrival-boot img.is-loaded {
+        opacity: 1;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .arrival-boot img {
+          transition: none;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .arrival figcaption,
+        .arrival-boot figcaption,
+        .arrival-caption {
+          font-size: 15px;
+        }
+      }
+
+      /* reduced motion: the line as a static caption over the still */
+      .arrival-caption {
+        position: absolute;
+        right: 16px;
+        bottom: 84px;
+        left: 16px;
+        z-index: 9;
+        pointer-events: none;
+        text-shadow: 0 2px 16px rgba(4, 8, 20, 0.78);
+      }
+    </style>
+    <noscript><style>#boot { display: none; }</style></noscript>
+
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://starrynight.markma.dev/" />
@@ -47,6 +162,37 @@
         </div>
       </noscript>
     </div>
+    <!-- the loading curtain: the opening's first frame before the code arrives (tasks/2026-10-25-loading-curtain-plan.md);
+         its words are `src/scene/arrival.ts`'s, and `scripts/arrival.test.ts` holds them equal -->
+    <div class="arrival-boot" id="boot">
+      <figure class="arrival-painting">
+        <img src="/reference/painting.jpg" alt="The Starry Night, Vincent van Gogh, 1889" draggable="false" fetchpriority="low" onload="this.classList.add('is-loaded')" />
+        <figcaption>
+          <p class="arrival-line">“This morning, long before sunrise, I looked out at the countryside from my window, with nothing but the morning star, which seemed very large.”</p>
+          <p class="arrival-cite">Vincent to Theo, Saint-Rémy, June 1889 · letter 777</p>
+          <p class="arrival-cue">Painting the night sky…</p>
+        </figcaption>
+      </figure>
+    </div>
+    <!-- a page that will not play the opening never shows its curtain (the loading read's P2): App.tsx's rule, read
+         before the code arrives. A disagreement costs only the old dark page or a cut on React's first commit, and
+         `scripts/arrival.test.ts` runs this against the rule's cases. A page that fails keeps the painting and the
+         line, with no cue (the closing read) -->
+    <script>
+      ;(function () {
+        var q = new URLSearchParams(location.search)
+        var a = q.get('arrival')
+        var arrived = false
+        try { arrived = sessionStorage.getItem('starry-night:arrived') === '1' } catch (e) {}
+        var plays = q.get('street') !== '1' && (q.get('mode') ?? 'diorama') === 'diorama' && (a === '1' || (a !== '0' && !arrived))
+        if (!plays || matchMedia('(prefers-reduced-motion: reduce)').matches) document.getElementById('boot').remove()
+        // an uncaught error, a failed load (the bundle, a throw in a render) or an unhandled rejection (R3F's, with no
+        // WebGL), and the cue stops promising
+        var fail = function () { document.documentElement.classList.add('arrival-failed') }
+        addEventListener('error', fail, true)
+        addEventListener('unhandledrejection', fail)
+      })()
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

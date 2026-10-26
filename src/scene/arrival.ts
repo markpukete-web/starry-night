@@ -40,11 +40,34 @@ export const ARRIVAL = {
    * would collapse the opening into one frame and advance the sky by the whole gap (review F3)
    */
   maxDt: 0.1,
+  /**
+   * the longest frame the painting's credit accepts while the opening waits (the loading read's P3): the scene's
+   * build runs at 2 to 5 fps, where `maxDt` would credit a fifth of the time the painting was up. The timeout keeps
+   * `maxDt`, so its real length is unchanged
+   */
+  seenDt: 1,
   /** how long the opening waits for the scene before it opens anyway: a failed asset cannot hold the curtain (review F5) */
   readyTimeout: 15,
+  /**
+   * the loading curtain (tasks/2026-10-25-loading-curtain-plan.md (d)): the hold counts from the painting's
+   * appearance, but this much of it is left once the scene is ready, at least the line's whole fade
+   */
+  afterReady: 1.5,
   /** milliseconds: the title and the dock fade in once the arrival is done (CSS reads it as `--arrival-reveal`) */
   reveal: 600,
 }
+
+/**
+ * The opening's words, in one place: React's layer renders them and `index.html`'s `#boot` copies them, so the curtain
+ * reads the same before and after the code arrives (`scripts/arrival.test.ts` finds them in `#boot`).
+ */
+export const VINCENTS_LINE =
+  '“This morning, long before sunrise, I looked out at the countryside from my window, with nothing but the morning star, which seemed very large.”'
+export const VINCENTS_CITE = 'Vincent to Theo, Saint-Rémy, June 1889 · letter 777'
+/** the loading cue under the citation, shown while the opening waits for the scene */
+export const ARRIVAL_CUE = 'Painting the night sky…'
+/** clock seconds over which the cue fades once the opening stops waiting */
+export const CUE_FADE = 0.5
 
 export type ArrivalFrame = {
   /** the scan's opacity */
@@ -109,7 +132,8 @@ export function arrivalCamera(home: Home, progress: number): readonly [number, n
 export const ARRIVAL_START_INSIDE_ORBIT =
   ARRIVAL.startDistance > DIORAMA_ORBIT.minDistance && ARRIVAL.startDistance < DIORAMA_ORBIT.maxDistance
 
-const ARRIVED_KEY = 'starry-night:arrived'
+/** `index.html`'s curtain script reads the same key, and `scripts/arrival.test.ts` holds the two equal */
+export const ARRIVED_KEY = 'starry-night:arrived'
 
 /**
  * Once per session: a plain visit plays the opening the first time only, so a reload or a return within the tab's
@@ -132,9 +156,9 @@ export function rememberArrived(): void {
   }
 }
 
-/** The frame delta the arrival accepts: a hidden tab's 30 s becomes `maxDt`, a NaN becomes 0. */
-export function boundedDt(dt: number): number {
-  return Number.isFinite(dt) ? Math.min(Math.max(0, dt), ARRIVAL.maxDt) : 0
+/** The frame delta the arrival accepts: a hidden tab's 30 s becomes `max` (`maxDt` unless given), a NaN becomes 0. */
+export function boundedDt(dt: number, max = ARRIVAL.maxDt): number {
+  return Number.isFinite(dt) ? Math.min(Math.max(0, dt), max) : 0
 }
 
 export type ArrivalInputs = {
@@ -142,8 +166,10 @@ export type ArrivalInputs = {
   dt: number
   /** the scene can be revealed: the sky's ribbons, the cypress and the scan are all there */
   ready: boolean
-  /** a tap, click or key has asked to move on */
+  /** a tap, click or key has asked to move on: the clock runs faster once the scene is ready */
   skipRequested: boolean
+  /** the painting is on screen, so the wait counts toward the hold */
+  shown?: boolean
   /** a capture's pin: an absolute time, taken as is */
   pinned?: number
   /** system reduced motion: the end state at once, no wait */
@@ -151,13 +177,19 @@ export type ArrivalInputs = {
 }
 
 /**
- * The arrival clock. It waits for the scene with `a` at 0 (the layer opaque), opens anyway after `readyTimeout`
- * or on a skip, accepts at most `maxDt` per frame, runs `skipSpeed` times faster after a skip, and latches at the
- * end. A pin is absolute: a capture's pins go up only, and a lower pin reads as the caller's error.
+ * The arrival clock. It waits for the scene with `a` at 0 (the layer opaque) and opens anyway after `readyTimeout`.
+ * The time the painting was shown while it waited counts toward the hold, up to `hold − afterReady`. It accepts at
+ * most `maxDt` per frame, runs `skipSpeed` times faster after a skip once the scene is ready (a skip does not end the
+ * wait: the curtain says the scene is loading), and latches at the end. A pin is absolute: a capture's pins go up
+ * only, and a lower pin reads as the caller's error.
  */
 export class ArrivalClock {
   a = 0
   waited = 0
+  /** the seconds of the wait with the painting on screen */
+  seen = 0
+  /** true while it holds for the scene */
+  waiting = true
   done = false
   /**
    * The sky's advance this frame: the rate times the bounded delta while the arrival runs, including the frame that
@@ -166,20 +198,25 @@ export class ArrivalClock {
    * jump the sky by the whole gap (Codex, code review F12).
    */
   step: number | null = 0
-  tick({ dt, ready, skipRequested, pinned, reduced = false }: ArrivalInputs): number {
+  tick({ dt, ready, skipRequested, shown = false, pinned, reduced = false }: ArrivalInputs): number {
     if (this.done) {
       this.step = null
       return this.a
     }
     const bounded = boundedDt(dt)
     if (typeof pinned === 'number' && Number.isFinite(pinned)) {
+      this.waiting = false
       this.a = pinned
     } else {
-      if (!reduced && !ready && !skipRequested && this.waited < ARRIVAL.readyTimeout) {
+      if (!reduced && !ready && this.waited < ARRIVAL.readyTimeout) {
         this.waited += bounded
+        if (shown) this.seen += boundedDt(dt, ARRIVAL.seenDt)
         this.step = 0
         return this.a
       }
+      // the first frame out of the wait: nothing in the frame changes before `hold − lineFade`, so the credit is unseen
+      if (this.waiting) this.a = Math.min(this.seen, ARRIVAL.hold - ARRIVAL.afterReady)
+      this.waiting = false
       this.a += bounded * (skipRequested ? ARRIVAL.skipSpeed : 1)
     }
     const frame = arrivalFrame(this.a, reduced)

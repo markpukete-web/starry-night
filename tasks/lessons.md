@@ -3182,3 +3182,19 @@ must be byte-identical before the stimulus's difference means anything.
 - **A check run straight after a reload can catch the page still moving.** The walk check's K1 failed once after the
   studio's stash reloaded the dev server, then passed on the branch and its base. Wait for the reload to settle, and
   run a failing check twice before naming a defect (the frogs, Task 4).
+
+## 2026-10-25 (late) — the loading curtain
+
+- **Chrome's network emulation cannot show a fetch priority.** It divides the throughput evenly between open
+  requests, and `vite preview` serves HTTP/1.1. So `fetchpriority="high"` on the curtain's painting moved nothing:
+  20.7 s on slow 4G before and after, to within a few milliseconds. A priority's effect needs a real HTTP/2 server
+  and a real link. Do not report it as measured from the emulation.
+- **A page with no WebGL keeps React's tree.** R3F's context error does not unmount the root, so a fix that assumed
+  "the root unmounts" (the Consultant's P2) left React's copy of the loading cue up for ever. The gate's browser
+  check with `getContext` stubbed to null found it. A failure path gets its own browser run at the gate, not a
+  reading of what the framework should do. The same run showed R3F's context failure reaches the page as an unhandled
+  rejection, not a window `error`: a listener on `error` alone never fired.
+- **A test of an inline script can run the script itself.** A13 slices the classic script out of `index.html` and
+  runs it with `new Function` over stubbed `location`, `sessionStorage`, `matchMedia` and `document`. The rule then
+  lives in one place, the page, and a change to it fails the test.
+
