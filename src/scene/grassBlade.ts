@@ -1,4 +1,6 @@
 import { Color, SRGBColorSpace } from 'three'
+import { mulberry32 } from './brush.ts'
+import { vnoise } from './brushForms.ts'
 import { STREET_SOURCES } from './streetStrokes.ts'
 import type { ImageData2D } from './useImageData.ts'
 
@@ -9,9 +11,9 @@ import type { ImageData2D } from './useImageData.ts'
  * along its arch, because the thinner pointed blade read as agave on the flat strip. The grass test's blades were
  * short straight spikes that tapered all along (`tasks/todo.md`, "Not yet Van Gogh"). A blade here is a ribbon in a
  * vertical plane that faces the camera, as a brushstroke faces its viewer, and bends within that plane: its angle from
- * the vertical grows from `lean` at the root by `curl` at the tip. Three segments: at the painting's stroke length two
- * fold the longest arcs into one kink, and a fourth shows only at 2.5× (Task 1's look passes,
- * `tasks/2026-10-24-street-s3.md`).
+ * the vertical grows from `lean` at the root by `curl` at the tip. Four segments, and no joint turns more than
+ * `jointMax`: with three, a joint turned up to 38° and the near arches read as a V at 2× (S3b task 2; two segments
+ * folded every arc into one kink, S3).
  */
 
 /**
@@ -22,7 +24,9 @@ export const GRASS_SOURCES = { field: STREET_SOURCES.field, bushes: [1445, 1155,
 
 export const GRASS_BLADE = {
   /** rows of the ribbon less one: 2 triangles each */
-  segments: 3,
+  segments: 4,
+  /** the largest turn at a joint (radians, about 22°): six segments' 19° read as a curve at 4×, three's 38° as a V */
+  jointMax: 0.38,
   /** a clump's blade length before the tuft rule (Task 2) and the per-blade factor 0.75–1.25 */
   height: 0.036,
   /** a blade's half-width at its widest: 5–7.5 times as long as wide, fatter than the painting's 8–11 (see above) */
@@ -34,10 +38,16 @@ export const GRASS_BLADE = {
   tipMax: 1.8,
   /** blades a clump, the outermost blade's lean from the vertical (radians), and the roots' spread */
   clump: [5, 9],
-  fan: 0.5,
+  fan: 0.3,
+  /** the whole clump leans this far toward its side, so its strokes lie over in low arcs (S3b look pass 1) */
+  leanToSide: 0.35,
+  /** a clump's blades curl to its side (`clumpSide`), but this share of them the other way */
+  against: 0.15,
+  /** the side field's frequency per world unit: neighbours 0.03 apart mostly agree */
+  sideScale: 5,
   spread: 0.012,
   /** how far a blade's plane turns off facing the camera, either way (radians) */
-  turn: 0.5,
+  turn: 0.3,
   /** the colour's multiplier at the root and at the tip */
   shade: [0.6, 1.05],
   /** the shader's largest push at the tip under the hand, its wind, and the distance from which it widens a blade */
@@ -45,6 +55,17 @@ export const GRASS_BLADE = {
   wind: 0.0035,
   widenFrom: 0.3,
 } as const
+
+/**
+ * The street's moon on the blade (S3b task 1). The painting's bush strokes are lit along their outer arch: a pale
+ * grey-green edge on a dark body. A blade takes its top colour where its arch faces `STREET_MOON`, the facing eased
+ * through `facing` and the length through `along`, at most `top` of the way. `ambient` scales the pigment. The top colour
+ * is one of the lightest `topShare` of the bushes' texels that `grassTopUsable` keeps. The light reaches `edge` of the
+ * blade's width in from its outer edge, at full strength over the outer half of that (S3b look passes 1–4: the whole
+ * width read as a grey veil, a ramp across it as a dim one, and the band's strongest part fell where the stroke's edge
+ * is cut away). The facing's narrow range lights the arches that face the moon best, not every arch top.
+ */
+export const GRASS_LIGHT = { ambient: 1.0, top: 1.0, along: [0.2, 0.5], topShare: 0.02, edge: 0.5, facing: [0.55, 0.75] } as const
 
 export type BladeSpec = {
   x: number
@@ -59,6 +80,8 @@ export type BladeSpec = {
   curl: number
   /** linear RGB, one texel of a source */
   colour: [number, number, number]
+  /** linear RGB, a lit texel of the bushes (`GRASS_LIGHT`) */
+  topColour: [number, number, number]
   seed: number
 }
 
@@ -129,6 +152,36 @@ vec3 grassBladeVertex(vec3 root, float a, float across, float height, float half
 }`
 
 /**
+ * How squarely the blade's outer arch at `a` faces `moon` (a unit world direction), 0 to 1. The arch's outer side is
+ * away from its centre of curvature, so it turns with the curl. A straight blade takes its upper side. Every blade in
+ * the street curls by at least 0.5 rad (its test), so the straight rule is for the formula only. `GRASS_MOON_GLSL` is
+ * the same function for the shader.
+ */
+export function bladeMoonFacing(spec: BladeSpec, a: number, right: readonly [number, number], moon: readonly [number, number, number]): number {
+  const th = spec.lean + spec.curl * a
+  const side = Math.abs(spec.curl) < 1e-6 ? (th >= 0 ? 1 : -1) : Math.sign(spec.curl)
+  const c = Math.cos(spec.yaw)
+  const s = Math.sin(spec.yaw)
+  const ax = right[0] * c + right[1] * s
+  const az = -right[0] * s + right[1] * c
+  return Math.max(0, side * (-Math.cos(th) * ax * moon[0] + Math.sin(th) * moon[1] - Math.cos(th) * az * moon[2]))
+}
+
+/**
+ * `bladeMoonFacing` in GLSL. Its first ten arguments are `grassBladeVertex`'s, and the shader passes both one argument
+ * string, so the facing cannot read a different yaw or `right` from the vertex (Codex R7).
+ */
+export const GRASS_MOON_GLSL = `
+float grassMoonFacing(vec3 root, float a, float across, float height, float halfWidth, float lean, float curl, float yaw, vec2 right, float widen, vec3 moon) {
+  float th = lean + curl * a;
+  float side = abs(curl) < 1e-6 ? (th >= 0.0 ? 1.0 : -1.0) : sign(curl);
+  float c = cos(yaw);
+  float s = sin(yaw);
+  vec2 ax = vec2(right.x * c + right.y * s, -right.x * s + right.y * c);
+  return max(0.0, side * dot(vec3(-cos(th) * ax.x, sin(th), -cos(th) * ax.y), moon));
+}`
+
+/**
  * The farthest the shader can move any point of the blade from its root across the ground, with the camera at
  * `distance`: the arch and its width widened there, then the hand's full push and the wind at the tip. The plane is
  * vertical and holds the root, so the turn toward the camera does not change it. The shader's wind is a unit
@@ -156,6 +209,41 @@ export function grassTexelUsable(r: number, g: number, b: number): boolean {
   return r + g + b < 520 && !(hi - lo < 40 && hi + lo > 230) && !(r > 1.05 * g && r > b)
 }
 
+/**
+ * A texel the top colour may take: not a near-white, not the canvas's warm brown and beige. Unlike `grassTexelUsable`
+ * it keeps the light grey, because the lit edges of the bush strokes are pale grey-green (`probe-usable.txt`, S3b).
+ */
+export function grassTopUsable(r: number, g: number, b: number): boolean {
+  return r + g + b < 520 && !(r > 1.05 * g && r > b)
+}
+
+const topPools = new WeakMap<ImageData2D, [number, number, number][]>()
+
+/** The bushes' lightest `topShare` of usable texels, in linear RGB, built once per painting. */
+function topPool(painting: ImageData2D): [number, number, number][] {
+  const cached = topPools.get(painting)
+  if (cached) return cached
+  const [x0, y0, x1, y1] = GRASS_SOURCES.bushes
+  const sx = painting.width / 1600
+  const sy = painting.height / 1267
+  const texels: [number, number, number, number][] = []
+  for (let y = Math.floor(y0 * sy); y < Math.floor(y1 * sy); y++) {
+    for (let x = Math.floor(x0 * sx); x < Math.floor(x1 * sx); x++) {
+      const i = (y * painting.width + x) * 4
+      const [r, g, b] = [painting.data[i], painting.data[i + 1], painting.data[i + 2]]
+      if (grassTopUsable(r, g, b)) texels.push([0.299 * r + 0.587 * g + 0.114 * b, r, g, b])
+    }
+  }
+  if (texels.length === 0) throw new Error('grassBlade: the bushes have no lit texel for the top colour')
+  texels.sort((p, q) => q[0] - p[0])
+  const pool = texels.slice(0, Math.ceil(GRASS_LIGHT.topShare * texels.length)).map(([, r, g, b]): [number, number, number] => {
+    const c = new Color().setRGB(r / 255, g / 255, b / 255, SRGBColorSpace)
+    return [c.r, c.g, c.b]
+  })
+  topPools.set(painting, pool)
+  return pool
+}
+
 /** One texel's colour from a source, inner blades from its dark end and outer from its pale end (`out` 0 → 1). */
 function pigment(rand: () => number, painting: ImageData2D, out: number): [number, number, number] {
   const [x0, y0, x1, y1] = rand() < 0.5 ? GRASS_SOURCES.field : GRASS_SOURCES.bushes
@@ -176,20 +264,34 @@ function pigment(rand: () => number, painting: ImageData2D, out: number): [numbe
 }
 
 /**
- * A clump at (x, z): blades fanned from upright at its centre to `fan` at its edge, each arching outward, the outer
- * ones bent furthest and pale, the inner dark. `height` is the clump's (Task 2's tuft rule); each blade takes 0.75–1.25
+ * Which way a clump at (x, z) curls, toward the camera's right (1) or its left (−1): a slow field along the verge, so
+ * the painting's bush strokes, which curve together side by side, come in groups (S3b task 2).
+ */
+export function clumpSide(x: number, z: number): -1 | 1 {
+  return vnoise(x * GRASS_BLADE.sideScale + 11.3, z * GRASS_BLADE.sideScale - 7.1) < 0.5 ? -1 : 1
+}
+
+/**
+ * A clump at (x, z): leaning `leanToSide` toward its side, its blades fanned `fan` either way from that, all but
+ * `against` of them arching to the side, the outer ones bent furthest and pale, the inner dark. `height` is the clump's (Task 2's tuft rule); each blade takes 0.75–1.25
  * of it.
  */
 export function clump(rand: () => number, painting: ImageData2D, x: number, z: number, height: number): BladeSpec[] {
   const T = GRASS_BLADE
+  const tops = topPool(painting)
+  const side = clumpSide(x, z)
   const n = T.clump[0] + Math.floor(rand() * (T.clump[1] - T.clump[0] + 1))
   const blades: BladeSpec[] = []
   for (let i = 0; i < n; i++) {
+    // the seed first, and the paint from it: `pigment` refuses texels in a loop, so paint drawn from `rand` made the
+    // layout depend on the image (S3b, Codex R6)
+    const seed = rand() * 1000
+    const paint = mulberry32(Math.floor(seed * 1e6))
     const f = Math.max(-1, Math.min(1, (i / (n - 1)) * 2 - 1 + (rand() - 0.5) / n))
-    const lean = f * T.fan
-    const dir = Math.abs(f) < 0.15 ? (rand() < 0.5 ? -1 : 1) : Math.sign(f)
+    const lean = side * T.leanToSide + f * T.fan
+    const dir = rand() < T.against ? -side : side
     const bend = (T.curve[0] + rand() * (T.curve[1] - T.curve[0])) * (0.7 + 0.3 * Math.abs(f))
-    const curl = dir * (dir === Math.sign(lean) ? Math.min(bend, T.tipMax - Math.abs(lean)) : bend)
+    const curl = dir * Math.min(dir === Math.sign(lean) ? Math.min(bend, T.tipMax - Math.abs(lean)) : bend, T.jointMax * T.segments)
     blades.push({
       x: x + (rand() - 0.5) * T.spread,
       z: z + (rand() - 0.5) * T.spread,
@@ -198,8 +300,9 @@ export function clump(rand: () => number, painting: ImageData2D, x: number, z: n
       halfWidth: T.halfWidth[0] + rand() * (T.halfWidth[1] - T.halfWidth[0]),
       lean,
       curl,
-      colour: pigment(rand, painting, Math.abs(f)),
-      seed: rand() * 1000,
+      colour: pigment(paint, painting, Math.abs(f)),
+      topColour: tops[Math.floor(paint() * tops.length)],
+      seed,
     })
   }
   return blades

@@ -5,6 +5,7 @@ import { CYPRESS_STROKE_BODY, strokeGlslWith, type StrokeBody } from './cypressS
 import type { BakedMass } from './landDomes.ts'
 import { buildFlatPanel, buildStreet, FLAT_VIEW, type StreetBuild, type StreetCounts } from './streetGeometry.ts'
 import { FOG, fogInjection } from './streetFog.ts'
+import { grassBaseBody, grassBasePalette } from './grassBase.ts'
 import { BrushCypress } from './BrushCypress.tsx'
 import {
   STATION_T,
@@ -20,6 +21,7 @@ import StreetLife from './streetLife.tsx'
 import { swayInjection } from './streetLife.ts'
 import StreetWalk from './StreetWalk.tsx'
 import StreetGrass from './StreetGrass.tsx'
+import StreetFrog from './StreetFrog.tsx'
 import { useImageData } from './useImageData.ts'
 import { material, plainGeometry } from './streetMaterial.ts'
 
@@ -108,10 +110,12 @@ export default function Street({ reduced = false, still = false }: { reduced?: b
   }, [camera, flags.flat, flags.station, flags.walkT, portrait, offset])
   /* eslint-enable react-hooks/immutability */
 
-  const materials = useMemo(() => {
+  const fog = useMemo(() => {
     const devFogColour = import.meta.env.DEV && typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('fogColour') : null
     const fogColour = devFogColour ? (devFogColour.startsWith('#') ? devFogColour : `#${devFogColour}`) : FOG.colour
-    const fog = () => (flags.flat ? fogInjection(fogColour, 100, 200) : fogInjection(fogColour))
+    return () => (flags.flat ? fogInjection(fogColour, 100, 200) : fogInjection(fogColour))
+  }, [flags.flat])
+  const materials = useMemo(() => {
     const ids = flags.ids > 0
     return {
       solid: material('street-solid', null, fog(), false, ids),
@@ -122,8 +126,14 @@ export default function Street({ reduced = false, still = false }: { reduced?: b
       trees: material('street-trees-sway', strokeGlslWith(CYPRESS_STROKE_BODY), fog(), true, ids, swayInjection()),
       treeSolid: material('street-trees-solid-sway', null, fog(), false, ids, swayInjection()),
     }
-  }, [flags.flat, flags.ids])
+  }, [fog, flags.ids])
   useEffect(() => () => { for (const m of Object.values(materials)) m.dispose() }, [materials])
+  // the base under the grass, painted with the bushes' dark dabs (S3b pass 5): its paint is the painting's, so it waits for it
+  const baseMaterial = useMemo(
+    () => (flags.grass && paintingData ? material('street-grass-base', grassBaseBody(grassBasePalette(paintingData)), fog(), false, flags.ids > 0) : null),
+    [flags.grass, flags.ids, paintingData, fog],
+  )
+  useEffect(() => () => baseMaterial?.dispose(), [baseMaterial])
 
   const meshes = useMemo(() => {
     if (!build) return null
@@ -136,6 +146,7 @@ export default function Street({ reduced = false, still = false }: { reduced?: b
     const treeCls = isSrc ? 255 : 5
     return {
       underpaint: plainGeometry(build.underpaint, upCls),
+      grassBase: build.grassBase.indices.length > 0 ? plainGeometry(build.grassBase, isSrc ? build.grassBase.src : build.grassBase.cls) : null,
       strokes: strokeGeometry(build.strokes.arrays, build.strokes.stroke, build.strokes.seed, undefined, strokesCls),
       ground: strokeGeometry(build.ground.arrays, build.ground.stroke, build.ground.seed, undefined, groundCls),
       outlines: strokeGeometry(build.outlines.arrays, build.outlines.stroke, build.outlines.seed, undefined, outlinesCls),
@@ -144,7 +155,7 @@ export default function Street({ reduced = false, still = false }: { reduced?: b
       treeStrokes: strokeGeometry(build.trees.strokes, build.trees.stroke, build.trees.seed, undefined, treeCls),
     }
   }, [build, flags.ids])
-  useEffect(() => () => { if (meshes) for (const g of Object.values(meshes)) g.dispose() }, [meshes])
+  useEffect(() => () => { if (meshes) for (const g of Object.values(meshes)) g?.dispose() }, [meshes])
 
   if (!meshes) return null
   const devStrideStr = import.meta.env.DEV && typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('cypressStride') : null
@@ -154,6 +165,8 @@ export default function Street({ reduced = false, still = false }: { reduced?: b
   return (
     <group name="street" position={offset}>
       <mesh name="street-underpaint" geometry={meshes.underpaint} material={materials.solid} renderOrder={0} />
+      {/* after the underpaint, as it drew inside that mesh until pass 5, and before `street-ground` (order 1), so a tie in depth with the ground mesh still goes to the ground */}
+      {meshes.grassBase && baseMaterial && <mesh name="street-grass-base" geometry={meshes.grassBase} material={baseMaterial} renderOrder={0.5} />}
       <mesh name="street-ground" geometry={meshes.ground} material={materials.ground} renderOrder={1} />
       <mesh name="street-strokes" geometry={meshes.strokes} material={materials.strokes} renderOrder={1} />
       <mesh name="street-windows" geometry={meshes.windows} material={materials.solid} renderOrder={2} />
@@ -181,6 +194,8 @@ export default function Street({ reduced = false, still = false }: { reduced?: b
           still={still}
         />
       )}
+      {/* the frog lives at the verge's edge, so only with the grass (S3b pass 5) */}
+      {!flags.flat && flags.grass && paintingData && <StreetFrog painting={paintingData} flags={flags} reduced={reduced} />}
       {!flags.flat && (
         <StreetWalk
           painting={paintingData}

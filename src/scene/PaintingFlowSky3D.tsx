@@ -1238,10 +1238,18 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
   // One ribbon mesh; its geometry and material switch together. A swapped prop never unmounts the mesh.
   const ribbons = mode === 'moving' ? { geometry: movingGeometry, material: movingMaterial } : { geometry, material: ribbonMaterial }
 
-  // C: the ready seam, written after commit so the mesh below draws on the frame the arrival first reads it
+  // C: the ready seam, written after commit so the mesh below draws on the frame the arrival first reads it. The
+  // captures read it as `__skyReady`: `__streetReady` alone let a loaded machine capture the street before its sky (S3b)
   useLayoutEffect(() => {
-    if (readyRef) readyRef.current = Boolean(ribbons.geometry) && !awaitingMoving
+    const ready = Boolean(ribbons.geometry) && !awaitingMoving
+    if (readyRef) readyRef.current = ready
+    const w = window as Window & { __skyReady?: boolean }
+    w.__skyReady = ready
   }, [readyRef, ribbons.geometry, awaitingMoving])
+  // the seam is the mounted sky's: a sky that unmounts is not ready (Codex B6)
+  useLayoutEffect(() => () => {
+    ;(window as Window & { __skyReady?: boolean }).__skyReady = false
+  }, [])
 
   return (
     <group ref={skyRoot}>

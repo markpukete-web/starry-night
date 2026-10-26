@@ -1,5 +1,47 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-10-25 (late afternoon): S3b pass 5 built, gated and reviewed; the church next, Mark out
+
+S3b pass 5 is done on `feat/street-s3b` (head `22b00fc`), local, no PR. Mark is out and gates on his return. What it
+holds, against his words: the base between the clumps painted in the bushes' dark paint, the hand closing on a press,
+and a frog with blinking eyes, in a gap of the left verge's grass ("Why not under the grass"). The record:
+`tasks/2026-10-25-street-s3b.md`, Task 6. The Consultant's branch review: MERGEABLE, ten P3s, each answered there, six
+fixed in `22b00fc`.
+
+**For Mark's gate.** Live at `http://192.168.0.148:5196/?street=1` (or `localhost:5196`). The frog is at stop 0, low
+left. The clips: `scratch/street-s3b-2026-10-25/t6/clips/blink/` and `t6/clips/press/`. His calls: the frog's place,
+size and blink speed, the base's darker verge, and whether the press reads. Perf holds 60 fps at every pose. The p95
+rose about 1 ms (the record says where). Then the PR, on his word.
+
+**The church (slice 3c) is next, then the portal.** Mark: "agree, church first then portal". The plan is
+`tasks/2026-10-25-street-church-plan.md` on `feat/street-church` (stacked on S3b), in review. Two deviations from the
+design need Mark's word at the gate: stop 4 frames the spire, and a church-only light lifts its plaster.
+
+## Pickup — 2026-10-25 (afternoon): Mark read S3b live; his answers and three ideas (superseded by the pickup above)
+
+S3b is gated by the Lead and committed on `feat/street-s3b` (`cb34463`), local, no PR. Mark on the live street: the far
+arch tops at stop 0 are fine, the stripes are fine, the grass's direction is right. The bare base between the clumps
+"bother me a bit". Proposed to Mark, waiting for his word (it passes the four-pass cap): one more S3b pass that paints the
+base in the bushes' darkest colours, broken up, and gives the hand a press (the closed-hand cursor while the button is
+down, a hover at 0.6 and a press at 1, as `landTouch.ts` does). Then the PR.
+
+**Noted, not queued (scope rule), Mark's ideas, 2026-10-25:**
+- The hand with a touching motion on a click. The small version is in the proposed pass above. A drawn hand that pats
+  the grass is the larger version, for later if the small one reads as plain.
+- Fences "so that it feels more real". They go in the village's craft slice (below, 2026-10-24). The Lead's read: low
+  dry-stone walls along the lane and a wooden rail round a cottage garden, not white pickets.
+- The church at stop 4 "looks pretty flat" (his capture beside the painting's church and two reworks by other artists,
+  ideas only). The cause: `streetLayout.ts:218` turns the diorama's church square to the lane, so stop 4 sees one wall.
+  The Lead's proposal, most effect first: turn it to show two walls and the roof's slope (stop 4's framing changes), build
+  it from the nave, a porch gable and a tower with a belfry, give the eaves, the door and a step depth, light the moonlit
+  side near white, shorter strokes per wall. Its own slice, next after S3b. The walk has about 6,700 triangles spare at
+  its worst point, so the church and the walls need a budget from elsewhere.
+- Frogs or other animals in the village. The Lead's read: frogs fit poorly (no water, too small and dark to read).
+  Mark asked for a frog anyway, in pass 5, and it is built (the pickup above). The rest of this note stands.
+  Moths at the lit windows fit best: Vincent painted a giant peacock moth at Saint-Rémy in May 1889. Then a cat on a wall
+  or an owl on a ridge. One or two, quiet. Borrowing a motif from his other work is near the "other paintings" line, so
+  it is Mark's call. Not a fix for the bare base.
+
 ## Pickup — 2026-10-24 (afternoon, later): Mark read the grass test live; slice 2's plan next
 
 Mark, on the live test: "It actually feels good, but there's room for improvement for sure. This is a throwaway test
@@ -2677,7 +2719,16 @@ only the historical record of what was closed along the way.
 
 ## Parked ideas (scope-growth — do NOT build without Mark)
 
-- (none yet)
+- A per-frame cap on the grass's triangles (S3b, 2026-10-25). Today the budget is a test over 901 sampled poses plus a
+  refinement and a 2% margin, and the density is set to pass it (0.165). A cap in `StreetGrass`'s frame loop, thinning
+  the far chunks first, would hold the ceiling at every pose and let the density go back up (0.18 is 10% more blades).
+  It changes the frame loop, so it waits for Mark (`tasks/2026-10-25-street-s3b.md`, Task 2).
+- A smaller `tipMax` for the grass (S3b, 2026-10-25). At stop 0 the moonlit arcs fall to the right past each arch's top
+  (59% of the verge's orientation in 135–180°), where the painting's bush strokes rise to the right (55% in 0–45°). A
+  blade that stops nearer the horizontal would show more of the arch's rising part. The look passes reached their cap at
+  pass 4, so it waits for Mark (`tasks/2026-10-25-street-s3b.md`, Task 3).
+- The grass's stripes (S3b, 2026-10-25). At 2× they read as regular bands along a ribbon more than as bristle marks. No
+  look pass changed the stroke body. It waits for Mark's read at the gate.
 
 ## Course-correction — 2D flat is the FOUNDATION, not the final form (Mark, 2026-06-23)
 

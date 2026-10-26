@@ -18,6 +18,8 @@ export const TRAIL = {
   period: LAND_TOUCH.period,
   windowStart: LAND_TOUCH.windowStart,
   windowEnd: LAND_TOUCH.windowEnd,
+  /** a mouse that moves with no button down brushes the grass at this share of a press (S3b pass 5, as the land) */
+  hoverAmp: LAND_TOUCH.hoverAmp,
 } as const
 
 export type LiveTexel = {
@@ -89,6 +91,7 @@ export function stampSegment(
   radius: number,
   now: number,
   source: 'hand' | 'feet',
+  amp = 1,
 ): void {
   if (trail.mode === 'frozen') return
 
@@ -153,7 +156,7 @@ export function stampSegment(
       }
 
       const q = dist / radius
-      const target = (1 - q) ** 2
+      const target = amp * (1 - q) ** 2
       const idx = r * cols + c
 
       const existing = trail.live.get(idx)
@@ -201,6 +204,23 @@ export function stampSegment(
           stampedThisStep: true,
         })
       }
+    }
+  }
+}
+
+/**
+ * A press lifted (S3b pass 5, Codex F1): the source's held texels let go, as the step lets go of a texel it did not
+ * reach. A stamp holds only a texel it would push at least as hard, so without this a hover that goes on over a lifted
+ * press kept the press's push. The swing then brings each texel down until the hover holds it again at its own push.
+ */
+export function releaseSource(trail: Trail, source: 'hand' | 'feet', now: number): void {
+  if (trail.mode === 'frozen') return
+  for (const texel of trail.live.values()) {
+    if (texel.release !== NO_RELEASE || texel.source !== source) continue
+    texel.release = now
+    if (trail.mode === 'settle') {
+      texel.settleFrom = calcAmp(texel, now, 'swing')
+      texel.settleT0 = now
     }
   }
 }

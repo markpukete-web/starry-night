@@ -9,6 +9,7 @@ import test from 'node:test'
 import { NO_RELEASE } from '../src/scene/landTouch.ts'
 import {
   createTrail,
+  releaseSource,
   stampSegment,
   stepTrail,
   encodePush,
@@ -409,4 +410,57 @@ test('a sweep\'s end is a point', () => {
     assert.equal(px, 0, `frame ${f}: center texel keeps push 0 in x`)
     assert.equal(pz, 0, `frame ${f}: center texel keeps push 0 in z`)
   }
+})
+
+/** The push at `at` after `seconds` of stamps at `amp` from 60 Hz frame `from`, each stamp followed by a step. */
+function holdAt(trail: Trail, at: [number, number], amp: number, from: number, seconds: number): number {
+  const dt = 1 / 60
+  const frames = Math.round(seconds / dt)
+  for (let k = 0; k < frames; k++) {
+    stampSegment(trail, null, at, TRAIL.radius, (from + k) * dt, 'hand', amp)
+    stepTrail(trail, (from + k) * dt, 'swing')
+  }
+  return from + frames
+}
+
+test("a hover pushes at hoverAmp of a press's push (S3b pass 5)", () => {
+  const at: [number, number] = [0.2025, 0.2025]
+  const probe: [number, number] = [at[0] + 0.5 * TRAIL.radius, at[1]]
+  const hover = createTrail([0, 0, 0.4, 0.4])
+  const press = createTrail([0, 0, 0.4, 0.4])
+  holdAt(hover, at, TRAIL.hoverAmp, 0, 1)
+  holdAt(press, at, 1, 0, 1)
+  const h = getTexelPush(hover, ...probe)[0]
+  const p = getTexelPush(press, ...probe)[0]
+  assert.equal(TRAIL.hoverAmp, 0.6)
+  assert.ok(p > 0.15, `the press pushes (${p})`)
+  assert.ok(Math.abs(h / p - TRAIL.hoverAmp) < 0.03, `the hover is ${(h / p).toFixed(3)} of the press`)
+})
+
+test('a press lifted under a hover settles to the hover\'s push (Codex F1)', () => {
+  const at: [number, number] = [0.2025, 0.2025]
+  const probe: [number, number] = [at[0] + 0.5 * TRAIL.radius, at[1]]
+  const lifted = createTrail([0, 0, 0.4, 0.4])
+  const frame = holdAt(lifted, at, 1, 0, 0.5)
+  const pressed = getTexelPush(lifted, ...probe)[0]
+  releaseSource(lifted, 'hand', frame / 60)
+  holdAt(lifted, at, TRAIL.hoverAmp, frame, 3)
+  const fresh = createTrail([0, 0, 0.4, 0.4])
+  holdAt(fresh, at, TRAIL.hoverAmp, 0, 3.5)
+  const settled = getTexelPush(lifted, ...probe)[0]
+  const hover = getTexelPush(fresh, ...probe)[0]
+  assert.ok(settled < pressed - 0.05, `the push fell from the press's ${pressed.toFixed(3)} to ${settled.toFixed(3)}`)
+  assert.ok(Math.abs(settled - hover) <= 2 / 127, `it settled at the hover's ${hover.toFixed(3)} (${settled.toFixed(3)})`)
+  for (const texel of lifted.live.values()) assert.equal(texel.release, NO_RELEASE, 'the hover holds every texel it reaches again')
+})
+
+test("a lift lets go of the hand's texels only", () => {
+  const trail = createTrail([0, 0, 0.4, 0.4])
+  stampSegment(trail, null, [0.1025, 0.1025], TRAIL.radius, 0, 'hand')
+  stampSegment(trail, null, [0.3025, 0.3025], TRAIL.feet, 0, 'feet')
+  stepTrail(trail, 0, 'swing')
+  releaseSource(trail, 'hand', 0.1)
+  const sources = [...trail.live.values()]
+  assert.ok(sources.some((t) => t.source === 'hand') && sources.some((t) => t.source === 'feet'))
+  for (const texel of sources) assert.equal(texel.release === NO_RELEASE, texel.source === 'feet', `${texel.source} ${texel.release}`)
 })

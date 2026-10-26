@@ -5,18 +5,58 @@ import {
   Vector4,
 } from 'three'
 import type { AliveInjection } from './aliveMaterial.ts'
-import { CYPRESS_STROKE_BODY, strokeGlslWith } from './cypressStrokeShader.ts'
-import { GRASS_BLADE, GRASS_BLADE_GLSL } from './grassBlade.ts'
+import { CYPRESS_STROKE_BODY, type StrokeBody, strokeGlslWith } from './cypressStrokeShader.ts'
+import { GRASS_BLADE, GRASS_BLADE_GLSL, GRASS_LIGHT, GRASS_MOON_GLSL } from './grassBlade.ts'
 import { PALETTE } from './palette.ts'
 import { fogInjection } from './streetFog.ts'
 import { lifeTimeUniform } from './streetLife.ts'
+import { STREET_MOON } from './streetLight.ts'
 import { material } from './streetMaterial.ts'
 
+/**
+ * The grass's own stroke body (S3b decision (d)): the cypress's, without its gaps, its dry brush from 0.85 and a finer
+ * fray, as slice 3 drew it. The look passes set its lanes, edge and rake, and the cypress's text does not change.
+ */
+export const GRASS_STROKE_BODY: StrokeBody = { ...CYPRESS_STROKE_BODY, gaps: null, dryFrom: 0.85, fray: 0.08 }
+
+const MOON_VARYINGS = 'varying vec3 vTopColour;\nvarying float vMoon;\nvarying float vMoonSide;'
+
+/**
+ * The moon's colour, before the stroke body so the bristles shade it. `vStroke.y` is 0 at across −1, and the outer edge
+ * has across of the curl's opposite sign (`bladeMoonFacing`'s derivation).
+ */
+const MOON_FRAGMENT = `
+float moonOuter = vMoonSide > 0.0 ? 1.0 - vStroke.y : vStroke.y;
+diffuseColor.rgb = mix(diffuseColor.rgb, vTopColour, vMoon * smoothstep(${(1 - GRASS_LIGHT.edge).toFixed(6)}, ${(1 - 0.5 * GRASS_LIGHT.edge).toFixed(6)}, moonOuter));
+`
+
+/** `grassBladeVertex`'s arguments in the shader. `grassMoonFacing` takes the same text, so both read one blade (Codex R7). */
+export const GRASS_BLADE_ARGS = 'root, position.y, position.x, aHeight, aHalfWidth, aLean, aCurl, aYaw, right, widen'
+
+/**
+ * The grass's shader pieces. `lit` adds the street's moon on each blade's outer arch (S3b task 1). Unlit, the text is
+ * slice 3's byte for byte, which the unlit captures and the colour gate rely on.
+ */
 export function grassInjection(
   trailTexture: DataTexture,
   trailRect: [number, number, number, number],
+  lit: boolean,
 ): Omit<AliveInjection, 'key'> {
   const liftColour = new Color(PALETTE.hillsCrest)
+  const L = GRASS_LIGHT
+  const moonHead = lit ? `
+attribute vec3 aTopColour;
+uniform vec3 uMoon;
+${MOON_VARYINGS}
+${GRASS_MOON_GLSL}` : ''
+  // the colour is mixed in the fragment (\`MOON_FRAGMENT\`), which shapes it across the blade's two columns
+  const moonColour = lit ? `
+float moonFacing = grassMoonFacing(${GRASS_BLADE_ARGS}, uMoon);
+vColor.rgb *= ${L.ambient.toFixed(6)};
+vTopColour = aTopColour;
+vMoon = ${L.top.toFixed(6)} * smoothstep(${L.facing[0].toFixed(6)}, ${L.facing[1].toFixed(6)}, moonFacing) * smoothstep(${L.along[0].toFixed(6)}, ${L.along[1].toFixed(6)}, position.y);
+// a straight blade takes \`grassMoonFacing\`'s side, the edge above it (Codex B4)
+vMoonSide = abs(aCurl) < 1e-6 ? (aLean + aCurl * position.y >= 0.0 ? 1.0 : -1.0) : sign(aCurl);` : ''
   return {
     uniforms: {
       uTrailMap: { value: trailTexture },
@@ -24,6 +64,7 @@ export function grassInjection(
       uAliveTime: lifeTimeUniform,
       uLift: { value: 0.8 },
       uLiftColour: { value: liftColour },
+      ...(lit ? { uMoon: { value: STREET_MOON } } : {}),
     },
     vertexHead: /* glsl */ `
 attribute vec2 aRoot;
@@ -38,7 +79,7 @@ uniform vec4 uTrailRect;
 uniform float uAliveTime;
 varying float vPush;
 
-${GRASS_BLADE_GLSL}
+${GRASS_BLADE_GLSL}${moonHead}
 `,
     vertexBody: /* glsl */ `
 vColor = vec4(aBladeColour * mix(${GRASS_BLADE.shade[0].toFixed(6)}, ${GRASS_BLADE.shade[1].toFixed(6)}, position.y), 1.0);
@@ -54,7 +95,7 @@ vec2 right = vec2(dirToCam.y, -dirToCam.x);
 float d = distance(worldRoot, cameraPosition);
 float widen = max(1.0, d / ${GRASS_BLADE.widenFrom.toFixed(6)});
 
-vec3 pos = grassBladeVertex(root, position.y, position.x, aHeight, aHalfWidth, aLean, aCurl, aYaw, right, widen);
+vec3 pos = grassBladeVertex(${GRASS_BLADE_ARGS});${moonColour}
 
 vec2 trailUV = (aRoot - uTrailRect.xy) / uTrailRect.zw;
 vec2 push = (texture2D(uTrailMap, trailUV).rg * 255.0 - 128.0) / 127.0;
@@ -86,20 +127,21 @@ diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * 1.4 + uLiftColour * 
   }
 }
 
+/** `lit` is ignored under `ids`: the ID view's program stays slice 3's. */
 export function buildGrassMaterial(
   trailTexture: DataTexture,
   trailRect: [number, number, number, number],
   ids: boolean,
+  lit: boolean,
 ): MeshBasicMaterial {
-  const strokeBody = strokeGlslWith({
-    ...CYPRESS_STROKE_BODY,
-    gaps: null,
-    dryFrom: 0.85,
-    fray: 0.08,
-  })
-  const injection = grassInjection(trailTexture, trailRect)
+  const stroke = strokeGlslWith(GRASS_STROKE_BODY)
+  const moon = lit && !ids
+  const strokeBody = moon
+    ? { ...stroke, fragmentHead: `${stroke.fragmentHead}\n${MOON_VARYINGS}`, fragmentBody: MOON_FRAGMENT + stroke.fragmentBody }
+    : stroke
+  const injection = grassInjection(trailTexture, trailRect, moon)
   return material(
-    'street-grass',
+    moon ? 'street-grass-moon' : 'street-grass',
     strokeBody,
     { ...fogInjection(), vertexBody: '' },
     true,

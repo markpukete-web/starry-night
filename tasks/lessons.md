@@ -3057,3 +3057,86 @@ must be byte-identical before the stimulus's difference means anything.
 - **Read the PR's CI before you call the gate passed.** The grass test read a derived file that only the Lead's
   worktree links, so every local run passed and every CI run failed with ENOENT. Run the suite once with
   `reference/derived` hidden before you push a test that reads a file (PR #22, 2026-10-25).
+
+## 2026-10-25 — street S3b, Tasks 0 and 1: the baselines and the moon on the blade
+
+- **`__streetReady` never waited for the sky.** On a loaded machine (Codex was running probes) a capture took the
+  street before the sky had built, and a pinned pair differed between runs (`t0/first-try/`, stop 4 on the phone with no
+  sky). A 24-capture retest on a quiet machine passed under both waits, so timing alone proved nothing. The pair with no
+  sky did. The sky now writes `window.__skyReady`, and every capture that draws the sky waits for both.
+- **A seam's consumer must know which pages never produce it.** The ID view does not mount the sky
+  (`DioramaExperience.tsx:327`), so a wait on `__skyReady` timed out on all eight ID captures. Read the producer's mount
+  condition before you add a wait to every caller (Codex C1).
+- **A checker that guesses file names can read the wrong time.** `check-street-colour.ts` looked for `-t5.png` and then
+  `.png`. A time-0 pair was missing to it, and a stale time-5 image beside it would have been read with time-0
+  metadata. `--time T` reads `-tT.png` only and checks the metadata's times (Codex C2).
+- **The blade's texel filter refused the lit edges it was meant to show.** `grassTexelUsable` drops the light grey of the
+  canvas, and the painting's lit bush edges are pale grey-green. Only 7 of the bushes' 347 lightest texels passed it.
+  The top colour has its own rule, which keeps the grey and still refuses near-white and brown (Codex R2).
+- **Register lit, unlit and ID captures at one clock.** At time 5 the lit page's wind moved the blades and the unlit
+  page's did not, so one ID mask could not fit both. At pinned time 0 every page's wind is at 0 (Codex R4).
+- **A numerical test of a shader function does not test its call.** Case 14 checks `grassMoonFacing` by number, but a
+  call with `yaw` 0 would still pass it. The facing takes the vertex function's own argument text, one constant, and a
+  test pins both calls to it (Codex R7). Make the wrong call impossible to write, then test that.
+- **Measure main before you set a bound on a change.** Case 15 asked the hand to raise the mean L* within 80 px by 2.
+  Main's own grass raises it by 0.55, so the bound tested nothing about the moon. Counting the pixels the hand brightens,
+  lit against unlit, gave 1.01 for the build and 0.65 for a mutant with the lift off.
+- **A multisampled ID view has blended edges.** The lit change's "far" pixels were all quarter, half and three-quarter
+  blends of the grass's ID colour with another class, at blades thinner than a pixel. A mask of pure ID colours misses
+  them. Decompose the blend before you call a pixel "not grass".
+- **A hard-coded loop count hides a changed list.** `grassChunks` looped over three bands with `bi < 3`. A probe that
+  split the outer band built only three of four, and its triangle counts looked like a saving. The loop now follows
+  `GRASS.bands`. Count the chunks a probe builds before you trust its totals.
+- **A new draw in the layout's random stream moves the budget by several percent.** Drawing the curl's side for every
+  blade changed every later draw, and the walk's worst point at density 0.18 went from 95% to 104%. Rerun the budget
+  test after any change to what `clump` draws, not only after a change of density.
+- **A chunk that is partly in view draws all its blades.** At the walk's worst point 46% of the drawn blades were off
+  screen. Halving the chunks' length cut the triangles by 15% at the cost of about twice the draw calls.
+
+- **A blade that leans one way and curls the other stands up.** After Task 2 about half the blades read upright: the
+  fan's lean was signed at random and the curl followed the clump's side. Leaning the whole clump toward its side
+  (`leanToSide` 0.35, `fan` 0.5 → 0.3, `turn` 0.5 → 0.3, `GRASS_LIGHT.top` 0.6 → 0.75, `edge` 1) laid the clumps
+  over in low arcs (S3b look pass 1).
+- **A colour mixed in the vertex shader cannot be shaped across a two-column ribbon.** The moon's edge ramp ran linearly
+  over the blade's whole width. The mix moved to the fragment, before the stroke body, on `vStroke.y` (S3b look pass 2).
+- **Draw the weight in a loud colour before you tune its strength.** Pass 2's light was invisible. One capture with the
+  weight drawn in red showed it on the right place and at most 0.65 strong, so pass 3 tuned the strength, not the place.
+- **A light band at a stroke's edge falls where the alpha test cuts the stroke.** Pass 3's light was strongest at the
+  outer edge, and that edge is the part of the shaped stroke that is discarded. Reach full strength inside the band
+  (S3b look pass 4).
+- **Ramps that multiply leave the light under half.** The facing, the length and the width each eased from 0 to 1, and
+  their product rarely passed 0.5. Measure what the change adds, lit against unlit, before you raise any one of them:
+  pass 3 raised `top` and moved nothing.
+- **Probe the last pass's values before you spend it.** Four throwaway captures at two stops (A–D) bracketed the
+  painting's L > 60 share. Pass 4 then took one value (S3b: `facing` [0.55, 0.75], `edge` 0.5, `along` [0.2, 0.5],
+  `top` 1.0, `topShare` 0.02).
+- **zsh reads `$V:c` in a string as a modifier.** `"colour/full-s$S-$V:colour/ids-s$S-$V"` lost a character, so the
+  unlit look lines never reached `look.txt` and nothing failed. Brace every variable next to a colon: `${V}:`.
+- **Test a morphology helper on a mask with an edge.** `grass-look.ts` grew the zeros and shrank the ones, and its only
+  tests used masks that were all ones or all zeros. Every look figure in S3b's Task 3 measured the blades alone. One test
+  with a single pixel in a field would have shown it (Codex B1).
+- **`tsc --noEmit -p .` checks nothing in this repo.** The root `tsconfig.json` only references the others, so a
+  backtick that ended a GLSL template string passed it. Use `npx tsc -b`.
+- **A hash test that only says "differs" protects nothing.** The lit program's test required its text to differ from
+  the unlit one, so a mutant that inverted the moon's edge passed. Pin the behaviour: evaluate the compiled expression
+  against what the geometry says (Codex B3).
+- **A weaker stamp does not release a held press.** The trail keeps a held texel at the stronger of its targets, so
+  scaling a stamp's amplitude made a hover weaker only on fresh texels. A press lifted under a hover stayed at full
+  strength until the hand left. A change of strength needs its own release (`releaseSource`; Codex F1, S3b pass 5).
+- **An identity gate holds only in the right order.** The base alone could be proven against Task 4's ID frames, and
+  the frog then makes those frames differ by design. Prove each change's identity before the next visible one lands,
+  then compare the rest of the frame (Codex F3).
+- **A frog that only sinks its eyes shows them below the socket.** Shrink and sink together, each eye about its own
+  pivot, so the closed eye hides inside the head (S3b pass 5, look pass 3).
+- **Place a creature where it would live, then find the spot there that the camera sees.** Visibility put the frog on
+  the pale path, and Mark asked why it was not in the grass. A search of the verge for gaps the grass already leaves,
+  with each gap's screen position on both viewports, found one in frame on the phone with 13 blades round it.
+- **Read a capture's size before projecting into it.** A helper that assumed 1280 × 800 cropped empty grass. The
+  desktop captures are 1600 × 900 and the phone's 390 × 844 at a scale of 1.
+- **`git checkout` cannot restore an untracked file.** A mutation run backed a new file up with `cp a || cp b`, then
+  restored with `git checkout || cp b`. Both restores missed and two mutants stayed in the file. Back up to one fixed
+  path and restore from it.
+- **A screenshot of a visible browser reports the real cursor.** Mid-press, Playwright's screenshot made Chrome send a
+  `pointerleave` and a move to the Mac's own cursor, with no button down, so the scripted press ended. A fix for a
+  move in place went in before the event's position was logged, and it guarded nothing real. Log the event's position
+  and target before you name its cause. Drive a recorded hand through the seam, which ignores the real pointer.

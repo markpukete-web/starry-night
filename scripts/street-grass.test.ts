@@ -10,7 +10,7 @@ import { Frustum, Matrix4, PerspectiveCamera, Vector3 } from 'three'
 
 import { bladeReach, bladeVertex, GRASS_BLADE } from '../src/scene/grassBlade.ts'
 import type { BakedMass } from '../src/scene/landDomes.ts'
-import { buildStreet } from '../src/scene/streetGeometry.ts'
+import { buildFlatPanel, buildStreet } from '../src/scene/streetGeometry.ts'
 import {
   GRASS,
   grassChunks,
@@ -223,7 +223,10 @@ test('the sphere holds every displaced blade', { skip }, () => {
 
 // sampled, not every point: the count jumps where a chunk leaves the frustum, so a point between two samples can read
 // higher (Codex F05: 35,838 at t 0.31737 against the grid's 35,796). The grid is every 0.001 of t, plus that point.
-test('the grass fits its room at sampled points of the walk', { skip }, () => {
+test('the grass fits its room at sampled points of the walk, refined around the worst, with a 2% margin', () => {
+  // the layout no longer depends on the paint (S3b), so any painting gives the street's chunks and this runs in CI
+  const chunks = grassChunks(swatchPainting(0))
+  const painting = swatchPainting(0)
   const at = (t: number, aspect: number, portrait: boolean, chunkList: typeof chunks) => {
     const p = walkPose(t, portrait)
     const c = new PerspectiveCamera(p.fov, aspect, p.near, p.far)
@@ -245,19 +248,27 @@ test('the grass fits its room at sampled points of the walk', { skip }, () => {
     return drawn * 2 * GRASS_BLADE.segments
   }
 
-  let worst = { tris: 0, t: 0, aspect: '' }
+  const aspects = [
+    [1600 / 900, false, 'landscape'],
+    [390 / 844, true, 'portrait'],
+  ] as const
+  const points: { tris: number; t: number; aspect: (typeof aspects)[number] }[] = []
   for (const t of [...Array.from({ length: 901 }, (_, k) => k / 1000), 0.31737]) {
-    for (const [aspect, portrait, name] of [
-      [1600 / 900, false, 'landscape'],
-      [390 / 844, true, 'portrait'],
-    ] as const) {
-      const tris = at(t, aspect, portrait, chunks)
-      if (tris > worst.tris) worst = { tris, t, aspect: name }
+    for (const aspect of aspects) points.push({ tris: at(t, aspect[0], aspect[1], chunks), t, aspect })
+  }
+  // around the five worst points, every 0.0001 over ±0.005 (Codex R6: the sampled walk is not a proof, so keep a margin)
+  points.sort((p, q) => q.tris - p.tris)
+  let worst = points[0]
+  for (const p of points.slice(0, 5)) {
+    for (let k = -50; k <= 50; k++) {
+      const t = Math.min(0.9, Math.max(0, p.t + k / 10000))
+      const tris = at(t, p.aspect[0], p.aspect[1], chunks)
+      if (tris > worst.tris) worst = { tris, t, aspect: p.aspect }
     }
   }
 
-  console.log(`[budget test] worst sampled point: t=${worst.t.toFixed(5)}, aspect=${worst.aspect}, tris=${worst.tris} (budget ${GRASS.budget}, density ${GRASS.density})`)
-  assert.ok(worst.tris <= GRASS.budget, `worst ${worst.tris} <= budget ${GRASS.budget}`)
+  console.log(`[budget test] worst refined point: t=${worst.t.toFixed(5)}, aspect=${worst.aspect[2]}, tris=${worst.tris} (budget ${GRASS.budget}, ${((100 * worst.tris) / GRASS.budget).toFixed(1)}%, density ${GRASS.density})`)
+  assert.ok(worst.tris <= 0.98 * GRASS.budget, `worst ${worst.tris} <= 0.98 × budget ${GRASS.budget}`)
 
   // Negative control: at twice density, budget is exceeded
   const doubleChunks = grassChunks(painting, GRASS.density * 2)
@@ -341,9 +352,13 @@ test('with grass the ground is clipped to the footprint and nothing else', { ski
   console.log(`[clipped triangles] drop = ${drop} (probe: 32343)`)
   assert.ok(Math.abs(drop - 32343) / 32343 <= 0.01, `drop ${drop} within 1% of 32343`)
 
-  // Base triangles in underpaint
-  const upPos = bGrass.underpaint.positions
-  const upIdx = bGrass.underpaint.indices
+  // Base triangles, in their own arrays since S3b pass 5, none left in the underpaint
+  assert.deepEqual(bGrass.underpaint.indices, bNoGrass.underpaint.indices, 'the underpaint is the same with grass')
+  assert.equal(bNoGrass.grassBase.indices.length, 0, 'no base without grass')
+  assert.equal(buildFlatPanel(painting, flow, masses, true)!.grassBase.indices.length, 0, 'no base on the flat panel')
+  assert.ok(bGrass.grassBase.cls.every((c) => c === 3) && bGrass.grassBase.src.every((c) => c === 255), "the base is the ground's class, source 255 (Codex F2)")
+  const upPos = bGrass.grassBase.positions
+  const upIdx = bGrass.grassBase.indices
   let baseTriangles = 0
   const baseTris: [number, number, number][] = []
   for (let i = 0; i < upIdx.length; i += 3) {
@@ -409,4 +424,41 @@ test('with grass the ground is clipped to the footprint and nothing else', { ski
       }
     }
   }
+})
+
+/** A 1600 × 1267 painting of seven grass swatches in a diagonal pattern, `shift` places along: two shifts differ in every texel. */
+function swatchPainting(shift: number): ImageData2D {
+  const width = 1600
+  const height = 1267
+  const data = new Uint8ClampedArray(width * height * 4)
+  const swatches = [[40, 60, 110, 255], [60, 90, 70, 255], [30, 40, 60, 255], [150, 150, 70, 255], [90, 120, 80, 255], [160, 170, 165, 255], [70, 100, 130, 255]]
+  for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) data.set(swatches[(x * 3 + y * 5 + shift) % swatches.length], (y * width + x) * 4)
+  return { data, width, height }
+}
+
+test("the layout is the paint's no longer: two paintings that differ in every texel give one layout (S3b, Codex R6)", () => {
+  const shape = (chunks: ReturnType<typeof grassChunks>) =>
+    chunks.map((c) => c.blades.map((b) => [b.x, b.z, b.height, b.halfWidth, b.lean, b.curl, b.yaw].join(',')).join(';')).join('|')
+  const a = grassChunks(swatchPainting(0))
+  const b = grassChunks(swatchPainting(3))
+  assert.ok(a.length > 0)
+  assert.equal(shape(a), shape(b))
+  assert.notDeepEqual(a[0].blades.map((x) => x.colour), b[0].blades.map((x) => x.colour))
+})
+
+test('no joint turns more than GRASS_BLADE.jointMax: the arch is a curve, not a V (S3b task 2)', () => {
+  let worst = 0
+  for (const ch of grassChunks(swatchPainting(0))) {
+    for (const b of ch.blades) {
+      const S = GRASS_BLADE.segments
+      const rows = Array.from({ length: S + 1 }, (_, j) => bladeVertex(b, j / S, 0, [1, 0]))
+      for (let j = 1; j < S; j++) {
+        const u = [rows[j][0] - rows[j - 1][0], rows[j][1] - rows[j - 1][1], rows[j][2] - rows[j - 1][2]]
+        const v = [rows[j + 1][0] - rows[j][0], rows[j + 1][1] - rows[j][1], rows[j + 1][2] - rows[j][2]]
+        const cos = (u[0] * v[0] + u[1] * v[1] + u[2] * v[2]) / (Math.hypot(...u) * Math.hypot(...v))
+        worst = Math.max(worst, Math.acos(Math.min(1, cos)))
+      }
+    }
+  }
+  assert.ok(worst <= GRASS_BLADE.jointMax + 1e-9, `a joint turns ${worst.toFixed(4)} rad, over ${GRASS_BLADE.jointMax}`)
 })
