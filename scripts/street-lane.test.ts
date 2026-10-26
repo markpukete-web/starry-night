@@ -6,7 +6,7 @@ import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { existsSync, readFileSync } from 'node:fs'
 import test from 'node:test'
-import { PerspectiveCamera, Vector3 } from 'three'
+import { Group, PerspectiveCamera, Sprite, Vector3 } from 'three'
 
 import { buildFrog, FROG, frogPlace, FROGS, SQUARE_TOP } from '../src/scene/frog.ts'
 import type { BakedMass } from '../src/scene/landDomes.ts'
@@ -23,6 +23,7 @@ import {
   pathTangent,
   stationPose,
   stepClearings,
+  STREET,
   STREET_CHURCH,
   STREET_CYPRESS,
   STREET_HOUSES,
@@ -32,7 +33,7 @@ import {
   walkPose,
   wallClearings,
 } from '../src/scene/streetLayout.ts'
-import { LAMP_LIGHT, lampHaloScale, LIFE, litWindows } from '../src/scene/streetLife.ts'
+import { haloScaleOf, LAMP_LIGHT, lampHaloScale, LIFE, litWindows } from '../src/scene/streetLife.ts'
 import { SOURCE_STROKES, STROKE_LIFT } from '../src/scene/streetStrokes.ts'
 import type { ImageData2D } from '../src/scene/useImageData.ts'
 import { decodePNG } from './lib/png.ts'
@@ -957,4 +958,44 @@ test("the lantern's cap faces up", { skip }, () => {
       assert.ok(cross.dot(toCentroid) > 0, `triangle ${t} dot with vector from cap base centre > 0`)
     }
   }
+})
+
+test("the halo's scale survives a translated parent", { skip }, () => {
+  assert.ok(realPainting)
+  const build = buildStreet(realPainting, flow, masses, { grass: true, lane: true })
+  const lamp4 = build.report.lane.lamps[3]
+
+  const offset = new Vector3(...STREET.originA)
+  const group = new Group()
+  group.position.copy(offset)
+  const sprite = new Sprite()
+  sprite.position.copy(lamp4.lantern)
+  group.add(sprite)
+
+  const pose = walkPose(0.613)
+  const [cx, cy, cz] = pose.position
+  const [tx, ty, tz] = pose.target
+
+  const camNoOffset = new PerspectiveCamera(pose.fov, 16 / 9, 0.01, 100)
+  camNoOffset.position.set(cx, cy, cz)
+  camNoOffset.lookAt(tx, ty, tz)
+  camNoOffset.aspect = 16 / 9
+  camNoOffset.updateMatrixWorld()
+
+  const p = lamp4.lantern.clone().applyMatrix4(camNoOffset.matrixWorldInverse)
+  const depth = -p.z
+  const expectedScale = lampHaloScale(depth, pose.fov, 16 / 9)
+
+  const camera = new PerspectiveCamera(pose.fov, 16 / 9, 0.01, 100)
+  camera.position.set(cx + offset.x, cy + offset.y, cz + offset.z)
+  camera.lookAt(tx + offset.x, ty + offset.y, tz + offset.z)
+  camera.aspect = 16 / 9
+  camera.updateMatrixWorld()
+
+  const scale = haloScaleOf(sprite, camera)
+  assert.ok(Math.abs(scale - expectedScale) < 1e-9, `scale ${scale} within 1e-9 of expectedScale ${expectedScale}`)
+
+  const viewHeight = 2 * depth * Math.tan((pose.fov * Math.PI) / 360) * Math.min(1, 16 / 9)
+  const fraction = scale / viewHeight
+  assert.ok(fraction <= LAMP_LIGHT.haloView + 1e-9, `projected short-side fraction ${fraction} <= haloView ${LAMP_LIGHT.haloView}`)
 })

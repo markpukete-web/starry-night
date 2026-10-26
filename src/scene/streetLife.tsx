@@ -22,7 +22,7 @@ import type { BrushArraysWithCls } from './streetGeometry.ts'
 import { FOG, fogInjection } from './streetFog.ts'
 import type { ImageData2D } from './useImageData.ts'
 import { pathPoint, pathTangent, STREET_CHURCH, STREET_HOUSES, STREET_TREES } from './streetLayout.ts'
-import { HILL_PAINT, LIFE, lifeTimeUniform, lifeTime, litWindows, hillsGeometry, LAMP_LIGHT, lampHaloScale } from './streetLife.ts'
+import { HILL_PAINT, LIFE, lifeTimeUniform, lifeTime, litWindows, hillsGeometry, LAMP_LIGHT, haloScaleOf } from './streetLife.ts'
 
 /** The life's builds, each counted once: StrictMode runs a mount's effect twice in development on the same `parts`, and a
  * real rebuild is a new object. A count deleted in the effect's cleanup read 1 after any number of rebuilds (Fable C1). */
@@ -132,17 +132,11 @@ export function StreetLife({
 
     if (lamps.length > 0) {
       state.camera.updateMatrixWorld()
-      const inv = state.camera.matrixWorldInverse
       const cam = state.camera as PerspectiveCamera
-      const fov = cam.fov ?? 50
-      const aspect = cam.aspect ?? 1
-      const lanternPos = new Vector3()
       for (let i = 0; i < lamps.length; i++) {
         const sprite = haloRefs.current[i]
         if (!sprite) continue
-        lanternPos.copy(lamps[i].lantern).applyMatrix4(inv)
-        const depth = -lanternPos.z
-        const s = lampHaloScale(depth, fov, aspect)
+        const s = haloScaleOf(sprite, cam)
         sprite.scale.set(s, s, s)
       }
     }
