@@ -69,7 +69,7 @@ At `cf26434` (`E/tools/k1-gate.sh`, logs in `E/t5/`): the tree clean, tsc and li
 done. Against port 5205 every case passed: the grass (18 cases), the walk, the rotation, the cypress held unanswered
 (the street ready in 2,955 ms with 574,041 triangles), the portal (its stop 0 byte-identical to `?street=1`) and
 reduced motion. No headless Chrome was left. The review's fixes (`02d5fba`) leave the build's hash unchanged, so these
-runs hold for the branch's head.
+runs hold for the branch's head. The sweep's later points ran with F2 already in the served tree: the same hash.
 
 **The browser's sweep**, Task 0's 32 points on both viewports: no point over 1,444,930. The worst is 1,414,747
 (desktop, `t` 0.295), 30,183 under the ceiling. The base's worst was 1,444,499 at the same point, 431 under
