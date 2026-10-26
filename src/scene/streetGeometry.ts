@@ -8,7 +8,7 @@ import { buildLandTrees, type BakedMass, type LandTrees } from './landDomes.ts'
 import { buildStreetTrees } from './streetTrees.ts'
 import { PALETTE } from './palette.ts'
 import { CHURCH_LIGHT, leanOf, lightOf, shadeNew, STREET_LIGHT, type StreetLight } from './streetLight.ts'
-import { CHURCH, DETAIL, doorOf, doorStepFrame, houseFrame, STEP, STREET, STREET_CHURCH, STREET_HOUSES, STREET_RAIL, STREET_SQUARE, STREET_TREES, detailOf, laneDistance, pathPoint, pathTangent, streetGroundAt, type StreetHouse, laneAt, STREET_WALLS } from './streetLayout.ts'
+import { CHURCH, DETAIL, doorOf, doorStepFrame, houseFrame, STEP, STREET, STREET_CHURCH, STREET_HOUSES, STREET_LAMPS, STREET_RAIL, STREET_SQUARE, STREET_TREES, detailOf, laneDistance, pathPoint, pathTangent, streetGroundAt, type StreetHouse, laneAt, STREET_WALLS } from './streetLayout.ts'
 import { outlineFace, PATH_LIFT, sourceUnderpaint, streetMassConfig, STREET_MOON_LIFT, traceFace, type FaceStrokes, type StreetFace, type StreetSourceName, stoneDab, STREET_SOURCES, STROKE_LIFT } from './streetStrokes.ts'
 import type { ImageData2D } from './useImageData.ts'
 import { VILLAGE_CHURCH, type Pigment } from './villageKnot.ts'
@@ -1510,6 +1510,141 @@ function gardenRail(ctx: Context): void {
   }
 }
 
+function laneLamps(ctx: Context): void {
+  const windowLitRGB = sourceUnderpaint(ctx.painting, 'windowLit', 1)
+  const windowLitColor = new Color().setRGB(...windowLitRGB, SRGBColorSpace)
+
+  const postH = LANE_CRAFT.lamp.height
+  const postSize = LANE_CRAFT.lamp.post
+  const hp = postSize / 2
+
+  const [lanternW, lanternH] = LANE_CRAFT.lamp.lantern
+  const hl = lanternW / 2
+
+  const [capW, capH] = LANE_CRAFT.lamp.cap
+  const hc = capW / 2
+
+  for (let i = 0; i < STREET_LAMPS.length; i++) {
+    const lamp = STREET_LAMPS[i]
+    const foot = laneAt(lamp.t, lamp.lateral)
+    const pFoot = new Vector3(foot.x, 0, foot.z)
+    const nVec = new Vector3(foot.nx, 0, foot.nz)
+    const tVec = new Vector3(foot.nz, 0, -foot.nx)
+
+    const underpaintStart = ctx.underpaint.positions.length / 3
+
+    // Post: box 0.004 square, 0.13 high, in INK, class 0, src 255
+    const c0 = pFoot.clone().addScaledVector(tVec, -hp).addScaledVector(nVec, -hp)
+    const c1 = pFoot.clone().addScaledVector(tVec, hp).addScaledVector(nVec, -hp)
+    const c2 = pFoot.clone().addScaledVector(tVec, hp).addScaledVector(nVec, hp)
+    const c3 = pFoot.clone().addScaledVector(tVec, -hp).addScaledVector(nVec, hp)
+
+    const c0T = c0.clone().setY(postH)
+    const c1T = c1.clone().setY(postH)
+    const c2T = c2.clone().setY(postH)
+    const c3T = c3.clone().setY(postH)
+
+    const postQuads: [Vector3[], Vector3][] = [
+      [[c0, c1, c1T, c0T], nVec.clone().negate()],
+      [[c1, c2, c2T, c1T], tVec.clone()],
+      [[c2, c3, c3T, c2T], nVec.clone()],
+      [[c3, c0, c0T, c3T], tVec.clone().negate()],
+    ]
+
+    for (let q = 0; q < 4; q++) {
+      const [corners, normal] = postQuads[q]
+      const face: StreetFace = {
+        origin: corners[0],
+        u: corners[1].clone().sub(corners[0]),
+        v: corners[3].clone().sub(corners[0]),
+        normal,
+        shape: 'quad',
+        kind: 'wall',
+        source: 'wallA',
+        refHeight: postH,
+        seed: 0x7100 + i * 23 + q * 7,
+        mirror: false,
+      }
+      const light = lightOf(face, ctx.lit, ctx.wallLight)
+      const litColour = INK.clone().multiplyScalar(light)
+      const from = ctx.underpaint.positions.length
+      polygon(ctx.underpaint, corners, litColour, 0, 255)
+      shadeNew(ctx.underpaint, from, face, ctx.lit)
+    }
+
+    // Lantern: box 0.012 square, 0.016 high on post's top, centre at y 0.138 (0.13 to 0.146)
+    // Four sides in windowLit mean, unlit, class 2, src 255
+    const l0 = pFoot.clone().addScaledVector(tVec, -hl).addScaledVector(nVec, -hl).setY(postH)
+    const l1 = pFoot.clone().addScaledVector(tVec, hl).addScaledVector(nVec, -hl).setY(postH)
+    const l2 = pFoot.clone().addScaledVector(tVec, hl).addScaledVector(nVec, hl).setY(postH)
+    const l3 = pFoot.clone().addScaledVector(tVec, -hl).addScaledVector(nVec, hl).setY(postH)
+
+    const l0T = l0.clone().setY(postH + lanternH)
+    const l1T = l1.clone().setY(postH + lanternH)
+    const l2T = l2.clone().setY(postH + lanternH)
+    const l3T = l3.clone().setY(postH + lanternH)
+
+    const lanternSides = [
+      [l0, l1, l1T, l0T],
+      [l1, l2, l2T, l1T],
+      [l2, l3, l3T, l2T],
+      [l3, l0, l0T, l3T],
+    ]
+
+    for (const quad of lanternSides) {
+      polygon(ctx.underpaint, quad, windowLitColor, 2, 255)
+    }
+
+    // Cap: pyramid 0.016 square and 0.008 high in INK, class 0, src 255
+    const capBaseY = postH + lanternH
+    const b0 = pFoot.clone().addScaledVector(tVec, -hc).addScaledVector(nVec, -hc).setY(capBaseY)
+    const b1 = pFoot.clone().addScaledVector(tVec, hc).addScaledVector(nVec, -hc).setY(capBaseY)
+    const b2 = pFoot.clone().addScaledVector(tVec, hc).addScaledVector(nVec, hc).setY(capBaseY)
+    const b3 = pFoot.clone().addScaledVector(tVec, -hc).addScaledVector(nVec, hc).setY(capBaseY)
+    const apex = pFoot.clone().setY(capBaseY + capH)
+
+    const capTris = [
+      [b0, b1, apex],
+      [b1, b2, apex],
+      [b2, b3, apex],
+      [b3, b0, apex],
+    ]
+
+    for (let ct = 0; ct < 4; ct++) {
+      const tri = capTris[ct]
+      const uEdge = tri[1].clone().sub(tri[0])
+      const vEdge = tri[2].clone().sub(tri[0])
+      const normal = uEdge.clone().cross(vEdge).normalize()
+      const face: StreetFace = {
+        origin: tri[0],
+        u: uEdge,
+        v: vEdge,
+        normal,
+        shape: 'triangle',
+        kind: 'wall',
+        source: 'wallA',
+        refHeight: capH,
+        seed: 0x7300 + i * 23 + ct * 7,
+        mirror: false,
+      }
+      const light = lightOf(face, ctx.lit, ctx.wallLight)
+      const litColour = INK.clone().multiplyScalar(light)
+      const from = ctx.underpaint.positions.length
+      polygon(ctx.underpaint, tri, litColour, 0, 255)
+      shadeNew(ctx.underpaint, from, face, ctx.lit)
+    }
+
+    const underpaintEnd = ctx.underpaint.positions.length / 3
+    const lanternCenter = pFoot.clone().setY(0.138)
+
+    ctx.report.lane.lamps.push({
+      foot: pFoot,
+      lantern: lanternCenter,
+      underpaint: [underpaintStart, underpaintEnd],
+    })
+  }
+}
+
 export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | null, masses: BakedMass[] | null, { lit = true, grass = false, paint = WALL_PAINT, lane = true }: { lit?: boolean; grass?: boolean; paint?: WallPaint; lane?: boolean } = {}): StreetBuild | null {
   if (!painting || !flow || !masses) return null
   const ctx: Context = {
@@ -1568,6 +1703,7 @@ export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | nu
   if (lane) {
     laneWalls(ctx)
     gardenRail(ctx)
+    laneLamps(ctx)
   }
   const trees = buildStreetTrees(painting, STREET_TREES)
   const triangles = (ctx.underpaint.indices.length + ctx.grassBase.indices.length + ctx.strokes.arrays.indices.length + ctx.ground.arrays.indices.length + ctx.outlines.arrays.indices.length + ctx.windows.indices.length + trees.solid.indices.length + trees.strokes.indices.length) / 3

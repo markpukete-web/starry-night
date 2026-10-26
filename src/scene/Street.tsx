@@ -199,7 +199,7 @@ export default function Street({
           alive={false}
         />
       )}
-      {!flags.flat && flags.ids === 0 && flags.light && build && paintingData && <StreetLife windows={build.windows} painting={paintingData} reduced={reduced} />}
+      {!flags.flat && flags.ids === 0 && flags.light && build && paintingData && <StreetLife windows={build.windows} painting={paintingData} reduced={reduced} lamps={build.report.lane.lamps} />}
       {!flags.flat && flags.grass && paintingData && (
         <StreetGrass
           painting={paintingData}

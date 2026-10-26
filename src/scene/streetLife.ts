@@ -21,6 +21,18 @@ export const LIFE = {
   halo: [0.09, 0.85] as const,
 }
 
+export const LAMP_LIGHT = {
+  halo: 2 * LIFE.halo[0] + 0.012,
+  haloView: 0.5,
+  poolY: 0.007,
+} as const
+
+export function lampHaloScale(depth: number, fovDeg: number, aspect: number): number {
+  if (depth <= 0) return 0
+  const maxWorld = LAMP_LIGHT.haloView * 2 * depth * Math.tan((fovDeg * Math.PI) / 360) * Math.min(1, aspect)
+  return Math.min(LAMP_LIGHT.halo, maxWorld)
+}
+
 /** One clock for the sway and the fireflies. */
 export const lifeTimeUniform = { value: 0 }
 

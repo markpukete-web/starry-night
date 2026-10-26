@@ -6,9 +6,9 @@ import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { existsSync, readFileSync } from 'node:fs'
 import test from 'node:test'
-import { Vector3 } from 'three'
+import { PerspectiveCamera, Vector3 } from 'three'
 
-import { FROG, frogPlace, FROGS } from '../src/scene/frog.ts'
+import { buildFrog, FROG, frogPlace, FROGS, SQUARE_TOP } from '../src/scene/frog.ts'
 import type { BakedMass } from '../src/scene/landDomes.ts'
 import { buildStreet, LANE_CRAFT } from '../src/scene/streetGeometry.ts'
 import { grassChunks, inFootprint } from '../src/scene/streetGrass.ts'
@@ -21,13 +21,18 @@ import {
   laneDistance,
   pathPoint,
   pathTangent,
+  stationPose,
   stepClearings,
+  STREET_CHURCH,
   STREET_CYPRESS,
   STREET_HOUSES,
+  STREET_LAMPS,
   STREET_WALLS,
   vincentBoxCorners,
+  walkPose,
   wallClearings,
 } from '../src/scene/streetLayout.ts'
+import { LAMP_LIGHT, lampHaloScale, LIFE, litWindows } from '../src/scene/streetLife.ts'
 import { STROKE_LIFT } from '../src/scene/streetStrokes.ts'
 import type { ImageData2D } from '../src/scene/useImageData.ts'
 import { decodePNG } from './lib/png.ts'
@@ -557,4 +562,330 @@ test('the rail is drawn and has no ink', { skip }, () => {
     buildWithout.outlines.arrays.positions.length,
     'rail adds no outlines ink',
   )
+})
+
+test('seven lamps alternate sides', () => {
+  const table = [
+    { t: 0.10, lateral: 0.11 },
+    { t: 0.24, lateral: -0.11 },
+    { t: 0.38, lateral: 0.11 },
+    { t: 0.55, lateral: -0.11 },
+    { t: 0.65, lateral: 0.11 },
+    { t: 0.79, lateral: -0.11 },
+    { t: 1.00, lateral: 0.20 },
+  ]
+  assert.equal(STREET_LAMPS.length, 7)
+  for (let i = 0; i < 7; i++) {
+    assert.equal(STREET_LAMPS[i].t, table[i].t)
+    assert.equal(STREET_LAMPS[i].lateral, table[i].lateral)
+    if (i > 0) {
+      assert.ok(Math.sign(STREET_LAMPS[i].lateral) !== Math.sign(STREET_LAMPS[i - 1].lateral), 'signs alternate')
+    }
+  }
+})
+
+test("no lantern fills a stop's frame", { skip }, () => {
+  assert.ok(realPainting)
+  const build = buildStreet(realPainting, flow, masses, { grass: true, lane: true })
+  assert.ok(build)
+  const lamps = build.report.lane.lamps
+  assert.equal(lamps.length, 7)
+
+  const aspects: [string, number, boolean][] = [
+    ['16:9', 16 / 9, false],
+    ['16:10', 1.6, false],
+    ['phone', 390 / 844, true],
+  ]
+
+  for (const lamp of lamps) {
+    const p = lamp.lantern
+    for (let stop = 0; stop < 5; stop++) {
+      for (const [, aspect, portrait] of aspects) {
+        const pose = stationPose(stop, portrait)
+        const cam = new PerspectiveCamera(pose.fov, aspect, pose.near, pose.far)
+        cam.position.set(...pose.position)
+        cam.lookAt(new Vector3(...pose.target))
+        cam.updateMatrixWorld()
+        cam.updateProjectionMatrix()
+
+        const q = p.clone().project(cam)
+        const d = p.distanceTo(cam.position)
+        if (q.z >= -1 && q.z < 1 && Math.abs(q.x) <= 1 && Math.abs(q.y) <= 1) {
+          assert.ok(d >= 0.35, `lantern at stop ${stop} distance ${d} >= 0.35`)
+        }
+      }
+    }
+  }
+})
+
+test('no halo fills the screen on the walk', { skip }, () => {
+  assert.ok(realPainting)
+  const build = buildStreet(realPainting, flow, masses, { grass: true, lane: true })
+  assert.ok(build)
+  const lamps = build.report.lane.lamps
+  assert.equal(lamps.length, 7)
+
+  const aspects: [string, number, boolean][] = [
+    ['16:9', 16 / 9, false],
+    ['16:10', 1.6, false],
+    ['phone', 390 / 844, true],
+  ]
+
+  let maxExceeded = false
+
+  for (const lamp of lamps) {
+    const lantern = lamp.lantern
+    for (const [, aspect, portrait] of aspects) {
+      const poses: ReturnType<typeof walkPose>[] = []
+      for (let s = 0; s < 5; s++) poses.push(stationPose(s, portrait))
+      for (let k = 0; k <= 900; k++) poses.push(walkPose(k / 1000, portrait))
+
+      for (const pose of poses) {
+        const cam = new PerspectiveCamera(pose.fov, aspect, pose.near, pose.far)
+        cam.position.set(...pose.position)
+        cam.lookAt(new Vector3(...pose.target))
+        cam.updateMatrixWorld()
+        cam.updateProjectionMatrix()
+
+        const c = lantern.clone().applyMatrix4(cam.matrixWorldInverse)
+        if (-c.z <= pose.near) continue
+
+        const s = lampHaloScale(-c.z, pose.fov, aspect)
+        const c0 = new Vector3(c.x - s / 2, c.y - s / 2, c.z).applyMatrix4(cam.projectionMatrix)
+        const c1 = new Vector3(c.x + s / 2, c.y + s / 2, c.z).applyMatrix4(cam.projectionMatrix)
+
+        const heightFrac = Math.abs(c1.y - c0.y) / 2
+        const widthFrac = Math.abs(c1.x - c0.x) / 2
+        const larger = Math.max(heightFrac, widthFrac)
+
+        assert.ok(larger <= LAMP_LIGHT.haloView + 1e-9, `larger fraction ${larger} <= ${LAMP_LIGHT.haloView}`)
+
+        // Check if unscaled halo exceeds 1
+        const sUnscaled = LAMP_LIGHT.halo
+        const u0 = new Vector3(c.x - sUnscaled / 2, c.y - sUnscaled / 2, c.z).applyMatrix4(cam.projectionMatrix)
+        const u1 = new Vector3(c.x + sUnscaled / 2, c.y + sUnscaled / 2, c.z).applyMatrix4(cam.projectionMatrix)
+        const unscaledLarger = Math.max(Math.abs(u1.y - u0.y) / 2, Math.abs(u1.x - u0.x) / 2)
+        if (unscaledLarger > 1) maxExceeded = true
+      }
+    }
+  }
+
+  assert.ok(maxExceeded, 'unscaled halo exceeds 1 at some pose (non-vacuous assertion)')
+})
+
+test('no pool lies over a frog', { skip }, () => {
+  assert.ok(realPainting)
+  const body = buildFrog(realPainting).body
+  const poolY = LAMP_LIGHT.poolY
+  const R = LIFE.pool[0]
+  const build = buildStreet(realPainting, flow, masses, { grass: true, lane: true })
+  assert.ok(build)
+  const lamps = build.report.lane.lamps
+  assert.equal(lamps.length, 7)
+
+  const aspects: [string, number, boolean][] = [
+    ['16:9', 16 / 9, false],
+    ['16:10', 1.6, false],
+    ['phone', 390 / 844, true],
+  ]
+
+  let hits = 0
+  for (const spec of FROGS) {
+    const place = frogPlace(spec)
+    const c = Math.cos(place.yaw)
+    const s = Math.sin(place.yaw)
+    const verts: Vector3[] = []
+    for (const a of [body.underpaint, body.strokes.arrays]) {
+      for (let i = 0; i < a.positions.length; i += 3) {
+        const [lx, ly, lz] = [a.positions[i] * spec.scale, a.positions[i + 1] * spec.scale, a.positions[i + 2] * spec.scale]
+        verts.push(new Vector3(place.position[0] + c * lx + s * lz, place.position[1] + ly, place.position[2] - s * lx + c * lz))
+      }
+    }
+
+    for (const [, aspect, portrait] of aspects) {
+      const pose = stationPose(spec.stop, portrait)
+      const cam = new PerspectiveCamera(pose.fov, aspect, pose.near, pose.far)
+      cam.position.set(...pose.position)
+      cam.lookAt(new Vector3(...pose.target))
+      cam.updateMatrixWorld()
+      cam.updateProjectionMatrix()
+
+      for (const v of verts) {
+        if (v.y >= poolY) continue
+        const q = v.clone().project(cam)
+        if (!(q.z >= -1 && q.z < 1 && Math.abs(q.x) <= 1 && Math.abs(q.y) <= 1)) continue
+        const f = (poolY - cam.position.y) / (v.y - cam.position.y)
+        if (!(f > 0 && f < 1)) continue
+        const hx = cam.position.x + f * (v.x - cam.position.x)
+        const hz = cam.position.z + f * (v.z - cam.position.z)
+
+        for (const lamp of lamps) {
+          const r = Math.hypot(hx - lamp.foot.x, hz - lamp.foot.z)
+          if (r < R) hits++
+        }
+      }
+    }
+  }
+
+  assert.equal(hits, 0, 'no rays from frog stop to frog vertices cross a pool')
+})
+
+test('no lamp touches Vincent, a frog, a house, a wall or the rail', { skip }, () => {
+  assert.ok(realPainting)
+  const build = buildStreet(realPainting, flow, masses, { grass: true, lane: true })
+  assert.ok(build)
+  const lamps = build.report.lane.lamps
+  assert.equal(lamps.length, 7)
+
+  const houses = STREET_HOUSES.map((h) => {
+    const { along, toPath } = houseFrame(h)
+    const p: [number, number] = [h.x, h.z]
+    const a: [number, number] = [along.x, along.z]
+    const n: [number, number] = [toPath.x, toPath.z]
+    return [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([s, k]) => [
+      p[0] + a[0] * (s * h.w) / 2 + n[0] * (k * h.d) / 2,
+      p[1] + a[1] * (s * h.w) / 2 + n[1] * (k * h.d) / 2,
+    ] as [number, number])
+  })
+  const steps = STREET_HOUSES.map((h) => doorStepFoot(h, STREET_HOUSES.indexOf(h)))
+
+  const nave = STREET_CHURCH.nave
+  const belfry = STREET_CHURCH.belfry
+  const churchBoxes = [
+    { x: nave.x, z: nave.z, w: nave.w, d: nave.d, yaw: nave.yaw },
+    { x: belfry.cx, z: belfry.cz, w: belfry.width, d: belfry.width, yaw: belfry.yaw },
+  ].map((h) =>
+    [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([s, k]) => [
+      h.x + (Math.cos(h.yaw) * (s * h.w)) / 2 - (Math.sin(h.yaw) * (k * h.d)) / 2,
+      h.z + (Math.sin(h.yaw) * (s * h.w)) / 2 + (Math.cos(h.yaw) * (k * h.d)) / 2,
+    ] as [number, number]),
+  )
+
+  const segDist = (p: [number, number], a: [number, number], b: [number, number]): number => {
+    const d = [b[0] - a[0], b[1] - a[1]]
+    const n = d[0] ** 2 + d[1] ** 2
+    const t = n ? Math.max(0, Math.min(1, ((p[0] - a[0]) * d[0] + (p[1] - a[1]) * d[1]) / n)) : 0
+    return Math.hypot(p[0] - a[0] - t * d[0], p[1] - a[1] - t * d[1])
+  }
+  const cross = (a: [number, number], b: [number, number], p: [number, number]) =>
+    (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0])
+  const inside = (p: [number, number], q: [number, number][]) => {
+    const cs = q.map((a, i) => cross(a, q[(i + 1) % q.length], p))
+    return cs.every((x) => x >= -1e-12) || cs.every((x) => x <= 1e-12)
+  }
+  const ptDist = (p: [number, number], q: [number, number][]) =>
+    inside(p, q) ? 0 : Math.min(...q.map((a, i) => segDist(p, a, q[(i + 1) % q.length])))
+
+  const vincentBoxes = Array.from({ length: 901 }, (_, k) => {
+    const c = vincentBoxCorners(k / 1000).filter((p) => p[1] === 0)
+    return [c[0], c[1], c[3], c[2]].map((p) => [p[0], p[2]] as [number, number])
+  })
+
+  const wallFootprints: [number, number][][] = []
+  for (const w of build.report.lane.walls) {
+    for (const s of w.segments) {
+      wallFootprints.push(s.corners.map((c) => [c.x, c.z] as [number, number]))
+    }
+  }
+
+  const rail = build.report.lane.rail!
+  const l2Index = STREET_HOUSES.findIndex((h) => h.id === 'L2')
+  const l2H = STREET_HOUSES[l2Index]
+  const l2F = doorStepFrame(l2H, l2Index)
+  const l2Door = doorOf(l2H, l2Index)
+  const l2W = l2H.w
+  const l2G = l2Door.w * l2W + 0.02
+  const l2A0 = l2Door.cu * l2W - l2G / 2
+  const l2A1 = l2Door.cu * l2W + l2G / 2
+  const l2Point = (a: number, k: number): [number, number] => [
+    l2F.ox + a * l2F.ux + k * l2F.nx,
+    l2F.oz + a * l2F.uz + k * l2F.nz,
+  ]
+  const railSpans: [[number, number], [number, number]][] = [
+    [l2Point(-0.02, 0.03), l2Point(-0.02, 0.12)],
+    [l2Point(-0.02, 0.12), l2Point(l2A0, 0.12)],
+    [l2Point(l2A1, 0.12), l2Point(l2W + 0.02, 0.12)],
+    [l2Point(l2W + 0.02, 0.12), l2Point(l2W + 0.02, 0.03)],
+  ]
+
+  for (const lamp of lamps) {
+    const p: [number, number] = [lamp.foot.x, lamp.foot.z]
+
+    // 0.03 or more from Vincent's box over 901 samples
+    for (let k = 0; k < vincentBoxes.length; k++) {
+      const d = ptDist(p, vincentBoxes[k])
+      assert.ok(d >= 0.03 - 1e-6, `lamp to Vincent at ${k / 1000} ${d} >= 0.03`)
+    }
+
+    // 0.06 or more from each frog
+    for (const f of FROGS) {
+      const [fx, , fz] = frogPlace(f).position
+      const fd = Math.hypot(p[0] - fx, p[1] - fz)
+      assert.ok(fd >= 0.06 - 1e-6, `lamp to frog ${f.stop} ${fd} >= 0.06`)
+    }
+
+    // 0.03 or more outside every house, step, church nave and belfry
+    for (let i = 0; i < houses.length; i++) {
+      const hd = ptDist(p, houses[i])
+      assert.ok(hd >= 0.03 - 1e-6, `lamp to house ${STREET_HOUSES[i].id} ${hd} >= 0.03`)
+      const sd = ptDist(p, steps[i])
+      assert.ok(sd >= 0.03 - 1e-6, `lamp to step ${STREET_HOUSES[i].id} ${sd} >= 0.03`)
+    }
+    for (const cb of churchBoxes) {
+      const cd = ptDist(p, cb)
+      assert.ok(cd >= 0.03 - 1e-6, `lamp to church box ${cd} >= 0.03`)
+    }
+
+    // 0.03 or more outside rail's posts and span lines
+    for (const rp of rail.posts) {
+      const rd = Math.hypot(p[0] - rp.x, p[1] - rp.z)
+      assert.ok(rd >= 0.03 - 1e-6, `lamp to rail post ${rd} >= 0.03`)
+    }
+    for (const [sA, sB] of railSpans) {
+      const rd = segDist(p, sA, sB)
+      assert.ok(rd >= 0.03 - 1e-6, `lamp to rail span ${rd} >= 0.03`)
+    }
+
+    // Its edge (centre distance - 0.002) 0.02 or more from every wall segment's footprint
+    for (const wf of wallFootprints) {
+      const wd = ptDist(p, wf)
+      assert.ok(wd - 0.002 >= 0.02 - 1e-6, `lamp edge to wall ${wd - 0.002} >= 0.02`)
+    }
+  }
+})
+
+test('a lantern is not a lit window', { skip }, () => {
+  assert.ok(realPainting)
+  const buildWith = buildStreet(realPainting, flow, masses, { grass: true, lane: true })
+  const buildWithout = buildStreet(realPainting, flow, masses, { grass: true, lane: false })
+  assert.ok(buildWith && buildWithout)
+
+  assert.equal(
+    litWindows(buildWith.windows).length,
+    litWindows(buildWithout.windows).length,
+    'lanterns add no lit windows',
+  )
+
+  const lamps = buildWith.report.lane.lamps
+  assert.equal(lamps.length, 7)
+
+  const upCls = buildWith.underpaint.cls
+  for (const lamp of lamps) {
+    const [u0, u1] = lamp.underpaint
+    assert.ok(u1 > u0, 'lamp underpaint range non-empty')
+    const lanternCls2: number[] = []
+    const otherCls0: number[] = []
+    for (let vi = u0; vi < u1; vi++) {
+      if (upCls[vi] === 2) lanternCls2.push(vi)
+      else if (upCls[vi] === 0) otherCls0.push(vi)
+      else assert.fail(`unexpected class ${upCls[vi]} on lamp vertex ${vi}`)
+    }
+    // 4 side quads = 16 vertices of class 2
+    assert.equal(lanternCls2.length, 16, 'lantern four side quads are class 2 (16 vertices)')
+    assert.ok(otherCls0.length > 0, 'other vertices are class 0')
+  }
+})
+
+test("a lamp's pool lies over the lane's strokes", () => {
+  assert.ok(LAMP_LIGHT.poolY > SQUARE_TOP, `poolY ${LAMP_LIGHT.poolY} > SQUARE_TOP ${SQUARE_TOP}`)
 })

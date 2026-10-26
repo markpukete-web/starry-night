@@ -278,6 +278,16 @@ export const STREET_RAIL = {
   gap: 0.02,
 } as const
 
+export const STREET_LAMPS = [
+  { t: 0.1, lateral: 0.11 },
+  { t: 0.24, lateral: -0.11 },
+  { t: 0.38, lateral: 0.11 },
+  { t: 0.55, lateral: -0.11 },
+  { t: 0.65, lateral: 0.11 },
+  { t: 0.79, lateral: -0.11 },
+  { t: 1.0, lateral: 0.2 },
+] as const
+
 export type OrientedBox = {
   ox: number
   oz: number

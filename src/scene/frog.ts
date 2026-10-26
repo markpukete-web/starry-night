@@ -252,7 +252,7 @@ export type FrogSpec = {
 }
 
 /** The square's strokes reach this high: its face at 0.002 (`streetGeometry.ts`), the strokes' top level over it. */
-const SQUARE_TOP = 0.002 + STROKE_LIFT + (LIFT_LEVELS - 1) * LIFT_STEP
+export const SQUARE_TOP = 0.002 + STROKE_LIFT + (LIFT_LEVELS - 1) * LIFT_STEP
 
 /**
  * One frog by each stop, from the spots measured in the render (`tasks/2026-10-25-street-frogs-plan.md` Task 2). Stop 1's
