@@ -10,15 +10,11 @@ differences."). The change read as small to him.
 `ca102c7`). #23's Codex review never left "running". Mark had declined a re-request on 2026-10-25, and #23's thread
 says so.
 
-**The branches, tidied** (Mark: "can you also tidy up our branches?"). Local: 27 branches deleted, each contained in
-`main`, or in `feat/village-lane` for `feat/village-craft`. Left: `main` (the main checkout is on it now), `feat/village-lane`
-(K2) and `spike/grass-hand` (one unique commit, `1bfb8c2`, the throwaway grass test, kept for Mark's word). The worktree
-`framing-wt` is removed. `craft-wt` is detached at `96f246e` and serves K1 on port 5205 for K2's gate. The 20 remote
-branches other than `main` are all contained in `main`. The permission rule refused their delete, so Mark runs it:
-`git push origin --delete feat/arrival-c feat/cypress-e1 feat/cypress-medium feat/cypress-paint-e4 feat/flags-on
-feat/land-e2 feat/loading-curtain feat/phone-framing feat/street-church feat/street-frogs feat/street-portal
-feat/street-s1b-lead feat/street-s2-vincent feat/street-s3 feat/street-s3b feat/touch-land-d1 feat/village-craft
-fix/finger-no-bend fix/moving-first-paint record/2d-streamline-flow`.
+**The branches, tidied** (Mark: "can you also tidy up our branches?"). Every branch contained in `main` is deleted,
+local and remote, with `feat/village-craft` (contained in `feat/village-lane`) and, on Mark's word, `spike/grass-hand`
+(`1bfb8c2`, the throwaway grass test). Left: `main` (the main checkout is on it now) and `feat/village-lane` (K2), and
+on the remote only `main`. The worktree `framing-wt` is removed. `craft-wt` is detached at `96f246e` and serves K1 on
+port 5205 for K2's gate.
 
 **K2's build: Tasks 1 to 3 with the worker** (`w4:p5`), from `c9fd0cd` on `feat/village-lane`, brief
 `scratch/village-craft-2026-10-25/k2/brief-k2-build.md`, the report due at `k2/t3/report-worker.md`. The dev server for
