@@ -285,6 +285,14 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   per move against the village with the land and the island in front: the hand, and the hint "Enter the village" 16 px
   right and 18 px below the pointer. A tap on a house enters, and the sky's surge is masked there. Escape and the
   dock's "Back to the painting" return. Reduced motion cuts both ways. Untuned by Mark.
+- The frogs, five, one by each stop (2026-10-25, `src/scene/frog.ts` `FROG`, `FROGS`; the record
+  `tasks/2026-10-25-street-frogs.md`), replacing S3b's one: 1,212 triangles each, `FROG.size` 0.0108 (about 22 cm
+  beside Vincent; look pass 1, was 0.0086), one blink clock for all five as S3b's. Stops 0 to 3 in a grass gap at `t`
+  0.035, 0.283, 0.466, 0.677, laterals −0.086, 0.086, −0.098, −0.098, turned 0.35, 0.3, 0.4, 0.3 rad from side-on,
+  sizes 1.0, 0.94, 1.06, 0.97. Stop 4 on the square's edge at `t` 0.975, lateral −0.08, `y` 0.0065, 0.35 rad, size 1.02.
+  Each is drawn within its `draw` of the camera: 0.5 in the grass, 1.1 on the square (look pass 3), so one is drawn
+  before `t` 0.45 and a second only at 0.8 or more. The walk's worst point 1,444,499 triangles (desktop, `t` 0.295).
+  Untuned by Mark.
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)

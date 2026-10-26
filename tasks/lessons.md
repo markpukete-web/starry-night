@@ -3170,3 +3170,14 @@ must be byte-identical before the stimulus's difference means anything.
   the home after a return, in all five rounds. The same plain page reads both counts over 300 frames, because one draw
   at the narrow frustum's edge comes and goes with time. Sample many frames, and compare the scene's objects, before
   you name a cause (the portal, Task 8).
+- **A test that rebuilds the code's rule cannot catch the code ignoring it.** The frogs' draw tests computed `d < draw`
+  from the table, so a cull that drew every frog, hid every frog or kept one common 0.5 still passed. Read the state
+  the component left (`__frogsDrawn`), judge it by the check's own distances, and run the regressions against it
+  (the frogs, Codex F1).
+- **A phone's touch cost does not show on the Mac.** On an iPhone 17 Pro Max the painting held 60 fps still and fell
+  to 18–50 under a finger, and `touch=0` restored it. The Mac, at 4× CPU throttle and with vsync off, showed no touch
+  cost: 15 live surges and 3 land touches cost nothing measurable. The phone's `?perf=1` readout and URL flags are the
+  loop (2026-10-25, Mark's first real-device reading).
+- **A check run straight after a reload can catch the page still moving.** The walk check's K1 failed once after the
+  studio's stash reloaded the dev server, then passed on the branch and its base. Wait for the reload to settle, and
+  run a failing check twice before naming a defect (the frogs, Task 4).

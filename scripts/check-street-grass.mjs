@@ -20,18 +20,20 @@
  *     of bladeMoonFacing for both curl signs, signed lean, yaw 0 and ±0.4, three right vectors and a straight blade.
  * 15. The hand against lit tops (S3b task 1), stop 0, vincent=0: the hand held on the verge brightens by more than
  *     5 L*, within 80 px of it, at least 0.85 as many pixels on the lit page as on the unlit one (main's program).
+ * 18. The frogs' draw distance (the frogs' branch review, Codex F1): at walk poses held still, each frog the frame's
+ *     cull left drawn is within its spec's `draw` of the camera, and each frog it hid is beyond it.
  */
 
 import { spawn } from 'node:child_process'
 import { existsSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { pathPoint, pathTangent, STREET, vincentPlace } from '../src/scene/streetLayout.ts'
+import { pathPoint, pathTangent, STATION_T, STREET, vincentPlace } from '../src/scene/streetLayout.ts'
 import { bladeMoonFacing, GRASS_BLADE, GRASS_MOON_GLSL } from '../src/scene/grassBlade.ts'
 import { STREET_MOON } from '../src/scene/streetLight.ts'
 import { decodePNG } from './lib/png.ts'
 import { WALK } from '../src/scene/streetWalk.ts'
-import { FROG } from '../src/scene/frog.ts'
+import { FROG, FROGS } from '../src/scene/frog.ts'
 
 const appUrl = process.env.DIORAMA_CAPTURE_URL || 'http://127.0.0.1:5191/'
 const parsedUrl = new URL(appUrl)
@@ -1156,7 +1158,7 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
         for (let i = 0; i < 3; i++) {
           const f = await frog17()
           if (!f) throw new Error(`Case 17 failed: no __frog ${label}`)
-          const sink = B.sink * FROG.eye.r * shut
+          const sink = B.sink * FROG.eye.r * FROG.size * shut
           const scale = 1 - (1 - B.shrink) * shut
           if (f.shut !== shut || Math.abs(f.sink - sink) > 1e-6 || Math.abs(f.scale - scale) > 1e-6) {
             throw new Error(`Case 17 failed: ${label}, shut ${f.shut}, sink ${f.sink}, scale ${f.scale}; expected ${shut}, ${sink}, ${scale}`)
@@ -1185,6 +1187,71 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
       await page.waitForStreetReady()
       if ((await page.evaluate(() => typeof window.__frog)) !== 'undefined') throw new Error('Case 17 failed: a frog with grass=0')
       console.log(`PASS: case 17 - the blink: shut, shrunk and sunk pinned at ${shutAt}, open at 0 and under reduced motion, blinked live (${live17.toFixed(2)}), absent with grass=0`)
+    }
+
+    // -------------------------------------------------------------
+    // Case 18: the frogs' draw distance (the frogs' branch review, Codex F1). At walk poses held still, a frog the
+    // frame's cull left drawn is within its spec's `draw` of the camera, by the check's own distance from the groups'
+    // world places, and a frog it hid is beyond it. The poses make the case fail if the cull draws every frog (some are
+    // hidden), hides every frog (each station draws its own), or keeps one common 0.5 (stop 4's frog is drawn between
+    // 0.5 and its 1.1). Then one page walks across stop 2's 0.5 and stop 4's 1.1 both ways (`__streetWalk.set`), so a
+    // cull that stops after its first frame fails too (Codex's re-read). A frog within 0.005 of its `draw` is not judged.
+    // -------------------------------------------------------------
+    if (shouldRun(18)) {
+      const poses18 = [
+        ...STATION_T.map((t, k) => ({ query: `station=${k}`, t, station: k })),
+        ...[0.1, 0.33, 0.45, 0.52, 0.6, 0.75, 0.8].map((t) => ({ query: `walkT=${t}`, t, station: -1 })),
+      ]
+      let hidden18 = 0
+      let far18 = 0
+      const own18 = new Set()
+      /** the frogs as the frame's cull left them, each judged by its distance; returns each frog's `visible` */
+      const judge18 = async (label, station) => {
+        const s = await page.evaluate(() => window.__frogsDrawn?.() ?? null)
+        if (!s || s.frogs.length !== FROGS.length) throw new Error(`Case 18 failed: no __frogsDrawn at ${label}`)
+        return s.frogs.map((f, k) => {
+          const spec = FROGS[k]
+          const d = Math.hypot(f.at[0] - s.camera[0], f.at[1] - s.camera[1], f.at[2] - s.camera[2])
+          if (Math.abs(d - spec.draw) < 0.005) return f.visible
+          if (f.visible !== d < spec.draw) {
+            throw new Error(`Case 18 failed: at ${label} stop ${f.stop}'s frog is ${f.visible ? 'drawn' : 'hidden'} at ${d.toFixed(3)} from the camera, its draw ${spec.draw}`)
+          }
+          if (!f.visible) hidden18++
+          if (f.visible && spec.stop === station) own18.add(spec.stop)
+          if (f.visible && d > 0.5) far18++
+          return f.visible
+        })
+      }
+      for (const pose of poses18) {
+        await page.send('Page.navigate', { url: `${origin}/?street=1&${pose.query}&arrival=0&walkMode=input` })
+        await page.waitForStreetReady()
+        await sleep(300)
+        await judge18(pose.query, pose.station)
+      }
+      if (hidden18 === 0 || own18.size !== FROGS.length || far18 === 0) {
+        throw new Error(`Case 18 failed: the poses did not test the cull (hidden ${hidden18}, own stops ${[...own18]}, drawn beyond 0.5 ${far18})`)
+      }
+      // one page: stop 2's frog (t 0.466) is drawn from 0.40 and hidden from 0.33, stop 4's (t 0.975) hidden from 0.45 and
+      // drawn from 0.6; each crossing must flip the frog's `visible` without a reload
+      await page.send('Page.navigate', { url: `${origin}/?street=1&walkT=0.4&arrival=0&walkMode=input` })
+      await page.waitForStreetReady()
+      await sleep(300)
+      const walk18 = [0.4, 0.33, 0.4, 0.45, 0.6, 0.45]
+      const seen18 = []
+      for (const t of walk18) {
+        await page.evaluate((v) => window.__streetWalk.set(v), t)
+        await sleep(300)
+        const walked = await page.evaluate(() => window.__streetWalk.t)
+        if (Math.abs(walked - t) > 1e-9) throw new Error(`Case 18 failed: the walk is at ${walked}, set to ${t}`)
+        seen18.push(await judge18(`walk t ${t} on one page`, -1))
+      }
+      const flips18 = (k, from, to) => walk18.some((t, i) => i > 0 && seen18[i - 1][k] === from && seen18[i][k] === to)
+      const two = FROGS.findIndex((f) => f.stop === 2)
+      const four = FROGS.findIndex((f) => f.stop === 4)
+      if (!flips18(two, true, false) || !flips18(two, false, true) || !flips18(four, false, true) || !flips18(four, true, false)) {
+        throw new Error(`Case 18 failed: on one page the walk did not flip stop 2's and stop 4's frogs both ways (${JSON.stringify(seen18)})`)
+      }
+      console.log(`PASS: case 18 - the draw distance: ${poses18.length} poses, ${hidden18} frogs hidden beyond their draw, every station drew its own, ${far18} drawn beyond 0.5, and on one page stop 2's and stop 4's frogs flipped both ways`)
     }
 
     await page.close()

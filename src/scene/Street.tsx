@@ -209,7 +209,7 @@ export default function Street({
           still={still}
         />
       )}
-      {/* the frog lives at the verge's edge, so only with the grass (S3b pass 5) */}
+      {/* the frogs live in the grass's gaps and on the square at its end, so only with the grass (S3b pass 5) */}
       {!flags.flat && flags.grass && paintingData && <StreetFrog painting={paintingData} flags={flags} reduced={reduced} />}
       {!flags.flat && (
         <StreetWalk

@@ -129,14 +129,14 @@ export function emptyPart(): VincentPart {
 const COLUMNS = 3
 
 /** One stroke draped on a surface over [a0, a1] × [s0, s1], `steps` along it, lifted off the surface. */
-export function stroke(into: VincentStrokes, surface: Surface, a0: number, a1: number, s0: number, s1: number, steps: number, colour: Color, cls: number, seed: number): void {
+export function stroke(into: VincentStrokes, surface: Surface, a0: number, a1: number, s0: number, s1: number, steps: number, colour: Color, cls: number, seed: number, lift = LIFT): void {
   const rows: Vector3[][] = []
   for (let k = 0; k < steps; k++) {
     const s = s0 + ((s1 - s0) * k) / (steps - 1)
     const row: Vector3[] = []
     for (let j = 0; j < COLUMNS; j++) {
       const { p, n } = surface(a0 + ((a1 - a0) * j) / (COLUMNS - 1), s)
-      row.push(p.addScaledVector(n, LIFT))
+      row.push(p.addScaledVector(n, lift))
     }
     rows.push(row)
   }
@@ -175,14 +175,14 @@ export function solid(into: BrushArraysWithCls, surface: Surface, na: number, ns
 
 /** Strokes round a surface: `count` of them, each a little wider than its share so the underpaint shows only between.
  * Each takes a texel of `paint`, a rectangle of the painting, or the colour a picker gives (the frog's, S3b pass 5). */
-export function clad(part: VincentPart, surface: Surface, count: number, steps: number, painting: ImageData2D, paint: Rect | (() => Color), cls: number, rand: () => number, around: [number, number] = [0, 1], along: [number, number] = [0, 1]): void {
+export function clad(part: VincentPart, surface: Surface, count: number, steps: number, painting: ImageData2D, paint: Rect | (() => Color), cls: number, rand: () => number, around: [number, number] = [0, 1], along: [number, number] = [0, 1], lift = LIFT): void {
   const span = (around[1] - around[0]) / count
   for (let i = 0; i < count; i++) {
     const centre = around[0] + span * (i + 0.5 + (rand() - 0.5) * 0.3)
     const half = span * (0.6 + rand() * 0.15)
     const s0 = along[0] + rand() * 0.06 * (along[1] - along[0])
     const s1 = along[1] - rand() * 0.06 * (along[1] - along[0])
-    stroke(part.strokes, surface, centre - half, centre + half, s0, s1, steps, typeof paint === 'function' ? paint() : texel(painting, paint, rand), cls, rand())
+    stroke(part.strokes, surface, centre - half, centre + half, s0, s1, steps, typeof paint === 'function' ? paint() : texel(painting, paint, rand), cls, rand(), lift)
   }
 }
 
