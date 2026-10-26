@@ -288,7 +288,9 @@ test('a frame band round every door', () => {
     const s1 = door.cu + door.w / 2
     const b = CRAFT.door.band * door.w
     const bt = (b * front.u.length()) / front.v.length()
-    const t1 = Math.min(1, door.h + bt)
+    // A1: a cottage's band stops at its door's top, with no band over it (the thatch's slab hides the wall above)
+    const cottage = h.type === 'cottage'
+    const t1 = cottage ? door.h : Math.min(1, door.h + bt)
 
     const plasterMean = new Color().setRGB(...sourceUnderpaint(painting, 'plaster', 1), SRGBColorSpace)
     const expectedBandColour =
@@ -305,8 +307,9 @@ test('a frame band round every door', () => {
     const expectedSpans: Record<string, { s: [number, number]; t: [number, number] }> = {
       'band left': { s: [Math.max(0, s0 - b), s0], t: [0, t1] },
       'band right': { s: [s1, Math.min(1, s1 + b)], t: [0, t1] },
-      'band over': { s: [s0, s1], t: [door.h, t1] },
     }
+    if (cottage) assert.ok(!craft.parts.some((p) => p.name === 'band over'), `cottage ${index} has no band over`)
+    else expectedSpans['band over'] = { s: [s0, s1], t: [door.h, t1] }
 
     for (const [partName, expectedSpan] of Object.entries(expectedSpans)) {
       const part = craft.parts.find((p) => p.name === partName)
@@ -618,13 +621,16 @@ test('the parts keep apart on every front', () => {
 })
 
 test('the levels keep their order', () => {
-  assert.ok(STROKE_LIFT + 15 * LIFT_STEP < CRAFT.door.lift, 'strokes below door lift')
-  assert.ok(CRAFT.door.lift < OUTLINE_LIFT, 'door lift below outline lift')
+  // A2: the band lies under the strokes, over the wall's underpaint; the door's ink over the strokes' top
+  assert.ok(CRAFT.door.lift < STROKE_LIFT, 'band below the strokes')
+  assert.ok(STROKE_LIFT + 15 * LIFT_STEP < OUTLINE_LIFT, "strokes below the door's ink")
   assert.ok(0.0055 < CRAFT.shutter.lift, 'pane below shutter lift')
 
-  const gap1 = CRAFT.door.lift - (STROKE_LIFT + 15 * LIFT_STEP)
-  const gap2 = OUTLINE_LIFT - CRAFT.door.lift
+  const gap0 = CRAFT.door.lift
+  const gap1 = STROKE_LIFT - CRAFT.door.lift
+  const gap2 = OUTLINE_LIFT - (STROKE_LIFT + 15 * LIFT_STEP)
   const gap3 = CRAFT.shutter.lift - 0.0055
+  assert.ok(gap0 >= 2 * LIFT_STEP, `gap 0 ${gap0} >= ${2 * LIFT_STEP}`)
   assert.ok(gap1 >= 2 * LIFT_STEP, `gap 1 ${gap1} >= ${2 * LIFT_STEP}`)
   assert.ok(gap2 >= 2 * LIFT_STEP, `gap 2 ${gap2} >= ${2 * LIFT_STEP}`)
   assert.ok(gap3 >= 2 * LIFT_STEP, `gap 3 ${gap3} >= ${2 * LIFT_STEP}`)

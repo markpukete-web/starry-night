@@ -27,7 +27,8 @@ export type Strokes = { arrays: BrushArrays; stroke: number[]; seed: number[]; c
 
 export type WallPaint = { base: number; light: number; cover: number }
 export const KEPT_PAINT: WallPaint = { base: 0, light: 0.5, cover: 1 }
-export const WALL_PAINT: WallPaint = { ...KEPT_PAINT }
+/** look pass 2: the base at the lightest half, a fifth fewer strokes */
+export const WALL_PAINT: WallPaint = { base: 1, light: 0.5, cover: 0.8 }
 
 export type CraftPart = { name: string; buffer: 'underpaint' | 'outlines' | 'windows'; from: number; to: number }
 export type CraftReport = {
@@ -79,7 +80,7 @@ export type StreetBuild = {
 }
 
 export const CRAFT = {
-  door: { recess: 0.02, band: 0.3, lift: 0.0046, paleDark: 0.7 },
+  door: { recess: 0.02, band: 0.3, lift: 0.001, paleDark: 0.7 },
   shutter: { lift: 0.006, louvres: [0.25, 0.5, 0.75], maxSamples: 5 },
   eaves: 0.03,
 } as const
@@ -366,11 +367,13 @@ function drawFrameBand(
   front: StreetFace,
   door: { cu: number; w: number; h: number },
   craftParts: CraftPart[],
+  over: boolean,
 ): [number, number, number] {
   const [s0, s1] = [door.cu - door.w / 2, door.cu + door.w / 2]
   const b = CRAFT.door.band * door.w
   const bt = (b * front.u.length()) / front.v.length()
-  const t1 = Math.min(1, door.h + bt)
+  // a cottage's band stops at its door's top: above it, the thatch's slab hides the wall, and a band there pierces it
+  const t1 = over ? Math.min(1, door.h + bt) : door.h
 
   const atLift = (s: number, t: number) =>
     front.origin.clone().addScaledVector(front.u, s).addScaledVector(front.v, t).addScaledVector(front.normal, CRAFT.door.lift)
@@ -401,11 +404,13 @@ function drawFrameBand(
   const qRightTo = ctx.underpaint.positions.length / 3
   craftParts.push({ name: 'band right', buffer: 'underpaint', from: qRightFrom, to: qRightTo })
 
-  const overQuad = [atLift(s0, door.h), atLift(s1, door.h), atLift(s1, t1), atLift(s0, t1)]
-  const qOverFrom = ctx.underpaint.positions.length / 3
-  polygon(ctx.underpaint, overQuad, litColour, 0, 255)
-  const qOverTo = ctx.underpaint.positions.length / 3
-  craftParts.push({ name: 'band over', buffer: 'underpaint', from: qOverFrom, to: qOverTo })
+  if (over) {
+    const overQuad = [atLift(s0, door.h), atLift(s1, door.h), atLift(s1, t1), atLift(s0, t1)]
+    const qOverFrom = ctx.underpaint.positions.length / 3
+    polygon(ctx.underpaint, overQuad, litColour, 0, 255)
+    const qOverTo = ctx.underpaint.positions.length / 3
+    craftParts.push({ name: 'band over', buffer: 'underpaint', from: qOverFrom, to: qOverTo })
+  }
 
   shadeNew(ctx.underpaint, bandFrom, front, ctx.lit)
 
@@ -551,12 +556,12 @@ function buildHouse(ctx: Context, owner: string, index: number, shape: StreetSha
   }
 
   if (shape.craft) {
-    const bandColour = drawFrameBand(ctx, front, door, craftParts)
+    const bandColour = drawFrameBand(ctx, front, door, craftParts, true)
     craftParts.push({ name: 'step', buffer: 'underpaint', from: report.door!.stepRange[0], to: report.door!.stepRange[1] })
 
     drawWindowShutters(ctx, front, 0, win0, seed + 13, craftParts)
 
-    if (storeys === 2 && win1) {
+    if (win1) {
       drawWindowShutters(ctx, front, 1, win1, seed + 17, craftParts)
     }
 
@@ -794,7 +799,7 @@ function buildCottage(ctx: Context, owner: string, index: number, shape: StreetS
   }
 
   if (shape.craft) {
-    const bandColour = drawFrameBand(ctx, front, door, craftParts)
+    const bandColour = drawFrameBand(ctx, front, door, craftParts, false)
     const [s0, s1] = [door.cu - door.w / 2, door.cu + door.w / 2]
     const { range: stepRange } = doorStep(ctx, front, s0, s1, sourceColour(ctx, front.source))
     craftParts.push({ name: 'step', buffer: 'underpaint', from: stepRange[0], to: stepRange[1] })
