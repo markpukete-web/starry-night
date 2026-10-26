@@ -3271,3 +3271,18 @@ must be byte-identical before the stimulus's difference means anything.
 - **"Painted exactly as X" carries X's stroke scale.** The lane's stroke size on a 0.06-wide path gives one clipped
   stroke across, a hard-edged ribbon (the Consultant's Q2). When a part borrows another's paint, state its own reference
   height.
+
+- **A plan's colour share needs a lightness probe before the build, not after the first capture** (K2's look
+  passes 1 to 3, 2026-10-26). wallA's darkest 40% is L 4.7 and 57% of its texels
+  are under L 20, so the walls read black with pale flecks (`E2/probe/lead-k2-wall-sources.mjs`, a minute to run).
+  Both plan reviews passed the number. The street's convention is the houses' (K1): an object's base is its source's
+  mean, and its strokes sit on it. "Dry stone with dark mortar" (the base at the darkest 40%) read as a black barrier
+  with leaves on it in three recipes; the painted-wall convention read as a wall in one.
+- **An in-place probe settles a look pass's knobs before a worker round** (K2 pass 3, 2026-10-26): patch the literals
+  (`E/tools/k2-wall-variant.py`), capture one stop, crop at 1:1, restore the tree (`k2-wall-probe.sh`). Three recipes
+  cost four minutes. It counts as a pass against the cap, and it saved a worker round and a Codex read on a guess.
+- **A green suite under Node's type stripping proves neither the type check nor the lint** (Codex's K2 branch
+  review, 2026-10-26). Node's type stripping runs the suite without the type check, so 396 green tests
+  hid two unused imports that fail `npx tsc -b` and four that fail `npm run lint` (F2). The Lead's checks before the
+  look passes now include both, not only the gate script. And a mutation's red must come from the named mutation
+  alone: mutation 3's red came from an extra edit of the report's ranges, and the pure omission stayed green (F3).
