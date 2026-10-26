@@ -270,6 +270,14 @@ export const STREET_WALLS = [
   { side: -1 as const, t0: 0.54, t1: 0.84 },
 ] as const
 
+export const STREET_RAIL = {
+  house: 'L2',
+  back: 0.03,
+  depth: 0.12,
+  margin: 0.02,
+  gap: 0.02,
+} as const
+
 export type OrientedBox = {
   ox: number
   oz: number

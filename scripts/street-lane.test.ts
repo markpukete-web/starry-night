@@ -11,11 +11,14 @@ import { Vector3 } from 'three'
 import { FROG, frogPlace, FROGS } from '../src/scene/frog.ts'
 import type { BakedMass } from '../src/scene/landDomes.ts'
 import { buildStreet, LANE_CRAFT } from '../src/scene/streetGeometry.ts'
-import { grassChunks } from '../src/scene/streetGrass.ts'
+import { grassChunks, inFootprint } from '../src/scene/streetGrass.ts'
 import {
+  doorOf,
   doorStepFoot,
+  doorStepFrame,
   houseFrame,
   laneAt,
+  laneDistance,
   pathPoint,
   pathTangent,
   stepClearings,
@@ -343,4 +346,215 @@ test('the walls cost what the plan says', { skip }, () => {
   const buildWithout = buildStreet(realPainting, flow, masses, { grass: true, lane: false })
   const delta = buildWith.counts.triangles - buildWithout.counts.triangles
   assert.ok(delta >= 1000 && delta <= 4000, `wall triangle delta ${delta} in [1000, 4000]`)
+})
+
+test('the rail closes the front garden, open at the door', { skip }, () => {
+  assert.ok(realPainting)
+  const build = buildStreet(realPainting, flow, masses, { grass: true, lane: true })
+  const rail = build.report.lane.rail
+  assert.ok(rail, 'rail exists in report')
+  assert.equal(rail.house, 'L2')
+
+  const l2Index = STREET_HOUSES.findIndex((h) => h.id === 'L2')
+  const h = STREET_HOUSES[l2Index]
+  const f = doorStepFrame(h, l2Index)
+  const door = doorOf(h, l2Index)
+  const W = h.w
+  const g = door.w * W + 0.02
+  const a0 = door.cu * W - g / 2
+  const a1 = door.cu * W + g / 2
+
+  const point = (a: number, k: number): Vector3 =>
+    new Vector3(f.ox + a * f.ux + k * f.nx, 0, f.oz + a * f.uz + k * f.nz)
+
+  const chains: [number, number][][] = [
+    [[-0.02, 0.03], [-0.02, 0.12]],
+    [[-0.02, 0.12], [a0, 0.12]],
+    [[a1, 0.12], [W + 0.02, 0.12]],
+    [[W + 0.02, 0.12], [W + 0.02, 0.03]],
+  ]
+
+  const expectedPosts: Vector3[] = []
+  for (const [start, end] of chains) {
+    const len = Math.hypot(end[0] - start[0], end[1] - start[1])
+    const spans = Math.ceil(len / 0.12)
+    for (let i = 0; i <= spans; i++) {
+      const a = start[0] + ((end[0] - start[0]) * i) / spans
+      const k = start[1] + ((end[1] - start[1]) * i) / spans
+      const p = point(a, k)
+      if (!expectedPosts.some((q) => q.distanceTo(p) < 1e-9)) {
+        expectedPosts.push(p)
+      }
+    }
+  }
+
+  assert.equal(expectedPosts.length, 7, 'Decision (c) gives 7 posts')
+  assert.equal(rail.posts.length, 7, 'rail reports 7 posts')
+
+  for (const exp of expectedPosts) {
+    assert.ok(
+      rail.posts.some((p) => p.distanceTo(exp) < 1e-9),
+      `expected post at (${exp.x.toFixed(4)}, ${exp.z.toFixed(4)}) found`,
+    )
+  }
+
+  // Neighbours along each chain are 0.12 or less apart
+  for (const [start, end] of chains) {
+    const len = Math.hypot(end[0] - start[0], end[1] - start[1])
+    const spans = Math.ceil(len / 0.12)
+    for (let i = 0; i < spans; i++) {
+      const pA = point(start[0] + ((end[0] - start[0]) * i) / spans, start[1] + ((end[1] - start[1]) * i) / spans)
+      const pB = point(start[0] + ((end[0] - start[0]) * (i + 1)) / spans, start[1] + ((end[1] - start[1]) * (i + 1)) / spans)
+      assert.ok(pA.distanceTo(pB) <= 0.12 + 1e-9, `neighbours distance ${pA.distanceTo(pB)} <= 0.12`)
+    }
+  }
+
+  // Gateposts are g apart and midpoint at a = door.cu * W, k = 0.12
+  const [gp0, gp1] = rail.opening
+  const expGp0 = point(a0, 0.12)
+  const expGp1 = point(a1, 0.12)
+  assert.ok(
+    (gp0.distanceTo(expGp0) < 1e-9 && gp1.distanceTo(expGp1) < 1e-9) ||
+    (gp0.distanceTo(expGp1) < 1e-9 && gp1.distanceTo(expGp0) < 1e-9),
+    'opening gateposts match (a0, 0.12) and (a1, 0.12)',
+  )
+  assert.ok(Math.abs(gp0.distanceTo(gp1) - g) < 1e-9, `gateposts distance ${gp0.distanceTo(gp1)} == ${g}`)
+  const mid = gp0.clone().add(gp1).multiplyScalar(0.5)
+  const expMid = point(door.cu * W, 0.12)
+  assert.ok(mid.distanceTo(expMid) < 1e-9, 'gateposts midpoint at door.cu * W, 0.12')
+})
+
+test('the rail stands in the grass, clear of everything', { skip }, () => {
+  assert.ok(realPainting)
+  const build = buildStreet(realPainting, flow, masses, { grass: true, lane: true })
+  const rail = build.report.lane.rail
+  assert.ok(rail)
+
+  const houses = STREET_HOUSES.map((h) => {
+    const { along, toPath } = houseFrame(h)
+    const p: [number, number] = [h.x, h.z]
+    const a: [number, number] = [along.x, along.z]
+    const n: [number, number] = [toPath.x, toPath.z]
+    return [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([s, k]) => [
+      p[0] + a[0] * (s * h.w) / 2 + n[0] * (k * h.d) / 2,
+      p[1] + a[1] * (s * h.w) / 2 + n[1] * (k * h.d) / 2,
+    ] as [number, number])
+  })
+  const steps = STREET_HOUSES.map((h) => doorStepFoot(h, STREET_HOUSES.indexOf(h)))
+
+  const segDist = (p: [number, number], a: [number, number], b: [number, number]): number => {
+    const d = [b[0] - a[0], b[1] - a[1]]
+    const n = d[0] ** 2 + d[1] ** 2
+    const t = n ? Math.max(0, Math.min(1, ((p[0] - a[0]) * d[0] + (p[1] - a[1]) * d[1]) / n)) : 0
+    return Math.hypot(p[0] - a[0] - t * d[0], p[1] - a[1] - t * d[1])
+  }
+  const cross = (a: [number, number], b: [number, number], p: [number, number]) =>
+    (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0])
+  const inside = (p: [number, number], q: [number, number][]) => {
+    const cs = q.map((a, i) => cross(a, q[(i + 1) % q.length], p))
+    return cs.every((x) => x >= -1e-12) || cs.every((x) => x <= 1e-12)
+  }
+  const ptDist = (p: [number, number], q: [number, number][]) =>
+    inside(p, q) ? 0 : Math.min(...q.map((a, i) => segDist(p, a, q[(i + 1) % q.length])))
+
+  const wallFootprints: [number, number][][] = []
+  for (const w of build.report.lane.walls) {
+    for (const seg of w.segments) {
+      wallFootprints.push(seg.corners.map((c) => [c.x, c.z] as [number, number]))
+    }
+  }
+
+  for (const post of rail.posts) {
+    assert.ok(inFootprint(post.x, post.z), `post at (${post.x}, ${post.z}) in grass footprint`)
+
+    const pt: [number, number] = [post.x, post.z]
+    for (let i = 0; i < houses.length; i++) {
+      const d = ptDist(pt, houses[i])
+      assert.ok(d >= 0.03 - 1e-6, `post to house ${STREET_HOUSES[i].id} ${d} >= 0.03`)
+      const sd = ptDist(pt, steps[i])
+      assert.ok(sd >= 0.03 - 1e-6, `post to step ${STREET_HOUSES[i].id} ${sd} >= 0.03`)
+    }
+
+    for (const wFoot of wallFootprints) {
+      const d = ptDist(pt, wFoot)
+      assert.ok(d >= 0.03 - 1e-6, `post to wall ${d} >= 0.03`)
+    }
+
+    const laneDist = laneDistance(post.x, post.z)
+    assert.ok(laneDist - 0.06 >= 0.03 - 1e-6, `laneDistance - 0.06 = ${laneDist - 0.06} >= 0.03`)
+  }
+})
+
+test('the rail is drawn and has no ink', { skip }, () => {
+  assert.ok(realPainting)
+  const buildWith = buildStreet(realPainting, flow, masses, { grass: true, lane: true })
+  const buildWithout = buildStreet(realPainting, flow, masses, { grass: true, lane: false })
+  const rail = buildWith.report.lane.rail
+  assert.ok(rail)
+
+  const [u0, u1] = rail.underpaint
+  assert.ok(u1 > u0, 'underpaint range non-empty')
+
+  const l2Index = STREET_HOUSES.findIndex((h) => h.id === 'L2')
+  const h = STREET_HOUSES[l2Index]
+  const f = doorStepFrame(h, l2Index)
+  const door = doorOf(h, l2Index)
+  const W = h.w
+  const g = door.w * W + 0.02
+  const a0 = door.cu * W - g / 2
+  const a1 = door.cu * W + g / 2
+
+  const point = (a: number, k: number): Vector3 =>
+    new Vector3(f.ox + a * f.ux + k * f.nx, 0, f.oz + a * f.uz + k * f.nz)
+
+  const chains: [number, number][][] = [
+    [[-0.02, 0.03], [-0.02, 0.12]],
+    [[-0.02, 0.12], [a0, 0.12]],
+    [[a1, 0.12], [W + 0.02, 0.12]],
+    [[W + 0.02, 0.12], [W + 0.02, 0.03]],
+  ]
+
+  const spans: [Vector3, Vector3][] = []
+  for (const [start, end] of chains) {
+    const len = Math.hypot(end[0] - start[0], end[1] - start[1])
+    const num = Math.ceil(len / 0.12)
+    for (let i = 0; i < num; i++) {
+      const pA = point(start[0] + ((end[0] - start[0]) * i) / num, start[1] + ((end[1] - start[1]) * i) / num)
+      const pB = point(start[0] + ((end[0] - start[0]) * (i + 1)) / num, start[1] + ((end[1] - start[1]) * (i + 1)) / num)
+      spans.push([pA, pB])
+    }
+  }
+
+  const segDist = (p: [number, number], a: [number, number], b: [number, number]): number => {
+    const d = [b[0] - a[0], b[1] - a[1]]
+    const n = d[0] ** 2 + d[1] ** 2
+    const t = n ? Math.max(0, Math.min(1, ((p[0] - a[0]) * d[0] + (p[1] - a[1]) * d[1]) / n)) : 0
+    return Math.hypot(p[0] - a[0] - t * d[0], p[1] - a[1] - t * d[1])
+  }
+
+  const upPositions = buildWith.underpaint.positions
+  for (let vi = u0; vi < u1; vi++) {
+    const vx = upPositions[vi * 3]
+    const vy = upPositions[vi * 3 + 1]
+    const vz = upPositions[vi * 3 + 2]
+
+    assert.ok(vy >= -1e-9 && vy <= 0.05 + 1e-9, `vertex y ${vy} in [0, 0.05]`)
+
+    // horizontally within 0.0035 of a post's foot or of a span's line
+    let minDist = Infinity
+    for (const post of rail.posts) {
+      minDist = Math.min(minDist, Math.hypot(vx - post.x, vz - post.z))
+    }
+    for (const [sA, sB] of spans) {
+      minDist = Math.min(minDist, segDist([vx, vz], [sA.x, sA.z], [sB.x, sB.z]))
+    }
+    assert.ok(minDist <= 0.00355, `vertex (${vx}, ${vz}) minDist ${minDist} <= 0.0035`)
+  }
+
+  // no ink: outlines vertex count equals lane: false build's
+  assert.equal(
+    buildWith.outlines.arrays.positions.length,
+    buildWithout.outlines.arrays.positions.length,
+    'rail adds no outlines ink',
+  )
 })

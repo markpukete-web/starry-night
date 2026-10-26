@@ -8,7 +8,7 @@ import { buildLandTrees, type BakedMass, type LandTrees } from './landDomes.ts'
 import { buildStreetTrees } from './streetTrees.ts'
 import { PALETTE } from './palette.ts'
 import { CHURCH_LIGHT, leanOf, lightOf, shadeNew, STREET_LIGHT, type StreetLight } from './streetLight.ts'
-import { CHURCH, DETAIL, doorOf, houseFrame, STEP, STREET, STREET_CHURCH, STREET_HOUSES, STREET_SQUARE, STREET_TREES, detailOf, laneDistance, pathPoint, pathTangent, streetGroundAt, type StreetHouse, laneAt, STREET_WALLS } from './streetLayout.ts'
+import { CHURCH, DETAIL, doorOf, doorStepFrame, houseFrame, STEP, STREET, STREET_CHURCH, STREET_HOUSES, STREET_RAIL, STREET_SQUARE, STREET_TREES, detailOf, laneDistance, pathPoint, pathTangent, streetGroundAt, type StreetHouse, laneAt, STREET_WALLS } from './streetLayout.ts'
 import { outlineFace, PATH_LIFT, sourceUnderpaint, streetMassConfig, STREET_MOON_LIFT, traceFace, type FaceStrokes, type StreetFace, type StreetSourceName, stoneDab, STREET_SOURCES, STROKE_LIFT } from './streetStrokes.ts'
 import type { ImageData2D } from './useImageData.ts'
 import { VILLAGE_CHURCH, type Pigment } from './villageKnot.ts'
@@ -1378,6 +1378,138 @@ function laneWalls(ctx: Context): void {
   }
 }
 
+function gardenRail(ctx: Context): void {
+  const l2Index = STREET_HOUSES.findIndex((h) => h.id === STREET_RAIL.house)
+  const h = STREET_HOUSES[l2Index]
+  const f = doorStepFrame(h, l2Index)
+  const door = doorOf(h, l2Index)
+  const W = h.w
+  const g = door.w * W + STREET_RAIL.gap
+  const a0 = door.cu * W - g / 2
+  const a1 = door.cu * W + g / 2
+
+  const point = (a: number, k: number): Vector3 =>
+    new Vector3(f.ox + a * f.ux + k * f.nx, 0, f.oz + a * f.uz + k * f.nz)
+
+  const chains: [number, number][][] = [
+    [[-STREET_RAIL.margin, STREET_RAIL.back], [-STREET_RAIL.margin, STREET_RAIL.depth]],
+    [[-STREET_RAIL.margin, STREET_RAIL.depth], [a0, STREET_RAIL.depth]],
+    [[a1, STREET_RAIL.depth], [W + STREET_RAIL.margin, STREET_RAIL.depth]],
+    [[W + STREET_RAIL.margin, STREET_RAIL.depth], [W + STREET_RAIL.margin, STREET_RAIL.back]],
+  ]
+
+  const posts: Vector3[] = []
+  const spans: [Vector3, Vector3][] = []
+
+  for (const [start, end] of chains) {
+    const len = Math.hypot(end[0] - start[0], end[1] - start[1])
+    const num = Math.ceil(len / LANE_CRAFT.rail.spacing)
+    for (let i = 0; i <= num; i++) {
+      const a = start[0] + ((end[0] - start[0]) * i) / num
+      const k = start[1] + ((end[1] - start[1]) * i) / num
+      const p = point(a, k)
+      if (!posts.some((q) => q.distanceTo(p) < 1e-9)) {
+        posts.push(p)
+      }
+    }
+    for (let i = 0; i < num; i++) {
+      const pA = point(start[0] + ((end[0] - start[0]) * i) / num, start[1] + ((end[1] - start[1]) * i) / num)
+      const pB = point(start[0] + ((end[0] - start[0]) * (i + 1)) / num, start[1] + ((end[1] - start[1]) * (i + 1)) / num)
+      spans.push([pA, pB])
+    }
+  }
+
+  const gp0 = point(a0, STREET_RAIL.depth)
+  const gp1 = point(a1, STREET_RAIL.depth)
+
+  const underpaintStart = ctx.underpaint.positions.length / 3
+  const baseColorRGB = sourceUnderpaint(ctx.painting, 'thatch', 1)
+  const baseColor = new Color().setRGB(...baseColorRGB, SRGBColorSpace)
+
+  const addQuad = (corners: [Vector3, Vector3, Vector3, Vector3], normal: Vector3, refHeight: number, seed: number) => {
+    const face: StreetFace = {
+      origin: corners[0],
+      u: corners[1].clone().sub(corners[0]),
+      v: corners[3].clone().sub(corners[0]),
+      normal,
+      shape: 'quad',
+      kind: 'wall',
+      source: 'thatch',
+      refHeight,
+      seed,
+      mirror: false,
+    }
+    const light = lightOf(face, ctx.lit, ctx.wallLight)
+    const litColour = baseColor.clone().multiplyScalar(light)
+    const from = ctx.underpaint.positions.length
+    polygon(ctx.underpaint, corners, litColour, 0, 255)
+    shadeNew(ctx.underpaint, from, face, ctx.lit)
+  }
+
+  // Posts: 0.005 square, 0.05 high, with top
+  const postSize = LANE_CRAFT.rail.post
+  const postH = LANE_CRAFT.rail.height
+  const hp = postSize / 2
+  const uVec = new Vector3(f.ux, 0, f.uz)
+  const nVec = new Vector3(f.nx, 0, f.nz)
+
+  posts.forEach((foot, pi) => {
+    const c0 = foot.clone().addScaledVector(uVec, -hp).addScaledVector(nVec, -hp)
+    const c1 = foot.clone().addScaledVector(uVec, hp).addScaledVector(nVec, -hp)
+    const c2 = foot.clone().addScaledVector(uVec, hp).addScaledVector(nVec, hp)
+    const c3 = foot.clone().addScaledVector(uVec, -hp).addScaledVector(nVec, hp)
+
+    const c0T = c0.clone().setY(postH)
+    const c1T = c1.clone().setY(postH)
+    const c2T = c2.clone().setY(postH)
+    const c3T = c3.clone().setY(postH)
+
+    const seed = 0x6100 + pi * 13
+    addQuad([c0, c1, c1T, c0T], nVec.clone().negate(), postH, seed)
+    addQuad([c1, c2, c2T, c1T], uVec.clone(), postH, seed + 1)
+    addQuad([c2, c3, c3T, c2T], nVec.clone(), postH, seed + 2)
+    addQuad([c3, c0, c0T, c3T], uVec.clone().negate(), postH, seed + 3)
+    addQuad([c0T, c1T, c2T, c3T], UP, postSize, seed + 4)
+  })
+
+  // Rails: 2 rails per span, centres at y 0.02 and 0.042, box 0.004 square
+  const barSize = LANE_CRAFT.rail.bar
+  const hb = barSize / 2
+  const railYs = LANE_CRAFT.rail.rails
+
+  spans.forEach(([pA, pB], si) => {
+    const dir = pB.clone().sub(pA).normalize()
+    const across = new Vector3(-dir.z, 0, dir.x)
+
+    railYs.forEach((cy, ri) => {
+      const y0 = cy - hb
+      const y1 = cy + hb
+      const a0 = pA.clone().addScaledVector(across, -hb).setY(y0)
+      const a1 = pA.clone().addScaledVector(across, hb).setY(y0)
+      const b0 = pB.clone().addScaledVector(across, -hb).setY(y0)
+      const b1 = pB.clone().addScaledVector(across, hb).setY(y0)
+
+      const a0T = a0.clone().setY(y1)
+      const a1T = a1.clone().setY(y1)
+      const b0T = b0.clone().setY(y1)
+      const b1T = b1.clone().setY(y1)
+
+      const seed = 0x6200 + si * 23 + ri * 7
+      addQuad([a0, b0, b0T, a0T], across.clone().negate(), barSize, seed)
+      addQuad([b1, a1, a1T, b1T], across.clone(), barSize, seed + 1)
+      addQuad([a0T, b0T, b1T, a1T], UP, barSize, seed + 2)
+      addQuad([b0, a0, a1, b1], UP.clone().negate(), barSize, seed + 3)
+    })
+  })
+
+  ctx.report.lane.rail = {
+    house: 'L2',
+    posts,
+    opening: [gp0, gp1],
+    underpaint: [underpaintStart, ctx.underpaint.positions.length / 3],
+  }
+}
+
 export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | null, masses: BakedMass[] | null, { lit = true, grass = false, paint = WALL_PAINT, lane = true }: { lit?: boolean; grass?: boolean; paint?: WallPaint; lane?: boolean } = {}): StreetBuild | null {
   if (!painting || !flow || !masses) return null
   const ctx: Context = {
@@ -1433,7 +1565,10 @@ export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | nu
     ;(h.type === 'cottage' ? cottage : house)(ctx, `house-${index}`, index, shape, new Vector3(h.x, 0, h.z), along, toPath, h.lit, h.chimney, density)
   })
   ctx.report.church = church(ctx)
-  if (lane) laneWalls(ctx)
+  if (lane) {
+    laneWalls(ctx)
+    gardenRail(ctx)
+  }
   const trees = buildStreetTrees(painting, STREET_TREES)
   const triangles = (ctx.underpaint.indices.length + ctx.grassBase.indices.length + ctx.strokes.arrays.indices.length + ctx.ground.arrays.indices.length + ctx.outlines.arrays.indices.length + ctx.windows.indices.length + trees.solid.indices.length + trees.strokes.indices.length) / 3
   return {
