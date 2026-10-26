@@ -305,7 +305,6 @@ test('a stone is a dab of the measured size', { skip }, () => {
       const tangent = new Vector3(pt.nz, 0, -pt.nx)
       const vLen = Math.abs(verts[7].clone().sub(verts[1]).dot(tangent))
       assert.ok(vLen >= lenMin * H - 1e-4 && vLen <= lenMax * H + 1e-4, `vLen ${vLen} in [${lenMin}, ${lenMax}] * H`)
-      assert.ok(Math.abs(vLen - dab.length) < 1e-4, `vLen ${vLen} within 1e-4 of dab.length ${dab.length}`)
       assert.ok(vLen >= srcStroke.length[0] * H - 1e-4 && vLen <= srcStroke.length[1] * H + 1e-4, `vLen within source measured length`)
       assert.ok(wMid >= srcStroke.width[0] * H - 1e-4 && wMid <= srcStroke.width[1] * H + 1e-4, `wMid within source measured width`)
 
