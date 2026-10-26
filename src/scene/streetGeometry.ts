@@ -1314,7 +1314,9 @@ function laneWalls(ctx: Context): void {
         col.multiplyScalar(lightOf(dabFace, ctx.lit, ctx.wallLight))
 
         stoneDab(wallStrokes, [p0, p1, p2], across, dabWidth, col, Math.round(rng() * 10000))
-        dabs.push({ face: 'lane', t: tMid, lateral: lat, y: courseY, length: L, width: dabWidth })
+        // the report carries the emitted length, the endpoints' projection on the tangent: one dab of 224 straddles a lane
+        // kink, where the offset curve jumps, and is drawn 0.0022 longer than L (the Lead's gate on the fix round)
+        dabs.push({ face: 'lane', t: tMid, lateral: lat, y: courseY, length: Math.abs((pt2.x - pt0.x) * tangent.x + (pt2.z - pt0.z) * tangent.z), width: dabWidth })
 
         tCurr += dtCell
       }
@@ -1385,7 +1387,7 @@ function laneWalls(ctx: Context): void {
         col.multiplyScalar(lightOf(dabFace, ctx.lit, ctx.wallLight))
 
         stoneDab(wallStrokes, [p0, p1, p2], across, dabWidth, col, Math.round(rng() * 10000))
-        dabs.push({ face: 'top', t: tMid, lateral: lat, y: rowY, length: L, width: dabWidth })
+        dabs.push({ face: 'top', t: tMid, lateral: lat, y: rowY, length: Math.abs((pt2.x - pt0.x) * tangent.x + (pt2.z - pt0.z) * tangent.z), width: dabWidth })
 
         tCurr += dtCell
       }
