@@ -3246,3 +3246,18 @@ must be byte-identical before the stimulus's difference means anything.
 - **A test that loops over reported parts proves nothing when a part goes missing.** The levels test checked each
   leaf's ink range only where one was reported, so removing the ink kept it green (Codex F1). Require the expected
   part and its count first, then check its values.
+
+
+## 2026-10-26 (night) — the village craft, K2's plan
+
+- **A check at the stations misses the walk between them.** Revision 0 kept every lantern 0.35 from each station's
+  camera, and the walk between the stops still passed four at 0.14 to 0.25, their halos 1.1 to 1.8 screen heights
+  (Codex F4). A part the camera can pass gets its check over every walk sample, not only the stops.
+- **A test over every camera can fail on a view nobody sees.** The pool-against-frog test, run from all five stops,
+  failed at the fix: from stop 0, rays to frog 3 1.5 away crossed lamp 4's pool, under a pixel of the frog affected.
+  Scope a regression test to the view the defect was found in (the frog's own stop), and write the excluded case into
+  the plan for Mark's eye, not into the test's tolerance.
+- **A knob range can eat a margin a test holds.** W3's clearing has 0.00015 to spare at frog 3's ring, so revision 0's
+  "lane-side margin 0.012 to 0.03" knob would have broken the ring test at its first step. Read each knob's range
+  against the tightest margin it moves before the plan offers it.
+

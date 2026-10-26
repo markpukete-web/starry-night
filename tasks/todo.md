@@ -1,6 +1,34 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-26 (evening): K1 on preview for Mark, K2's plan reviewed (both legs REVISE), revision 1 next
+## Pickup — 2026-10-26 (night): K2's plan, revision 1, approved by both legs; Mark's read and his K1 pass next
+
+**K2's plan, revision 1 at `2d81767`** on `feat/village-lane` (`tasks/2026-10-26-village-craft-k2-plan.md`), local.
+Both review rounds are folded in, each finding answered in its table "What revision 1 changed". The bounded re-reads:
+Codex APPROVE (`k2/plan-review-codex-r1.md`, F1 to F9 closed, no new P2), the worker BUILDABLE
+(`k2/plan-build-worker-r1.md`, W01 to W11 closed, no new gap). Evidence in `scratch/village-craft-2026-10-25/k2/`.
+
+The Lead's calls in revision 1, each open to Mark at the gate:
+
+- **F4, the halos on the walk:** Decision (d2). A halo's world size is held so it never spans more than 0.5 of the
+  viewport's shorter side (`lampHaloScale` in `streetLife.ts`, set per frame from the lantern's view depth). Without
+  it, four lamps pass the walk at 0.14 to 0.25 and their halos span 1.07 to 1.80 screen heights. Codex's probe: 12,378
+  cases, the largest 0.5000000000000071. A fourth departure from the design, beside the walls' lateral, no ink on the
+  rail and the lamps' count and places.
+- **F3, lamp 4's pool:** lamp 4 at `t` 0.55. The pool test casts each frog's own stop's rays to its body
+  (`k2/probe/lead-pool-frogs.mjs`): 0 crossings at 0.55, 2,844 at 0.52, 273 at 0.58, so lamp 4 cannot move in Task 4.
+  From stops 0 and 1, rays to frog 3 (1.1 to 1.6 away, under a pixel of it affected) cross lamp 4's pool: the frog in
+  the lamp's light, not counted.
+- The stones from `wallA` (`plaster` is too narrow for the dab). The rail at L2 only (R1 too near R2, L5 and R5
+  outside the grass).
+
+`T/grass-hash.ts` now reads `LANE=0` (passes `stepClearings()`), and gives K1's `def5470cc15817ba` on the lane
+worktree.
+
+**Next:** Mark reads the plan. K2's build (Tasks 1 to 3 to the worker, the brief `k2/brief-k2-build.md`) waits for his
+K1 pass on the preview. The PR stack #23 to #29 merges on his word (no new Codex activity since 2026-10-25), then K1's
+PR.
+
+## Pickup — 2026-10-26 (evening): K1 on preview for Mark, K2's plan reviewed (both legs REVISE), revision 1 next (superseded by the night pickup above)
 
 Mark wrapped up here ("When Codex's done, record where we at. I need to wrap up and will revisit next session").
 
