@@ -307,13 +307,13 @@ function acceptFor(face: StreetFace, painting: ImageData2D): TexelAccept {
 
 /** The mean of the darkest `share` of the source's texels (sRGB 0..1), a tenth for a face's underpaint; all of them
  * for a lit window's base. */
-export function sourceUnderpaint(painting: ImageData2D, source: StreetSourceName, share = 0.1): [number, number, number] {
-  return rectUnderpaint(painting, STREET_SOURCES[source], share)
+export function sourceUnderpaint(painting: ImageData2D, source: StreetSourceName, share = 0.1, lightest = false): [number, number, number] {
+  return rectUnderpaint(painting, STREET_SOURCES[source], share, lightest)
 }
 
 /** `sourceUnderpaint` for any rectangle of the painting (1600 × 1267 px): Vincent's sources are not traced faces, so
  * they are not `STREET_SOURCES` keys (S2 plan review F1). */
-export function rectUnderpaint(painting: ImageData2D, rect: readonly [number, number, number, number], share = 0.1): [number, number, number] {
+export function rectUnderpaint(painting: ImageData2D, rect: readonly [number, number, number, number], share = 0.1, lightest = false): [number, number, number] {
   const [x0, y0, x1, y1] = rect
   const sx = painting.width / 1600
   const sy = painting.height / 1267
@@ -326,8 +326,9 @@ export function rectUnderpaint(painting: ImageData2D, rect: readonly [number, nu
     }
   }
   texels.sort((a, b) => a[0] - b[0])
-  const dark = texels.slice(0, Math.max(1, Math.round(texels.length * share)))
-  return [0, 1, 2].map((c) => dark.reduce((sum, t) => sum + t[c + 1], 0) / dark.length / 255) as [number, number, number]
+  const count = Math.max(1, Math.round(texels.length * share))
+  const sample = lightest ? texels.slice(texels.length - count) : texels.slice(0, count)
+  return [0, 1, 2].map((c) => sample.reduce((sum, t) => sum + t[c + 1], 0) / sample.length / 255) as [number, number, number]
 }
 
 /**

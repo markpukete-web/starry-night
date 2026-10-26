@@ -7,7 +7,7 @@ import test from 'node:test'
 import { islandHeightAt } from '../src/scene/islandShape.ts'
 import type { BakedMass } from '../src/scene/landDomes.ts'
 import { Vector3 } from 'three'
-import { COTTAGE, ROOF_EDGE, buildStreet, cottageFaces, houseRoofEdges, type StreetShape } from '../src/scene/streetGeometry.ts'
+import { COTTAGE, KEPT_PAINT, ROOF_EDGE, buildStreet, cottageFaces, houseRoofEdges, type StreetShape } from '../src/scene/streetGeometry.ts'
 import { CHURCH, DETAIL, detailOf, STREET, STREET_CHURCH, STREET_HOUSES, STREET_TRIANGLE_BUDGET, laneDistance, pathPoint } from '../src/scene/streetLayout.ts'
 import type { ImageData2D } from '../src/scene/useImageData.ts'
 import { VILLAGE_CHURCH } from '../src/scene/villageKnot.ts'
@@ -31,7 +31,8 @@ function villagePainting(): ImageData2D {
   return { data, width, height }
 }
 
-const build = buildStreet(villagePainting(), flow, masses)
+// Pins S1's cladding; street-craft.test.ts pins the paint.
+const build = buildStreet(villagePainting(), flow, masses, { paint: KEPT_PAINT })
 
 test('the street builds all or nothing', () => {
   assert.equal(buildStreet(null, flow, masses), null)
