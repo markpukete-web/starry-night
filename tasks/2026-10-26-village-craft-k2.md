@@ -208,7 +208,8 @@ The diagnosis by geometry (`laneAt`): the case's point `laneAt(0.12, +0.15)` is 
 starts at `t` 0.14 on the same side; its lane face at 0.135, 0.03 thick, cleared 0.012), inside the hand's 0.045 push
 radius. Under the pool the ground between the blades is pale, so a blade that bends away or over it darkens the pixel
 rather than brightening it, and the case counts brightening alone. The other nine cases at that point (1, 2, 4, 6, 8, 9,
-11, 12, 16) pass: they read the hit, the peak and the push, not the sign of the light. The probe: `GRASS_VERGE_T` and
+11, 12, 16) pass (case 16 at the re-run below: the chain's run stopped at case 15): they read the hit, the peak and the
+push, not the sign of the light. The probe: `GRASS_VERGE_T` and
 `GRASS_VERGE_LAT` override the point (defaults S3's 0.12, 0.15); case 15 alone on the lane at the default, at
 (0.12, −0.23) (past W1's outer face −0.165 and its clearing −0.177 by more than the hand's 0.045; 0.31 from lamp 2) and at
 (0.12, +0.32) (0.21 from lamp 1's foot, the disc's edge 0.17; 0.16 from W2's near corner), and K1 at the same points.
@@ -270,3 +271,7 @@ walls' end caps carry the base colour only, no stones; stonier stones (a darker 
 the cap; lamp 1's pool reaches the verge grass by design (0.063 from S3's hand point), the reason case 15's point moved;
 the K1 fog fails stand. A `?lane=0` toggle (the build hash's `LANE=0` as a URL flag) would let him compare K1 and K2 on
 one preview: noted in `tasks/todo.md`, not built.
+
+Pushed at 00:10 (`883c311` the check, `946ef0b` the docs) to `feat/village-lane`. The Vercel preview
+`https://starry-night-gepd7ldoi-markpukete-webs-projects.vercel.app/?street=1&station=0` (Vercel sign-in); Mark pinged at
+00:13. No PR until he has looked. K1's preview stays at its own deployment URL for a side-by-side.

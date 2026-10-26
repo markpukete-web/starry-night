@@ -5,8 +5,9 @@
 **K2, the lane's walls, rail and lamps: on preview, Mark's live read pending.** The record is
 `tasks/2026-10-26-village-craft-k2.md`, its gate section at the end; the evidence `scratch/village-craft-2026-10-25/k2/`
 (`t5/` the gate's runs, `gate/` the Lead's checks and the case 15 probes). The code head is `883c311` (the grass check's
-case 15 moved to lateral 0.32, past lamp 1's pool); the scene's code is `3662089`. Pushed to `feat/village-lane`. The
-preview link is in the ping to Mark and in the next docs commit. No PR until he has looked. The Tunables entry is in
+case 15 moved to lateral 0.32, past lamp 1's pool); the scene's code is `3662089`. Pushed to `feat/village-lane` at `946ef0b`.
+The preview is `https://starry-night-gepd7ldoi-markpukete-webs-projects.vercel.app/?street=1&station=0` (Vercel sign-in),
+Mark pinged at 00:13. No PR until he has looked. The Tunables entry is in
 CLAUDE.md. Codex's confirmation read was APPROVE on the code at `3662089`; the check's change is for the PR review.
 
 **Open for his eye, none a blocker:** the lantern reads as a flat yellow box at 1:1; the walls' end caps carry the base
