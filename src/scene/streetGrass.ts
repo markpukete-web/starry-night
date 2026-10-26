@@ -3,8 +3,7 @@ import { mulberry32 } from './brush.ts'
 import { vnoise } from './brushForms.ts'
 import { bladeReach, type BladeSpec, clump, GRASS_BLADE } from './grassBlade.ts'
 import {
-  doorOf,
-  houseFrame,
+  doorStepFrame,
   laneParam,
   pathPoint,
   pathTangent,
@@ -99,24 +98,7 @@ export function grassChunks(painting: ImageData2D, customDensity?: number): Gras
 
   const chunks: GrassChunk[] = []
 
-  const stepFeet = STREET_HOUSES.map((h, i) => {
-    const { along, toPath } = houseFrame(h)
-    const flip = -along.z * toPath.x + along.x * toPath.z < 0
-    const u = flip ? -1 : 1
-    const ux = u * along.x
-    const uz = u * along.z
-    const toPathLen = Math.hypot(toPath.x, toPath.z)
-    const nx = toPath.x / toPathLen
-    const nz = toPath.z / toPathLen
-    const ox = h.x + toPath.x * (h.d / 2) - ux * (h.w / 2)
-    const oz = h.z + toPath.z * (h.d / 2) - uz * (h.w / 2)
-    const door = doorOf(h, i)
-    const s0 = door.cu - door.w / 2
-    const s1 = door.cu + door.w / 2
-    const ws0 = h.w * s0
-    const ws1 = h.w * s1
-    return { ox, oz, ux, uz, nx, nz, ws0, ws1 }
-  })
+  const stepFeet = STREET_HOUSES.map((h, i) => doorStepFrame(h, i))
 
   for (let t0 = GRASS.t[0]; t0 < GRASS.t[1] - 1e-9; t0 += DT) {
     for (const side of [-1, 1]) {
@@ -124,10 +106,6 @@ export function grassChunks(painting: ImageData2D, customDensity?: number): Gras
         const [l0, l1] = [BANDS[bi], BANDS[bi + 1]]
         const tries = Math.round((FULL * density * DT * STREET.pathLength * (l1 - l0) * 3) / meanClump)
         let chunkBlades: BladeSpec[] = []
-        let minX = Infinity
-        let minZ = Infinity
-        let maxX = -Infinity
-        let maxZ = -Infinity
 
         for (let i = 0; i < tries; i++) {
           const t = t0 + rand() * DT
@@ -147,10 +125,6 @@ export function grassChunks(painting: ImageData2D, customDensity?: number): Gras
             const [, bLat] = laneParam(b.x, b.z)
             if (Math.abs(bLat) < 0.052 || isExcluded(b.x, b.z)) continue
             chunkBlades.push(b)
-            if (b.x < minX) minX = b.x
-            if (b.x > maxX) maxX = b.x
-            if (b.z < minZ) minZ = b.z
-            if (b.z > maxZ) maxZ = b.z
           }
         }
 
@@ -180,10 +154,10 @@ export function grassChunks(painting: ImageData2D, customDensity?: number): Gras
 
         if (chunkBlades.length === 0) continue
 
-        minX = Infinity
-        minZ = Infinity
-        maxX = -Infinity
-        maxZ = -Infinity
+        let minX = Infinity
+        let minZ = Infinity
+        let maxX = -Infinity
+        let maxZ = -Infinity
         for (const b of chunkBlades) {
           if (b.x < minX) minX = b.x
           if (b.x > maxX) maxX = b.x

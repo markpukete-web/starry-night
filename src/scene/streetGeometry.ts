@@ -476,7 +476,7 @@ function buildHouse(ctx: Context, owner: string, index: number, shape: StreetSha
   const fl = c(-w / 2, d / 2, 0), fr = c(w / 2, d / 2, 0), br = c(w / 2, -d / 2, 0), bl = c(-w / 2, -d / 2, 0)
   const upE = UP.clone().multiplyScalar(eave)
   const walls: [string, Vector3, Vector3][] = [['front', fl, fr], ['right', fr, br], ['back', br, bl], ['left', bl, fl]]
-  const door = doorOf(shape as StreetHouse, index)
+  const door = doorOf(shape, index)
   const wallFaces = walls.map(([name, a, z], i) => {
     const face = orientedFace(a, z.clone().sub(a), upE, inside, { shape: 'quad', kind: 'wall', source: wall, refHeight: shape.brush ?? eave, seed: seed + i, mirror: i % 2 === 1 })
     if (i === 0 && shape.recess) cladRound(ctx, owner, face, door, density)
@@ -530,16 +530,19 @@ function buildHouse(ctx: Context, owner: string, index: number, shape: StreetSha
   ctx.report.windows.push({ owner, lit: false })
 
   const w0From = ctx.windows.positions.length / 3
-  opening(ctx, front, index % 2 ? 0.2 : 0.8, 0.62 / storeys, 0.12, 0.2 / storeys, lit, seed + 13)
+  const win0 = { cu: index % 2 ? 0.2 : 0.8, cv: 0.62 / storeys, w: 0.12, h: 0.2 / storeys }
+  opening(ctx, front, win0.cu, win0.cv, win0.w, win0.h, lit, seed + 13)
   const w0To = ctx.windows.positions.length / 3
   ctx.report.windows.push({ owner, lit })
   if (shape.craft) {
     craftParts.push({ name: 'window 0', buffer: 'windows', from: w0From, to: w0To })
   }
 
+  let win1: { cu: number; cv: number; w: number; h: number } | undefined
   if (storeys === 2) {
     const w1From = ctx.windows.positions.length / 3
-    opening(ctx, front, index % 2 ? 0.2 : 0.8, (1 + 0.62) / storeys, 0.12, 0.2 / storeys, false, seed + 17)
+    win1 = { cu: index % 2 ? 0.2 : 0.8, cv: (1 + 0.62) / storeys, w: 0.12, h: 0.2 / storeys }
+    opening(ctx, front, win1.cu, win1.cv, win1.w, win1.h, false, seed + 17)
     const w1To = ctx.windows.positions.length / 3
     ctx.report.windows.push({ owner, lit: false })
     if (shape.craft) {
@@ -551,11 +554,9 @@ function buildHouse(ctx: Context, owner: string, index: number, shape: StreetSha
     const bandColour = drawFrameBand(ctx, front, door, craftParts)
     craftParts.push({ name: 'step', buffer: 'underpaint', from: report.door!.stepRange[0], to: report.door!.stepRange[1] })
 
-    const win0 = { cu: index % 2 ? 0.2 : 0.8, cv: 0.62 / storeys, w: 0.12, h: 0.2 / storeys }
     drawWindowShutters(ctx, front, 0, win0, seed + 13, craftParts)
 
-    if (storeys === 2) {
-      const win1 = { cu: index % 2 ? 0.2 : 0.8, cv: (1 + 0.62) / storeys, w: 0.12, h: 0.2 / storeys }
+    if (storeys === 2 && win1) {
       drawWindowShutters(ctx, front, 1, win1, seed + 17, craftParts)
     }
 
@@ -770,7 +771,7 @@ function buildCottage(ctx: Context, owner: string, index: number, shape: StreetS
   ink(ctx, owner, STREET.wallRef, edges, seed)
   // the door reaches most of the low wall (at 0.6 of a 0.09 eave it stood below the camera's eye), a small window beside it
   const front = wallFaces[0]
-  const door = doorOf(shape as StreetHouse, index)
+  const door = doorOf(shape, index)
   const craftParts: CraftPart[] = []
   const doorFrom = ctx.windows.positions.length / 3
   const inkFrom = ctx.outlines.arrays.positions.length / 3
@@ -784,7 +785,8 @@ function buildCottage(ctx: Context, owner: string, index: number, shape: StreetS
   }
 
   const w0From = ctx.windows.positions.length / 3
-  opening(ctx, front, index % 2 ? 0.74 : 0.26, 0.55, 0.12, 0.3, lit, seed + 13)
+  const win0 = { cu: index % 2 ? 0.74 : 0.26, cv: 0.55, w: 0.12, h: 0.3 }
+  opening(ctx, front, win0.cu, win0.cv, win0.w, win0.h, lit, seed + 13)
   const w0To = ctx.windows.positions.length / 3
   ctx.report.windows.push({ owner, lit })
   if (shape.craft) {
@@ -797,7 +799,6 @@ function buildCottage(ctx: Context, owner: string, index: number, shape: StreetS
     const { range: stepRange } = doorStep(ctx, front, s0, s1, sourceColour(ctx, front.source))
     craftParts.push({ name: 'step', buffer: 'underpaint', from: stepRange[0], to: stepRange[1] })
 
-    const win0 = { cu: index % 2 ? 0.74 : 0.26, cv: 0.55, w: 0.12, h: 0.3 }
     drawWindowShutters(ctx, front, 0, win0, seed + 13, craftParts)
 
     ctx.report.craft.push({

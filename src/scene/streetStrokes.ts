@@ -305,8 +305,8 @@ function acceptFor(face: StreetFace, painting: ImageData2D): TexelAccept {
   return EVERY_TEXEL
 }
 
-/** The mean of the darkest `share` of the source's texels (sRGB 0..1), a tenth for a face's underpaint; all of them
- * for a lit window's base. */
+/** The mean of the darkest `share` of the source's texels (sRGB 0..1), or of the lightest with `lightest`: a tenth for a
+ * face's underpaint, all of them for a lit window's base. */
 export function sourceUnderpaint(painting: ImageData2D, source: StreetSourceName, share = 0.1, lightest = false): [number, number, number] {
   return rectUnderpaint(painting, STREET_SOURCES[source], share, lightest)
 }

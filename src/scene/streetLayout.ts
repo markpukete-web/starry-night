@@ -218,14 +218,16 @@ export function houseFrame(h: StreetHouse): { along: Vector3; toPath: Vector3 } 
   return { along, toPath }
 }
 
-export function doorOf(h: StreetHouse, index: number): { cu: number; w: number; h: number } {
+export function doorOf(h: { type?: StreetHouse['type']; storeys: number }, index: number): { cu: number; w: number; h: number } {
   if (h.type === 'cottage') {
     return { cu: index % 2 ? 0.34 : 0.66, w: 0.16, h: 0.85 }
   }
   return { cu: 0.5, w: 0.2, h: 0.6 / h.storeys }
 }
 
-export function doorStepFoot(h: StreetHouse, index: number): [number, number][] {
+/** A door's step on the ground: the drawn front's s = 0 corner (ox, oz), its unit u along the drawn front (ux, uz), its
+ * unit normal out to the lane (nx, nz), and the door's span along u in world units (ws0, ws1) */
+export function doorStepFrame(h: StreetHouse, index: number): { ox: number; oz: number; ux: number; uz: number; nx: number; nz: number; ws0: number; ws1: number } {
   const { along, toPath } = houseFrame(h)
   const flip = -along.z * toPath.x + along.x * toPath.z < 0
   const u = flip ? -1 : 1
@@ -234,16 +236,23 @@ export function doorStepFoot(h: StreetHouse, index: number): [number, number][] 
   const toPathLen = Math.hypot(toPath.x, toPath.z)
   const nx = toPath.x / toPathLen
   const nz = toPath.z / toPathLen
-  const originX = h.x + toPath.x * (h.d / 2) - ux * (h.w / 2)
-  const originZ = h.z + toPath.z * (h.d / 2) - uz * (h.w / 2)
+  const ox = h.x + toPath.x * (h.d / 2) - ux * (h.w / 2)
+  const oz = h.z + toPath.z * (h.d / 2) - uz * (h.w / 2)
   const door = doorOf(h, index)
   const s0 = door.cu - door.w / 2
   const s1 = door.cu + door.w / 2
-  const corner = (s: number, k: number): [number, number] => [
-    originX + ux * (h.w * s) + nx * k,
-    originZ + uz * (h.w * s) + nz * k,
+  const ws0 = h.w * s0
+  const ws1 = h.w * s1
+  return { ox, oz, ux, uz, nx, nz, ws0, ws1 }
+}
+
+export function doorStepFoot(h: StreetHouse, index: number): [number, number][] {
+  const { ox, oz, ux, uz, nx, nz, ws0, ws1 } = doorStepFrame(h, index)
+  const corner = (ws: number, k: number): [number, number] => [
+    ox + ux * ws + nx * k,
+    oz + uz * ws + nz * k,
   ]
-  return [corner(s0, 0), corner(s1, 0), corner(s1, STEP.depth), corner(s0, STEP.depth)]
+  return [corner(ws0, 0), corner(ws1, 0), corner(ws1, STEP.depth), corner(ws0, STEP.depth)]
 }
 
 // The square: map (500, 300), radius 0.25
