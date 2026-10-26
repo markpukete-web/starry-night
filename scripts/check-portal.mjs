@@ -28,7 +28,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { DIORAMA_CAMERAS } from '../src/scene/dioramaContract.ts'
+import { DIORAMA_CAMERAS, portraitFov } from '../src/scene/dioramaContract.ts'
 
 const appUrl = process.env.DIORAMA_CAPTURE_URL || 'http://127.0.0.1:5198/'
 const origin = new URL(appUrl).origin
@@ -470,8 +470,8 @@ async function main() {
     await page.send('Emulation.setDeviceMetricsOverride', { ...DESKTOP, width: 900, height: 1600 })
     await sleep(800)
     const rec10 = await record(page, () => page.key('Escape'), `window.__portal().place === 'diorama'`)
-    // a portrait aspect takes the portrait lens
-    const r10 = assertReturn(rec10, 'case 10', view10, DIORAMA_CAMERAS.mobile)
+    // a portrait aspect takes the portrait lens, fitted to that aspect (portraitFov, 2026-10-25)
+    const r10 = assertReturn(rec10, 'case 10', view10, { ...DIORAMA_CAMERAS.mobile, fov: portraitFov(900 / 1600) })
     console.log(`PASS 10: after a rotation in the street the return holds the saved pose (${r10.now}, ${r10.after}), its rotation and the portrait lens`)
 
     // ---- case 2, the phone: Vincent held at stop 0 under the layer, then walking
@@ -483,6 +483,19 @@ async function main() {
     const walked = await page.evaluate('window.__streetWalk.t')
     if (!(walked > 0)) throw new Error(`case 2 (phone): the automatic walk did not start after the layer (t ${walked})`)
     console.log(`PASS 2 (phone): Vincent at stop 0 when the street shows (t ${firstStreet.walk}), walking after (t ${walked.toFixed(4)})`)
+    // the flight and the way back keep the phone's fitted lens, with no zoom out at the start or snap at the end
+    // (portraitFov, Codex PR #29 P2)
+    const fitted = portraitFov(PHONE.width / PHONE.height)
+    const recBack = await record(page, () => page.key('Escape'), `window.__portal().place === 'diorama'`)
+    // A frame under the whole layer cannot show its lens: the probe's own rAF can sample `leaving` after React's commit
+    // and before the driver's first leaving frame has written the lens, with the street's still on the camera
+    const offLens = [...recPhone.filter((f) => f.place === 'flying'), ...recBack.filter((f) => f.place === 'leaving' || f.place === 'diorama')]
+      .filter((f) => !f.view || Math.abs(f.view.lens.fov - fitted) > 1e-9)
+    const lensFaults = offLens.filter((f) => f.layer < 1)
+    const flown = recPhone.filter((f) => f.place === 'flying').length
+    const back = recBack.filter((f) => f.place === 'leaving').length
+    if (!flown || !back || lensFaults.length) throw new Error(`case 2 (phone): ${lensFaults.length} of ${flown} flying and ${back} leaving frames off the fitted ${fitted.toFixed(2)}° with the scene in view (first ${lensFaults[0]?.place} ${lensFaults[0]?.view?.lens.fov}, layer ${lensFaults[0]?.layer})`)
+    console.log(`PASS 2b (phone): ${flown} flying and ${back} leaving frames, and the return, at the fitted lens ${fitted.toFixed(2)}° wherever the scene shows (${offLens.length} under the whole layer)`)
 
     // ---- case 11: three round trips
     await open(page, `${BASE}&perf=1`)

@@ -4,6 +4,8 @@ import {
   DIORAMA_CAMERAS,
   DIORAMA_ORBIT,
   DIORAMA_RECOVERY_CONTRACT,
+  PORTRAIT_FIT,
+  portraitFov,
   type DioramaDebugMode,
 } from '../src/scene/dioramaContract.ts'
 import {
@@ -60,6 +62,25 @@ test('portrait home holds the whole composition — Mark 2026-07-28, checklist i
   assert.equal(portrait.pose.azimuthDeg, -15)
   assert.equal(portrait.pose.fov, 88)
   assert.equal(portrait.pose.distance, 5.4)
+})
+
+test('portrait lens: a wider phone keeps 360 × 800\'s horizontal field, a tablet stops at maxAspect (2026-10-25)', () => {
+  const deg = Math.PI / 180
+  const across = (aspect: number) => (2 * Math.atan(Math.tan((portraitFov(aspect) / 2) * deg) * aspect)) / deg
+  // narrower than the reference, and a broken aspect: candidate C as measured
+  for (const aspect of [0.3, 0.4, 0.45, Number.NaN]) assert.equal(portraitFov(aspect), PORTRAIT_FIT.fov, `aspect ${aspect}`)
+  // Mark's phone in an in-app browser, about 440 × 735: about 72°, the composition at 360 × 800's width
+  assert.ok(Math.abs(portraitFov(440 / 735) - 72.0) < 0.05, `440 × 735 → ${portraitFov(440 / 735)}`)
+  // across the held range the horizontal field is the reference's, and the lens narrows as the phone widens
+  const held = across(PORTRAIT_FIT.referenceAspect)
+  let last = PORTRAIT_FIT.fov
+  for (let aspect = 0.46; aspect <= PORTRAIT_FIT.maxAspect + 1e-9; aspect += 0.01) {
+    assert.ok(Math.abs(across(aspect) - held) < 1e-9, `horizontal field at ${aspect}`)
+    assert.ok(portraitFov(aspect) < last, `narrows at ${aspect}`)
+    last = portraitFov(aspect)
+  }
+  // a tablet (768 × 1024, 820 × 1180) keeps maxAspect's lens, so the keel and the letterbox stay in frame
+  for (const aspect of [768 / 1024, 820 / 1180, 0.99]) assert.equal(portraitFov(aspect), portraitFov(PORTRAIT_FIT.maxAspect), `aspect ${aspect}`)
 })
 
 test('painting-first design camera stays close to the front composition basis', () => {

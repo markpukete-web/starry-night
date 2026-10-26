@@ -43,6 +43,7 @@ import { PortalContext, type PortalControl } from './portalContext'
 import {
   DIORAMA_CAMERAS,
   DIORAMA_ORBIT,
+  portraitFov,
   type DioramaDebugMode,
   type DioramaViewMode,
 } from './dioramaContract'
@@ -455,9 +456,19 @@ function Scene({
   // R3F's `size` is the canvas size and re-renders on resize. Reading window.inner* here instead
   // left the camera stale until reload, so rotating a device kept the previous orientation's
   // framing — landscape→portrait held the desktop close-up (Codex, 2026-07-28).
-  const { size } = useThree()
+  const { size, camera } = useThree()
   const isPortrait = size.height > size.width
   const defaultCamera = isPortrait && view === 'design' ? DIORAMA_CAMERAS.mobile : DIORAMA_CAMERAS[view]
+  // the home's lens: the portrait one follows the canvas's aspect (`portraitFov`). The diorama writes it here and the
+  // portal's flights write it as they run (Codex PR #29 P2). The camera element keeps the fixed default, since the
+  // street's walk writes its own lens only when the orientation flips and a prop re-applied on resize would reach it
+  const lens = useMemo(
+    () => (isPortrait && view === 'design' ? { ...defaultCamera, fov: portraitFov(size.width / size.height) } : defaultCamera),
+    [defaultCamera, isPortrait, view, size.width, size.height],
+  )
+  useLayoutEffect(() => {
+    if (place === 'diorama') writeLens(camera, lens)
+  }, [camera, lens, place])
   const skyHome = isPortrait ? DIORAMA_CAMERAS.mobile : DIORAMA_CAMERAS.design
 
 
@@ -518,7 +529,7 @@ function Scene({
       )}
       {measurePerformance && <PerfProbe />}
       {!streetMode && arrival && <ArrivalDriver home={defaultCamera} reduced={still} onDone={onArrived} {...refs} />}
-      {portal && <PortalDriver place={place} still={still} lens={defaultCamera} portal={portal} />}
+      {portal && <PortalDriver place={place} still={still} lens={lens} portal={portal} />}
       {showStreet && (
         // the street places the camera at its station itself, in its own chunk (the main bundle carries no layout); its
         // own Suspense, so a chunk still loading never hides the sky or the diorama (the portal's decision (e)). Through

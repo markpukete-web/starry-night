@@ -74,6 +74,24 @@ export const DIORAMA_CAMERAS = {
 
 export const DIORAMA_CAMERA = DIORAMA_CAMERAS.design
 
+/**
+ * The portrait home's lens by the canvas's aspect (2026-10-25, Mark: "The island is not well positioned for phone").
+ * Candidate C was measured from 360 × 800 to 430 × 932, aspects 0.45 to 0.46, at a vertical fov of 88. Safari's bars
+ * and an in-app browser make a phone wider than that (Mark's: about 440 × 735, aspect 0.60), and a fixed vertical
+ * fov then shows the same height of world across more width: the whole composition drawn at three quarters of its
+ * size, with spare sides. So the horizontal field of 360 × 800 is held from `referenceAspect` up to `maxAspect`, and
+ * the vertical fov narrows to keep it. Narrower than the reference, 88 as before. Wider than `maxAspect`, the fov at
+ * `maxAspect`, so a tablet keeps the letterbox rather than losing the island's keel.
+ */
+export const PORTRAIT_FIT = { fov: 88, referenceAspect: 0.45, maxAspect: 0.65 }
+
+export function portraitFov(aspect: number): number {
+  const { fov, referenceAspect, maxAspect } = PORTRAIT_FIT
+  if (!(aspect > referenceAspect)) return fov
+  const halfWidth = Math.tan(((fov / 2) * Math.PI) / 180) * referenceAspect
+  return (2 * Math.atan(halfWidth / Math.min(aspect, maxAspect)) * 180) / Math.PI
+}
+
 export const DIORAMA_ORBIT = {
   minDistance: 3.25,
   maxDistance: 5.6,

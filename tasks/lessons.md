@@ -3198,3 +3198,19 @@ must be byte-identical before the stimulus's difference means anything.
   runs it with `new Function` over stubbed `location`, `sessionStorage`, `matchMedia` and `document`. The rule then
   lives in one place, the page, and a change to it fails the test.
 
+## 2026-10-25 (late) — the phone framing
+
+- **A fixed vertical fov is a framing tuned for one aspect.** Candidate C was chosen across aspects 0.45 to 0.46. An
+  in-app browser's bars made Mark's phone 0.60, and the same height of world across more width drew the whole
+  composition at three quarters of its chosen size. A portrait framing that must hold a landscape subject holds its
+  horizontal field, and the vertical fov follows the aspect.
+- **Read the viewport off the phone, not off a screenshot.** I estimated 440 × 820 from the screenshot. The advisor
+  read the bars as an in-app browser's and put it at about 440 × 735. `?perf=1` already prints
+  `innerWidth × innerHeight @ devicePixelRatio`, so the next framing question starts with Mark reading that line.
+- **A lens prop reaches every camera user.** The street's walk writes its lens only when the orientation flips. A
+  diorama lens on the camera element's prop, re-applied on every resize, would have reached the street on a resize
+  that keeps the orientation. A per-place value belongs in an effect gated on the place.
+- **A probe on its own frame callback sees React's state before the frame loop acts on it.** Case 2b's recorder
+  samples `place` from a ref on `requestAnimationFrame`. It caught one `leaving` sample before the driver's first
+  leaving frame had written the lens. Filter such samples by what the visitor sees (the layer at 1), not by position
+  in the list, and prove the filter with a mutation that must still fail.

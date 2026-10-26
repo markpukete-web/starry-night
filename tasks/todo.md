@@ -12,7 +12,8 @@ scope.** The PR next, on the finger fix's.
 **PR #26 (the frogs) and PR #27 (the finger fix):** Codex completed with no findings and a +1 on each, at `8699a4b`
 and `04294e6`. No threads to answer.
 
-**The phone framing, reopened (Mark, 2026-10-25: "The island is not well positioned for phone").** The portrait home
+**The phone framing: fixed on `feat/phone-framing` (stacked on the loading curtain), passed by Mark on his phone ("It
+reads right on the phone, push it"). The record: `tasks/2026-10-25-phone-framing.md`. What was found:** The portrait home
 is candidate C, Mark's pick of 2026-07-28 (`1f6b21e`): the whole composition, letterboxed, about 19% unpainted sky at
 the top. It was measured from 360 × 800 to 430 × 932. Mark's iPhone 17 Pro Max in Safari is about 440 × 820 with its
 bars, a wider aspect than any measured. Next: capture production at his viewport, name what is wrong, then two or three
