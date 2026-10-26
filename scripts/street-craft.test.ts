@@ -643,7 +643,14 @@ test('the levels keep their order', () => {
     const lean = leanOf(c.index)
     const front = c.front
 
-    const inkParts = c.parts.filter((p) => p.name.startsWith('leaf ') && p.name.endsWith('ink'))
+    // every leaf has its ink: seven edges (four sides, three louvres), five samples, three columns
+    const leaves = c.parts.filter((p) => p.name.startsWith('leaf ') && !p.name.endsWith('ink'))
+    const inkParts = leaves.map((leaf) => {
+      const ink = c.parts.find((p) => p.name === `${leaf.name} ink`)
+      assert.ok(ink, `${c.owner} ${leaf.name}: missing ink`)
+      assert.equal(ink.to - ink.from, 7 * CRAFT.shutter.maxSamples * 3, `${c.owner} ${leaf.name}: ink vertices`)
+      return ink
+    })
     for (const part of inkParts) {
       assert.equal(part.buffer, 'outlines')
       for (let i = part.from; i < part.to; i++) {

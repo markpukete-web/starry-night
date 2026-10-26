@@ -224,10 +224,12 @@ function clad(ctx: Context, owner: string, name: string, face: StreetFace, faceD
   let base: Color
   if (face.kind === 'wall') {
     const paint = ctx.wallPaint
-    const mean = new Color().setRGB(...sourceUnderpaint(ctx.painting, face.source, 1), SRGBColorSpace)
-    const litCol = new Color().setRGB(...sourceUnderpaint(ctx.painting, face.source, paint.light, true), SRGBColorSpace)
-      .multiplyScalar(1 + STREET_MOON_LIFT * moonShade(face.normal))
-    base = mean.lerp(litCol, paint.base)
+    base = new Color().setRGB(...sourceUnderpaint(ctx.painting, face.source, 1), SRGBColorSpace)
+    if (paint.base !== 0) {
+      const litCol = new Color().setRGB(...sourceUnderpaint(ctx.painting, face.source, paint.light, true), SRGBColorSpace)
+        .multiplyScalar(1 + STREET_MOON_LIFT * moonShade(face.normal))
+      base.lerp(litCol, paint.base)
+    }
   } else {
     const share = face.kind === 'ground' || face.kind === 'path' ? GROUND_BASE_SHARE : 1
     const [r, g, b] = sourceUnderpaint(ctx.painting, face.source, share)
