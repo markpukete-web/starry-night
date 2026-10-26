@@ -1,6 +1,35 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-26 (night, 21:30): K2's Tasks 1 to 3 built, K3's design at revision 1 with both reads folded, three calls for Mark
+## Pickup — 2026-10-26 (night, 22:40): K2 in its Lead gate, Codex's seven findings confirmed, the fix round's brief at revision 3 with Codex, the worker next
+
+**K2's gate so far** (the record `tasks/2026-10-26-village-craft-k2.md`, the evidence `scratch/village-craft-2026-10-25/k2/`).
+The suite, the hashes, the diff read and the nine mutation proofs re-run by the Lead all pass. Look pass 1: the lamps
+and the rail land, the walls read black (wallA's darkest 40% is L 4.7). Pass 2 (`5806c1c`, wallB and the halo at 0.7):
+the lamps and the rail pass, the walls still fail at 1:1 (a near-black body, stones as leaves). Pass 3, probed in
+place at stop 3 (`k2/t4/p3/A..D-wall.png`): recipe D, the body at the source's mean with the stones from the lighter
+half of wallB's texels, the width 0.19, the joint 0.92, the length kept at the painting's measured range. Pass 4, the
+cap, is the full capture after the fix round.
+
+**Codex's branch review** (`k2/review-branch-codex.md`): REVISE, seven findings, every one confirmed against the code
+and by the Lead's run of Codex's probe. F2 is the one that bites the gate: `npx tsc -b` and `npm run lint` fail on
+unused imports, so the build would fail. F1 the halo's depth in the wrong frame under `?skyAnchor=A`, F5 the cap's
+inward winding, F3 and F4 weak guards, F6 dead controls, F7 the proofs' missing commands.
+
+**The fix round** (`k2/brief-k2-fix1.md`, revision 3): one worker brief for F1 to F7 with tests and six proofs, plus
+pass 3's values. Codex's plan leg stopped revisions 1 and 2 on contract breaks (the hash rule, the lint's place, the
+tests' height reads, the helper's module, the F6 proof, then the measured-dab test and the measured length range),
+all folded. Revision 3 is with Codex (`k2/brief-codex-k2-fix1-plan-r3.md`). On GO the worker runs it; the Lead then
+sends Codex the bounded confirmation (`k2/brief-codex-k2-fix1-review.md`), captures pass 4 (`k2-look.sh p4`), runs
+`k2-gate.sh`, `k2-colour.sh`, `k2-perf.sh` and `k2-walk.sh`, finishes the record, the Tunables entry and the lessons,
+pushes `feat/village-lane` for the Vercel preview and pings Mark with the link. The PR follows, stacked on main.
+
+**Quotas at 21:47:** the worker 21% session, 50% week; Codex 11% and 8%; the Claude pool 49% session (resets 22:29)
+and 80% week (resets 06:59).
+
+**K3** waits on Mark's three calls (below, the 21:30 pickup). Mark's answer on the three-agent question is pending.
+
+
+## Pickup — 2026-10-26 (night, 21:30): K2's Tasks 1 to 3 built, K3's design at revision 1 with both reads folded, three calls for Mark (superseded by the 22:40 pickup above)
 
 **K2's build.** Tasks 1 to 3 are committed: `a19c983` the walls, `30564f5` amendment A1, `9f1d52d` the rail, `38e221a`
 the lamps. Codex's bounded read of A1 is GO (`k2/review-a1-codex.md`): the density test still catches a wrong falloff,

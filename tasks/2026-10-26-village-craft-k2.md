@@ -131,3 +131,18 @@ lamp's numbers), F5 (the cap's winding, a test), F3 and F4 (the two guards), F1 
 position, a test with a translated parent), pass 3's values, five mutation proofs with their commands on the page
 (F7), the type check, the lint, the suite and the hashes. Codex reads the brief first as the plan leg
 (`E2/brief-codex-k2-fix1-plan.md`, five bounded questions, `VERDICT: GO` or `STOP`); the worker starts on GO.
+
+Codex's plan leg stopped the brief twice, each time on a contract break the Lead had missed (`E2/review-fix1-plan-codex.md`,
+`-r2.md`). Revision 1: the cap fix must move the build hash and the hash rule did not allow it; the lint gate came
+before the retained import's use; the tests read the wall's height from the object the brief removed; the halo helper
+had to live in `streetLife.ts` for Node's test runner (`.tsx` fails to load); the inner-lateral mutation had no valid
+red once the tests follow the control. Revision 2 carried all five, and Codex found one more: the measured-dab test
+pins the stone's length and width to the plan's literals, and wallB's measured stroke range (`SOURCE_STROKES`, 0.6 to
+2.0 of the reference height) starts above pass 3's 0.4. Revision 3: the test takes its targets from the controls and
+checks the painting's measured range on its own, and pass 3's length stays inside that range (recipe D, probed at
+stop 3 like the others: B's body and texel floor with the build's length).
+Recipe D (`E2/t4/p3/D-wall.png`, 22:35): B's body and texel floor with the build's length 0.61 to 0.89. It reads as a
+grey painted wall with long pale strokes along its courses, the top lit by the moon. B's shorter stones read more as
+stones, but they sit under the painting's measured stroke length for this source, and the bar is the painting's
+hand, so D is pass 3's recipe: `LANE_CRAFT.wall` base 1, pale 0.5, joint 0.92, width 0.19, length unchanged. Whether
+the strokes should read stonier is Mark's call at the gate.
