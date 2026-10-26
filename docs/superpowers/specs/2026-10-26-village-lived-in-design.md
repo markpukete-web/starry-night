@@ -15,7 +15,7 @@ probes again and they reproduce. This revision folds both reads. The plan follow
 | Codex F4 (P2): the plant's dabs took flat palette colours, with no scan source. | Fact 9, Decision (c) | The plant is a clump of the grass's own blades, the bushes' measured stroke in the bushes' paint. |
 | Codex F5 (P3): the plant's reference height 0.022 was the pot's width, not its height 0.02. | Decision (c) | The pot is 0.022 across and 0.022 high. The thatch row is no longer used. |
 | Codex F6 (P3), Consultant Q6: the measurement crop (the palette's `village` rectangle) ends at y 2615, above seven of the nine `STREET_SOURCES`. | Fact 8, Decision (d) | The crop runs to the scan's bottom. The Lead names the wall that owns the `plaster` patch at 1:1 first. |
-| Consultant Q1: L5's and R5's nearest lane points lie inside the square. The lane's path has ended there, and the square's face is coplanar. | Facts 1, 4, Decision (a) | A path ends at the lane's edge or the square's rim, whichever its line meets first. L5's path is 0.039 long, R5's 0.156. Frog 4 is checked by its body, not a grass ring. |
+| Consultant Q1: L5's and R5's nearest lane points lie inside the square. The lane's path has ended there, and the square's face is coplanar. | Facts 1, 4, Decision (a) | A path ends at the lane's edge or the square's paving, whichever its line meets first. L5's step is 0.001 from the paving, so L5 has no path. R5's is 0.056 long. Frog 4 stands on the paving, 0.32 from R5's strip. |
 | Consultant Q2: at the lane's reference height a 0.06-wide path carries one or two strokes. Each is longer than the path and clipped square at both ends: the anti-goal. | Fact 5, Decision (a), (e) | A door path's reference height scales with its width, as the far ground's does. Cover 0.25 to start: 28,700 triangles for the ten. |
 | Consultant Q3: a shorter `plaster` length rebuilds the church too (`KEPT_PAINT` holds no length). More, shorter strokes at the same cover cost tens of thousands of triangles. | Decision (d), (e) | The shorter row reaches the four plaster houses only, through `WALL_PAINT`. The church keeps today's row. The ribbon count holds. |
 | Consultant Q4: the rail as built rides the walls' class with `src` 255, so "class 255, as the rail" cannot both hold. | Constraints, Decision (c) | The objects' flat parts ride the walls' class with `src` 255, as the rail does. The plant's blades ride the grass's. |
@@ -44,7 +44,8 @@ asks to be looked at. From stop 0 the village still reads as the painting's.
 
 ## Goals
 
-1. A path from every front door to the lane or the square, painted as the lane is, the grass cleared along it.
+1. A path from every front door to the lane, painted as the lane is, the grass cleared along it. L5's door opens on
+   the square's paving and needs none.
 2. A sign of life at three doors, one kind each: a bench, a pot plant, a bucket.
 3. The plaster houses' walls stop reading as planks at walking distance, if a 1:1 measurement of the scan's village
    supports a shorter stroke (K1's open item).
@@ -88,8 +89,8 @@ asks to be looked at. From stop 0 the village still reads as the painting's.
 
 Read at `1f3fa26` on `feat/village-lane` (before K2's build) with the Lead's probes
 `scratch/village-craft-2026-10-25/k2/probe/lead-k3-*.mjs`, then corrected against Codex's `codex-k3-route.mjs` and
-`codex-k3-paint.mjs`, the Consultant's `consultant-k3-check.mjs`, and the Lead's `lead-k3-r2gap.mjs` and
-`lead-k3-paint-ref.mjs`, all run by the Lead on 2026-10-26. The route probes check every leg of a path over its full
+`codex-k3-paint.mjs`, the Consultant's `consultant-k3-check.mjs`, and the Lead's `lead-k3-r2gap.mjs`,
+`lead-k3-paint-ref.mjs` and `lead-k3-square.mjs`, all run by the Lead on 2026-10-26. The route probes check every leg of a path over its full
 width against K2's wall footprints, the lamp posts and the frogs' rings. The paint probes run the real tracer on the real
 painting and flow.
 
@@ -111,9 +112,11 @@ painting and flow.
    | R5 | cottage | 0.045 | 0.247, on the square | 4 (0.37) | no |
 
    The lane's path ends at `t` 0.9257 (its last segment overlapping to 0.9457, `streetGeometry.ts:977-982`), and the
-   square's one face takes over, a 0.5 × 0.5 quad at y 0.002 inside the circle of radius 0.25 about `STREET_SQUARE`.
-   L5's nearest lane-edge point (`t` 0.974) and R5's (`t` 0.934) lie inside that circle, so a path to them would run
-   over the square's paving, coplanar with it. L5's line meets the rim 0.039 from its step, R5's 0.156.
+   square's one face takes over: a 0.5 × 0.5 quad at y 0.002 in the street's frame, centred on `STREET_SQUARE`, its
+   corners 0.354 from the centre (`streetGeometry.ts:990-992`). The grass stops at the circle of radius 0.25 about the
+   same centre (`inFootprint`, `streetGrass.ts:58`). L5's nearest lane-edge point (`t` 0.974) and R5's (`t` 0.934) lie
+   on that paving, so a path to them would be coplanar with it. L5's step stands 0.001 from the paving's edge. R5's
+   line meets the paving 0.056 from its step (and the grass's circle at 0.156).
 2. **Some doors face away from the lane.** The angle between a door's facing (`doorStepFrame`'s normal) and the line
    to the nearest lane-edge point, on a 0.0001 grid of `t`: L1 5.2°, L2 4.6°, L3 70.3°, L4 33.8°, L5 8.8°, R1 45.4°,
    R2 52.6°, R3 1.2°, R4 8.1°, R5 23.7°. A path straight out of L3's or R1's door runs 0.45 to 0.55 and crosses a K2
@@ -129,8 +132,9 @@ painting and flow.
 4. **Lamps and frogs near the paths.** With the path the door's width + 0.02 wide: lamp 1 stands inside R1's two-leg
    path, which slides to `t` 0.062 (0.494 long, 0.030 from the post). Lamp 5 is 0.010 from R3's edge, which slides to
    `t` 0.627 (0.030). Lamp 2 is 0.040 from L1's path and lamp 7 0.055 from R5's: clear. Frog 4 (the square's, `t`
-   0.975, lateral −0.08) stands inside the circle, past the rim where L5's path ends, so the grass-ring rule (frogs 0 to
-   3, in the grass) does not reach it: L5's and R5's legs are checked against its body (`FROG.clear`). L2's nearest
+   0.975, lateral −0.08) stands on the paving 0.155 from the square's centre, so the grass-ring rule (frogs 0 to 3, in
+   the grass) does not reach it: R5's strip to the paving's edge is 0.32 from its body (`FROG.clear`), and L5 has no
+   strip. L2's nearest
    point (`t` 0.341) is 4.6° off its facing, but a strip at the door's width + 0.02 is exactly as wide as K2's gateposts
    are apart, so it sits on a post (Decision (a), L2).
 5. **The lane's paint, and what it costs on a narrow path.** The lane's path is `clad(ctx, 'path', …)` in segments:
@@ -144,8 +148,8 @@ painting and flow.
    path's width keeps the fractions inside the measured row. The lane's path and the square cost 49,512 triangles over
    an area of about 0.54, but a narrow strip costs more per unit of area, and a ribbon costs about 250 triangles
    whatever its length (the tracer steps in fractions of the stroke), so the cost is the ribbon count. The ten paths on
-   the real tracer, at the ends that clear every obstacle (area 0.215, before L5's and R5's paths end at the rim, which
-   takes about 7% off):
+   the real tracer, at the ends that clear every obstacle (area 0.215, before L5's path goes and R5's ends at the
+   paving, which takes about 11% off):
 
    | Reference height | Cover | Triangles | Ribbons |
    | --- | --- | --- | --- |
@@ -190,8 +194,9 @@ painting and flow.
 
 **(a) The paths.** Every front door gets one. A path is one or two straight strips, the door's width + 0.02 wide, from
 the step's front to the lane's edge (lateral 0.06), on the lane's surface (y 0.002), painted as the lane's path is
-(Fact 5) with its own base and strokes, in the `path` owner. Where the step's line meets the square's rim before the
-lane's edge (L5, R5), the path ends at the rim. The grass is cleared along it with the steps' margin (`GRASS.house`
+(Fact 5) with its own base and strokes, in the `path` owner. Where the step's line meets the square's paving before
+the lane's edge (R5), the path ends at the paving's edge. L5's step is 0.001 from that edge, so L5 has no path: its
+door opens on the square. The grass is cleared along it with the steps' margin (`GRASS.house`
 0.012), one rectangle per strip (Fact 6).
 
 The rule for its end: the lane-edge point nearest the step. Where the line from the step to that point is more than 30°
@@ -199,8 +204,8 @@ off the door's facing (L3, L4, R1, R2), the path has two legs: the first straigh
 from there to the end. Every leg, over its full width, stays 0.03 or more from every lamp post, wall footprint, frog
 ring (frogs 0 to 3) and frog body (frog 4). Where the nearest end fails that, the end slides along the lane's edge, away
 from the obstacle, to the nearest `t` that passes (L3, R1, R3, Fact 4). The plan starts from these ends and the tests
-hold them: L1 0.265, L2 0.341, L3 0.499, L4 0.875, L5 the rim (0.039 from its step), R1 0.062, R2 by Decision (b),
-R3 0.627, R4 0.710, R5 the rim (0.156 from its step).
+hold them: L1 0.265, L2 0.341, L3 0.499, L4 0.875, L5 none, R1 0.062, R2 by Decision (b), R3 0.627, R4 0.710, R5
+the paving's edge (0.056 from its step).
 
 **L2 (Lead, Codex F3):** its path passes K2's gate. Two legs: the first on the door's axis through the gate to 0.02 past
 the posts, the second from there to the nearest point. The whole path is the door's width wide (0.048, no + 0.02): the
@@ -269,8 +274,8 @@ outcomes:
 Whatever the outcome, the change touches only faces whose source is `plaster` and whose owner is one of the four
 houses. The church and the flat panel keep `KEPT_PAINT` and today's row.
 
-**(e) The budget.** The paths at the scaled reference and cover 0.25 cost about 28,700 triangles, about 7% less once
-L5's and R5's end at the rim, before the grass they clear gives anything back (Fact 5). The objects about 300 to 600
+**(e) The budget.** The paths at the scaled reference and cover 0.25 cost about 28,700 triangles, about 11% less once
+L5's path goes and R5's ends at the paving, before the grass they clear gives anything back (Fact 5). The objects about 300 to 600
 each, the plant's clump about 70. K1's 30,183 less K2's measured cost (about 2,500) leaves about 27,700, so cover 0.25
 fits only with the grass saving, which the browser's sweep measures. The plaster's outcome 2 holds its count. If the
 sweep fails, the levers in order: the paths' cover down to 0.15, then the far paths (L1 and R1, the two longest) fading
