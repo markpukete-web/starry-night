@@ -7,7 +7,7 @@ import test from 'node:test'
 import { islandHeightAt } from '../src/scene/islandShape.ts'
 import type { BakedMass } from '../src/scene/landDomes.ts'
 import { Vector3 } from 'three'
-import { COTTAGE, ROOF_EDGE, buildStreet, cottageFaces, houseRoofEdges, type StreetShape } from '../src/scene/streetGeometry.ts'
+import { COTTAGE, KEPT_PAINT, ROOF_EDGE, buildStreet, cottageFaces, houseRoofEdges, type StreetShape } from '../src/scene/streetGeometry.ts'
 import { CHURCH, DETAIL, detailOf, STREET, STREET_CHURCH, STREET_HOUSES, STREET_TRIANGLE_BUDGET, laneDistance, pathPoint } from '../src/scene/streetLayout.ts'
 import type { ImageData2D } from '../src/scene/useImageData.ts'
 import { VILLAGE_CHURCH } from '../src/scene/villageKnot.ts'
@@ -31,7 +31,8 @@ function villagePainting(): ImageData2D {
   return { data, width, height }
 }
 
-const build = buildStreet(villagePainting(), flow, masses)
+// Pins S1's cladding; street-craft.test.ts pins the paint.
+const build = buildStreet(villagePainting(), flow, masses, { paint: KEPT_PAINT })
 
 test('the street builds all or nothing', () => {
   assert.equal(buildStreet(null, flow, masses), null)
@@ -44,9 +45,22 @@ test('every face of a house is clad, and every edge has its outline', () => {
   assert.ok(build)
   for (let house = 0; house < STREET_HOUSES.length; house++) {
     const faces = build.report.faces.filter((f) => f.owner === `house-${house}`)
-    // four walls, two gables, two roof planes
-    assert.equal(faces.length, 8, `house ${house} has its eight faces`)
-    for (const face of faces) assert.ok(face.ribbons >= 12, `house ${house}'s ${face.name} has ${face.ribbons} ribbons`)
+    const isCottage = STREET_HOUSES[house].type === 'cottage'
+    assert.equal(faces.length, isCottage ? 8 : 10, `house ${house} has its faces`)
+    if (isCottage) {
+      for (const face of faces) assert.ok(face.ribbons >= 12, `house ${house}'s ${face.name} has ${face.ribbons} ribbons`)
+    } else {
+      let splitRibbons = 0
+      for (const face of faces) {
+        if (face.name === 'front left' || face.name === 'front right' || face.name === 'front over') {
+          assert.ok(face.ribbons > 0, `house ${house}'s ${face.name} has ${face.ribbons} ribbons`)
+          splitRibbons += face.ribbons
+        } else {
+          assert.ok(face.ribbons >= 12, `house ${house}'s ${face.name} has ${face.ribbons} ribbons`)
+        }
+      }
+      assert.ok(splitRibbons >= 12, `house ${house}'s split front sum is ${splitRibbons}`)
+    }
     const outlines = build.report.outlines.find((o) => o.owner === `house-${house}`)
     // a painting house: four eaves, four corners, four rakes, the ridge, four along the ground. A cottage (its ridge
     // along the width): four corners, four along the ground, two eaves, four rakes, the ridge

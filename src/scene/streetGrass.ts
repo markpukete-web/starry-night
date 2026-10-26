@@ -3,9 +3,11 @@ import { mulberry32 } from './brush.ts'
 import { vnoise } from './brushForms.ts'
 import { bladeReach, type BladeSpec, clump, GRASS_BLADE } from './grassBlade.ts'
 import {
+  doorStepFrame,
   laneParam,
   pathPoint,
   pathTangent,
+  STEP,
   STREET,
   STREET_CYPRESS,
   STREET_HOUSES,
@@ -96,16 +98,14 @@ export function grassChunks(painting: ImageData2D, customDensity?: number): Gras
 
   const chunks: GrassChunk[] = []
 
+  const stepFeet = STREET_HOUSES.map((h, i) => doorStepFrame(h, i))
+
   for (let t0 = GRASS.t[0]; t0 < GRASS.t[1] - 1e-9; t0 += DT) {
     for (const side of [-1, 1]) {
       for (let bi = 0; bi < BANDS.length - 1; bi++) {
         const [l0, l1] = [BANDS[bi], BANDS[bi + 1]]
         const tries = Math.round((FULL * density * DT * STREET.pathLength * (l1 - l0) * 3) / meanClump)
-        const chunkBlades: BladeSpec[] = []
-        let minX = Infinity
-        let minZ = Infinity
-        let maxX = -Infinity
-        let maxZ = -Infinity
+        let chunkBlades: BladeSpec[] = []
 
         for (let i = 0; i < tries; i++) {
           const t = t0 + rand() * DT
@@ -125,10 +125,6 @@ export function grassChunks(painting: ImageData2D, customDensity?: number): Gras
             const [, bLat] = laneParam(b.x, b.z)
             if (Math.abs(bLat) < 0.052 || isExcluded(b.x, b.z)) continue
             chunkBlades.push(b)
-            if (b.x < minX) minX = b.x
-            if (b.x > maxX) maxX = b.x
-            if (b.z < minZ) minZ = b.z
-            if (b.z > maxZ) maxZ = b.z
           }
         }
 
@@ -140,6 +136,33 @@ export function grassChunks(painting: ImageData2D, customDensity?: number): Gras
           const tmp = chunkBlades[i]
           chunkBlades[i] = chunkBlades[j]
           chunkBlades[j] = tmp
+        }
+
+        chunkBlades = chunkBlades.filter((b) => {
+          for (let s = 0; s < stepFeet.length; s++) {
+            const { ox, oz, ux, uz, nx, nz, ws0, ws1 } = stepFeet[s]
+            const dx = b.x - ox
+            const dz = b.z - oz
+            const a = dx * ux + dz * uz
+            const k = dx * nx + dz * nz
+            const da = Math.max(ws0 - a, 0, a - ws1)
+            const dk = Math.max(-k, 0, k - STEP.depth)
+            if (Math.hypot(da, dk) < GRASS.house) return false
+          }
+          return true
+        })
+
+        if (chunkBlades.length === 0) continue
+
+        let minX = Infinity
+        let minZ = Infinity
+        let maxX = -Infinity
+        let maxZ = -Infinity
+        for (const b of chunkBlades) {
+          if (b.x < minX) minX = b.x
+          if (b.x > maxX) maxX = b.x
+          if (b.z < minZ) minZ = b.z
+          if (b.z > maxZ) maxZ = b.z
         }
 
         const corners: [number, number][] = [

@@ -3214,3 +3214,35 @@ must be byte-identical before the stimulus's difference means anything.
   samples `place` from a ref on `requestAnimationFrame`. It caught one `leaving` sample before the driver's first
   leaving frame had written the lens. Filter such samples by what the visitor sees (the layer at 1), not by position
   in the list, and prove the filter with a mutation that must still fail.
+
+## 2026-10-25 (late) — the village craft design
+
+- **Read the code a design names before giving it values.** The craft design's builder check asked eleven questions,
+  and seven began from a claim the code contradicted: the street's windows do not glimmer, R5 is a fourth cottage, the
+  plaster's measured width differs, every street layer is one mesh, so the triangle count is global. Each was a value
+  written from memory of the diorama or the plan, not from the file (2026-10-25, the Consultant's builder check).
+- **A test file outside `test:sky`'s list never runs in the gate.** `package.json:22` names each test file. A plan
+  that adds one must add it there in the same task, or the gate passes with the new test red (Codex F3 on K1's plan).
+- **An exclusion inside a seeded generator moves everything after it.** `grassChunks` draws every blade from one
+  `mulberry32(1)` stream. Rejecting a candidate earlier changes every later draw, so a local clearing moved blades
+  into the frogs' gaps far from it. A local change to seeded output filters after the generation (Codex F1, the
+  worker agreeing).
+
+
+## 2026-10-26 — the village craft, K1 (the houses)
+
+- **A capture taken before the sky and the cypress load is not a base.** K1's first base captures showed an empty
+  sky and no tree, so every pair looked like a change. `CAPTURE_SETTLE_MS=4000` waits for them. Recapture the base
+  the same way before any pass is compared to it (`E/t0/base-settled/`).
+- **A part laid over the strokes' top reads as pasted on.** The door's band at 0.0046 sat above every wall stroke,
+  the one surface no stroke touched, and read as a flat grey plate. At 0.001, under the strokes, they cross its edges
+  and it reads as the wall's paint (A2). Paint-like parts go under the strokes. Ink goes over them.
+- **Check a part's height against the roof that hangs over it.** A cottage's band stopped at 0.99 of the wall and
+  pierced the thatch's slab by 6.5 mm, which showed as a pale bar on the roof at stop 4 (A1). A probe that projects
+  every part into the frame named the part in one run (`scratchpad/probe/which-part.ts`).
+- **A colour knob's effect differs by source. Read it in Lab before trusting the full frame.** `base` 1 cut the
+  streaks at full frame, but it lifted the dark houses by L 11 to 16 and the plaster by only 5, where the streaks are.
+  The palette gate caught it (walls' ΔE up 3 to 6). Pass 3 put `base` back to 0.
+- **A test that loops over reported parts proves nothing when a part goes missing.** The levels test checked each
+  leaf's ink range only where one was reported, so removing the ink kept it green (Codex F1). Require the expected
+  part and its count first, then check its values.

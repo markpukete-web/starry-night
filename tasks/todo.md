@@ -1,5 +1,55 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-10-26 (afternoon): K1 (the houses) passed the Lead's gate; Mark's live read next
+
+**The village's craft, K1.** Built, gated and reviewed on `feat/village-craft`, head `02d5fba` and the record's
+commit. The record is `tasks/2026-10-25-village-craft-k1.md`. The branch is pushed for a Vercel preview, and no PR is
+open until Mark has looked ("I prefer live links, so when first slice done, push then I will review"). His pass ends K1.
+
+Open for Mark: the plaster houses' long vertical strokes (a stroke length needs a new 1:1 measurement of the scan's
+village), and stop 1's phone frame, walls' ΔE 9.55 to 10.10.
+
+**Next:** K2's plan (walls, rail, lamps) from `scratch/village-craft-2026-10-25/k2/design-notes.md`, reviewed while
+Mark reads K1. K2's build waits for his K1 pass. The PR stack #23 to #29 merges on Mark's word, then K1's PR.
+
+## Pickup — 2026-10-26 (00:20): K1's plan reviewed, both legs REVISE; revision 1 next
+
+**The village's craft, K1 the houses.** Mark approved the design ("go with your recommendation, start the plan"). The
+plan is `tasks/2026-10-25-village-craft-k1-plan.md`, revision 0 at `23ed2be` on `feat/village-craft` (rebased onto
+`feat/phone-framing`), local. Mark stopped the session here ("we need to take a break and pick it up next session").
+Nothing is built.
+
+**Codex's correctness read** (`scratch/village-craft-2026-10-25/plan-review-codex.md`): REVISE, six P2 and two P3.
+
+- F1, P2: a step exclusion inside `grassChunks` shifts its one seeded stream, so the grass moves everywhere and refills
+  the frog gaps at stops 1 and 3 (a blade root 0.0050 from stop 1's frog, the clearance 0.0075). Filter the blades
+  after the generation and the shuffle, then update the chunks' bounds.
+- F2, P2: `front over` gets 8 ribbons on five painting houses, under `street-build.test.ts`'s floor of 12. Give the
+  split fragments their own floor or a minimum count, with its triangles.
+- F3, P2: `test:sky` lists its files (`package.json:22`), so `street-craft.test.ts` must be added there in Task 1.
+- F4, P2: 'far houses and far ground take half' asserts each house face's density equals `detailOf`. The cover knob
+  changes it. Hold that test at `KEPT_PAINT` or assert the factored density. The far ground at 0.25 needs the same.
+- F5, P2: Decision (a)'s formula must name its colour space: decode to linear, apply the moon lift, mix in linear,
+  encode only for the report (`house-7/back`: 0.478 against 0.444 on red).
+- F6, P2: knob 3's `walls` bucket must reach `leaned()`, the triangle count, the returned buffers and `Street.tsx`.
+- F7, P3: say that the church keeps `CHURCH.recess` and gets neither `craft` nor `eaves`.
+- F8, P3: the K2-room target has two rules (Decision (i) lets a miss carry, Task 4 says it is met). Pick one.
+- Its notes: the levels hold. The levels test should check the drawn ink's vertices, not only the constants. The
+  shutter colour is `PALETTE.villageCool`. The walls' cover at 0.9 saves 15,796 triangles, at 0.8 31,344.
+
+**The worker's buildability read** (`scratch/village-craft-2026-10-25/plan-build-worker.md`, 288 lines): cannot be
+built as written. It agrees on F1 to F3. It adds: `report.faces` has no `source`, `craftShape` and `CraftReport` have
+no home or type, and the plan gives no formula for `doorStepFoot`, the cottage's band, or the soffits' corners.
+
+**Next:** the Lead reads both reports in full and folds them into revision 1 in one round. Then Codex's bounded re-read
+(these findings only, APPROVE or REVISE, nothing below P2). Then Mark reads the plan. Then Tasks 1 to 3 go to the
+worker. The base: 603,641 triangles, build 646 ms, hash `71114298aa85575a`. The tools are in
+`scratch/village-craft-2026-10-25/tools/` (`WT=<worktree>` picks the checkout). No dev server runs for the craft
+worktree yet: Task 0 serves it on port 5205.
+
+**PR #29 (the phone framing):** Codex's P2 fixed in `32c71f0` and answered on the thread. No re-review requested.
+Merges in stack order #23 to #29, on Mark's word.
+
 ## Pickup — 2026-10-25 (near midnight): the loading curtain passed on Mark's phone; the phone framing reopened
 
 **The loading curtain** is done on `feat/loading-curtain` (stacked on `fix/finger-no-bend`), local, no PR. The opening's

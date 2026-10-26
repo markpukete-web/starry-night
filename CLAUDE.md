@@ -308,6 +308,16 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   Each is drawn within its `draw` of the camera: 0.5 in the grass, 1.1 on the square (look pass 3), so one is drawn
   before `t` 0.45 and a second only at 0.8 or more. The walk's worst point 1,444,499 triangles (desktop, `t` 0.295).
   Untuned by Mark.
+- The village craft, K1, the houses (2026-10-26, `src/scene/streetGeometry.ts` `WALL_PAINT`, `CRAFT`,
+  `streetLayout.ts` `STEP`; the record `tasks/2026-10-25-village-craft-k1.md`): the walls' paint `base` 0 (the
+  source's mean; 1 lifted the dark houses by L 11 to 16), `light` 0.5, `cover` 0.8 (a fifth fewer strokes; the church
+  and the flat panel keep `KEPT_PAINT`, cover 1). The six painting houses' doors set 0.02 into the wall. Every door
+  framed by a band 0.3 of the door's width, at 0.001 off the front, under the strokes (A2); a cottage's band stops at
+  the door's top, under the thatch (A1). The band is the plaster's mean, × 0.7 on a plaster wall. A step 0.012 high,
+  0.03 deep. 22
+  shutter leaves at 0.006 off the front, louvres at 0.25, 0.5 and 0.75, ink at five samples an edge. The painting
+  houses' eaves 0.03 (rakes 0.015) with an underside. 574,041 street triangles (base 603,641); the walk's worst point
+  1,414,747 (desktop, `t` 0.295). Untuned by Mark.
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)
