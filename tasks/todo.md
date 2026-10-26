@@ -1,6 +1,45 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-26 (night, 20:15): K1 passed; K2's build running on the worker
+## Pickup — 2026-10-26 (night, 21:00): K2's Task 1 built, amendment A1 for a test the plan missed; K3's design drafted; Mark's two questions
+
+**K2's build.** Task 1 is committed at `a19c983` (the walls, 1,964 triangles, both `LANE=0` hashes K1's). The worker
+stopped there, rightly: `street-grass.test.ts:99` (the density falloff by band) fails at 17.9% because its expected
+count never knew the clearings and the walls take 1,373 blades out of band 0. Neither plan review caught it.
+**Amendment A1** (the plan's table and Task 1 Step 3a): that one test reads K1's grass (`stepClearings()`), nothing
+else changes. The worker continues with A1, Tasks 2 and 3 and the mutation proofs (`k2/brief-k2-build-2.md`). Codex
+reads A1 bounded (GO or NO-GO) in parallel (`k2/brief-codex-a1-and-k3.md`, Part A).
+
+**K3, the lived-in houses: the design is drafted** at `2e4f995`,
+`docs/superpowers/specs/2026-10-26-village-lived-in-design.md`, for Mark's approval. Mark asked for the plan too
+("plan and draft k3, then let codex review"), and the Lead holds the plan until he approves the design: he is
+rethinking Vincent and the walk (below), and a plan on an unapproved design is the waste. Codex reads the design's
+facts (Part B of the same brief), the Consultant reads it as a builder (`k2/brief-builder-check-k3-consultant.md`).
+Its one cross-slice call for Mark: R2's door path crosses K2's wall W2 whichever way it runs, so it lands past W2's end
+(the recommendation), or W2 gets a gap, or R2 gets no path.
+
+**Noted, not queued (scope rule), Mark's two questions, 2026-10-26 (night):**
+
+- **Vincent's form.** "After couple of slices, I feel like our little Vincent is too 'Creepy', I think Simon's approach
+  is better, he makes a robot walking around, perhaps we can use a Wall-E style robot? ... perhaps we should make our
+  site more futuristic but not so creepy, or would you have any better idea?" The Lead's read: the robot copies Simon
+  (the bar: study, never copy) and "futuristic" fights the locked faithfulness bar. The creepiness is in Vincent's
+  behaviour and light, not his species: a small dark figure held 0.58 ahead of the camera, back always turned, never
+  pausing, lit by nothing of his own, under moonlight. The fix proposed: a lantern in his hand (warm light on him and
+  the path ahead), a walking rhythm, a stop and a turn of the head at each station, a three-quarter view at the stops,
+  and a silhouette from Van Gogh's own "Painter on the Road to Tarascon" (1888: hat, canvas on the back, stick), which
+  is near the "other paintings" line and so Mark's call. A throwaway spike of the figure for his eye, since movable is
+  settled by building. Its own slice.
+- **Free exploration.** "Do you think we can still make the village exploreable? Like you can control Vincent or robot
+  to freely explore through the grass or on the path etc?" The Lead's read: possible and big (two slices or more). It
+  breaks the street design's non-goal ("No free roaming") and the locked camera criterion (Mark's edit, not the
+  Lead's), the church's faces thinned where no walk pose sees them (`CHURCH.hidden`), `detailOf`'s far-house halving,
+  the frogs drawn only near the walk's camera, and a triangle ceiling checked only at the walk's points. The middle
+  way: steer Vincent off the path onto the verge within the grass's footprint, the camera following, bounded by the
+  houses, walls, rail and lamps. After K3 and after the village opens to visitors.
+
+**Next:** the worker's K2 report, then the Lead's gate on K2 (Task 4's look passes, Task 5's runs), Codex's branch
+review, the push and Mark's preview link. Mark reads K3's design with both reads folded in.
+
 
 **K1, the houses: passed by Mark on the preview** ("K1 passed, start K2's build. In fact I don't feel much
 differences."). The change read as small to him.

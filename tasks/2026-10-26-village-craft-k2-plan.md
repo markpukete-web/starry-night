@@ -52,6 +52,7 @@ steps and the walls. The lamps' halos and pools join the lit windows' in `Street
 | F6 | Each run, the rail and each lamp report their emitted vertex ranges. The tests require them non-empty and on the part. Mutations that drop each append must turn a test red | Tasks 1 to 3 |
 | F7 | The lamp posts and caps are class 0 in `INK`, the walls' class as the design says | Decision (d) |
 | F9 | Facts 2, 7, 8 and 11 corrected | The facts |
+| A1 (2026-10-26, the worker's stop in Task 1) | `street-grass.test.ts`'s density test reads K1's grass: `grassChunks(painting, undefined, stepClearings())`. Its expected count is a grid of its own exclusions (houses, cypress, square), which never knew the clearings, and the walls' 1,373 blades all leave band 0 (17.9% under, the bar 10%). The test measures the generator's falloff, which the walls do not change. Every other test keeps the default clearings | Task 1 Files, Step 3a |
 
 ## Session mapping
 
@@ -389,6 +390,7 @@ sweep under 1,444,930 on both viewports. K1 left the walk's worst point 30,183 u
   `lane` option)
 - Change: `src/scene/streetGrass.ts` (the `clearings` parameter and the filter over it)
 - Change: `package.json` (`test:sky`: add `scripts/street-lane.test.ts`)
+- Change: `scripts/street-grass.test.ts` (A1: the density test's chunks, line 99's test only)
 - Test: `scripts/street-lane.test.ts` (new)
 
 **Interfaces:**
@@ -430,6 +432,14 @@ sweep under 1,444,930 on both viewports. K1 left the walk's worst point 30,183 u
   - `'the walls cost what the plan says'`: the build's triangles less the build with `lane: false` is 1,000 to 4,000.
 - [ ] **Step 2: Run them**: `node --test scripts/street-lane.test.ts`. Expected: FAIL (no `laneAt`).
 - [ ] **Step 3: Build Decisions (a), (b), (e) and (f)**, and add the test file to `test:sky`.
+- [ ] **Step 3a (A1): the density test reads K1's grass.** In `scripts/street-grass.test.ts`, the test `'the density
+  falls with the distance from the lane'` (line 99) measures the generator's falloff by band against a grid of its own
+  exclusions (houses, the cypress, the square), which never knew the steps' or the walls' clearings. K2's walls take
+  1,373 blades out of band 0 and the test fails 17.9% against its 10% bar (the worker's stop, `E2/t3/report-worker.md`
+  §5). The test builds its own chunks, `grassChunks(painting, undefined, stepClearings())`: K1's grass exactly (hash
+  `def5470cc15817ba`), where it passed at 3.6%. Every other test in the file keeps the shared `chunks` with the default
+  clearings. Imported: `stepClearings` from `streetLayout.ts`. Committed on its own, after Task 1's commit:
+  `test(grass): the density test reads K1's grass, the generator's falloff without K2's clearings (K2 amendment A1)`.
 - [ ] **Step 4: Run the suite**: `npm run -s test:sky 2>&1 | tee E2/t1/test-sky.log`. Expected: all PASS, the frog
   tests among them, and `grep -c "a stone is a dab" E2/t1/test-sky.log` is at least 1.
 - [ ] **Step 5: K1 unmoved without the furniture**: `LANE=0 WT=$PWD npx tsx T/build-hash.ts` gives `35ce7aeb5bd88590`,
