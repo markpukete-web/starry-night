@@ -33,7 +33,9 @@ import {
  * released and swings. With `landMasksSky`, a hand on the tree moves the tree and does not surge the sky behind
  * it (F9: at bend 0 there is no land touch and no masking, so B is exactly today's). A leave, a cancel or a hidden
  * tab releases the held touch (F3). The land meshes are looked up by name when needed, since the tree and the
- * land mount after their loads; `__landState().found` says which are there.
+ * land mount after their loads; `__landState().found` says which are there. A finger touches no land (2026-10-25:
+ * on Mark's phone the land's cast under a moving finger cost the frame rate, 38–60 fps against 60 with the bend off),
+ * so on a touch screen a finger turns the view and lights the sky, and a mouse or a pen still bends the land.
  */
 type TouchWindow = Window & {
   __touchState?: () => unknown
@@ -126,7 +128,9 @@ export function useTouchInput({
     const raycaster = new Raycaster()
     const ndc2 = new Vector2()
     const byName = (name: string): Object3D | undefined => scene.getObjectByName(name)
-    const landActive = () => landStore !== undefined && bendRef.current > 0
+    const landActive = () => landStore !== undefined && bendRef.current > 0 && !p.finger
+    // the land's ray casts, for case 12 of `check-portal.mjs`: a finger must cast none (the Consultant's F1)
+    let casts = 0
     /** The world point under a client position when the nearest opaque body there is land, else null. */
     const landPoint = (clientX: number, clientY: number): [number, number, number] | null => {
       if (!landActive()) return null
@@ -136,6 +140,7 @@ export function useTouchInput({
       if (!landMeshes.length) return null
       const occluders = LAND_OCCLUDERS.map(byName).filter((o): o is Object3D => o !== undefined)
       ndc2.set(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1)
+      casts++
       raycaster.setFromCamera(ndc2, camera)
       return landPick(raycaster.intersectObjects([...landMeshes, ...occluders], false), landMeshes)
     }
@@ -189,7 +194,7 @@ export function useTouchInput({
       p.y = event.clientY
       p.down = true
       p.finger = event.pointerType === 'touch'
-      // D1 (F2): a press begins its hold at once, so a still finger bends what it rests on
+      // D1 (F2): a press begins its hold at once, so a still mouse or pen bends what it rests on (a finger touches no land)
       const point = landPoint(event.clientX, event.clientY)
       p.overLand = point !== null
       if (point && landStore) landStore.current = followHeld(landStore.current, point, 1, clock.current)
@@ -251,7 +256,7 @@ export function useTouchInput({
     w.__camera = () => ({ position: camera.position.toArray(), quaternion: camera.quaternion.toArray() })
     // D1's: the land store as data with the meshes found, a touch at a world point with an explicit t0 (held or a
     // tap), and the land meshes' screen rects at the current camera (the gate's mask)
-    w.__landState = () => ({ ...(landStore?.current ?? emptyLandStore()), bendGain: bendRef.current, found: [...LAND_MESHES, ...LAND_OCCLUDERS].filter((name) => byName(name) !== undefined) })
+    w.__landState = () => ({ ...(landStore?.current ?? emptyLandStore()), bendGain: bendRef.current, casts, found: [...LAND_MESHES, ...LAND_OCCLUDERS].filter((name) => byName(name) !== undefined) })
     w.__landInject = (x, y, z, amp, t0 = clock.current, hold = false) => {
       if (!landStore) return
       landStore.current = hold ? beginHeld(landStore.current, [x, y, z], amp, t0) : pushTap(landStore.current, [x, y, z], amp, t0)

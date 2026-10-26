@@ -19,6 +19,8 @@
  * 9. The street through the portal at stop 0 against `?street=1` at stop 0, clocks pinned: byte-identical.
  * 10. A rotation in the street: enter, resize to the other aspect, leave; the pose is the saved one within 1e-6.
  * 11. Three round trips leave the renderer's geometries and textures where the first left them.
+ * 12. On the phone, a finger pressed and dragged over a tree adds sky surges, no land touch and no land cast, and a
+ *    finger's tap on a tree adds a kick and no land touch or cast. A mouse over a tree casts and adds one (the control).
  * Each case prints PASS or throws; the run exits 1 on the first failure.
  */
 import { execFileSync, execSync, spawn } from 'node:child_process'
@@ -140,6 +142,9 @@ class CdpPage {
       if (Date.now() - start > timeoutMs) throw new Error(`timed out after ${timeoutMs} ms waiting for ${what}`)
       await sleep(100)
     }
+  }
+  touch(type, x, y) {
+    return this.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y, id: 1 }] })
   }
   mouse(type, x, y, extra = {}) {
     return this.send('Input.dispatchMouseEvent', { type, x, y, button: type === 'mouseMoved' ? 'none' : 'left', buttons: type === 'mousePressed' ? 1 : 0, clickCount: 1, pointerType: 'mouse', ...extra })
@@ -490,6 +495,60 @@ async function main() {
     }
     if (counts.some((c) => c.geometries !== counts[0].geometries || c.textures !== counts[0].textures)) throw new Error(`case 11: the counts after each return ${JSON.stringify(counts)}`)
     console.log(`PASS 11: three round trips leave ${counts[0].geometries} geometries and ${counts[0].textures} textures each time`)
+
+    // ---- case 12: a finger touches no land (2026-10-25: the land's cast under a finger cost Mark's phone its frame rate)
+    await open(page, BASE, PHONE)
+    await page.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 })
+    await page.evaluate(`window.__touchGet = window.__touchState; window.__landGet = window.__landState`)
+    const tree12 = await page.evaluate(`window.__findPick('land', 8)`)
+    if (!tree12) throw new Error('case 12: no tree on the phone')
+    const surges12 = `window.__touchGet().surges.length`
+    const land12 = `window.__landGet().touches.length`
+    const casts12 = `window.__landGet().casts`
+    const kicks12 = `window.__touchGet().kicks.length`
+    const s12a = await page.evaluate(surges12)
+    const l12a = await page.evaluate(land12)
+    const c12a = await page.evaluate(casts12)
+    await page.touch('touchStart', tree12[0], tree12[1])
+    await sleep(100)
+    for (let i = 1; i <= 8; i++) {
+      await page.touch('touchMove', tree12[0] + i * 12, tree12[1])
+      await sleep(80)
+    }
+    const l12held = await page.evaluate(land12)
+    await page.touch('touchEnd')
+    await sleep(300)
+    const s12b = await page.evaluate(surges12)
+    const l12b = await page.evaluate(land12)
+    if (s12b <= s12a) throw new Error(`case 12: the control failed, the finger's drag took the surges from ${s12a} to ${s12b}`)
+    if (l12held !== l12a || l12b !== l12a) throw new Error(`case 12: a finger on a tree took the land touches from ${l12a} to ${l12held} held and ${l12b} after`)
+    // a finger's tap on a tree, once the drag's orbit has settled (the Consultant's F2): a kick, and no land touch
+    await sleep(1500)
+    const tree12t = await page.evaluate(`window.__findPick('land', 8)`)
+    if (!tree12t) throw new Error('case 12: no tree on the phone after the drag')
+    const k12a = await page.evaluate(kicks12)
+    await page.touch('touchStart', tree12t[0], tree12t[1])
+    await sleep(60)
+    await page.touch('touchEnd')
+    await sleep(300)
+    const k12b = await page.evaluate(kicks12)
+    const l12tap = await page.evaluate(land12)
+    const c12b = await page.evaluate(casts12)
+    if (k12b !== k12a + 1) throw new Error(`case 12: the control failed, a finger's tap took the kicks from ${k12a} to ${k12b}`)
+    if (l12tap !== l12a) throw new Error(`case 12: a finger's tap on a tree took the land touches from ${l12a} to ${l12tap}`)
+    if (c12b !== c12a) throw new Error(`case 12: a finger cast the land's ray ${c12b - c12a} times`)
+    await page.send('Emulation.setTouchEmulationEnabled', { enabled: false })
+    await sleep(1500)
+    const tree12b = await page.evaluate(`window.__findPick('land', 8)`)
+    if (!tree12b) throw new Error('case 12: no tree on the phone for the mouse')
+    await page.mouse('mouseMoved', tree12b[0], tree12b[1])
+    await page.mouse('mousePressed', tree12b[0], tree12b[1])
+    await sleep(200)
+    const l12mouse = await page.evaluate(land12)
+    const c12mouse = await page.evaluate(casts12)
+    await page.mouse('mouseReleased', tree12b[0], tree12b[1])
+    if (l12mouse <= l12tap || c12mouse <= c12b) throw new Error(`case 12: the control failed, a mouse over a tree took the land touches from ${l12tap} to ${l12mouse} and the casts from ${c12b} to ${c12mouse}`)
+    console.log(`PASS 12: on the phone a finger's drag over a tree added ${s12b - s12a} sky surges and its tap a kick, with no land touch and no cast; a mouse over a tree cast ${c12mouse - c12b} times and added ${l12mouse - l12tap} touch`)
 
     if (page.errors.length) throw new Error(`page errors:\n  ${page.errors.join('\n  ')}`)
     page.ws.close()

@@ -30,7 +30,7 @@ export const LAND_TOUCH = {
   windowEnd: 5,
   /** live touches the shaders take; a fifth is refused (never an eviction mid-swing) */
   maxTouches: 4,
-  /** a hover's amplitude; a tap's and a held finger's is 1 */
+  /** a hover's amplitude; a tap's and a held press's is 1 (a mouse's or a pen's: a finger touches no land) */
   hoverAmp: 0.6,
   /** a hand on the tree moves the tree and does not surge the sky behind it (B's open item); Mark's choice, 2026-10-21 */
   landMasksSky: true,
