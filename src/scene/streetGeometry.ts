@@ -103,7 +103,8 @@ export const LANE_CRAFT = {
     length: [0.61, 0.89] as [number, number],
     joint: 0.88,
     cover: 0.85,
-    source: 'wallA' as StreetSourceName,
+    /** look pass 2: wallA's darkest 40% is L 4.7 and 57% of its texels are under L 20, so the wall read black with pale flecks; wallB's base is L 13 and its median texel L 30 */
+    source: 'wallB' as StreetSourceName,
   },
   rail: {
     post: 0.005,

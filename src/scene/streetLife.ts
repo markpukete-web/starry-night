@@ -22,7 +22,8 @@ export const LIFE = {
 }
 
 export const LAMP_LIGHT = {
-  halo: 2 * LIFE.halo[0] + 0.012,
+  /** 0.7 of the plan's 2 × LIFE.halo[0] + 0.012 (look pass 2: at stop 0 the far lamps' halos merged into one haze) */
+  halo: 0.7 * (2 * LIFE.halo[0] + 0.012),
   haloView: 0.5,
   poolY: 0.007,
 } as const
