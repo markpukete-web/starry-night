@@ -270,6 +270,22 @@ export const STREET_WALLS = [
   { side: -1 as const, t0: 0.54, t1: 0.84 },
 ] as const
 
+/**
+ * Dry-stone wall dimensions and clearing parameters (K2, Codex F6):
+ * - inner: lateral of the lane face
+ * - thickness: wall depth perpendicular to lane
+ * - height: wall height in y
+ * - segment: longest segment in t for subdivision
+ * - clearingOverlap: clearing rectangle's end overlap in u
+ */
+export const STREET_WALL = {
+  inner: 0.135,
+  thickness: 0.03,
+  height: 0.055,
+  segment: 0.02,
+  clearingOverlap: 0.002,
+} as const
+
 export const STREET_RAIL = {
   house: 'L2',
   back: 0.03,
@@ -311,15 +327,15 @@ export function stepClearings(): OrientedBox[] {
 export function wallClearings(): OrientedBox[] {
   const rectangles: OrientedBox[] = []
   for (const { side, t0, t1 } of STREET_WALLS) {
-    const n = Math.ceil((t1 - t0) / 0.02)
+    const n = Math.ceil((t1 - t0) / STREET_WALL.segment)
     const dt = (t1 - t0) / n
     for (let i = 0; i < n; i++) {
       const ta = t0 + i * dt
       const tb = t0 + (i + 1) * dt
-      const q0 = laneAt(ta, side * 0.135)
-      const q1 = laneAt(tb, side * 0.135)
-      const q2 = laneAt(tb, side * 0.165)
-      const q3 = laneAt(ta, side * 0.165)
+      const q0 = laneAt(ta, side * STREET_WALL.inner)
+      const q1 = laneAt(tb, side * STREET_WALL.inner)
+      const q2 = laneAt(tb, side * (STREET_WALL.inner + STREET_WALL.thickness))
+      const q3 = laneAt(ta, side * (STREET_WALL.inner + STREET_WALL.thickness))
       const o = [q0.x, q0.z]
       const d = [q1.x - o[0], q1.z - o[1]]
       const len = Math.hypot(d[0], d[1])
@@ -341,8 +357,8 @@ export function wallClearings(): OrientedBox[] {
         uz: u[1],
         nx: nVec[0],
         nz: nVec[1],
-        u0: Math.min(...uv.map((p) => p[0])) - 0.002,
-        u1: Math.max(...uv.map((p) => p[0])) + 0.002,
+        u0: Math.min(...uv.map((p) => p[0])) - STREET_WALL.clearingOverlap,
+        u1: Math.max(...uv.map((p) => p[0])) + STREET_WALL.clearingOverlap,
         k0: Math.min(...uv.map((p) => p[1])),
         k1: Math.max(...uv.map((p) => p[1])),
       })

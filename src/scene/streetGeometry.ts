@@ -8,7 +8,7 @@ import { buildLandTrees, type BakedMass, type LandTrees } from './landDomes.ts'
 import { buildStreetTrees } from './streetTrees.ts'
 import { PALETTE } from './palette.ts'
 import { CHURCH_LIGHT, leanOf, lightOf, shadeNew, STREET_LIGHT, type StreetLight } from './streetLight.ts'
-import { CHURCH, DETAIL, doorOf, doorStepFrame, houseFrame, STEP, STREET, STREET_CHURCH, STREET_HOUSES, STREET_LAMPS, STREET_RAIL, STREET_SQUARE, STREET_TREES, detailOf, laneDistance, pathPoint, pathTangent, streetGroundAt, type StreetHouse, laneAt, STREET_WALLS } from './streetLayout.ts'
+import { CHURCH, DETAIL, doorOf, doorStepFrame, houseFrame, STEP, STREET, STREET_CHURCH, STREET_HOUSES, STREET_LAMPS, STREET_RAIL, STREET_SQUARE, STREET_TREES, detailOf, laneDistance, pathPoint, pathTangent, streetGroundAt, type StreetHouse, laneAt, STREET_WALLS, STREET_WALL } from './streetLayout.ts'
 import { outlineFace, PATH_LIFT, sourceUnderpaint, streetMassConfig, STREET_MOON_LIFT, traceFace, type FaceStrokes, type StreetFace, type StreetSourceName, stoneDab, STREET_SOURCES, STROKE_LIFT } from './streetStrokes.ts'
 import type { ImageData2D } from './useImageData.ts'
 import { VILLAGE_CHURCH, type Pigment } from './villageKnot.ts'
@@ -94,15 +94,13 @@ export type StreetBuild = {
 
 export const LANE_CRAFT = {
   wall: {
-    inner: 0.135,
-    thickness: 0.03,
-    height: 0.055,
-    segment: 0.02,
     courses: 5,
     rows: 2,
     length: [0.61, 0.89] as [number, number],
     joint: 0.88,
-    cover: 0.85,
+    width: 0.17,
+    base: 0.4,
+    pale: 1,
     /** look pass 2: wallA's darkest 40% is L 4.7 and 57% of its texels are under L 20, so the wall read black with pale flecks; wallB's base is L 13 and its median texel L 30 */
     source: 'wallB' as StreetSourceName,
   },
@@ -1053,10 +1051,10 @@ function grassBaseStrip(ctx: Context): void {
 }
 
 function laneWalls(ctx: Context): void {
-  const H = LANE_CRAFT.wall.height
-  const source = LANE_CRAFT.wall.source
+  const H = STREET_WALL.height
+  const { courses, rows, length, joint, width, base, pale, source } = LANE_CRAFT.wall
   const src = SOURCE_CLASSES[source]
-  const baseColorRGB = sourceUnderpaint(ctx.painting, source, 0.4)
+  const baseColorRGB = sourceUnderpaint(ctx.painting, source, base)
   const baseColor = new Color().setRGB(...baseColorRGB, SRGBColorSpace)
 
   const speed = (t: number, lat: number) => {
@@ -1069,7 +1067,7 @@ function laneWalls(ctx: Context): void {
     const side = run.side
     const t0 = run.t0
     const t1 = run.t1
-    const n = Math.ceil((t1 - t0) / 0.02)
+    const n = Math.ceil((t1 - t0) / STREET_WALL.segment)
     const dt = (t1 - t0) / n
 
     const underpaintStart = ctx.underpaint.positions.length / 3
@@ -1080,10 +1078,10 @@ function laneWalls(ctx: Context): void {
     for (let i = 0; i < n; i++) {
       const ta = t0 + i * dt
       const tb = t0 + (i + 1) * dt
-      const q0 = laneAt(ta, side * 0.135)
-      const q1 = laneAt(tb, side * 0.135)
-      const q2 = laneAt(tb, side * 0.165)
-      const q3 = laneAt(ta, side * 0.165)
+      const q0 = laneAt(ta, side * STREET_WALL.inner)
+      const q1 = laneAt(tb, side * STREET_WALL.inner)
+      const q2 = laneAt(tb, side * (STREET_WALL.inner + STREET_WALL.thickness))
+      const q3 = laneAt(ta, side * (STREET_WALL.inner + STREET_WALL.thickness))
 
       const corners = [
         new Vector3(q0.x, 0, q0.z),
@@ -1099,7 +1097,7 @@ function laneWalls(ctx: Context): void {
       const p2 = new Vector3(q1.x, H, q1.z)
       const p3 = new Vector3(q0.x, H, q0.z)
       const midT = (ta + tb) / 2
-      const midPt = laneAt(midT, side * 0.135)
+      const midPt = laneAt(midT, side * STREET_WALL.inner)
       const nLane = new Vector3(-side * midPt.nx, 0, -side * midPt.nz)
 
       const faceLane: StreetFace = {
@@ -1232,18 +1230,36 @@ function laneWalls(ctx: Context): void {
       ribbons: 0,
     }
     const [x0, y0, x1, y1] = STREET_SOURCES[source]
+    const sx = ctx.painting.width / 1600
+    const sy = ctx.painting.height / 1267
+    const luminances: number[] = []
+    const startX = Math.floor(x0 * sx)
+    const endX = Math.ceil(x1 * sx)
+    const startY = Math.floor(y0 * sy)
+    const endY = Math.ceil(y1 * sy)
+    for (let y = startY; y < endY; y++) {
+      for (let x = startX; x < endX; x++) {
+        const i = (y * ctx.painting.width + x) * 4
+        const r = ctx.painting.data[i] / 255
+        const g = ctx.painting.data[i + 1] / 255
+        const b = ctx.painting.data[i + 2] / 255
+        luminances.push(0.2126 * r + 0.7152 * g + 0.0722 * b)
+      }
+    }
+    luminances.sort((a, b) => a - b)
+    const floor = luminances[Math.floor(luminances.length * (1 - pale))]
 
-    // 5 courses on lane face
-    for (let c = 0; c < 5; c++) {
-      const courseY = (c + 0.5) * (H / 5)
-      const width = 0.17 * H
-      const lat = side * (0.135 - STROKE_LIFT)
+    // courses on lane face
+    for (let c = 0; c < courses; c++) {
+      const courseY = (c + 0.5) * (H / courses)
+      const dabWidth = width * H
+      const lat = side * (STREET_WALL.inner - STROKE_LIFT)
       const rng = mulberry32(0x5100 + (side === -1 ? 0 : 50) + c * 31 + Math.round(t0 * 100))
-      let tCurr = t0 + rng() * 0.5 * ((H * 0.75) / 0.88 / speed(t0, lat))
+      let tCurr = t0 + rng() * 0.5 * ((H * ((length[0] + length[1]) / 2)) / joint / speed(t0, lat))
 
       while (tCurr < t1) {
-        const L = H * (0.61 + 0.28 * rng())
-        const cell = L / 0.88
+        const L = H * (length[0] + (length[1] - length[0]) * rng())
+        const cell = L / joint
         const sp = speed(tCurr, lat)
         const dtCell = cell / sp
         if (tCurr + dtCell > t1) break
@@ -1272,9 +1288,16 @@ function laneWalls(ctx: Context): void {
         const across = new Vector3(0, 1, 0)
         const normal = new Vector3(-side * ptMid.nx, 0, -side * ptMid.nz)
 
-        const uTex = (x0 + rng() * (x1 - x0)) / ctx.painting.width
-        const vTex = (y0 + rng() * (y1 - y0)) / ctx.painting.height
-        const rgb = sampleColour(ctx.painting, uTex, vTex)
+        let uTex = (x0 + rng() * (x1 - x0)) / ctx.painting.width
+        let vTex = (y0 + rng() * (y1 - y0)) / ctx.painting.height
+        let rgb = sampleColour(ctx.painting, uTex, vTex)
+        let lum = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]
+        for (let retry = 0; retry < 8 && lum < floor; retry++) {
+          uTex = (x0 + rng() * (x1 - x0)) / ctx.painting.width
+          vTex = (y0 + rng() * (y1 - y0)) / ctx.painting.height
+          rgb = sampleColour(ctx.painting, uTex, vTex)
+          lum = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]
+        }
         const col = new Color().setRGB(rgb[0], rgb[1], rgb[2], SRGBColorSpace)
         const dabFace: StreetFace = {
           origin: p1,
@@ -1290,24 +1313,24 @@ function laneWalls(ctx: Context): void {
         }
         col.multiplyScalar(lightOf(dabFace, ctx.lit, ctx.wallLight))
 
-        stoneDab(wallStrokes, [p0, p1, p2], across, width, col, Math.round(rng() * 10000))
-        dabs.push({ face: 'lane', t: tMid, lateral: lat, y: courseY, length: L, width })
+        stoneDab(wallStrokes, [p0, p1, p2], across, dabWidth, col, Math.round(rng() * 10000))
+        dabs.push({ face: 'lane', t: tMid, lateral: lat, y: courseY, length: L, width: dabWidth })
 
         tCurr += dtCell
       }
     }
 
-    // 2 rows on top
-    for (let r = 0; r < 2; r++) {
-      const lat = side * (0.135 + (r === 0 ? 0.25 : 0.75) * 0.03)
+    // rows on top
+    for (let r = 0; r < rows; r++) {
+      const lat = side * (STREET_WALL.inner + ((r + 0.5) / rows) * STREET_WALL.thickness)
       const rowY = H + STROKE_LIFT
-      const width = 0.17 * H
+      const dabWidth = width * H
       const rng = mulberry32(0x6100 + (side === -1 ? 0 : 50) + r * 31 + Math.round(t0 * 100))
-      let tCurr = t0 + rng() * 0.5 * ((H * 0.75) / 0.88 / speed(t0, lat))
+      let tCurr = t0 + rng() * 0.5 * ((H * ((length[0] + length[1]) / 2)) / joint / speed(t0, lat))
 
       while (tCurr < t1) {
-        const L = H * (0.61 + 0.28 * rng())
-        const cell = L / 0.88
+        const L = H * (length[0] + (length[1] - length[0]) * rng())
+        const cell = L / joint
         const sp = speed(tCurr, lat)
         const dtCell = cell / sp
         if (tCurr + dtCell > t1) break
@@ -1336,9 +1359,16 @@ function laneWalls(ctx: Context): void {
         const across = new Vector3(side * ptMid.nx, 0, side * ptMid.nz)
         const normal = new Vector3(0, 1, 0)
 
-        const uTex = (x0 + rng() * (x1 - x0)) / ctx.painting.width
-        const vTex = (y0 + rng() * (y1 - y0)) / ctx.painting.height
-        const rgb = sampleColour(ctx.painting, uTex, vTex)
+        let uTex = (x0 + rng() * (x1 - x0)) / ctx.painting.width
+        let vTex = (y0 + rng() * (y1 - y0)) / ctx.painting.height
+        let rgb = sampleColour(ctx.painting, uTex, vTex)
+        let lum = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]
+        for (let retry = 0; retry < 8 && lum < floor; retry++) {
+          uTex = (x0 + rng() * (x1 - x0)) / ctx.painting.width
+          vTex = (y0 + rng() * (y1 - y0)) / ctx.painting.height
+          rgb = sampleColour(ctx.painting, uTex, vTex)
+          lum = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]
+        }
         const col = new Color().setRGB(rgb[0], rgb[1], rgb[2], SRGBColorSpace)
         const dabFace: StreetFace = {
           origin: p1,
@@ -1354,8 +1384,8 @@ function laneWalls(ctx: Context): void {
         }
         col.multiplyScalar(lightOf(dabFace, ctx.lit, ctx.wallLight))
 
-        stoneDab(wallStrokes, [p0, p1, p2], across, width, col, Math.round(rng() * 10000))
-        dabs.push({ face: 'top', t: tMid, lateral: lat, y: rowY, length: L, width })
+        stoneDab(wallStrokes, [p0, p1, p2], across, dabWidth, col, Math.round(rng() * 10000))
+        dabs.push({ face: 'top', t: tMid, lateral: lat, y: rowY, length: L, width: dabWidth })
 
         tCurr += dtCell
       }
@@ -1573,7 +1603,7 @@ function laneLamps(ctx: Context): void {
       shadeNew(ctx.underpaint, from, face, ctx.lit)
     }
 
-    // Lantern: box 0.012 square, 0.016 high on post's top, centre at y 0.138 (0.13 to 0.146)
+    // Lantern: box 0.012 square, 0.016 high on post's top, centre at y postH + lanternH / 2 (0.138 at defaults)
     // Four sides in windowLit mean, unlit, class 2, src 255
     const l0 = pFoot.clone().addScaledVector(tVec, -hl).addScaledVector(nVec, -hl).setY(postH)
     const l1 = pFoot.clone().addScaledVector(tVec, hl).addScaledVector(nVec, -hl).setY(postH)
@@ -1636,7 +1666,7 @@ function laneLamps(ctx: Context): void {
     }
 
     const underpaintEnd = ctx.underpaint.positions.length / 3
-    const lanternCenter = pFoot.clone().setY(0.138)
+    const lanternCenter = pFoot.clone().setY(LANE_CRAFT.lamp.height + LANE_CRAFT.lamp.lantern[1] / 2)
 
     ctx.report.lane.lamps.push({
       foot: pFoot,

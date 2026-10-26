@@ -27,11 +27,12 @@ import {
   STREET_CYPRESS,
   STREET_HOUSES,
   STREET_LAMPS,
+  STREET_WALL,
   vincentBoxCorners,
   walkPose,
 } from '../src/scene/streetLayout.ts'
 import { LAMP_LIGHT, lampHaloScale, LIFE, litWindows } from '../src/scene/streetLife.ts'
-import { STROKE_LIFT } from '../src/scene/streetStrokes.ts'
+import { SOURCE_STROKES, STROKE_LIFT } from '../src/scene/streetStrokes.ts'
 import type { ImageData2D } from '../src/scene/useImageData.ts'
 import { decodePNG } from './lib/png.ts'
 
@@ -72,17 +73,18 @@ test('the walls stand on the verges the plan names', { skip }, () => {
   const walls = build.report.lane.walls
   assert.equal(walls.length, 3)
   const expectedSpecs = [
-    { side: -1, t0: 0.06, t1: 0.22, segs: 8 },
-    { side: 1, t0: 0.14, t1: 0.47, segs: 17 },
-    { side: -1, t0: 0.54, t1: 0.84, segs: 15 },
+    { side: -1, t0: 0.06, t1: 0.22 },
+    { side: 1, t0: 0.14, t1: 0.47 },
+    { side: -1, t0: 0.54, t1: 0.84 },
   ]
   walls.forEach((w, idx) => {
     const exp = expectedSpecs[idx]
     assert.equal(w.side, exp.side)
     assert.ok(Math.abs(w.t0 - exp.t0) < 1e-9)
     assert.ok(Math.abs(w.t1 - exp.t1) < 1e-9)
-    assert.equal(w.segments.length, exp.segs)
-    const dt = (exp.t1 - exp.t0) / exp.segs
+    const segs = Math.ceil((exp.t1 - exp.t0) / STREET_WALL.segment)
+    assert.equal(w.segments.length, segs)
+    const dt = (exp.t1 - exp.t0) / segs
     w.segments.forEach((seg, sIdx) => {
       const t0 = exp.t0 + sIdx * dt
       const t1 = exp.t0 + (sIdx + 1) * dt
@@ -92,10 +94,10 @@ test('the walls stand on the verges the plan names', { skip }, () => {
       for (const c of seg.corners) {
         assert.equal(c.y, 0)
       }
-      const q0 = laneAt(t0, w.side * 0.135)
-      const q1 = laneAt(t1, w.side * 0.135)
-      const q2 = laneAt(t1, w.side * 0.165)
-      const q3 = laneAt(t0, w.side * 0.165)
+      const q0 = laneAt(t0, w.side * STREET_WALL.inner)
+      const q1 = laneAt(t1, w.side * STREET_WALL.inner)
+      const q2 = laneAt(t1, w.side * (STREET_WALL.inner + STREET_WALL.thickness))
+      const q3 = laneAt(t0, w.side * (STREET_WALL.inner + STREET_WALL.thickness))
       assert.ok(Math.hypot(seg.corners[0].x - q0.x, seg.corners[0].z - q0.z) < 1e-9)
       assert.ok(Math.hypot(seg.corners[1].x - q1.x, seg.corners[1].z - q1.z) < 1e-9)
       assert.ok(Math.hypot(seg.corners[2].x - q2.x, seg.corners[2].z - q2.z) < 1e-9)
@@ -107,7 +109,7 @@ test('the walls stand on the verges the plan names', { skip }, () => {
 test('every wall is drawn', { skip }, () => {
   assert.ok(realPainting)
   const build = buildStreet(realPainting, flow, masses, { grass: true, lane: true })
-  const H = LANE_CRAFT.wall.height
+  const H = STREET_WALL.height
   const pos = build.underpaint.positions
   for (const w of build.report.lane.walls) {
     const [u0, u1] = w.underpaint
@@ -227,7 +229,7 @@ test("no wall touches a house, a step, the lane, Vincent, the cypress or a frog'
       }
 
       // lane face past lateral 0.06 + 0.03 = 0.09
-      assert.ok(0.135 >= 0.09 - 1e-9)
+      assert.ok(STREET_WALL.inner >= 0.06 + 0.03 - 1e-9)
 
       for (const f of FROGS.filter((fr) => fr.stop < 4)) {
         const [fx, , fz] = frogPlace(f).position
@@ -242,14 +244,17 @@ test("no wall touches a house, a step, the lane, Vincent, the cypress or a frog'
 test('a stone is a dab of the measured size', { skip }, () => {
   assert.ok(realPainting)
   const build = buildStreet(realPainting, flow, masses, { grass: true, lane: true })
-  const H = LANE_CRAFT.wall.height
+  const H = STREET_WALL.height
   const strokePos = build.strokes.arrays.positions
+  const [lenMin, lenMax] = LANE_CRAFT.wall.length
+  const expWidth = LANE_CRAFT.wall.width * H
+  const srcStroke = SOURCE_STROKES[LANE_CRAFT.wall.source]
 
   for (const w of build.report.lane.walls) {
     const [s0] = w.strokes
     w.dabs.forEach((dab, i) => {
-      assert.ok(dab.length >= 0.61 * H - 1e-9 && dab.length <= 0.89 * H + 1e-9, `dab length ${dab.length}`)
-      assert.ok(Math.abs(dab.width - 0.17 * H) < 1e-9, `dab width ${dab.width}`)
+      assert.ok(dab.length >= lenMin * H - 1e-9 && dab.length <= lenMax * H + 1e-9, `dab length ${dab.length}`)
+      assert.ok(Math.abs(dab.width - expWidth) < 1e-9, `dab width ${dab.width}`)
 
       const vBase = (s0 + 9 * i) * 3
       const verts: Vector3[] = []
@@ -263,8 +268,10 @@ test('a stone is a dab of the measured size', { skip }, () => {
       const pt = laneAt(dab.t, dab.lateral)
       const tangent = new Vector3(pt.nz, 0, -pt.nx)
       const vLen = Math.abs(verts[7].clone().sub(verts[1]).dot(tangent))
-      assert.ok(vLen >= 0.6 * H - 1e-4 && vLen <= 0.9 * H + 1e-4, `vLen ${vLen} in [0.6, 0.9] * H`)
+      assert.ok(vLen >= lenMin * H - 1e-4 && vLen <= lenMax * H + 1e-4, `vLen ${vLen} in [${lenMin}, ${lenMax}] * H`)
       assert.ok(Math.abs(vLen - dab.length) < 1e-4, `vLen ${vLen} within 1e-4 of dab.length ${dab.length}`)
+      assert.ok(vLen >= srcStroke.length[0] * H - 1e-4 && vLen <= srcStroke.length[1] * H + 1e-4, `vLen within source measured length`)
+      assert.ok(wMid >= srcStroke.width[0] * H - 1e-4 && wMid <= srcStroke.width[1] * H + 1e-4, `wMid within source measured width`)
 
       if (dab.face === 'lane') {
         assert.ok(Math.hypot(verts[4].x - pt.x, verts[4].z - pt.z) < 1e-9, `lane dab v4 (x, z)`)
@@ -282,16 +289,16 @@ test('the grass clears the walls', { skip }, () => {
   const chunks = grassChunks(realPainting)
   const wallFootprints: [number, number][][] = []
   for (const [side, t0, t1] of [[-1, 0.06, 0.22], [1, 0.14, 0.47], [-1, 0.54, 0.84]] as const) {
-    const n = Math.ceil((t1 - t0) / 0.02)
+    const n = Math.ceil((t1 - t0) / STREET_WALL.segment)
     const dt = (t1 - t0) / n
     for (let i = 0; i < n; i++) {
       const ta = t0 + i * dt
       const tb = t0 + (i + 1) * dt
       wallFootprints.push([
-        [laneAt(ta, side * 0.135).x, laneAt(ta, side * 0.135).z],
-        [laneAt(tb, side * 0.135).x, laneAt(tb, side * 0.135).z],
-        [laneAt(tb, side * 0.165).x, laneAt(tb, side * 0.165).z],
-        [laneAt(ta, side * 0.165).x, laneAt(ta, side * 0.165).z],
+        [laneAt(ta, side * STREET_WALL.inner).x, laneAt(ta, side * STREET_WALL.inner).z],
+        [laneAt(tb, side * STREET_WALL.inner).x, laneAt(tb, side * STREET_WALL.inner).z],
+        [laneAt(tb, side * (STREET_WALL.inner + STREET_WALL.thickness)).x, laneAt(tb, side * (STREET_WALL.inner + STREET_WALL.thickness)).z],
+        [laneAt(ta, side * (STREET_WALL.inner + STREET_WALL.thickness)).x, laneAt(ta, side * (STREET_WALL.inner + STREET_WALL.thickness)).z],
       ])
     }
   }
