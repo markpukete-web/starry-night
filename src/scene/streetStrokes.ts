@@ -402,7 +402,7 @@ export function traceFace(face: StreetFace, flow: ImageData2D, painting: ImageDa
  * and 0.6 of it at the ends, wobbling across by at most a quarter of its width, run past each corner by half its
  * width so the corners close, lifted over the strokes.
  */
-export function outlineFace(face: StreetFace, edges: readonly (readonly [Vector3, Vector3])[], ink: Color, seed: number): FaceStrokes {
+export function outlineFace(face: StreetFace, edges: readonly (readonly [Vector3, Vector3])[], ink: Color, seed: number, maxSamples?: number): FaceStrokes {
   const arrays = makeBrushArrays()
   const stroke: number[] = []
   const seeds: number[] = []
@@ -417,7 +417,7 @@ export function outlineFace(face: StreetFace, edges: readonly (readonly [Vector3
     const start = a.clone().addScaledVector(along, -width / 2)
     const total = length + width
     // odd, so the middle sample sits at the edge's centre, spaced about half the width apart
-    const n = Math.max(5, 2 * Math.ceil(total / width) + 1)
+    const n = Math.min(maxSamples ?? Infinity, Math.max(5, 2 * Math.ceil(total / width) + 1))
     const edgeSeed = seed * 31 + index * 7
     const tone = 0.92 + 0.16 * vnoise(edgeSeed * 0.37, 1.3)
     const steps: Vector3[][] = []

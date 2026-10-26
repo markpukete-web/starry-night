@@ -114,7 +114,7 @@ const GROUND_BASE_SHARE = 0.4
 /** Look pass 3: the path's pale base stops this far short of its edges (0.2 of its width), so strokes draw the edge */
 const PATH_BASE_INSET = 0.024
 /** the roofs overhang the walls by this much along both axes */
-const OVERHANG = 0.015
+export const OVERHANG = 0.015
 /** the door's and the windows' frames: a thin ink, a fraction of the wall's height */
 export const FRAME = 0.35
 const UP = new Vector3(0, 1, 0)
@@ -412,6 +412,61 @@ function drawFrameBand(
   return bandColour
 }
 
+function drawWindowShutters(
+  ctx: Context,
+  front: StreetFace,
+  k: number,
+  window: { cu: number; cv: number; w: number; h: number },
+  seed: number,
+  craftParts: CraftPart[],
+): void {
+  const atLift = (s: number, t: number) =>
+    front.origin.clone().addScaledVector(front.u, s).addScaledVector(front.v, t).addScaledVector(front.normal, CRAFT.shutter.lift)
+
+  const leafHeight = window.h * front.v.length()
+  const leafFace: StreetFace = {
+    ...front,
+    refHeight: leafHeight * FRAME,
+  }
+
+  const shutterColour = new Color(PALETTE.villageCool).multiplyScalar(lightOf(front, ctx.lit, ctx.wallLight))
+  const [t0, t1] = [window.cv - window.h / 2, window.cv + window.h / 2]
+
+  for (const side of ['left', 'right'] as const) {
+    const [s0, s1] = side === 'left' ? [window.cu - window.w, window.cu - window.w / 2] : [window.cu + window.w / 2, window.cu + window.w]
+    const p00 = atLift(s0, t0)
+    const p10 = atLift(s1, t0)
+    const p11 = atLift(s1, t1)
+    const p01 = atLift(s0, t1)
+    const quad = [p00, p10, p11, p01]
+
+    const underFrom = ctx.underpaint.positions.length
+    const leafFrom = ctx.underpaint.positions.length / 3
+    polygon(ctx.underpaint, quad, shutterColour, 0, 255)
+    shadeNew(ctx.underpaint, underFrom, front, ctx.lit)
+    const leafTo = ctx.underpaint.positions.length / 3
+    craftParts.push({ name: `leaf ${k} ${side}`, buffer: 'underpaint', from: leafFrom, to: leafTo })
+
+    const edges: [Vector3, Vector3][] = [
+      [p00, p10],
+      [p10, p11],
+      [p11, p01],
+      [p01, p00],
+    ]
+    for (const frac of CRAFT.shutter.louvres) {
+      const t = t0 + frac * (t1 - t0)
+      edges.push([atLift(s0, t), atLift(s1, t)])
+    }
+
+    const leafSeed = seed + 31 + (side === 'left' ? 0 : 7)
+    const inkFrom = ctx.outlines.arrays.positions.length / 3
+    const stroked = outlineFace(leafFace, edges, INK, leafSeed, CRAFT.shutter.maxSamples)
+    append(ctx.outlines, stroked, 255)
+    const inkTo = ctx.outlines.arrays.positions.length / 3
+    craftParts.push({ name: `leaf ${k} ${side} ink`, buffer: 'outlines', from: inkFrom, to: inkTo })
+  }
+}
+
 function buildHouse(ctx: Context, owner: string, index: number, shape: StreetShape, centre: Vector3, along: Vector3, toPath: Vector3, lit: boolean, chimney: boolean, density = 1): HouseReport {
   const c = (x: number, z: number, y: number) => centre.clone().addScaledVector(along, x).addScaledVector(toPath, z).setY(y)
   const { w, d, eave, pitch, storeys, wallSource: wall, roofSource: roof } = shape
@@ -495,6 +550,22 @@ function buildHouse(ctx: Context, owner: string, index: number, shape: StreetSha
   if (shape.craft) {
     const bandColour = drawFrameBand(ctx, front, door, craftParts)
     craftParts.push({ name: 'step', buffer: 'underpaint', from: report.door!.stepRange[0], to: report.door!.stepRange[1] })
+
+    const win0 = { cu: index % 2 ? 0.2 : 0.8, cv: 0.62 / storeys, w: 0.12, h: 0.2 / storeys }
+    drawWindowShutters(ctx, front, 0, win0, seed + 13, craftParts)
+
+    if (storeys === 2) {
+      const win1 = { cu: index % 2 ? 0.2 : 0.8, cv: (1 + 0.62) / storeys, w: 0.12, h: 0.2 / storeys }
+      drawWindowShutters(ctx, front, 1, win1, seed + 17, craftParts)
+    }
+
+    for (const soffit of houseSoffits(shape, centre, along, toPath)) {
+      const from = ctx.underpaint.positions.length / 3
+      polygon(ctx.underpaint, soffit.corners, edgeColour, 255)
+      const to = ctx.underpaint.positions.length / 3
+      craftParts.push({ name: soffit.name.startsWith('left') ? 'soffit left' : 'soffit right', buffer: 'underpaint', from, to })
+    }
+
     ctx.report.craft.push({
       owner,
       index,
@@ -592,17 +663,38 @@ function edgeBands(top: Vector3[], depth: number, names: [string, string, string
 function houseRoofPlanes(shape: StreetShape, centre: Vector3, along: Vector3, toPath: Vector3): [string, Vector3[]][] {
   const c = (x: number, z: number, y: number) => centre.clone().addScaledVector(along, x).addScaledVector(toPath, z).setY(y)
   const { w, d, eave, pitch } = shape
+  const eaveOverhang = shape.eaveOverhang ?? OVERHANG
   const ridgeF = c(0, d / 2 + OVERHANG, eave + pitch)
   const ridgeB = c(0, -d / 2 - OVERHANG, eave + pitch)
   return ([['left', -1], ['right', 1]] as const).map(([name, sideX]) => {
-    const eaveY = eave - OVERHANG * (pitch / (w / 2))
-    return [name, [c(sideX * (w / 2 + OVERHANG), d / 2 + OVERHANG, eaveY), c(sideX * (w / 2 + OVERHANG), -d / 2 - OVERHANG, eaveY), ridgeB, ridgeF]]
+    const eaveY = eave - eaveOverhang * (pitch / (w / 2))
+    return [name, [c(sideX * (w / 2 + eaveOverhang), d / 2 + OVERHANG, eaveY), c(sideX * (w / 2 + eaveOverhang), -d / 2 - OVERHANG, eaveY), ridgeB, ridgeF]]
   })
 }
 
 /** S1b task 3: the edge bands of a painting house's two roof planes (pure, the test's seam). */
 export function houseRoofEdges(shape: StreetShape, centre: Vector3, along: Vector3, toPath: Vector3): HouseFace[] {
   return houseRoofPlanes(shape, centre, along, toPath).flatMap(([name, top]) => edgeBands(top, ROOF_EDGE, [`${name} eave`, `${name} back rake`, `${name} front rake`]))
+}
+
+export function houseSoffits(shape: StreetShape, centre: Vector3, along: Vector3, toPath: Vector3): HouseFace[] {
+  if (!shape.eaveOverhang) return []
+  const c = (x: number, z: number, y: number) => centre.clone().addScaledVector(along, x).addScaledVector(toPath, z).setY(y)
+  const { w, d, eave } = shape
+  const planes = houseRoofPlanes(shape, centre, along, toPath)
+  return ([['left', -1], ['right', 1]] as const).map(([name, sideX], k) => {
+    const top = planes[k][1]
+    const down = upwardNormal(top).multiplyScalar(-ROOF_EDGE)
+    const bandCorner2 = top[1].clone().add(down)
+    const bandCorner3 = top[0].clone().add(down)
+    const c0 = c(sideX * (w / 2), d / 2 + OVERHANG, eave)
+    const c1 = c(sideX * (w / 2), -d / 2 - OVERHANG, eave)
+    return {
+      name: `${name} soffit`,
+      kind: 'underside',
+      corners: [c0, c1, bandCorner2, bandCorner3],
+    }
+  })
 }
 
 /** S1b task 2: a cottage's faces (pure, the test's seam). Its width runs along `along`, its front faces `toPath`, the
@@ -704,6 +796,10 @@ function buildCottage(ctx: Context, owner: string, index: number, shape: StreetS
     const [s0, s1] = [door.cu - door.w / 2, door.cu + door.w / 2]
     const { range: stepRange } = doorStep(ctx, front, s0, s1, sourceColour(ctx, front.source))
     craftParts.push({ name: 'step', buffer: 'underpaint', from: stepRange[0], to: stepRange[1] })
+
+    const win0 = { cu: index % 2 ? 0.74 : 0.26, cv: 0.55, w: 0.12, h: 0.3 }
+    drawWindowShutters(ctx, front, 0, win0, seed + 13, craftParts)
+
     ctx.report.craft.push({
       owner,
       index,

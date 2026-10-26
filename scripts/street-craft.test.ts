@@ -7,11 +7,11 @@ import { Color, SRGBColorSpace, Vector3 } from 'three'
 import { moonShade } from '../src/scene/brushForms.ts'
 import { frogPlace, FROGS } from '../src/scene/frog.ts'
 import type { BakedMass } from '../src/scene/landDomes.ts'
-import { buildFlatPanel, buildStreet, CRAFT, FRAME, KEPT_PAINT } from '../src/scene/streetGeometry.ts'
+import { buildFlatPanel, buildStreet, CRAFT, craftShape, FRAME, houseRoofEdges, houseSoffits, KEPT_PAINT, OVERHANG } from '../src/scene/streetGeometry.ts'
 import { GRASS, grassChunks } from '../src/scene/streetGrass.ts'
 import { doorOf, doorStepFoot, houseFrame, STREET_CHURCH, STREET_HOUSES } from '../src/scene/streetLayout.ts'
 import { leanOf, lightOf, STREET_LIGHT, wallShade } from '../src/scene/streetLight.ts'
-import { OUTLINE_FRACTION, rectUnderpaint, sourceUnderpaint, STREET_MOON_LIFT } from '../src/scene/streetStrokes.ts'
+import { LIFT_STEP, OUTLINE_FRACTION, OUTLINE_LIFT, outlineFace, rectUnderpaint, sourceUnderpaint, STREET_MOON_LIFT, STROKE_LIFT, type StreetFace } from '../src/scene/streetStrokes.ts'
 import type { ImageData2D } from '../src/scene/useImageData.ts'
 import { decodePNG } from './lib/png.ts'
 
@@ -22,6 +22,8 @@ const masses = JSON.parse(readFileSync(new URL('../public/reference/land-masses.
 const workPainting = new URL('../reference/derived/_work-painting.png', import.meta.url)
 const skip = !existsSync(workPainting) && 'needs reference/derived/_work-painting.png (not in CI)'
 const paintingPng = skip ? null : decodePNG(readFileSync(workPainting))
+
+const close = (a: number, b: number, eps = 1e-9) => Math.abs(a - b) <= eps
 
 /** A 1600 × 1267 painting in the village's blues and greens, varied so every filter finds texels. */
 function villagePainting(): ImageData2D {
@@ -471,6 +473,351 @@ test('no blade and no frog on a step', { skip }, () => {
     for (let s = 0; s < stepFeet.length; s++) {
       const d = distToFoot(fx, fz, stepFeet[s])
       assert.ok(d >= GRASS.house - 1e-9, `frog ${spec.name} too close to step ${s}: ${d} < ${GRASS.house}`)
+    }
+  }
+})
+
+test('two open leaves beside every front window', () => {
+  const painting = villagePainting()
+  const build = buildStreet(painting, flow, masses, { paint: KEPT_PAINT })
+  const craft = build.report.craft
+  const leafParts = craft.flatMap((c) => c.parts.filter((p) => p.name.startsWith('leaf ') && !p.name.endsWith('ink')))
+  assert.equal(leafParts.length, 22, '22 leaf parts across the village')
+
+  for (const c of craft) {
+    const h = STREET_HOUSES[c.index]
+    const along = houseFrame(h).along
+    const lean = leanOf(c.index)
+    const front = c.front
+    const storeys = h.storeys
+
+    const windowSpecs: { k: number; cu: number; cv: number; w: number; h: number }[] = []
+    if (h.type === 'painting') {
+      windowSpecs.push({
+        k: 0,
+        cu: c.index % 2 ? 0.2 : 0.8,
+        cv: 0.62 / storeys,
+        w: 0.12,
+        h: 0.2 / storeys,
+      })
+      if (storeys === 2) {
+        windowSpecs.push({
+          k: 1,
+          cu: c.index % 2 ? 0.2 : 0.8,
+          cv: (1 + 0.62) / storeys,
+          w: 0.12,
+          h: 0.2 / storeys,
+        })
+      }
+    } else {
+      windowSpecs.push({
+        k: 0,
+        cu: c.index % 2 ? 0.74 : 0.26,
+        cv: 0.55,
+        w: 0.12,
+        h: 0.3,
+      })
+    }
+
+    for (const win of windowSpecs) {
+      for (const side of ['left', 'right'] as const) {
+        const part = c.parts.find((p) => p.name === `leaf ${win.k} ${side}`)
+        assert.ok(part, `${c.owner}: missing leaf ${win.k} ${side}`)
+        assert.equal(part.buffer, 'underpaint')
+        const [s0Exp, s1Exp] = side === 'left' ? [win.cu - win.w, win.cu - win.w / 2] : [win.cu + win.w / 2, win.cu + win.w]
+        const [t0Exp, t1Exp] = [win.cv - win.h / 2, win.cv + win.h / 2]
+
+        let minS = Infinity, maxS = -Infinity
+        let minT = Infinity, maxT = -Infinity
+        for (let i = part.from; i < part.to; i++) {
+          const vx = build.underpaint.positions[i * 3]
+          const vy = build.underpaint.positions[i * 3 + 1]
+          const vz = build.underpaint.positions[i * 3 + 2]
+          const pUnleaned = new Vector3(
+            vx - along.x * lean * vy,
+            vy,
+            vz - along.z * lean * vy,
+          )
+          const lift = pUnleaned.clone().sub(front.origin).dot(front.normal)
+          assert.ok(close(lift, CRAFT.shutter.lift, 1e-9), `${c.owner} leaf ${win.k} ${side}: lift ${lift} vs ${CRAFT.shutter.lift}`)
+          const diff = pUnleaned.clone().sub(front.origin)
+          const s = diff.dot(front.u) / front.u.lengthSq()
+          const t = diff.dot(front.v) / front.v.lengthSq()
+          minS = Math.min(minS, s)
+          maxS = Math.max(maxS, s)
+          minT = Math.min(minT, t)
+          maxT = Math.max(maxT, t)
+        }
+        assert.ok(close(minS, s0Exp, 1e-9), `${c.owner} leaf ${win.k} ${side} minS ${minS} vs ${s0Exp}`)
+        assert.ok(close(maxS, s1Exp, 1e-9), `${c.owner} leaf ${win.k} ${side} maxS ${maxS} vs ${s1Exp}`)
+        assert.ok(close(minT, t0Exp, 1e-9), `${c.owner} leaf ${win.k} ${side} minT ${minT} vs ${t0Exp}`)
+        assert.ok(close(maxT, t1Exp, 1e-9), `${c.owner} leaf ${win.k} ${side} maxT ${maxT} vs ${t1Exp}`)
+        assert.ok(minS >= 0 && maxS <= 1 && minT >= 0 && maxT <= 1, `${c.owner} leaf ${win.k} ${side} inside [0, 1]²`)
+      }
+    }
+  }
+})
+
+test('the parts keep apart on every front', () => {
+  const painting = villagePainting()
+  const build = buildStreet(painting, flow, masses, { paint: KEPT_PAINT })
+  for (const c of build.report.craft) {
+    const h = STREET_HOUSES[c.index]
+    const along = houseFrame(h).along
+    const lean = leanOf(c.index)
+    const front = c.front
+
+    type FrontRect = { name: string; s0: number; s1: number; t0: number; t1: number }
+    const rects: FrontRect[] = []
+
+    const relevantParts = c.parts.filter(
+      (p) =>
+        p.name === 'door' ||
+        p.name.startsWith('band ') ||
+        p.name.startsWith('window ') ||
+        (p.name.startsWith('leaf ') && !p.name.endsWith('ink')),
+    )
+
+    for (const part of relevantParts) {
+      const pos = part.buffer === 'windows' ? build.windows.positions : build.underpaint.positions
+      let minS = Infinity, maxS = -Infinity
+      let minT = Infinity, maxT = -Infinity
+      for (let i = part.from; i < part.to; i++) {
+        const vx = pos[i * 3]
+        const vy = pos[i * 3 + 1]
+        const vz = pos[i * 3 + 2]
+        const pUnleaned = new Vector3(
+          vx - along.x * lean * vy,
+          vy,
+          vz - along.z * lean * vy,
+        )
+        const diff = pUnleaned.clone().sub(front.origin)
+        const s = diff.dot(front.u) / front.u.lengthSq()
+        const t = diff.dot(front.v) / front.v.lengthSq()
+        minS = Math.min(minS, s)
+        maxS = Math.max(maxS, s)
+        minT = Math.min(minT, t)
+        maxT = Math.max(maxT, t)
+      }
+      rects.push({ name: part.name, s0: minS, s1: maxS, t0: minT, t1: maxT })
+    }
+
+    const uLen = front.u.length()
+    const vLen = front.v.length()
+    for (let i = 0; i < rects.length; i++) {
+      for (let j = i + 1; j < rects.length; j++) {
+        const a = rects[i]
+        const b = rects[j]
+        const ds = Math.max(0, Math.min(a.s1, b.s1) - Math.max(a.s0, b.s0))
+        const dt = Math.max(0, Math.min(a.t1, b.t1) - Math.max(a.t0, b.t0))
+        const overlap = ds * uLen * dt * vLen
+        assert.ok(overlap <= 1e-9, `${c.owner}: overlap between ${a.name} and ${b.name}: ${overlap} > 1e-9`)
+      }
+    }
+  }
+})
+
+test('the levels keep their order', () => {
+  assert.ok(STROKE_LIFT + 15 * LIFT_STEP < CRAFT.door.lift, 'strokes below door lift')
+  assert.ok(CRAFT.door.lift < OUTLINE_LIFT, 'door lift below outline lift')
+  assert.ok(0.0055 < CRAFT.shutter.lift, 'pane below shutter lift')
+
+  const gap1 = CRAFT.door.lift - (STROKE_LIFT + 15 * LIFT_STEP)
+  const gap2 = OUTLINE_LIFT - CRAFT.door.lift
+  const gap3 = CRAFT.shutter.lift - 0.0055
+  assert.ok(gap1 >= 2 * LIFT_STEP, `gap 1 ${gap1} >= ${2 * LIFT_STEP}`)
+  assert.ok(gap2 >= 2 * LIFT_STEP, `gap 2 ${gap2} >= ${2 * LIFT_STEP}`)
+  assert.ok(gap3 >= 2 * LIFT_STEP, `gap 3 ${gap3} >= ${2 * LIFT_STEP}`)
+
+  const painting = villagePainting()
+  const build = buildStreet(painting, flow, masses, { paint: KEPT_PAINT })
+  for (const c of build.report.craft) {
+    const h = STREET_HOUSES[c.index]
+    const along = houseFrame(h).along
+    const lean = leanOf(c.index)
+    const front = c.front
+
+    const inkParts = c.parts.filter((p) => p.name.startsWith('leaf ') && p.name.endsWith('ink'))
+    for (const part of inkParts) {
+      assert.equal(part.buffer, 'outlines')
+      for (let i = part.from; i < part.to; i++) {
+        const vx = build.outlines.arrays.positions[i * 3]
+        const vy = build.outlines.arrays.positions[i * 3 + 1]
+        const vz = build.outlines.arrays.positions[i * 3 + 2]
+        const pUnleaned = new Vector3(
+          vx - along.x * lean * vy,
+          vy,
+          vz - along.z * lean * vy,
+        )
+        const lift = pUnleaned.clone().sub(front.origin).dot(front.normal)
+        assert.ok(close(lift, CRAFT.shutter.lift + OUTLINE_LIFT, 1e-9), `${c.owner} ${part.name}: vertex ${i} lift ${lift} vs ${CRAFT.shutter.lift + OUTLINE_LIFT}`)
+      }
+    }
+
+    if (h.type === 'painting') {
+      const doorInk = c.parts.find((p) => p.name === 'door ink')
+      assert.ok(doorInk, `${c.owner} missing door ink`)
+      assert.equal(doorInk.buffer, 'outlines')
+      for (let i = doorInk.from; i < doorInk.to; i++) {
+        const vx = build.outlines.arrays.positions[i * 3]
+        const vy = build.outlines.arrays.positions[i * 3 + 1]
+        const vz = build.outlines.arrays.positions[i * 3 + 2]
+        const pUnleaned = new Vector3(
+          vx - along.x * lean * vy,
+          vy,
+          vz - along.z * lean * vy,
+        )
+        const lift = pUnleaned.clone().sub(front.origin).dot(front.normal)
+        assert.ok(close(lift, OUTLINE_LIFT, 1e-9), `${c.owner} door ink: vertex ${i} lift ${lift} vs ${OUTLINE_LIFT}`)
+      }
+    }
+  }
+})
+
+test("a leaf's ink is cheap", () => {
+  const face: StreetFace = {
+    origin: new Vector3(0, 0, 0),
+    u: new Vector3(1, 0, 0),
+    v: new Vector3(0, 1, 0),
+    normal: new Vector3(0, 0, 1),
+    shape: 'quad',
+    kind: 'wall',
+    source: 'wallA',
+    refHeight: 0.0018 / OUTLINE_FRACTION,
+    seed: 1,
+    mirror: false,
+  }
+  const edges: [Vector3, Vector3][] = [[new Vector3(0, 0, 0), new Vector3(0.036, 0, 0)]]
+  const ink = new Color(0, 0, 0)
+  const capped = outlineFace(face, edges, ink, 42, 5)
+  assert.equal(capped.arrays.positions.length / 3, 15, 'five samples x three columns = 15 vertices')
+  const uncapped = outlineFace(face, edges, ink, 42)
+  assert.ok(uncapped.arrays.positions.length / 3 > 15, `without cap: ${uncapped.arrays.positions.length / 3} > 15`)
+})
+
+test("a painting house's eaves overhang 0.03, its rakes 0.015, the church's both 0.015", () => {
+  const frame = { centre: new Vector3(0, 0, 0), along: new Vector3(1, 0, 0), toPath: new Vector3(0, 0, 1) }
+  const paintingHouses = STREET_HOUSES.filter((h) => h.type === 'painting')
+  for (const h of paintingHouses) {
+    const craftedEdges = houseRoofEdges(craftShape(h), frame.centre, frame.along, frame.toPath)
+    for (const edge of craftedEdges) {
+      if (edge.name.endsWith('eave')) {
+        for (const p of [edge.corners[0], edge.corners[1]]) {
+          assert.ok(close(Math.abs(p.x), h.w / 2 + 0.03, 1e-9), `${h.id} ${edge.name}: |x| ${Math.abs(p.x)} vs ${h.w / 2 + 0.03}`)
+        }
+      }
+      if (edge.name.endsWith('rake')) {
+        for (const p of [edge.corners[0], edge.corners[1]]) {
+          assert.ok(close(Math.abs(p.z), h.d / 2 + 0.015, 1e-9), `${h.id} ${edge.name}: |z| ${Math.abs(p.z)} vs ${h.d / 2 + 0.015}`)
+        }
+      }
+    }
+
+    const plainEdges = houseRoofEdges({ ...h }, frame.centre, frame.along, frame.toPath)
+    for (const edge of plainEdges) {
+      if (edge.name.endsWith('eave')) {
+        for (const p of [edge.corners[0], edge.corners[1]]) {
+          assert.ok(close(Math.abs(p.x), h.w / 2 + 0.015, 1e-9), `${h.id} plain ${edge.name}: |x| ${Math.abs(p.x)} vs ${h.w / 2 + 0.015}`)
+        }
+      }
+      if (edge.name.endsWith('rake')) {
+        for (const p of [edge.corners[0], edge.corners[1]]) {
+          assert.ok(close(Math.abs(p.z), h.d / 2 + 0.015, 1e-9), `${h.id} plain ${edge.name}: |z| ${Math.abs(p.z)} vs ${h.d / 2 + 0.015}`)
+        }
+      }
+    }
+  }
+
+  const painting = villagePainting()
+  const build = buildStreet(painting, flow, masses, { paint: KEPT_PAINT })
+  for (let idx = 0; idx < STREET_HOUSES.length; idx++) {
+    const h = STREET_HOUSES[idx]
+    if (h.type !== 'painting') continue
+    const { along } = houseFrame(h)
+    const alongUnit = along.clone().normalize()
+    const centre = new Vector3(h.x, 0, h.z)
+    for (const side of ['left', 'right']) {
+      const roof = build.report.faces.find((f) => f.owner === `house-${idx}` && f.name === `${side} roof`)
+      assert.ok(roof, `house-${idx} missing ${side} roof`)
+      for (const cornerIdx of [0, 1]) {
+        const p = roof.corners[cornerIdx]
+        const dist = Math.abs(p.clone().sub(centre).dot(alongUnit))
+        assert.ok(close(dist, h.w / 2 + 0.03, 1e-9), `house-${idx} ${side} roof corner ${cornerIdx}: dist ${dist} vs ${h.w / 2 + 0.03}`)
+      }
+    }
+  }
+
+  // Church nave
+  const cNaveAlong = new Vector3(Math.cos(STREET_CHURCH.nave.yaw), 0, Math.sin(STREET_CHURCH.nave.yaw)).normalize()
+  const cNaveCentre = new Vector3(STREET_CHURCH.nave.x, 0, STREET_CHURCH.nave.z)
+  for (const side of ['left', 'right']) {
+    const roof = build.report.faces.find((f) => f.owner === 'church' && f.name === `${side} roof`)
+    assert.ok(roof, `church missing ${side} roof`)
+    for (const cornerIdx of [0, 1]) {
+      const p = roof.corners[cornerIdx]
+      const dist = Math.abs(p.clone().sub(cNaveCentre).dot(cNaveAlong))
+      assert.ok(close(dist, STREET_CHURCH.nave.w / 2 + 0.015, 1e-9), `church ${side} roof corner ${cornerIdx}: dist ${dist} vs ${STREET_CHURCH.nave.w / 2 + 0.015}`)
+    }
+  }
+})
+
+test('a soffit under each eave', () => {
+  const frame = { centre: new Vector3(0, 0, 0), along: new Vector3(1, 0, 0), toPath: new Vector3(0, 0, 1) }
+  const paintingHouses = STREET_HOUSES.filter((h) => h.type === 'painting')
+  for (const h of paintingHouses) {
+    const soffits = houseSoffits(craftShape(h), frame.centre, frame.along, frame.toPath)
+    assert.equal(soffits.length, 2, `${h.id}: two soffits`)
+    const edges = houseRoofEdges(craftShape(h), frame.centre, frame.along, frame.toPath)
+    for (const soffit of soffits) {
+      assert.equal(soffit.kind, 'underside')
+      const [c0, c1, c2, c3] = soffit.corners
+      assert.ok(close(c0.y, h.eave, 1e-12) && close(c1.y, h.eave, 1e-12), `${h.id} ${soffit.name}: y is eave`)
+      assert.ok(close(Math.abs(c0.x), h.w / 2, 1e-12) && close(Math.abs(c1.x), h.w / 2, 1e-12), `${h.id} ${soffit.name}: |x| is w/2`)
+      assert.ok(close(Math.abs(c0.z), h.d / 2 + OVERHANG, 1e-12) && close(Math.abs(c1.z), h.d / 2 + OVERHANG, 1e-12), `${h.id} ${soffit.name}: |z| is d/2 + OVERHANG`)
+      const side = soffit.name.startsWith('left') ? 'left' : 'right'
+      const eaveBand = edges.find((b) => b.name === `${side} eave`)!
+      assert.ok(eaveBand, `${h.id}: missing ${side} eave band`)
+      assert.ok(c2.distanceTo(eaveBand.corners[2]) < 1e-12, `${h.id} ${soffit.name}: corner 2 matches eave band`)
+      assert.ok(c3.distanceTo(eaveBand.corners[3]) < 1e-12, `${h.id} ${soffit.name}: corner 3 matches eave band`)
+    }
+  }
+
+  const cottages = STREET_HOUSES.filter((h) => h.type === 'cottage')
+  for (const h of cottages) {
+    const soffits = houseSoffits(craftShape(h), frame.centre, frame.along, frame.toPath)
+    assert.equal(soffits.length, 0, `${h.id}: cottage has no soffits`)
+  }
+
+  const painting = villagePainting()
+  const build = buildStreet(painting, flow, masses, { paint: KEPT_PAINT })
+  for (const c of build.report.craft) {
+    const h = STREET_HOUSES[c.index]
+    if (h.type !== 'painting') continue
+    const { along, toPath } = houseFrame(h)
+    const centre = new Vector3(h.x, 0, h.z)
+    const lean = leanOf(c.index)
+    const pureSoffits = houseSoffits(craftShape(h), centre, along, toPath)
+    const soffitParts = c.parts.filter((p) => p.name.startsWith('soffit'))
+    assert.equal(soffitParts.length, 2, `${c.owner}: two soffit parts`)
+    for (const part of soffitParts) {
+      assert.equal(part.buffer, 'underpaint')
+      const pure = pureSoffits.find((s) => (part.name.endsWith('left') ? s.name.startsWith('left') : s.name.startsWith('right')))!
+      assert.ok(pure, `${c.owner} matching pure soffit for ${part.name}`)
+      const unleanedCorners: Vector3[] = []
+      for (let i = part.from; i < part.to; i++) {
+        const vx = build.underpaint.positions[i * 3]
+        const vy = build.underpaint.positions[i * 3 + 1]
+        const vz = build.underpaint.positions[i * 3 + 2]
+        unleanedCorners.push(new Vector3(
+          vx - along.x * lean * vy,
+          vy,
+          vz - along.z * lean * vy,
+        ))
+      }
+      assert.equal(unleanedCorners.length, 4, `${c.owner} ${part.name} 4 vertices`)
+      for (let k = 0; k < 4; k++) {
+        assert.ok(unleanedCorners[k].distanceTo(pure.corners[k]) < 1e-9, `${c.owner} ${part.name} corner ${k} matches pure`)
+      }
     }
   }
 })
