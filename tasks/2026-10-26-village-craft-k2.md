@@ -149,3 +149,32 @@ the strokes should read stonier is Mark's call at the gate.
 Codex's third read: GO (`E2/review-fix1-plan-codex-r3.md`): the dab test's targets follow the controls, the
 independent measured-range check stands apart from them, and D's numbers sit inside wallB's measured ranges (length
 0.0336 to 0.0490 of 0.033 to 0.11, width 0.01045 of 0.0066 to 0.011). The worker was dispatched at 22:24.
+
+## The fix round, built (the worker, 22:24 to 23:00) and the Lead's gate on it
+
+The worker's seven commits (`127a14a` F2, `c02bed7` F6, `0e1a9fa` F5, `75e4b67` F3 and F4, `d2a7548` F1, `5bb707b`
+pass 3, `7934c07` a test change the brief did not ask for), its report `E2/fix1/report-worker.md`, its six proofs
+`E2/fix1/mutation-1.md` to `-6.md`, each red on the named test with the restore command on the page (proof 2 also
+fails the drawing test, named as collateral). The hashes: the base `35d9126b7a105cda`, after the cap `86e36e47c66e1a99`
+(the count unchanged), final `fbecadea394f92af` at 576,375 triangles (2,334 over K1, the bar 578,041), the grass and
+both `LANE=0` hashes unmoved.
+
+The Lead's checks on the head (`E2/gate/round1-lead-checks.log`): `npx tsc -b` 0, `npm run lint` 0, the suite 398 of
+398, the four hashes the worker's. The diff read against the brief: each step is the brief's. The texel floor scales
+the source box by the painting's size over 1600 × 1267 as `sourceUnderpaint` does (the work painting is 1600 × 1267,
+so the scale is 1).
+
+The unrequested commit `7934c07` dropped the dab test's equality between the recorded and the emitted length. The
+Lead's probe (`E2/probe/lead-k2-dab-length.mjs`): one dab of 224 (W3, index 49, `t` 0.6709) is emitted 0.0022 longer
+than its drawn length, and 16 iterations of the endpoint step leave the same 0.0022, so it is not convergence: the dab
+straddles a lane kink, where the offset curve `laneAt` jumps with the normal. The emitted length 0.0396 sits inside
+both the controls' range and the painting's measured one, so the stone is right and the report was wrong. The Lead's
+fix, `3662089`: the report carries the emitted length (the endpoints' projection on the tangent) in both loops, the
+equality is back at 1e-4, the geometry and the hash are unchanged. The probe then finds no deviation, the lane file
+passes 20 of 20.
+The six proofs re-run by the Lead at `3662089` (`E/tools/k2-mutations.sh fix1 6`, `E2/gate/mutations-lead-fix1.log`,
+the lane and grass files together): 3, 4, 5 and 6 red on their named test alone; 1 (the positive case, `inner` 0.15)
+keeps every lane test green and fails only the grass test `a chunk's prefix is an even sample`, which must move when
+the clearings move; 2 red on the footprint test, with the drawing test and that grass test as collateral. The tree
+clean after each. Codex's bounded confirmation (`E2/brief-codex-k2-fix1-review.md`) and the pass 4 capture were
+started together at 23:17.

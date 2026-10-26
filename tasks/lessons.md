@@ -3286,3 +3286,7 @@ must be byte-identical before the stimulus's difference means anything.
   hid two unused imports that fail `npx tsc -b` and four that fail `npm run lint` (F2). The Lead's checks before the
   look passes now include both, not only the gate script. And a mutation's red must come from the named mutation
   alone: mutation 3's red came from an extra edit of the report's ranges, and the pure omission stayed green (F3).
+- **Do not commit on a branch after dispatching a worker whose brief pins its head** (K2's fix round, 2026-10-26). The
+  Lead committed docs 20 seconds before the worker ran Step 0's `git rev-parse` check, so the worker saw a head the
+  brief did not name. Pin the brief to the code commit (`5806c1c`) and allow docs on top, or hold every commit until
+  the worker reports.
