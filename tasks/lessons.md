@@ -3290,3 +3290,14 @@ must be byte-identical before the stimulus's difference means anything.
   Lead committed docs 20 seconds before the worker ran Step 0's `git rev-parse` check, so the worker saw a head the
   brief did not name. Pin the brief to the code commit (`5806c1c`) and allow docs on top, or hold every commit until
   the worker reports.
+- **A browser check's measured point is a premise, and a new object near it changes what the check measures** (K2's
+  gate, 2026-10-27). The grass check's case 15 counts the pixels the hand brightens at `laneAt(0.12, 0.15)`. K2 put lamp 1's
+  pool 0.063 from that point, so a bent blade over the pale pool darkens the pixel and the count fell to 0.74 of the
+  unlit page's (K1 1.07). The hand's push was as visible as before. Diagnose such a failure by geometry first (the
+  distances from the point to every new object, one node script) before any browser run, and name the premise the
+  check carried.
+- **A replacement point for a check must carry the check's control, patched on the same term** (K2's gate, 2026-10-27).
+  Point B (0.12, +0.32) passed on both builds with identical counts, but S3b's check had a control (0.65 with the hand's
+  lift off). The first control runs patched the moon's term and read 0.98 to 1.00 everywhere, a wasted set of four runs:
+  read the original record's control to the knob (`uLift`, not `GRASS_LIGHT.top`) before patching. A point without a
+  discriminating control is a weaker check, whatever its pass.

@@ -1,6 +1,28 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-26 (night, 22:20): K2 in its Lead gate, Codex's seven findings confirmed, the fix round's brief at revision 3 with Codex, the worker next
+## Pickup — 2026-10-27 (00:10): K2 passed the Lead's gate, pushed for Mark's preview, no PR until he has looked
+
+**K2, the lane's walls, rail and lamps: on preview, Mark's live read pending.** The record is
+`tasks/2026-10-26-village-craft-k2.md`, its gate section at the end; the evidence `scratch/village-craft-2026-10-25/k2/`
+(`t5/` the gate's runs, `gate/` the Lead's checks and the case 15 probes). The code head is `883c311` (the grass check's
+case 15 moved to lateral 0.32, past lamp 1's pool); the scene's code is `3662089`. Pushed to `feat/village-lane`. The
+preview link is in the ping to Mark and in the next docs commit. No PR until he has looked. The Tunables entry is in
+CLAUDE.md. Codex's confirmation read was APPROVE on the code at `3662089`; the check's change is for the PR review.
+
+**Open for his eye, none a blocker:** the lantern reads as a flat yellow box at 1:1; the walls' end caps carry the base
+colour only; stonier stones (a darker joint, a wider stone) after the cap; lamp 1's pool reaches the verge grass by
+design; the K1 fog fails stand.
+
+**Idea, not built:** `?lane=0`, the build hash's `LANE=0` as a URL flag, so he can compare K1 and K2 on one preview.
+Scope grows, so it is his call.
+
+**Next after his pass:** the PR stacked on main (Codex's review read through the timeline API, every thread answered, at
+most two re-requests). K3 waits on his three calls (the 21:30 pickup): R2 or W2 at `t` 0.41, bucket or woodpile, far
+paths full or fading. His answer on the three-agent question is pending. Quotas were last read at 21:47 (the 22:20
+pickup), not at this close.
+
+
+## Pickup — 2026-10-26 (night, 22:20): K2 in its Lead gate, Codex's seven findings confirmed, the fix round's brief at revision 3 with Codex, the worker next (superseded by the 00:10 pickup above)
 
 **K2's gate so far** (the record `tasks/2026-10-26-village-craft-k2.md`, the evidence `scratch/village-craft-2026-10-25/k2/`).
 The suite, the hashes, the diff read and the nine mutation proofs re-run by the Lead all pass. Look pass 1: the lamps

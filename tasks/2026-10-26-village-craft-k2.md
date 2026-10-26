@@ -177,4 +177,96 @@ the lane and grass files together): 3, 4, 5 and 6 red on their named test alone;
 keeps every lane test green and fails only the grass test `a chunk's prefix is an even sample`, which must move when
 the clearings move; 2 red on the footprint test, with the drawing test and that grass test as collateral. The tree
 clean after each. Codex's bounded confirmation (`E2/brief-codex-k2-fix1-review.md`) and the pass 4 capture were
-started together at 23:17.
+started together at 23:15.
+- **Pass 4** (the cap; the head `3662089`, `E2/t4/p4/`, the crops `p4-wall-s3.png`, `p4-wall-s0.png`, `p4-lamps-s0.png`,
+  `p4-rail-s1.png`, `p4-wall-s3-mobile.png`, `p4-lamps-s0-mobile.png`), read at 1:1 on both viewports. The walls pass:
+  a grey-blue body under the moon, its top lighter, long pale strokes along the courses, so each reads as a grey stone
+  wall painted the way the houses are. At stop 0 the near wall's end cap is a flat grey slab (the plan's caps carry
+  the base only). The lamps and the rail hold from pass 2: the far halos at stop 0 separate into lamps, the near lamp
+  reads as a lantern on a post with its pool, the rail as a fence at stop 1. The retune cap is reached: whether the
+  stones should read stonier than strokes, or the caps carry stones, is Mark's call at the gate.
+
+Codex's confirmation (`E2/review-fix1-codex.md`, 23:33): APPROVE. F1 to F7 closed by the named steps; its five
+counterexamples no longer reproduce at the head (its probe `E2/probe/codex-k2-fix1-confirm.mjs`); the Lead's
+emitted-length report is "the right bounded closure", the one dab's excess 0.00217 confirmed as the kink at `t`
+0.6844, every dab inside both ranges (0.6105 to 0.8870 of H long, 0.19 wide); the hash `fbecadea394f92af` unchanged
+by the Lead's commit; the budget 1,666 under the bar. It does not authorise relaxing the grass prefix guard for a
+later retune of `inner`.
+
+## Task 5: the gate's runs (`E/tools/k2-gate.sh`, `k2-colour.sh`, `k2-perf.sh`, `k2-walk.sh`, the log `E2/gate/task5-chain.log`)
+
+`k2-gate.sh` at `fe4498e` (the code at `3662089`): tsc 0, lint 0, test:sky 0, build 0, walk 0, rotation 0, cypress-hang
+0, portal 0, reduced 0, and **grass 1**: `check-street-grass.mjs` case 15 ("the hand against lit tops", S3b) reads
+668 pixels brightened on the lit page against 906 unlit, 0.74 under its 0.85 bar (K1's gate: 925 against 865, 1.07).
+The unlit count is K1's; the lit count fell. The case's verge point is `pathPoint(0.12)` offset 0.15, and K2's lamp 1
+stands at `t` 0.10, lateral 0.11: the hand's 80 px disc lies in the lamp's pool, which lights the verge before the hand
+arrives, and a brighter base shows the same push as a smaller L* step. The case's premise was the moon alone on the
+tips.
+
+The diagnosis by geometry (`laneAt`): the case's point `laneAt(0.12, +0.15)` is 0.063 from lamp 1's foot at `laneAt(0.10,
++0.11)`, inside its pool (radius 0.16, a glow plane at y 0.007 under the blades), and 0.033 from W2's clearing edge (W2
+starts at `t` 0.14 on the same side; its lane face at 0.135, 0.03 thick, cleared 0.012), inside the hand's 0.045 push
+radius. Under the pool the ground between the blades is pale, so a blade that bends away or over it darkens the pixel
+rather than brightening it, and the case counts brightening alone. The other nine cases at that point (1, 2, 4, 6, 8, 9,
+11, 12, 16) pass: they read the hit, the peak and the push, not the sign of the light. The probe: `GRASS_VERGE_T` and
+`GRASS_VERGE_LAT` override the point (defaults S3's 0.12, 0.15); case 15 alone on the lane at the default, at
+(0.12, −0.23) (past W1's outer face −0.165 and its clearing −0.177 by more than the hand's 0.045; 0.31 from lamp 2) and at
+(0.12, +0.32) (0.21 from lamp 1's foot, the disc's edge 0.17; 0.16 from W2's near corner), and K1 at the same points.
+
+`k2-colour.sh` (S1 task 7's method, `light=0`, `t` 5, stops 0 to 4, both viewports, K1 on 5205 against the lane on 5206,
+logs `E2/t5/colour/{base,branch}/check-s<n>-<v>.log`): no region is worse and failing on the lane. The failing regions are
+K1's, the fog on (Mark, 2026-10-24): walls at every stop but s0 mobile and s3 desktop, roofs at s1 and s4 mobile, byte for
+byte K1's numbers where the lane adds nothing (s4 mobile walls 23.44, roofs 12.91; s1 roofs 11.02). Where the lane adds
+pixels the mean moves toward the palette: the dry-stone walls carry the walls' class (s0 desktop 17.53 to 14.04, the area
+129,349 to 194,814 px; s3 mobile 21.48 to 14.86), the lanterns the lit window's (s0 desktop windows 3.99 to 0.76). One
+region rose: s3 desktop walls 7.89 to 9.14 (W3 beside stop 3), under 10.
+
+`k2-perf.sh` (the frogs' method: `capture-diorama.mjs --perf` at dpr 1.5, stops 0 and 3, five rounds, K1 and the lane
+side by side in each round, 10 s a run, `E2/t5/perf/<side>-s<n>-r<k>/perf-summary.json`): p50 16.7 ms in all 60 runs
+(60 fps at the display's vsync). p95 on the lane 16.9 to 17.6 ms on 29 runs and 18.1 on one (stop 3, round 1, no
+post-processing); K1 16.9 to 17.7. Draw calls at stop 0: 309 against K1's 288 (desktop), 240 against 222 (the phone
+viewport); at stop 3, 156 against 146 and 123 against 113. Scene triangles at stop 0 1,407,119 against 1,406,031
+(desktop), 1,401,123 against 1,400,041 (phone); at stop 3 1,268,699 against 1,269,569 (the clearings take more grass
+than the wall adds). The sweep (`E2/t5/tri-sweep.log`, 0.05 steps in `t`, both viewports): the worst sampled point
+1,412,737 (desktop, `t` 0.40), under the ceiling 1,444,930 by 32,193; K1's refined worst 1,414,747 (`t` 0.295).
+`k2-walk.sh p4` (`check-street-walk.mjs`) exit 0: every walk case passes on the lane. The chain ended at 23:53.
+
+The probe's runs (`E/tools/k2-grass15.sh`, logs `E2/gate/grass15-*.log`, 23:55 to 00:05): the lane at the default 668
+against 908 (0.74, the chain's failure reproduced); at A (0.12, −0.23) 1,676 against 1,623 (1.03), K1 there 2,133 against
+2,035 (1.05): the counts differ because the 80 px disc on the screen is wider than the hand's 0.045 push and takes in W1's
+clearing; at B (0.12, +0.32) 1,039 against 935 (1.11), K1 1,039 against 941 (1.10), the lane changing nothing there. A
+first control patched the wrong term: `GRASS_LIGHT.top` to 0 (the moon's lift) read 0.98 at B, 1.00 at A and 0.99 at C
+(0.35, −0.15, from stop 1, the camera's geometry to the point as S3's), against K1's 1.19 and the lane's 1.17 at C. S3b's
+control is the hand's lift, `uLift` 0.8 off in the lit program alone (0.65 at the default point), and the moon's term
+alone moves the count little anywhere. The control re-run with `uLift` is below.
+
+The control re-run with `uLift` 0 in the lit program (00:05, `E2/gate/grass15-branch-*ctrl2.log`): at the default point
+521 against 908 (0.57: the lift still shows there, the pool compresses it below the bar); at B 524 against 941 (0.56); at
+A 967 against 1,623 (0.60); at C 566 against 590 (0.96, no discrimination: the point is 0.29 further from stop 1's camera
+than it looks, the blades small on the screen). The fix: case 15 alone moves to B, `VERGE_15 = { t: 0.12, lat: 0.32 }` in
+`check-street-grass.mjs`, the comment carrying the geometry and the five numbers; the other nine cases keep S3's point,
+which they passed with the lamp there. The env knobs were the Lead's working copy only and are not committed;
+`k2-grass15.sh` is the probe's record. The bar (0.85) and the metric are unchanged; the control at B (0.56) reads as
+S3b's did at the default (0.65).
+
+The grass check re-run whole on the lane with the new point (`E2/t5/grass-rerun.log`, 00:08): 18 of 18 pass, case 15
+1,034 against 941 (1.10), case 16 (the press) passing for the first time in this gate: the chain's run had stopped at case
+15, so case 16 had not run before. `npm run lint` on the edited check exit 0 (`E2/gate/lint-grass15.log`).
+
+## The Lead's gate: K2 passes
+
+- Codex: the branch review's seven findings closed, the confirmation read APPROVE (bounded to the code at `3662089`, before
+  the check's change, which the PR review covers).
+- The Lead's checks at the head: tsc 0, lint 0 (twice, the second after the check's edit), test:sky 398 pass, build 0, the
+  hashes `fbecadea394f92af` 576,375 (lane) and `35ce7aeb5bd88590` 574,041 (`LANE=0`, K1 byte for byte), the lane grass
+  `70767bb72eaed35b`.
+- The browser gates: walk, rotation, cypress-hang, portal, reduced motion, grass (18 of 18 at the re-run), colour (no
+  region worse and failing; the fails K1's, the fog on), the frame rate 60 fps at stops 0 and 3 (p95 at most 18.1 ms),
+  the sweep's worst point 1,412,737 under 1,444,930.
+- The look: four passes, the cap; pass 4's 1:1 crops pass the walls, the lamps and the rail on both viewports.
+
+Open for Mark's eye, none a blocker: the lantern reads as a flat yellow box at 1:1 (a lit window's mean, no glass); the
+walls' end caps carry the base colour only, no stones; stonier stones (a darker joint, a wider stone) are his call after
+the cap; lamp 1's pool reaches the verge grass by design (0.063 from S3's hand point), the reason case 15's point moved;
+the K1 fog fails stand. A `?lane=0` toggle (the build hash's `LANE=0` as a URL flag) would let him compare K1 and K2 on
+one preview: noted in `tasks/todo.md`, not built.
