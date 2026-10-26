@@ -3261,3 +3261,13 @@ must be byte-identical before the stimulus's difference means anything.
   "lane-side margin 0.012 to 0.03" knob would have broken the ring test at its first step. Read each knob's range
   against the tightest margin it moves before the plan offers it.
 
+- **A cost by area is wrong by three against the generator.** K3's revision 0 priced the door paths at the lane's 92,000
+  triangles per unit of area: 17,600. The real tracer gives 50,000 for the same strips. A ribbon costs about 250
+  triangles whatever its length, and a narrow face takes more ribbons per unit of area (Codex K3-F2). Price a part by
+  running the generator on its faces, never by area.
+- **A probe that checks an endpoint passes a route that crosses a wall.** Revision 0's R2 route landed past W2's end and
+  was called clear because its end was. Its second leg cut the wall (Codex K3-F1). Check every leg over its full width,
+  and build the route the design describes, not a stand-in for it.
+- **"Painted exactly as X" carries X's stroke scale.** The lane's stroke size on a 0.06-wide path gives one clipped
+  stroke across, a hard-edged ribbon (the Consultant's Q2). When a part borrows another's paint, state its own reference
+  height.
