@@ -76,7 +76,7 @@ test("the church's walls take the church's light, its roofs the street's", () =>
   for (const f of churchFaces) {
     assert.ok(f.light <= 1, `${f.owner} ${f.name} reads ${f.light}, above its paint`)
   }
-  assert.ok(Math.abs(face('house-0', 'front').light - CHURCH_LIGHT.ambient) > 0.05, 'a house keeps the street light')
+  assert.ok(Math.abs(face('house-0', 'front left').light - CHURCH_LIGHT.ambient) > 0.05, 'a house keeps the street light')
 })
 
 test('stop 4 frames the church: the whole spire on the phone', () => {
@@ -137,7 +137,7 @@ test("the belfry follows the nave (a guard: it fails if the turn reaches the nav
 test("the church's faces take the shorter brush, and the houses keep theirs", () => {
   for (const f of churchFaces) assert.equal(f.refHeight, CHURCH.stroke, `${f.owner} ${f.name}`)
   const h = STREET_HOUSES[0]
-  const front = build.report.faces.find((f) => f.owner === 'house-0' && f.name === 'front')!
+  const front = build.report.faces.find((f) => f.owner === 'house-0' && f.name === 'front left')!
   assert.equal(front.refHeight, h.type === 'cottage' ? STREET.wallRef : h.eave)
 })
 

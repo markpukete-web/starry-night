@@ -202,6 +202,50 @@ export const STREET_HOUSES: readonly StreetHouse[] = HOUSE_DATA.map((h) => {
   }
 })
 
+/** A recessed door's step: a box this high and this deep, the door's width */
+export const STEP = { height: 0.012, depth: 0.03 } as const
+
+export function houseFrame(h: StreetHouse): { along: Vector3; toPath: Vector3 } {
+  const thetaRad = (h.theta * Math.PI) / 180
+  const along = new Vector3(Math.cos(h.yaw), 0, Math.sin(h.yaw))
+  const [fx, , fz] = STREET.forward
+  const [rx, rz] = [-fz, fx]
+  const toPath = new Vector3(
+    -h.side * (Math.cos(thetaRad) * rx - Math.sin(thetaRad) * fx),
+    0,
+    -h.side * (Math.cos(thetaRad) * rz - Math.sin(thetaRad) * fz),
+  )
+  return { along, toPath }
+}
+
+export function doorOf(h: StreetHouse, index: number): { cu: number; w: number; h: number } {
+  if (h.type === 'cottage') {
+    return { cu: index % 2 ? 0.34 : 0.66, w: 0.16, h: 0.85 }
+  }
+  return { cu: 0.5, w: 0.2, h: 0.6 / h.storeys }
+}
+
+export function doorStepFoot(h: StreetHouse, index: number): [number, number][] {
+  const { along, toPath } = houseFrame(h)
+  const flip = -along.z * toPath.x + along.x * toPath.z < 0
+  const u = flip ? -1 : 1
+  const ux = u * along.x
+  const uz = u * along.z
+  const toPathLen = Math.hypot(toPath.x, toPath.z)
+  const nx = toPath.x / toPathLen
+  const nz = toPath.z / toPathLen
+  const originX = h.x + toPath.x * (h.d / 2) - ux * (h.w / 2)
+  const originZ = h.z + toPath.z * (h.d / 2) - uz * (h.w / 2)
+  const door = doorOf(h, index)
+  const s0 = door.cu - door.w / 2
+  const s1 = door.cu + door.w / 2
+  const corner = (s: number, k: number): [number, number] => [
+    originX + ux * (h.w * s) + nx * k,
+    originZ + uz * (h.w * s) + nz * k,
+  ]
+  return [corner(s0, 0), corner(s1, 0), corner(s1, STEP.depth), corner(s0, STEP.depth)]
+}
+
 // The square: map (500, 300), radius 0.25
 const squareWorld = mapToWorld(500, 300)
 export const STREET_SQUARE = {
