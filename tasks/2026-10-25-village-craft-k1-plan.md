@@ -3,7 +3,8 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or
 > superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Revision 1 (2026-10-26).** It folds both plan reviews of revision 0 (`23ed2be`) in one round: Codex's correctness read
+**Revision 1 (2026-10-26), approved by Codex's bounded re-read (`E/plan-reread-codex.md`) with one wording fix in Task 2
+Step 2.** It folds both plan reviews of revision 0 (`23ed2be`) in one round: Codex's correctness read
 (`E/plan-review-codex.md`, REVISE, F1 to F8) and the worker's buildability read (`E/plan-build-worker.md`, W01 to W31).
 The fold table below gives each finding its answer and where it lives. Mark approved the craft design ("go with your
 recommendation, start the plan"), so every Lead's call in it stands. This plan is K1, the houses. K2, the lane, gets
@@ -425,7 +426,8 @@ plan finds it. Codex's estimate (in memory, house walls only): a cover of 0.9 sa
   - In `street-church.test.ts`, `:79` and `:140` read `house-0`'s `front left`. It carries the front's light and
     `refHeight`.
 - [ ] **Step 2: Run them**: `node --test scripts/street-craft.test.ts scripts/street-build.test.ts`. Expected: the new
-  tests FAIL. `scripts/street-church.test.ts` PASSES before and after its two edits.
+  tests FAIL. `scripts/street-church.test.ts` PASSES unedited. Its two edits read a face that only Step 3's split
+  makes, so they land with Step 3, and Step 4 runs them (Codex's re-read).
 - [ ] **Step 3: Build Decisions (d), (e) and (h)** for the door, the band and the step.
 - [ ] **Step 4: Run the suite**: `npm run -s test:sky 2>&1 | tee E/t2/test-sky.log`. Expected: all PASS, the
   church's, the grass's and the frogs' included.
