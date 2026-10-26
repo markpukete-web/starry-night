@@ -275,3 +275,8 @@ one preview: noted in `tasks/todo.md`, not built.
 Pushed at 00:10 (`883c311` the check, `946ef0b` the docs) to `feat/village-lane`. The Vercel preview
 `https://starry-night-gepd7ldoi-markpukete-webs-projects.vercel.app/?street=1&station=0` (Vercel sign-in); Mark pinged at
 00:13. No PR until he has looked. K1's preview stays at its own deployment URL for a side-by-side.
+
+Mark's first live read, 2026-10-27 00:20 to 00:29: "the lighting feel right." The wall at stop 0 reads to him as a concrete
+fence; he asked whether wood would be better. The Lead's recommendation: keep stone and make it read as stone (joints
+about 0.8 with a darker body, two stone sizes, a cope of upright stones, stoned end caps), probed in place at stop 0 before
+a worker round; a pass past the cap, so his call. He wrapped up without deciding. K2 is on preview, not passed.

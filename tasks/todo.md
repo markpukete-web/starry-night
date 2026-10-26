@@ -1,6 +1,18 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-27 (00:10): K2 passed the Lead's gate, pushed for Mark's preview, no PR until he has looked
+## Pickup — 2026-10-27 (00:29): K2 on preview, Mark's first read in, the stone wall reads as concrete, his call on a probe pending
+
+**Mark's live read tonight (00:20 to 00:29):** "the lighting feel right." The wall at stop 0 reads to him as a concrete
+fence, and he asked whether a wooden fence would be better. The Lead's answer: keep stone (Saint-Rémy's lanes and the
+asylum's enclosure wall Van Gogh painted in 1889 are dry stone; wood reads as a paddock and would repeat L2's rail; wallB is
+a measured source) and make it read as stone: joints opened from 0.92 to about 0.8 with the body a clear step darker than
+the stones, two stone sizes, a cope of upright stones along the top, stones on the end caps. That is a pass past K2's cap of
+four, so it needs his word. The cheap path first: the in-place probe (`E/tools/k2-wall-probe.sh`'s pattern) of the stonier
+recipe at stop 0, 1:1 crops for him, before any worker round. He wrapped up without deciding: **next session opens by
+asking him "probe it?" or wood**, then runs the probe if yes. Wood, if he wants it anywhere, belongs to a gate or a short
+garden fence by a house in K3, not the verges. K2 is not passed by him yet.
+
+## Pickup — 2026-10-27 (00:10): K2 passed the Lead's gate, pushed for Mark's preview, no PR until he has looked (superseded by the 00:29 pickup above)
 
 **K2, the lane's walls, rail and lamps: on preview, Mark's live read pending.** The record is
 `tasks/2026-10-26-village-craft-k2.md`, its gate section at the end; the evidence `scratch/village-craft-2026-10-25/k2/`
