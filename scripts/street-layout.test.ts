@@ -23,6 +23,7 @@ import {
   vincentPlace,
   vincentBoxCorners,
   STREET_SQUARE,
+  churchFront,
 } from '../src/scene/streetLayout.ts'
 import {
   VILLAGE_CHURCH,
@@ -344,10 +345,8 @@ test('no station camera stands inside anything', () => {
 
 test('stop 4 frames the gable and the door', () => {
   const nave = STREET_CHURCH.nave
-  const [fx, , fz] = STREET.forward
-  // front wall center (the door foot)
-  const frontWallCenterX = nave.x - fx * (nave.d / 2)
-  const frontWallCenterZ = nave.z - fz * (nave.d / 2)
+  // front wall center (the door foot), from the turned church's yaw (the church plan, F5)
+  const { x: frontWallCenterX, z: frontWallCenterZ } = churchFront()
   const doorFoot = { x: frontWallCenterX, y: 0, z: frontWallCenterZ }
   const gablePeak = { x: frontWallCenterX, y: nave.eave + nave.pitch, z: frontWallCenterZ }
 
@@ -611,10 +610,9 @@ test('Vincent stays in frame', () => {
 
 test('Vincent clears the church door at stop 4', () => {
   const nave = STREET_CHURCH.nave
-  const fx = STREET.forward[0]
-  const fz = STREET.forward[2]
-  const foot = new Vector3(nave.x - fx * (nave.d / 2), 0, nave.z - fz * (nave.d / 2))
-  const side = new Vector3(-fz, 0, fx)
+  // the door's foot and its width's direction, from the turned church's yaw (the church plan, F5)
+  const foot = churchFront()
+  const side = new Vector3(Math.cos(nave.yaw), 0, Math.sin(nave.yaw))
 
   for (const [aspect, portrait] of [[1.6, false], [390 / 844, true]] as const) {
     const pose = walkPose(0.9, portrait)

@@ -1,6 +1,21 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-25 (late afternoon): S3b pass 5 built, gated and reviewed; the church next, Mark out
+## Pickup — 2026-10-25 (evening): the church (slice 3c) built, gated and reviewed; the portal in build, Mark out
+
+The church is done on `feat/street-church` (stacked on S3b), local, no PR. It turns on the square to show its moonlit
+side, takes a shorter brush and its own light, and has a recessed door over a step and three side windows. Codex's
+branch review: FIX, two P2s and one P3, all about the tests, all fixed and answered in the record. The record:
+`tasks/2026-10-25-street-church.md`. Its last section, "Open for Mark", holds four calls: the desktop's cropped spire
+at stop 4, the church-only light, the plaster at L 44 against the painting's 52, and the phone roofs' colour fail.
+
+**For Mark's gate.** Live at `http://192.168.0.148:5197/?street=1&station=4`. The 1:1 compares:
+`scratch/street-church-2026-10-25/t5/mark/*-compare.png`. S3b's gate (the pickup below) is still his first. The PRs
+go in stack order, S3b then the church, on his word.
+
+**The portal (slice 4) is next, in build.** The plan is `tasks/2026-10-25-street-portal-plan.md` on
+`feat/street-portal` (stacked on the church), revision 2, the Consultant's nine P2s folded. The Lead builds it.
+
+## Pickup — 2026-10-25 (late afternoon): S3b pass 5 built, gated and reviewed; the church next, Mark out (superseded by the evening pickup above)
 
 S3b pass 5 is done on `feat/street-s3b` (head `22b00fc`), local, no PR. Mark is out and gates on his return. What it
 holds, against his words: the base between the clumps painted in the bushes' dark paint, the hand closing on a press,

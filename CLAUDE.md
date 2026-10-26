@@ -265,6 +265,16 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   press's texels settle to the hover's push. The frog at `t` 0.022, lateral −0.076 (a gap ringed by 13 blades), 1,944
   triangles; a blink shrinks each eye to 0.3 and sinks it 0.6 of its radius, 0.06 s down, 0.06 s shut, 0.1 s up, the
   gaps 2.5–6 s, one double in five, the first at 1.7 s. Untuned by Mark.
+- The church in the round, slice 3c (2026-10-25, `src/scene/streetLayout.ts` `CHURCH`, `streetLight.ts` `CHURCH_LIGHT`,
+  `streetGeometry.ts` `church()`; the record `tasks/2026-10-25-street-church.md`): the church turns 0.45 rad on the
+  square and stands 0.02 further back, so stop 4 sees its gable 37.8° and its moonlit side 65.7° off their normals.
+  Stop 4 aims at the turned front's centre (`churchFront()`), stop 0 at the church's place before the setback. The
+  church's walls, gables, belfry and spire take `CHURCH_LIGHT`: ambient 0.8 (look pass 1, was 0.7), key 0.9, capped at
+  1, the gable 0.8 and the moonlit side 0.986. Its roofs keep `STREET_LIGHT`. The brush 0.16 on every church face. The
+  eight faces no sampled pose of the walk sees are clad at 0.25. The door 0.02 behind the wall (`CHURCH.recess`), its
+  panel at tint 0.3 × 0.6 (`REVEAL_SHADE`), a step 0.012 high and 0.03 deep, three windows down the moonlit side,
+  centred at 0.55 of the wall's height, each 0.08 of its run wide and 0.3 of its height tall. The church 875 ribbons,
+  the walk's worst point 1,442,727 triangles. Untuned by Mark.
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)

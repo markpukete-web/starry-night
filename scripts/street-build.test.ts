@@ -8,7 +8,7 @@ import { islandHeightAt } from '../src/scene/islandShape.ts'
 import type { BakedMass } from '../src/scene/landDomes.ts'
 import { Vector3 } from 'three'
 import { COTTAGE, ROOF_EDGE, buildStreet, cottageFaces, houseRoofEdges, type StreetShape } from '../src/scene/streetGeometry.ts'
-import { DETAIL, detailOf, STREET, STREET_CHURCH, STREET_HOUSES, STREET_TRIANGLE_BUDGET, laneDistance, pathPoint } from '../src/scene/streetLayout.ts'
+import { CHURCH, DETAIL, detailOf, STREET, STREET_CHURCH, STREET_HOUSES, STREET_TRIANGLE_BUDGET, laneDistance, pathPoint } from '../src/scene/streetLayout.ts'
 import type { ImageData2D } from '../src/scene/useImageData.ts'
 import { VILLAGE_CHURCH } from '../src/scene/villageKnot.ts'
 import { decodePNG } from './lib/png.ts'
@@ -223,7 +223,9 @@ test('far houses and far ground take half', () => {
         assert.equal(density, 1, `${f.name} density ${density} against 1`)
       }
     } else {
-      assert.equal(density, 1, `${f.owner} ${f.name} density ${density} against 1`)
+      // the church's unseen faces are thin (`street-church.test.ts` holds which)
+      const expected = (CHURCH.hidden as readonly string[]).includes(`${f.owner}/${f.name}`) ? CHURCH.thin : 1
+      assert.equal(density, expected, `${f.owner} ${f.name} density ${density} against ${expected}`)
     }
   }
   assert.ok(halfHouses > 0, 'at least one house takes 0.5')

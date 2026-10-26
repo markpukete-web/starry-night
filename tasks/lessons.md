@@ -3140,3 +3140,16 @@ must be byte-identical before the stimulus's difference means anything.
   `pointerleave` and a move to the Mac's own cursor, with no button down, so the scripted press ended. A fix for a
   move in place went in before the event's position was logged, and it guarded nothing real. Log the event's position
   and target before you name its cause. Drive a recorded hand through the seam, which ignores the real pointer.
+- **A guard marker must be made or the run must stop.** The church's perf script touched `t4/PERF-RUNNING` at the
+  repo's root, a folder that did not exist, so `touch` failed and the run went on. The reviewer's brief checked that
+  path, found nothing, and ran its unit tests during the measurement. Make the folder, and stop the run when the
+  marker cannot be made (the church slice, 2026-10-25).
+- **An edit to a source file reloads a page that is being measured.** The dev server's hot reload reaches any open
+  page, so three comment fixes made during a perf round put that round in doubt. During perf, edit only files outside
+  the app's module graph (`tasks/*.md`, `CLAUDE.md`), or wait.
+- **A report built beside the geometry is not evidence of the geometry.** The church's door and window tests read
+  values the builder computed next to its draw calls, so removing a draw call left them green. Have the drawing
+  function return what it drew, and build the report from that (Codex C1).
+- **A sweep belongs to a commit.** Task 3's triangle sweep ran three minutes before the door's last change, so the
+  record carried a count from a build that was never committed. Run the sweep on the committed head, or say which
+  build it read.

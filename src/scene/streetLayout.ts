@@ -210,12 +210,43 @@ export const STREET_SQUARE = {
   radius: 0.25,
 } as const
 
-// The church: nave centre = square centre + (0.25 + nave.d / 2) * forward
-// facing back down the lane: yaw = atan2(forward.x, -forward.z)
+/**
+ * The church in the round (`tasks/2026-10-25-street-church-plan.md`, Mark: "at the end of the stop it looks pretty
+ * flat"). `turn` is added to the yaw that faces it back down the lane. Yaw increasing turns `along` from +x toward +z,
+ * so the gable's normal swings to the walker's left and the +along side, moonlit, opens toward stop 4's camera, which
+ * stands right of the axis. `setback` keeps the turned front corners outside the square's circle (0.234 from its
+ * centre, against 0.215 without it). `stroke` is the church's brush, `recess` the door's depth, and `hidden` the faces
+ * no sampled pose of the walk sees, clad thin.
+ */
+export const CHURCH = {
+  turn: 0.45,
+  setback: 0.02,
+  /** the church's brush: every face's `refHeight`, against the nave's eave 0.24 */
+  stroke: 0.16,
+  /** the door's depth into the front wall (the church plan (e)) */
+  recess: 0.02,
+  /** the +along side's windows, their centres across the wall */
+  windows: [0.25, 0.5, 0.75],
+  /** the density of the faces no sampled pose of the walk sees (the face probe, `scripts/street-church.test.ts`) */
+  thin: 0.25,
+  hidden: [
+    'church/back',
+    'church/left',
+    'church/back gable',
+    'church/left roof',
+    'belfry/wall 2',
+    'belfry/wall 3',
+    'spire/side 2',
+    'spire/side 3',
+  ],
+} as const
+
+// The church: nave centre = square centre + (0.25 + nave.d / 2 + setback) * forward
+// facing back down the lane, turned: yaw = atan2(forward.x, -forward.z) + turn
 const naveD = VILLAGE_CHURCH.nave.d
-const churchX = squareWorld.x + (0.25 + naveD / 2) * fx
-const churchZ = squareWorld.z + (0.25 + naveD / 2) * fz
-const churchYaw = Math.atan2(forward.x, -forward.z)
+const churchX = squareWorld.x + (0.25 + naveD / 2 + CHURCH.setback) * fx
+const churchZ = squareWorld.z + (0.25 + naveD / 2 + CHURCH.setback) * fz
+const churchYaw = Math.atan2(forward.x, -forward.z) + CHURCH.turn
 
 const dx0 = VILLAGE_CHURCH.belfry.cx - VILLAGE_CHURCH.nave.x
 const dz0 = VILLAGE_CHURCH.belfry.cz - VILLAGE_CHURCH.nave.z
@@ -225,6 +256,11 @@ const belfryLocalZ = -dx0 * Math.sin(yaw0) + dz0 * Math.cos(yaw0)
 
 const belfryCx = churchX + belfryLocalX * Math.cos(churchYaw) - belfryLocalZ * Math.sin(churchYaw)
 const belfryCz = churchZ + belfryLocalX * Math.sin(churchYaw) + belfryLocalZ * Math.cos(churchYaw)
+
+/** The front wall's centre at the ground, the door's foot: the nave's centre half its depth along the gable's normal. */
+export function churchFront(): Vector3 {
+  return new Vector3(churchX - Math.sin(churchYaw) * (naveD / 2), 0, churchZ + Math.cos(churchYaw) * (naveD / 2))
+}
 
 export const STREET_CHURCH = {
   nave: {
@@ -269,7 +305,8 @@ export const STREET_TREES: readonly LandMass[] = TREE_SPECS.map((spec) => {
 const p0 = pathPoint(0)
 const t0 = pathTangent(0)
 const cam0Pos = new Vector3(p0[0] - t0[0] * STREET.behind, STREET.eye, p0[2] - t0[2] * STREET.behind)
-const toNave0 = new Vector3(churchX - cam0Pos.x, 0, churchZ - cam0Pos.z).normalize()
+// the nave's place before the church slice's setback, so stop 0 stays as Mark passed it
+const toNave0 = new Vector3(churchX - CHURCH.setback * fx - cam0Pos.x, 0, churchZ - CHURCH.setback * fz - cam0Pos.z).normalize()
 
 function rotateY(v: Vector3, deg: number): Vector3 {
   const rad = (deg * Math.PI) / 180
@@ -369,9 +406,8 @@ export function stationPose(
     const [tgtX, , tgtZ] = pathPoint(targetT)
     target = [tgtX, STREET.lookHeight, tgtZ]
   } else {
-    // Stop 4: front wall centre of nave
-    const frontWallX = churchX - fx * (naveD / 2)
-    const frontWallZ = churchZ - fz * (naveD / 2)
+    // Stop 4: the front wall's centre, the door's foot
+    const { x: frontWallX, z: frontWallZ } = churchFront()
     const D = Math.hypot(frontWallX - position[0], frontWallZ - position[2])
     const eave = VILLAGE_CHURCH.nave.eave
     const pitch = VILLAGE_CHURCH.nave.pitch
