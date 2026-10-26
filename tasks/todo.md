@@ -1,5 +1,17 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-10-26 (afternoon): K1 (the houses) passed the Lead's gate; Mark's live read next
+
+**The village's craft, K1.** Built, gated and reviewed on `feat/village-craft`, head `02d5fba` and the record's
+commit. The record is `tasks/2026-10-25-village-craft-k1.md`. The branch is pushed for a Vercel preview, and no PR is
+open until Mark has looked ("I prefer live links, so when first slice done, push then I will review"). His pass ends K1.
+
+Open for Mark: the plaster houses' long vertical strokes (a stroke length needs a new 1:1 measurement of the scan's
+village), and stop 1's phone frame, walls' ΔE 9.55 to 10.10.
+
+**Next:** K2's plan (walls, rail, lamps) from `scratch/village-craft-2026-10-25/k2/design-notes.md`, reviewed while
+Mark reads K1. K2's build waits for his K1 pass. The PR stack #23 to #29 merges on Mark's word, then K1's PR.
+
 ## Pickup — 2026-10-26 (00:20): K1's plan reviewed, both legs REVISE; revision 1 next
 
 **The village's craft, K1 the houses.** Mark approved the design ("go with your recommendation, start the plan"). The
