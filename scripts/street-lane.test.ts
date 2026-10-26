@@ -894,3 +894,32 @@ test('a lantern is not a lit window', { skip }, () => {
 test("a lamp's pool lies over the lane's strokes", () => {
   assert.ok(LAMP_LIGHT.poolY > SQUARE_TOP, `poolY ${LAMP_LIGHT.poolY} > SQUARE_TOP ${SQUARE_TOP}`)
 })
+
+test("the lantern's cap faces up", { skip }, () => {
+  assert.ok(realPainting)
+  const build = buildStreet(realPainting, flow, masses, { grass: true, lane: true })
+  const pos = build.underpaint.positions
+  const capBaseY = LANE_CRAFT.lamp.height + LANE_CRAFT.lamp.lantern[1]
+
+  for (const lamp of build.report.lane.lamps) {
+    const [, u1] = lamp.underpaint
+    const capBaseCenter = new Vector3(lamp.foot.x, capBaseY, lamp.foot.z)
+
+    for (let t = 0; t < 4; t++) {
+      const v0Idx = (u1 - 12 + t * 3) * 3
+      const v1Idx = (u1 - 12 + t * 3 + 1) * 3
+      const v2Idx = (u1 - 12 + t * 3 + 2) * 3
+
+      const v0 = new Vector3(pos[v0Idx], pos[v0Idx + 1], pos[v0Idx + 2])
+      const v1 = new Vector3(pos[v1Idx], pos[v1Idx + 1], pos[v1Idx + 2])
+      const v2 = new Vector3(pos[v2Idx], pos[v2Idx + 1], pos[v2Idx + 2])
+
+      const cross = v1.clone().sub(v0).cross(v2.clone().sub(v0))
+      assert.ok(cross.y > 0, `triangle ${t} cross product y ${cross.y} > 0`)
+
+      const centroid = v0.clone().add(v1).add(v2).divideScalar(3)
+      const toCentroid = centroid.clone().sub(capBaseCenter)
+      assert.ok(cross.dot(toCentroid) > 0, `triangle ${t} dot with vector from cap base centre > 0`)
+    }
+  }
+})

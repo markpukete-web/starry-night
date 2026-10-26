@@ -1635,10 +1635,10 @@ function laneLamps(ctx: Context): void {
     const apex = pFoot.clone().setY(capBaseY + capH)
 
     const capTris = [
-      [b0, b1, apex],
-      [b1, b2, apex],
-      [b2, b3, apex],
-      [b3, b0, apex],
+      [b1, b0, apex],
+      [b2, b1, apex],
+      [b3, b2, apex],
+      [b0, b3, apex],
     ]
 
     for (let ct = 0; ct < 4; ct++) {
