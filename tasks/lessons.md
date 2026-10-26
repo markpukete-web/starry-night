@@ -3153,3 +3153,20 @@ must be byte-identical before the stimulus's difference means anything.
 - **A sweep belongs to a commit.** Task 3's triangle sweep ran three minutes before the door's last change, so the
   record carried a count from a build that was never committed. Run the sweep on the committed head, or say which
   build it read.
+- **The canvas is a second React root, and it commits a frame or more after the page.** The portal's return did not
+  fade: in the frames between the page's `leaving` and the canvas's, the driver still ran the street's finished fade
+  and hid the copy the leave had just made. Guard a per-place effect so it runs once, and expect the canvas to see a
+  place late (the portal, Task 3).
+- **R3F reports a caught error as a page error.** Its `createRoot` passes `reportError` as `onCaughtError`, so an
+  error boundary inside the canvas still fires the page's error event. A check that fails on any page error must
+  accept that one error by its text, in that case only (the portal, Task 6).
+- **A screenshot waits for the main thread, and a compositor animation does not.** During the street's 1.5 s build,
+  timed screenshots came back at 0, 188 and 1,948 ms. A CDP screencast showed 155 distinct frames inside that long
+  task. To judge motion during a long task, read the screencast (the portal, look pass 1).
+- **Start a hand-off at the last motion's speed, not at rest.** A smoothstep is at rest only at its last instant: the
+  flight's push-in is 10% a second at s 0.98 and 2.2% on its last frame. A drift that started at rest read as a stop.
+  A frame-difference profile across the hand-off (change per 100 ms) showed it: 14, then 0.7 (the portal, pass 2).
+- **A triangle count that differs between two pages is not yet a defect.** The phone's home read 2 triangles more than
+  the home after a return, in all five rounds. The same plain page reads both counts over 300 frames, because one draw
+  at the narrow frustum's edge comes and goes with time. Sample many frames, and compare the scene's objects, before
+  you name a cause (the portal, Task 8).

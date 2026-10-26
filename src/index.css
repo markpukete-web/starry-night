@@ -472,3 +472,60 @@ button {
     max-height: calc(100vh - 278px);
   }
 }
+
+/* The portal (slice 4): the last frame, copied with drawImage, held over the WebGL canvas while the scene swaps under
+   it. After R3F's canvas in the DOM, so every script's first `canvas` is still the WebGL one (plan review F6). */
+.portal-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  width: 100%;
+  height: 100%;
+  visibility: hidden;
+  pointer-events: none;
+  /* a resize while the frame is held crops it instead of stretching it (Codex branch review F5) */
+  object-fit: cover;
+}
+
+/* The flight's last frame keeps moving while the street builds, toward the centre, where the flight's target sits. It
+   starts at the flight's last-frame push-in, 2.2% a second (the curve's first slope 2 × 0.045 / 4 s), and slows to rest
+   at 4 s, so a slower build ends on a settle, not a stop (look pass 2). */
+.portal-layer.is-drifting {
+  animation: portal-drift 4s cubic-bezier(0.2, 0.4, 0.5, 1) forwards;
+}
+
+/* system reduced motion turned on while the frame is held: the drift stops where it is (Codex branch review F3) */
+@media (prefers-reduced-motion: reduce) {
+  .portal-layer.is-drifting {
+    animation-play-state: paused;
+  }
+}
+
+@keyframes portal-drift {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.045);
+  }
+}
+
+/* The hint beside the pointer over the village. It never takes the pointer, so the hover and the click stay on the
+   canvas (plan review F5). */
+.portal-hint {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 13;
+  padding: 6px 12px;
+  border: 1px solid rgba(244, 234, 211, 0.2);
+  border-radius: 14px;
+  background: rgba(12, 24, 55, 0.72);
+  color: #f7e7b5;
+  font-size: 13px;
+  font-weight: 620;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+  visibility: hidden;
+}

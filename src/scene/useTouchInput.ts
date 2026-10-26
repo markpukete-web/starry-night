@@ -53,6 +53,7 @@ export function useTouchInput({
   home,
   knob,
   land,
+  skyMasked,
 }: {
   enabled: boolean
   store: RefObject<TouchStore>
@@ -64,12 +65,16 @@ export function useTouchInput({
   knob: number
   /** D1: the land-touch store and the `bend` knob; absent, the hook is B's. */
   land?: { store: RefObject<LandStore>; bendGain: number }
+  /** The portal (slice 4, decision (i)): a tap where this says true sends no surge, since it enters the village. */
+  skyMasked?: (clientX: number, clientY: number) => boolean
 }) {
   const { camera, gl, events, scene } = useThree()
   const knobRef = useRef(knob)
+  const skyMaskedRef = useRef(skyMasked)
   useEffect(() => {
     knobRef.current = knob
-  }, [knob])
+    skyMaskedRef.current = skyMasked
+  }, [knob, skyMasked])
   const bendRef = useRef(land?.bendGain ?? 0)
   useEffect(() => {
     bendRef.current = land?.bendGain ?? 0
@@ -218,6 +223,7 @@ export function useTouchInput({
       }
       if (gesture !== 'tap') return
       if (onLand && LAND_TOUCH.landMasksSky && landActive()) return
+      if (skyMaskedRef.current?.(event.clientX, event.clientY)) return
       const point = skyPoint(event.clientX, event.clientY)
       if (point) push(point[0], point[1], knobRef.current, clock.current, true)
     }
