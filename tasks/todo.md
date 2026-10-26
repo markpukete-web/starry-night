@@ -1,6 +1,21 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-26 (night): K2's plan, revision 1, approved by both legs; Mark's read and his K1 pass next
+## Pickup — 2026-10-26 (night, 20:15): K1 passed; K2's build running on the worker
+
+**K1, the houses: passed by Mark on the preview** ("K1 passed, start K2's build. In fact I don't feel much
+differences."). The change read as small to him. K1's PR follows the stack #23 to #29, on his word.
+
+**K2's build: Tasks 1 to 3 with the worker** (`w4:p5`), from `c9fd0cd` on `feat/village-lane`, brief
+`scratch/village-craft-2026-10-25/k2/brief-k2-build.md`, the report due at `k2/t3/report-worker.md`. The dev server for
+`lane-wt` runs on port 5206. Then the Lead's look passes (Task 4) and gate (Task 5).
+
+**Noted, not queued (scope rule), Mark's idea, 2026-10-26:** "the house front door maybe shouldn't be that much grass.
+We might need to refine the house later on to make it more real and show that house actually live in people. Perhaps
+some decorations, front door path, small plant ect". A later slice, after K2: a path from each door to the lane (the
+grass cleared along it, as the steps clear it now), and a few signs of life at the doors (a pot plant, a bench, a
+bucket), each an identity object from the scan's colours. Its design comes before any code.
+
+## Pickup — 2026-10-26 (night): K2's plan, revision 1, approved by both legs; Mark's read and his K1 pass next (superseded by the 20:15 pickup above)
 
 **K2's plan, revision 1 at `2d81767`** on `feat/village-lane` (`tasks/2026-10-26-village-craft-k2-plan.md`), local.
 Both review rounds are folded in, each finding answered in its table "What revision 1 changed". The bounded re-reads:

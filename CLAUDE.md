@@ -317,7 +317,7 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   0.03 deep. 22
   shutter leaves at 0.006 off the front, louvres at 0.25, 0.5 and 0.75, ink at five samples an edge. The painting
   houses' eaves 0.03 (rakes 0.015) with an underside. 574,041 street triangles (base 603,641); the walk's worst point
-  1,414,747 (desktop, `t` 0.295). Untuned by Mark.
+  1,414,747 (desktop, `t` 0.295). Passed by Mark on the preview, 2026-10-26 ("K1 passed"), untuned.
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)
