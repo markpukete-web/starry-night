@@ -317,7 +317,29 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   0.03 deep. 22
   shutter leaves at 0.006 off the front, louvres at 0.25, 0.5 and 0.75, ink at five samples an edge. The painting
   houses' eaves 0.03 (rakes 0.015) with an underside. 574,041 street triangles (base 603,641); the walk's worst point
-  1,414,747 (desktop, `t` 0.295). Untuned by Mark.
+  1,414,747 (desktop, `t` 0.295). Passed by Mark on the preview, 2026-10-26 ("K1 passed"), untuned.
+- The village craft, K2, the lane's walls, rail and lamps (2026-10-26, `src/scene/streetLayout.ts` `STREET_WALL`,
+  `STREET_WALLS`, `STREET_RAIL`, `STREET_LAMPS`, `streetGeometry.ts` `LANE_CRAFT`, `streetLife.ts` `LAMP_LIGHT`,
+  `haloScaleOf`; the record `tasks/2026-10-26-village-craft-k2.md`): three dry-stone walls on the open verges (W1 left
+  `t` 0.06 to 0.22, W2 right 0.14 to 0.47, W3 left 0.54 to 0.84), the lane face at lateral 0.135, 0.03 thick, 0.055
+  high, segments of at most 0.02 in `t`, the grass cleared 0.012 round each segment's rectangle with a 0.002 end overlap
+  (1,373 blades fewer, the rest K1's byte for byte). A wall's stones are draped dabs (`stoneDab`, 3 × 3, 8 triangles) on
+  wallB's darkest 40% (pass 5, 2026-10-27, past the cap on Mark's word, Mark's pick S4 of four probed recipes; passes 1
+  to 4 read as concrete because the stroke body draws a flame and the dab took all of it): a stone takes the stroke's
+  full-bodied middle (along 0.3 to 0.7, flipped on odd seeds), its ends 0.92 of its middle, its wobble 0.12 widths; four
+  courses and two top rows, each planned to fill its run flush to both heads (stones drawn 0.6 to 1.0 of the height,
+  scaled to the run, clamped to wallB's measured 0.6 to 2.0, the last stone fitted to the head), the joint 0.92, 0.2 of
+  the height wide, a stone per course on each head (0.6 high across the 0.03 cap), the texels from wallB's lightest 55%,
+  the report's length the emitted one. The rail round L2's front garden: 7
+  posts 0.005 square and 0.05 high, rails at 0.02 and 0.042, open at the door, the thatch's mean, no ink. Seven lamps
+  (`t` 0.10, 0.24, 0.38, 0.55, 0.65, 0.79, 1.0, alternate sides at lateral ±0.11, the last on the square), a post
+  0.004 square and 0.13 high in ink, a lantern 0.012 × 0.016 in the lit window's mean (class 2), an ink cap wound
+  outward, a halo sprite scaled each frame from the sprite's world position (`haloScaleOf`: at most 0.5 of the view's
+  short side, 0.7 of the plan's 0.192), a pool at y 0.007 over the square's stroke top. 576,295 street triangles (pass 5; 576,375 at pass 4)
+  (K1 574,041, the bar 578,041); the sweep's worst sampled point 1,412,657 at pass 5 (1,412,737 at pass 4; desktop, `t` 0.40; 0.05 steps, 0.01 over 0.25 to
+  0.40; 1,411,299 at K1's 0.295; the ceiling 1,444,930); 60 fps at stops 0 and 3 at dpr 1.5 (p50 16.7 ms, p95 at most 17.6 at pass 5, 18.1 at pass 4), 309 draw calls at stop 0 (K1 288).
+  Five look passes, the fifth past the cap on Mark's word: 1 the build, 2 wallB and the halo, 3 four recipes probed in place at stop 3, 4 the full
+  capture, 5 the stone wall from four recipes probed in place at stop 0. Mark chose S4 from them and passed the wall on the preview (2026-10-27 21:06, "Passed").
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)

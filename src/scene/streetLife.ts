@@ -1,6 +1,8 @@
 import {
   BufferAttribute,
   BufferGeometry,
+  Object3D,
+  PerspectiveCamera,
   Vector3,
 } from 'three'
 import type { AliveInjection } from './aliveMaterial.ts'
@@ -19,6 +21,31 @@ export const LIFE = {
   /** the warm pool on the ground below a lit window: its radius and strength */
   pool: [0.16, 0.5] as const,
   halo: [0.09, 0.85] as const,
+}
+
+export const LAMP_LIGHT = {
+  /** 0.7 of the plan's 2 × LIFE.halo[0] + 0.012 (look pass 2: at stop 0 the far lamps' halos merged into one haze) */
+  halo: 0.7 * (2 * LIFE.halo[0] + 0.012),
+  haloView: 0.5,
+  poolY: 0.007,
+} as const
+
+export function lampHaloScale(depth: number, fovDeg: number, aspect: number): number {
+  if (depth <= 0) return 0
+  const maxWorld = LAMP_LIGHT.haloView * 2 * depth * Math.tan((fovDeg * Math.PI) / 360) * Math.min(1, aspect)
+  return Math.min(LAMP_LIGHT.halo, maxWorld)
+}
+
+const vWorld = new Vector3()
+
+/**
+ * Scale for a lamp halo sprite, taking depth from the sprite's world position.
+ * Assumes the caller has already updated the camera's world matrix.
+ */
+export function haloScaleOf(sprite: Object3D, camera: PerspectiveCamera): number {
+  sprite.getWorldPosition(vWorld)
+  vWorld.applyMatrix4(camera.matrixWorldInverse)
+  return lampHaloScale(-vWorld.z, camera.fov, camera.aspect)
 }
 
 /** One clock for the sway and the fireflies. */

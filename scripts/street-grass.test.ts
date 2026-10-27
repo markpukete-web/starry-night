@@ -22,6 +22,7 @@ import {
   laneParam,
   pathPoint,
   pathTangent,
+  stepClearings,
   STREET,
   STREET_CYPRESS,
   STREET_HOUSES,
@@ -97,8 +98,9 @@ test('the grass keeps off the houses, the tree, the square and the path', { skip
 })
 
 test('the density falls with the distance from the lane', { skip }, () => {
+  const localChunks = grassChunks(painting, undefined, stepClearings())
   const bandCounts = [0, 0, 0]
-  for (const ch of chunks) {
+  for (const ch of localChunks) {
     for (const b of ch.blades) {
       const [, lat] = laneParam(b.x, b.z)
       const a = Math.abs(lat)

@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import {
   AdditiveBlending,
@@ -9,8 +9,12 @@ import {
   DoubleSide,
   MeshBasicMaterial,
   MirroredRepeatWrapping,
+  PerspectiveCamera,
   ShaderMaterial,
+  Sprite,
+  SpriteMaterial,
   SRGBColorSpace,
+  Vector3,
 } from 'three'
 import { injectAlive } from './aliveMaterial.ts'
 import { mulberry32 } from './brush.ts'
@@ -18,7 +22,7 @@ import type { BrushArraysWithCls } from './streetGeometry.ts'
 import { FOG, fogInjection } from './streetFog.ts'
 import type { ImageData2D } from './useImageData.ts'
 import { pathPoint, pathTangent, STREET_CHURCH, STREET_HOUSES, STREET_TREES } from './streetLayout.ts'
-import { HILL_PAINT, LIFE, lifeTimeUniform, lifeTime, litWindows, hillsGeometry } from './streetLife.ts'
+import { HILL_PAINT, LIFE, lifeTimeUniform, lifeTime, litWindows, hillsGeometry, LAMP_LIGHT, haloScaleOf } from './streetLife.ts'
 
 /** The life's builds, each counted once: StrictMode runs a mount's effect twice in development on the same `parts`, and a
  * real rebuild is a new object. A count deleted in the effect's cleanup read 1 after any number of rebuilds (Fable C1). */
@@ -108,11 +112,34 @@ const FIREFLY_FRAGMENT = `
   }`
 
 /** The street's living parts: fireflies over the path, a warm glow at each lit window and on the ground below it, the hills. */
-export function StreetLife({ windows, painting, reduced = false }: { windows: BrushArraysWithCls; painting: ImageData2D; reduced?: boolean }) {
+export function StreetLife({
+  windows,
+  painting,
+  reduced = false,
+  lamps = [],
+}: {
+  windows: BrushArraysWithCls
+  painting: ImageData2D
+  reduced?: boolean
+  lamps?: readonly { foot: Vector3; lantern: Vector3 }[]
+}) {
+  const haloRefs = useRef<(Sprite | null)[]>([])
+
   useFrame((state) => {
     // the sky's capture seam pins this clock too, so a capture is frame-exact
     const pinned = (window as Window & { __skyTime?: number }).__skyTime
     lifeTimeUniform.value = lifeTime(pinned, state.clock.elapsedTime, reduced)
+
+    if (lamps.length > 0) {
+      state.camera.updateMatrixWorld()
+      const cam = state.camera as PerspectiveCamera
+      for (let i = 0; i < lamps.length; i++) {
+        const sprite = haloRefs.current[i]
+        if (!sprite) continue
+        const s = haloScaleOf(sprite, cam)
+        sprite.scale.set(s, s, s)
+      }
+    }
   })
 
   const parts = useMemo(() => {
@@ -143,6 +170,15 @@ export function StreetLife({ windows, painting, reduced = false }: { windows: Br
     const texture = radialTexture()
     const glowMaterial = (strength: number) =>
       new MeshBasicMaterial({ map: texture, color: new Color(LIFE.glow).multiplyScalar(strength), transparent: true, depthWrite: false, blending: AdditiveBlending, side: DoubleSide, toneMapped: false })
+    const lampHalo = new SpriteMaterial({
+      map: texture,
+      color: new Color(LIFE.glow).multiplyScalar(LIFE.halo[1]),
+      transparent: true,
+      depthWrite: false,
+      depthTest: true,
+      blending: AdditiveBlending,
+      toneMapped: false,
+    })
     const hillPaint = hillTexture(painting)
     const hills = new MeshBasicMaterial({ map: hillPaint, vertexColors: true, side: DoubleSide, toneMapped: false })
     // the air between: the street's fog colour, reached far beyond the street's own fog
@@ -151,7 +187,7 @@ export function StreetLife({ windows, painting, reduced = false }: { windows: Br
     const footTexture = footprintTexture()
     const foot = new MeshBasicMaterial({ map: footTexture, color: new Color(0, 0, 0), transparent: true, opacity: 0.65, depthWrite: false, toneMapped: false })
     const blob = new MeshBasicMaterial({ map: texture, color: new Color(0, 0, 0), transparent: true, opacity: 0.6, depthWrite: false, toneMapped: false })
-    return { flyGeometry, flyMaterial, texture, pool: glowMaterial(LIFE.pool[1]), halo: glowMaterial(LIFE.halo[1]), hillsGeometry: hillsGeometry(), hills, hillPaint, footTexture, foot, blob }
+    return { flyGeometry, flyMaterial, texture, pool: glowMaterial(LIFE.pool[1]), halo: glowMaterial(LIFE.halo[1]), lampHalo, hillsGeometry: hillsGeometry(), hills, hillPaint, footTexture, foot, blob }
   }, [painting])
   useEffect(() => () => {
     parts.flyGeometry.dispose()
@@ -159,6 +195,7 @@ export function StreetLife({ windows, painting, reduced = false }: { windows: Br
     parts.texture.dispose()
     parts.pool.dispose()
     parts.halo.dispose()
+    parts.lampHalo.dispose()
     parts.hillsGeometry.dispose()
     parts.hills.dispose()
     parts.hillPaint.dispose()
@@ -206,6 +243,21 @@ export function StreetLife({ windows, painting, reduced = false }: { windows: Br
           </group>
         )
       })}
+      {lamps.map((lamp, i) => (
+        <group key={`lamp-${i}`}>
+          <mesh position={[lamp.foot.x, LAMP_LIGHT.poolY, lamp.foot.z]} rotation={[-Math.PI / 2, 0, 0]} material={parts.pool} renderOrder={4}>
+            <planeGeometry args={[LIFE.pool[0] * 2, LIFE.pool[0] * 2]} />
+          </mesh>
+          <sprite
+            ref={(el) => {
+              haloRefs.current[i] = el
+            }}
+            position={lamp.lantern.toArray()}
+            material={parts.lampHalo}
+            renderOrder={4}
+          />
+        </group>
+      ))}
       <points name="street-fireflies" geometry={parts.flyGeometry} material={parts.flyMaterial} renderOrder={5} />
     </group>
   )

@@ -3246,3 +3246,88 @@ must be byte-identical before the stimulus's difference means anything.
 - **A test that loops over reported parts proves nothing when a part goes missing.** The levels test checked each
   leaf's ink range only where one was reported, so removing the ink kept it green (Codex F1). Require the expected
   part and its count first, then check its values.
+
+
+## 2026-10-26 (night) — the village craft, K2's plan
+
+- **A check at the stations misses the walk between them.** Revision 0 kept every lantern 0.35 from each station's
+  camera, and the walk between the stops still passed four at 0.14 to 0.25, their halos 1.1 to 1.8 screen heights
+  (Codex F4). A part the camera can pass gets its check over every walk sample, not only the stops.
+- **A test over every camera can fail on a view nobody sees.** The pool-against-frog test, run from all five stops,
+  failed at the fix: from stop 0, rays to frog 3 1.5 away crossed lamp 4's pool, under a pixel of the frog affected.
+  Scope a regression test to the view the defect was found in (the frog's own stop), and write the excluded case into
+  the plan for Mark's eye, not into the test's tolerance.
+- **A knob range can eat a margin a test holds.** W3's clearing has 0.00015 to spare at frog 3's ring, so revision 0's
+  "lane-side margin 0.012 to 0.03" knob would have broken the ring test at its first step. Read each knob's range
+  against the tightest margin it moves before the plan offers it.
+
+- **A cost by area is wrong by three against the generator.** K3's revision 0 priced the door paths at the lane's 92,000
+  triangles per unit of area: 17,600. The real tracer gives 50,000 for the same strips. A ribbon costs about 250
+  triangles whatever its length, and a narrow face takes more ribbons per unit of area (Codex K3-F2). Price a part by
+  running the generator on its faces, never by area.
+- **A probe that checks an endpoint passes a route that crosses a wall.** Revision 0's R2 route landed past W2's end and
+  was called clear because its end was. Its second leg cut the wall (Codex K3-F1). Check every leg over its full width,
+  and build the route the design describes, not a stand-in for it.
+- **"Painted exactly as X" carries X's stroke scale.** The lane's stroke size on a 0.06-wide path gives one clipped
+  stroke across, a hard-edged ribbon (the Consultant's Q2). When a part borrows another's paint, state its own reference
+  height.
+
+- **A plan's colour share needs a lightness probe before the build, not after the first capture** (K2's look
+  passes 1 to 3, 2026-10-26). wallA's darkest 40% is L 4.7 and 57% of its texels
+  are under L 20, so the walls read black with pale flecks (`E2/probe/lead-k2-wall-sources.mjs`, a minute to run).
+  Both plan reviews passed the number. The street's convention is the houses' (K1): an object's base is its source's
+  mean, and its strokes sit on it. "Dry stone with dark mortar" (the base at the darkest 40%) read as a black barrier
+  with leaves on it in three recipes; the painted-wall convention read as a wall in one.
+- **An in-place probe settles a look pass's knobs before a worker round** (K2 pass 3, 2026-10-26): patch the literals
+  (`E/tools/k2-wall-variant.py`), capture one stop, crop at 1:1, restore the tree (`k2-wall-probe.sh`). Three recipes
+  cost four minutes. It counts as a pass against the cap, and it saved a worker round and a Codex read on a guess.
+- **A green suite under Node's type stripping proves neither the type check nor the lint** (Codex's K2 branch
+  review, 2026-10-26). Node's type stripping runs the suite without the type check, so 396 green tests
+  hid two unused imports that fail `npx tsc -b` and four that fail `npm run lint` (F2). The Lead's checks before the
+  look passes now include both, not only the gate script. And a mutation's red must come from the named mutation
+  alone: mutation 3's red came from an extra edit of the report's ranges, and the pure omission stayed green (F3).
+- **Do not commit on a branch after dispatching a worker whose brief pins its head** (K2's fix round, 2026-10-26). The
+  Lead committed docs 20 seconds before the worker ran Step 0's `git rev-parse` check, so the worker saw a head the
+  brief did not name. Pin the brief to the code commit (`5806c1c`) and allow docs on top, or hold every commit until
+  the worker reports.
+- **A browser check's measured point is a premise, and a new object near it changes what the check measures** (K2's
+  gate, 2026-10-27). The grass check's case 15 counts the pixels the hand brightens at `laneAt(0.12, 0.15)`. K2 put lamp 1's
+  pool 0.063 from that point, so a bent blade over the pale pool darkens the pixel and the count fell to 0.74 of the
+  unlit page's (K1 1.07). The hand's push was as visible as before. Diagnose such a failure by geometry first (the
+  distances from the point to every new object, one node script) before any browser run, and name the premise the
+  check carried.
+- **A replacement point for a check must carry the check's control, patched on the same term** (K2's gate, 2026-10-27).
+  Point B (0.12, +0.32) passed on both builds with identical counts, but S3b's check had a control (0.65 with the hand's
+  lift off). The first control runs patched the moon's term and read 0.98 to 1.00 everywhere, a wasted set of four runs:
+  read the original record's control to the knob (`uLift`, not `GRASS_LIGHT.top`) before patching. A point without a
+  discriminating control is a weaker check, whatever its pass.
+
+## 2026-10-27 (evening) — K2 pass 5, the stone wall
+
+- **A dab's look is set by the stroke body before any literal** (K2 passes 1 to 4, 2026-10-26 to 27). The street's
+  stroke body draws every stroke as a flame (a pointed head, the tail 0.72, the dry brush from 0.55), so a stone given
+  the whole stroke drew as a leaf with gaps a third of its length whatever the joint literal said, and three body shares
+  read the same. Mark read the wall as concrete. Before tuning a part's literals, read the shader its ribbons go
+  through, and give a part the stroke's range that draws its shape (a stone: the full-bodied middle, 0.3 to 0.7).
+- **Four in-place recipes at one stop settle a look in twenty minutes** (pass 5, 2026-10-27). The probe patched the
+  literals and the loop, captured stop 0, cropped at 1:1 and restored, four times, and Mark chose from one stacked
+  image. The same question through a worker round and a Codex read would have cost an evening.
+- **A waiter on a report section must match the heading loosely** (pass 5's fix round, 2026-10-27). The brief said
+  "append a section `## Fix round 1`", the worker wrote `## 8. Fix Round 1 (Codex F3)`, and the waiter's exact grep
+  never fired: the fix sat finished for eleven minutes until Mark asked why every pane was idle. Match the section with
+  `grep -i` on one word, or watch the report's mtime, and treat the pane's `done` state as a second signal.
+- **A brief file in the worker's evidence folder is a dispatch** (2026-10-27). The Lead drafted the fix brief into
+  `k2/t6/` to send after the worker's report. The worker listed its folder at the end of its own brief, found the file
+  and ran it, unasked. It did the right work, but a draft the Lead meant to revise would have run as written. Keep
+  drafts in the Lead's scratchpad and copy a brief into the evidence folder only when it is sent.
+- **A mutation artefact's diff goes stale when a later commit touches its hunk** (pass 5, mutation 6). The worker
+  recorded mutation 6 against its wall commit, then the fix round added two comment lines above the hunk, and the
+  gate's `git apply` of the artefact failed at the new head. The gate applied the mutation by its line's text and it
+  went red. Record each mutation's diff at the head the gate will run it on, or write the mutation as a text
+  substitution.
+- **A second dev server over the same `node_modules` link re-optimises the first's dependency cache, and a mutation
+  run leaves HMR state** (pass 5's gate, 2026-10-27). The walk check's case 6 failed twice on the lane's server after
+  the mutations and after K1's server started on 5205 ("re-optimizing dependencies because vite config has changed"
+  in both logs, a failed module fetch in the lane's), and passed on K1 in the same minute and on the lane's server
+  restarted alone. The grass check's case 4 failed the same way. Restart the server under test after a mutation run
+  and before the browser gates, with no other server up, and read both servers' logs when a timing case fails.

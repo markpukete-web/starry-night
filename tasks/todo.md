@@ -1,6 +1,300 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-26 (afternoon): K1 (the houses) passed the Lead's gate; Mark's live read next
+## Pickup — 2026-10-27 (21:00): K2 pass 5, the stone wall, passed the Lead's gate, pushed for Mark's preview
+
+**K2 pass 5 (S4, the stone wall) passed the Lead's gate at 20:57** (the record `tasks/2026-10-26-village-craft-k2.md`,
+its last section; the evidence `scratch/village-craft-2026-10-25/k2/t6/`, the gate's runs `k2/t5/` and `k2/gate/`).
+The code head is `973c07d` on `feat/village-lane`. Pushed for the Vercel preview at 20:58:
+`https://starry-night-kdvm5pcw6-markpukete-webs-projects.vercel.app/?street=1&station=0` (Vercel sign-in), Mark pinged at 21:01. **Passed by Mark at 21:06 ("Passed, what's next"); the PR is open, Codex's review pending.** The three agents are idle. The dev server on 5206 is this
+session's background job (restarted fresh at 20:56, alone).
+
+**What Mark reads:** the wall at stop 0 and stop 3 at 1:1 against the probe he chose (S4), the top rows (the shared
+planner lays shorter stones than the probe did), the heads. Open and not blockers: the lantern's flat box, the K1 fog
+fails, `?lane=0`.
+
+**Next after his pass:** the PR stacked on main (Codex's review read through the timeline API, every thread answered,
+at most two re-requests), then K3 on his three calls (the 21:30 pickup of 2026-10-26: R2 or W2 at `t` 0.41, bucket or
+woodpile, far paths full or fading). Quotas at 19:00: Claude 2% of the week, Codex 11%, the worker 53% (now about 56%).
+
+## Pickup — 2026-10-27 (19:25): K2 pass 5, the stone wall, the worker building S4, Codex reading the brief (superseded by the 21:00 pickup above)
+
+**Mark's calls tonight:** "Probe stone" (19:05) over wood, then S4 (19:20) over S3 and over passing K2 as built. Pass 5
+is past K2's cap of four on his word. The record's last section (`tasks/2026-10-26-village-craft-k2.md`, "Pass 5")
+has the probe: the cause was the dab's shape under the stroke body's flame, not the body share. The evidence is
+`scratch/village-craft-2026-10-25/k2/t6/` (the probe tools, the four patches and crops, the comparison image).
+
+**Running:** the worker (`w4:p5`) builds `k2/t6/brief-k2-pass5.md` on `feat/village-lane` in `lane-wt` (two commits,
+three new tests, five mutation proofs, the look captures into `k2/t4/p5/`), its report at `k2/t6/report-worker.md`.
+Codex (`w4:p4`) reads the brief as a plan, `k2/t6/review-plan-codex.md`, GO or STOP first line. A STOP stops the
+worker before its Step 3 commit.
+
+**Next:** the Lead's gate on the worker's branch (the diff against the brief, the mutations re-run with
+`k2-mutations.sh t6 5`, pass 5's frames read at 1:1 on both viewports, `k2-gate.sh`, `k2-colour.sh`, `k2-perf.sh`,
+`k2-walk.sh`), the Tunables entry, then the push for Mark's preview and his live read. The PR after his pass. K3
+waits on his three calls (the 21:30 pickup of 2026-10-26). The dev server on 5206 is this session's background job.
+
+## Pickup — 2026-10-27 (00:29): K2 on preview, Mark's first read in, the stone wall reads as concrete, his call on a probe pending
+
+**Mark's live read tonight (00:20 to 00:29):** "the lighting feel right." The wall at stop 0 reads to him as a concrete
+fence, and he asked whether a wooden fence would be better. The Lead's answer: keep stone (Saint-Rémy's lanes and the
+asylum's enclosure wall Van Gogh painted in 1889 are dry stone; wood reads as a paddock and would repeat L2's rail; wallB is
+a measured source) and make it read as stone: joints opened from 0.92 to about 0.8 with the body a clear step darker than
+the stones, two stone sizes, a cope of upright stones along the top, stones on the end caps. That is a pass past K2's cap of
+four, so it needs his word. The cheap path first: the in-place probe (`E/tools/k2-wall-probe.sh`'s pattern) of the stonier
+recipe at stop 0, 1:1 crops for him, before any worker round. He wrapped up without deciding: **next session opens by
+asking him "probe it?" or wood**, then runs the probe if yes. Wood, if he wants it anywhere, belongs to a gate or a short
+garden fence by a house in K3, not the verges. K2 is not passed by him yet.
+
+## Pickup — 2026-10-27 (00:10): K2 passed the Lead's gate, pushed for Mark's preview, no PR until he has looked (superseded by the 00:29 pickup above)
+
+**K2, the lane's walls, rail and lamps: on preview, Mark's live read pending.** The record is
+`tasks/2026-10-26-village-craft-k2.md`, its gate section at the end; the evidence `scratch/village-craft-2026-10-25/k2/`
+(`t5/` the gate's runs, `gate/` the Lead's checks and the case 15 probes). The code head is `883c311` (the grass check's
+case 15 moved to lateral 0.32, past lamp 1's pool); the scene's code is `3662089`. Pushed to `feat/village-lane` at `946ef0b`.
+The preview is `https://starry-night-gepd7ldoi-markpukete-webs-projects.vercel.app/?street=1&station=0` (Vercel sign-in),
+Mark pinged at 00:13. No PR until he has looked. The Tunables entry is in
+CLAUDE.md. Codex's confirmation read was APPROVE on the code at `3662089`; the check's change is for the PR review.
+
+**Open for his eye, none a blocker:** the lantern reads as a flat yellow box at 1:1; the walls' end caps carry the base
+colour only; stonier stones (a darker joint, a wider stone) after the cap; lamp 1's pool reaches the verge grass by
+design; the K1 fog fails stand.
+
+**Idea, not built:** `?lane=0`, the build hash's `LANE=0` as a URL flag, so he can compare K1 and K2 on one preview.
+Scope grows, so it is his call.
+
+**Next after his pass:** the PR stacked on main (Codex's review read through the timeline API, every thread answered, at
+most two re-requests). K3 waits on his three calls (the 21:30 pickup): R2 or W2 at `t` 0.41, bucket or woodpile, far
+paths full or fading. His answer on the three-agent question is pending. Quotas were last read at 21:47 (the 22:20
+pickup), not at this close.
+
+
+## Pickup — 2026-10-26 (night, 22:20): K2 in its Lead gate, Codex's seven findings confirmed, the fix round's brief at revision 3 with Codex, the worker next (superseded by the 00:10 pickup above)
+
+**K2's gate so far** (the record `tasks/2026-10-26-village-craft-k2.md`, the evidence `scratch/village-craft-2026-10-25/k2/`).
+The suite, the hashes, the diff read and the nine mutation proofs re-run by the Lead all pass. Look pass 1: the lamps
+and the rail land, the walls read black (wallA's darkest 40% is L 4.7). Pass 2 (`5806c1c`, wallB and the halo at 0.7):
+the lamps and the rail pass, the walls still fail at 1:1 (a near-black body, stones as leaves). Pass 3, probed in
+place at stop 3 (`k2/t4/p3/A..D-wall.png`): recipe D, the body at the source's mean with the stones from the lighter
+half of wallB's texels, the width 0.19, the joint 0.92, the length kept at the painting's measured range. Pass 4, the
+cap, is the full capture after the fix round.
+
+**Codex's branch review** (`k2/review-branch-codex.md`): REVISE, seven findings, every one confirmed against the code
+and by the Lead's run of Codex's probe. F2 is the one that bites the gate: `npx tsc -b` and `npm run lint` fail on
+unused imports, so the build would fail. F1 the halo's depth in the wrong frame under `?skyAnchor=A`, F5 the cap's
+inward winding, F3 and F4 weak guards, F6 dead controls, F7 the proofs' missing commands.
+
+**The fix round** (`k2/brief-k2-fix1.md`, revision 3): one worker brief for F1 to F7 with tests and six proofs, plus
+pass 3's values. Codex's plan leg stopped revisions 1 and 2 on contract breaks (the hash rule, the lint's place, the
+tests' height reads, the helper's module, the F6 proof, then the measured-dab test and the measured length range),
+all folded. Revision 3 is with Codex (`k2/brief-codex-k2-fix1-plan-r3.md`). On GO the worker runs it; the Lead then
+sends Codex the bounded confirmation (`k2/brief-codex-k2-fix1-review.md`), captures pass 4 (`k2-look.sh p4`), runs
+`k2-gate.sh`, `k2-colour.sh`, `k2-perf.sh` and `k2-walk.sh`, finishes the record, the Tunables entry and the lessons,
+pushes `feat/village-lane` for the Vercel preview and pings Mark with the link. The PR follows, stacked on main.
+
+**Quotas at 21:47:** the worker 21% session, 50% week; Codex 11% and 8%; the Claude pool 49% session (resets 22:29)
+and 80% week (resets 06:59).
+
+**K3** waits on Mark's three calls (below, the 21:30 pickup). Mark's answer on the three-agent question is pending.
+
+
+## Pickup — 2026-10-26 (night, 21:30): K2's Tasks 1 to 3 built, K3's design at revision 1 with both reads folded, three calls for Mark (superseded by the 22:20 pickup above)
+
+**K2's build.** Tasks 1 to 3 are committed: `a19c983` the walls, `30564f5` amendment A1, `9f1d52d` the rail, `38e221a`
+the lamps. Codex's bounded read of A1 is GO (`k2/review-a1-codex.md`): the density test still catches a wrong falloff,
+and no other test in the suite leans on the shared chunks in a way the clearings break. The worker is on the nine
+mutation proofs and its report (`k2/t3/report-worker.md`). The Lead's gate follows.
+
+**K3's design, revision 1** (`docs/superpowers/specs/2026-10-26-village-lived-in-design.md`). Codex: REVISE, four P2 and
+two P3 (`k2/design-review-k3-codex.md`). The Consultant's builder check: six questions
+(`k2/builder-check-k3-consultant.md`). The Lead ran both reviewers' probes again (they reproduce) and two of its own
+(`k2/probe/lead-k3-r2gap.mjs`, `lead-k3-paint-ref.mjs`). What changed: the paths' ends are checked over every leg's
+full width. R2's recommendation moves to W2 ending at `t` 0.41 (the path 0.344 long), because the route to 0.50 crossed
+the wall. The budget was wrong by three: the ten paths at the lane's stroke size and full cover cost about 50,000
+triangles on the real tracer, so a path takes a reference height scaled to its width and a cover of 0.25 (28,700).
+L5's and R5's paths end at the square's rim. L2's path is the door's width wide, through the gate. The plant is a clump
+of the grass's blades. The objects ride the walls' class as the rail does. The bucket is a wooden pail. A shorter
+plaster row would reach the church, so it reaches the four houses only, through `WALL_PAINT`, the ribbon count held.
+The measurement crop runs to the scan's bottom. The table at the design's top lists every row.
+
+**Mark's three calls (the design's last section):** R2 against W2 (the recommendation: W2 ends at `t` 0.41), the bucket
+or a woodpile, the far paths at full length or fading short of the lane.
+
+**Mark asked (21:05) why the Consultant, Codex and the worker ran at once.** The Lead's answer: the worker was building,
+not reviewing. Codex's two reads were both due. The Consultant was the builder's leg, which the design process asks for
+before Mark reads a design. Two gaps owned: no Quota Finch check before three dispatches, and the Consultant was set as
+Codex's fallback, not a parallel reader. The recommendation: both legs for plans, Codex alone for designs. Mark's answer
+is pending.
+
+**Next:** Mark reads revision 1 and makes the three calls. Then the K3 plan (`superpowers:writing-plans`), both plan
+reviews (Codex's correctness read, the worker's buildability read), and the build on `feat/village-lived-in` after K2's
+gate. In parallel: the worker's K2 report, the Lead's gate on K2, Codex's branch review, the push and Mark's preview
+link.
+
+
+## Pickup — 2026-10-26 (night, 21:00): K2's Task 1 built, amendment A1 for a test the plan missed; K3's design drafted; Mark's two questions (superseded by the 21:30 pickup above)
+
+**K2's build.** Task 1 is committed at `a19c983` (the walls, 1,964 triangles, both `LANE=0` hashes K1's). The worker
+stopped there, rightly: `street-grass.test.ts:99` (the density falloff by band) fails at 17.9% because its expected
+count never knew the clearings and the walls take 1,373 blades out of band 0. Neither plan review caught it.
+**Amendment A1** (the plan's table and Task 1 Step 3a): that one test reads K1's grass (`stepClearings()`), nothing
+else changes. The worker continues with A1, Tasks 2 and 3 and the mutation proofs (`k2/brief-k2-build-2.md`). Codex
+reads A1 bounded (GO or NO-GO) in parallel (`k2/brief-codex-a1-and-k3.md`, Part A).
+
+**K3, the lived-in houses: the design is drafted** at `2e4f995`,
+`docs/superpowers/specs/2026-10-26-village-lived-in-design.md`, for Mark's approval. Mark asked for the plan too
+("plan and draft k3, then let codex review"), and the Lead holds the plan until he approves the design: he is
+rethinking Vincent and the walk (below), and a plan on an unapproved design is the waste. Codex reads the design's
+facts (Part B of the same brief), the Consultant reads it as a builder (`k2/brief-builder-check-k3-consultant.md`).
+Its one cross-slice call for Mark: R2's door path crosses K2's wall W2 whichever way it runs, so it lands past W2's end
+(the recommendation), or W2 gets a gap, or R2 gets no path.
+
+**Noted, not queued (scope rule), Mark's two questions, 2026-10-26 (night):**
+
+- **Vincent's form.** "After couple of slices, I feel like our little Vincent is too 'Creepy', I think Simon's approach
+  is better, he makes a robot walking around, perhaps we can use a Wall-E style robot? ... perhaps we should make our
+  site more futuristic but not so creepy, or would you have any better idea?" The Lead's read: the robot copies Simon
+  (the bar: study, never copy) and "futuristic" fights the locked faithfulness bar. The creepiness is in Vincent's
+  behaviour and light, not his species: a small dark figure held 0.58 ahead of the camera, back always turned, never
+  pausing, lit by nothing of his own, under moonlight. The fix proposed: a lantern in his hand (warm light on him and
+  the path ahead), a walking rhythm, a stop and a turn of the head at each station, a three-quarter view at the stops,
+  and a silhouette from Van Gogh's own "Painter on the Road to Tarascon" (1888: hat, canvas on the back, stick), which
+  is near the "other paintings" line and so Mark's call. A throwaway spike of the figure for his eye, since movable is
+  settled by building. Its own slice.
+- **Free exploration.** "Do you think we can still make the village exploreable? Like you can control Vincent or robot
+  to freely explore through the grass or on the path etc?" The Lead's read: possible and big (two slices or more). It
+  breaks the street design's non-goal ("No free roaming") and the locked camera criterion (Mark's edit, not the
+  Lead's), the church's faces thinned where no walk pose sees them (`CHURCH.hidden`), `detailOf`'s far-house halving,
+  the frogs drawn only near the walk's camera, and a triangle ceiling checked only at the walk's points. The middle
+  way: steer Vincent off the path onto the verge within the grass's footprint, the camera following, bounded by the
+  houses, walls, rail and lamps. After K3 and after the village opens to visitors.
+
+**Mark's decision (2026-10-26, 21:00): "I will go with your recommendations."** No robot. The roadmap after K2:
+K3 (the lived-in houses, the design as drafted, R2's path past W2's end), then Vincent's form (a throwaway spike with
+the lantern for his eye, then its slice), then **Vincent's wander with the camera kept**. Mark's version of exploration:
+"the free exploration would be under Vincent walk through the grass etc but keep the camera." The Lead's read: it works
+and is one slice, two with the phone's steering. The camera stays on the path (so the hidden faces, `detailOf`, the
+frogs' draw distance and the ceiling checks hold) and yaws to keep him in frame (on the phone he leaves the frame at
+about 0.2 off the path otherwise, and the grass budget is re-measured across the yaw). Vincent gets a lateral control,
+bounded by the grass's footprint and the parts' footprints, and the grass parts under his feet off the path as it does
+on it. It changes the street design's non-goal ("Vincent stays on one path"), not the locked camera rule: the visitor
+still moves the camera only along the path. His form comes first: once he is steered, he is looked at.
+
+**Next:** the worker's K2 report, then the Lead's gate on K2 (Task 4's look passes, Task 5's runs), Codex's branch
+review, the push and Mark's preview link. Mark reads K3's design with both reads folded in.
+
+
+**K1, the houses: passed by Mark on the preview** ("K1 passed, start K2's build. In fact I don't feel much
+differences."). The change read as small to him.
+
+**The stack #23 to #30 merged to `main`** on Mark's word, 2026-10-26 ("merge the stack #23 to #30"), merge commits,
+`main` at `3fd5b2e`, production built (Vercel success). K1 is PR #30, Codex's review there: no findings (+1 at
+`ca102c7`). #23's Codex review never left "running". Mark had declined a re-request on 2026-10-25, and #23's thread
+says so.
+
+**The branches, tidied** (Mark: "can you also tidy up our branches?"). Every branch contained in `main` is deleted,
+local and remote, with `feat/village-craft` (contained in `feat/village-lane`) and, on Mark's word, `spike/grass-hand`
+(`1bfb8c2`, the throwaway grass test). Left: `main` (the main checkout is on it now) and `feat/village-lane` (K2), and
+on the remote only `main`. The worktree `framing-wt` is removed. `craft-wt` is detached at `96f246e` and serves K1 on
+port 5205 for K2's gate.
+
+**K2's build: Tasks 1 to 3 with the worker** (`w4:p5`), from `c9fd0cd` on `feat/village-lane`, brief
+`scratch/village-craft-2026-10-25/k2/brief-k2-build.md`, the report due at `k2/t3/report-worker.md`. The dev server for
+`lane-wt` runs on port 5206. Then the Lead's look passes (Task 4) and gate (Task 5).
+
+**Noted, not queued (scope rule), Mark's idea, 2026-10-26:** "the house front door maybe shouldn't be that much grass.
+We might need to refine the house later on to make it more real and show that house actually live in people. Perhaps
+some decorations, front door path, small plant ect". A later slice, after K2: a path from each door to the lane (the
+grass cleared along it, as the steps clear it now), and a few signs of life at the doors (a pot plant, a bench, a
+bucket), each an identity object from the scan's colours. Its design comes before any code.
+
+## Pickup — 2026-10-26 (night): K2's plan, revision 1, approved by both legs; Mark's read and his K1 pass next (superseded by the 20:15 pickup above)
+
+**K2's plan, revision 1 at `2d81767`** on `feat/village-lane` (`tasks/2026-10-26-village-craft-k2-plan.md`), local.
+Both review rounds are folded in, each finding answered in its table "What revision 1 changed". The bounded re-reads:
+Codex APPROVE (`k2/plan-review-codex-r1.md`, F1 to F9 closed, no new P2), the worker BUILDABLE
+(`k2/plan-build-worker-r1.md`, W01 to W11 closed, no new gap). Evidence in `scratch/village-craft-2026-10-25/k2/`.
+
+The Lead's calls in revision 1, each open to Mark at the gate:
+
+- **F4, the halos on the walk:** Decision (d2). A halo's world size is held so it never spans more than 0.5 of the
+  viewport's shorter side (`lampHaloScale` in `streetLife.ts`, set per frame from the lantern's view depth). Without
+  it, four lamps pass the walk at 0.14 to 0.25 and their halos span 1.07 to 1.80 screen heights. Codex's probe: 12,378
+  cases, the largest 0.5000000000000071. A fourth departure from the design, beside the walls' lateral, no ink on the
+  rail and the lamps' count and places.
+- **F3, lamp 4's pool:** lamp 4 at `t` 0.55. The pool test casts each frog's own stop's rays to its body
+  (`k2/probe/lead-pool-frogs.mjs`): 0 crossings at 0.55, 2,844 at 0.52, 273 at 0.58, so lamp 4 cannot move in Task 4.
+  From stops 0 and 1, rays to frog 3 (1.1 to 1.6 away, under a pixel of it affected) cross lamp 4's pool: the frog in
+  the lamp's light, not counted.
+- The stones from `wallA` (`plaster` is too narrow for the dab). The rail at L2 only (R1 too near R2, L5 and R5
+  outside the grass).
+
+`T/grass-hash.ts` now reads `LANE=0` (passes `stepClearings()`), and gives K1's `def5470cc15817ba` on the lane
+worktree.
+
+**Next:** Mark reads the plan. K2's build (Tasks 1 to 3 to the worker, the brief `k2/brief-k2-build.md`) waits for his
+K1 pass on the preview. The PR stack #23 to #29 merges on his word (no new Codex activity since 2026-10-25), then K1's
+PR.
+
+## Pickup — 2026-10-26 (evening): K1 on preview for Mark, K2's plan reviewed (both legs REVISE), revision 1 next (superseded by the night pickup above)
+
+Mark wrapped up here ("When Codex's done, record where we at. I need to wrap up and will revisit next session").
+
+**K1, the houses: on preview, Mark's live read pending.** Passed the Lead's gate, record
+`tasks/2026-10-25-village-craft-k1.md`. Pushed at `3b2de77`. The preview is
+`https://starry-night-n9lqu8ccy-markpukete-webs-projects.vercel.app/?street=1&station=0` (Vercel sign-in). No PR until
+he has looked. Open for him: the plaster houses' long vertical strokes (a shorter stroke needs a new 1:1 measurement),
+and stop 1's phone frame, walls' ΔE 9.55 to 10.10. Two local docs commits since the push ride up on the next code push:
+`ca102c7` (the record's sweep note) and `b7a5a4f` (K2's plan).
+
+**K2, the lane: plan revision 0 at `b7a5a4f`** (`tasks/2026-10-26-village-craft-k2-plan.md`): three stone walls on the
+open verges, a rail round L2's front garden, seven lamps. Both legs read it. Evidence in
+`scratch/village-craft-2026-10-25/k2/`.
+
+- The worker's buildability read (`k2/plan-build-worker.md`): NOT BUILDABLE AS WRITTEN, W01 to W11. The Lead's answers,
+  not yet written into the plan: `report.lane.lamps` everywhere (W01). Export `LAMP_POOL_Y` from `streetLife.ts` (W02).
+  State the frame test's formula in the plan, the probe now at `k2/probe/k2-lamps.mts` (W03). `stepClearings()` and
+  `wallClearings()`, with `streetClearings()` their sum (W04). A wall rectangle: origin at the segment's lane-face start,
+  `u` the chord, `n` = side × (−uz, ux), `u0, u1` = −0.001 and chord + 0.001, `k0, k1` = 0 and 0.03 (W05). A run splits
+  into `ceil(Δt / 0.02)` equal segments (W06). The rail's lamp check moves to Task 3 (W07). The report gives the dabs'
+  vertex range in `strokes`, 9 vertices a dab (W08). Each segment reports its 4 footprint corners and the run its
+  underpaint range (W09). Rail posts are feet at y 0, the opening the two gateposts' feet (W10). The caller passes the
+  dab's centres already lifted (W11).
+- Codex's correctness read (`k2/plan-review-codex.md`): REVISE, F1 to F7 P2, F8 and F9 P3. Its probes are in
+  `k2/probe/codex-*.mjs`.
+  - F1: a dab 0.17 of the wall's height is outside `plaster`'s measured width (0.10 to 0.15), and the 0.88 joint makes
+    the painted length 0.53 to 0.79, under the 0.6 minimum. Answer: the stones' source is `wallA` or `wallB`, and the
+    cell length is 0.68 to 1.02 so the painted length is 0.6 to 0.9. The tests read the emitted sizes.
+  - F2: every rail's back posts are 0.02 from their own house, against the plan's 0.03 rule. Answer: L2's side rails
+    start 0.03 out from the front. R1 is not a fallback (0.021 from R2).
+  - F3: lamp 4's pool at y 0.007 lies in front of frog 2 from stop 2. Answer: lamp 4 to `t` 0.55 (Codex's probe: no
+    frog ray crosses the pool, every other clearance kept), and a pool-against-frog test.
+  - F4: **the open design question for revision 1.** On the walk between the stops, a lamp's halo sprite can project
+    larger than the screen (lamps 1, 3, 4 and 6, up to 1.8 screen heights at 0.14 from the camera). The station-only
+    check misses it. The options: fade a halo as the camera comes within about 0.3 (a change with distance, not with
+    time), a smaller halo, or lamps further from the walk line. The Lead's call, written into revision 1 with a
+    whole-walk test, open to Mark at the gate.
+  - F5: the mutation proofs' `git checkout -- <file>` would undo uncommitted Task 3 work. Answer: commit first, then
+    restore each mutation from a saved copy and check the hash.
+  - F6: the wall tests can pass with no wall drawn. Answer: each run reports its emitted ranges, all non-empty, and a
+    mutation that drops the append must turn a test red. The rail the same.
+  - F7: the design puts posts in the walls' class. Answer: the lamp posts in class 0, in `INK`.
+  - F8: as W01. F9: four facts to correct: the 90-triangle count was built with `KEPT_PAINT` (the default gives 86.4).
+    Vincent is 0.4 ahead of the path sample, not the camera. Sprites already exist in the sky (`SkyDome.tsx:236-255`).
+    The walls fail at eight of ten frames, not seven.
+
+**Task 0 is done.** Branch `feat/village-lane` from `b7a5a4f`, local. K1's hashes in `k2/t0/`: build
+`35ce7aeb5bd88590` (574,041), grass `def5470cc15817ba`. `tools/build-hash.ts` has a `LANE=0` switch. The dev server for
+K2 (port 5206) is not started.
+
+**The worktrees** `craft-wt`, `framing-wt` and `lane-wt` were in this session's scratchpad, which is removed with the
+session. The branches stay in the repo. A new session adds its own: `git worktree add <scratchpad>/lane-wt
+feat/village-lane`, then links `node_modules` and `reference/derived` to the main checkout's.
+
+**Next:** the Lead folds both reports into revision 1 in one round, F4 decided. Codex's bounded re-read (these findings
+only, APPROVE or REVISE, nothing below P2). Mark reads the plan. K2's build waits for his K1 pass. The PR stack #23 to
+#29 merges on Mark's word, then K1's PR.
+
+## Pickup — 2026-10-26 (afternoon): K1 (the houses) passed the Lead's gate; Mark's live read next (superseded by the evening pickup above)
 
 **The village's craft, K1.** Built, gated and reviewed on `feat/village-craft`, head `02d5fba` and the record's
 commit. The record is `tasks/2026-10-25-village-craft-k1.md`. The branch is pushed for a Vercel preview, and no PR is

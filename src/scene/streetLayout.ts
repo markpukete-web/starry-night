@@ -79,6 +79,15 @@ export function pathTangent(t: number): [number, number, number] {
   return [tan.x, tan.y, tan.z]
 }
 
+/** One map from the lane: position and outward normal in the street frame (Fact 4, Decision (f)). */
+export function laneAt(t: number, lat: number): { x: number; z: number; nx: number; nz: number } {
+  const [px, , pz] = pathPoint(t)
+  const [tx, , tz] = pathTangent(t)
+  const n = Math.hypot(tx, tz)
+  const [nx, nz] = [-tz / n, tx / n]
+  return { x: px + lat * nx, z: pz + lat * nz, nx, nz }
+}
+
 // laneOffset sampled at 400 segments over t -0.2 to 1.0
 const N_LANE_SAMPLES = 400
 const laneSamples: [number, number, number][] = []
@@ -253,6 +262,113 @@ export function doorStepFoot(h: StreetHouse, index: number): [number, number][] 
     oz + uz * ws + nz * k,
   ]
   return [corner(ws0, 0), corner(ws1, 0), corner(ws1, STEP.depth), corner(ws0, STEP.depth)]
+}
+
+export const STREET_WALLS = [
+  { side: -1 as const, t0: 0.06, t1: 0.22 },
+  { side: 1 as const, t0: 0.14, t1: 0.47 },
+  { side: -1 as const, t0: 0.54, t1: 0.84 },
+] as const
+
+/**
+ * Dry-stone wall dimensions and clearing parameters (K2, Codex F6):
+ * - inner: lateral of the lane face
+ * - thickness: wall depth perpendicular to lane
+ * - height: wall height in y
+ * - segment: longest segment in t for subdivision
+ * - clearingOverlap: clearing rectangle's end overlap in u
+ */
+export const STREET_WALL = {
+  inner: 0.135,
+  thickness: 0.03,
+  height: 0.055,
+  segment: 0.02,
+  clearingOverlap: 0.002,
+} as const
+
+export const STREET_RAIL = {
+  house: 'L2',
+  back: 0.03,
+  depth: 0.12,
+  margin: 0.02,
+  gap: 0.02,
+} as const
+
+export const STREET_LAMPS = [
+  { t: 0.1, lateral: 0.11 },
+  { t: 0.24, lateral: -0.11 },
+  { t: 0.38, lateral: 0.11 },
+  { t: 0.55, lateral: -0.11 },
+  { t: 0.65, lateral: 0.11 },
+  { t: 0.79, lateral: -0.11 },
+  { t: 1.0, lateral: 0.2 },
+] as const
+
+export type OrientedBox = {
+  ox: number
+  oz: number
+  ux: number
+  uz: number
+  nx: number
+  nz: number
+  u0: number
+  u1: number
+  k0: number
+  k1: number
+}
+
+export function stepClearings(): OrientedBox[] {
+  return STREET_HOUSES.map((h, i) => {
+    const { ox, oz, ux, uz, nx, nz, ws0, ws1 } = doorStepFrame(h, i)
+    return { ox, oz, ux, uz, nx, nz, u0: ws0, u1: ws1, k0: 0, k1: STEP.depth }
+  })
+}
+
+export function wallClearings(): OrientedBox[] {
+  const rectangles: OrientedBox[] = []
+  for (const { side, t0, t1 } of STREET_WALLS) {
+    const n = Math.ceil((t1 - t0) / STREET_WALL.segment)
+    const dt = (t1 - t0) / n
+    for (let i = 0; i < n; i++) {
+      const ta = t0 + i * dt
+      const tb = t0 + (i + 1) * dt
+      const q0 = laneAt(ta, side * STREET_WALL.inner)
+      const q1 = laneAt(tb, side * STREET_WALL.inner)
+      const q2 = laneAt(tb, side * (STREET_WALL.inner + STREET_WALL.thickness))
+      const q3 = laneAt(ta, side * (STREET_WALL.inner + STREET_WALL.thickness))
+      const o = [q0.x, q0.z]
+      const d = [q1.x - o[0], q1.z - o[1]]
+      const len = Math.hypot(d[0], d[1])
+      const u = [d[0] / len, d[1] / len]
+      let nVec = [-u[1], u[0]]
+      if (nVec[0] * (q3.x - o[0]) + nVec[1] * (q3.z - o[1]) < 0) {
+        nVec = [-nVec[0], -nVec[1]]
+      }
+      const corners = [q0, q1, q2, q3]
+      const uv = corners.map((p) => {
+        const x = p.x - o[0]
+        const z = p.z - o[1]
+        return [x * u[0] + z * u[1], x * nVec[0] + z * nVec[1]]
+      })
+      rectangles.push({
+        ox: o[0],
+        oz: o[1],
+        ux: u[0],
+        uz: u[1],
+        nx: nVec[0],
+        nz: nVec[1],
+        u0: Math.min(...uv.map((p) => p[0])) - STREET_WALL.clearingOverlap,
+        u1: Math.max(...uv.map((p) => p[0])) + STREET_WALL.clearingOverlap,
+        k0: Math.min(...uv.map((p) => p[1])),
+        k1: Math.max(...uv.map((p) => p[1])),
+      })
+    }
+  }
+  return rectangles
+}
+
+export function streetClearings(): OrientedBox[] {
+  return [...stepClearings(), ...wallClearings()]
 }
 
 // The square: map (500, 300), radius 0.25
