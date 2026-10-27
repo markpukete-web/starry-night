@@ -1,6 +1,24 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-27 (21:15): K2 passed by Mark and reviewed clean on PR #31; K3's three calls made, the plan next
+## Pickup — 2026-10-27 (21:45): K3's plan written and out for both reads; the build follows on this branch
+
+**K2 is merged** (#31, main `1b5e62f`, Codex's review clean). Its worktrees and server are gone.
+
+**K3, the lived-in houses: the plan is at revision 0**, `tasks/2026-10-27-village-lived-in-plan.md` (`f04c0e8` on
+`feat/village-lived-in`, the worktree `lived-wt` in session `49dba370`'s scratchpad). The plaster measurement is done
+first, as the design asked (`scratch/village-craft-2026-10-25/k3/t0/plaster/measurement.md`): the walls carry strokes
+0.35 to 0.75 of their height in two or three tiers, so the plan takes 0.65 of the row on the four plaster houses with
+the cover scaled to hold the count. Four calls against the design's text are open to Mark at the gate (the plan's
+head). Both plan reads were sent at 21:45: Codex's correctness read (`k3/brief-plan-review-codex.md` →
+`k3/plan-review-codex.md`) and the worker's buildability read (`k3/brief-plan-build-worker.md` →
+`k3/plan-build-worker.md`), waiters armed. **Next:** fold both reads into revision 1, dispatch Tasks 1 to 4 to the
+worker (`k3/brief-k3-build.md`), the Lead's look passes and gate, the push for Mark's preview, the PR as a draft then
+ready. Then Vincent's form (a throwaway lantern spike for Mark's eye), then his wander with the camera kept.
+
+**Quotas at 21:35 (Quota Finch):** Claude 47% of the session and 7% of the week, Codex 25% / 15%, the worker 14% of
+the session and 57% of the week.
+
+## Pickup — 2026-10-27 (21:15) (superseded by the 21:45 pickup above): K2 passed by Mark and reviewed clean on PR #31; K3's three calls made, the plan next
 
 **K2 is done bar the merge.** Mark passed pass 5 on the preview at 21:06. PR #31 (`feat/village-lane` on main, head
 `27e2001`) is open and ready; Codex's review completed at 21:09 with no findings. The merge is Mark's click, or the
