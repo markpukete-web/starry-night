@@ -3,9 +3,10 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or
 > superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Revision 0 (2026-10-27, night).** Written from the approved design and Mark's three calls of 21:11: W2 ends at `t`
-0.41, a wooden pail by L4's door, the far houses' paths at full length. Both plan reviews follow: Codex's correctness
-read and the worker's buildability read. Their findings fold into revision 1.
+**Revision 1, part 1 (2026-10-27, 22:05).** The worker's buildability read (W01 to W11, `E3/plan-build-worker.md`) is
+folded in. The table below says where each finding is answered. Codex's correctness read is pending and folds into
+part 2. Revision 0 is `f04c0e8`, written from the approved design and Mark's three calls of 21:11: W2 ends at `t`
+0.41, a wooden pail by L4's door, the far houses' paths at full length.
 
 Four of this plan's decisions depart from the design's text, each for a fact the design did not have. The plaster
 measurement is done and gives one outcome, not three (Decision (d)). The three objects clear the grass round them, as
@@ -29,6 +30,22 @@ unmoved at every later task.
 **Spec:** `docs/superpowers/specs/2026-10-26-village-lived-in-design.md`, Decisions (a) to (f) and "Mark's three
 calls", with its Constraints and Anti-goals.
 
+## What revision 1 changed
+
+| Finding | The answer | Where |
+| --- | --- | --- |
+| W01 | The distance between two convex polygons is written out | Task 2, the clearance test |
+| W02 | `index` is the house's index in `STREET_HOUSES`, for the frame, the door, the seed and the mirror | Decision (a) |
+| W03 | The candidate path in the slid-end test keeps its first leg. The grid's bounds are written out | Task 2 |
+| W04 | `flatPolygon` takes any convex polygon. A tub's top is one call with eight corners | Decision (c) |
+| W05 | The plant's sphere is centred at `(x, 0.02, z)` in the chunk's own frame. The mesh's `position-y` lifts it | Decision (g), Task 3 |
+| W06 | An object's `box.height` is its full height: the pail's 0.026 with its handle | Task 3 Interfaces |
+| W07 | The bench's blocks are centred across the plank's depth | Decision (c) |
+| W08 | `clad` derives `lengthScale` itself and forwards it to `traceFace`. Its `paint` option does not change | Task 4 Interfaces |
+| W09 | `StreetBuild['report']['lived']` is typed, and `buildFlatPanel` initialises it empty | Task 2 Interfaces |
+| W10 | `T/` is the tools folder written out. The worktree holds no `T` | Session mapping, Task 1 |
+| W11 | `objectClearings(): OrientedBox[]` is a function returning `[]` until Task 3 | Task 2 Files |
+
 ## Session mapping
 
 Checked against `herdr agent list` on 2026-10-27 at 21:25: Lead Claude `w4:p1`. Worker Gemini 3.8 (`agy`) `w4:p5`,
@@ -41,7 +58,8 @@ to the main checkout's, served on port 5206. The base for the colour and frame-t
 `1b5e62f` (K2's head) on port 5205. One dev server runs at a time during the mutation proofs (K2's lesson: two servers
 re-optimise each other's dependency cache). The evidence goes in
 `/Users/markma/Projects/starry-night/scratch/village-craft-2026-10-25/k3/` (`E3/` below), the tools in
-`scratch/village-craft-2026-10-25/tools/` (`T/`). Nothing is pushed before the Lead's gate.
+`/Users/markma/Projects/starry-night/scratch/village-craft-2026-10-25/tools/` (`T/`). The worktree holds no `T`: a
+step that says `T/build-hash.ts` means that folder's file, written out (W10). Nothing is pushed before the Lead's gate.
 
 ## The facts the plan rests on (read at `08c0254`)
 
@@ -126,7 +144,10 @@ through K2's gateposts). A path's points: `S` the step's front centre, `(ox, oz)
 past the posts), then `B` to `E`.
 
 `doorPathLegs(): { house: string; index: number; width: number; end: number | null; points: [number, number][] }[]`
-returns the nine paths in `STREET_PATHS`'s order, `points` the two or three points above as `[x, z]`.
+returns the nine paths in `STREET_PATHS`'s order, `points` the two or three points above as `[x, z]`. `index` is the
+house's index in `STREET_HOUSES` (L1 0, L2 1, L3 2, L4 3, R1 5, R2 6, R3 7, R4 8, R5 9), found by `findIndex` on `id`.
+`doorStepFrame(h, index)` and `doorOf(h, index)` take it, as the steps do (`doorOf` reads its parity for a cottage's
+door). The seed and the mirror below take the same index (W02).
 `pathClearings(): OrientedBox[]` returns one rectangle per leg: origin the leg's start, `u` the unit vector to its end,
 `n` the perpendicular `(−uz, ux)`, `u0` 0, `u1` the leg's length, `k0` `−width / 2`, `k1` `width / 2`. The filter adds
 `GRASS.house` 0.012 as it does for the steps and the walls.
@@ -173,22 +194,26 @@ centre: `a' = 2 × door.cu × W − a`. The numbers: each object's near edge sta
 The sizes, in `LIVED_CRAFT` in `streetGeometry.ts`:
 
 - **The bench:** a plank 0.10 long (along `u`), 0.03 deep, 0.012 thick, its top at y 0.037, on two blocks 0.012 square
-  and 0.025 high, each 0.01 in from the plank's end. Wood as the rail's: `sourceUnderpaint(painting, 'thatch', 1)`. No
+  and 0.025 high, each 0.01 in from the plank's end and centred across its depth (0.009 from each long edge, W07). Wood as the rail's: `sourceUnderpaint(painting, 'thatch', 1)`. No
   ink (the rail's reason: at the plank's 0.012 the ink would be 0.0017, at the blocks' 0.025 0.0035, a third of a
   block). Every face a flat quad, lit and shaded as a wall face.
 - **The pot:** an eight-sided tub 0.022 across (flat to flat) and 0.022 high, its eight sides and its top in
-  `PALETTE.villageCool` (`#36403f`), flat quads. The rim: `ink` round the top's eight edges at `refHeight` 0.022, so the
+  `PALETTE.villageCool` (`#36403f`), each side one `flatPolygon` call with four corners, the top one call with eight
+  (W04). The rim: `ink` round the top's eight edges at `refHeight` 0.022, so the
   ink is 0.0031 wide, 0.14 of the pot as a door's frame is of a wall. The plant stands on the top (Decision (g)).
-- **The pail:** an eight-sided tub 0.016 across and 0.018 high in the rail's wood, flat quads, its top a flat quad in
-  the wood at 0.5 (the inside in shadow), under the rim's ink. Two hoops: `ink` round the eight edges at
+- **The pail:** an eight-sided tub 0.016 across and 0.018 high in the rail's wood, each side one `flatPolygon` call, its
+  top one call with eight corners in the wood at 0.5 (the inside in shadow), under the rim's ink. Two hoops: `ink` round the eight edges at
   y 0.005 and y 0.014, `refHeight` 0.018, the ink 0.0025 wide. A handle: a half-circle of radius 0.008 over the top
   in the plane across `u`, six straight edges from rim to rim, `refHeight` 0.018, in `ink`. Each edge's normal is the
   side's for a hoop and `u` for the handle.
 
 All of it goes into `underpaint` (class 0, `src` 255) and `outlines`, through one module helper lifted from the rail:
-`flatQuad(ctx, corners: [Vector3, Vector3, Vector3, Vector3], normal: Vector3, colour: Color, refHeight: number, seed:
-number): void`, the rail's `addQuad` with the colour as an argument. The rail calls it with its wood. The rail's
-vertices do not move (Task 3's test). Seeds `0x7a00 + i × 32` for object `i`.
+`flatPolygon(ctx, corners: Vector3[], normal: Vector3, colour: Color, refHeight: number, seed: number): void`, the
+rail's `addQuad` with the colour as an argument and any convex polygon as its corners, fanned from the first corner as
+`polygon` does (W04). The face it builds for `lightOf` and `shadeNew` has `u` from the first corner to the second and
+`v` from the first to the last: `lightOf` reads the normal only, and `wallShade` returns 1 for a face whose origin
+stands above y 0.01, so the octagon tops take no shade. The rail calls it with its four corners and its wood, byte for
+byte as today. The rail's vertices do not move (Task 3's test). Seeds `0x7a00 + i × 32` for object `i`.
 
 **Lead, against the design's "the grass is cleared along the path":** the grass is also cleared round each object,
 one rectangle per object in `objectClearings()`: the footprint (the bench's plank, a tub's square) in the house's frame,
@@ -228,8 +253,9 @@ height only. A blade 0.02 long at the grass's half-width is 3 to 6 times as long
 7.5). `GrassChunk` gains `y?: number`, the plant's `PLANT.y` 0.022, the pot's height (the test holds it equal to
 `LIVED_CRAFT.pot.height`: `streetGeometry.ts` imports `streetGrass.ts`, so the grass does not import the craft back). `latIn` is `PLANT.latIn` 10, so
 `grassDrawCount` draws every blade at any distance (the share is `min(1, (10 / d)²)`). `box` is the roots' bounds,
-`reach` the blades' largest `bladeReach` at 0.5, `sphere` centred at `(x, y + PLANT.sphere[0], z)` with radius
-`PLANT.sphere[1]`. The pot's `(x, z)` comes from `STREET_OBJECTS` through `objectPlaces()` in `streetLayout.ts`:
+`reach` the blades' largest `bladeReach` at 0.5, `sphere` centred at `(x, PLANT.sphere[0], z)` with radius
+`PLANT.sphere[1]`, in the chunk's own frame: `StreetGrass.tsx` sets it as the geometry's bounding sphere, and three
+applies the mesh's `position-y` to it at culling time, so the centre is not lifted twice (W05). The pot's `(x, z)` comes from `STREET_OBJECTS` through `objectPlaces()` in `streetLayout.ts`:
 `{ kind; house; index; centre: [number, number]; frame: ReturnType<typeof doorStepFrame> }[]`.
 
 `StreetGrass.tsx` builds `plants = useMemo(() => plantChunks(painting))`, concatenates them after `chunks` for the
@@ -308,7 +334,8 @@ with `[...stepClearings(), ...wallClearings()]` against `G1`.
 - [ ] **Step 3: Set `t1` to 0.41.**
 - [ ] **Step 4: Run the suite**: `npm run -s test:sky 2>&1 | tee E3/t1/test-sky.log`. Expected: all PASS, the frog tests
   among them (W2's last three segments stood behind no frog).
-- [ ] **Step 5: K3's base hashes**: `WT=$PWD npx tsx T/build-hash.ts` and `WT=$PWD npx tsx T/grass-hash.ts`, into
+- [ ] **Step 5: K3's base hashes**: `WT=$PWD npx tsx T/build-hash.ts` and `WT=$PWD npx tsx T/grass-hash.ts` (`T` is
+  `/Users/markma/Projects/starry-night/scratch/village-craft-2026-10-25/tools`, W10), into
   `E3/t1/hash.txt` as `B1` and `G1`, with the triangle count. Expected: the build under 576,295 (three segments of
   stones fewer) and the grass with more blades than K2's 17,010.
 - [ ] **Step 6: Commit** by pathspec: `feat(street): W2 ends at t 0.41, where R2's path meets the lane (K3 task 1)`.
@@ -316,8 +343,8 @@ with `[...stepClearings(), ...wallClearings()]` against `G1`.
 ### Task 2: the paths and the grass's clearings (worker)
 
 **Files:**
-- Change: `src/scene/streetLayout.ts` (`LIVED_PATH`, `STREET_PATHS`, `doorPathLegs`, `pathClearings`, `objectClearings`
-  as an empty list until Task 3, `streetClearings`)
+- Change: `src/scene/streetLayout.ts` (`LIVED_PATH`, `STREET_PATHS`, `doorPathLegs`, `pathClearings`, `objectClearings(): OrientedBox[]`
+  returning `[]` until Task 3 (W11), `streetClearings`)
 - Change: `src/scene/streetGeometry.ts` (`clad`'s `paint` option, `Context.lived`, `doorPaths(ctx)` called after
   `laneLamps`, the `lived` option, `report.lived`)
 - Change: `scripts/street-lane.test.ts` (the subset test, Decision (g))
@@ -328,9 +355,11 @@ with `[...stepClearings(), ...wallClearings()]` against `G1`.
 **Interfaces:**
 - Produces: `LIVED_PATH`, `STREET_PATHS`, `doorPathLegs()`, `pathClearings()`, `objectClearings()`, `streetClearings()`
   as Decision (a) and (f). `buildStreet(…, { lived })`. `clad`'s `paint` option.
-- `report.lived.paths: { house: string; width: number; end: number | null; points: Vector3[]; faces: string[]; ground:
-  [number, number] }[]`, `points` at y 0.002, `faces` the names clad (`door L1 leg 0`, …), `ground` the path's vertex
-  range `[start, end)` in `build.ground.arrays`. `report.lived.objects: []` until Task 3.
+- `StreetBuild['report']` gains `lived: { paths: LivedPath[]; objects: LivedObject[] }` (W09). `buildFlatPanel`
+  initialises it to `{ paths: [], objects: [] }` beside `lane` (`streetGeometry.ts:1833`), as `buildStreet` does when
+  `lived` is false. `LivedPath = { house: string; width: number; end: number | null; points: Vector3[]; faces: string[];
+  ground: [number, number] }`, `points` at y 0.002, `faces` the names clad (`door L1 leg 0`, …), `ground` the path's
+  vertex range `[start, end)` in `build.ground.arrays`. `LivedObject` is Task 3's. `objects` is `[]` until Task 3.
 
 - [ ] **Step 1: Write the failing tests** in `street-lived.test.ts`:
   - `'every front door but L5 has a path, at the ends the plan names'`: `report.lived.paths` has 9 entries in
@@ -345,11 +374,17 @@ with `[...stepClearings(), ...wallClearings()]` against `G1`.
     lamp post's foot (`report.lane.lamps[].foot`), from every wall segment's footprint polygon
     (`report.lane.walls[].segments[].corners`) and from every frog's ring (frogs 0 to 3: the body's centre from
     `frogPlace`, radius `3 × FROG.clear × scale`) and body (frog 4: its centre, radius `FROG.size × scale`). The
-    distance from a point to a rectangle and between two convex polygons as `street-lane.test.ts:452-466` has them.
+    distance between two convex polygons (W01): 0 when either holds a vertex of the other (`inside`,
+    `street-lane.test.ts:463-466`) or two of their edges cross, else the least distance from a vertex of either to an
+    edge of the other (`segDist`, `:456-461`). For two convex polygons the closest pair lies at a vertex and an edge, so
+    that is the whole distance. A ring or a body is a point and a radius: the polygon's distance to the point, less the
+    radius.
   - `'a slid end is the nearest that clears'`: for each path with an `end`, `tNear` is the `t` on a 0.0001 grid where
-    `laneAt(t, side × 0.06)` is nearest `points[0]`, printed per house. For L3, R1 and R3, every `t` on a 0.001 grid strictly between
-    `tNear` and `end` fails the clearance rule above for the path's strip to that `t`. For the rest, `|end − tNear|`
-    is 0.003 or less.
+    `laneAt(t, side × 0.06)` is nearest `points[0]`, printed per house. For L3, R1 and R3, every `t` on a 0.001 grid over
+    `[min(tNear, end) + 0.001, max(tNear, end) − 0.001]` fails the clearance rule above for the candidate path to that
+    `t` (W03): the path's first leg kept as it is, its second from the bend to `laneAt(t, side × 0.06)`, or its one leg
+    from `S` when it has one. R1's end lies below its `tNear`, L3's and R3's above. For the rest, `|end − tNear|` is
+    0.003 or less.
   - `'a path's strip ends on the lane's edge, both corners'`: the last leg's two end corners (`E ± (width / 2) ×
     across`) have `|laneParam lateral|` within 0.015 of 0.06. R5 is skipped (it ends on the paving).
   - `'the grass clears the paths'`: in `grassChunks(painting)`, no blade root within 0.012 of any leg's rectangle (the
@@ -377,20 +412,22 @@ with `[...stepClearings(), ...wallClearings()]` against `G1`.
 
 **Files:**
 - Change: `src/scene/streetLayout.ts` (`STREET_OBJECTS`, `objectPlaces`, `objectClearings`)
-- Change: `src/scene/streetGeometry.ts` (`LIVED_CRAFT`, `flatQuad` lifted from the rail, `signsOfLife(ctx)` called
+- Change: `src/scene/streetGeometry.ts` (`LIVED_CRAFT`, `flatPolygon` lifted from the rail, `signsOfLife(ctx)` called
   after `doorPaths`, `report.lived.objects`)
 - Change: `src/scene/streetGrass.ts` (`PLANT`, `GrassChunk.y`, `plantChunks`)
 - Change: `src/scene/StreetGrass.tsx` (the plants after the chunks, the mesh lifted by `y`)
 - Test: `scripts/street-lived.test.ts`
 
 **Interfaces:**
-- Produces: `STREET_OBJECTS`, `objectPlaces()`, `objectClearings()` as Decision (c). `LIVED_CRAFT = { bench: { plank:
+- Produces: `STREET_OBJECTS`, `objectPlaces()`, `objectClearings()` as Decision (c). `LivedObject = { kind: 'bench' |
+  'pot' | 'pail'; house: string; centre: Vector3; box: { u: number; n: number; height: number }; underpaint: [number,
+  number]; outlines: [number, number] }`. `LIVED_CRAFT = { bench: { plank:
   [0.1, 0.03, 0.012], seat: 0.037, block: 0.012, blockHeight: 0.025, blockInset: 0.01 }, pot: { across: 0.022, height:
   0.022, sides: 8 }, pail: { across: 0.016, height: 0.018, sides: 8, hoops: [0.005, 0.014], handle: 0.008,
-  handleEdges: 6 } }`. `flatQuad`. `PLANT`, `plantChunks(painting)`.
-- `report.lived.objects: { kind: 'bench' | 'pot' | 'pail'; house: string; centre: Vector3; box: { u: number; n: number;
-  height: number }; underpaint: [number, number]; outlines: [number, number] }[]`. `centre` is the footprint's centre
-  at y 0. `box` is the footprint's extent along `u` and `n` and the object's height. The ranges are `[start, end)`
+  handleEdges: 6 } }`. `flatPolygon`. `PLANT`, `plantChunks(painting)`.
+- `report.lived.objects: LivedObject[]`. `centre` is the footprint's centre
+  at y 0. `box` is the footprint's extent along `u` and `n` and the object's full height: the bench's 0.037, the pot's
+  0.022, the pail's 0.026 with its handle (`LIVED_CRAFT.pail.height` 0.018 is the tub's, W06). The ranges are `[start, end)`
   vertex indices in `build.underpaint` and `build.outlines.arrays`.
 
 - [ ] **Step 1: Write the failing tests:**
@@ -407,8 +444,8 @@ with `[...stepClearings(), ...wallClearings()]` against `G1`.
   - `'the pot plant is a clump of the grass's blades on the pot's top'`: `plantChunks(painting)` has one chunk. Its `y`
     is `PLANT.y`, equal to `LIVED_CRAFT.pot.height`. It has 5 to 9 blades, every root within 0.011 of the pot's centre, each `height` in `[0.75, 1.25] × 0.7 ×
     0.036`, each `halfWidth` in `0.7 × [0.0024, 0.0034]`, each `|curl|` 0.5 or more (the grass's rule). Its `latIn` is 10
-    and `grassDrawCount(chunk, cam)` is its blade count at a camera 2 away. Its sphere's centre is `(x, 0.042, z)` and
-    its radius 0.06.
+    and `grassDrawCount(chunk, cam)` is its blade count at a camera 2 away. Its sphere's centre is `(x, 0.02, z)` (the
+    chunk's own frame, W05) and its radius 0.06.
   - `'the grass clears the objects'`: no blade root within 0.012 of any object's footprint. `streetClearings().length`
     is 10 + 37 + 14 + 3.
   - `'the paths and the objects cost what the plan says'`: the delta of Task 2's cost test, now 12,000 to 32,000.
@@ -430,7 +467,8 @@ with `[...stepClearings(), ...wallClearings()]` against `G1`.
 
 **Interfaces:**
 - Produces: `faceConfig(face, count?, rows = 64, lengthScale = 1)`. `traceFace(…, { lengthScale })`.
-  `report.faces[].lengthScale`.
+  `report.faces[].lengthScale`. `clad` derives `lengthScale` itself (Decision (d)) and calls `traceFace(face, ctx.flow,
+  ctx.painting, { density: density × cover, lengthScale })`. Its `paint` option does not change (W08).
 
 - [ ] **Step 1: Write the failing tests:**
   - `'the plaster houses take the measured shorter row, the church keeps its own'`: every face of source `plaster` and
@@ -459,12 +497,12 @@ with `[...stepClearings(), ...wallClearings()]` against `G1`.
   3. `pathClearings()` returns `[]`: `the grass clears the paths` fails.
   4. `doorPaths` skips its `clad` calls, the report kept: `a door path takes the lane's paint …` fails on `ribbons`.
   5. `LIVED_PATH.cover` at 1: `a door path takes the lane's paint …` fails on `cover`.
-  6. The pot's `flatQuad` calls skipped: `every object is drawn` fails.
+  6. The pot's `flatPolygon` calls skipped: `every object is drawn` fails.
   7. The pail's `ink` calls skipped: `every object is drawn` fails on the `outlines` range.
   8. `plantChunks` returns its chunk with `y` 0: `the pot plant is a clump …` fails.
   9. `clad` reads `WALL_PAINT.plasterLength` whatever `ctx.wallPaint` is: `… the church keeps its own` fails.
   10. `clad` leaves the cover unscaled: `the plaster houses' ribbon count holds` fails.
-  11. `flatQuad` lifts its first corner by 0.001: `the rail did not move` fails.
+  11. `flatPolygon` lifts its first corner by 0.001: `the rail did not move` fails.
 
   A mutation whose test stays green is a finding: report it, do not weaken the mutation.
 
