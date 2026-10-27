@@ -284,9 +284,10 @@ with `[...stepClearings(), ...wallClearings()]` against `G1`.
   `reference/derived` linked. The dev server on 5206 is not started yet.
 - [x] The plaster measurement: `E3/t0/plaster/measurement.md` and its crops (Fact 1).
 - [x] The plaster houses' ribbon counts at K2's head: `T/k3-plaster-count.mts` (Fact 2).
-- [ ] `T/build-hash.ts` reads `LIVED=0` and passes `{ lived: false }`. `T/grass-hash.ts` reads `LIVED=0` and passes
-  `[...stepClearings(), ...wallClearings()]`. An older tree ignores both. `T/k3-gate.sh`, `k3-colour.sh`, `k3-perf.sh`,
-  `k3-look.sh`, `k3-walk.sh` and `k3-mutations.sh` from K2's, for `lived-wt` on 5206, the base on 5205 and `E3/`.
+- [x] `T/build-hash.ts` reads `LIVED=0` and passes `{ lived: false }`. `T/grass-hash.ts` reads `LIVED=0` and passes
+  `[...stepClearings(), ...wallClearings()]`. An older tree ignores both: on `08c0254` they give K2's hashes. `T/k3-gate.sh`,
+  `k3-colour.sh`, `k3-perf.sh`, `k3-look.sh`, `k3-walk.sh` and `k3-mutations.sh` from K2's, for `lived-wt` on 5206, the
+  base (the main checkout at `1b5e62f`) on 5205 and `E3/`. The look pairs are against K2's pass 5 (`E/k2/t4/p5`).
 - [ ] Write the brief for Tasks 1 to 4 (`E3/brief-k3-build.md`), lint it, and dispatch it with a one-line pointer.
 
 ### Task 1: W2 ends at the gateway (worker)
