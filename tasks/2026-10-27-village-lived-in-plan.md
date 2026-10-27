@@ -62,6 +62,7 @@ calls", with its Constraints and Anti-goals.
 | F9 | `if (lived) { doorPaths(ctx); signsOfLife(ctx) }` stands after the `if (lane)` block | Decision (f) |
 | F10 | The slid-end test finds the nearest valid end on both sides on a 0.0001 grid. The table's end is within 0.0006 of it | Task 2 |
 | F11 | `plasterLength` 0.7: the row 0.35 to 0.70, inside the measured 0.35 to 0.75. The knob 0.7 to 0.75 | Decision (d) |
+| LP3 (Task 1's suite) | With W2 at 0.41, K2's test `each course fills its run flush to both wall heads` failed: two courses' last stones stopped 0.008 and 0.0126 short of the head (by arc length, bound 0.006). The last stone was sized from the lane's speed at its start, and near `t` 0.41 that speed rises 15% across one stone. The fix sizes it from the rest of the run, measured, and centres it there by length (`E3/probe/lead-k3-w2-flush.log`, `-fixed.log`) | Task 1 |
 | LP2 (the Lead's probe) | With the legs clipped, every path clears 0.03 (the least L3's 0.030017) and each mitre is shared exactly (`E3/probe/lead-k3-clip.mjs`, `.log`). Each table end is within 0.0005 of the nearest valid end. The end corners lie within 0.003 of lateral 0.06. The pail's handle stands in the plane facing the lane (normal `n`): across `u` it was edge-on to the camera | Decision (a), (c) |
 
 ## Session mapping
@@ -390,10 +391,13 @@ with `[...stepClearings(), ...wallClearings()]` against `G1`.
 **Files:**
 - Change: `src/scene/streetLayout.ts` (`STREET_WALLS[1].t1` 0.41)
 - Change: `scripts/street-lane.test.ts` (`the walls stand on the verges the plan names`, `the grass clears the walls`)
+- Change: `src/scene/streetGeometry.ts` (`laneWalls`' `layCourse`: the last stone, LP3, built by the Lead)
 
 **Interfaces:**
 - Produces: `STREET_WALLS` `[{ side: -1, t0: 0.06, t1: 0.22 }, { side: 1, t0: 0.14, t1: 0.41 }, { side: -1, t0: 0.54,
-  t1: 0.84 }]`. Nothing else changes.
+  t1: 0.84 }]`. Each course's last stone takes its cell from `arcOf(tCurr, t1, lat)`, the rest of the run measured by
+  64 midpoint samples, and its centre from the `t` where that length reaches half (LP3). Every course of the three
+  walls then ends within 0.003 of its heads by arc length. The last stones of W1 and W3 grow by at most 0.0018.
 
 - [ ] **Step 1: Make the tests pin the new wall.** `the walls stand on the verges the plan names` asserts the three
   runs' sides, `t0` and `t1` equal the list above to 1e-9 and their segment counts are 8, 14 and 15. `the grass clears

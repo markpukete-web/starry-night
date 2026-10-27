@@ -1252,13 +1252,22 @@ function laneWalls(ctx: Context): void {
     luminances.sort((a, b) => a - b)
     const floor = luminances[Math.floor(luminances.length * (1 - pale))]
 
-    // D3.1. runOf(lat) is the run's world length: 64 midpoint samples of speed(t, lat) over [t0, t1], summed with their dt
-    const runOf = (lat: number) => {
-      let w = 0
+    // D3.1. arcOf(a, b, lat) is the world length from a to b: 64 midpoint samples of speed(t, lat), summed with their
+    // dt. With `half`, it returns instead the t where that length reaches half the total (K3 task 1).
+    const arcOf = (a: number, b: number, lat: number, half = false) => {
       const N = 64
-      for (let k = 0; k < N; k++) w += speed(t0 + ((k + 0.5) * (t1 - t0)) / N, lat) * ((t1 - t0) / N)
-      return w
+      const dt = (b - a) / N
+      const steps = Array.from({ length: N }, (_, k) => speed(a + (k + 0.5) * dt, lat) * dt)
+      const total = steps.reduce((sum, w) => sum + w, 0)
+      if (!half) return total
+      let w = 0
+      for (let k = 0; k < N; k++) {
+        if (w + steps[k] >= total / 2) return a + (k + (total / 2 - w) / steps[k]) * dt
+        w += steps[k]
+      }
+      return b
     }
+    const runOf = (lat: number) => arcOf(t0, t1, lat)
 
     // D3.2. planCourse(rng, W) draws stone lengths H * (draw[0] + (draw[1] - draw[0]) * rng()) until their sum reaches W * joint.
     // If dropping the last one lands nearer W * joint than keeping it, drop it (never below one stone).
@@ -1308,13 +1317,15 @@ function laneWalls(ctx: Context): void {
 
       for (let si = 0; si < lens.length; si++) {
         const sp = speed(tCurr, lat)
-        // D3.3. The last stone's length is (t1 - tCurr) * speed(tCurr, lat) * joint clamped to [length[0] * H, length[1] * H],
-        // so the course ends at the wall head whatever the walk's curvature error.
-        const L = si === lens.length - 1 ? Math.min(Math.max((t1 - tCurr) * sp * joint, length[0] * H), length[1] * H) : lens[si]
-        const cell = L / joint
-        const dtCell = cell / sp
+        // D3.3. The last stone's cell is the rest of the run, measured by arcOf, and the stone sits at its middle by
+        // length, joint × the rest long, clamped to [length[0] * H, length[1] * H], so the course ends at the wall head.
+        // K3 task 1: sized from speed(tCurr) alone, W2's last stone fell 0.0126 short of t 0.41, where the lane's speed
+        // rises 15% across one stone.
+        const last = si === lens.length - 1
+        const L = last ? Math.min(Math.max(arcOf(tCurr, t1, lat) * joint, length[0] * H), length[1] * H) : lens[si]
+        const dtCell = last ? t1 - tCurr : L / joint / sp
 
-        const tMid = tCurr + dtCell / 2
+        const tMid = last ? arcOf(tCurr, t1, lat, true) : tCurr + dtCell / 2
         let dt0 = L / 2 / speed(tMid, lat)
         let dt2 = L / 2 / speed(tMid, lat)
         const ptMid = laneAt(tMid, lat)

@@ -266,7 +266,7 @@ export function doorStepFoot(h: StreetHouse, index: number): [number, number][] 
 
 export const STREET_WALLS = [
   { side: -1 as const, t0: 0.06, t1: 0.22 },
-  { side: 1 as const, t0: 0.14, t1: 0.47 },
+  { side: 1 as const, t0: 0.14, t1: 0.41 },
   { side: -1 as const, t0: 0.54, t1: 0.84 },
 ] as const
 

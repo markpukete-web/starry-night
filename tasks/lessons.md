@@ -3331,3 +3331,15 @@ must be byte-identical before the stimulus's difference means anything.
   in both logs, a failed module fetch in the lane's), and passed on K1 in the same minute and on the lane's server
   restarted alone. The grass check's case 4 failed the same way. Restart the server under test after a mutation run
   and before the browser gates, with no other server up, and read both servers' logs when a timing case fails.
+
+## 2026-10-27 (night) — K3's plan and Task 1
+
+- **Moving a wall's end re-runs every test that measures the wall, not only the ones the change names** (K3 Task 1,
+  2026-10-27). The plan expected the full suite to pass with W2 at 0.41, and both plan reads ran only the grass and frog
+  tests against it. K2's flush test failed: two courses stopped 0.008 and 0.0126 short of the new head. The planner
+  sized the last stone from the lane's speed at the stone's start, and near `t` 0.41 that speed rises 15% across one
+  stone. The old end at 0.47 sat on a steadier stretch, so K2 never showed it. A plan that moves a K2 geometry
+  parameter now names the K2 tests that read it, and a probe runs them before the plan claims the suite passes.
+- **"Seen from stop N" is a distance unless a frame proves it** (K3's plan, 2026-10-27). The design named a stop for each
+  object, measured as the distance from the stop to the door. None of the three is in frame at its stop. The probe that
+  projects each object from every walk pose took a minute and changed the look pass's crops and Mark's gate brief.
