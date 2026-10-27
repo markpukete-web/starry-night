@@ -9,6 +9,10 @@ probes (LP1, LP2). The table below says where each finding is answered. Revision
 approved design and Mark's three calls of 21:11: W2 ends at `t` 0.41, a wooden pail by L4's door, the far houses'
 paths at full length.
 
+**Revision 2 (2026-10-27, 23:10).** Codex's confirmation read (`E3/plan-confirm-codex.md`) closed eleven findings and
+kept F6 open at P2: a ray through a real leaf missed revision 1's mid-height plane. The plant's hit is now a vertical
+cylinder (Decision (g), LP4). Task 1 is built (`5f3753c`), with the Lead's fix to K2's last stone (LP3).
+
 Four of this plan's decisions depart from the design's text, each for a fact the design did not have. The plaster
 measurement is done and gives one outcome, not three (Decision (d)). The three objects clear the grass round them, as
 the steps do, or the grass buries them (Decision (c)). The pot plant's clump is built outside `grassChunks`, so K2's
@@ -56,7 +60,8 @@ calls", with its Constraints and Anti-goals.
 | F1 | `street-build.test.ts`'s fixture builds with `{ paint: KEPT_PAINT, lived: false }`. A new test holds the default build under `STREET_TRIANGLE_BUDGET` | Task 2 |
 | F2 | The last point is checked against `laneAt(end, side × 0.06)` to 1e-12, not through `laneParam`, which is approximate | Task 2 |
 | F3, F12 | Each leg is clipped to the lines it meets: the step's front, the mitre at a bend, the lane's edge (R5: the paving's edge). No paint runs onto the lane and none is doubled at a bend. `clad` and `traceFace` take a clip polygon | Decision (a), (f), Task 2 |
-| F6 | `plantHit` casts the hand's ray against the plant before the ground plane. A unit test and a browser case press on the plant | Decision (g), Task 3 |
+| F6 | `plantHit` casts the hand's ray against the plant before the ground plane. A unit test and a browser case press on the plant. Revision 2, after Codex's confirmation read: the hit is a vertical cylinder, and the tests aim at real leaf points | Decision (g), Task 3 |
+| LP4 (the Lead's probe) | The plant's hit is a cylinder about its root centre, from the pot's top to its tallest blade, of radius the blades' rest reach (0.0282). All 816 rays through leaf points in frame hit it, from five stops and four walk points on both viewports. Codex's counterexample is among them. All 1,632 points 0.1 to the camera's right miss (`E3/probe/lead-k3-plant-cylinder.mjs`, `.log`) | Decision (g), Task 3 |
 | F7 | Mutation 11's red is the `B1` hash test | Task 4 |
 | F8 | The tests read the tunables and hold each inside its authorised range. The cost tests scale with the cover | Tasks 2 to 4 |
 | F9 | `if (lived) { doorPaths(ctx); signsOfLife(ctx) }` stands after the `if (lane)` block | Decision (f) |
@@ -300,8 +305,7 @@ origin) · v / |v|`, and passes the list to `traceFace` as `options.clip`, which
 height)` in the step test (`streetStrokes.ts:353`). The report's `corners` are then the clip. Without either, every
 call builds byte for byte as today. `T/build-hash.ts` and `T/grass-hash.ts` read `LIVED=0` (Task 0).
 
-**(g) The plant, and the grass's tests.** `streetGrass.ts` exports `PLANT = { scale: 0.7, y: 0.022, latIn: 10, hitY:
-0.0126, hit: 0.03 }` and `plantChunks(painting: ImageData2D): GrassChunk[]`: one chunk for the pot. Its blades are
+**(g) The plant, and the grass's tests.** `streetGrass.ts` exports `PLANT = { scale: 0.7, y: 0.022, latIn: 10 }` and `plantChunks(painting: ImageData2D): GrassChunk[]`: one chunk for the pot. Its blades are
 `clump(mulberry32(0x7a40), painting, x, z, PLANT.scale × GRASS_BLADE.height)` at the pot's top centre `(x, z)`, each
 blade's `halfWidth` then multiplied by `PLANT.scale` so the blade keeps the grass's proportion (the design names the
 height only. A blade 0.02 long at the grass's half-width is 3 to 6 times as long as wide, fatter than the grass's 5 to
@@ -322,14 +326,17 @@ The sphere is in the chunk's own frame, so the mesh's translation lifts it with 
 mounts, so case 10 holds. The trail's rectangle stays `grassRect(chunks)`, the verge's, and the pot's root lies inside
 it.
 
-**The hand on the plant (Codex F6).** `plantHit(origin: Vector3, direction: Vector3, plants: GrassChunk[]): [number,
-number] | null` in `streetGrass.ts`, in the street's frame: for each plant, the ray's meet with the plane y = `chunk.y +
-PLANT.hitY` (the plant's mid-height, 0.5 × 0.7 × 0.036). When the meet lies within `PLANT.hit` 0.03 of the plant's root
-centre (its box's centre) horizontally, it returns the meet's `[x, z]`, the nearest plant's when several meet. Else
-null. `StreetGrass.tsx` calls it with the ray's origin less `offset` before the ground plane, and on a hit takes it as
-the hand's hit. The trail's radius 0.045 then covers every root, which lie within 0.011 of the centre. The capture seam
-gains `window.__grassPlants`: each plant's mid-height centre `[x, y, z]` in the street's frame, as `__walkProject`
-takes a point.
+**The hand on the plant (Codex F6, revision 2).** `plantHit(origin: Vector3, direction: Vector3, plants: GrassChunk[]):
+[number, number] | null` in `streetGrass.ts`, in the street's frame. Each plant is a vertical cylinder about `c`, its
+box's centre `(x, z)`: from `bottom = chunk.y` to `top = chunk.y + ` its tallest blade's `height`, of radius `rootOff +
+chunk.reach − GRASS_BLADE.push − GRASS_BLADE.wind`. `rootOff` is its farthest root's distance from `c`. The radius is the
+blades' rest reach at the farthest walk camera, 0.0282 at scale 0.7 (LP4): the push is left out, so a press beside the
+plant is not taken. A ray that runs downward meets `y = top` at `s1 = max(0, (top − oy) / dy)` and `y = bottom` at `s0 =
+(bottom − oy) / dy`, `s0 ≥ 0`. Its points between `s1` and `s0` project to a segment on the ground. When that segment
+comes within the radius of `c`, the plant is hit and `plantHit` returns `c`, the plant entered first (the least `s1`)
+when several are. Else null. `StreetGrass.tsx` calls it with the ray's origin less `offset` before the ground plane, and
+on a hit takes `c` as the hand's hit. The trail's radius 0.045 then covers every root, each within 0.0054 of `c`. The
+capture seam gains `window.__grassPlants`: each plant's `{ y, blades }` in the street's frame.
 
 The grass's tests: K2's `the grass away from the walls is K1's` keeps its steps-only hash and drops its equal-count
 assertion. Its subset check matches each default chunk to the steps-only chunk that holds the default's first blade
@@ -553,11 +560,14 @@ with `[...stepClearings(), ...wallClearings()]` against `G1`.
     lies inside the chunk's sphere in the chunk's own frame (`x`, `z` as built, `y` above the pot's top). Checked also
     with the sphere replaced by Codex's fixed one (radius 0.06 about `(x, 0.02, z)`): that one fails, so the test is not
     vacuous.
-  - `'a pointer on the pot plant pushes it'` (Codex F6): from stop 2's camera (`walkPose(STATION_T[2], false)`, where
-    the plant is in frame on both viewports, `E3/probe/lead-k3-plant-view.log`), a ray through the plant's mid-height
-    centre gives `plantHit` a point within `PLANT.hit` of it. A ray through a point 0.1 to the side at the same height
-    gives null. The ground plane's meet for the first ray is 0.045 or more from the plant (0.277 in the probe, so the
-    old path missed it).
+  - `'a pointer on a leaf of the pot plant pushes it'` (Codex F6, revision 2, LP4): the poses are the five stops and
+    walk `t` 0.3, 0.36, 0.5 and 0.55, each on a 1600 × 900 desktop (`walkPose(t, false)`) and a 390 × 844 phone
+    (`walkPose(t, true)`). For each pose, each blade, `a` in 0.25, 0.5, 0.75 and 1 and `across` 0 and `± bladeWidth(a)`:
+    the point `bladeVertex(blade, a, across, right, widen)` lifted by `PLANT.y`, with `right` and `widen` as the shader
+    takes them for that camera. When it projects inside the frame, a ray through it (`Raycaster.setFromCamera`) gives
+    `plantHit` the plant's centre to 1e-12 (816 rays in the probe). The same point moved 0.1 along the camera's right
+    on the ground gives null (1,632 in the probe). The message names Codex's counterexample, stop 2's blade 3 at `a`
+    0.75, which revision 1's plane missed.
   - `'the grass clears the objects'`: no blade root within 0.012 of any object's footprint. `streetClearings().length`
     is 10 + 37 + 14 + 3.
   - `'the objects cost what the plan says'`: the triangles in the three objects' `underpaint` and `outlines` ranges
@@ -567,9 +577,10 @@ with `[...stepClearings(), ...wallClearings()]` against `G1`.
 - [ ] **Step 4: Run the suite** into `E3/t3/test-sky.log`. Expected: all PASS.
 - [ ] **Step 5: K2 unmoved**, again: `LIVED=0` gives `B1` and `G1`, into `E3/t3/hash.txt`.
 - [ ] **Step 5b: The browser's checks**, against port 5206: `check-street-grass.mjs` (every case, case 10 among them,
-  and the new case 19: on the desktop at stop 2 (`walkT=0.44&walkMode=input`), `__grassHand` presses at
-  `__walkProject(t, __grassPlants[0])`, and two frames later `__grassPushNear(x, z, 0.03)` at the plant's `(x, z)` is
-  above 0) and `check-portal.mjs` (case 11's counts equal over three trips, with the plant's mesh), their output in
+  and the new case 19: on the desktop at stop 2 (`walkT=0.44&walkMode=input`), the leaf point is blade 3's of
+  `__grassPlants[0]` at `a` 0.75, `across` 0, for `walkPose(0.44, false)`'s camera, lifted by its `y`. `__grassHand`
+  presses at `__walkProject(t, point)`, and two frames later `__grassPushNear(cx, cz, 0.03)` at the plant's centre is
+  above 0. Codex's replay of the ground fallback reads 0 there) and `check-portal.mjs` (case 11's counts equal over three trips, with the plant's mesh), their output in
   `E3/t3/`.
 - [ ] **Step 6: Commit** by pathspec: `feat(street): a bench, a pot plant and a pail by three doors (K3 task 3)`.
 
@@ -622,9 +633,11 @@ with `[...stepClearings(), ...wallClearings()]` against `G1`.
   11. `flatPolygon` lifts its first corner by 0.001: `K2's street without the lived-in parts` fails on `B1` (Codex F7:
       the rail comparison runs the same helper on both sides, so it cannot fail).
   12. `clad` does not pass the clip to `traceFace`: `no paint runs past a leg's clip …` fails.
-  13. `plantHit` returns null: `a pointer on the pot plant pushes it` fails.
+  13. `plantHit` returns null: `a pointer on a leaf of the pot plant pushes it` fails.
   14. `plantChunks` sets a fixed sphere of radius 0.06 about `(x, 0.02, z)`: `the plant's sphere holds every blade`
       fails.
+  15. `plantHit` takes revision 1's plane instead: the meet with `y = chunk.y + 0.5 ×` the tallest blade's height,
+      within 0.03 of `c`. `a pointer on a leaf of the pot plant pushes it` fails on Codex's counterexample.
 
   A mutation whose test stays green is a finding: report it, do not weaken the mutation.
 
