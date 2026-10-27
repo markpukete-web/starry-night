@@ -13,7 +13,13 @@ Four of this plan's decisions depart from the design's text, each for a fact the
 measurement is done and gives one outcome, not three (Decision (d)). The three objects clear the grass round them, as
 the steps do, or the grass buries them (Decision (c)). The pot plant's clump is built outside `grassChunks`, so K2's
 grass tests keep their hash (Decision (g)). K2's subset test is amended, because a path's clearing can empty a whole
-chunk (Decision (g)). All four are open to Mark at the gate.
+chunk (Decision (g)). All four are open to Mark at the gate. Revision 0 had a fifth, a doubled bend (Codex F12).
+Revision 1 removes it: the legs meet on a mitre, as the design asks.
+
+One fact the design did not have changes no decision. The design names a stop for each object: the bench seen from
+stop 2, the pot plant and the pail from stop 4. Those are distances, not views. None of the three is in frame at its
+named stop (`E3/probe/lead-k3-objects-view.log`). Each is seen while walking, widest at 76, 32 and 22 px on a 1600 ×
+900 desktop. The plan keeps the design's doors. Their scale is Mark's call at the gate.
 
 **Goal:** Every front door gets a trodden path to the lane, three doors get a sign of life (a bench, a pot plant, a
 pail), and the four plaster houses take the stroke length the scan shows.
@@ -108,8 +114,8 @@ step that says `T/build-hash.ts` means that folder's file, written out (W10). No
 8. **The budget.** K2's gate: the walk's worst sampled point 1,412,657 (desktop, `t` 0.40) under the ceiling 1,444,930,
    32,273 to spare. Codex's probe (`E3/plan-review-probes/path-count-probe.json`): the nine paths, unclipped, at cover
    0.25 cost 26,672 triangles, at 0.15 15,488, about 106,700 × the cover. The objects about 990 (Codex's
-   `object-ink.json`: the ink 912 of them), the plant 5 to 9 blades at 8 triangles. The plaster's shorter row saves about 9,500
-   (Codex's `plaster-probe.json`). The grass the paths clear gives some back at the worst point, measured in the
+   `object-ink.json`: the ink 912 of them), the plant 5 to 9 blades at 8 triangles. The plaster's shorter row saved 9,544 at a factor of
+   0.65 (Codex's `plaster-probe.json`), less at 0.7. The grass the paths clear gives some back at the worst point, measured in the
    browser. Mark's "full length" call takes the far-path fade out of the levers. The lever left is the paths' cover down
    to 0.15. Then stop and ask Mark.
 9. **The rail's builder** (`streetGeometry.ts:1435-1532`) draws every face through a local `addQuad(corners, normal,
@@ -273,9 +279,9 @@ lengthScale = 1)`, which multiplies `minLength` and `maxLength` by it before the
 `lengthScale: number`. The look pass's knob is 0.7 to 0.75: a factor outside it puts an end of the row outside the
 measurement, and needs a new one first.
 
-**(e) The budget.** The reserve is 32,273 at K2's worst point (Fact 8). The paths about 26,700 at cover 0.25 (less
-where the clip trims a corner), the objects about 990, the plant under 100, the plaster about −9,500, W2's three
-segments a little less. The grass the clearings take out gives some back (2,054 blades, Codex's probe). The hard limit
+**(e) The budget.** The reserve is 32,273 at K2's worst point (Fact 8). The paths cost about 26,700 at cover 0.25,
+less where the clip trims a corner. The objects cost about 990 and the plant under 100. The plaster's shorter row
+saves something under the 9,544 Codex measured at 0.65, and W2's three fewer segments save a little more. The grass the clearings take out gives some back (2,054 blades, Codex's probe). The hard limit
 is the browser's sweep: every point under 1,444,930 on both viewports. If the sweep fails, the paths' cover goes down
 to 0.15 (about 15,500). If that fails, stop and ask Mark.
 
