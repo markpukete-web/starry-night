@@ -447,6 +447,8 @@ export function outlineFace(face: StreetFace, edges: readonly (readonly [Vector3
 /**
  * A dry-stone wall dab: 3 samples along, 3 columns across, 8 triangles.
  * centres are already lifted. across is the unit vector in the face's plane across the stone.
+ * Pass 5 (2026-10-27): a stone takes the stroke body's full-bodied middle (along 0.3 to 0.7), blocky and steady,
+ * avoiding the flame's pointed head, 0.72 tail and 0.55 dry brush; ends taper 0.92, wobble 0.12.
  */
 export function stoneDab(
   into: FaceStrokes,
@@ -460,9 +462,10 @@ export function stoneDab(
   const colours: Color[] = []
   for (let k = 0; k < 3; k++) {
     const s = k / 2
-    const taper = 1 - 0.4 * Math.abs(2 * s - 1) ** 2
+    // pass 5: a stone's ends are 0.92 of its middle and it wobbles 0.12 widths (0.6 and 0.5 drew a leaf)
+    const taper = 1 - 0.08 * Math.abs(2 * s - 1) ** 2
     const half = (width * taper) / 2
-    const wobble = (vnoise(seed + s * 3.1, 0.7) - 0.5) * 0.5 * width
+    const wobble = (vnoise(seed + s * 3.1, 0.7) - 0.5) * 0.12 * width
     const centre = centres[k].clone().addScaledVector(across, wobble)
     steps.push([
       centre.clone().addScaledVector(across, -half),
@@ -472,10 +475,14 @@ export function stoneDab(
     colours.push(colour)
   }
   pushDrapedRibbon(into.arrays, steps, colours)
+  // the stroke body draws a flame (a pointed head, the tail at 0.72, the dry brush from 0.55): a stone takes the
+  // stroke's full-bodied middle, along 0.3 to 0.7, flipped on odd seeds so the slight tails alternate
+  const flip = seed % 2 === 1
   for (let k = 0; k < 3; k++) {
     const s = k / 2
+    const w = flip ? 0.7 - 0.4 * s : 0.3 + 0.4 * s
     for (let j = 0; j < 3; j++) {
-      into.stroke.push(s, j / 2)
+      into.stroke.push(w, j / 2)
       into.seed.push(seed)
     }
   }
