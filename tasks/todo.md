@@ -1,6 +1,22 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-27 (23:40): K3's plan at revision 2, Task 1 built, Tasks 2 to 4 with the worker
+## Pickup — 2026-10-28 (02:30): K3 gated and pushed for Mark's preview; Vincent's form spike pushed beside it
+
+**K3 passes the Lead's gate with one criterion open** (the record `tasks/2026-10-27-village-lived-in.md`, branch
+`feat/village-lived-in` at the head after `1b7402e`, pushed for a Vercel preview, no PR). The worker built Tasks 2 to
+4. Codex's branch review found F1 (P1, tsc and lint failed), F2 (P2) and F3 (P3). The Lead fixed all three (`e14ed17`),
+and the look pass's one defect, R1's path ending in a bare slab (`1b7402e`). Codex's confirmation read: APPROVE. Every
+gate run passes, and the fifteen mutations are red on the final head. The build's time is +10.9% against the plan's
+10% bound, 62 ms of it in the paths' 14 faces: Mark's call. His four calls are at the end of the record.
+
+**Vincent's form, a throwaway spike** (`spike/vincent-form`, rebased on K3, pushed for its own preview, never merged):
+`?street=1&vform=lantern` or `&vform=tarascon`. The design draft and Mark's four calls are in
+`tasks/2026-10-28-vincent-form-spike.md` on that branch.
+
+**Next, after Mark's look:** K3's PR as a draft, then ready, so Codex's review fires; Vincent's form as a slice if he
+wants it, planned from the spike's answers.
+
+## Pickup — 2026-10-27 (23:40): K3's plan at revision 2, Task 1 built, Tasks 2 to 4 with the worker (superseded by the 02:30 pickup above)
 
 **K3's plan is at revision 2** (`tasks/2026-10-27-village-lived-in-plan.md` on `feat/village-lived-in`, the worktree
 `lived-wt` in session `49dba370`'s scratchpad, its dev server on 5206). Codex's confirmation read closed eleven of its
