@@ -45,6 +45,7 @@ calls", with its Constraints and Anti-goals.
 | W09 | `StreetBuild['report']['lived']` is typed, and `buildFlatPanel` initialises it empty | Task 2 Interfaces |
 | W10 | `T/` is the tools folder written out. The worktree holds no `T` | Session mapping, Task 1 |
 | W11 | `objectClearings(): OrientedBox[]` is a function returning `[]` until Task 3 | Task 2 Files |
+| L1 (the Lead's probe) | A leg's end corners straddle the lane's edge symmetrically, up to 0.016 at R1. The test's band is 0.02, one corner each side. Every path's clearance holds with W2 at 0.41: the least is L3's 0.030017 to frog 2's ring, its window `t` 0.499 to 0.501. The objects clear their paths by 0.011 to 0.014 and the rail by 0.08 | Decision (a), Task 2 |
 
 ## Session mapping
 
@@ -161,10 +162,12 @@ normalised, `below` (0, −1, 0), kind `path`, source `field`, `refHeight = STRE
 bend. The lane's own segments overlap by 0.02 in `t` at the same y with the same base colour, and Mark passed them, so
 the wedge takes no mitre: `facePolygon` draws parallelograms only. At cover 0.25 the doubled strokes there are 0.5.
 
-A leg meets the lane's edge square to its own direction, not to the lane's. Where the leg is not perpendicular to the
-lane, one end corner lies on the lane and the other short of the edge by `(width / 2) × tan φ`. The test holds both
-corners within 0.015 of lateral 0.06. No overlap onto the lane: a door path's strokes at the lane's lift levels over the
-lane's would z-fight.
+A leg meets the lane's edge square to its own direction, not to the lane's. Its end's centre lies on lateral 0.06.
+Where the leg is `φ` off the lane's normal, one end corner runs into the lane by `(width / 2) × tan φ` and the other
+stops short of the edge by the same (L1, the Lead's probe `E3/probe/lead-k3-plan-check.mjs`). The largest is R1's: its
+corners at laterals 0.045 and 0.076. The next are R2's and L3's, 0.008 either way. The wedge on the lane lies over the
+lane's strokes at the same lift levels, as the lane's own segments overlap by 0.02 in `t`, which Mark passed. The look
+pass reads R1's end at 1:1. The test holds one corner at 0.06 or less and the other at 0.06 or more, each within 0.02.
 
 **(b) W2 ends at `t` 0.41** (Mark, 2026-10-27): `STREET_WALLS[1].t1` 0.47 → 0.41, 14 segments. R2's path lands at its
 nearest point, `t` 0.457, two legs, 0.344 long, 0.031 clear of the wall's end (`lead-k3-r2gap.mjs`). Task 1 does this
@@ -386,7 +389,8 @@ with `[...stepClearings(), ...wallClearings()]` against `G1`.
     from `S` when it has one. R1's end lies below its `tNear`, L3's and R3's above. For the rest, `|end − tNear|` is
     0.003 or less.
   - `'a path's strip ends on the lane's edge, both corners'`: the last leg's two end corners (`E ± (width / 2) ×
-    across`) have `|laneParam lateral|` within 0.015 of 0.06. R5 is skipped (it ends on the paving).
+    across`) have `|laneParam lateral|` within 0.02 of 0.06, one at 0.06 or less and the other at 0.06 or more (L1).
+    R5 is skipped (it ends on the paving).
   - `'the grass clears the paths'`: in `grassChunks(painting)`, no blade root within 0.012 of any leg's rectangle (the
     rectangle's distance as the filter computes it). `pathClearings().length` is 14.
   - `'the grass away from the paths is K2's'`: `grassChunks(painting, undefined, [...stepClearings(),
