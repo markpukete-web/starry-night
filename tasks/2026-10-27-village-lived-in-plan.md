@@ -11,7 +11,9 @@ paths at full length.
 
 **Revision 2 (2026-10-27, 23:10).** Codex's confirmation read (`E3/plan-confirm-codex.md`) closed eleven findings and
 kept F6 open at P2: a ray through a real leaf missed revision 1's mid-height plane. The plant's hit is now a vertical
-cylinder (Decision (g), LP4). Task 1 is built (`5f3753c`), with the Lead's fix to K2's last stone (LP3).
+cylinder (Decision (g), LP4). Task 1 is built (`5f3753c`), with the Lead's fix to K2's last stone (LP3). Fable read
+both fixes in Codex's place (`E3/plan-confirm-fable.md`, BUILD, no finding at P2 or higher). Fable is a Claude model,
+as the Lead is, so that read is not independent of the Lead's provider.
 
 Four of this plan's decisions depart from the design's text, each for a fact the design did not have. The plaster
 measurement is done and gives one outcome, not three (Decision (d)). The three objects clear the grass round them, as
@@ -61,6 +63,7 @@ calls", with its Constraints and Anti-goals.
 | F2 | The last point is checked against `laneAt(end, side × 0.06)` to 1e-12, not through `laneParam`, which is approximate | Task 2 |
 | F3, F12 | Each leg is clipped to the lines it meets: the step's front, the mitre at a bend, the lane's edge (R5: the paving's edge). No paint runs onto the lane and none is doubled at a bend. `clad` and `traceFace` take a clip polygon | Decision (a), (f), Task 2 |
 | F6 | `plantHit` casts the hand's ray against the plant before the ground plane. A unit test and a browser case press on the plant. Revision 2, after Codex's confirmation read: the hit is a vertical cylinder, and the tests aim at real leaf points | Decision (g), Task 3 |
+| Fable's read (BUILD) | Three items below P2. W2's outer top row: its last stone now starts 0.0034 inside the stone before. That stone already ran 0.0125 past its cell near the kink at `t` 0.3317. The wording on K2's walls. Case 19 runs only at anchor B, where the street's offset is zero | Task 5's crops, Global constraints, Task 3 Step 5b |
 | LP4 (the Lead's probe) | The plant's hit is a cylinder about its root centre, from the pot's top to its tallest blade, of radius the blades' rest reach (0.0282). All 816 rays through leaf points in frame hit it, from five stops and four walk points on both viewports. Codex's counterexample is among them. All 1,632 points 0.1 to the camera's right miss (`E3/probe/lead-k3-plant-cylinder.mjs`, `.log`) | Decision (g), Task 3 |
 | F7 | Mutation 11's red is the `B1` hash test | Task 4 |
 | F8 | The tests read the tunables and hold each inside its authorised range. The cost tests scale with the cover | Tasks 2 to 4 |
@@ -351,7 +354,8 @@ with `[...stepClearings(), ...wallClearings()]` against `G1`.
 - A stroke's width and length stay inside their source's measured range, or inside the Lead's new 1:1 measurement in
   the record (Fact 1 for the plaster). A door path's reference height is the lane's scaled by its width, so the field's
   fractions stay inside the measured row.
-- K2's walls, rail and lamps do not move but for W2's end (Task 1). The houses' places, the lane, the stops, the frogs
+- K2's rail and lamps do not move. K2's walls move at W2's end and at each course's last stone, which LP3 lengthens by
+  at most 0.0018 on W1 and W3 (Task 1). The houses' places, the lane, the stops, the frogs
   and the church do not change. The grass changes only inside the new clearings.
 - No new motion in time. The plant moves as the grass does, under the wind and the hand, nothing more.
 - The triangle ceiling is 1,444,930 at every browser point, both orientations. 60 fps on the desktop, 30 on a mid-tier
@@ -580,7 +584,9 @@ with `[...stepClearings(), ...wallClearings()]` against `G1`.
   and the new case 19: on the desktop at stop 2 (`walkT=0.44&walkMode=input`), the leaf point is blade 3's of
   `__grassPlants[0]` at `a` 0.75, `across` 0, for `walkPose(0.44, false)`'s camera, lifted by its `y`. `__grassHand`
   presses at `__walkProject(t, point)`, and two frames later `__grassPushNear(cx, cz, 0.03)` at the plant's centre is
-  above 0. Codex's replay of the ground fallback reads 0 there) and `check-portal.mjs` (case 11's counts equal over three trips, with the plant's mesh), their output in
+  above 0. Codex's replay of the ground fallback reads 0 there. Then the same again with `skyAnchor=A`, the point plus
+  `STREET.originA` as case 11 takes it: at anchor B the offset is zero, so only A proves that `plantHit` takes the
+  ray's origin less `offset` (Fable P4)) and `check-portal.mjs` (case 11's counts equal over three trips, with the plant's mesh), their output in
   `E3/t3/`.
 - [ ] **Step 6: Commit** by pathspec: `feat(street): a bench, a pot plant and a pail by three doors (K3 task 3)`.
 
@@ -647,7 +653,9 @@ Each pass captures stops 0 to 4 on both viewports beside K2's (`T/k3-look.sh`) a
 into the record `tasks/2026-10-27-village-lived-in.md` and `tasks/lessons.md`. The gate's crops: each object on the
 desktop where it is widest in frame (Decision (c)): the bench at walk `t` 0.2, the pot plant at 0.55, the pail at 0.69,
 and stops 1 and 3 for the paths. Then R1's path end at 1:1 at `t` 0.05 (the most oblique leg, LP1), W2's new end at 1:1
-from `t` 0.3 beside K2's wall (LP3's last stones), the plaster walls
+from `t` 0.3 beside K2's wall (LP3's last stones). Fable's P3 is there: the outer top row's last two stones may meet
+with no mortar, about 4 px. If the crop shows it, the last stone's rest starts at the stone before's drawn end, which
+changes that one course only, the plaster walls
 at 1:1 beside the scan's (`E3/t0/plaster/`), and stop 0 beside the painting's village. The knobs, inside their ranges:
 
 - The paths: `LIVED_PATH.cover` 0.15 to 0.3 (0.35 would cost about 37,000, over the reserve), `baseInset` 0.25 to 0.4

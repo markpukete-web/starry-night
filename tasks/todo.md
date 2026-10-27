@@ -1,6 +1,24 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-27 (22:45): K3's plan at revision 1, Task 1 building, Codex confirming the fixes
+## Pickup — 2026-10-27 (23:40): K3's plan at revision 2, Task 1 built, Tasks 2 to 4 with the worker
+
+**K3's plan is at revision 2** (`tasks/2026-10-27-village-lived-in-plan.md` on `feat/village-lived-in`, the worktree
+`lived-wt` in session `49dba370`'s scratchpad, its dev server on 5206). Codex's confirmation read closed eleven of its
+twelve findings and kept F6, the hand on the pot plant (`k3/plan-confirm-codex.md`). Revision 2 makes the plant's hit a
+vertical cylinder of its blades' rest reach (`k3/probe/lead-k3-plant-cylinder.mjs`: 816 leaf rays hit, 1,632 side
+points miss). Codex's usage ran low, so Mark routed the rest to Fable in the Consultant tab (`w4:p6`): BUILD, no
+finding at P2 or higher (`k3/plan-confirm-fable.md`). Fable is a Claude model, so that read is not independent of the
+Lead's provider.
+
+**Task 1 is built** (`5f3753c`): W2 ends at `t` 0.41. K2's flush test then failed, because the last stone of a course
+was sized from the lane's speed at its start (the Lead's K2 pass 5 formula). The Lead's fix sizes it from the rest of
+the run, measured. `test:sky` 401 of 401, `B1` `5f3ea9c0e97f6e46`, `G1` `aa265c36150f8105`.
+
+**Running at 23:40:** the worker builds Tasks 2 to 4 and the fifteen mutation proofs (`k3/brief-k3-build.md` →
+`k3/t4/report-worker.md`), its waiter armed. **Next:** the Lead's look passes (Task 5, Fable's P3 on W2's outer top row
+among the crops) and gate (Task 6), the push for Mark's preview, the PR as a draft then ready (Codex reviews it).
+
+## Pickup — 2026-10-27 (22:45): K3's plan at revision 1, Task 1 building, Codex confirming the fixes (superseded by the 23:40 pickup above)
 
 **K3's plan is at revision 1** (`tasks/2026-10-27-village-lived-in-plan.md`, `855ede5` on `feat/village-lived-in`, the
 worktree `lived-wt` in session `49dba370`'s scratchpad, its dev server on 5206). Both reads of revision 0 are folded in:
