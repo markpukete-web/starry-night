@@ -1,6 +1,24 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-27 (21:00): K2 pass 5, the stone wall, passed the Lead's gate, pushed for Mark's preview
+## Pickup — 2026-10-27 (21:15): K2 passed by Mark and reviewed clean on PR #31; K3's three calls made, the plan next
+
+**K2 is done bar the merge.** Mark passed pass 5 on the preview at 21:06. PR #31 (`feat/village-lane` on main, head
+`27e2001`) is open and ready; Codex's review completed at 21:09 with no findings. The merge is Mark's click, or the
+Lead's on his word. After the merge: delete the branch, prune the worktrees `craft-wt` and `lane-wt` (session
+`fc6c46e1`'s scratchpad), stop the dev server on 5206 (this session's background job).
+
+**K3, the lived-in houses: the design is approved.** Mark's three calls at 21:11, all the recommendations: W2 ends at
+`t` 0.41, a wooden pail by L4's door, the far paths at full length (recorded in the design,
+`docs/superpowers/specs/2026-10-26-village-lived-in-design.md`, "Mark's three calls"). This branch,
+`feat/village-lived-in`, is stacked on `feat/village-lane` at `27e2001`; its worktree `lived-wt` is in session
+`49dba370`'s scratchpad (`node_modules` and `reference/derived` linked to the main checkout's). **Next:** the K3 plan
+(`superpowers:writing-plans`, from the design's Decisions table), Codex's correctness read and the worker's buildability
+read, then the build here after #31 merges (rebase onto main first). Then Vincent's form (a throwaway lantern spike for
+Mark's eye), then his wander with the camera kept (the 2026-10-26 21:00 pickup).
+
+**Quotas at 21:10:** Claude about 5% of the week, Codex about 13%, the worker about 57%.
+
+## Pickup — 2026-10-27 (21:00): K2 pass 5, the stone wall, passed the Lead's gate, pushed for Mark's preview (superseded by the 21:15 pickup above)
 
 **K2 pass 5 (S4, the stone wall) passed the Lead's gate at 20:57** (the record `tasks/2026-10-26-village-craft-k2.md`,
 its last section; the evidence `scratch/village-craft-2026-10-25/k2/t6/`, the gate's runs `k2/t5/` and `k2/gate/`).

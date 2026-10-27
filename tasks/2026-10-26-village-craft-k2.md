@@ -395,3 +395,6 @@ Pushed at 20:58 (`80f11eb`, the code `973c07d`) to `feat/village-lane`. The Verc
 `-s3.png`). No PR until he has looked.
 
 **Passed by Mark on the preview, 2026-10-27 21:06: "Passed, what's next".** The PR follows, stacked on main.
+
+PR #31 opened at 21:07 (draft, then ready). Codex's review completed at 21:09 on `27e2001`: no findings (the summary comment
+alone, no inline thread, `has_any_findings: false`). Mergeable. The merge is Mark's click or the Lead's on his word.
