@@ -403,7 +403,7 @@ with `[...stepClearings(), ...wallClearings()]` against `G1`.
 - [ ] **Step 3: Set `t1` to 0.41.**
 - [ ] **Step 4: Run the suite**: `npm run -s test:sky 2>&1 | tee E3/t1/test-sky.log`. Expected: all PASS, the frog tests
   among them (W2's last three segments stood behind no frog).
-- [ ] **Step 5: K3's base hashes**: `WT=$PWD npx tsx T/build-hash.ts` and `WT=$PWD npx tsx T/grass-hash.ts` (`T` is
+- [ ] **Step 5: K3's base hashes**: `WT=$PWD node T/build-hash.ts` and `WT=$PWD node T/grass-hash.ts` (`T` is
   `/Users/markma/Projects/starry-night/scratch/village-craft-2026-10-25/tools`, W10), into
   `E3/t1/hash.txt` as `B1` and `G1`, with the triangle count. Expected: the build under 576,295 (three segments of
   stones fewer) and the grass with more blades than K2's 17,010.
@@ -488,7 +488,7 @@ with `[...stepClearings(), ...wallClearings()]` against `G1`.
 - [ ] **Step 3: Build Decisions (a), (f) and (g)'s test amendment**, and add the file to `test:sky`.
 - [ ] **Step 4: Run the suite** into `E3/t2/test-sky.log`. Expected: all PASS, the frog tests and the whole of
   `street-build.test.ts` among them.
-- [ ] **Step 5: K2 unmoved**: `LIVED=0 WT=$PWD npx tsx T/build-hash.ts` gives `B1`, `LIVED=0 WT=$PWD npx tsx
+- [ ] **Step 5: K2 unmoved**: `LIVED=0 WT=$PWD node T/build-hash.ts` gives `B1`, `LIVED=0 WT=$PWD node
   T/grass-hash.ts` gives `G1`. Both, and the two hashes without `LIVED=0`, into `E3/t2/hash.txt`.
 - [ ] **Step 6: Commit** by pathspec: `feat(street): a trodden path from every front door to the lane (K3 task 2)`.
 
