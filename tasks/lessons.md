@@ -3338,7 +3338,9 @@ must be byte-identical before the stimulus's difference means anything.
   2026-10-27). The plan expected the full suite to pass with W2 at 0.41, and both plan reads ran only the grass and frog
   tests against it. K2's flush test failed: two courses stopped 0.008 and 0.0126 short of the new head. The planner
   sized the last stone from the lane's speed at the stone's start, and near `t` 0.41 that speed rises 15% across one
-  stone. The old end at 0.47 sat on a steadier stretch, so K2 never showed it. A plan that moves a K2 geometry
+  stone. The old end at 0.47 sat on a steadier stretch, so K2 never showed it. The formula was the Lead's, from K2 pass 5's brief
+  (`k2/t6/brief-k2-pass5.md:77`, "so the course ends at the wall head whatever the walk's curvature error"). The worker
+  built it as written, and the Lead's K2 gate passed it. A plan that moves a K2 geometry
   parameter now names the K2 tests that read it, and a probe runs them before the plan claims the suite passes.
 - **"Seen from stop N" is a distance unless a frame proves it** (K3's plan, 2026-10-27). The design named a stop for each
   object, measured as the distance from the stop to the door. None of the three is in frame at its stop. The probe that
