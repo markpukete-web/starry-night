@@ -280,3 +280,34 @@ Mark's first live read, 2026-10-27 00:20 to 00:29: "the lighting feel right." Th
 fence; he asked whether wood would be better. The Lead's recommendation: keep stone and make it read as stone (joints
 about 0.8 with a darker body, two stone sizes, a cope of upright stones, stoned end caps), probed in place at stop 0 before
 a worker round; a pass past the cap, so his call. He wrapped up without deciding. K2 is on preview, not passed.
+
+## Pass 5, the stone wall: past the cap on Mark's word (2026-10-27, evening)
+
+Mark, 19:05: "Probe stone", over wood and over passing K2 as it stands. The probe ran in place at stop 0 on 5206
+(`scratch/village-craft-2026-10-25/k2/t6/tools/stone-probe.py` patches the literals and the course loop,
+`run-probe.sh` captures, crops the left wall at 1:1, `500x300+90+430` of the desktop frame, and restores the tree;
+the patches `S1.patch` to `S4.patch`, the crops `S1-wall.png` to `S4-wall.png` beside `p4-wall.png`).
+
+**The two causes.** The street's stroke body (`CYPRESS_STROKE_BODY`) draws every stroke as a flame: the head pointed
+(`r = pow(1 - x^2.5, 0.4)`), the tail 0.72 of the width, the dry brush from 0.55 along. `stoneDab` gave each stone the
+whole stroke, an end taper of 0.6 and a wobble of half a width, so each stone drew as a leaf with gaps a third of its
+length, whatever the joint literal said. Pass 3's crops prove the body share was not the lever: recipe A (the dark
+body) and D (the mean) carry the same leaves. The second cause: the body at the mean gave the joints the stones' tone.
+
+**The recipes.** All four: the stone takes the stroke's full-bodied middle (along 0.3 to 0.7, flipped on odd seeds),
+the geometry's ends 0.92 of the middle, the wobble 0.12 widths, each course planned as stones that fill its run and
+end flush at both heads, a stone per course on each head, width 0.2 H, the stones from wallB's lightest 55%.
+S1: five courses, stones drawn 0.6 to 1.4 H skewed short, joint 0.96, the body at the darkest 40%: coursed flat
+stone, the stones long and the perpends faint, a plank read at the near end. S2: S1 with the body at the mean: the
+joints grey, the stones blend into a slatted block. S3: five courses, 0.6 to 1.1 H, joint 0.92, the dark body: more
+stones per run, the perpends visible. S4: four courses, 0.6 to 1.0 H uniform, joint 0.92, the dark body: blocks with
+clear bed joints, the near head four stones. The comparison for Mark: `k2/t6/k2-pass5-wall-probe.png` (built, S3, S4).
+
+**Mark's pick, 19:20: S4.** The build goes to the worker (`k2/t6/brief-k2-pass5.md`: D1 the dab's shape, D2 the
+paint, D3 the planned course shared by the lane courses and the top rows, D4 the head stones, three new tests, the
+dab test's cap branch, five mutation proofs, the look captures as pass 5). Codex reads the brief in parallel with a
+STOP verdict (`k2/t6/brief-codex-k2-pass5-plan.md`): the recipe is probed and chosen, so the read's risk is in the
+tests, and a STOP within the hour costs one worker round at most. The Lead's gate follows: the worker's report and
+diff read, the mutations re-run, the look at pass 5's frames on both viewports, `k2-gate.sh`, `k2-colour.sh`,
+`k2-perf.sh`, `k2-walk.sh`, then the push for Mark's preview. Open from pass 4 and still open: the lantern's flat
+box, the fog fails, the `?lane=0` idea.

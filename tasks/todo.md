@@ -1,5 +1,22 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-10-27 (19:25): K2 pass 5, the stone wall, the worker building S4, Codex reading the brief
+
+**Mark's calls tonight:** "Probe stone" (19:05) over wood, then S4 (19:20) over S3 and over passing K2 as built. Pass 5
+is past K2's cap of four on his word. The record's last section (`tasks/2026-10-26-village-craft-k2.md`, "Pass 5")
+has the probe: the cause was the dab's shape under the stroke body's flame, not the body share. The evidence is
+`scratch/village-craft-2026-10-25/k2/t6/` (the probe tools, the four patches and crops, the comparison image).
+
+**Running:** the worker (`w4:p5`) builds `k2/t6/brief-k2-pass5.md` on `feat/village-lane` in `lane-wt` (two commits,
+three new tests, five mutation proofs, the look captures into `k2/t4/p5/`), its report at `k2/t6/report-worker.md`.
+Codex (`w4:p4`) reads the brief as a plan, `k2/t6/review-plan-codex.md`, GO or STOP first line. A STOP stops the
+worker before its Step 3 commit.
+
+**Next:** the Lead's gate on the worker's branch (the diff against the brief, the mutations re-run with
+`k2-mutations.sh t6 5`, pass 5's frames read at 1:1 on both viewports, `k2-gate.sh`, `k2-colour.sh`, `k2-perf.sh`,
+`k2-walk.sh`), the Tunables entry, then the push for Mark's preview and his live read. The PR after his pass. K3
+waits on his three calls (the 21:30 pickup of 2026-10-26). The dev server on 5206 is this session's background job.
+
 ## Pickup — 2026-10-27 (00:29): K2 on preview, Mark's first read in, the stone wall reads as concrete, his call on a probe pending
 
 **Mark's live read tonight (00:20 to 00:29):** "the lighting feel right." The wall at stop 0 reads to him as a concrete

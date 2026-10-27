@@ -3301,3 +3301,14 @@ must be byte-identical before the stimulus's difference means anything.
   lift off). The first control runs patched the moon's term and read 0.98 to 1.00 everywhere, a wasted set of four runs:
   read the original record's control to the knob (`uLift`, not `GRASS_LIGHT.top`) before patching. A point without a
   discriminating control is a weaker check, whatever its pass.
+
+## 2026-10-27 (evening) — K2 pass 5, the stone wall
+
+- **A dab's look is set by the stroke body before any literal** (K2 passes 1 to 4, 2026-10-26 to 27). The street's
+  stroke body draws every stroke as a flame (a pointed head, the tail 0.72, the dry brush from 0.55), so a stone given
+  the whole stroke drew as a leaf with gaps a third of its length whatever the joint literal said, and three body shares
+  read the same. Mark read the wall as concrete. Before tuning a part's literals, read the shader its ribbons go
+  through, and give a part the stroke's range that draws its shape (a stone: the full-bodied middle, 0.3 to 0.7).
+- **Four in-place recipes at one stop settle a look in twenty minutes** (pass 5, 2026-10-27). The probe patched the
+  literals and the loop, captured stop 0, cropped at 1:1 and restored, four times, and Mark chose from one stacked
+  image. The same question through a worker round and a Codex read would have cost an evening.
