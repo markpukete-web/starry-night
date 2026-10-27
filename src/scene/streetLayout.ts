@@ -352,11 +352,11 @@ export function pathClearings(): OrientedBox[] {
   return doorPathLegs().flatMap((p) => pathLegShapes(p).map((s) => s.rect))
 }
 
-export const STREET_OBJECTS = [
+export const STREET_OBJECTS: readonly { kind: 'bench' | 'pot' | 'pail'; house: string; a: number; k: number; side: -1 | 1 }[] = [
   { kind: 'bench', house: 'L2', a: 0.19, k: 0.025, side: 1 },
   { kind: 'pot', house: 'R4', a: 0.2, k: 0.021, side: 1 },
   { kind: 'pail', house: 'L4', a: 0.196, k: 0.018, side: 1 },
-] as const
+]
 
 export function objectPlaces(): {
   kind: 'bench' | 'pot' | 'pail'

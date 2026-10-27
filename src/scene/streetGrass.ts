@@ -133,7 +133,6 @@ export function grassChunks(painting: ImageData2D, customDensity?: number, clear
   const BANDS = GRASS.bands
   const FULL = GRASS.full
   const R0 = GRASS.r0
-  const TOP = GRASS.top
   const meanClump = (GRASS_BLADE.clump[0] + GRASS_BLADE.clump[1]) / 2
 
   const walkCameras = grassWalkCameras()

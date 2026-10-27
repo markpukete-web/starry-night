@@ -6,12 +6,12 @@ import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { existsSync, readFileSync } from 'node:fs'
 import test from 'node:test'
-import { PerspectiveCamera, Raycaster, Sphere, Vector2, Vector3 } from 'three'
+import { PerspectiveCamera, Raycaster, Vector2, Vector3 } from 'three'
 
 import { FROG, frogPlace, FROGS } from '../src/scene/frog.ts'
 import { bladeVertex, bladeWidth, GRASS_BLADE } from '../src/scene/grassBlade.ts'
 import type { BakedMass } from '../src/scene/landDomes.ts'
-import { buildStreet, LIVED_CRAFT, type LivedObject, type LivedPath, type StreetBuild, WALL_PAINT } from '../src/scene/streetGeometry.ts'
+import { buildStreet, LIVED_CRAFT, type StreetBuild, WALL_PAINT } from '../src/scene/streetGeometry.ts'
 import { grassChunks, grassDrawCount, grassRect, PLANT, plantChunks, plantHit } from '../src/scene/streetGrass.ts'
 import {
   doorOf,
@@ -21,7 +21,6 @@ import {
   laneAt,
   laneParam,
   LIVED_PATH,
-  objectClearings,
   objectPlaces,
   pathClearings,
   pathLegShapes,
@@ -629,7 +628,6 @@ test("the plant's sphere holds every blade", { skip }, () => {
   const chunk = chunks[0]
   const sphereCentre = new Vector3(...chunk.sphere.centre)
   const sphereRadius = chunk.sphere.radius
-  const pot = objectPlaces().find((p) => p.kind === 'pot')!
 
   let fixedFails = 0
   const fixedCentre = new Vector3(chunk.sphere.centre[0], 0.02, chunk.sphere.centre[2])
@@ -651,8 +649,9 @@ test("the plant's sphere holds every blade", { skip }, () => {
             for (let dir = 0; dir < 8; dir++) {
               const angle = (dir * Math.PI) / 4
               const disp = (GRASS_BLADE.push + GRASS_BLADE.wind) * a * a
-              const drop = Math.max(0, 0.7 * disp * a)
-              const pt = new Vector3(v[0] + disp * Math.cos(angle), v[1] - drop, v[2] + disp * Math.sin(angle))
+              // The shader clamps the dropped height at the root (grassShader.ts), not the drop
+              const y = Math.max(0, v[1] - 0.7 * disp * a)
+              const pt = new Vector3(v[0] + disp * Math.cos(angle), y, v[2] + disp * Math.sin(angle))
               assert.ok(
                 pt.distanceTo(sphereCentre) <= sphereRadius + 1e-9,
                 `blade point (${pt.x}, ${pt.y}, ${pt.z}) outside sphere`,
@@ -671,13 +670,13 @@ test('a pointer on a leaf of the pot plant pushes it', { skip }, () => {
   assert.ok(realPainting)
   const chunks = plantChunks(realPainting)
   const chunk = chunks[0]
-  const pot = objectPlaces().find((p) => p.kind === 'pot')!
   const poses: [string, number][] = [
     ...STATION_T.map((t) => ['stop', t] as [string, number]),
     ...[0.3, 0.36, 0.5, 0.55].map((t) => ['walk', t] as [string, number]),
   ]
 
   let rays = 0
+  const counterexample = new Set<string>()
   for (const [view, portrait, aspect] of [
     ['desktop', false, 1600 / 900],
     ['phone', true, 390 / 844],
@@ -704,6 +703,7 @@ test('a pointer on a leaf of the pot plant pushes it', { skip }, () => {
             const rc = new Raycaster()
             rc.setFromCamera(new Vector2(ndc.x, ndc.y), cam)
             rays++
+            if (kind === 'stop' && t === STATION_T[2] && chunk.blades.indexOf(b) === 3 && a === 0.75) counterexample.add(view)
             const hit = plantHit(rc.ray.origin, rc.ray.direction, chunks)
             assert.ok(
               hit !== null,
@@ -729,7 +729,9 @@ test('a pointer on a leaf of the pot plant pushes it', { skip }, () => {
       }
     }
   }
-  assert.equal(rays, 816, '816 rays hit')
+  // The count moves with PLANT.scale as leaf points cross the frame's edge (816 at 0.7), so it is not pinned
+  assert.ok(rays > 0, 'some leaf points are in frame')
+  assert.deepEqual([...counterexample].sort(), ['desktop', 'phone'], "Codex's counterexample is cast on both viewports")
 })
 
 test('the grass clears the objects', { skip }, () => {

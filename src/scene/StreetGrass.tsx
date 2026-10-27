@@ -392,7 +392,7 @@ export default function StreetGrass({
       delete w.__grassHit
       delete w.__grassHand
     }
-  }, [totalBlades, trail])
+  }, [totalBlades, trail, plants])
 
   // 7. Raycaster & Planes
   const raycaster = useMemo(() => new Raycaster(), [])
