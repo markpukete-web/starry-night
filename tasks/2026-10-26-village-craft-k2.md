@@ -311,3 +311,78 @@ tests, and a STOP within the hour costs one worker round at most. The Lead's gat
 diff read, the mutations re-run, the look at pass 5's frames on both viewports, `k2-gate.sh`, `k2-colour.sh`,
 `k2-perf.sh`, `k2-walk.sh`, then the push for Mark's preview. Open from pass 4 and still open: the lantern's flat
 box, the fog fails, the `?lane=0` idea.
+
+**The build (19:24 to 20:02).** The worker's commits on `feat/village-lane`: `0eef7d2` (D1, the dab's shape),
+`a757638` (D2 to D4, `layCourse` shared by the lane courses and the top rows with the normal and across vectors
+evaluated at each stone's `ptMid`, `pickStone`, the head loop, three new tests and the dab test's cap branch) and
+`973c07d` (the fix round). Its report `k2/t6/report-worker.md`: red then 34 green, tsc 0, lint 0, test:sky 401,
+build 0, the build hash `496b3f70b495aac0` at 576,295 triangles (pass 4's 576,375), the lane grass hash
+`70767bb72eaed35b` unchanged, both `LANE=0` hashes K1's, the wall delta 2,254 (the bar 1,000 to 4,000), five
+mutations red, the look captures `k2/t4/p5/`.
+
+**Codex's plan read (`k2/t6/review-plan-codex.md`, 19:36): STOP, three P2, all in the tests.** F1: the dab test
+measured every length on the lane tangent, and a head stone runs across the thickness, so its length read 0. F2: the
+odd seed's along coordinate evaluates to 0.29999999999999993 at the last step, under a literal 0.3. F3: the flush test
+bounded the gap and not the overhang, so a last stone at 1.8 H passed. The worker had closed F1 and F2 in its Step 1
+on its own (the cap's axis by face, a 1e-9 tolerance) and reported both as readings. F3 went to one fix brief
+(`k2/t6/brief-k2-pass5-fix1.md`): `|residual| ≤ 0.006` at both heads, mutation 6 on Codex's control, and the kink
+comment the refactor had dropped put back. Codex's reconstruction of the plan hashed `496b3f70b495aac0` at 576,295,
+the worker's build byte for byte. Codex also measured D3's two layers: the final fit alone survives the flush test,
+the scaling alone does not (the right wall goes red); mutation 3 with both off stays valid, and its artefact carries
+the measurement. The worker found the fix brief in its folder and ran it unasked (a lesson); the Lead's waiter missed
+the report's heading (a lesson): eleven idle minutes until Mark asked.
+
+**The Lead's gate (from 20:13).** The diff read against the brief: D1 to D4 as written. The six mutations re-run by
+the Lead (`k2/gate/mutations-lead-t6.log`): each red on its named test, the tree clean after each; mutation 6's
+artefact diff did not apply at `973c07d` (the comment commit moved its hunk) and was applied by its line's text,
+red. The look at pass 5 (`k2/t4/p5/`, the crops `p5-wall-s0.png`, `p5-wall-s3.png`): at stops 0, 1 and 3 on desktop
+and at stop 0 on the phone the walls read as coursed stone with dark joints, the heads stoned, the top a row of
+flat stones (the shared planner lays shorter top stones than the probe did: 31 more top dabs, the top reads as a
+coping). Codex's bounded confirmation read of the fix round and the gate's runs (`k2-gate.sh`, `k2-colour.sh`,
+`k2-perf.sh`, `k2-walk.sh p5`) are below.
+
+**Codex's confirmation read (`k2/t6/review-fix1-codex.md`, 20:20): REVISE on one artefact, the code confirmed.** Q1 yes:
+the cap branch measures the head stones on the thickness axis (24 lengths at 0.033 within 1e-16), the lane and top
+projections unchanged by exactly 0. Q2 yes: T1 admits 0.29999999999999993 and rejects 0 and 1. Q3: the code yes (the
+1.8 H control goes red at both heads on an isolated copy of `973c07d`), the artefact no: `mutation-6.md` records HEAD
+`a757638` and the geometry diff alone while its red run used the fixed test, so applied as recorded it stays green.
+The worker regenerates the artefact from clean `973c07d` after the gate's browser runs (`brief-k2-pass5-m6.md`). No
+production fix.
+
+**The gate's runs (`k2-gate.sh` 20:17 to 20:30, `k2-colour.sh`, `k2-perf.sh` to 20:43, `k2-walk.sh p5` to 20:47; the
+logs `k2/t5/`, overwriting pass 4's, whose numbers the pass 4 section keeps).** tsc 0, lint 0, test:sky 0, build 0,
+rotation 0, cypress-hang 0, portal 0, reduced motion 0. The sweep's worst sampled point 1,412,657 (desktop, `t` 0.40;
+pass 4 1,412,737; the bar 1,444,930). The frame rate at stops 0 and 3, five rounds, three runs each: 16.7 ms median
+(60 fps), p95 at most 17.6 ms (pass 4 18.1), 1,407,039 triangles at stop 0 and 1,268,619 at stop 3 on desktop. The
+colour gate against K1 on 5205: no region newly failing and none worse on any of the ten pairs; the walls region
+improved where it fails (stop 0 desktop ΔE 17.5 to 11.4, stop 2 phone 15.5 to 10.2, stop 4 desktop 21.2 to 19.5), the
+other fails K1's (the roofs at stops 1 and 4, the fog and the trees' area on the phone). The walk's four lamp passes
+captured. Two checks failed in the chain on timing while K1's server started on 5205 and Codex ran its probes: the
+grass check's case 4 (a precondition, `__grassHit.t` did not advance in its window) and the walk check's case 6 (a
+wheel before a blur moved him 0.0033). Pass 5 touches neither; both are re-run alone below.
+
+**The two re-runs (20:50 to 20:57).** The grass check alone on 5206: 18 of 18 (`k2/t5/grass-rerun.log`). The walk
+check alone on 5206 failed case 6 again (0.00346, `walk-rerun.log`), passed on K1 at 5205 in the same minute
+(`walk-control-k1.log`, 6 of 6), and passed on the lane's server restarted alone with 5205 stopped
+(`walk-rerun2.log`, 6 of 6). The lane's first server log (`vite-5206-first.log`) holds a failed module fetch at
+20:19 after the mutation edits, and both servers logged a dependency re-optimisation at their start over the shared
+`node_modules` link (a lesson). The worker's regenerated mutation 6 (`k2/t6/mutation-6.md`): HEAD `973c07d`, red 1,
+restore 0, clean 0, green 0.
+
+## The Lead's gate: K2 pass 5 passes
+
+- Mark's word for the pass (19:05) and his pick of S4 (19:20).
+- Codex: the plan read's three P2 closed (F1 and F2 in the worker's tests, F3 in the fix round), the confirmation
+  read's code answers yes on all three, its artefact finding closed by the regeneration.
+- The Lead's checks at `973c07d`: the diff against the brief, the six mutations red on their named tests, tsc 0,
+  lint 0, test:sky 401 (the three new tests in it), build 0, the hashes `496b3f70b495aac0` 576,295 (lane),
+  `35ce7aeb5bd88590` 574,041 (`LANE=0`, K1 byte for byte), the lane grass `70767bb72eaed35b`.
+- The browser gates: walk (6 of 6 on the fresh server), rotation, cypress-hang, portal, reduced motion, grass
+  (18 of 18 alone), colour (no region newly failing or worse, the walls' fails smaller), 60 fps at stops 0 and 3
+  (p95 at most 17.6 ms), the sweep's worst point 1,412,657 under 1,444,930, the four lamp passes captured.
+- The look: pass 5's frames at 1:1, stops 0, 1 and 3 on desktop and stop 0 on the phone: the walls read as coursed
+  stone with dark joints, the heads stoned, the top a coping of flat stones.
+
+Open for Mark's eye, none a blocker: the lantern's flat box, the K1 fog fails, the `?lane=0` idea, and the top rows
+laid by the shared planner (shorter stones than the probe showed; the Lead reads them as a coping). Pushed for his
+preview at the time in the pickup. No PR until he has looked.

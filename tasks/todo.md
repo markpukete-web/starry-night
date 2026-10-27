@@ -1,6 +1,22 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-27 (19:25): K2 pass 5, the stone wall, the worker building S4, Codex reading the brief
+## Pickup — 2026-10-27 (21:00): K2 pass 5, the stone wall, passed the Lead's gate, pushed for Mark's preview
+
+**K2 pass 5 (S4, the stone wall) passed the Lead's gate at 20:57** (the record `tasks/2026-10-26-village-craft-k2.md`,
+its last section; the evidence `scratch/village-craft-2026-10-25/k2/t6/`, the gate's runs `k2/t5/` and `k2/gate/`).
+The code head is `973c07d` on `feat/village-lane`. Pushed for the Vercel preview; the link is in the record's last
+line and in Mark's chat. **No PR until he has looked.** The three agents are idle. The dev server on 5206 is this
+session's background job (restarted fresh at 20:56, alone).
+
+**What Mark reads:** the wall at stop 0 and stop 3 at 1:1 against the probe he chose (S4), the top rows (the shared
+planner lays shorter stones than the probe did), the heads. Open and not blockers: the lantern's flat box, the K1 fog
+fails, `?lane=0`.
+
+**Next after his pass:** the PR stacked on main (Codex's review read through the timeline API, every thread answered,
+at most two re-requests), then K3 on his three calls (the 21:30 pickup of 2026-10-26: R2 or W2 at `t` 0.41, bucket or
+woodpile, far paths full or fading). Quotas at 19:00: Claude 2% of the week, Codex 11%, the worker 53% (now about 56%).
+
+## Pickup — 2026-10-27 (19:25): K2 pass 5, the stone wall, the worker building S4, Codex reading the brief (superseded by the 21:00 pickup above)
 
 **Mark's calls tonight:** "Probe stone" (19:05) over wood, then S4 (19:20) over S3 and over passing K2 as built. Pass 5
 is past K2's cap of four on his word. The record's last section (`tasks/2026-10-26-village-craft-k2.md`, "Pass 5")

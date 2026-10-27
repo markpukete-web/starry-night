@@ -3312,3 +3312,22 @@ must be byte-identical before the stimulus's difference means anything.
 - **Four in-place recipes at one stop settle a look in twenty minutes** (pass 5, 2026-10-27). The probe patched the
   literals and the loop, captured stop 0, cropped at 1:1 and restored, four times, and Mark chose from one stacked
   image. The same question through a worker round and a Codex read would have cost an evening.
+- **A waiter on a report section must match the heading loosely** (pass 5's fix round, 2026-10-27). The brief said
+  "append a section `## Fix round 1`", the worker wrote `## 8. Fix Round 1 (Codex F3)`, and the waiter's exact grep
+  never fired: the fix sat finished for eleven minutes until Mark asked why every pane was idle. Match the section with
+  `grep -i` on one word, or watch the report's mtime, and treat the pane's `done` state as a second signal.
+- **A brief file in the worker's evidence folder is a dispatch** (2026-10-27). The Lead drafted the fix brief into
+  `k2/t6/` to send after the worker's report. The worker listed its folder at the end of its own brief, found the file
+  and ran it, unasked. It did the right work, but a draft the Lead meant to revise would have run as written. Keep
+  drafts in the Lead's scratchpad and copy a brief into the evidence folder only when it is sent.
+- **A mutation artefact's diff goes stale when a later commit touches its hunk** (pass 5, mutation 6). The worker
+  recorded mutation 6 against its wall commit, then the fix round added two comment lines above the hunk, and the
+  gate's `git apply` of the artefact failed at the new head. The gate applied the mutation by its line's text and it
+  went red. Record each mutation's diff at the head the gate will run it on, or write the mutation as a text
+  substitution.
+- **A second dev server over the same `node_modules` link re-optimises the first's dependency cache, and a mutation
+  run leaves HMR state** (pass 5's gate, 2026-10-27). The walk check's case 6 failed twice on the lane's server after
+  the mutations and after K1's server started on 5205 ("re-optimizing dependencies because vite config has changed"
+  in both logs, a failed module fetch in the lane's), and passed on K1 in the same minute and on the lane's server
+  restarted alone. The grass check's case 4 failed the same way. Restart the server under test after a mutation run
+  and before the browser gates, with no other server up, and read both servers' logs when a timing case fails.
