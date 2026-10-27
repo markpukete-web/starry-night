@@ -339,7 +339,7 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   (K1 574,041, the bar 578,041); the sweep's worst sampled point 1,412,657 at pass 5 (1,412,737 at pass 4; desktop, `t` 0.40; 0.05 steps, 0.01 over 0.25 to
   0.40; 1,411,299 at K1's 0.295; the ceiling 1,444,930); 60 fps at stops 0 and 3 at dpr 1.5 (p50 16.7 ms, p95 at most 17.6 at pass 5, 18.1 at pass 4), 309 draw calls at stop 0 (K1 288).
   Five look passes, the fifth past the cap on Mark's word: 1 the build, 2 wallB and the halo, 3 four recipes probed in place at stop 3, 4 the full
-  capture, 5 the stone wall from four recipes probed in place at stop 0. Mark chose S4 from them (2026-10-27).
+  capture, 5 the stone wall from four recipes probed in place at stop 0. Mark chose S4 from them and passed the wall on the preview (2026-10-27 21:06, "Passed").
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)

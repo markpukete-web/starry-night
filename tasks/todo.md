@@ -5,7 +5,7 @@
 **K2 pass 5 (S4, the stone wall) passed the Lead's gate at 20:57** (the record `tasks/2026-10-26-village-craft-k2.md`,
 its last section; the evidence `scratch/village-craft-2026-10-25/k2/t6/`, the gate's runs `k2/t5/` and `k2/gate/`).
 The code head is `973c07d` on `feat/village-lane`. Pushed for the Vercel preview at 20:58:
-`https://starry-night-kdvm5pcw6-markpukete-webs-projects.vercel.app/?street=1&station=0` (Vercel sign-in), Mark pinged at 21:01. **No PR until he has looked.** The three agents are idle. The dev server on 5206 is this
+`https://starry-night-kdvm5pcw6-markpukete-webs-projects.vercel.app/?street=1&station=0` (Vercel sign-in), Mark pinged at 21:01. **Passed by Mark at 21:06 ("Passed, what's next"); the PR is open, Codex's review pending.** The three agents are idle. The dev server on 5206 is this
 session's background job (restarted fresh at 20:56, alone).
 
 **What Mark reads:** the wall at stop 0 and stop 3 at 1:1 against the probe he chose (S4), the top rows (the shared

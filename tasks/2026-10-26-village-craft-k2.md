@@ -393,3 +393,5 @@ Pushed at 20:58 (`80f11eb`, the code `973c07d`) to `feat/village-lane`. The Verc
 `https://starry-night-kdvm5pcw6-markpukete-webs-projects.vercel.app/?street=1&station=0` (Vercel sign-in), built at
 20:59; Mark pinged at 21:01 with the before-and-after crops at stops 0 and 3 (`k2/t6/k2-pass5-before-after-s0.png`,
 `-s3.png`). No PR until he has looked.
+
+**Passed by Mark on the preview, 2026-10-27 21:06: "Passed, what's next".** The PR follows, stacked on main.
