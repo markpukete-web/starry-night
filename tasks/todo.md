@@ -1,6 +1,28 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-27 (21:45): K3's plan written and out for both reads; the build follows on this branch
+## Pickup — 2026-10-27 (22:45): K3's plan at revision 1, Task 1 building, Codex confirming the fixes
+
+**K3's plan is at revision 1** (`tasks/2026-10-27-village-lived-in-plan.md`, `855ede5` on `feat/village-lived-in`, the
+worktree `lived-wt` in session `49dba370`'s scratchpad, its dev server on 5206). Both reads of revision 0 are folded in:
+the worker's W01 to W11 and Codex's F1 to F12 (REVISE). The largest change answers F3 and F12: each door path's legs
+are clipped to the step's front, a mitre at the bend and the lane's edge, so no paint runs onto the lane and none is
+doubled (the Lead's probe `k3/probe/lead-k3-clip.mjs`, all pass). The plaster row is 0.7, the objects' ink is lifted
+0.0005, the plant's bounds come from the verge's code and the hand casts against it.
+
+**One fact for Mark's gate:** none of the three objects is in frame at the stop the design names. Each is seen while
+walking, widest at 76 px (the bench), 32 px (the pot) and 22 px (the pail) on a 1600 × 900 desktop, and 35, 14 and 6 px
+on a phone (`k3/probe/lead-k3-objects-view.log`). The plan keeps the design's doors and scale.
+
+**Running at 22:42:** the worker builds Task 1 alone (W2 to `t` 0.41, `k3/brief-k3-task1.md` → `k3/t1/report-worker.md`).
+Codex reads revision 1's fixes, bounded to four questions (`k3/brief-plan-confirm-codex.md` → `k3/plan-confirm-codex.md`,
+BUILD or REVISE). Both waiters are armed. **Next:** on BUILD, the Lead checks Task 1 and sends Tasks 2 to 4 with the
+fourteen mutation proofs (`k3/brief-k3-build.md`, to be rewritten from revision 1). Then the Lead's look passes and gate,
+the push for Mark's preview, the PR as a draft then ready.
+
+**Quotas at 22:36 (Quota Finch):** Claude 2% of the session and 9% of the week, Codex 72% of the session (resets 00:24)
+and 23% of the week, the worker 18% of the session and 58% of the week.
+
+## Pickup — 2026-10-27 (21:45): K3's plan written and out for both reads; the build follows on this branch (superseded by the 22:45 pickup above)
 
 **K2 is merged** (#31, main `1b5e62f`, Codex's review clean). Its worktrees and server are gone.
 
