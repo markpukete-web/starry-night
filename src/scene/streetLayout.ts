@@ -319,10 +319,12 @@ export function pathLegShapes(path: DoorPath): { clip: [number, number][]; base:
     ]
 
     const band = (s: number) => add2(pts[k], mul2(a, s * (0.5 - LIVED_PATH.baseInset) * width))
+    // The free end's base stops short of the clip by the same inset, so the strokes, not the flat base, meet the lane
+    const baseEnd = k === pts.length - 2 ? sub2(pts[k + 1], mul2(d, LIVED_PATH.baseInset * width)) : pts[k + 1]
     const base: [number, number][] = [
       meet2(band(-1), d, pts[k], startLine),
-      meet2(band(-1), d, pts[k + 1], endLine),
-      meet2(band(1), d, pts[k + 1], endLine),
+      meet2(band(-1), d, baseEnd, endLine),
+      meet2(band(1), d, baseEnd, endLine),
       meet2(band(1), d, pts[k], startLine),
     ]
 

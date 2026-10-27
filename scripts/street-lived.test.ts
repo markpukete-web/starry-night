@@ -15,6 +15,7 @@ import { buildStreet, LIVED_CRAFT, type StreetBuild, WALL_PAINT } from '../src/s
 import { grassChunks, grassDrawCount, grassRect, PLANT, plantChunks, plantHit } from '../src/scene/streetGrass.ts'
 import {
   doorOf,
+  doorPathLegs,
   doorStepFoot,
   doorStepFrame,
   houseFrame,
@@ -295,6 +296,22 @@ test("a path ends on the lane's edge", { skip }, () => {
       assert.ok(Math.abs(lat1 - 0.06) <= 0.003, `${p.house} c1 lateral ${lat1} within 0.003 of 0.06`)
       assert.ok(Math.abs(lat2 - 0.06) <= 0.003, `${p.house} c2 lateral ${lat2} within 0.003 of 0.06`)
     }
+  }
+})
+
+test("a path's base stops short of its free end, so the strokes meet the lane", () => {
+  const mid = (q: [number, number][]): [number, number] => [(q[1][0] + q[2][0]) / 2, (q[1][1] + q[2][1]) / 2]
+  for (const path of doorPathLegs()) {
+    const shapes = pathLegShapes(path)
+    shapes.forEach((s, k) => {
+      const [p0, p1] = [path.points[k], path.points[k + 1]]
+      const len = Math.hypot(p1[0] - p0[0], p1[1] - p0[1])
+      const d: [number, number] = [(p1[0] - p0[0]) / len, (p1[1] - p0[1]) / len]
+      const [mc, mb] = [mid(s.clip), mid(s.base)]
+      const gap = (mc[0] - mb[0]) * d[0] + (mc[1] - mb[1]) * d[1]
+      const want = k === shapes.length - 1 ? LIVED_PATH.baseInset * path.width : 0
+      assert.ok(Math.abs(gap - want) <= 1e-9, `${path.house} leg ${k}: the base ends ${gap} short of the clip, want ${want}`)
+    })
   }
 })
 
