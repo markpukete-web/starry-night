@@ -399,19 +399,19 @@ with `[...stepClearings(), ...wallClearings()]` against `G1`.
   64 midpoint samples, and its centre from the `t` where that length reaches half (LP3). Every course of the three
   walls then ends within 0.003 of its heads by arc length. The last stones of W1 and W3 grow by at most 0.0018.
 
-- [ ] **Step 1: Make the tests pin the new wall.** `the walls stand on the verges the plan names` asserts the three
+- [x] **Step 1: Make the tests pin the new wall.** `the walls stand on the verges the plan names` asserts the three
   runs' sides, `t0` and `t1` equal the list above to 1e-9 and their segment counts are 8, 14 and 15. `the grass clears
   the walls` builds its footprints from `STREET_WALLS` instead of its literal list.
-- [ ] **Step 2: Run them**: `node --test scripts/street-lane.test.ts`. Expected: `the walls stand on the verges` FAILS
+- [x] **Step 2: Run them**: `node --test scripts/street-lane.test.ts`. Expected: `the walls stand on the verges` FAILS
   (17 segments against 14). The grass test passes (it follows the constant).
-- [ ] **Step 3: Set `t1` to 0.41.**
-- [ ] **Step 4: Run the suite**: `npm run -s test:sky 2>&1 | tee E3/t1/test-sky.log`. Expected: all PASS, the frog tests
+- [x] **Step 3: Set `t1` to 0.41.**
+- [x] **Step 4: Run the suite**: `npm run -s test:sky 2>&1 | tee E3/t1/test-sky.log`. Expected: all PASS, the frog tests
   among them (W2's last three segments stood behind no frog).
-- [ ] **Step 5: K3's base hashes**: `WT=$PWD node T/build-hash.ts` and `WT=$PWD node T/grass-hash.ts` (`T` is
+- [x] **Step 5: K3's base hashes**: `WT=$PWD node T/build-hash.ts` and `WT=$PWD node T/grass-hash.ts` (`T` is
   `/Users/markma/Projects/starry-night/scratch/village-craft-2026-10-25/tools`, W10), into
   `E3/t1/hash.txt` as `B1` and `G1`, with the triangle count. Expected: the build under 576,295 (three segments of
   stones fewer) and the grass with more blades than K2's 17,010.
-- [ ] **Step 6: Commit** by pathspec: `feat(street): W2 ends at t 0.41, where R2's path meets the lane (K3 task 1)`.
+- [x] **Step 6: Commit** by pathspec: `feat(street): W2 ends at t 0.41, where R2's path meets the lane (K3 task 1)`.
 
 ### Task 2: the paths and the grass's clearings (worker)
 
@@ -633,7 +633,8 @@ with `[...stepClearings(), ...wallClearings()]` against `G1`.
 Each pass captures stops 0 to 4 on both viewports beside K2's (`T/k3-look.sh`) and reads them at 1:1. The pass goes
 into the record `tasks/2026-10-27-village-lived-in.md` and `tasks/lessons.md`. The gate's crops: each object on the
 desktop where it is widest in frame (Decision (c)): the bench at walk `t` 0.2, the pot plant at 0.55, the pail at 0.69,
-and stops 1 and 3 for the paths. Then R1's path end at 1:1 at `t` 0.05 (the most oblique leg, LP1), the plaster walls
+and stops 1 and 3 for the paths. Then R1's path end at 1:1 at `t` 0.05 (the most oblique leg, LP1), W2's new end at 1:1
+from `t` 0.3 beside K2's wall (LP3's last stones), the plaster walls
 at 1:1 beside the scan's (`E3/t0/plaster/`), and stop 0 beside the painting's village. The knobs, inside their ranges:
 
 - The paths: `LIVED_PATH.cover` 0.15 to 0.3 (0.35 would cost about 37,000, over the reserve), `baseInset` 0.25 to 0.4
