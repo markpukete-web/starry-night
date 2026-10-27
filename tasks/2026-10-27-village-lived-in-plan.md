@@ -510,8 +510,8 @@ with `[...stepClearings(), ...wallClearings()]` against `G1`.
 
 Each pass captures stops 0 to 4 on both viewports beside K2's (`T/k3-look.sh`) and reads them at 1:1. The pass goes
 into the record `tasks/2026-10-27-village-lived-in.md` and `tasks/lessons.md`. The gate's crops: stops 2 and 4 for the bench,
-the pot plant and the pail, stops 1 and 3 for the paths, R4's path at 1:1 beside the lane's at stop 4, the plaster walls
-at 1:1 beside the scan's (`E3/t0/plaster/`), stop 0 beside the painting's village. The knobs, inside their ranges:
+the pot plant and the pail, and stops 1 and 3 for the paths. Then R4's path at 1:1 beside the lane's at stop 4, the
+plaster walls at 1:1 beside the scan's (`E3/t0/plaster/`), and stop 0 beside the painting's village. The knobs, inside their ranges:
 
 - The paths: `LIVED_PATH.cover` 0.15 to 0.35, `baseInset` 0.25 to 0.4 (the base 0.2 to 0.5 of the width), `leg` 0.06 to
   0.10. An end may move along the lane's edge by up to 0.01 in `t` where the clearance test still passes.
