@@ -13,6 +13,10 @@ gate run passes, and the fifteen mutations are red on the final head. The build'
 `?street=1&vform=lantern` or `&vform=tarascon`. The design draft and Mark's four calls are in
 `tasks/2026-10-28-vincent-form-spike.md` on that branch.
 
+**The previews (behind Vercel's login):** K3 `https://starry-night-96swuihn2-markpukete-webs-projects.vercel.app/?street=1`
+(`61b7c2e`), the spike `https://starry-night-e1rdn3w9w-markpukete-webs-projects.vercel.app/?street=1&vform=lantern`
+(`5eb98c2`, rebased on `1b7402e`; tsc, lint, the build and 426 tests pass on it).
+
 **Next, after Mark's look:** K3's PR as a draft, then ready, so Codex's review fires; Vincent's form as a slice if he
 wants it, planned from the spike's answers.
 
