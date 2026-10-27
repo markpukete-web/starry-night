@@ -4,6 +4,8 @@ import { mulberry32 } from './brush.ts'
 import { makeBrushArrays, pushDrapedRibbon, type BrushArrays } from './brushForms.ts'
 import { CYPRESS_STROKE_BODY, strokeGlslWith } from './cypressStrokeShader.ts'
 import type { BrushArraysWithCls } from './streetGeometry.ts'
+import { PALETTE } from './palette.ts'
+import { LIFE } from './streetLife.ts'
 import { VINCENT_RIG } from './streetLayout.ts'
 import { STREET_LIGHT, STREET_MOON } from './streetLight.ts'
 import { rectUnderpaint, STREET_SOURCES } from './streetStrokes.ts'
@@ -37,7 +39,52 @@ export type Surface = (a: number, s: number) => Point
 
 export type VincentStrokes = { arrays: BrushArrays; stroke: number[]; seed: number[]; cls: number[] }
 export type VincentPart = { strokes: VincentStrokes; underpaint: BrushArraysWithCls }
-export type VincentBuild = { body: VincentPart; armLeft: VincentPart & { pivot: [number, number, number] }; shadow: BrushArrays; triangles: number }
+export type Pivoted = VincentPart & { pivot: [number, number, number] }
+export type VincentBuild = {
+  body: VincentPart
+  armLeft: Pivoted
+  shadow: BrushArrays
+  triangles: number
+  /** the form spike's parts (`?vform=`): the head turns on its own, the legs stride, the lantern hangs from the left hand */
+  head?: Pivoted
+  legs?: [Pivoted, Pivoted]
+  lantern?: { glass: BrushArraysWithCls; ink: BrushArraysWithCls; pivot: [number, number, number] }
+}
+
+/**
+ * The form spike (2026-10-28, behind `?vform=lantern` or `?vform=tarascon`, a throwaway for Mark's eye, never merged).
+ * The design is Fable's consult, `scratch/vincent-form-2026-10-28/consult-fable.md`: legs that stride under a hem
+ * raised to the calf, the head its own part so it turns 45° past a body turned side-on, a face from the big swirl's
+ * pale ring under a beard of the hair's paint, a lantern in the left hand. Tarascon: Van Gogh's "Painter on the Road to
+ * Tarascon" (1888), "laden with boxes, sticks, a canvas" (his letter to Theo): the yellow straw hat from the moon's
+ * body, the easel and the stool strapped to his back, the rolled canvas across it, a cane. Its forms only, our paint.
+ */
+export type VincentForm = 'classic' | 'lantern' | 'tarascon'
+export const FORM = {
+  hem: [[0.028, 0.0145], [0.034, 0.0135]] as [number, number][],
+  neck: 0.066,
+  /** look pass 3: the lantern form's brim. S2's 0.017 (0.4 of his height) hid the turned face from the camera's height;
+   * Tarascon keeps it, the 1888 painting's broad straw */
+  brim: 0.0125,
+  hip: [0.006, 0.034] as const,
+  ankle: 0.004,
+  leg: [0.004, 0.003] as const,
+  boot: { r: 0.0038, ry: 0.0022, rz: 0.0055, forward: 0.0015 },
+  /** look pass 3: the moon's body mixed 0.35 toward the roofs' sienna, an ochre. The big swirl's pale ring (L 72,
+   * Fable's pick) read as a pale mask under the moon, and the thatch (pass 2) as the hair */
+  face: [1376, 216, 1408, 248] as Rect,
+  faceShade: 0.35,
+  /** the hat's shadow over the face's top 40% */
+  shade: 0.45,
+  lantern: { handle: 0.008, cap: 0.003, r: 0.0035, h: 0.01 },
+  tarascon: {
+    hat: [1376, 216, 1408, 248] as Rect,
+    crownTop: 0.0805,
+    back: -0.0115,
+    cane: { r: 0.0012, lean: 0.3, above: 0.01 },
+  },
+}
+const INK = new Color(PALETTE.ground)
 
 /** The smock's profile: [y, radius], hem to neck, the shoulders a dome; x : z = 1.2 : 0.8 round it. */
 const SMOCK: readonly [number, number][] = [[0.001, 0.0155], [0.02, 0.0138], [0.04, 0.0121], [0.056, 0.0109], [0.062, 0.0105], [0.0645, 0.0085], [0.066, 0.004]]
@@ -99,11 +146,11 @@ export function tube(from: Vector3, to: Vector3, r0: number, r1: number): Surfac
 }
 
 /** The hat's brim: `a` round it, `s` from the crown out to the drooping edge. */
-function brim(): Surface {
-  const slope = new Vector3(BRIM.r - CROWN.r, -BRIM.droop, 0)
+function brim(outer: number = BRIM.r): Surface {
+  const slope = new Vector3(outer - CROWN.r, -BRIM.droop, 0)
   return (a, s) => {
     const th = a * Math.PI * 2
-    const r = CROWN.r + (BRIM.r - CROWN.r) * s
+    const r = CROWN.r + (outer - CROWN.r) * s
     const n = new Vector3(BRIM.droop * Math.cos(th), slope.x, BRIM.droop * Math.sin(th)).normalize()
     return { p: new Vector3(Math.cos(th) * r, BRIM.y - BRIM.droop * s * s, Math.sin(th) * r), n }
   }
@@ -190,11 +237,58 @@ export function triangles(part: VincentPart): number {
   return (part.strokes.arrays.indices.length + part.underpaint.indices.length) / 3
 }
 
-export function buildVincent(painting: ImageData2D): VincentBuild {
+/** A surface moved up by `dy`: the head's parts in the frame of its pivot at the neck. */
+function shifted(f: Surface, dy: number): Surface {
+  return (a, s) => {
+    const q = f(a, s)
+    q.p.y += dy
+    return q
+  }
+}
+
+/** A surface's `a` range [a0, a1] stretched over 0..1, for a patch round part of it. */
+function arc(f: Surface, a0: number, a1: number): Surface {
+  return (a, s) => f(a0 + (a1 - a0) * a, s)
+}
+
+function ellipsoid(centre: Vector3, rx: number, ry: number, rz: number): Surface {
+  const unit = sphere(new Vector3(), 1)
+  return (a, s) => {
+    const { n } = unit(a, s)
+    return { p: new Vector3(centre.x + n.x * rx, centre.y + n.y * ry, centre.z + n.z * rz), n: new Vector3(n.x / rx, n.y / ry, n.z / rz).normalize() }
+  }
+}
+
+/** A flat-faced box from its eight corners' half sizes, each face one colour. */
+function box(into: BrushArraysWithCls, centre: Vector3, half: Vector3, colour: Color): void {
+  const c = (x: number, y: number, z: number) => new Vector3(centre.x + x * half.x, centre.y + y * half.y, centre.z + z * half.z)
+  const faces = [
+    [c(-1, -1, -1), c(1, -1, -1), c(1, 1, -1), c(-1, 1, -1)],
+    [c(-1, -1, 1), c(1, -1, 1), c(1, 1, 1), c(-1, 1, 1)],
+    [c(-1, -1, -1), c(-1, 1, -1), c(-1, 1, 1), c(-1, -1, 1)],
+    [c(1, -1, -1), c(1, 1, -1), c(1, 1, 1), c(1, -1, 1)],
+    [c(-1, 1, -1), c(1, 1, -1), c(1, 1, 1), c(-1, 1, 1)],
+    [c(-1, -1, -1), c(1, -1, -1), c(1, -1, 1), c(-1, -1, 1)],
+  ]
+  for (const f of faces) {
+    const base = into.positions.length / 3
+    for (const p of f) {
+      into.positions.push(p.x, p.y, p.z)
+      into.colors.push(colour.r, colour.g, colour.b)
+      into.cls.push(VINCENT_CLASS.none)
+      into.src.push(VINCENT_CLASS.none)
+    }
+    into.indices.push(base, base + 1, base + 2, base, base + 2, base + 3)
+  }
+}
+
+export function buildVincent(painting: ImageData2D, form: VincentForm = 'classic'): VincentBuild {
   const rand = mulberry32(0x5a7e)
   const body = emptyPart()
+  const spike = form !== 'classic'
+  const tarascon = form === 'tarascon'
   const smockCls = VINCENT_CLASS.smock
-  const smock = revolve(SMOCK, SMOCK_SCALE.x, SMOCK_SCALE.z)
+  const smock = revolve(spike ? [...FORM.hem, ...SMOCK.slice(2)] : SMOCK, SMOCK_SCALE.x, SMOCK_SCALE.z)
   // the smock's base is its source's mean, as the street's walls are (S1b look passes 1 and 2): on its darkest 40% the
   // gaps between strokes held the smock at ΔE 10.5–11.6 from the village's blues, with the source itself at 0.4
   const smockBase = underpaintColour(painting, VINCENT_SOURCES.smock, 1)
@@ -203,32 +297,71 @@ export function buildVincent(painting: ImageData2D): VincentBuild {
   clad(body, smock, 18, 6, painting, VINCENT_SOURCES.smock, smockCls, rand, [0, 1], [0, 0.56])
   clad(body, smock, 16, 6, painting, VINCENT_SOURCES.smock, smockCls, rand, [0.03, 1.03], [0.44, 1])
 
-  const head = sphere(new Vector3(0, HEAD.y, 0), HEAD.r)
-  solid(body.underpaint, head, 12, 8, underpaintColour(painting, VINCENT_SOURCES.hair), VINCENT_CLASS.none)
+  // the form spike's head is its own part about the neck, so it turns past the body without rewriting a vertex
+  const headPart = spike ? emptyPart() : body
+  const dy = spike ? -FORM.neck : 0
+  const head = shifted(sphere(new Vector3(0, HEAD.y, 0), HEAD.r), dy)
+  solid(headPart.underpaint, head, 12, 8, underpaintColour(painting, VINCENT_SOURCES.hair), VINCENT_CLASS.none)
   // the hair over the back of his head (−z, the side the camera sees), crown to nape
-  clad(body, head, 6, 6, painting, VINCENT_SOURCES.hair, VINCENT_CLASS.none, rand, [0.5, 1], [0.15, 0.95])
+  clad(headPart, head, 6, 6, painting, VINCENT_SOURCES.hair, VINCENT_CLASS.none, rand, [0.5, 1], [0.15, 0.95])
+  if (spike) {
+    // the face (+z): a pale patch between the hat's shadow and the beard, no eyes (two pixels of eye read as a mask)
+    const face = arc(shifted(sphere(new Vector3(0, HEAD.y, 0), HEAD.r * 1.03), dy), 0.12, 0.38)
+    const faceColour = underpaintColour(painting, FORM.face, 1).lerp(underpaintColour(painting, VINCENT_SOURCES.hair, 1), FORM.faceShade)
+    // look pass 1: a beard to s 0.45 left the face a 3 px band under the brim; the beard now stops at the mouth
+    solid(headPart.underpaint, face, 6, 4, faceColour, VINCENT_CLASS.none, 0.28, 0.6)
+    solid(headPart.underpaint, face, 6, 2, faceColour.clone().multiplyScalar(FORM.shade), VINCENT_CLASS.none, 0.6, 0.72)
+    // look pass 2: a flat face turned to the camera read as a mask, so the profile gets a silhouette, a nose and a
+    // beard that stands off the jaw
+    const hc = new Vector3(0, HEAD.y + dy, 0)
+    solid(headPart.underpaint, ellipsoid(hc.clone().add(new Vector3(0, -0.0004, HEAD.r * 0.98)), 0.0011, 0.0016, 0.0019), 6, 4, faceColour.clone().multiplyScalar(0.85), VINCENT_CLASS.none)
+    const beard = ellipsoid(hc.clone().add(new Vector3(0, -HEAD.r * 0.55, HEAD.r * 0.45)), HEAD.r * 0.72, HEAD.r * 0.5, HEAD.r * 0.62)
+    solid(headPart.underpaint, beard, 8, 5, underpaintColour(painting, VINCENT_SOURCES.hair), VINCENT_CLASS.none)
+    clad(headPart, beard, 5, 4, painting, VINCENT_SOURCES.hair, VINCENT_CLASS.none, rand, [0, 0.5], [0.05, 0.75])
+    // the beard: the hair's paint, the warmest dark note in the painting (the scan has no red), chin and jaw
+    clad(headPart, head, 5, 4, painting, VINCENT_SOURCES.hair, VINCENT_CLASS.none, rand, [0.06, 0.44], [0.1, 0.32])
+  }
 
-  const crown = revolve([[CROWN.y0, CROWN.r], [CROWN.y1 - 0.0035, CROWN.r * 0.92], [CROWN.y1 - 0.001, CROWN.r * 0.62], [CROWN.y1, CROWN.r * 0.3], [CROWN.y1, 0]], 1, 1)
-  const hatColour = underpaintColour(painting, VINCENT_SOURCES.hat)
-  solid(body.underpaint, crown, 16, 4, hatColour, VINCENT_CLASS.hat)
-  clad(body, crown, 8, 4, painting, VINCENT_SOURCES.hat, VINCENT_CLASS.hat, rand, [0, 1], [0, 0.75])
-  const hatBrim = brim()
-  solid(body.underpaint, hatBrim, 24, 3, hatColour, VINCENT_CLASS.hat)
-  clad(body, hatBrim, 12, 4, painting, VINCENT_SOURCES.hat, VINCENT_CLASS.hat, rand)
+  const crownTop = tarascon ? FORM.tarascon.crownTop : CROWN.y1
+  const crown = shifted(revolve([[CROWN.y0, CROWN.r], [crownTop - 0.0035, CROWN.r * 0.92], [crownTop - 0.001, CROWN.r * 0.62], [crownTop, CROWN.r * 0.3], [crownTop, 0]], 1, 1), dy)
+  const hatSource = tarascon ? FORM.tarascon.hat : VINCENT_SOURCES.hat
+  const hatColour = underpaintColour(painting, hatSource)
+  solid(headPart.underpaint, crown, 16, 4, hatColour, VINCENT_CLASS.hat)
+  clad(headPart, crown, 8, 4, painting, hatSource, VINCENT_CLASS.hat, rand, [0, 1], [0, 0.75])
+  const hatBrim = shifted(brim(form === 'lantern' ? FORM.brim : BRIM.r), dy)
+  solid(headPart.underpaint, hatBrim, 24, 3, hatColour, VINCENT_CLASS.hat)
+  clad(headPart, hatBrim, 12, 4, painting, hatSource, VINCENT_CLASS.hat, rand)
 
   // the right arm (−x) holds the canvas against him; it does not swing
   const rightArm = tube(new Vector3(-ARM.shoulder[0], ARM.shoulder[1], 0), new Vector3(-ARM.hand[0], ARM.hand[1], 0.004), ARM.r, ARM.rHand)
   solid(body.underpaint, rightArm, 8, 4, smockBase, smockCls)
   clad(body, rightArm, 3, 5, painting, VINCENT_SOURCES.smock, smockCls, rand)
 
-  const roll = tube(
-    CANVAS.centre.clone().add(new Vector3(Math.sin(CANVAS.turn), 0, Math.cos(CANVAS.turn)).multiplyScalar(-CANVAS.length / 2)),
-    CANVAS.centre.clone().add(new Vector3(Math.sin(CANVAS.turn), 0, Math.cos(CANVAS.turn)).multiplyScalar(CANVAS.length / 2)),
-    CANVAS.r,
-    CANVAS.r,
-  )
+  // Tarascon's rolled canvas stands up his back beside the easel (look pass 6: laid across it, it stuck out sideways
+  // like a pole once he turned side-on); the others carry it under the right arm
+  const roll = tarascon
+    ? tube(new Vector3(0.007, 0.03, FORM.tarascon.back - CANVAS.r), new Vector3(0.007, 0.068, FORM.tarascon.back - CANVAS.r), CANVAS.r, CANVAS.r)
+    : tube(
+        CANVAS.centre.clone().add(new Vector3(Math.sin(CANVAS.turn), 0, Math.cos(CANVAS.turn)).multiplyScalar(-CANVAS.length / 2)),
+        CANVAS.centre.clone().add(new Vector3(Math.sin(CANVAS.turn), 0, Math.cos(CANVAS.turn)).multiplyScalar(CANVAS.length / 2)),
+        CANVAS.r,
+        CANVAS.r,
+      )
   solid(body.underpaint, roll, 10, 2, underpaintColour(painting, VINCENT_SOURCES.canvas), VINCENT_CLASS.none)
   clad(body, roll, 3, 4, painting, VINCENT_SOURCES.canvas, VINCENT_CLASS.none, rand)
+  if (tarascon) {
+    const b = FORM.tarascon.back
+    // the easel strapped flat on his back: three legs in the ink, shoulder to below the hip, splayed
+    for (const [x0, x1] of [[-0.004, -0.009], [0.004, 0.009], [0, 0]] as const) {
+      solid(body.underpaint, tube(new Vector3(x0, 0.072, b - 0.001), new Vector3(x1, 0.018, b - 0.003), 0.0011, 0.0011), 4, 1, INK, VINCENT_CLASS.none)
+    }
+    // the camp stool folded over the easel, and the paint box at the small of his back, in the village's warm dark
+    box(body.underpaint, new Vector3(0, 0.044, b - 0.004), new Vector3(0.008, 0.007, 0.002), underpaintColour(painting, [920, 1160, 944, 1184], 1))
+    // the cane in the right hand, leaning forward to the ground
+    const hand = new Vector3(-ARM.hand[0], ARM.hand[1], 0.004)
+    const lean = Math.tan(FORM.tarascon.cane.lean)
+    solid(body.underpaint, tube(hand.clone().add(new Vector3(0, FORM.tarascon.cane.above, -FORM.tarascon.cane.above * lean)), new Vector3(hand.x, 0, hand.z + hand.y * lean), FORM.tarascon.cane.r, FORM.tarascon.cane.r), 4, 1, INK, VINCENT_CLASS.none)
+  }
 
   // the left arm (+x) is its own part about its shoulder, so Task 4 swings it without rewriting a vertex
   const pivot: [number, number, number] = [ARM.shoulder[0], ARM.shoulder[1], 0]
@@ -247,16 +380,44 @@ export function buildVincent(painting: ImageData2D): VincentBuild {
     shadow.indices.push(0, 1 + ((i + 1) % SHADOW.segments), 1 + i)
   }
 
-  return { body, armLeft: { ...armLeft, pivot }, shadow, triangles: triangles(body) + triangles(armLeft) + shadow.indices.length / 3 }
+  if (!spike) return { body, armLeft: { ...armLeft, pivot }, shadow, triangles: triangles(body) + triangles(armLeft) + shadow.indices.length / 3 }
+
+  // the legs below the raised hem, each about its hip; pale trousers, so the step reads where a leg is one pixel wide
+  const trousers = underpaintColour(painting, STREET_SOURCES.plaster)
+  const legs = ([1, -1] as const).map((side): Pivoted => {
+    const part = emptyPart()
+    const foot = new Vector3(0, FORM.ankle - FORM.hip[1], 0)
+    const leg = tube(new Vector3(0, 0, 0), foot, FORM.leg[0], FORM.leg[1])
+    solid(part.underpaint, leg, 8, 4, trousers, VINCENT_CLASS.none)
+    clad(part, leg, 4, 5, painting, STREET_SOURCES.plaster, VINCENT_CLASS.none, rand)
+    solid(part.underpaint, ellipsoid(foot.clone().setZ(FORM.boot.forward), FORM.boot.r, FORM.boot.ry, FORM.boot.rz), 6, 3, INK, VINCENT_CLASS.none)
+    return { ...part, pivot: [side * FORM.hip[0], FORM.hip[1], 0] }
+  }) as [Pivoted, Pivoted]
+
+  // the lantern hangs from the left hand: a handle and a cap in the ink, the glass in the lamps' own light
+  const L = FORM.lantern
+  const glass = { ...makeBrushArrays(), cls: [] as number[], src: [] as number[] }
+  const ink = { ...makeBrushArrays(), cls: [] as number[], src: [] as number[] }
+  const top = -L.handle - L.cap
+  solid(ink, tube(new Vector3(0, 0, 0), new Vector3(0, -L.handle, 0), 0.0006, 0.0006), 4, 1, INK, VINCENT_CLASS.none)
+  solid(ink, tube(new Vector3(0, -L.handle, 0), new Vector3(0, top, 0), 0.0006, L.r * 1.2), 8, 1, INK, VINCENT_CLASS.none)
+  solid(glass, tube(new Vector3(0, top, 0), new Vector3(0, top - L.h, 0), L.r, L.r), 8, 2, new Color(LIFE.glow), VINCENT_CLASS.none)
+  solid(ink, tube(new Vector3(0, top - L.h, 0), new Vector3(0, top - L.h - 0.0012, 0), L.r * 1.15, L.r * 1.15), 8, 1, INK, VINCENT_CLASS.none)
+  const lantern = { glass, ink, pivot: [ARM.hand[0] - ARM.shoulder[0], ARM.hand[1] - ARM.shoulder[1], 0] as [number, number, number] }
+
+  const head2 = { ...headPart, pivot: [0, FORM.neck, 0] as [number, number, number] }
+  const count = triangles(body) + triangles(armLeft) + triangles(headPart) + legs.reduce((n, leg) => n + triangles(leg), 0) + (glass.indices.length + ink.indices.length) / 3 + shadow.indices.length / 3
+  return { body, armLeft: { ...armLeft, pivot }, shadow, triangles: count, head: head2, legs, lantern }
 }
 
 const glsl = (v: number) => v.toFixed(6)
 
 /** The moon on his own normals, in the shader, because he turns as he walks: S1b's `STREET_LIGHT` ambient and key on
  * `STREET_MOON`, constants written as literals, nothing under `light=0`. The normal is flipped to the side drawn. */
-export function vincentMoon(lit: boolean): Omit<AliveInjection, 'key' | 'uniforms'> {
+export function vincentMoon(lit: boolean, lantern = false): Omit<AliveInjection, 'key' | 'uniforms'> {
   if (!lit) return { vertexHead: '', vertexBody: '', fragmentHead: '', fragmentBody: '' }
   const m = STREET_MOON.clone().normalize()
+  if (lantern) return lanternMoon(m)
   return {
     vertexHead: 'varying vec3 vMoonNormal;',
     vertexBody: 'vMoonNormal = normalize(mat3(modelMatrix) * normal);',
@@ -265,10 +426,35 @@ export function vincentMoon(lit: boolean): Omit<AliveInjection, 'key' | 'uniform
   }
 }
 
+/** The form spike's lantern: its world position, written each frame from the lantern's glass (`StreetWalk.tsx`). */
+export const lanternUniform = { value: new Vector3() }
+/** The lantern's light on his own strokes, Fable's consult Q2: the lamps' glow, falling off over r 0.03. Warm 0.4 (look
+ * pass 3: Fable's 0.6 greyed the smock's blue with the lantern raised beside it). */
+export const LANTERN_LIFT = { warm: 0.4, r: 0.03 }
+/** The uniform's registration, for `material()`'s `extra` part. */
+export const lanternExtra: Omit<AliveInjection, 'key'> = { uniforms: { uLantern: lanternUniform }, vertexHead: '', vertexBody: '', fragmentHead: '', fragmentBody: '' }
+
+function lanternMoon(m: Vector3): Omit<AliveInjection, 'key' | 'uniforms'> {
+  const g = new Color(LIFE.glow).multiplyScalar(LANTERN_LIFT.warm)
+  const glowVec = `vec3(${glsl(g.r)}, ${glsl(g.g)}, ${glsl(g.b)})`
+  return {
+    vertexHead: 'varying vec3 vMoonNormal;\nvarying vec3 vVinWorld;',
+    vertexBody: 'vMoonNormal = normalize(mat3(modelMatrix) * normal);\nvVinWorld = (modelMatrix * vec4(position, 1.0)).xyz;',
+    fragmentHead: 'varying vec3 vMoonNormal;\nvarying vec3 vVinWorld;\nuniform vec3 uLantern;',
+    fragmentBody: `{
+      vec3 vinN = normalize(vMoonNormal) * (gl_FrontFacing ? 1.0 : -1.0);
+      vec3 vinToL = uLantern - vVinWorld;
+      float vinD = length(vinToL);
+      float vinK = max(0.0, dot(vinN, vinToL / max(vinD, 1e-5))) / (1.0 + vinD * vinD / ${glsl(LANTERN_LIFT.r * LANTERN_LIFT.r)});
+      diffuseColor.rgb *= vec3(${glsl(STREET_LIGHT.ambient)} + ${glsl(STREET_LIGHT.key)} * max(0.0, dot(vinN, vec3(${glsl(m.x)}, ${glsl(m.y)}, ${glsl(m.z)})))) + ${glowVec} * vinK;
+    }`,
+  }
+}
+
 /** The cypress's stroke body (as the street's faces), then the moon: before the fog's mix in `material()`'s order. */
-export function vincentStrokeBody(lit: boolean): Omit<AliveInjection, 'key' | 'uniforms'> {
+export function vincentStrokeBody(lit: boolean, lantern = false): Omit<AliveInjection, 'key' | 'uniforms'> {
   const body = strokeGlslWith(CYPRESS_STROKE_BODY)
-  const moon = vincentMoon(lit)
+  const moon = vincentMoon(lit, lantern)
   return {
     vertexHead: [body.vertexHead, moon.vertexHead].join('\n'),
     vertexBody: [body.vertexBody, moon.vertexBody].join('\n'),

@@ -1,11 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import {
+  AdditiveBlending,
+  Color,
+  DoubleSide,
   MeshBasicMaterial,
   PerspectiveCamera,
+  SpriteMaterial,
   Vector3,
   type Group,
+  type Mesh,
+  type Sprite,
 } from 'three'
+import { LAMP_LIGHT, LIFE, haloScaleOf, lifeTimeUniform, radialTexture } from './streetLife.ts'
 import { FOG, fogInjection } from './streetFog.ts'
 import {
   STATION_T,
@@ -20,12 +27,20 @@ import { classifyGesture, type PointerSample } from './touchSurge.ts'
 import type { ImageData2D } from './useImageData.ts'
 import {
   buildVincent,
+  FORM,
+  lanternExtra,
+  lanternUniform,
   vincentMoon,
   vincentStrokeBody,
   type VincentBuild,
 } from './vincent.ts'
 import {
   admitGesture,
+  FORM_WALK,
+  formGait,
+  initialForm,
+  stepForm,
+  turnPose,
   gait,
   initialWalk,
   setStreetGesture,
@@ -58,6 +73,8 @@ type StreetWalkWindow = Window & {
   /** the rendered figure's own transform, for the checks (Codex K3, K4): his world position, roll and arm swing */
   __vincentPose?: () => { world: [number, number, number]; roll: number; arm: number } | null
   __walkProject?: (t: number, point: [number, number, number]) => [number, number]
+  /** the form spike's state, for its captures */
+  __vincentForm?: () => { t: number; auto: boolean; turn: number; dwell: number; rest: number; bodyYaw: number; headYaw: number }
 }
 
 export default function StreetWalk({
@@ -90,29 +107,48 @@ export default function StreetWalk({
 
   const vincentGroupRef = useRef<Group>(null)
   const armGroupRef = useRef<Group>(null)
+  // the form spike (`?vform=`, throwaway): the head, the legs, the lantern and its light
+  const spike = flags.vform !== 'classic'
+  const headGroupRef = useRef<Group>(null)
+  const legLeftRef = useRef<Group>(null)
+  const legRightRef = useRef<Group>(null)
+  const lanternGroupRef = useRef<Group>(null)
+  const haloRef = useRef<Sprite>(null)
+  const poolRef = useRef<Mesh>(null)
+  const formRef = useRef(initialForm())
+  // a probe-only override of the turn, `vturn=<body°>,<head°>`, for the spike's side-by-side captures
+  const turnAngles = useMemo(() => {
+    const raw = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('vturn')
+    const [b, h] = (raw ?? '').split(',').map((v) => (parseFloat(v) * Math.PI) / 180)
+    return Number.isFinite(b) && Number.isFinite(h) ? { body: b, head: h } : { body: FORM_WALK.body, head: FORM_WALK.head }
+  }, [])
+  const swingRef = useRef(0)
 
   // Vincent geometry and materials
   const build = useMemo<VincentBuild | null>(() => {
     if (!painting) return null
-    return buildVincent(painting)
-  }, [painting])
+    return buildVincent(painting, flags.vform)
+  }, [painting, flags.vform])
 
   const vincentMaterials = useMemo(() => {
     const fog = () => fogInjection(FOG.colour)
     const ids = flags.ids > 0
+    const lantern = spike && flags.light
     const strokes = material(
-      flags.light ? 'vincent-lit' : 'vincent',
-      vincentStrokeBody(flags.light),
+      flags.light ? (lantern ? 'vincent-lit-lantern' : 'vincent-lit') : 'vincent',
+      vincentStrokeBody(flags.light, lantern),
       fog(),
       true,
       ids,
+      lantern ? lanternExtra : undefined,
     )
     const solid = material(
-      flags.light ? 'vincent-solid-lit' : 'vincent-solid',
-      vincentMoon(flags.light),
+      flags.light ? (lantern ? 'vincent-solid-lit-lantern' : 'vincent-solid-lit') : 'vincent-solid',
+      vincentMoon(flags.light, lantern),
       fog(),
       false,
       ids,
+      lantern ? lanternExtra : undefined,
     )
     const shadow = new MeshBasicMaterial({
       color: 0x000000,
@@ -120,14 +156,23 @@ export default function StreetWalk({
       opacity: 0.5,
       depthWrite: false,
     })
-    return { strokes, solid, shadow }
-  }, [flags.light, flags.ids])
+    // the lantern's glass in the lamps' own light, its halo and its pool the lamps' materials at his scale (Fable Q2)
+    const glowTexture = radialTexture()
+    const glass = new MeshBasicMaterial({ vertexColors: true, toneMapped: false, side: DoubleSide })
+    const halo = new SpriteMaterial({ map: glowTexture, color: new Color(LIFE.glow).multiplyScalar(LIFE.halo[1]), transparent: true, depthWrite: false, depthTest: true, blending: AdditiveBlending, toneMapped: false })
+    const pool = new MeshBasicMaterial({ map: glowTexture, color: new Color(LIFE.glow).multiplyScalar(LIFE.pool[1]), transparent: true, depthWrite: false, blending: AdditiveBlending, side: DoubleSide, toneMapped: false })
+    return { strokes, solid, shadow, glowTexture, glass, halo, pool }
+  }, [flags.light, flags.ids, spike])
 
   useEffect(() => {
     return () => {
       vincentMaterials.strokes.dispose()
       vincentMaterials.solid.dispose()
       vincentMaterials.shadow.dispose()
+      vincentMaterials.glowTexture.dispose()
+      vincentMaterials.glass.dispose()
+      vincentMaterials.halo.dispose()
+      vincentMaterials.pool.dispose()
     }
   }, [vincentMaterials])
 
@@ -151,6 +196,13 @@ export default function StreetWalk({
         build.armLeft.strokes.cls,
       ),
       shadow: plainGeometry(build.shadow),
+      head: build.head
+        ? { under: plainGeometry(build.head.underpaint, build.head.underpaint.cls), strokes: strokeGeometry(build.head.strokes.arrays, build.head.strokes.stroke, build.head.strokes.seed, undefined, build.head.strokes.cls) }
+        : null,
+      legs: build.legs
+        ? build.legs.map((leg) => ({ under: plainGeometry(leg.underpaint, leg.underpaint.cls), strokes: strokeGeometry(leg.strokes.arrays, leg.strokes.stroke, leg.strokes.seed, undefined, leg.strokes.cls) }))
+        : null,
+      lantern: build.lantern ? { glass: plainGeometry(build.lantern.glass), ink: plainGeometry(build.lantern.ink, build.lantern.ink.cls) } : null,
     }
   }, [build])
 
@@ -162,6 +214,14 @@ export default function StreetWalk({
         vincentGeometries.armUnder.dispose()
         vincentGeometries.armStrokes.dispose()
         vincentGeometries.shadow.dispose()
+        vincentGeometries.head?.under.dispose()
+        vincentGeometries.head?.strokes.dispose()
+        vincentGeometries.legs?.forEach((leg) => {
+          leg.under.dispose()
+          leg.strokes.dispose()
+        })
+        vincentGeometries.lantern?.glass.dispose()
+        vincentGeometries.lantern?.ink.dispose()
       }
     }
   }, [vincentGeometries])
@@ -254,14 +314,24 @@ export default function StreetWalk({
         const p = new Vector3().setFromMatrixPosition(body.matrixWorld)
         return { world: [p.x, p.y, p.z], roll: body.rotation.z, arm: arm.rotation.x }
       }
+      if (spike) {
+        w.__vincentForm = () => ({
+          t: walkStateRef.current.t,
+          auto: walkStateRef.current.auto,
+          ...formRef.current,
+          bodyYaw: vincentGroupRef.current?.rotation.y ?? NaN,
+          headYaw: headGroupRef.current?.rotation.y ?? NaN,
+        })
+      }
     }
     return () => {
       delete w.__streetWalk
       delete w.__walkProject
       delete w.__vincentBox
       delete w.__vincentPose
+      delete w.__vincentForm
     }
-  }, [walkOnActive, flags.flat, flags.vincent, getVincentBox, portrait, size, offset, gl.domElement])
+  }, [walkOnActive, flags.flat, flags.vincent, getVincentBox, portrait, size, offset, gl.domElement, spike])
 
   // Input listeners: only when walkOn is true
   /* eslint-disable react-hooks/immutability -- canvas touchAction must be none for pointer gestures */
@@ -310,6 +380,7 @@ export default function StreetWalk({
       setStreetGesture(null)
       walkStateRef.current = stopWalk(walkStateRef.current)
       queuedWheelPxRef.current = 0
+      formRef.current = { ...formRef.current, dwell: 0 }
     }
 
     const onVisibilityChange = () => {
@@ -355,6 +426,7 @@ export default function StreetWalk({
         walkStateRef.current = toggleWalk(walkStateRef.current, still)
         // a wheel turned before the tap must not move him after it (Codex K1)
         queuedWheelPxRef.current = 0
+        formRef.current = { ...formRef.current, dwell: 0 }
       }
     }
 
@@ -407,7 +479,13 @@ export default function StreetWalk({
       still,
     }
 
-    const nextState = stepWalk(walkStateRef.current, input)
+    const prevState = walkStateRef.current
+    let nextState = stepWalk(prevState, input)
+    if (spike) {
+      const stepped = stepForm(prevState, nextState, formRef.current, input, reduced || still)
+      nextState = stepped.next
+      formRef.current = stepped.form
+    }
     walkStateRef.current = nextState
 
     // Camera placement
@@ -433,7 +511,41 @@ export default function StreetWalk({
     persp.updateMatrixWorld()
 
     // Vincent sway & placement
-    if (flags.vincent && vincentGroupRef.current && armGroupRef.current) {
+    if (spike && flags.vincent && vincentGroupRef.current && armGroupRef.current) {
+      const { position: vPos, yaw } = vincentPlace(nextState.t)
+      const form = formRef.current
+      const g = formGait(nextState.distance, nextState.speed, nextState.t - prevState.t > 1e-7, form.turn)
+      const pose = turnPose(form.turn, turnAngles.body, turnAngles.head)
+      const body = vincentGroupRef.current
+      body.rotation.order = 'YXZ'
+      body.position.set(vPos[0], vPos[1] + g.lift, vPos[2])
+      body.rotation.set(g.pitch, yaw + pose.body, g.roll)
+      const arm = g.arm - pose.raise
+      armGroupRef.current.rotation.set(arm, 0, 0)
+      headGroupRef.current?.rotation.set(0, pose.head, 0)
+      legLeftRef.current?.rotation.set(-g.leg, 0, 0)
+      legRightRef.current?.rotation.set(g.leg, 0, 0)
+      // the lantern hangs plumb under the swinging hand, a pendulum lagging it by τ 0.15 s (Fable Q5)
+      const hang = -arm - g.pitch
+      swingRef.current = reduced || still ? hang : swingRef.current + (hang - swingRef.current) * (1 - Math.exp(-dt / FORM_WALK.lag))
+      lanternGroupRef.current?.rotation.set(swingRef.current, 0, 0)
+      body.updateMatrixWorld(true)
+      if (lanternGroupRef.current) {
+        const glass = lanternGroupRef.current.localToWorld(new Vector3(0, -FORM.lantern.handle - FORM.lantern.cap - FORM.lantern.h / 2, 0))
+        lanternUniform.value.copy(glass)
+        // look pass 4: 0.18 of a lamp's halo (Fable's 0.4 washed his smock grey once the lantern was raised before him)
+        if (haloRef.current) haloRef.current.scale.setScalar(0.18 * haloScaleOf(haloRef.current, persp))
+        if (poolRef.current && body.parent) {
+          // the pool lies on the ground ahead of the lantern, the way he faces, flickering a little
+          const local = body.parent.worldToLocal(glass.clone())
+          const facing = yaw + pose.body
+          poolRef.current.position.set(local.x + Math.sin(facing) * 0.046, LAMP_LIGHT.poolY, local.z + Math.cos(facing) * 0.046)
+          poolRef.current.rotation.set(-Math.PI / 2, facing, 0, 'YXZ')
+          const T = lifeTimeUniform.value
+          vincentMaterials.pool.opacity = 0.96 + 0.04 * Math.sin(7.3 * T) * Math.sin(11.1 * T)
+        }
+      }
+    } else if (flags.vincent && vincentGroupRef.current && armGroupRef.current) {
       const { position: vPos, yaw } = vincentPlace(nextState.t)
       const g = gait(nextState.distance, nextState.speed, still)
       // his group sits inside the street's, which already carries the anchor's offset (Codex K3): local, not world
@@ -448,8 +560,16 @@ export default function StreetWalk({
 
   const initialPlace = vincentPlace(initialT)
   const pivot = build.armLeft.pivot
+  const lanternShown = spike && flags.light && flags.ids === 0 && build.lantern && vincentGeometries.lantern
+  const glassY = -FORM.lantern.handle - FORM.lantern.cap - FORM.lantern.h / 2
 
   return (
+    <>
+    {lanternShown && (
+      <mesh ref={poolRef} material={vincentMaterials.pool} renderOrder={4}>
+        <planeGeometry args={[0.1, 0.16]} />
+      </mesh>
+    )}
     <group
       ref={vincentGroupRef}
       position={initialPlace.position}
@@ -476,7 +596,28 @@ export default function StreetWalk({
           material={vincentMaterials.strokes}
           renderOrder={5}
         />
+        {lanternShown && build.lantern && vincentGeometries.lantern && (
+          <group ref={lanternGroupRef} position={build.lantern.pivot}>
+            <mesh geometry={vincentGeometries.lantern.ink} material={vincentMaterials.solid} renderOrder={4} />
+            <mesh geometry={vincentGeometries.lantern.glass} material={vincentMaterials.glass} renderOrder={4} />
+            <sprite ref={haloRef} material={vincentMaterials.halo} position={[0, glassY, 0]} renderOrder={6} />
+          </group>
+        )}
       </group>
+      {build.head && vincentGeometries.head && (
+        <group ref={headGroupRef} position={build.head.pivot}>
+          <mesh geometry={vincentGeometries.head.under} material={vincentMaterials.solid} renderOrder={4} />
+          <mesh geometry={vincentGeometries.head.strokes} material={vincentMaterials.strokes} renderOrder={5} />
+        </group>
+      )}
+      {build.legs &&
+        vincentGeometries.legs &&
+        build.legs.map((leg, k) => (
+          <group key={k} ref={k === 0 ? legLeftRef : legRightRef} position={leg.pivot}>
+            <mesh geometry={vincentGeometries.legs![k].under} material={vincentMaterials.solid} renderOrder={4} />
+            <mesh geometry={vincentGeometries.legs![k].strokes} material={vincentMaterials.strokes} renderOrder={5} />
+          </group>
+        ))}
       {flags.light && flags.ids === 0 && (
         <mesh
           geometry={vincentGeometries.shadow}
@@ -485,5 +626,6 @@ export default function StreetWalk({
         />
       )}
     </group>
+    </>
   )
 }

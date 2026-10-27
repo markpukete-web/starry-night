@@ -14,6 +14,8 @@ export type StreetFlags = {
   vincent: boolean
   /** S3: the grass along the lane, on unless `grass=0`; on the flat panel, its blade strip under `grass=1` only */
   grass: boolean
+  /** the form spike (2026-10-28, throwaway): `vform=lantern` (or `1`) or `vform=tarascon`; otherwise S2's figure */
+  vform: 'classic' | 'lantern' | 'tarascon'
 }
 
 export function readStreetFlags(search: string): StreetFlags {
@@ -39,6 +41,8 @@ export function readStreetFlags(search: string): StreetFlags {
   const walkMode = rawWalkMode === 'auto' || rawWalkMode === 'input' ? rawWalkMode : null
   const vincent = params.get('vincent') !== '0'
   const grass = flat ? params.get('grass') === '1' : params.get('grass') !== '0'
+  const rawForm = params.get('vform')
+  const vform = rawForm === 'tarascon' ? 'tarascon' : rawForm === 'lantern' || rawForm === '1' ? 'lantern' : 'classic'
 
   return {
     street,
@@ -54,6 +58,7 @@ export function readStreetFlags(search: string): StreetFlags {
     walkMode,
     vincent,
     grass,
+    vform,
   }
 }
 

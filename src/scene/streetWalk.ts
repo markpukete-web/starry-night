@@ -190,3 +190,88 @@ export function admitGesture(
   }
   return 'hand'
 }
+
+/**
+ * The form spike's walk (2026-10-28, `?vform=`, throwaway): Fable's consult, questions 3 and 5. The automatic walk
+ * dwells 3 s at each station it reaches from below. In every mode he turns once he has not walked forward for 0.5 s,
+ * eased in over 0.6 s and out over 0.3 s, and out again 0.45 s before a dwell ends, so he faces the lane before the
+ * camera moves. He strides only walking forward and turned under 0.2: backward he stands, carried with the camera.
+ */
+export const FORM_WALK = {
+  dwell: 3,
+  rest: 0.5,
+  turnIn: 0.6,
+  turnOut: 0.3,
+  turnGate: 0.2,
+  endTurn: 0.45,
+  body: Math.PI / 2,
+  head: Math.PI / 4,
+  bob: 0.003,
+  roll: 0.015,
+  arm: 0.12,
+  leg: 0.35,
+  pitch: 0.06,
+  lag: 0.15,
+  /** look pass 3: at rest he holds the lantern out in front, the arm raised this far, so its light reaches his face.
+   * Look pass 6: 0.75, as 1.2 held the arm out level, a reach rather than a carry */
+  raise: 0.75,
+} as const
+
+export type FormWalk = { dwell: number; rest: number; turn: number }
+
+export function initialForm(): FormWalk {
+  return { dwell: 0, rest: 0, turn: 0 }
+}
+
+/** The dwell and the rest on top of `stepWalk`'s result: the automatic walk's own step undone while a dwell runs, its
+ * crossing of a station clamped onto it. The camera still reads only `t`. */
+export function stepForm(prev: WalkState, next: WalkState, f: FormWalk, i: WalkInput, immediate: boolean): { next: WalkState; form: FormWalk } {
+  const L = STREET.pathLength
+  const autoOn = prev.auto && i.autoMode && !i.paused && !i.still
+  let { t, target } = next
+  let dwell = f.dwell
+  if (autoOn && dwell > 0) {
+    const autoT = (WALK.auto * i.dt) / L
+    t = Math.max(WALK_T.min, t - autoT)
+    target = Math.max(WALK_T.min, target - autoT)
+    dwell = Math.max(0, dwell - i.dt)
+  } else if (autoOn) {
+    for (const st of STATION_T) {
+      if (st < WALK_T.max && prev.t < st - 1e-6 && t >= st) {
+        t = st
+        target = st
+        dwell = FORM_WALK.dwell
+        break
+      }
+    }
+  } else {
+    dwell = 0
+  }
+  const deltaWorld = Math.abs(t - prev.t) * L
+  const corrected = { ...next, t, target, distance: prev.distance + deltaWorld, speed: i.dt > 0 ? deltaWorld / i.dt : 0 }
+  const rest = t - prev.t > 1e-7 ? 0 : f.rest + i.dt
+  const want = rest > FORM_WALK.rest && !(dwell > 0 && dwell < FORM_WALK.endTurn) ? 1 : 0
+  const rate = want > f.turn ? i.dt / FORM_WALK.turnIn : want < f.turn ? -i.dt / FORM_WALK.turnOut : 0
+  // reduced motion and the still state: a standing figure, turned at once (Fable Q7)
+  const turn = immediate ? 1 : Math.min(1, Math.max(0, f.turn + rate))
+  return { next: corrected, form: { dwell, rest, turn } }
+}
+
+export function formGait(distance: number, speed: number, forward: boolean, turn: number): { lift: number; roll: number; arm: number; leg: number; pitch: number } {
+  if (!forward || speed === 0 || turn >= FORM_WALK.turnGate) return { lift: 0, roll: 0, arm: 0, leg: 0, pitch: 0 }
+  const k = Math.min(1, Math.max(0, speed / WALK.settle))
+  const phi = (Math.PI * distance) / WALK.stride
+  return {
+    lift: FORM_WALK.bob * Math.abs(Math.sin(phi)) * k,
+    roll: FORM_WALK.roll * Math.sin(phi) * k,
+    arm: FORM_WALK.arm * Math.cos(phi) * k,
+    leg: FORM_WALK.leg * Math.cos(phi) * k,
+    pitch: FORM_WALK.pitch * k,
+  }
+}
+
+/** The turn's ease: the body first, the head after it past a quarter of the turn, both smoothstepped. */
+export function turnPose(turn: number, body: number = FORM_WALK.body, head: number = FORM_WALK.head): { body: number; head: number; raise: number } {
+  const ease = (x: number) => x * x * (3 - 2 * x)
+  return { body: body * ease(turn), head: head * ease(Math.min(1, Math.max(0, (turn - 0.25) / 0.75))), raise: FORM_WALK.raise * ease(turn) }
+}
