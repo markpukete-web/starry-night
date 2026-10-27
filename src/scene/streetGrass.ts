@@ -4,6 +4,7 @@ import { vnoise } from './brushForms.ts'
 import { bladeReach, type BladeSpec, clump, GRASS_BLADE } from './grassBlade.ts'
 import {
   laneParam,
+  objectPlaces,
   pathPoint,
   pathTangent,
   STREET,
@@ -57,12 +58,72 @@ export function inFootprint(x: number, z: number): boolean {
   )
 }
 
+export const PLANT = { scale: 0.7, y: 0.022, latIn: 10 } as const
+
 export type GrassChunk = {
   blades: BladeSpec[]
   latIn: number
   box: { min: [number, number, number]; max: [number, number, number] }
   reach: number
   sphere: { centre: [number, number, number]; radius: number }
+  y?: number
+}
+
+export function grassWalkCameras(): [number, number, number][] {
+  const walkCameras: [number, number, number][] = []
+  for (let k = 0; k <= 900; k++) {
+    const t = k / 1000
+    walkCameras.push(walkPose(t, false).position)
+    walkCameras.push(walkPose(t, true).position)
+  }
+  return walkCameras
+}
+
+export function chunkOf(chunkBlades: BladeSpec[], latIn: number, walkCameras: [number, number, number][]): GrassChunk {
+  let minX = Infinity
+  let minZ = Infinity
+  let maxX = -Infinity
+  let maxZ = -Infinity
+  for (const b of chunkBlades) {
+    if (b.x < minX) minX = b.x
+    if (b.x > maxX) maxX = b.x
+    if (b.z < minZ) minZ = b.z
+    if (b.z > maxZ) maxZ = b.z
+  }
+
+  const corners: [number, number][] = [
+    [minX, minZ],
+    [maxX, minZ],
+    [minX, maxZ],
+    [maxX, maxZ],
+  ]
+  let maxCamDist = 0
+  for (const cam of walkCameras) {
+    for (const [cornerX, cornerZ] of corners) {
+      const d = Math.hypot(cornerX - cam[0], cam[1], cornerZ - cam[2])
+      if (d > maxCamDist) maxCamDist = d
+    }
+  }
+
+  let chunkReach = 0
+  for (const b of chunkBlades) {
+    const r = bladeReach(b, maxCamDist)
+    if (r > chunkReach) chunkReach = r
+  }
+
+  const padded = new Box3(
+    new Vector3(minX - chunkReach, 0, minZ - chunkReach),
+    new Vector3(maxX + chunkReach, GRASS.top, maxZ + chunkReach),
+  )
+  const sphere = padded.getBoundingSphere(new Sphere())
+
+  return {
+    blades: chunkBlades,
+    latIn,
+    box: { min: [minX, 0, minZ], max: [maxX, 0, maxZ] },
+    reach: chunkReach,
+    sphere: { centre: [sphere.center.x, sphere.center.y, sphere.center.z], radius: sphere.radius },
+  }
 }
 
 export function grassChunks(painting: ImageData2D, customDensity?: number, clearings: readonly OrientedBox[] = streetClearings()): GrassChunk[] {
@@ -75,12 +136,7 @@ export function grassChunks(painting: ImageData2D, customDensity?: number, clear
   const TOP = GRASS.top
   const meanClump = (GRASS_BLADE.clump[0] + GRASS_BLADE.clump[1]) / 2
 
-  const walkCameras: [number, number, number][] = []
-  for (let k = 0; k <= 900; k++) {
-    const t = k / 1000
-    walkCameras.push(walkPose(t, false).position)
-    walkCameras.push(walkPose(t, true).position)
-  }
+  const walkCameras = grassWalkCameras()
 
   const insideHouse = (x: number, z: number, m: number) =>
     STREET_HOUSES.some((h) => {
@@ -151,56 +207,64 @@ export function grassChunks(painting: ImageData2D, customDensity?: number, clear
         })
 
         if (chunkBlades.length === 0) continue
-
-        let minX = Infinity
-        let minZ = Infinity
-        let maxX = -Infinity
-        let maxZ = -Infinity
-        for (const b of chunkBlades) {
-          if (b.x < minX) minX = b.x
-          if (b.x > maxX) maxX = b.x
-          if (b.z < minZ) minZ = b.z
-          if (b.z > maxZ) maxZ = b.z
-        }
-
-        const corners: [number, number][] = [
-          [minX, minZ],
-          [maxX, minZ],
-          [minX, maxZ],
-          [maxX, maxZ],
-        ]
-        let maxCamDist = 0
-        for (const cam of walkCameras) {
-          for (const [cornerX, cornerZ] of corners) {
-            const d = Math.hypot(cornerX - cam[0], cam[1], cornerZ - cam[2])
-            if (d > maxCamDist) maxCamDist = d
-          }
-        }
-
-        let chunkReach = 0
-        for (const b of chunkBlades) {
-          const r = bladeReach(b, maxCamDist)
-          if (r > chunkReach) chunkReach = r
-        }
-
-        const padded = new Box3(
-          new Vector3(minX - chunkReach, 0, minZ - chunkReach),
-          new Vector3(maxX + chunkReach, TOP, maxZ + chunkReach),
-        )
-        const sphere = padded.getBoundingSphere(new Sphere())
-
-        chunks.push({
-          blades: chunkBlades,
-          latIn: l0,
-          box: { min: [minX, 0, minZ], max: [maxX, 0, maxZ] },
-          reach: chunkReach,
-          sphere: { centre: [sphere.center.x, sphere.center.y, sphere.center.z], radius: sphere.radius },
-        })
+        chunks.push(chunkOf(chunkBlades, l0, walkCameras))
       }
     }
   }
 
   return chunks
+}
+
+export function plantChunks(painting: ImageData2D): GrassChunk[] {
+  const pot = objectPlaces().find((p) => p.kind === 'pot')!
+  const [px, pz] = pot.centre
+  const blades = clump(mulberry32(0x7a40), painting, px, pz, PLANT.scale * GRASS_BLADE.height)
+  for (const b of blades) {
+    b.halfWidth *= PLANT.scale
+  }
+  const chunk = chunkOf(blades, PLANT.latIn, grassWalkCameras())
+  chunk.y = PLANT.y
+  return [chunk]
+}
+
+export function plantHit(origin: Vector3, direction: Vector3, plants: GrassChunk[]): [number, number] | null {
+  if (direction.y >= 0) return null
+  let bestS1 = Infinity
+  let bestC: [number, number] | null = null
+
+  for (const chunk of plants) {
+    const cx = (chunk.box.min[0] + chunk.box.max[0]) / 2
+    const cz = (chunk.box.min[2] + chunk.box.max[2]) / 2
+    const rootOff = Math.max(...chunk.blades.map((b) => Math.hypot(b.x - cx, b.z - cz)))
+    const radius = rootOff + chunk.reach - GRASS_BLADE.push - GRASS_BLADE.wind
+    const bottom = chunk.y ?? 0
+    const tallest = Math.max(...chunk.blades.map((b) => b.height))
+    const top = bottom + tallest
+
+    const s0 = (bottom - origin.y) / direction.y
+    if (s0 < 0) continue
+    const s1 = Math.max(0, (top - origin.y) / direction.y)
+
+    const ax = origin.x + s1 * direction.x
+    const az = origin.z + s1 * direction.z
+    const bx = origin.x + s0 * direction.x
+    const bz = origin.z + s0 * direction.z
+
+    const ux = bx - ax
+    const uz = bz - az
+    const L2 = ux * ux + uz * uz
+    const t = L2 < 1e-18 ? 0 : Math.max(0, Math.min(1, ((cx - ax) * ux + (cz - az) * uz) / L2))
+    const dist = Math.hypot(ax + t * ux - cx, az + t * uz - cz)
+
+    if (dist <= radius) {
+      if (s1 < bestS1) {
+        bestS1 = s1
+        bestC = [cx, cz]
+      }
+    }
+  }
+
+  return bestC
 }
 
 export function grassDrawCount(chunk: GrassChunk, camera: [number, number, number]): number {

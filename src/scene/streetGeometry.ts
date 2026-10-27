@@ -8,8 +8,8 @@ import { buildLandTrees, type BakedMass, type LandTrees } from './landDomes.ts'
 import { buildStreetTrees } from './streetTrees.ts'
 import { PALETTE } from './palette.ts'
 import { CHURCH_LIGHT, leanOf, lightOf, shadeNew, STREET_LIGHT, type StreetLight } from './streetLight.ts'
-import { CHURCH, DETAIL, doorOf, doorPathLegs, doorStepFrame, houseFrame, LIVED_PATH, pathLegShapes, STEP, STREET, STREET_CHURCH, STREET_HOUSES, STREET_LAMPS, STREET_RAIL, STREET_SQUARE, STREET_TREES, detailOf, laneDistance, pathPoint, pathTangent, streetGroundAt, type StreetHouse, laneAt, STREET_WALLS, STREET_WALL } from './streetLayout.ts'
-import { outlineFace, PATH_LIFT, sourceUnderpaint, streetMassConfig, STREET_MOON_LIFT, traceFace, type FaceStrokes, type StreetFace, type StreetSourceName, stoneDab, STREET_SOURCES, STROKE_LIFT } from './streetStrokes.ts'
+import { CHURCH, DETAIL, doorOf, doorPathLegs, doorStepFrame, houseFrame, LIVED_PATH, objectPlaces, pathLegShapes, STEP, STREET, STREET_CHURCH, STREET_HOUSES, STREET_LAMPS, STREET_OBJECTS, STREET_RAIL, STREET_SQUARE, STREET_TREES, detailOf, laneDistance, pathPoint, pathTangent, streetGroundAt, type StreetHouse, laneAt, STREET_WALLS, STREET_WALL } from './streetLayout.ts'
+import { outlineFace, OUTLINE_FRACTION, OUTLINE_LIFT, PATH_LIFT, sourceUnderpaint, streetMassConfig, STREET_MOON_LIFT, traceFace, type FaceStrokes, type StreetFace, type StreetSourceName, stoneDab, STREET_SOURCES, STROKE_LIFT } from './streetStrokes.ts'
 import type { ImageData2D } from './useImageData.ts'
 import { VILLAGE_CHURCH, type Pigment } from './villageKnot.ts'
 
@@ -113,6 +113,32 @@ export type LivedObject = {
   underpaint: [number, number]
   outlines: [number, number]
 }
+
+export const LIVED_CRAFT = {
+  bench: {
+    plank: [0.1, 0.03, 0.012] as [number, number, number],
+    seat: 0.037,
+    block: 0.012,
+    blockHeight: 0.025,
+    blockInset: 0.01,
+  },
+  pot: {
+    across: 0.022,
+    height: 0.022,
+    sides: 8,
+  },
+  pail: {
+    across: 0.016,
+    height: 0.018,
+    sides: 8,
+    hoops: [0.005, 0.014] as [number, number],
+    handle: 0.008,
+    handleEdges: 6,
+  },
+  ink: {
+    lift: 0.0005,
+  },
+} as const
 
 export const LANE_CRAFT = {
   wall: {
@@ -334,11 +360,38 @@ function clad(
   ctx.report.faces.push({ owner, name, ribbons: traced.ribbons, density, cover, source: face.source, base: baseRGB, corners: paint.clip ?? facePolygon(face), normal: face.normal.clone(), light, refHeight: face.refHeight })
 }
 
+export function flatPolygon(
+  ctx: Context,
+  corners: Vector3[],
+  normal: Vector3,
+  colour: Color,
+  refHeight: number,
+  seed: number,
+): void {
+  const face: StreetFace = {
+    origin: corners[0],
+    u: corners[1].clone().sub(corners[0]),
+    v: corners[corners.length - 1].clone().sub(corners[0]),
+    normal,
+    shape: 'quad',
+    kind: 'wall',
+    source: 'thatch',
+    refHeight,
+    seed,
+    mirror: false,
+  }
+  const light = lightOf(face, ctx.lit, ctx.wallLight)
+  const litColour = colour.clone().multiplyScalar(light)
+  const from = ctx.underpaint.positions.length
+  polygon(ctx.underpaint, corners, litColour, 0, 255)
+  shadeNew(ctx.underpaint, from, face, ctx.lit)
+}
+
 /** Ink a volume's edges, each with the normal of the face it belongs to. */
-function ink(ctx: Context, owner: string, refHeight: number, edges: [Vector3, Vector3, Vector3][], seed: number): void {
+function ink(ctx: Context, owner: string, refHeight: number, edges: [Vector3, Vector3, Vector3][], seed: number, lift = OUTLINE_LIFT): void {
   edges.forEach(([a, b, normal], i) => {
     const face: StreetFace = { origin: a, u: b.clone().sub(a), v: UP.clone(), normal, shape: 'quad', kind: 'wall', source: 'wallA', refHeight, seed, mirror: false }
-    append(ctx.outlines, outlineFace(face, [[a, b]], INK, seed * 17 + i), 255)
+    append(ctx.outlines, outlineFace(face, [[a, b]], INK, seed * 17 + i, undefined, lift), 255)
   })
   ctx.report.outlines.push({ owner, edges: edges.length })
 }
@@ -1533,23 +1586,7 @@ function gardenRail(ctx: Context): void {
   const baseColor = new Color().setRGB(...baseColorRGB, SRGBColorSpace)
 
   const addQuad = (corners: [Vector3, Vector3, Vector3, Vector3], normal: Vector3, refHeight: number, seed: number) => {
-    const face: StreetFace = {
-      origin: corners[0],
-      u: corners[1].clone().sub(corners[0]),
-      v: corners[3].clone().sub(corners[0]),
-      normal,
-      shape: 'quad',
-      kind: 'wall',
-      source: 'thatch',
-      refHeight,
-      seed,
-      mirror: false,
-    }
-    const light = lightOf(face, ctx.lit, ctx.wallLight)
-    const litColour = baseColor.clone().multiplyScalar(light)
-    const from = ctx.underpaint.positions.length
-    polygon(ctx.underpaint, corners, litColour, 0, 255)
-    shadeNew(ctx.underpaint, from, face, ctx.lit)
+    flatPolygon(ctx, corners, normal, baseColor, refHeight, seed)
   }
 
   // Posts: 0.005 square, 0.05 high, with top
@@ -1789,8 +1826,185 @@ function doorPaths(ctx: Context): void {
   }
 }
 
-function signsOfLife(_ctx: Context): void {
-  // Built in Task 3
+function signsOfLife(ctx: Context): void {
+  const places = objectPlaces()
+  const woodColor = new Color().setRGB(...sourceUnderpaint(ctx.painting, 'thatch', 1), SRGBColorSpace)
+  const potColor = new Color(PALETTE.villageCool)
+
+  for (let i = 0; i < places.length; i++) {
+    const p = places[i]
+    const seedBase = 0x7a00 + i * 32
+    const underpaintStart = ctx.underpaint.positions.length / 3
+    const outlinesStart = ctx.outlines.arrays.positions.length / 3
+    const f = p.frame
+    const uVec = new Vector3(f.ux, 0, f.uz)
+    const nVec = new Vector3(f.nx, 0, f.nz)
+    const centre = new Vector3(p.centre[0], 0, p.centre[1])
+    let box: { u: number; n: number; height: number }
+
+    if (p.kind === 'bench') {
+      box = { u: 0.1, n: 0.03, height: 0.037 }
+      // Plank: length 0.10 along u, depth 0.03 along n, top at y 0.037, bottom at y 0.025
+      const c0 = centre.clone().addScaledVector(uVec, -0.05).addScaledVector(nVec, -0.015).setY(0.037)
+      const c1 = centre.clone().addScaledVector(uVec, 0.05).addScaledVector(nVec, -0.015).setY(0.037)
+      const c2 = centre.clone().addScaledVector(uVec, 0.05).addScaledVector(nVec, 0.015).setY(0.037)
+      const c3 = centre.clone().addScaledVector(uVec, -0.05).addScaledVector(nVec, 0.015).setY(0.037)
+
+      const b0 = c0.clone().setY(0.025)
+      const b1 = c1.clone().setY(0.025)
+      const b2 = c2.clone().setY(0.025)
+      const b3 = c3.clone().setY(0.025)
+
+      // Top
+      flatPolygon(ctx, [c0, c1, c2, c3], UP, woodColor, 0.012, seedBase)
+      // 4 sides
+      flatPolygon(ctx, [b3, b2, c2, c3], nVec, woodColor, 0.012, seedBase + 1)
+      flatPolygon(ctx, [b1, b0, c0, c1], nVec.clone().negate(), woodColor, 0.012, seedBase + 2)
+      flatPolygon(ctx, [b2, b1, c1, c2], uVec, woodColor, 0.012, seedBase + 3)
+      flatPolygon(ctx, [b0, b3, c3, c0], uVec.clone().negate(), woodColor, 0.012, seedBase + 4)
+
+      // Two blocks: 0.012 square, 0.025 high, centred at +/-0.034 along u
+      for (let bk = 0; bk < 2; bk++) {
+        const bkCentre = centre.clone().addScaledVector(uVec, bk === 0 ? -0.034 : 0.034)
+        const t0 = bkCentre.clone().addScaledVector(uVec, -0.006).addScaledVector(nVec, -0.006).setY(0.025)
+        const t1 = bkCentre.clone().addScaledVector(uVec, 0.006).addScaledVector(nVec, -0.006).setY(0.025)
+        const t2 = bkCentre.clone().addScaledVector(uVec, 0.006).addScaledVector(nVec, 0.006).setY(0.025)
+        const t3 = bkCentre.clone().addScaledVector(uVec, -0.006).addScaledVector(nVec, 0.006).setY(0.025)
+
+        const g0 = t0.clone().setY(0)
+        const g1 = t1.clone().setY(0)
+        const g2 = t2.clone().setY(0)
+        const g3 = t3.clone().setY(0)
+
+        const bkSeed = seedBase + 5 + bk * 5
+        flatPolygon(ctx, [t0, t1, t2, t3], UP, woodColor, 0.025, bkSeed)
+        flatPolygon(ctx, [g3, g2, t2, t3], nVec, woodColor, 0.025, bkSeed + 1)
+        flatPolygon(ctx, [g1, g0, t0, t1], nVec.clone().negate(), woodColor, 0.025, bkSeed + 2)
+        flatPolygon(ctx, [g2, g1, t1, t2], uVec, woodColor, 0.025, bkSeed + 3)
+        flatPolygon(ctx, [g0, g3, t3, t0], uVec.clone().negate(), woodColor, 0.025, bkSeed + 4)
+      }
+    } else if (p.kind === 'pot') {
+      box = { u: 0.022, n: 0.022, height: 0.022 }
+      const W = 0.022
+      const d = W / 2
+      const c = (Math.SQRT2 - 1) * d
+      const corners2D: [number, number][] = [
+        [d, -c],
+        [d, c],
+        [c, d],
+        [-c, d],
+        [-d, c],
+        [-d, -c],
+        [-c, -d],
+        [c, -d],
+      ]
+      const topCorners = corners2D.map(([cu, cn]) =>
+        centre.clone().addScaledVector(uVec, cu).addScaledVector(nVec, cn).setY(0.022),
+      )
+      const botCorners = corners2D.map(([cu, cn]) =>
+        centre.clone().addScaledVector(uVec, cu).addScaledVector(nVec, cn).setY(0),
+      )
+
+      const rimEdges: [Vector3, Vector3, Vector3][] = []
+      for (let j = 0; j < 8; j++) {
+        const next = (j + 1) % 8
+        const midU = (corners2D[j][0] + corners2D[next][0]) / 2
+        const midN = (corners2D[j][1] + corners2D[next][1]) / 2
+        const sideNormal = uVec.clone().multiplyScalar(midU).addScaledVector(nVec, midN).normalize()
+
+        flatPolygon(
+          ctx,
+          [botCorners[j], botCorners[next], topCorners[next], topCorners[j]],
+          sideNormal,
+          potColor,
+          0.022,
+          seedBase + j,
+        )
+        rimEdges.push([topCorners[j], topCorners[next], sideNormal])
+      }
+
+      flatPolygon(ctx, topCorners, UP, potColor, 0.022, seedBase + 8)
+      ink(ctx, 'pot', 0.022, rimEdges, seedBase + 9, LIVED_CRAFT.ink.lift)
+    } else {
+      // Pail
+      box = { u: 0.016, n: 0.016, height: 0.026 }
+      const W = 0.016
+      const d = W / 2
+      const c = (Math.SQRT2 - 1) * d
+      const corners2D: [number, number][] = [
+        [d, -c],
+        [d, c],
+        [c, d],
+        [-c, d],
+        [-d, c],
+        [-d, -c],
+        [-c, -d],
+        [c, -d],
+      ]
+      const topCorners = corners2D.map(([cu, cn]) =>
+        centre.clone().addScaledVector(uVec, cu).addScaledVector(nVec, cn).setY(0.018),
+      )
+      const botCorners = corners2D.map(([cu, cn]) =>
+        centre.clone().addScaledVector(uVec, cu).addScaledVector(nVec, cn).setY(0),
+      )
+
+      const sideNormals: Vector3[] = []
+      for (let j = 0; j < 8; j++) {
+        const next = (j + 1) % 8
+        const midU = (corners2D[j][0] + corners2D[next][0]) / 2
+        const midN = (corners2D[j][1] + corners2D[next][1]) / 2
+        const sideNormal = uVec.clone().multiplyScalar(midU).addScaledVector(nVec, midN).normalize()
+        sideNormals.push(sideNormal)
+        flatPolygon(
+          ctx,
+          [botCorners[j], botCorners[next], topCorners[next], topCorners[j]],
+          sideNormal,
+          woodColor,
+          0.018,
+          seedBase + j,
+        )
+      }
+
+      const topShadowColor = woodColor.clone().multiplyScalar(0.5)
+      flatPolygon(ctx, topCorners, UP, topShadowColor, 0.018, seedBase + 8)
+
+      const hoopYs = LIVED_CRAFT.pail.hoops
+      for (let hIdx = 0; hIdx < hoopYs.length; hIdx++) {
+        const hy = hoopYs[hIdx]
+        const hoopEdges: [Vector3, Vector3, Vector3][] = []
+        for (let j = 0; j < 8; j++) {
+          const next = (j + 1) % 8
+          const pA = centre.clone().addScaledVector(uVec, corners2D[j][0]).addScaledVector(nVec, corners2D[j][1]).setY(hy)
+          const pB = centre.clone().addScaledVector(uVec, corners2D[next][0]).addScaledVector(nVec, corners2D[next][1]).setY(hy)
+          hoopEdges.push([pA, pB, sideNormals[j]])
+        }
+        ink(ctx, 'pail', 0.018, hoopEdges, seedBase + 9 + hIdx, LIVED_CRAFT.ink.lift)
+      }
+
+      const handleVerts: Vector3[] = []
+      for (let j = 0; j <= 6; j++) {
+        const th = (j * Math.PI) / 6
+        const v = centre.clone().addScaledVector(uVec, -0.008 * Math.cos(th)).setY(0.018 + 0.008 * Math.sin(th))
+        handleVerts.push(v)
+      }
+      const handleEdges: [Vector3, Vector3, Vector3][] = []
+      for (let j = 0; j < 6; j++) {
+        handleEdges.push([handleVerts[j], handleVerts[j + 1], nVec])
+      }
+      ink(ctx, 'pail', 0.018, handleEdges, seedBase + 12, LIVED_CRAFT.ink.lift)
+    }
+
+    const underpaintEnd = ctx.underpaint.positions.length / 3
+    const outlinesEnd = ctx.outlines.arrays.positions.length / 3
+    ctx.report.lived.objects.push({
+      kind: p.kind,
+      house: p.house,
+      centre,
+      box,
+      underpaint: [underpaintStart, underpaintEnd],
+      outlines: [outlinesStart, outlinesEnd],
+    })
+  }
 }
 
 export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | null, masses: BakedMass[] | null, { lit = true, grass = false, paint = WALL_PAINT, lane = true, lived = true }: { lit?: boolean; grass?: boolean; paint?: WallPaint; lane?: boolean; lived?: boolean } = {}): StreetBuild | null {

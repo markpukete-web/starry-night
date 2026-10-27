@@ -6,30 +6,38 @@ import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { existsSync, readFileSync } from 'node:fs'
 import test from 'node:test'
-import { Vector3 } from 'three'
+import { PerspectiveCamera, Raycaster, Sphere, Vector2, Vector3 } from 'three'
 
 import { FROG, frogPlace, FROGS } from '../src/scene/frog.ts'
+import { bladeVertex, bladeWidth, GRASS_BLADE } from '../src/scene/grassBlade.ts'
 import type { BakedMass } from '../src/scene/landDomes.ts'
-import { buildStreet, type LivedPath, type StreetBuild } from '../src/scene/streetGeometry.ts'
-import { grassChunks } from '../src/scene/streetGrass.ts'
+import { buildStreet, LIVED_CRAFT, type LivedObject, type LivedPath, type StreetBuild } from '../src/scene/streetGeometry.ts'
+import { grassChunks, grassDrawCount, grassRect, PLANT, plantChunks, plantHit } from '../src/scene/streetGrass.ts'
 import {
   doorOf,
   doorStepFoot,
   doorStepFrame,
+  houseFrame,
   laneAt,
   laneParam,
   LIVED_PATH,
+  objectClearings,
+  objectPlaces,
   pathClearings,
   pathLegShapes,
   pathTangent,
+  STATION_T,
   stepClearings,
   STREET,
   STREET_HOUSES,
+  STREET_OBJECTS,
   STREET_PATHS,
   STREET_TRIANGLE_BUDGET,
   streetClearings,
+  walkPose,
   wallClearings,
 } from '../src/scene/streetLayout.ts'
+import { OUTLINE_FRACTION } from '../src/scene/streetStrokes.ts'
 import type { ImageData2D } from '../src/scene/useImageData.ts'
 import { decodePNG } from './lib/png.ts'
 
@@ -446,4 +454,337 @@ test("K2's street without the lived-in parts", { skip }, () => {
   assert.deepEqual(build.report.lived, { paths: [], objects: [] })
   const hash = computeBuildHash(build)
   assert.equal(hash, '5f3ea9c0e97f6e46', 'B1 hash matches')
+})
+
+test('the three objects stand by their doors', { skip }, () => {
+  assert.ok(realPainting)
+  const build = buildStreet(realPainting, flow, masses, { grass: true })!
+  const objs = build.report.lived.objects
+  assert.equal(objs.length, 3, '3 objects')
+  assert.equal(objs[0].kind, 'bench')
+  assert.equal(objs[0].house, 'L2')
+  assert.equal(objs[1].kind, 'pot')
+  assert.equal(objs[1].house, 'R4')
+  assert.equal(objs[2].kind, 'pail')
+  assert.equal(objs[2].house, 'L4')
+
+  const houses = STREET_HOUSES.map((h) => {
+    const { along, toPath } = houseFrame(h)
+    const p: [number, number] = [h.x, h.z]
+    const a: [number, number] = [along.x, along.z]
+    const n: [number, number] = [toPath.x, toPath.z]
+    return [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([s, k]) => [
+      p[0] + (a[0] * s * h.w) / 2 + (n[0] * k * h.d) / 2,
+      p[1] + (a[1] * s * h.w) / 2 + (n[1] * k * h.d) / 2,
+    ] as [number, number])
+  })
+
+  for (const obj of objs) {
+    const spec = STREET_OBJECTS.find((o) => o.kind === obj.kind)!
+    const hIdx = STREET_HOUSES.findIndex((h) => h.id === obj.house)
+    const h = STREET_HOUSES[hIdx]
+    const f = doorStepFrame(h, hIdx)
+    const door = doorOf(h, hIdx)
+    const a = spec.side === -1 ? 2 * door.cu * h.w - spec.a : spec.a
+    const expectedCentre = [f.ox + a * f.ux + spec.k * f.nx, f.oz + a * f.uz + spec.k * f.nz]
+    assert.ok(Math.hypot(obj.centre.x - expectedCentre[0], obj.centre.z - expectedCentre[1]) <= 1e-9, `${obj.kind} centre`)
+
+    assert.ok(Math.abs(spec.k - obj.box.n / 2 - 0.01) <= 1e-9, `${obj.kind} near edge 0.01 from wall`)
+
+    const pathSpec = STREET_PATHS.find((sp) => sp.house === obj.house)!
+    const pathWidth = door.w * h.w + ('margin' in pathSpec && pathSpec.margin !== undefined ? pathSpec.margin : LIVED_PATH.margin)
+    const pathU0 = door.cu * h.w - pathWidth / 2
+    const pathU1 = door.cu * h.w + pathWidth / 2
+    const objU0 = a - obj.box.u / 2
+    const objU1 = a + obj.box.u / 2
+    const distToPath = Math.min(Math.abs(objU0 - pathU1), Math.abs(pathU0 - objU1))
+    assert.ok(distToPath >= 0.01 - 1e-9, `${obj.kind} footprint >= 0.01 from path strip: ${distToPath}`)
+
+    // footprint corners in world coordinates
+    const fpCorners: [number, number][] = [
+      [-1, -1],
+      [1, -1],
+      [1, 1],
+      [-1, 1],
+    ].map(([su, sn]) => {
+      const uOff = a + (su * obj.box.u) / 2
+      const nOff = spec.k + (sn * obj.box.n) / 2
+      return [f.ox + uOff * f.ux + nOff * f.nx, f.oz + uOff * f.uz + nOff * f.nz]
+    })
+
+    const stepCorners = doorStepFoot(h, hIdx)
+    assert.ok(polyDist(fpCorners, stepCorners) >= 0.01 - 1e-9, `${obj.kind} outside step rectangle`)
+
+    for (let i = 0; i < houses.length; i++) {
+      if (STREET_HOUSES[i].id !== obj.house) {
+        const d = polyDist(fpCorners, houses[i])
+        assert.ok(d >= 0.03 - 1e-9, `${obj.kind} >= 0.03 from house ${STREET_HOUSES[i].id}: ${d}`)
+      }
+    }
+
+    if (obj.kind === 'bench') {
+      assert.ok(objU0 >= 0.02 - 1e-9 && h.w - objU1 >= 0.02 - 1e-9, 'bench within house width by 0.02')
+      assert.ok(0.10 - (spec.k + obj.box.n / 2) >= 0.02 - 1e-9, 'bench k under 0.10 by 0.02')
+      for (const post of build.report.lane.rail!.posts) {
+        const d = distance([post.x, post.z], fpCorners)
+        assert.ok(d >= 0.01 - 1e-9, `bench >= 0.01 from rail post: ${d}`)
+      }
+    }
+  }
+})
+
+test('every object is drawn', { skip }, () => {
+  assert.ok(realPainting)
+  const build = buildStreet(realPainting, flow, masses, { grass: true })!
+  const pos = build.underpaint.positions
+  const outPos = build.outlines.arrays.positions
+
+  for (const obj of build.report.lived.objects) {
+    assert.ok(obj.underpaint[1] > obj.underpaint[0], `${obj.kind} underpaint non-empty`)
+    const spec = STREET_OBJECTS.find((o) => o.kind === obj.kind)!
+    const hIdx = STREET_HOUSES.findIndex((h) => h.id === obj.house)
+    const h = STREET_HOUSES[hIdx]
+    const f = doorStepFrame(h, hIdx)
+    const door = doorOf(h, hIdx)
+    const a = spec.side === -1 ? 2 * door.cu * h.w - spec.a : spec.a
+
+    for (let i = obj.underpaint[0]; i < obj.underpaint[1]; i++) {
+      const px = pos[i * 3]
+      const py = pos[i * 3 + 1]
+      const pz = pos[i * 3 + 2]
+      assert.ok(py >= -1e-6 && py <= obj.box.height + 1e-6, `${obj.kind} underpaint vertex ${i} y in box`)
+      const dx = px - f.ox
+      const dz = pz - f.oz
+      const uVal = dx * f.ux + dz * f.uz
+      const nVal = dx * f.nx + dz * f.nz
+      assert.ok(uVal >= a - obj.box.u / 2 - 1e-6 && uVal <= a + obj.box.u / 2 + 1e-6, `${obj.kind} u in box`)
+      assert.ok(nVal >= spec.k - obj.box.n / 2 - 1e-6 && nVal <= spec.k + obj.box.n / 2 + 1e-6, `${obj.kind} n in box`)
+    }
+
+    if (obj.kind === 'bench') {
+      assert.equal(obj.outlines[0], obj.outlines[1], 'bench outlines empty')
+    } else {
+      assert.ok(obj.outlines[1] > obj.outlines[0], `${obj.kind} outlines non-empty`)
+      const refHeight = obj.kind === 'pot' ? 0.022 : 0.018
+      const allowance = LIVED_CRAFT.ink.lift + 1.5 * OUTLINE_FRACTION * refHeight + 1e-6
+      for (let i = obj.outlines[0]; i < obj.outlines[1]; i++) {
+        const px = outPos[i * 3]
+        const py = outPos[i * 3 + 1]
+        const pz = outPos[i * 3 + 2]
+        assert.ok(py >= -allowance && py <= obj.box.height + allowance, `${obj.kind} ink y in box`)
+        const dx = px - f.ox
+        const dz = pz - f.oz
+        const uVal = dx * f.ux + dz * f.uz
+        const nVal = dx * f.nx + dz * f.nz
+        assert.ok(uVal >= a - obj.box.u / 2 - allowance && uVal <= a + obj.box.u / 2 + allowance, `${obj.kind} ink u in box`)
+        assert.ok(nVal >= spec.k - obj.box.n / 2 - allowance && nVal <= spec.k + obj.box.n / 2 + allowance, `${obj.kind} ink n in box`)
+      }
+    }
+  }
+})
+
+test('the rail did not move', { skip }, () => {
+  assert.ok(realPainting)
+  const buildLived = buildStreet(realPainting, flow, masses, { grass: true, lived: true })!
+  const buildFalse = buildStreet(realPainting, flow, masses, { grass: true, lived: false })!
+  const rLived = buildLived.report.lane.rail!
+  const rFalse = buildFalse.report.lane.rail!
+  assert.equal(rLived.underpaint[1] - rLived.underpaint[0], rFalse.underpaint[1] - rFalse.underpaint[0])
+  for (let i = rLived.underpaint[0] * 3; i < rLived.underpaint[1] * 3; i++) {
+    assert.equal(buildLived.underpaint.positions[i], buildFalse.underpaint.positions[i], `rail pos ${i}`)
+    assert.equal(buildLived.underpaint.colors[i], buildFalse.underpaint.colors[i], `rail col ${i}`)
+  }
+})
+
+test("the pot plant is a clump of the grass's blades on the pot's top", { skip }, () => {
+  assert.ok(realPainting)
+  assert.ok(PLANT.scale >= 0.6 && PLANT.scale <= 0.8, 'PLANT.scale in [0.6, 0.8]')
+  const chunks = plantChunks(realPainting)
+  assert.equal(chunks.length, 1, '1 plant chunk')
+  const chunk = chunks[0]
+  assert.equal(chunk.y, PLANT.y, 'chunk.y is PLANT.y')
+  assert.equal(chunk.y, LIVED_CRAFT.pot.height, 'chunk.y is pot height')
+  assert.ok(chunk.blades.length >= 5 && chunk.blades.length <= 9, '5 to 9 blades')
+
+  const pot = objectPlaces().find((p) => p.kind === 'pot')!
+  for (const b of chunk.blades) {
+    assert.ok(Math.hypot(b.x - pot.centre[0], b.z - pot.centre[1]) <= 0.011 + 1e-9, 'root within 0.011 of pot centre')
+    assert.ok(b.height >= 0.75 * PLANT.scale * 0.036 - 1e-9 && b.height <= 1.25 * PLANT.scale * 0.036 + 1e-9, 'blade height in range')
+    assert.ok(b.halfWidth >= PLANT.scale * 0.0024 - 1e-9 && b.halfWidth <= PLANT.scale * 0.0034 + 1e-9, 'blade halfWidth in range')
+    assert.ok(Math.abs(b.curl) >= 0.5 - 1e-9, '|curl| >= 0.5')
+  }
+
+  assert.equal(chunk.latIn, 10, 'latIn is 10')
+  const count = grassDrawCount(chunk, [pot.centre[0], 0, pot.centre[1] + 2])
+  assert.equal(count, chunk.blades.length, 'all blades drawn at distance 2')
+
+  const rect = grassRect(grassChunks(realPainting))
+  assert.ok(pot.centre[0] >= rect[0] && pot.centre[0] <= rect[0] + rect[2], 'pot x in grass rect')
+  assert.ok(pot.centre[1] >= rect[1] && pot.centre[1] <= rect[1] + rect[3], 'pot z in grass rect')
+})
+
+test("the plant's sphere holds every blade", { skip }, () => {
+  assert.ok(realPainting)
+  const chunks = plantChunks(realPainting)
+  const chunk = chunks[0]
+  const sphereCentre = new Vector3(...chunk.sphere.centre)
+  const sphereRadius = chunk.sphere.radius
+  const pot = objectPlaces().find((p) => p.kind === 'pot')!
+
+  let fixedFails = 0
+  const fixedCentre = new Vector3(chunk.sphere.centre[0], 0.02, chunk.sphere.centre[2])
+
+  for (let k = 0; k <= 90; k++) {
+    const t = k / 100
+    for (const portrait of [false, true]) {
+      const pose = walkPose(t, portrait)
+      const c = pose.position
+      for (const b of chunk.blades) {
+        const dx = c[0] - b.x
+        const dz = c[2] - b.z
+        const h = Math.hypot(dx, dz)
+        const right: [number, number] = [dz / h, -dx / h]
+        const widen = Math.max(1, Math.hypot(dx, c[1] - PLANT.y, dz) / GRASS_BLADE.widenFrom)
+        for (const a of [0, 0.25, 0.5, 0.75, 1]) {
+          for (const across of [-bladeWidth(a), bladeWidth(a)]) {
+            const v = bladeVertex(b, a, across, right, widen)
+            for (let dir = 0; dir < 8; dir++) {
+              const angle = (dir * Math.PI) / 4
+              const disp = (GRASS_BLADE.push + GRASS_BLADE.wind) * a * a
+              const drop = Math.max(0, 0.7 * disp * a)
+              const pt = new Vector3(v[0] + disp * Math.cos(angle), v[1] - drop, v[2] + disp * Math.sin(angle))
+              assert.ok(
+                pt.distanceTo(sphereCentre) <= sphereRadius + 1e-9,
+                `blade point (${pt.x}, ${pt.y}, ${pt.z}) outside sphere`,
+              )
+              if (pt.distanceTo(fixedCentre) > 0.06) fixedFails++
+            }
+          }
+        }
+      }
+    }
+  }
+  assert.ok(fixedFails > 0, 'fixed sphere fails as expected')
+})
+
+test('a pointer on a leaf of the pot plant pushes it', { skip }, () => {
+  assert.ok(realPainting)
+  const chunks = plantChunks(realPainting)
+  const chunk = chunks[0]
+  const pot = objectPlaces().find((p) => p.kind === 'pot')!
+  const poses: [string, number][] = [
+    ...STATION_T.map((t) => ['stop', t] as [string, number]),
+    ...[0.3, 0.36, 0.5, 0.55].map((t) => ['walk', t] as [string, number]),
+  ]
+
+  let rays = 0
+  for (const [view, portrait, aspect] of [
+    ['desktop', false, 1600 / 900],
+    ['phone', true, 390 / 844],
+  ] as const) {
+    for (const [kind, t] of poses) {
+      const pose = walkPose(t, portrait)
+      const cam = new PerspectiveCamera(pose.fov, aspect, pose.near, pose.far)
+      cam.position.set(...pose.position)
+      cam.lookAt(...pose.target)
+      cam.updateMatrixWorld()
+
+      for (const b of chunk.blades) {
+        const dx = cam.position.x - b.x
+        const dz = cam.position.z - b.z
+        const h = Math.hypot(dx, dz)
+        const right: [number, number] = [dz / h, -dx / h]
+        const widen = Math.max(1, Math.hypot(dx, cam.position.y - PLANT.y, dz) / GRASS_BLADE.widenFrom)
+        for (const a of [0.25, 0.5, 0.75, 1]) {
+          for (const across of [0, -bladeWidth(a), bladeWidth(a)]) {
+            const v = bladeVertex(b, a, across, right, widen)
+            const pt = new Vector3(v[0], v[1] + PLANT.y, v[2])
+            const ndc = pt.clone().project(cam)
+            if (!(Math.abs(ndc.x) < 1 && Math.abs(ndc.y) < 1 && ndc.z < 1 && ndc.z > -1)) continue
+            const rc = new Raycaster()
+            rc.setFromCamera(new Vector2(ndc.x, ndc.y), cam)
+            rays++
+            const hit = plantHit(rc.ray.origin, rc.ray.direction, chunks)
+            assert.ok(
+              hit !== null,
+              `MISS: ${view} ${kind} ${t} blade ${chunk.blades.indexOf(b)} a=${a} across=${across.toFixed(3)} (Codex counterexample: stop 2, blade 3, a 0.75)`,
+            )
+            const plantCx = (chunk.box.min[0] + chunk.box.max[0]) / 2
+            const plantCz = (chunk.box.min[2] + chunk.box.max[2]) / 2
+            assert.ok(Math.hypot(hit[0] - plantCx, hit[1] - plantCz) <= 1e-12, 'hit equals plant centre')
+
+            for (const [sx, sz] of [
+              [0.1 * right[0], 0.1 * right[1]],
+              [-0.1 * right[0], -0.1 * right[1]],
+            ]) {
+              const q = pt.clone().add(new Vector3(sx, 0, sz))
+              const qn = q.clone().project(cam)
+              const qr = new Raycaster()
+              qr.setFromCamera(new Vector2(qn.x, qn.y), cam)
+              const hitSide = plantHit(qr.ray.origin, qr.ray.direction, chunks)
+              assert.equal(hitSide, null, 'side point must miss')
+            }
+          }
+        }
+      }
+    }
+  }
+  assert.equal(rays, 816, '816 rays hit')
+})
+
+test('the grass clears the objects', { skip }, () => {
+  assert.ok(realPainting)
+  assert.equal(streetClearings().length, 10 + 37 + 14 + 3, '64 clearings')
+  const chunks = grassChunks(realPainting)
+  const objs = objectPlaces()
+
+  for (const chunk of chunks) {
+    for (const b of chunk.blades) {
+      for (const obj of objs) {
+        const spec = STREET_OBJECTS.find((o) => o.kind === obj.kind)!
+        const f = obj.frame
+        const h = STREET_HOUSES[obj.index]
+        const door = doorOf(h, obj.index)
+        const a = spec.side === -1 ? 2 * door.cu * h.w - spec.a : spec.a
+        const box = obj.kind === 'bench' ? [0.10, 0.03] : obj.kind === 'pot' ? [0.022, 0.022] : [0.016, 0.016]
+        const fpCorners: [number, number][] = [
+          [-1, -1],
+          [1, -1],
+          [1, 1],
+          [-1, 1],
+        ].map(([su, sn]) => {
+          const uOff = a + (su * box[0]) / 2
+          const nOff = spec.k + (sn * box[1]) / 2
+          return [f.ox + uOff * f.ux + nOff * f.nx, f.oz + uOff * f.uz + nOff * f.nz]
+        })
+        const d = distance([b.x, b.z], fpCorners)
+        assert.ok(d >= 0.012 - 1e-6, `blade at (${b.x}, ${b.z}) too close to ${obj.kind}: ${d} < 0.012`)
+      }
+    }
+  }
+})
+
+test('the objects cost what the plan says', { skip }, () => {
+  assert.ok(realPainting)
+  const build = buildStreet(realPainting, flow, masses, { grass: true })!
+  const objs = build.report.lived.objects
+
+  let totalTriangles = 0
+  const uIdx = build.underpaint.indices
+  for (let i = 0; i < uIdx.length; i += 3) {
+    const i0 = uIdx[i], i1 = uIdx[i + 1], i2 = uIdx[i + 2]
+    if (objs.some((o) => i0 >= o.underpaint[0] && i0 < o.underpaint[1] && i1 >= o.underpaint[0] && i1 < o.underpaint[1] && i2 >= o.underpaint[0] && i2 < o.underpaint[1])) {
+      totalTriangles++
+    }
+  }
+
+  const oIdx = build.outlines.arrays.indices
+  for (let i = 0; i < oIdx.length; i += 3) {
+    const i0 = oIdx[i], i1 = oIdx[i + 1], i2 = oIdx[i + 2]
+    if (objs.some((o) => i0 >= o.outlines[0] && i0 < o.outlines[1] && i1 >= o.outlines[0] && i1 < o.outlines[1] && i2 >= o.outlines[0] && i2 < o.outlines[1])) {
+      totalTriangles++
+    }
+  }
+
+  assert.ok(totalTriangles >= 700 && totalTriangles <= 1300, `object triangles ${totalTriangles} in [700, 1300]`)
 })

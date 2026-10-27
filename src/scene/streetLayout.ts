@@ -352,8 +352,53 @@ export function pathClearings(): OrientedBox[] {
   return doorPathLegs().flatMap((p) => pathLegShapes(p).map((s) => s.rect))
 }
 
+export const STREET_OBJECTS = [
+  { kind: 'bench', house: 'L2', a: 0.19, k: 0.025, side: 1 },
+  { kind: 'pot', house: 'R4', a: 0.2, k: 0.021, side: 1 },
+  { kind: 'pail', house: 'L4', a: 0.196, k: 0.018, side: 1 },
+] as const
+
+export function objectPlaces(): {
+  kind: 'bench' | 'pot' | 'pail'
+  house: string
+  index: number
+  centre: [number, number]
+  frame: ReturnType<typeof doorStepFrame>
+}[] {
+  return STREET_OBJECTS.map((obj) => {
+    const index = STREET_HOUSES.findIndex((h) => h.id === obj.house)
+    const h = STREET_HOUSES[index]
+    const frame = doorStepFrame(h, index)
+    const door = doorOf(h, index)
+    const a = obj.side === -1 ? 2 * door.cu * h.w - obj.a : obj.a
+    const centre: [number, number] = [
+      frame.ox + a * frame.ux + obj.k * frame.nx,
+      frame.oz + a * frame.uz + obj.k * frame.nz,
+    ]
+    return { kind: obj.kind, house: obj.house, index, centre, frame }
+  })
+}
+
 export function objectClearings(): OrientedBox[] {
-  return []
+  return objectPlaces().map((p) => {
+    const spec = STREET_OBJECTS.find((o) => o.kind === p.kind)!
+    const h = STREET_HOUSES[p.index]
+    const door = doorOf(h, p.index)
+    const a = spec.side === -1 ? 2 * door.cu * h.w - spec.a : spec.a
+    const box = p.kind === 'bench' ? [0.1, 0.03] : p.kind === 'pot' ? [0.022, 0.022] : [0.016, 0.016]
+    return {
+      ox: p.frame.ox,
+      oz: p.frame.oz,
+      ux: p.frame.ux,
+      uz: p.frame.uz,
+      nx: p.frame.nx,
+      nz: p.frame.nz,
+      u0: a - box[0] / 2,
+      u1: a + box[0] / 2,
+      k0: spec.k - box[1] / 2,
+      k1: spec.k + box[1] / 2,
+    }
+  })
 }
 
 export function houseFrame(h: StreetHouse): { along: Vector3; toPath: Vector3 } {

@@ -402,7 +402,7 @@ export function traceFace(face: StreetFace, flow: ImageData2D, painting: ImageDa
  * and 0.6 of it at the ends, wobbling across by at most a quarter of its width, run past each corner by half its
  * width so the corners close, lifted over the strokes.
  */
-export function outlineFace(face: StreetFace, edges: readonly (readonly [Vector3, Vector3])[], ink: Color, seed: number, maxSamples?: number): FaceStrokes {
+export function outlineFace(face: StreetFace, edges: readonly (readonly [Vector3, Vector3])[], ink: Color, seed: number, maxSamples?: number, lift = OUTLINE_LIFT): FaceStrokes {
   const arrays = makeBrushArrays()
   const stroke: number[] = []
   const seeds: number[] = []
@@ -426,7 +426,7 @@ export function outlineFace(face: StreetFace, edges: readonly (readonly [Vector3
       const t = k / (n - 1)
       const taper = 1 - 0.4 * Math.abs(2 * t - 1) ** 2
       const wobble = (vnoise(edgeSeed + t * 3.1, 0.7) - 0.5) * 0.5 * width
-      const centre = start.clone().addScaledVector(along, t * total).addScaledVector(across, wobble).addScaledVector(face.normal, OUTLINE_LIFT)
+      const centre = start.clone().addScaledVector(along, t * total).addScaledVector(across, wobble).addScaledVector(face.normal, lift)
       const half = (width * taper) / 2
       steps.push([centre.clone().addScaledVector(across, -half), centre.clone(), centre.clone().addScaledVector(across, half)])
       colours.push(ink.clone().multiplyScalar(tone))
