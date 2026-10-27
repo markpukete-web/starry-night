@@ -380,9 +380,16 @@ restore 0, clean 0, green 0.
 - The browser gates: walk (6 of 6 on the fresh server), rotation, cypress-hang, portal, reduced motion, grass
   (18 of 18 alone), colour (no region newly failing or worse, the walls' fails smaller), 60 fps at stops 0 and 3
   (p95 at most 17.6 ms), the sweep's worst point 1,412,657 under 1,444,930, the four lamp passes captured.
-- The look: pass 5's frames at 1:1, stops 0, 1 and 3 on desktop and stop 0 on the phone: the walls read as coursed
-  stone with dark joints, the heads stoned, the top a coping of flat stones.
+- The look: pass 5's frames at 1:1, stops 0, 1 and 3 on desktop and stops 0 and 3 on the phone: the walls read as
+  coursed stone with dark joints, the heads stoned, the top a coping of flat stones. On the phone at stop 3 (the near
+  wall at its biggest on the smallest screen) the courses read as pale horizontal stripes on a dark body: stone, but
+  banded; a point for Mark's eye.
 
 Open for Mark's eye, none a blocker: the lantern's flat box, the K1 fog fails, the `?lane=0` idea, and the top rows
 laid by the shared planner (shorter stones than the probe showed; the Lead reads them as a coping). Pushed for his
 preview at the time in the pickup. No PR until he has looked.
+
+Pushed at 20:58 (`80f11eb`, the code `973c07d`) to `feat/village-lane`. The Vercel preview
+`https://starry-night-kdvm5pcw6-markpukete-webs-projects.vercel.app/?street=1&station=0` (Vercel sign-in), built at
+20:59; Mark pinged at 21:01 with the before-and-after crops at stops 0 and 3 (`k2/t6/k2-pass5-before-after-s0.png`,
+`-s3.png`). No PR until he has looked.
