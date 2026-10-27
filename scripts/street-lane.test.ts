@@ -302,7 +302,9 @@ test('a stone is a dab of the measured size', { skip }, () => {
       assert.ok(Math.abs(wMid - dab.width) < 1e-9, `|v5 - v3| ${wMid} == width ${dab.width}`)
 
       const pt = laneAt(dab.t, dab.lateral)
-      const tangent = new Vector3(pt.nz, 0, -pt.nx)
+      const tangent = dab.face === 'cap'
+        ? new Vector3(pt.nx, 0, pt.nz).multiplyScalar(w.side)
+        : new Vector3(pt.nz, 0, -pt.nx)
       const vLen = Math.abs(verts[7].clone().sub(verts[1]).dot(tangent))
       assert.ok(vLen >= lenMin * H - 1e-4 && vLen <= lenMax * H + 1e-4, `vLen ${vLen} in [${lenMin}, ${lenMax}] * H`)
       assert.ok(Math.abs(vLen - dab.length) < 1e-4, `vLen ${vLen} within 1e-4 of dab.length ${dab.length}`)
@@ -312,11 +314,123 @@ test('a stone is a dab of the measured size', { skip }, () => {
       if (dab.face === 'lane') {
         assert.ok(Math.hypot(verts[4].x - pt.x, verts[4].z - pt.z) < 1e-9, `lane dab v4 (x, z)`)
         assert.ok(Math.abs(verts[4].y - dab.y) <= dab.width / 4 + 1e-9, `lane dab v4 y`)
-      } else {
+      } else if (dab.face === 'top') {
         assert.ok(Math.abs(verts[4].y - (H + STROKE_LIFT)) < 1e-9, `top dab v4 y`)
         assert.ok(Math.hypot(verts[4].x - pt.x, verts[4].z - pt.z) <= dab.width / 4 + 1e-9, `top dab v4 (x, z)`)
+      } else if (dab.face === 'cap') {
+        const sign = dab.t === w.t0 ? -1 : 1
+        const tan = pathTangent(dab.t)
+        const nCap = new Vector3(sign * tan[0], 0, sign * tan[2]).normalize()
+        const qa = laneAt(dab.t, w.side * STREET_WALL.inner)
+        const qb = laneAt(dab.t, w.side * (STREET_WALL.inner + STREET_WALL.thickness))
+        const centre = new Vector3((qa.x + qb.x) / 2, dab.y, (qa.z + qb.z) / 2).addScaledVector(nCap, STROKE_LIFT)
+        assert.ok(Math.hypot(verts[4].x - centre.x, verts[4].z - centre.z) <= dab.width / 4 + 1e-9, `cap dab v4 (x, z)`)
+        assert.ok(Math.abs(verts[4].y - dab.y) <= dab.width / 4 + 1e-9, `cap dab v4 y`)
       }
     })
+  }
+})
+
+test("a stone is the stroke's full-bodied middle", { skip }, () => {
+  assert.ok(realPainting)
+  const build = buildStreet(realPainting, flow, masses, { grass: true, lane: true })
+  const strokePos = build.strokes.arrays.positions
+  const strokeCoords = build.strokes.stroke
+
+  for (const w of build.report.lane.walls) {
+    const [s0] = w.strokes
+    w.dabs.forEach((dab, i) => {
+      const vBase = (s0 + 9 * i) * 3
+      const verts: Vector3[] = []
+      for (let k = 0; k < 9; k++) {
+        verts.push(new Vector3(strokePos[vBase + k * 3], strokePos[vBase + k * 3 + 1], strokePos[vBase + k * 3 + 2]))
+      }
+
+      for (let k = 0; k < 9; k++) {
+        const vIdx = s0 + 9 * i + k
+        const along = strokeCoords[vIdx * 2]
+        assert.ok(along >= 0.3 - 1e-9 && along <= 0.7 + 1e-9, `dab ${i} v${k} along ${along} in [0.3, 0.7]`)
+      }
+
+      const w0 = verts[0].distanceTo(verts[2])
+      const w2 = verts[6].distanceTo(verts[8])
+      assert.ok(w0 >= 0.9 * dab.width - 1e-9, `|v0 - v2| ${w0} >= 0.9 * ${dab.width}`)
+      assert.ok(w2 >= 0.9 * dab.width - 1e-9, `|v6 - v8| ${w2} >= 0.9 * ${dab.width}`)
+    })
+  }
+})
+
+test('each course fills its run flush to both wall heads', { skip }, () => {
+  assert.ok(realPainting)
+  const build = buildStreet(realPainting, flow, masses, { grass: true, lane: true })
+
+  const speed = (t: number, lat: number) => {
+    const p1 = laneAt(t + 1e-4, lat)
+    const p0 = laneAt(t - 1e-4, lat)
+    return Math.hypot(p1.x - p0.x, p1.z - p0.z) / 2e-4
+  }
+
+  for (const w of build.report.lane.walls) {
+    const laneGroups = new Map<string, typeof w.dabs>()
+    const topGroups = new Map<string, typeof w.dabs>()
+
+    for (const dab of w.dabs) {
+      if (dab.face === 'lane') {
+        const key = dab.y.toFixed(6)
+        const g = laneGroups.get(key) ?? []
+        g.push(dab)
+        laneGroups.set(key, g)
+      } else if (dab.face === 'top') {
+        const key = dab.lateral.toFixed(6)
+        const g = topGroups.get(key) ?? []
+        g.push(dab)
+        topGroups.set(key, g)
+      }
+    }
+
+    const groups = [...laneGroups.values(), ...topGroups.values()]
+    for (const group of groups) {
+      assert.ok(group.length >= 6, `group has at least six dabs: ${group.length}`)
+      group.sort((a, b) => a.t - b.t)
+      const first = group[0]
+      const last = group[group.length - 1]
+
+      const spFirst = speed(first.t, first.lateral)
+      const firstResidual = (first.t - w.t0) * spFirst - first.length / 2
+      assert.ok(firstResidual <= 0.006 + 1e-9, `first dab residual ${firstResidual} <= 0.006`)
+
+      const spLast = speed(last.t, last.lateral)
+      const lastResidual = (w.t1 - last.t) * spLast - last.length / 2
+      assert.ok(lastResidual <= 0.006 + 1e-9, `last dab residual ${lastResidual} <= 0.006`)
+    }
+  }
+})
+
+test('each wall head carries a stone per course', { skip }, () => {
+  assert.ok(realPainting)
+  const build = buildStreet(realPainting, flow, masses, { grass: true, lane: true })
+  const H = STREET_WALL.height
+  const courses = LANE_CRAFT.wall.courses
+
+  for (const w of build.report.lane.walls) {
+    const capDabs = w.dabs.filter((d) => d.face === 'cap')
+    assert.equal(capDabs.length, 2 * courses, `cap dabs count ${capDabs.length} == 2 * courses (${2 * courses})`)
+
+    const atT0 = capDabs.filter((d) => Math.abs(d.t - w.t0) < 1e-9)
+    const atT1 = capDabs.filter((d) => Math.abs(d.t - w.t1) < 1e-9)
+    assert.equal(atT0.length, courses, `half at t === w.t0`)
+    assert.equal(atT1.length, courses, `half at t === w.t1`)
+
+    const expHeights = Array.from({ length: courses }, (_, c) => (c + 0.5) * (H / courses))
+
+    for (const subset of [atT0, atT1]) {
+      subset.sort((a, b) => a.y - b.y)
+      subset.forEach((dab, c) => {
+        assert.ok(Math.abs(dab.y - expHeights[c]) < 1e-9, `dab y ${dab.y} == course height ${expHeights[c]}`)
+        assert.ok(Math.abs(dab.length - 0.6 * H) < 1e-9, `dab length ${dab.length} == 0.6 * H`)
+        assert.ok(Math.abs(dab.width - 0.2 * H) < 1e-9, `dab width ${dab.width} == 0.2 * H`)
+      })
+    }
   }
 })
 

@@ -84,7 +84,7 @@ export type StreetBuild = {
         segments: { t0: number; t1: number; corners: Vector3[] }[]
         underpaint: [number, number]
         strokes: [number, number]
-        dabs: { face: 'lane' | 'top'; t: number; lateral: number; y: number; length: number; width: number }[]
+        dabs: { face: 'lane' | 'top' | 'cap'; t: number; lateral: number; y: number; length: number; width: number }[]
       }[]
       rail: { house: string; posts: Vector3[]; opening: [Vector3, Vector3]; underpaint: [number, number] } | null
       lamps: { foot: Vector3; lantern: Vector3; underpaint: [number, number] }[]
@@ -94,13 +94,16 @@ export type StreetBuild = {
 
 export const LANE_CRAFT = {
   wall: {
-    courses: 5,
+    courses: 4,
     rows: 2,
-    length: [0.61, 0.89] as [number, number],
+    /** the painting's measured range for this wall (SOURCE_STROKES.wallB), the bound the dab test checks */
+    length: [0.6, 2.0] as [number, number],
+    /** a course draws its stones from here, uniform, then scales them to fill its run (pass 5) */
+    draw: [0.6, 1.0] as [number, number],
     joint: 0.92,
-    width: 0.19,
-    base: 1,
-    pale: 0.5,
+    width: 0.2,
+    base: 0.4,
+    pale: 0.55,
     /** look pass 2: wallA's darkest 40% is L 4.7 and 57% of its texels are under L 20, so the wall read black with pale flecks; wallB's base is L 13 and its median texel L 30 */
     source: 'wallB' as StreetSourceName,
   },
@@ -1052,7 +1055,7 @@ function grassBaseStrip(ctx: Context): void {
 
 function laneWalls(ctx: Context): void {
   const H = STREET_WALL.height
-  const { courses, rows, length, joint, width, base, pale, source } = LANE_CRAFT.wall
+  const { courses, rows, length, draw, joint, width, base, pale, source } = LANE_CRAFT.wall
   const src = SOURCE_CLASSES[source]
   const baseColorRGB = sourceUnderpaint(ctx.painting, source, base)
   const baseColor = new Color().setRGB(...baseColorRGB, SRGBColorSpace)
@@ -1222,7 +1225,7 @@ function laneWalls(ctx: Context): void {
     }
 
     // Now dabs
-    const dabs: { face: 'lane' | 'top'; t: number; lateral: number; y: number; length: number; width: number }[] = []
+    const dabs: { face: 'lane' | 'top' | 'cap'; t: number; lateral: number; y: number; length: number; width: number }[] = []
     const wallStrokes: FaceStrokes = {
       arrays: makeBrushArrays(),
       stroke: [],
@@ -1249,20 +1252,67 @@ function laneWalls(ctx: Context): void {
     luminances.sort((a, b) => a - b)
     const floor = luminances[Math.floor(luminances.length * (1 - pale))]
 
-    // courses on lane face
-    for (let c = 0; c < courses; c++) {
-      const courseY = (c + 0.5) * (H / courses)
-      const dabWidth = width * H
-      const lat = side * (STREET_WALL.inner - STROKE_LIFT)
-      const rng = mulberry32(0x5100 + (side === -1 ? 0 : 50) + c * 31 + Math.round(t0 * 100))
-      let tCurr = t0 + rng() * 0.5 * ((H * ((length[0] + length[1]) / 2)) / joint / speed(t0, lat))
+    // D3.1. runOf(lat) is the run's world length: 64 midpoint samples of speed(t, lat) over [t0, t1], summed with their dt
+    const runOf = (lat: number) => {
+      let w = 0
+      const N = 64
+      for (let k = 0; k < N; k++) w += speed(t0 + ((k + 0.5) * (t1 - t0)) / N, lat) * ((t1 - t0) / N)
+      return w
+    }
 
-      while (tCurr < t1) {
-        const L = H * (length[0] + (length[1] - length[0]) * rng())
-        const cell = L / joint
+    // D3.2. planCourse(rng, W) draws stone lengths H * (draw[0] + (draw[1] - draw[0]) * rng()) until their sum reaches W * joint.
+    // If dropping the last one lands nearer W * joint than keeping it, drop it (never below one stone).
+    // Scale every length by W * joint / sum, then clamp each to [length[0] * H, length[1] * H].
+    const planCourse = (rng: () => number, W: number) => {
+      const lens: number[] = []
+      let sum = 0
+      while (sum < W * joint) {
+        const L = H * (draw[0] + (draw[1] - draw[0]) * rng())
+        lens.push(L)
+        sum += L
+      }
+      if (lens.length > 1 && sum - W * joint > W * joint - (sum - lens[lens.length - 1])) sum -= lens.pop()!
+      const k = (W * joint) / sum
+      return lens.map((L) => Math.min(Math.max(L * k, length[0] * H), length[1] * H))
+    }
+
+    // D3.4. The colour pick (the texel from the source box, eight retries under floor) moves into one pickStone(rng) closure
+    const pickStone = (rng: () => number) => {
+      let uTex = (x0 + rng() * (x1 - x0)) / ctx.painting.width
+      let vTex = (y0 + rng() * (y1 - y0)) / ctx.painting.height
+      let rgb = sampleColour(ctx.painting, uTex, vTex)
+      let lum = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]
+      for (let retry = 0; retry < 8 && lum < floor; retry++) {
+        uTex = (x0 + rng() * (x1 - x0)) / ctx.painting.width
+        vTex = (y0 + rng() * (y1 - y0)) / ctx.painting.height
+        rgb = sampleColour(ctx.painting, uTex, vTex)
+        lum = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]
+      }
+      return new Color().setRGB(rgb[0], rgb[1], rgb[2], SRGBColorSpace)
+    }
+
+    // D3. One routine lays a course. The four lane courses and the two top rows call it.
+    // Arguments: the lateral, the height y, the across vector, the normal, the seed base, the face name ('lane' | 'top')
+    const layCourse = (
+      lat: number,
+      y: number,
+      across: Vector3 | ((ptMid: { nx: number; nz: number }) => Vector3),
+      normal: Vector3 | ((ptMid: { nx: number; nz: number }) => Vector3),
+      seedBase: number,
+      faceName: 'lane' | 'top',
+    ) => {
+      const dabWidth = width * H
+      const rng = mulberry32(seedBase)
+      const lens = planCourse(rng, runOf(lat))
+      let tCurr = t0
+
+      for (let si = 0; si < lens.length; si++) {
         const sp = speed(tCurr, lat)
+        // D3.3. The last stone's length is (t1 - tCurr) * speed(tCurr, lat) * joint clamped to [length[0] * H, length[1] * H],
+        // so the course ends at the wall head whatever the walk's curvature error.
+        const L = si === lens.length - 1 ? Math.min(Math.max((t1 - tCurr) * sp * joint, length[0] * H), length[1] * H) : lens[si]
+        const cell = L / joint
         const dtCell = cell / sp
-        if (tCurr + dtCell > t1) break
 
         const tMid = tCurr + dtCell / 2
         let dt0 = L / 2 / speed(tMid, lat)
@@ -1281,29 +1331,19 @@ function laneWalls(ctx: Context): void {
 
         const pt0 = laneAt(tMid - dt0, lat)
         const pt2 = laneAt(tMid + dt2, lat)
-        const p0 = new Vector3(pt0.x, courseY, pt0.z)
-        const p1 = new Vector3(ptMid.x, courseY, ptMid.z)
-        const p2 = new Vector3(pt2.x, courseY, pt2.z)
+        const p0 = new Vector3(pt0.x, y, pt0.z)
+        const p1 = new Vector3(ptMid.x, y, ptMid.z)
+        const p2 = new Vector3(pt2.x, y, pt2.z)
 
-        const across = new Vector3(0, 1, 0)
-        const normal = new Vector3(-side * ptMid.nx, 0, -side * ptMid.nz)
+        const acr = typeof across === 'function' ? across(ptMid) : across
+        const norm = typeof normal === 'function' ? normal(ptMid) : normal
 
-        let uTex = (x0 + rng() * (x1 - x0)) / ctx.painting.width
-        let vTex = (y0 + rng() * (y1 - y0)) / ctx.painting.height
-        let rgb = sampleColour(ctx.painting, uTex, vTex)
-        let lum = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]
-        for (let retry = 0; retry < 8 && lum < floor; retry++) {
-          uTex = (x0 + rng() * (x1 - x0)) / ctx.painting.width
-          vTex = (y0 + rng() * (y1 - y0)) / ctx.painting.height
-          rgb = sampleColour(ctx.painting, uTex, vTex)
-          lum = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]
-        }
-        const col = new Color().setRGB(rgb[0], rgb[1], rgb[2], SRGBColorSpace)
+        const col = pickStone(rng)
         const dabFace: StreetFace = {
           origin: p1,
-          u: across,
-          v: normal,
-          normal,
+          u: acr,
+          v: norm,
+          normal: norm,
           shape: 'quad',
           kind: 'wall',
           source,
@@ -1313,12 +1353,47 @@ function laneWalls(ctx: Context): void {
         }
         col.multiplyScalar(lightOf(dabFace, ctx.lit, ctx.wallLight))
 
-        stoneDab(wallStrokes, [p0, p1, p2], across, dabWidth, col, Math.round(rng() * 10000))
-        // the report carries the emitted length, the endpoints' projection on the tangent: one dab of 224 straddles a lane
-        // kink, where the offset curve jumps, and is drawn 0.0022 longer than L (the Lead's gate on the fix round)
-        dabs.push({ face: 'lane', t: tMid, lateral: lat, y: courseY, length: Math.abs((pt2.x - pt0.x) * tangent.x + (pt2.z - pt0.z) * tangent.z), width: dabWidth })
+        stoneDab(wallStrokes, [p0, p1, p2], acr, dabWidth, col, Math.round(rng() * 10000))
+        dabs.push({ face: faceName, t: tMid, lateral: lat, y, length: Math.abs((pt2.x - pt0.x) * tangent.x + (pt2.z - pt0.z) * tangent.z), width: dabWidth })
 
         tCurr += dtCell
+      }
+    }
+
+    // courses on lane face: each course is planned as stones that fill its run flush to both wall heads (pass 5)
+    for (let c = 0; c < courses; c++) {
+      const courseY = (c + 0.5) * (H / courses)
+      const lat = side * (STREET_WALL.inner - STROKE_LIFT)
+      const seedBase = 0x5100 + (side === -1 ? 0 : 50) + c * 31 + Math.round(t0 * 100)
+      layCourse(
+        lat,
+        courseY,
+        new Vector3(0, 1, 0),
+        (ptMid) => new Vector3(-side * ptMid.nx, 0, -side * ptMid.nz),
+        seedBase,
+        'lane',
+      )
+    }
+
+    // the wall heads: a stone per course on each cap face, the shortest measured length across the thickness (pass 5 D4)
+    for (const [tCap, sign, seedBase] of [[t0, -1, 0x7100], [t1, 1, 0x7200]] as const) {
+      const tan = pathTangent(tCap)
+      const nCap = new Vector3(sign * tan[0], 0, sign * tan[2]).normalize()
+      const qa = laneAt(tCap, side * STREET_WALL.inner)
+      const qb = laneAt(tCap, side * (STREET_WALL.inner + STREET_WALL.thickness))
+      const along = new Vector3(qb.x - qa.x, 0, qb.z - qa.z).normalize()
+      const rng = mulberry32(seedBase + (side === -1 ? 0 : 50) + Math.round(t0 * 100))
+      const L = length[0] * H
+      for (let c = 0; c < courses; c++) {
+        const courseY = (c + 0.5) * (H / courses)
+        const centre = new Vector3((qa.x + qb.x) / 2, courseY, (qa.z + qb.z) / 2).addScaledVector(nCap, STROKE_LIFT)
+        const p0 = centre.clone().addScaledVector(along, -L / 2)
+        const p2 = centre.clone().addScaledVector(along, L / 2)
+        const col = pickStone(rng)
+        const capFace: StreetFace = { origin: centre, u: new Vector3(0, 1, 0), v: nCap, normal: nCap, shape: 'quad', kind: 'wall', source, refHeight: H, seed: 0, mirror: false }
+        col.multiplyScalar(lightOf(capFace, ctx.lit, ctx.wallLight))
+        stoneDab(wallStrokes, [p0, centre, p2], new Vector3(0, 1, 0), width * H, col, Math.round(rng() * 10000))
+        dabs.push({ face: 'cap', t: tCap, lateral: side * (STREET_WALL.inner + STREET_WALL.thickness / 2), y: courseY, length: L, width: width * H })
       }
     }
 
@@ -1326,71 +1401,15 @@ function laneWalls(ctx: Context): void {
     for (let r = 0; r < rows; r++) {
       const lat = side * (STREET_WALL.inner + ((r + 0.5) / rows) * STREET_WALL.thickness)
       const rowY = H + STROKE_LIFT
-      const dabWidth = width * H
-      const rng = mulberry32(0x6100 + (side === -1 ? 0 : 50) + r * 31 + Math.round(t0 * 100))
-      let tCurr = t0 + rng() * 0.5 * ((H * ((length[0] + length[1]) / 2)) / joint / speed(t0, lat))
-
-      while (tCurr < t1) {
-        const L = H * (length[0] + (length[1] - length[0]) * rng())
-        const cell = L / joint
-        const sp = speed(tCurr, lat)
-        const dtCell = cell / sp
-        if (tCurr + dtCell > t1) break
-
-        const tMid = tCurr + dtCell / 2
-        let dt0 = L / 2 / speed(tMid, lat)
-        let dt2 = L / 2 / speed(tMid, lat)
-        const ptMid = laneAt(tMid, lat)
-        const tangent = new Vector3(ptMid.nz, 0, -ptMid.nx)
-
-        for (let iter = 0; iter < 4; iter++) {
-          const c0 = laneAt(tMid - dt0, lat)
-          const c2 = laneAt(tMid + dt2, lat)
-          const dot0 = (ptMid.x - c0.x) * tangent.x + (ptMid.z - c0.z) * tangent.z
-          const dot2 = (c2.x - ptMid.x) * tangent.x + (c2.z - ptMid.z) * tangent.z
-          dt0 += (L / 2 - dot0) / speed(tMid - dt0, lat)
-          dt2 += (L / 2 - dot2) / speed(tMid + dt2, lat)
-        }
-
-        const pt0 = laneAt(tMid - dt0, lat)
-        const pt2 = laneAt(tMid + dt2, lat)
-        const p0 = new Vector3(pt0.x, rowY, pt0.z)
-        const p1 = new Vector3(ptMid.x, rowY, ptMid.z)
-        const p2 = new Vector3(pt2.x, rowY, pt2.z)
-
-        const across = new Vector3(side * ptMid.nx, 0, side * ptMid.nz)
-        const normal = new Vector3(0, 1, 0)
-
-        let uTex = (x0 + rng() * (x1 - x0)) / ctx.painting.width
-        let vTex = (y0 + rng() * (y1 - y0)) / ctx.painting.height
-        let rgb = sampleColour(ctx.painting, uTex, vTex)
-        let lum = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]
-        for (let retry = 0; retry < 8 && lum < floor; retry++) {
-          uTex = (x0 + rng() * (x1 - x0)) / ctx.painting.width
-          vTex = (y0 + rng() * (y1 - y0)) / ctx.painting.height
-          rgb = sampleColour(ctx.painting, uTex, vTex)
-          lum = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]
-        }
-        const col = new Color().setRGB(rgb[0], rgb[1], rgb[2], SRGBColorSpace)
-        const dabFace: StreetFace = {
-          origin: p1,
-          u: across,
-          v: normal,
-          normal,
-          shape: 'quad',
-          kind: 'wall',
-          source,
-          refHeight: H,
-          seed: 0,
-          mirror: false,
-        }
-        col.multiplyScalar(lightOf(dabFace, ctx.lit, ctx.wallLight))
-
-        stoneDab(wallStrokes, [p0, p1, p2], across, dabWidth, col, Math.round(rng() * 10000))
-        dabs.push({ face: 'top', t: tMid, lateral: lat, y: rowY, length: Math.abs((pt2.x - pt0.x) * tangent.x + (pt2.z - pt0.z) * tangent.z), width: dabWidth })
-
-        tCurr += dtCell
-      }
+      const seedBase = 0x6100 + (side === -1 ? 0 : 50) + r * 31 + Math.round(t0 * 100)
+      layCourse(
+        lat,
+        rowY,
+        (ptMid) => new Vector3(side * ptMid.nx, 0, side * ptMid.nz),
+        new Vector3(0, 1, 0),
+        seedBase,
+        'top',
+      )
     }
 
     append(ctx.strokes, wallStrokes, 0, src)
