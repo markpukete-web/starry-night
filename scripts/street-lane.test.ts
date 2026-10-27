@@ -397,11 +397,11 @@ test('each course fills its run flush to both wall heads', { skip }, () => {
 
       const spFirst = speed(first.t, first.lateral)
       const firstResidual = (first.t - w.t0) * spFirst - first.length / 2
-      assert.ok(firstResidual <= 0.006 + 1e-9, `first dab residual ${firstResidual} <= 0.006`)
+      assert.ok(Math.abs(firstResidual) <= 0.006 + 1e-9, `first dab |residual| ${Math.abs(firstResidual)} <= 0.006`)
 
       const spLast = speed(last.t, last.lateral)
       const lastResidual = (w.t1 - last.t) * spLast - last.length / 2
-      assert.ok(lastResidual <= 0.006 + 1e-9, `last dab residual ${lastResidual} <= 0.006`)
+      assert.ok(Math.abs(lastResidual) <= 0.006 + 1e-9, `last dab |residual| ${Math.abs(lastResidual)} <= 0.006`)
     }
   }
 })
