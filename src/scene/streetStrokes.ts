@@ -254,14 +254,14 @@ export function faceCrop(flow: ImageData2D, face: StreetFace, minRows = 64, pain
  * length of L crop heights is L × the face's height, so the length is L × ref / height. The count covers the face
  * `COVER` times over before the clip.
  */
-export function faceConfig(face: StreetFace, count?: number, rows = 64): CypressRibbonConfig {
+export function faceConfig(face: StreetFace, count?: number, rows = 64, lengthScale = 1): CypressRibbonConfig {
   const width = face.u.length()
   const height = face.v.length()
   const scale = SOURCE_STROKES[face.source]
   const minHalfWidth = (0.5 * scale.width[0] * face.refHeight) / width
   const maxHalfWidth = (0.5 * scale.width[1] * face.refHeight) / width
-  const minLength = (scale.length[0] * face.refHeight) / height
-  const maxLength = (scale.length[1] * face.refHeight) / height
+  const minLength = ((scale.length[0] * face.refHeight) / height) * lengthScale
+  const maxLength = ((scale.length[1] * face.refHeight) / height) * lengthScale
   const area = 2 * ((minHalfWidth + maxHalfWidth) / 2) * Math.min(1, Math.sqrt(minLength * maxLength))
   // a triangle keeps the quad's count: the clip takes the strokes past its sloped sides
   const auto = Math.round(Math.min(800, Math.max(16, (scale.cover ?? COVER) / area)))
@@ -337,11 +337,11 @@ export function rectUnderpaint(painting: ImageData2D, rect: readonly [number, nu
  * steps go. Colours per sample from the source, lit by the moon's share on the face's normal. `options` are the
  * tests' seams: a fixed count, half-width and taper.
  */
-export function traceFace(face: StreetFace, flow: ImageData2D, painting: ImageData2D, options: { count?: number; fixedHalfWidth?: number; taper?: number; tint?: number; density?: number; clip?: [number, number][] } = {}): FaceStrokes {
+export function traceFace(face: StreetFace, flow: ImageData2D, painting: ImageData2D, options: { count?: number; fixedHalfWidth?: number; taper?: number; tint?: number; density?: number; clip?: [number, number][]; lengthScale?: number } = {}): FaceStrokes {
   const width = face.u.length()
   const height = face.v.length()
   const { crop, rows, pigment } = faceCrop(flow, face, 64, painting)
-  const config = faceConfig(face, options.count, crop.height)
+  const config = faceConfig(face, options.count, crop.height, options.lengthScale ?? 1)
   if (options.density !== undefined) {
     config.frontCount = Math.round(config.frontCount * options.density)
   }

@@ -25,10 +25,10 @@ export type StreetCounts = { ribbons: number; triangles: number; builds: number 
 export type BrushArraysWithCls = BrushArrays & { cls: number[]; src: number[] }
 export type Strokes = { arrays: BrushArrays; stroke: number[]; seed: number[]; cls: number[]; src: number[] }
 
-export type WallPaint = { base: number; light: number; cover: number }
+export type WallPaint = { base: number; light: number; cover: number; plasterLength?: number }
 export const KEPT_PAINT: WallPaint = { base: 0, light: 0.5, cover: 1 }
 /** look pass 3: a fifth fewer strokes; the base stays the mean (toward the lightest half it lifted the dark houses, wallB by L 16, and the walls' ΔE by 3 to 6) */
-export const WALL_PAINT: WallPaint = { base: 0, light: 0.5, cover: 0.8 }
+export const WALL_PAINT: WallPaint = { base: 0, light: 0.5, cover: 0.8, plasterLength: 0.7 }
 
 export type CraftPart = { name: string; buffer: 'underpaint' | 'outlines' | 'windows'; from: number; to: number }
 export type CraftReport = {
@@ -71,6 +71,7 @@ export type StreetBuild = {
       normal: Vector3
       light: number
       refHeight: number
+      lengthScale: number
     }[]
     outlines: { owner: string; edges: number }[]
     windows: { owner: string; lit: boolean }[]
@@ -341,7 +342,8 @@ function clad(
   const [fu, fv] = [insetU / face.u.length(), insetV / face.v.length()]
   const baseFace = { ...face, origin: face.origin.clone().addScaledVector(face.u, fu).addScaledVector(face.v, fv), u: face.u.clone().multiplyScalar(1 - 2 * fu), v: face.v.clone().multiplyScalar(1 - 2 * fv) }
   polygon(ctx.underpaint, paint.base ?? facePolygon(baseFace), base.multiplyScalar(light), cls, src)
-  const cover = paint.cover ?? (face.kind === 'wall' ? ctx.wallPaint.cover : 1)
+  const lengthScale = ctx.lived && face.kind === 'wall' && face.source === 'plaster' ? (ctx.wallPaint.plasterLength ?? 1) : 1
+  const cover = paint.cover ?? (face.kind === 'wall' ? ctx.wallPaint.cover * lengthScale : 1)
   let clipMetric: [number, number][] | undefined
   if (paint.clip) {
     const uLen = face.u.length()
@@ -351,13 +353,13 @@ function clad(
       return [d.dot(face.u) / uLen, d.dot(face.v) / vLen]
     })
   }
-  const traced = traceFace(face, ctx.flow, ctx.painting, { density: density * cover, clip: clipMetric })
+  const traced = traceFace(face, ctx.flow, ctx.painting, { density: density * cover, clip: clipMetric, lengthScale })
   for (let k = 0; k < traced.arrays.colors.length; k++) traced.arrays.colors[k] *= light
   shadeNew(ctx.underpaint, underFrom, shadeAs, ctx.lit)
   shadeNew(traced.arrays, 0, shadeAs, ctx.lit)
   append(face.kind === 'ground' || face.kind === 'path' ? ctx.ground : ctx.strokes, traced, cls, src)
   ctx.ribbons += traced.ribbons
-  ctx.report.faces.push({ owner, name, ribbons: traced.ribbons, density, cover, source: face.source, base: baseRGB, corners: paint.clip ?? facePolygon(face), normal: face.normal.clone(), light, refHeight: face.refHeight })
+  ctx.report.faces.push({ owner, name, ribbons: traced.ribbons, density, cover, source: face.source, base: baseRGB, corners: paint.clip ?? facePolygon(face), normal: face.normal.clone(), light, refHeight: face.refHeight, lengthScale })
 }
 
 export function flatPolygon(

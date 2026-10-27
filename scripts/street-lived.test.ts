@@ -11,7 +11,7 @@ import { PerspectiveCamera, Raycaster, Sphere, Vector2, Vector3 } from 'three'
 import { FROG, frogPlace, FROGS } from '../src/scene/frog.ts'
 import { bladeVertex, bladeWidth, GRASS_BLADE } from '../src/scene/grassBlade.ts'
 import type { BakedMass } from '../src/scene/landDomes.ts'
-import { buildStreet, LIVED_CRAFT, type LivedObject, type LivedPath, type StreetBuild } from '../src/scene/streetGeometry.ts'
+import { buildStreet, LIVED_CRAFT, type LivedObject, type LivedPath, type StreetBuild, WALL_PAINT } from '../src/scene/streetGeometry.ts'
 import { grassChunks, grassDrawCount, grassRect, PLANT, plantChunks, plantHit } from '../src/scene/streetGrass.ts'
 import {
   doorOf,
@@ -37,7 +37,7 @@ import {
   walkPose,
   wallClearings,
 } from '../src/scene/streetLayout.ts'
-import { OUTLINE_FRACTION } from '../src/scene/streetStrokes.ts'
+import { faceConfig, OUTLINE_FRACTION, type StreetFace } from '../src/scene/streetStrokes.ts'
 import type { ImageData2D } from '../src/scene/useImageData.ts'
 import { decodePNG } from './lib/png.ts'
 
@@ -787,4 +787,72 @@ test('the objects cost what the plan says', { skip }, () => {
   }
 
   assert.ok(totalTriangles >= 700 && totalTriangles <= 1300, `object triangles ${totalTriangles} in [700, 1300]`)
+})
+
+test('the plaster houses take the measured shorter row, the church keeps its own', { skip }, () => {
+  assert.ok(WALL_PAINT.plasterLength !== undefined && WALL_PAINT.plasterLength >= 0.7 && WALL_PAINT.plasterLength <= 0.75, 'plasterLength in 0.7..0.75')
+  assert.ok(realPainting)
+  const build = buildStreet(realPainting, flow, masses, { grass: true })!
+  const houses = ['house-0', 'house-3', 'house-6', 'house-8']
+  const plasterHouseFaces = build.report.faces.filter((f) => f.source === 'plaster' && houses.includes(f.owner))
+  assert.ok(plasterHouseFaces.length > 0, 'has plaster house faces')
+  for (const f of plasterHouseFaces) {
+    assert.equal(f.lengthScale, WALL_PAINT.plasterLength, `${f.owner}/${f.name} lengthScale`)
+    assert.ok(
+      Math.abs(f.cover - WALL_PAINT.cover * (WALL_PAINT.plasterLength ?? 1)) <= 1e-9,
+      `${f.owner}/${f.name} cover`,
+    )
+  }
+
+  const churchPlasterFaces = build.report.faces.filter((f) => ['church', 'belfry', 'spire'].includes(f.owner))
+  assert.ok(churchPlasterFaces.length > 0, 'has church plaster faces')
+  for (const f of churchPlasterFaces) {
+    assert.equal(f.lengthScale, 1, `${f.owner}/${f.name} lengthScale`)
+  }
+
+  const madeFace: StreetFace = {
+    origin: new Vector3(0, 0, 0),
+    u: new Vector3(0.28, 0, 0),
+    v: new Vector3(0, 0.3, 0),
+    normal: new Vector3(0, 0, 1),
+    shape: 'quad',
+    kind: 'wall',
+    source: 'plaster',
+    refHeight: 0.3,
+    seed: 1,
+    mirror: false,
+  }
+  const c1 = faceConfig(madeFace, undefined, 64)
+  const c2 = faceConfig(madeFace, undefined, 64, 0.7)
+  assert.ok(Math.abs(c2.minLength - 0.7 * c1.minLength) <= 1e-12, 'minLength scaled by 0.7')
+  assert.ok(Math.abs(c2.maxLength - 0.7 * c1.maxLength) <= 1e-12, 'maxLength scaled by 0.7')
+})
+
+test("the plaster houses' ribbon count holds", { skip }, () => {
+  assert.ok(realPainting)
+  const build = buildStreet(realPainting, flow, masses, { grass: true })!
+  const houses = ['house-0', 'house-3', 'house-6', 'house-8']
+  const houseRibbons = build.report.faces
+    .filter((f) => f.source === 'plaster' && houses.includes(f.owner))
+    .reduce((sum, f) => sum + f.ribbons, 0)
+  assert.ok(
+    houseRibbons >= 392 && houseRibbons <= 480,
+    `plaster house ribbons ${houseRibbons} in [392, 480]`,
+  )
+
+  const churchPlasterRibbons = build.report.faces
+    .filter((f) => f.source === 'plaster' && ['church', 'belfry', 'spire'].includes(f.owner))
+    .reduce((sum, f) => sum + f.ribbons, 0)
+  assert.equal(churchPlasterRibbons, 729, 'church plaster ribbons 729 exactly')
+})
+
+test("K2's walls without the lived-in parts", { skip }, () => {
+  assert.ok(realPainting)
+  const build = buildStreet(realPainting, flow, masses, { grass: true, lived: false })!
+  assert.ok(
+    build.report.faces.every((f) => f.lengthScale === 1),
+    'every face reports lengthScale 1',
+  )
+  const hash = computeBuildHash(build)
+  assert.equal(hash, '5f3ea9c0e97f6e46', 'B1 hash matches')
 })
