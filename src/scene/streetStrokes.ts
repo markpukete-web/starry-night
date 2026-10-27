@@ -337,7 +337,7 @@ export function rectUnderpaint(painting: ImageData2D, rect: readonly [number, nu
  * steps go. Colours per sample from the source, lit by the moon's share on the face's normal. `options` are the
  * tests' seams: a fixed count, half-width and taper.
  */
-export function traceFace(face: StreetFace, flow: ImageData2D, painting: ImageData2D, options: { count?: number; fixedHalfWidth?: number; taper?: number; tint?: number; density?: number } = {}): FaceStrokes {
+export function traceFace(face: StreetFace, flow: ImageData2D, painting: ImageData2D, options: { count?: number; fixedHalfWidth?: number; taper?: number; tint?: number; density?: number; clip?: [number, number][] } = {}): FaceStrokes {
   const width = face.u.length()
   const height = face.v.length()
   const { crop, rows, pigment } = faceCrop(flow, face, 64, painting)
@@ -351,7 +351,7 @@ export function traceFace(face: StreetFace, flow: ImageData2D, painting: ImageDa
   }
   if (options.taper !== undefined) config.taper = options.taper
   const ribbons = traceCypressRibbons(crop, pigment ?? painting, rows, config.frontCount, face.seed, config, acceptFor(face, painting))
-  const polygon = facePolygon(face, width, height)
+  const polygon = options.clip ?? facePolygon(face, width, height)
   // half an outline's width past the edge, under the ink; the ground and the path draw no outline (Fable R8)
   const allowance = (face.kind === 'ground' || face.kind === 'path' ? 0 : 0.5 * OUTLINE_FRACTION * face.refHeight) + 1e-12
   const shade = 1 + STREET_MOON_LIFT * moonShade(face.normal)

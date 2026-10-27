@@ -8,7 +8,7 @@ import { buildLandTrees, type BakedMass, type LandTrees } from './landDomes.ts'
 import { buildStreetTrees } from './streetTrees.ts'
 import { PALETTE } from './palette.ts'
 import { CHURCH_LIGHT, leanOf, lightOf, shadeNew, STREET_LIGHT, type StreetLight } from './streetLight.ts'
-import { CHURCH, DETAIL, doorOf, doorStepFrame, houseFrame, STEP, STREET, STREET_CHURCH, STREET_HOUSES, STREET_LAMPS, STREET_RAIL, STREET_SQUARE, STREET_TREES, detailOf, laneDistance, pathPoint, pathTangent, streetGroundAt, type StreetHouse, laneAt, STREET_WALLS, STREET_WALL } from './streetLayout.ts'
+import { CHURCH, DETAIL, doorOf, doorPathLegs, doorStepFrame, houseFrame, LIVED_PATH, pathLegShapes, STEP, STREET, STREET_CHURCH, STREET_HOUSES, STREET_LAMPS, STREET_RAIL, STREET_SQUARE, STREET_TREES, detailOf, laneDistance, pathPoint, pathTangent, streetGroundAt, type StreetHouse, laneAt, STREET_WALLS, STREET_WALL } from './streetLayout.ts'
 import { outlineFace, PATH_LIFT, sourceUnderpaint, streetMassConfig, STREET_MOON_LIFT, traceFace, type FaceStrokes, type StreetFace, type StreetSourceName, stoneDab, STREET_SOURCES, STROKE_LIFT } from './streetStrokes.ts'
 import type { ImageData2D } from './useImageData.ts'
 import { VILLAGE_CHURCH, type Pigment } from './villageKnot.ts'
@@ -89,7 +89,29 @@ export type StreetBuild = {
       rail: { house: string; posts: Vector3[]; opening: [Vector3, Vector3]; underpaint: [number, number] } | null
       lamps: { foot: Vector3; lantern: Vector3; underpaint: [number, number] }[]
     }
+    lived: {
+      paths: LivedPath[]
+      objects: LivedObject[]
+    }
   }
+}
+
+export type LivedPath = {
+  house: string
+  index: number
+  width: number
+  end: number | null
+  points: Vector3[]
+  legs: { name: string; clip: Vector3[]; base: Vector3[]; ground: [number, number] }[]
+}
+
+export type LivedObject = {
+  kind: 'bench' | 'pot' | 'pail'
+  house: string
+  centre: Vector3
+  box: { u: number; n: number; height: number }
+  underpaint: [number, number]
+  outlines: [number, number]
 }
 
 export const LANE_CRAFT = {
@@ -247,10 +269,20 @@ type Context = {
   /** the walls' light: the street's, the church's while `church()` clads its own */
   wallLight: StreetLight
   wallPaint: WallPaint
+  lived: boolean
 }
 
 /** Clad one face: its underpaint, its strokes, its report line. */
-function clad(ctx: Context, owner: string, name: string, face: StreetFace, faceDensity = 1, [insetU, insetV] = [0, 0], shadeAs = face): void {
+function clad(
+  ctx: Context,
+  owner: string,
+  name: string,
+  face: StreetFace,
+  faceDensity = 1,
+  [insetU, insetV] = [0, 0],
+  shadeAs = face,
+  paint: { cover?: number; clip?: Vector3[]; base?: Vector3[] } = {},
+): void {
   // the church's faces no sampled pose of the walk sees are thin, not removed (the church plan (f))
   const density = (CHURCH.hidden as readonly string[]).includes(`${owner}/${name}`) ? CHURCH.thin : faceDensity
   // a roof's base is its source's mean, not its darkest tenth: the street's eye meets the roofs at a grazing angle,
@@ -282,15 +314,24 @@ function clad(ctx: Context, owner: string, name: string, face: StreetFace, faceD
   const baseRGB: [number, number, number] = [base.r, base.g, base.b]
   const [fu, fv] = [insetU / face.u.length(), insetV / face.v.length()]
   const baseFace = { ...face, origin: face.origin.clone().addScaledVector(face.u, fu).addScaledVector(face.v, fv), u: face.u.clone().multiplyScalar(1 - 2 * fu), v: face.v.clone().multiplyScalar(1 - 2 * fv) }
-  polygon(ctx.underpaint, facePolygon(baseFace), base.multiplyScalar(light), cls, src)
-  const cover = face.kind === 'wall' ? ctx.wallPaint.cover : 1
-  const traced = traceFace(face, ctx.flow, ctx.painting, { density: density * cover })
+  polygon(ctx.underpaint, paint.base ?? facePolygon(baseFace), base.multiplyScalar(light), cls, src)
+  const cover = paint.cover ?? (face.kind === 'wall' ? ctx.wallPaint.cover : 1)
+  let clipMetric: [number, number][] | undefined
+  if (paint.clip) {
+    const uLen = face.u.length()
+    const vLen = face.v.length()
+    clipMetric = paint.clip.map((p) => {
+      const d = p.clone().sub(face.origin)
+      return [d.dot(face.u) / uLen, d.dot(face.v) / vLen]
+    })
+  }
+  const traced = traceFace(face, ctx.flow, ctx.painting, { density: density * cover, clip: clipMetric })
   for (let k = 0; k < traced.arrays.colors.length; k++) traced.arrays.colors[k] *= light
   shadeNew(ctx.underpaint, underFrom, shadeAs, ctx.lit)
   shadeNew(traced.arrays, 0, shadeAs, ctx.lit)
   append(face.kind === 'ground' || face.kind === 'path' ? ctx.ground : ctx.strokes, traced, cls, src)
   ctx.ribbons += traced.ribbons
-  ctx.report.faces.push({ owner, name, ribbons: traced.ribbons, density, cover, source: face.source, base: baseRGB, corners: facePolygon(face), normal: face.normal.clone(), light, refHeight: face.refHeight })
+  ctx.report.faces.push({ owner, name, ribbons: traced.ribbons, density, cover, source: face.source, base: baseRGB, corners: paint.clip ?? facePolygon(face), normal: face.normal.clone(), light, refHeight: face.refHeight })
 }
 
 /** Ink a volume's edges, each with the normal of the face it belongs to. */
@@ -1710,7 +1751,49 @@ function laneLamps(ctx: Context): void {
   }
 }
 
-export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | null, masses: BakedMass[] | null, { lit = true, grass = false, paint = WALL_PAINT, lane = true }: { lit?: boolean; grass?: boolean; paint?: WallPaint; lane?: boolean } = {}): StreetBuild | null {
+function doorPaths(ctx: Context): void {
+  for (const path of doorPathLegs()) {
+    const points3D = path.points.map(([x, z]) => new Vector3(x, 0.002, z))
+    const legs: LivedPath['legs'] = []
+    const shapes = pathLegShapes(path)
+    for (let k = 0; k < shapes.length; k++) {
+      const shape = shapes[k]
+      const name = `door ${path.house} leg ${k}`
+      const origin = new Vector3(shape.rect.ox, 0.002, shape.rect.oz)
+      const u = new Vector3(shape.rect.ux * (shape.rect.u1 - shape.rect.u0), 0, shape.rect.uz * (shape.rect.u1 - shape.rect.u0))
+      const v = new Vector3(shape.rect.nx * (shape.rect.k1 - shape.rect.k0), 0, shape.rect.nz * (shape.rect.k1 - shape.rect.k0))
+      const below = new Vector3(0, -1, 0)
+      const face = orientedFace(origin, u, v, below, {
+        shape: 'quad',
+        kind: 'path',
+        source: 'field',
+        refHeight: (STREET.wallRef * path.width) / 0.12,
+        seed: 0x7900 + path.index * 4 + k,
+        mirror: path.index % 2 === 1,
+      })
+      const clip3D = shape.clip.map(([x, z]) => new Vector3(x, 0.002, z))
+      const base3D = shape.base.map(([x, z]) => new Vector3(x, 0.002, z))
+      const groundStart = ctx.ground.arrays.positions.length / 3
+      clad(ctx, 'path', name, face, 1, [0, 0], face, { cover: LIVED_PATH.cover, clip: clip3D, base: base3D })
+      const groundEnd = ctx.ground.arrays.positions.length / 3
+      legs.push({ name, clip: clip3D, base: base3D, ground: [groundStart, groundEnd] })
+    }
+    ctx.report.lived.paths.push({
+      house: path.house,
+      index: path.index,
+      width: path.width,
+      end: path.end,
+      points: points3D,
+      legs,
+    })
+  }
+}
+
+function signsOfLife(_ctx: Context): void {
+  // Built in Task 3
+}
+
+export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | null, masses: BakedMass[] | null, { lit = true, grass = false, paint = WALL_PAINT, lane = true, lived = true }: { lit?: boolean; grass?: boolean; paint?: WallPaint; lane?: boolean; lived?: boolean } = {}): StreetBuild | null {
   if (!painting || !flow || !masses) return null
   const ctx: Context = {
     flow,
@@ -1721,11 +1804,12 @@ export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | nu
     outlines: { arrays: makeBrushArrays(), stroke: [], seed: [], cls: [], src: [] },
     windows: Object.assign(makeBrushArrays(), { cls: [], src: [] }),
     grassBase: Object.assign(makeBrushArrays(), { cls: [], src: [] }),
-    report: { faces: [], outlines: [], windows: [], church: { belfryWidth: 0, belfryHeight: 0, spireHeight: 0 }, craft: [], lane: { walls: [], rail: null, lamps: [] } },
+    report: { faces: [], outlines: [], windows: [], church: { belfryWidth: 0, belfryHeight: 0, spireHeight: 0 }, craft: [], lane: { walls: [], rail: null, lamps: [] }, lived: { paths: [], objects: [] } },
     ribbons: 0,
     lit,
     wallLight: STREET_LIGHT,
     wallPaint: paint,
+    lived,
   }
   ground(ctx)
   if (grass) {
@@ -1769,6 +1853,10 @@ export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | nu
     laneWalls(ctx)
     gardenRail(ctx)
     laneLamps(ctx)
+  }
+  if (lived) {
+    doorPaths(ctx)
+    signsOfLife(ctx)
   }
   const trees = buildStreetTrees(painting, STREET_TREES)
   const triangles = (ctx.underpaint.indices.length + ctx.grassBase.indices.length + ctx.strokes.arrays.indices.length + ctx.ground.arrays.indices.length + ctx.outlines.arrays.indices.length + ctx.windows.indices.length + trees.solid.indices.length + trees.strokes.indices.length) / 3
@@ -1841,11 +1929,12 @@ export function buildFlatPanel(painting: ImageData2D | null, flow: ImageData2D |
     outlines: { arrays: makeBrushArrays(), stroke: [], seed: [], cls: [], src: [] },
     windows: Object.assign(makeBrushArrays(), { cls: [], src: [] }),
     grassBase: Object.assign(makeBrushArrays(), { cls: [], src: [] }),
-    report: { faces: [], outlines: [], windows: [], church: { belfryWidth: 0, belfryHeight: 0, spireHeight: 0 }, craft: [], lane: { walls: [], rail: null, lamps: [] } },
+    report: { faces: [], outlines: [], windows: [], church: { belfryWidth: 0, belfryHeight: 0, spireHeight: 0 }, craft: [], lane: { walls: [], rail: null, lamps: [] }, lived: { paths: [], objects: [] } },
     ribbons: 0,
     lit: true,
     wallLight: STREET_LIGHT,
     wallPaint: KEPT_PAINT,
+    lived: false,
   }
   polygon(ctx.underpaint, [new Vector3(-0.3, -0.3, -0.05), new Vector3(1.9, -0.3, -0.05), new Vector3(1.9, 0.9, -0.05), new Vector3(-0.3, 0.9, -0.05)], new Color(0x111111), 255)
   const toward = new Vector3(0, 0, 1)

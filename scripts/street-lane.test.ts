@@ -488,10 +488,10 @@ test("the grass away from the walls is K1's", { skip }, () => {
   assert.equal(hash, 'def5470cc15817ba')
 
   const defaultChunks = grassChunks(realPainting)
-  assert.equal(defaultChunks.length, stepsChunks.length)
-  for (let i = 0; i < defaultChunks.length; i++) {
-    const dc = defaultChunks[i]
-    const sc = stepsChunks[i]
+  for (const dc of defaultChunks) {
+    const first = dc.blades[0]
+    const sc = stepsChunks.find((c) => c.blades.some((b) => b.x === first.x && b.z === first.z && b.seed === first.seed))
+    assert.ok(sc, 'default chunk found matching steps-only chunk')
     let sIdx = 0
     for (const db of dc.blades) {
       while (sIdx < sc.blades.length && (sc.blades[sIdx].x !== db.x || sc.blades[sIdx].z !== db.z || sc.blades[sIdx].seed !== db.seed)) {

@@ -32,7 +32,7 @@ function villagePainting(): ImageData2D {
 }
 
 // Pins S1's cladding; street-craft.test.ts pins the paint.
-const build = buildStreet(villagePainting(), flow, masses, { paint: KEPT_PAINT })
+const build = buildStreet(villagePainting(), flow, masses, { paint: KEPT_PAINT, lived: false })
 
 test('the street builds all or nothing', () => {
   assert.equal(buildStreet(null, flow, masses), null)
