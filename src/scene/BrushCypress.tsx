@@ -9,7 +9,7 @@ import { buildCypressLobePlan, sampleCypressLobe, type CypressLobeRows } from '.
 import { CYPRESS_RIBBON_CONFIG, ribbonColumns, strideSamples, traceCypressRibbons } from './cypressStrokes'
 import { cypressViewBearing } from './cypressMapping'
 import { DIORAMA_CAMERAS } from './dioramaContract'
-import { useImageData } from './useImageData'
+import { useImageData, type ImageData2D } from './useImageData'
 import { concatInjections, injectAlive } from './aliveMaterial'
 import { flickerGlsl, flickerUniformValues, flickerWeight, lobeHeight, pushFlicker, ribbonFlicker } from './cypressFlicker'
 import { CYPRESS_STROKE_BODY, strokeGlslWith } from './cypressStrokeShader'
@@ -64,6 +64,7 @@ export function BrushCypress({
   scale = 1,
   viewFrom = DIORAMA_CAMERAS.design.position,
   stride = 1,
+  painting,
 }: {
   /** The one sky clock (second pass, A3): pinned, advanced, or 0 while paused. */
   clock?: RefObject<number>
@@ -78,9 +79,12 @@ export function BrushCypress({
   scale?: number
   viewFrom?: readonly [number, number, number]
   stride?: number
+  /** The painting's pixels when the caller holds them already (the street): the tree then decodes no copy of its own. */
+  painting?: ImageData2D
 } = {}) {
   const bend = touch !== undefined
-  const paintingData = useImageData('/reference/painting.jpg')
+  const loaded = useImageData(painting ? null : '/reference/painting.jpg')
+  const paintingData = painting ?? loaded
   // the flow field's failure path (Codex F11): the tree still draws its underpaint, and the arrival goes on
   const [flowFailed, setFlowFailed] = useState(false)
   const onFlowError = useCallback(() => {
