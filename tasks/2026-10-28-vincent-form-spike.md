@@ -135,3 +135,10 @@ Tarascon. Then write the slice's plan.
 
 **Mark's picks, 2026-10-28 (11:21):** "Go with 90/45 and 4 s." The slice takes the body's turn 90° and the head's
 45°, and a dwell of 4 s. Still open: what Mark wants refined in Tarascon. Ask him before the slice's plan is written.
+
+**The cane, 2026-10-28 (11:33):** Mark could not tell what the tool in the right hand was. It is the cane: an ink tube
+0.0024 across (under a pixel on screen), fixed to the body at a lean of 0.3 rad, so it slides along the ground as he
+walks (`vincent.ts:360-363`). The right arm is still fixed, pinned for S2's canvas, which Tarascon moved to his back.
+Mark: "Remove it, go with your recommendation." The slice drops the cane and swings the right arm in the stride,
+opposite the left, which also closes Fable's third cause (only one arm moved). He named nothing else to refine, so the
+slice's plan is written from this record.
