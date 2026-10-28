@@ -165,3 +165,24 @@ the crown with `curl` 0.0012 all round and `lift` 0.0026 toward his right at the
 pass 1 (`look/p1`) lifted one side by 0.0016 and it did not show. Pass 2 (`look/p2`, `lift` 0.0026) shows it at stops 1
 and 3. The colour is unchanged: the moon's yellow (Mark's open call 1 above). Tarascon's hat is a darker ochre.
 451 tests pass, tsc and lint clean.
+
+## The hat's colour (18:50, `5b000f9`, `scratch/vincent-hat-2026-10-28/look/p3`, `gate/`)
+
+Mark: "Go for your recommendations for the hat's colour." The hat now paints from the crescent's lower-right edge,
+`[1490, 280, 1514, 304]`: the painting's darkest and warmest gold, with brown stroke lines through it. Its mean is L 63.1
+at hue 90. The moon's body, the hat's old patch, is L 68.9 at hue 94. The Tarascon hat measures L 65.9 at hue 84 and
+chroma 45. A search of the whole painting found no gold patch under chroma 50, so Tarascon's chroma is not a target.
+Its reference is a 1930s colour photograph of a canvas burnt in 1945. Only the direction counts: darker and warmer.
+
+The colour gate's `refHat` is now that patch's mean. The rectangle is written in the gate and not read from `FORM`, so
+the target stays put if the hat's patch moves (Codex T1). `palette.json` has no ochre swatch. Its nearest gold, the
+moon's `#c0b451`, is 14.1 from the patch. The unit test still prints the hat against `#c0b451` (11.45) and asserts the
+hat within 3 of its source patch (2.86). The margin is small because the solid under the strokes is the patch's darkest
+40% (L 56.5).
+
+- The colour gate, every stop and both viewports (`gate/colour-p3/branch`): the hat passes at ΔE 5.4 to 6.5 (it failed
+  at 16.2 to 17.2), rendered L 59 to 61 (was 65 to 66). Every other line is the same as V1's run at 14:40.
+- The lit look frames (`look/p3`, rough bands in Vincent's box): the hat's median L falls 3 to 5 at each stop
+  (stop 1 55.3 to 50.3, stop 3 47.0 to 44.2, stop 0 52.6 to 48.1, stop 2's phone 52.9 to 48.6). It is now below the
+  trousers' median at stops 0, 2 and 3, and above it at stop 1. It still reads as gold, a deeper ochre than before.
+- 451 tests, tsc and lint pass. One look pass.

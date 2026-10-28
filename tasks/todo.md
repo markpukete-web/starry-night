@@ -1,6 +1,17 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-28 (18:28): the hat after Van Gogh's own, pushed; its colour is next
+## Pickup — 2026-10-28 (18:55): the hat's colour is done and pushed for Mark's preview
+
+`5b000f9` paints the hat from the crescent's lower-right edge `[1490, 280, 1514, 304]`, the painting's darkest and
+warmest gold. The colour gate passes it at every stop (ΔE 5.4 to 6.5 from that patch). In the lit frames its median L
+falls 3 to 5. The record is the last section of `tasks/2026-10-28-vincent-form.md`, the look pass
+`scratch/vincent-hat-2026-10-28/look/p3`.
+
+**Next:** Mark looks at the preview. If he passes V1, open its PR as a draft, then mark it ready so Codex fires, and
+answer every thread. K3's PR #32 merges first; V1 rebases on `main` after it. The portal's iPhone crash waits on Mark's
+choice of fix (the 18:28 pickup on `feat/portal-on`).
+
+## Pickup — 2026-10-28 (18:28): the hat after Van Gogh's own, pushed; its colour is next (superseded by the 18:55 pickup above)
 
 Mark at 18:00: "Where did we get this hat from actually? it looks like a fishing man. But if that's something that
 Vincent Van Gogh drew then let's use his painting." `7850cc7` reshapes it from "The Painter on the Road to Tarascon"

@@ -363,7 +363,9 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   0.18 of a lamp's, its pool 0.1 × 0.16 placed 0.046 ahead. With `walk=0`, `flat=1`, `vincent=0`, `light=0` or `ids=1`
   there is no lantern. The street's build unchanged (596,919 triangles, the same hash), the sweep's worst point
   1,429,793 (desktop, `t` 0.26), 60 fps at stops 0 and 3 at dpr 1.5 (p50 16.7 ms, p95 at most 18.5), 321 draw calls
-  at stop 0 (K3 308). Two look passes of four. Untuned by Mark.
+  at stop 0 (K3 308). Two look passes of four. The hat (2026-10-28, Mark's "Go for your recommendations") paints from
+  the crescent's lower-right edge `[1490, 280, 1514, 304]` (L 63 at hue 90), gated against that patch's mean, ΔE 5.4 to
+  6.5. Untuned by Mark.
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)

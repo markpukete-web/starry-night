@@ -3395,3 +3395,14 @@ must be byte-identical before the stimulus's difference means anything.
   giving input priority, but the next branch made a fresh dwell from the same frame's scroll. A scroll's ease also
   crosses a station on later frames with no input, so the fix tests both: input on the frame, and `target` ahead of
   `t`.
+
+## 2026-10-28 (evening) — V1, the hat's colour
+
+- **A reference reproduction's chroma is not a target** (the hat's colour). The Tarascon hat measures chroma 45 at
+  hue 84, and no gold patch in The Starry Night falls under chroma 50. Scoring candidates on ΔE to Tarascon's mean
+  ranked mixed patches of gold, brown and pale halo first. Its reference is a 1930s colour photograph of a burnt
+  canvas, so only the direction transfers: darker and warmer. Choose the patch in the painting on those two signals,
+  then gate it against the painting.
+- **`palette.json` cannot gate every colour the scene uses** (the hat's colour). It has no ochre swatch. A darker,
+  warmer hat moves away from every swatch, so the gate's target is a rectangle of the painting written in the gate
+  itself. That keeps Codex T1's rule: the target does not move when the builder's patch moves.
