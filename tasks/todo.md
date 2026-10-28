@@ -1,5 +1,13 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-10-28 (15:40): Vincent's wander, a throwaway spike, drafted (on `spike/vincent-wander` only)
+
+**The spike** (`tasks/2026-10-28-vincent-wander-spike.md`, off V1's `b93e0f0`, never merged): `?wander=1` in the street.
+A tap on the verge sends Vincent there. The camera stays on its rail and turns toward him by up to `?wanderAim=`
+degrees. `?wanderCam=follow` or `hold`. A Sonnet builder builds it from the draft. The Lead tunes it, captures it and
+pushes it for Mark's preview. **Next:** the build, then the captures. Mark decides from the preview: a slice, a change,
+or no.
+
 ## Pickup — 2026-10-28 (14:40): V1 passes the Lead's gate and is pushed for Mark's preview
 
 **V1, Vincent's form** (`feat/vincent-form` at `b6c6404` plus the docs, off K3's `ed464c9`, pushed for a Vercel
