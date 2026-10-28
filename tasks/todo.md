@@ -1,6 +1,15 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-28 (18:28): the portal crashes Mark's iPhone; do not ship it until that is fixed
+## Pickup — 2026-10-28 (19:10): the iPhone fix is built and pushed for Mark's phone
+
+The diorama now unmounts while the street is mounted (`35bf02e`, the record `tasks/2026-10-28-portal-iphone.md`). In
+headless Chrome as the phone it frees 35 MB of WebGL buffers and 125 MB of live heap after the entry. The way back
+holds the layer until the diorama has rebuilt. Every portal check passes, and three mutations go red.
+
+**Next:** Mark enters the street through the portal on his iPhone, on the preview. If it holds, the portal-on slice
+goes to its PR path after K3 (#32) merges. If it still crashes, build option (b): enter by a page load to `?street=1`.
+
+## Pickup — 2026-10-28 (18:28): the portal crashes Mark's iPhone; do not ship it until that is fixed (superseded by the 19:10 pickup above)
 
 Mark, 16:47, on the preview `starry-night-ewdxv13gq`: "I couldn't get into the street", then a screenshot from his
 iPhone's in-app browser: "A problem repeatedly occurred on https://starry-night-ewdxv13gq-…". iOS killed the page's

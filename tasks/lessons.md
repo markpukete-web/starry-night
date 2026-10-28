@@ -3354,3 +3354,13 @@ must be byte-identical before the stimulus's difference means anything.
   Every gate run passed in Chrome, including real touch taps at phone sizes. On Mark's iPhone the page was killed ("A
   problem repeatedly occurred"), while the street alone loaded. Headless Chrome's process memory does not model iOS's
   limit. A change that holds two scenes at once needs Mark's phone as a check before the preview is called done.
+
+## 2026-10-28 (evening) — the portal's iPhone crash
+
+- **Measure whether an unmount frees memory before choosing it as the fix** (the portal's iPhone crash). Both
+  options were on the table for hours, and the doubt was whether R3F and drei's caches free anything. A ten-minute
+  probe (one line, `!showStreet`, and the repro tool counting WebGL bytes net of deletes) showed it frees 35 MB of
+  buffers and 125 MB of live heap. Textures barely move (37 to 32 MB): drei's loader cache keeps them.
+- **A ready seam set in an effect needs a cleanup once its component can mount twice** (the portal's way back). The
+  cypress's and the land's seams were written for the arrival, which mounts the diorama once. Without a reset on
+  unmount, a remount reads the last mount's `true`. Mutation 3 removed both cleanups and case 2 went red.
