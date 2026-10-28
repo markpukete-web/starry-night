@@ -8,6 +8,10 @@ one P3 (`$E/plan-review-codex.md`). The worker's buildability read is `$E/plan-b
 where each finding went. Mark moved the builds from the Gemini pane to Sonnet builder subagents at 12:10 ("Make the
 switch"). Codex gives revision 1 a bounded confirmation read before any build.
 
+**Revision 2 (2026-10-28, 12:55).** Codex's confirmation read of revision 1 (`$E/plan-confirm-codex.md`) closed F2 to
+F9. It kept F1 open and found N1 and N2. The last three rows of the table below say where they went. Codex reads
+revision 2's three changes while Tasks 1 and 2 are built. Its verdict comes before Task 3 starts.
+
 **Goal:** Vincent becomes the painter on the road to Tarascon for every visitor. He has legs that stride, a lantern in
 his left hand, and a pause at each station where he turns side-on and holds the lantern out. The lantern lights the
 ground and the grass round him.
@@ -27,6 +31,9 @@ this branch from `spike/vincent-form` at `b66b911`.
 | Finding | Where it went |
 | --- | --- |
 | Codex F1: `halfDepth` 0.024 fails the phone framing test | Decision (d): `halfDepth` stays 0.02. The turned pose gets 0.003 more along the lane in the rig test. Mutation 4 changed. |
+| Codex confirm, F1 kept open: mid-turn, the lagging lantern is 5.38 px outside the tap rect | Decision (d) rewritten: the tap rect takes in the rendered figure's bounds. Task 3's `vincentTapCorners`, its test and mutation 19. |
+| Codex confirm, N1: `stopWalk` keeps `auto`, so a blur does not end a dwell | Decision (h): a blur leaves the dwell running, as it leaves the walk. Task 2's test "a stop on blur keeps the dwell". |
+| Codex confirm, N2: linked `node_modules` share tsc's build-info files | Session mapping: each builder links every entry of `node_modules` but `.tmp`, so its `.tmp` is its own. |
 | Codex F2, worker W02: the easel's tube dips to y 0.0179 | Decision (c): the no-cane floor is 0.017. |
 | Codex F3, worker W01: the paint test reads the hat from `body` | Decision (e) and Task 1 Step 1: the hat is read from `head`, against its source patch. |
 | Codex F4: a cancelled dwell starts again one frame later | Decision (h): `Pause.last` and its re-arm rule. A new test and mutation 14. |
@@ -84,9 +91,18 @@ export S=/Users/markma/Projects/starry-night/scratch/vincent-form-2026-10-28/too
   branch `feat/vincent-form`, base `ed464c9` (K3's head, PR #32).
 - `$E` holds the evidence (ignored by git). `$T` holds the hash and gate tools. `$S` holds the spike's capture tools.
 - A builder's worktree starts from `main`. Its brief names its branch and its base commit on `feat/vincent-form`. The
-  builder runs `git switch -c <branch> <base>` first. It then links `node_modules` and `reference/derived` from
-  `/Users/markma/Projects/starry-night` with `ln -s`. It never installs. It commits on its own branch. The Lead gates
-  that branch and merges it into `feat/vincent-form`.
+  builder runs `git switch -c <branch> <base>` first. It then links the dependencies from
+  `/Users/markma/Projects/starry-night`, one link an entry, so that tsc's build-info (`node_modules/.tmp`) is its own
+  (Codex N2). Tried at 12:53 in a throwaway worktree: tsc, lint and a test file pass, and `.tmp` is written locally.
+
+  ```
+  M=/Users/markma/Projects/starry-night
+  mkdir node_modules
+  for e in $M/node_modules/* $M/node_modules/.[!.]*; do [ "$(basename "$e")" = .tmp ] || ln -s "$e" node_modules/; done
+  ln -s $M/reference/derived reference/derived
+  ```
+
+  It never installs. It commits on its own branch. The Lead gates that branch and merges it into `feat/vincent-form`.
 - Tasks 1 and 2 touch no file in common, so their builders run at once. Task 3's builder starts from the merged head.
 - A builder's worktree has no dev server. The Lead runs Task 3's browser checks from vform-wt.
 
@@ -106,8 +122,13 @@ rebases.
   (`halfWidth` 0.025, `halfDepth` 0.02) holds the walking figure.
 - Turned (the left arm raised 0.75, the lantern plumb, the body 90°, the head 45°), he spans x −0.0189 to 0.0226 and z
   −0.0227 to 0.0212 (`$E/probe/lead-tarascon-turned.log`). Along the lane he passes the box by 0.0027.
-- That reach moves his tap rect by at most 2.84 px on a 1280 × 800 desktop and 1.82 px on a 390 × 844 phone, over
-  `t` 0 to 0.9 (`$E/probe/lead-v1-tapbox.log`). Along the lane is depth on the screen.
+- That static reach moves his tap rect by at most 2.84 px on a 1280 × 800 desktop and 1.82 px on a 390 × 844 phone,
+  over `t` 0 to 0.9 (`$E/probe/lead-v1-tapbox.log`). It does not bound a pose mid-turn. At turn 0.7, with the lantern
+  lagging its raised hand, a point inside the lantern's ink lies 5.38 px outside the K3 tap rect on the desktop, and
+  `admitGesture` gives `hand` (Codex confirm F1, `$E/probe/codex-v1-confirm/visible-click-probe.json`). The pose: `t`
+  0.7251969475, the body 1.2315043202 rad past the lane, the left arm −0.588, the lantern's swing 0.3616545427.
+- `stopWalk` (`streetWalk.ts:99-104`) sets `target` to `t` and keeps `auto`. The blur and hidden handler calls it
+  (`StreetWalk.tsx:305-313`). So a blur does not stop the automatic walk (Codex confirm N1).
 - `vincentBoxCorners` (`streetLayout.ts:853`) reads `halfWidth`, `halfDepth` and `height`. It sizes his tap box and is
   read by "Vincent stays in frame" (`street-layout.test.ts:578-605`), which asserts every corner inside the viewport.
   With `halfDepth` 0.024 that test fails at `t` 0.540 on the phone (Codex F1, `$E/probe/codex-v1-review/box-test-red.log`).
@@ -149,9 +170,11 @@ the neck, a shoulder, a hip. The right arm is built by the same calls as the lef
 **(c) No cane.** Nothing in `body` reaches below y 0.017: the easel's centreline foot (0.018) less its tube's radius.
 Only the boots reach the ground.
 
-**(d) The rig.** `VINCENT_RIG` does not change: `height` 0.085, `halfWidth` 0.025, `halfDepth` 0.02. The crown's top
-becomes a constant of its own, `CROWN.y1 = 0.0805`. The turned figure passes the box by 0.0027 along the lane, which
-moves the tap rect by under 3 px (Facts). A larger box would break the phone framing test.
+**(d) The rig and the tap rect.** `VINCENT_RIG` does not change: `height` 0.085, `halfWidth` 0.025, `halfDepth` 0.02.
+It frames him, and a larger box would break the phone framing test. The crown's top becomes a constant of its own,
+`CROWN.y1 = 0.0805`. The tap rect is the projection of the rig box's corners and of the rendered figure's world bounds
+together, so a tap on any part of him in any pose lands on him (Codex confirm F1). The rig box stays its floor, so no
+tap that hit him at K3 misses him now.
 
 **(e) The hat's colour.** The colour gate's hat reference becomes the moon's body swatch `#c0b451` from `palette.json`,
 found by its hex, as the smock's is. The region's weighted mean is not used: two of its five swatches are the pale halo
@@ -171,8 +194,10 @@ raised. The left leg swings `−leg`, the right leg `+leg`. So each arm moves wi
 
 - A wheel turn or a key during a dwell ends it, and that frame's walk step stands. A tap on him stops the automatic
   walk, as a tap does today. That ends the dwell too. His next tap starts the walk again.
-- `stepPause` alone ends a dwell. The component never resets it: a tap, a stop or a pause turns the automatic walk
-  off, and `stepPause` then clears the dwell on its next frame.
+- `stepPause` alone ends a dwell. The component never resets it. A tap or the pause control turns the automatic walk
+  off, and `stepPause` then clears the dwell on its next frame. A blur or a hidden page calls `stopWalk`, which keeps
+  the automatic walk on (Facts). So the dwell keeps running through a blur, as the walk does. While the page is hidden
+  no frame runs, so the dwell waits with the walk.
 - `Pause.last` is the station `t` of the last dwell, −1 at the start. A crossing of `last` starts no dwell. `last`
   returns to −1 when `t` falls below `last − 0.01`, or when another station's dwell starts. So a dwell ended by a
   step back does not start again a frame later. A walk back past the station and forward again gets a fresh dwell.
@@ -245,8 +270,8 @@ Five failure modes no task's unit tests reach. Each line names the check that pi
 - Produces: `buildVincent(painting: ImageData2D): VincentBuild`, where `VincentBuild = { body: VincentPart; head:
   Pivoted; armLeft: Pivoted; armRight: Pivoted; legs: [Pivoted, Pivoted]; lantern: { glass: BrushArraysWithCls; ink:
   BrushArraysWithCls; pivot: [number, number, number] }; shadow: BrushArrays; triangles: number }`.
-- Produces: `FORM` (the spike's, without `brim` and the `lantern` form), with `FORM.tarascon = { hat, back }`. The
-  crown's top is `CROWN.y1`.
+- Produces: `FORM`, the spike's, less `brim` (the lantern form's brim), `tarascon.crownTop` and `tarascon.cane`. So
+  `FORM.tarascon = { hat, back }`, and the crown's top is `CROWN.y1`. `FORM.lantern` (the lantern's own sizes) stays.
 - Produces: `lanternUniform: { value: Vector4 }`, `LANTERN_LIFT`, `lanternExtra`, `vincentMoon(lit: boolean, lantern =
   false)`, `vincentStrokeBody(lit: boolean, lantern = false)`. `lanternMoon`'s GLSL reads `uLantern.xyz` and scales its
   term by `uLantern.w`.
@@ -259,8 +284,8 @@ Five failure modes no task's unit tests reach. Each line names the check that pi
   pitch.
   - "Vincent fits the rig": every part's points inside `|x| ≤ halfWidth` and `0 ≤ y ≤ height + 0.002`. Walking (arms
     ±0.12, legs ±0.35, no raise, no yaw, all four sign pairs): `|z| ≤ halfDepth`. Turned (the left arm −0.75, the
-    lantern plumb, the head π/4, the body yawed π/2): `|z| ≤ halfDepth + 0.003`, the reach that moves the tap rect
-    under 3 px (`$E/probe/lead-v1-tapbox.log`). His top lies in [0.080, 0.0825].
+    lantern plumb, the head π/4, the body yawed π/2): `|z| ≤ halfDepth + 0.003`, a bound on the measured 0.0027
+    (`$E/probe/lead-tarascon-turned.log`). His top lies in [0.080, 0.0825].
   - "Vincent is cheap": `build.triangles` equals the sum over body, head, both arms, both legs, the lantern's glass and
     ink, and the shadow. It is at most 4,000.
   - "the smock and the hat carry their classes": the body, both arms and the head pass the existing length and class
@@ -346,6 +371,8 @@ Five failure modes no task's unit tests reach. Each line names the check that pi
     then 20 steps with no input. The dwell is 0 on all 21, and `t` is above 0.23 on the last.
   - "a walk back past the station re-arms it": with `last` 0.23, start at `t` 0.215 and walk on. The crossing of 0.23
     starts a 4 s dwell.
+  - "a stop on blur keeps the dwell": in a dwell at 0.23 with 2 s left (`last` 0.23), apply `stopWalk` to the state,
+    then one step with no input. `auto` is true, `t` is 0.23 and the dwell is 1.99.
   - "the input walk turns at rest": `autoMode` false, no input. `turn` is 1 after 1.11 s.
   - "reduced motion stands turned": `immediate` true gives turn 1 on the first step.
   - "no stride walking backward, turned or still": `gait` is all zeros for `forward` false, for `turn` 0.2, and for
@@ -380,8 +407,8 @@ Five failure modes no task's unit tests reach. Each line names the check that pi
 ### Task 3: the figure on the street (builder, then the Lead's browser runs)
 
 **Files:**
-- Modify: `src/scene/StreetWalk.tsx`, `scripts/check-street-walk.mjs`
-- Test: `scripts/check-street-walk.mjs` (browser, run by the Lead)
+- Modify: `src/scene/StreetWalk.tsx`, `src/scene/streetLayout.ts` (`vincentTapCorners`), `scripts/check-street-walk.mjs`
+- Test: `scripts/street-vincent.test.ts`, `scripts/check-street-walk.mjs` (browser, run by the Lead)
 
 **Interfaces:**
 - Consumes: Task 1's `VincentBuild`, `lanternUniform`, `lanternExtra`, `FORM`, `radialTexture`. Task 2's `PAUSE`,
@@ -390,6 +417,20 @@ Five failure modes no task's unit tests reach. Each line names the check that pi
   number } | null`, and `window.__vincentForm: () => { t: number; auto: boolean; turn: number; dwell: number; rest:
   number; bodyYaw: number; headYaw: number; clock: number; lantern: number }`, for every visitor. `clock` is the sum of
   the frame loop's clamped `dt` since mount. `lantern` is `lanternUniform.value.w`.
+- Produces, in `streetLayout.ts`: `vincentTapCorners(t: number, figure: { min: [number, number, number]; max: [number,
+  number, number] } | null): [number, number, number][]`: `vincentBoxCorners(t)`, and with `figure` its 8 corners
+  too. `figure` is in the street's frame, without the anchor's offset, as `vincentBoxCorners` is.
+
+- [ ] **Step 0: Write the failing test** "a tap on him lands in his tap rect, mid-turn" in
+  `scripts/street-vincent.test.ts`. Pose the figure as Task 1's rig test does, at Codex's pose (Facts): `t`
+  0.7251969475, the body yawed 1.2315043202 rad past the lane, the head at `turnPose(0.7).head`, the left arm −0.588,
+  the lantern's swing 0.3616545427, the right arm, the legs, the pitch and the roll 0. Use the spike's signs and order
+  (`70acd5b:src/scene/StreetWalk.tsx:514-530`, rotation order `YXZ`), then place it at `vincentPlace(t)` with its yaw.
+  Project with `walkPose(t, portrait)` as "Vincent stays in frame" does, on 1280 × 800 and 390 × 844. Expected: every
+  vertex of every part lies inside `hitBox` of the client rect of `vincentTapCorners(t, the posed vertices' bounds)`.
+  The control: with `figure` null, at least one vertex lies outside. If the control finds none, stop and report.
+  Run `node --test scripts/street-vincent.test.ts > $E/t3/red-unit.log 2>&1`. Expected: red, as `vincentTapCorners`
+  does not exist.
 
 - [ ] **Step 1: Modify the browser check** `check-street-walk.mjs`.
   - Case 6, K4 (`:701-704`): replace the fixed `sleep(1500)` with a poll of `__vincentForm().turn` every 100 ms until
@@ -413,10 +454,14 @@ Five failure modes no task's unit tests reach. Each line names the check that pi
   - Write `lanternUniform.value` only inside the branch that has the figure: the glass's world position, w 1. Set w to
     0 in the effect's cleanup.
   - Key the lit materials by Decision (k).
+  - `getVincentBox` projects `vincentTapCorners(t, figure)`, each corner plus `offset` as today. `figure` is
+    `new Box3().setFromObject(vincentGroupRef.current)` less `offset`, or null when there is no figure.
   - The component does not reset the dwell (Decision (h)). Remove the spike's resets on a tap and on a stop.
   - Keep `clock` in a ref, adding the clamped `dt` each frame.
 - [ ] **Step 4: Run** the green step and both hash tools, saving each output to `$E/t3/green-<name>.log`. Expected: all
   pass, and both hashes unchanged.
+- [ ] **Step 4b: Mutation proof** in `$E/t3/mutation-19.md`: `vincentTapCorners` ignores `figure`. Expected red: "a tap
+  on him lands in his tap rect, mid-turn".
 - [ ] **Step 5: Commit** `feat(street): the Tarascon figure walks the street, pauses and holds out his lantern (V1
   task 3)`.
 - [ ] **Step 6 (Lead): Run** `check-street-walk.mjs`, `check-street-rotation.mjs`, `check-street-grass.mjs` and
@@ -430,7 +475,7 @@ The Lead builds this task. Its values are set by eye, so it is visual work.
 **Files:**
 - Create: `src/scene/streetLantern.ts`
 - Modify: `src/scene/streetMaterial.ts` (the `body` type), `src/scene/Street.tsx`, `src/scene/grassShader.ts`,
-  `src/scene/StreetGrass.tsx`
+  `src/scene/StreetGrass.tsx`, `package.json` (`test:sky` runs `scripts/street-lantern.test.ts`)
 - Test: `scripts/street-lantern.test.ts`, `scripts/street-grass-shader.test.ts`
 
 **Interfaces:**
@@ -481,7 +526,7 @@ At most four passes (the cap per slice). The spike's six passes do not count.
 - [ ] The colour gate on every stop and viewport, K3 against the branch (`$T/k3-colour.sh`). Expected: no region newly
   failing. The smock and the hat within ΔE 10 of their swatches. If the hat fails, it is Mark's call at the preview.
 - [ ] The perf runs at stops 0 and 3 (`$T/k3-perf.sh`). Expected: p50 16.7 ms.
-- [ ] The eighteen mutations, run again by the Lead in a checkout no builder is using.
+- [ ] The nineteen mutations, run again by the Lead in a checkout no builder is using.
 - [ ] The street's build time against K3's 653 ms. Vincent is built apart from the street, so it should not move.
 
 ### Task 7: review and the record (Lead)
