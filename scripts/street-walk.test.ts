@@ -268,6 +268,28 @@ test('input ends a dwell', () => {
   }
 })
 
+test('a scroll across a station makes no stop', () => {
+  // Codex B2: the wheel's own frame crosses 0.23, and the walk step stands as `stepWalk` made it
+  const s0 = initialWalk(0.229, true)
+  const walked = stepWalk(s0, { ...STEP, wheelPx: 100 })
+  assert.ok(walked.t > STATION_T[1], 'the control: the wheel frame crosses the station')
+  let r = frame(s0, initialPause(), { wheelPx: 100 })
+  assert.equal(r.p.dwell, 0, 'no dwell on the wheel frame')
+  assert.equal(r.s.t, walked.t)
+  assert.equal(r.s.target, walked.target)
+  // a scroll that crosses while it eases in, on frames with no input, carries him past too
+  r = frame(initialWalk(0.225, true), initialPause(), { wheelPx: 100 })
+  let crossed = false
+  for (let k = 0; k < 400 && r.s.t !== r.s.target; k++) {
+    const before = r.s.t
+    r = frame(r.s, r.p)
+    if (before < STATION_T[1] && r.s.t >= STATION_T[1]) crossed = true
+    assert.equal(r.p.dwell, 0, `frame ${k}: no dwell while the scroll eases in`)
+  }
+  assert.ok(crossed, 'the control: the eased scroll crosses the station on a frame with no input')
+  assert.equal(r.s.t, r.s.target, 'the scroll is taken in full')
+})
+
 test('a dwell ended by a step back does not start again', () => {
   let r = frame(initialWalk(STATION_T[1], true), { dwell: 2, rest: 0, turn: 0, last: STATION_T[1] }, { keys: -1 })
   assert.equal(r.p.dwell, 0, 'the step back ends the dwell')

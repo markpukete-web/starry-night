@@ -6,7 +6,7 @@ import { islandHeightAt } from '../src/scene/islandShape.ts'
 import { buildLandTrees, type BakedMass } from '../src/scene/landDomes.ts'
 import { LAND_MASSES } from '../src/scene/landMasses.ts'
 import { buildStreet } from '../src/scene/streetGeometry.ts'
-import { readStreetFlags, streetReadiness, touchEnabled, walkOn } from '../src/scene/streetMode.ts'
+import { lanternShown, readStreetFlags, streetReadiness, touchEnabled, walkOn } from '../src/scene/streetMode.ts'
 import { decodePNG } from './lib/png.ts'
 
 test('walk flags', () => {
@@ -35,6 +35,14 @@ test('walk flags', () => {
   assert.equal(walkOn(readStreetFlags('?street=1&flat=1')), false)
   assert.equal(walkOn(readStreetFlags('?street=1&walk=0')), false)
   assert.equal(walkOn(readStreetFlags('?street=1')), true)
+})
+
+test('the lantern shows only where the walk places it', () => {
+  // Codex B1: the walk's frame loop alone places the halo and the pool and lights the ground
+  assert.equal(lanternShown(readStreetFlags('?street=1')), true)
+  for (const q of ['walk=0', 'flat=1', 'vincent=0', 'light=0', 'ids=1']) {
+    assert.equal(lanternShown(readStreetFlags(`?street=1&${q}`)), false, q)
+  }
 })
 
 test('flags', () => {

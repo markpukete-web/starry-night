@@ -61,6 +61,14 @@ export function walkOn(flags: StreetFlags): boolean {
   return !flags.flat && flags.walk
 }
 
+/**
+ * Vincent's lantern, its halo and its pool: on the lit street without the id pass, and only where the walk runs, because
+ * the walk's frame loop alone places them and lights the ground (Codex B1)
+ */
+export function lanternShown(flags: StreetFlags): boolean {
+  return walkOn(flags) && flags.vincent && flags.light && flags.ids === 0
+}
+
 export type AssetStatus = 'pending' | 'ok' | 'failed'
 
 export function streetReadiness(s: {

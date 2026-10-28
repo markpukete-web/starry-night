@@ -21,7 +21,7 @@ import {
   vincentTapCorners,
   walkPose,
 } from './streetLayout.ts'
-import { walkOn, type StreetFlags } from './streetMode.ts'
+import { lanternShown, walkOn, type StreetFlags } from './streetMode.ts'
 import { strokeGeometry } from './strokeGeometry.ts'
 import { classifyGesture, type PointerSample } from './touchSurge.ts'
 import type { ImageData2D } from './useImageData.ts'
@@ -135,8 +135,7 @@ export default function StreetWalk({
   const swingRef = useRef(0)
   const hangRef = useRef(0)
   const clockRef = useRef(0)
-  // the lantern, its halo and its pool show on the lit street without the id pass
-  const lanternOn = flags.vincent && flags.light && flags.ids === 0
+  const lanternOn = lanternShown(flags)
 
   // Vincent geometry and materials
   const build = useMemo<VincentBuild | null>(() => {
