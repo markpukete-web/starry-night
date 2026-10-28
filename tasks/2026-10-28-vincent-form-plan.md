@@ -12,6 +12,14 @@ switch"). Codex gives revision 1 a bounded confirmation read before any build.
 F9. It kept F1 open and found N1 and N2. The last three rows of the table below say where they went. Codex reads
 revision 2's three changes while Tasks 1 and 2 are built. Its verdict comes before Task 3 starts.
 
+**Revision 3 (2026-10-28, 13:15).** Codex's second confirmation (`$E/plan-confirm2-codex.md`) closed N1 and N2. It
+kept F1 open on the lantern's halo: a sprite, drawn facing the camera, so its group's box does not bound it. The halo
+is the lantern's light, not his figure, so the figure's bounds now take his meshes only. Revision 3 also fixes
+Decision (j): in the spike, Vincent's lantern term is already in his body, before the fog. Tasks 1 and 2 were built
+from revision 2 and merged at `8389bb5` (a frog test re-pinned by the Lead, Task 1's commit message). F1 has had two
+reads that found a further gap. Revision 3's fix gets no third plan read: the Lead gates it, and Codex's branch review
+(Task 7) reads it.
+
 **Goal:** Vincent becomes the painter on the road to Tarascon for every visitor. He has legs that stride, a lantern in
 his left hand, and a pause at each station where he turns side-on and holds the lantern out. The lantern lights the
 ground and the grass round him.
@@ -34,6 +42,8 @@ this branch from `spike/vincent-form` at `b66b911`.
 | Codex confirm, F1 kept open: mid-turn, the lagging lantern is 5.38 px outside the tap rect | Decision (d) rewritten: the tap rect takes in the rendered figure's bounds. Task 3's `vincentTapCorners`, its test and mutation 19. |
 | Codex confirm, N1: `stopWalk` keeps `auto`, so a blur does not end a dwell | Decision (h): a blur leaves the dwell running, as it leaves the walk. Task 2's test "a stop on blur keeps the dwell". |
 | Codex confirm, N2: linked `node_modules` share tsc's build-info files | Session mapping: each builder links every entry of `node_modules` but `.tmp`, so its `.tmp` is its own. |
+| Codex confirm 2, F1 kept open: the halo sprite is drawn outside its group's box | Decision (d): the figure's bounds are his meshes', by `vincentFigureBounds`. Task 3's Step 0 builds the real three tree, and mutation 20. |
+| Lead, from Task 1's gate: Decision (j) put Vincent's term after the fog | Decision (j) fixed: the spike's term is in his moon body, before the fog. `lanternExtra` only registers the uniform. |
 | Codex F2, worker W02: the easel's tube dips to y 0.0179 | Decision (c): the no-cane floor is 0.017. |
 | Codex F3, worker W01: the paint test reads the hat from `body` | Decision (e) and Task 1 Step 1: the hat is read from `head`, against its source patch. |
 | Codex F4: a cancelled dwell starts again one frame later | Decision (h): `Pause.last` and its re-arm rule. A new test and mutation 14. |
@@ -172,9 +182,12 @@ Only the boots reach the ground.
 
 **(d) The rig and the tap rect.** `VINCENT_RIG` does not change: `height` 0.085, `halfWidth` 0.025, `halfDepth` 0.02.
 It frames him, and a larger box would break the phone framing test. The crown's top becomes a constant of its own,
-`CROWN.y1 = 0.0805`. The tap rect is the projection of the rig box's corners and of the rendered figure's world bounds
-together, so a tap on any part of him in any pose lands on him (Codex confirm F1). The rig box stays its floor, so no
-tap that hit him at K3 misses him now.
+`CROWN.y1 = 0.0805`. The tap rect is the projection of the rig box's corners and of his figure's world bounds
+together, so a tap on any part of him in any pose lands on him (Codex confirm F1). His figure is his meshes: the body,
+the head, the arms, the legs, the lantern's glass and ink, and the shadow. The halo and the pool are the lantern's
+light, drawn over the street, so a tap on them is a tap on the street (Codex confirm 2). The pool is outside his
+group. The halo is a sprite inside it, so the bounds skip sprites. The rig box stays the rect's floor, so no tap that
+hit him at K3 misses him now.
 
 **(e) The hat's colour.** The colour gate's hat reference becomes the moon's body swatch `#c0b451` from `palette.json`,
 found by its hex, as the smock's is. The region's weighted mean is not used: two of its five swatches are the pale halo
@@ -216,7 +229,8 @@ position in xyz, the strength in w.
 - The frame loop writes it only on a frame that has the figure, with w 1. On unmount it sets w to 0. With `vincent=0`
   nothing writes it, so w stays 0.
 - On the ground and the grass, the term is added after the body's colour and before the fog's mix. Vincent's own term
-  stays where the spike has it, in `extra`, after the fog: Mark passed that look, and he stands 0.4 from the camera.
+  is already there in the spike: `lanternMoon` writes it in his body, and `lanternExtra` only registers `uLantern`.
+  Task 4 composes the ground's and the grass's term the same way.
 - The look passes set the ground's and the grass's falloff and warmth. The pool sprite stays until a look pass shows
   the shader's light makes it redundant.
 
@@ -420,17 +434,26 @@ Five failure modes no task's unit tests reach. Each line names the check that pi
 - Produces, in `streetLayout.ts`: `vincentTapCorners(t: number, figure: { min: [number, number, number]; max: [number,
   number, number] } | null): [number, number, number][]`: `vincentBoxCorners(t)`, and with `figure` its 8 corners
   too. `figure` is in the street's frame, without the anchor's offset, as `vincentBoxCorners` is.
+- Produces, in `streetWalk.ts`: `vincentFigureBounds(root: Object3D): { min: [number, number, number]; max: [number,
+  number, number] } | null`: the union of `Box3.expandByObject` over each `Mesh` under `root`, in world coordinates.
+  It skips sprites and every object that is not a mesh. Null when `root` holds no mesh.
 
-- [ ] **Step 0: Write the failing test** "a tap on him lands in his tap rect, mid-turn" in
-  `scripts/street-vincent.test.ts`. Pose the figure as Task 1's rig test does, at Codex's pose (Facts): `t`
-  0.7251969475, the body yawed 1.2315043202 rad past the lane, the head at `turnPose(0.7).head`, the left arm −0.588,
-  the lantern's swing 0.3616545427, the right arm, the legs, the pitch and the roll 0. Use the spike's signs and order
-  (`70acd5b:src/scene/StreetWalk.tsx:514-530`, rotation order `YXZ`), then place it at `vincentPlace(t)` with its yaw.
-  Project with `walkPose(t, portrait)` as "Vincent stays in frame" does, on 1280 × 800 and 390 × 844. Expected: every
-  vertex of every part lies inside `hitBox` of the client rect of `vincentTapCorners(t, the posed vertices' bounds)`.
-  The control: with `figure` null, at least one vertex lies outside. If the control finds none, stop and report.
-  Run `node --test scripts/street-vincent.test.ts > $E/t3/red-unit.log 2>&1`. Expected: red, as `vincentTapCorners`
-  does not exist.
+- [ ] **Step 0: Write the failing tests** in `scripts/street-vincent.test.ts`. Build the figure as a three tree, the
+  way the component's JSX nests it (`70acd5b:src/scene/StreetWalk.tsx:571-627`): a root group, a `Mesh` for each part
+  from its positions, the arm, head and leg groups at their pivots, the lantern's group inside the left arm's at the
+  lantern's pivot, and a `Sprite` in the lantern's group at the glass, scaled 0.05. Pose it at Codex's pose (Facts):
+  `t` 0.7251969475, the root at `vincentPlace(t)` with rotation order `YXZ` and yaw `vincentPlace(t).yaw` +
+  1.2315043202, the head at `turnPose(0.7).head`, the left arm −0.588, the lantern's group 0.3616545427, the right
+  arm, the legs, the pitch and the roll 0 (the spike's signs, `70acd5b:src/scene/StreetWalk.tsx:514-530`). Call
+  `updateMatrixWorld(true)` on the root.
+  - "a tap on him lands in his tap rect, mid-turn": project with `walkPose(t, portrait)` as "Vincent stays in frame"
+    does, on 1280 × 800 and 390 × 844. Every vertex of every mesh, in world coordinates, lies inside `hitBox` of the
+    client rect of `vincentTapCorners(t, vincentFigureBounds(root))`. The control: with `figure` null, at least one
+    vertex lies outside. If the control finds none, stop and report.
+  - "the lantern's light is not his figure": `vincentFigureBounds(root)` equals the bounds of the same tree with the
+    sprite removed, within 1e-12. A tree holding only the sprite gives null.
+  Run `node --test scripts/street-vincent.test.ts > $E/t3/red-unit.log 2>&1`. Expected: red, as neither function
+  exists.
 
 - [ ] **Step 1: Modify the browser check** `check-street-walk.mjs`.
   - Case 6, K4 (`:701-704`): replace the fixed `sleep(1500)` with a poll of `__vincentForm().turn` every 100 ms until
@@ -455,13 +478,15 @@ Five failure modes no task's unit tests reach. Each line names the check that pi
     0 in the effect's cleanup.
   - Key the lit materials by Decision (k).
   - `getVincentBox` projects `vincentTapCorners(t, figure)`, each corner plus `offset` as today. `figure` is
-    `new Box3().setFromObject(vincentGroupRef.current)` less `offset`, or null when there is no figure.
+    `vincentFigureBounds(vincentGroupRef.current)` less `offset`, or null when there is no figure.
   - The component does not reset the dwell (Decision (h)). Remove the spike's resets on a tap and on a stop.
   - Keep `clock` in a ref, adding the clamped `dt` each frame.
 - [ ] **Step 4: Run** the green step and both hash tools, saving each output to `$E/t3/green-<name>.log`. Expected: all
   pass, and both hashes unchanged.
-- [ ] **Step 4b: Mutation proof** in `$E/t3/mutation-19.md`: `vincentTapCorners` ignores `figure`. Expected red: "a tap
-  on him lands in his tap rect, mid-turn".
+- [ ] **Step 4b: Mutation proofs** in `$E/t3/mutation-<n>.md`:
+  19. `vincentTapCorners` ignores `figure`. Expected red: "a tap on him lands in his tap rect, mid-turn".
+  20. `vincentFigureBounds` returns `new Box3().setFromObject(root)`'s bounds, sprites included. Expected red: "the
+      lantern's light is not his figure".
 - [ ] **Step 5: Commit** `feat(street): the Tarascon figure walks the street, pauses and holds out his lantern (V1
   task 3)`.
 - [ ] **Step 6 (Lead): Run** `check-street-walk.mjs`, `check-street-rotation.mjs`, `check-street-grass.mjs` and
@@ -526,7 +551,7 @@ At most four passes (the cap per slice). The spike's six passes do not count.
 - [ ] The colour gate on every stop and viewport, K3 against the branch (`$T/k3-colour.sh`). Expected: no region newly
   failing. The smock and the hat within ΔE 10 of their swatches. If the hat fails, it is Mark's call at the preview.
 - [ ] The perf runs at stops 0 and 3 (`$T/k3-perf.sh`). Expected: p50 16.7 ms.
-- [ ] The nineteen mutations, run again by the Lead in a checkout no builder is using.
+- [ ] The twenty mutations, run again by the Lead in a checkout no builder is using.
 - [ ] The street's build time against K3's 653 ms. Vincent is built apart from the street, so it should not move.
 
 ### Task 7: review and the record (Lead)
