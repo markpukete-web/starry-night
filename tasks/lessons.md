@@ -3367,3 +3367,31 @@ must be byte-identical before the stimulus's difference means anything.
   93 ribbons at a quarter of the lane's cover and still cost 62 ms, because `traceFace` resamples a 64-row flow crop
   over each face, and a long narrow leg gives a wide crop. The plan counted triangles, not faces, and the build came in
   10.9% over K2's against a 10% bound. A plan that adds faces probes the build's time per face before it sets a bound.
+
+## 2026-10-28 — V1, Vincent's form: the build, review and gate
+
+- **Motion on the frame's real time breaks a pinned capture** (V1's gate, the portal's case 9). The capture seam pins
+  the sky, the street's life and the frogs. The walk's state never followed it, and V1's turn and lantern swing are walk
+  state, so a capture 2.5 s after load caught him mid-turn on every run. The fix went in the shared capture script, not
+  in each caller: it waits for `__vincentForm().settled` after any eval, which also covers a portal entry that first
+  shows him after the eval. New motion either follows `__skyTime` or reports when it rests.
+- **A check that sleeps a fixed time reads a pose mid-animation** (V1 Task 3, the walk check's K3 leg). Two loads read
+  500 ms after ready moved his box 3.39 px with the anchor's offset right. Poll the state that ends the animation, then
+  wait about six times the slowest lag's τ.
+- **Judge a multiplicative light by its footprint, not by eye** (V1 look pass 1). The lantern's lift multiplies the
+  paint, so at reach 0.05 it showed only on the pale path. The Lead's eye read reach 0.08 as dimmer. The frame against
+  the term off, stretched, settled it: 15,222 px lit against 4,937, no pixel more than 21 of 255 brighter.
+- **Commit before a mutation that restores to HEAD** (V1, the B1 and B2 fixes). The Lead's helper restored each mutated
+  file to HEAD while the fixes were uncommitted, which wiped the fixes and voided two results. The Task 2 builder had
+  committed first for this reason.
+- **Do not run unit-test batches beside browser checks** (V1's gate). The mutation runner, Codex and a build put the
+  load average at 12.7. The grass check's 200 ms read after a pin and the portal's 1.5 s damping wait both failed, and
+  both passed alone. A separate checkout keeps edits from reloading the server's pages, but it does not share the CPU
+  fairly.
+- **Two guards that decide one thing drift apart** (V1, Codex B1). The lantern rendered under one condition and was
+  placed under another, so `walk=0` drew the halo at 41 times its size and the pool upright at the origin. One function
+  now decides both, and a test pins it.
+- **A station's stop must come from the automatic walk alone** (V1, Codex B2). Clearing the dwell on input read as
+  giving input priority, but the next branch made a fresh dwell from the same frame's scroll. A scroll's ease also
+  crosses a station on later frames with no input, so the fix tests both: input on the frame, and `target` ahead of
+  `t`.
