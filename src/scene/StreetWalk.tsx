@@ -75,7 +75,10 @@ type StreetWalkWindow = Window & {
   /** the rendered figure's own transform, for the checks (Codex K3, K4): his world position, roll and both arms' swing */
   __vincentPose?: () => { world: [number, number, number]; roll: number; arm: number; armRight: number } | null
   __walkProject?: (t: number, point: [number, number, number]) => [number, number]
-  /** the pause's state for the checks (V1): `clock` is the frame loop's own clamped time, `lantern` the light's strength */
+  /**
+   * the pause's state for the checks (V1): `clock` is the frame loop's own clamped time, `lantern` the light's strength,
+   * `settled` true once the turn is 0 or 1 and the lantern hangs within 1e-6 rad of its rest, so a pinned capture holds
+   */
   __vincentForm?: () => {
     t: number
     auto: boolean
@@ -86,6 +89,7 @@ type StreetWalkWindow = Window & {
     headYaw: number
     clock: number
     lantern: number
+    settled: boolean
   }
 }
 
@@ -129,6 +133,7 @@ export default function StreetWalk({
   // the pause (V1): only `stepPause` ends a dwell, so no handler below touches this (Decision (h))
   const pauseRef = useRef(initialPause())
   const swingRef = useRef(0)
+  const hangRef = useRef(0)
   const clockRef = useRef(0)
   // the lantern, its halo and its pool show on the lit street without the id pass
   const lanternOn = flags.vincent && flags.light && flags.ids === 0
@@ -368,6 +373,8 @@ export default function StreetWalk({
         headYaw: headGroupRef.current?.rotation.y ?? NaN,
         clock: clockRef.current,
         lantern: lanternUniform.value.w,
+        settled:
+          (pauseRef.current.turn === 0 || pauseRef.current.turn === 1) && Math.abs(swingRef.current - hangRef.current) < 1e-6,
       })
     }
     return () => {
@@ -570,6 +577,7 @@ export default function StreetWalk({
       legLeftRef.current?.rotation.set(l.legLeft, 0, 0)
       legRightRef.current?.rotation.set(l.legRight, 0, 0)
       // the lantern hangs plumb under the swinging hand, a pendulum lagging it (Fable Q5); still under reduced motion
+      hangRef.current = l.hang
       swingRef.current = reduced || still ? l.hang : lag(swingRef.current, l.hang, dt)
       lanternGroupRef.current?.rotation.set(swingRef.current, 0, 0)
       body.updateMatrixWorld(true)
