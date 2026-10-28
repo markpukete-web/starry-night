@@ -27,7 +27,7 @@ import { dropBootCurtain, keepBootCurtain } from '../bootCurtain'
 import { isStreetMode, streetIdsPass, streetSkyAnchor, touchEnabled } from './streetEntry'
 import {
   controlsEnabled,
-  dioramaVisible,
+  dioramaMounted,
   flightPose,
   flightStep,
   PORTAL,
@@ -289,6 +289,8 @@ type PortalDrive = {
   ok: boolean | null
   /** this place's one event has been sent */
   sent: boolean
+  /** leaving: the layer holds until the diorama, mounted again, has built and drawn */
+  held: boolean
 }
 
 /** What the scene needs from the portal, given while `?portal=1` is on, even after a failed chunk turns it off. */
@@ -333,11 +335,14 @@ function PortalDriver({
   still,
   lens,
   portal: { send, drive, controlsRef, layerRef, copyToLayer },
+  dioramaReady,
 }: {
   place: PortalPlace
   still: boolean
   lens: Lens
   portal: ScenePortal
+  /** the cypress's and the land's seams: true once the diorama mounted for the way back has built */
+  dioramaReady: () => boolean
 }) {
   const { camera } = useThree()
   /* eslint-disable react-hooks/immutability -- R3F render-loop writes: the camera, the controls, the layer's style */
@@ -348,6 +353,7 @@ function PortalDriver({
       d.t = 0
       d.settled = 0
       d.sent = false
+      d.held = place === 'leaving'
       if (place === 'leaving') {
         // with damping off, one update applies and clears the residual delta before the reset puts the pose back
         // (plan decision (f)); the reset recomputes the orbit from a pose inside the limits, so it holds
@@ -407,9 +413,18 @@ function PortalDriver({
       // once only, and `leave` ends it: the canvas's root commits a new place a frame or more after the page's, so a
       // street frame that runs after the leave's copy must not fade it (Codex branch review F1)
       d.sent = fade(PORTAL.fadeIn)
-    } else if (place === 'leaving' && !d.sent && fade(PORTAL.fadeOut)) {
-      d.sent = true
-      send('left')
+    } else if (place === 'leaving' && !d.sent) {
+      // the diorama mounts again under the layer: the fade starts once it has built and drawn its settle frames, or at
+      // the arrival's timeout, and runs from that frame
+      if (d.held) {
+        if ((dioramaReady() && ++d.settled > PORTAL.settleFrames) || d.t > ARRIVAL.readyTimeout) {
+          d.held = false
+          d.t = 0
+        }
+      } else if (fade(PORTAL.fadeOut)) {
+        d.sent = true
+        send('left')
+      }
     }
   }, -2)
   /* eslint-enable react-hooks/immutability */
@@ -529,7 +544,7 @@ function Scene({
       )}
       {measurePerformance && <PerfProbe />}
       {!streetMode && arrival && <ArrivalDriver home={defaultCamera} reduced={still} onDone={onArrived} {...refs} />}
-      {portal && <PortalDriver place={place} still={still} lens={lens} portal={portal} />}
+      {portal && <PortalDriver place={place} still={still} lens={lens} portal={portal} dioramaReady={() => refs.cypressReadyRef.current && refs.landReadyRef.current} />}
       {showStreet && (
         // the street places the camera at its station itself, in its own chunk (the main bundle carries no layout); its
         // own Suspense, so a chunk still loading never hides the sky or the diorama (the portal's decision (e)). Through
@@ -541,19 +556,18 @@ function Scene({
         </Suspense>
       )}
       <Suspense fallback={null}>
-        {/* the diorama stays mounted while the street shows, hidden, so the way back draws it at once */}
-        {!streetMode && debug !== 'flow' && (
-          <group visible={dioramaVisible(place)}>
-            <Diorama
-              debug={debug === 'stage' ? 'stage' : 'final'}
-              clock={skyClock}
-              alive={alive}
-              tuning={aliveTuning}
-              cypressReady={arrival ? refs.cypressReadyRef : undefined}
-              landReady={arrival ? refs.landReadyRef : undefined}
-              touch={landTouch}
-            />
-          </group>
+        {/* unmounted while the street is mounted, so the street builds in the diorama's freed memory: both held at once
+            crashed Mark's iPhone (2026-10-28). The way back mounts it again under the layer, which waits for its seams */}
+        {!streetMode && debug !== 'flow' && dioramaMounted(place) && (
+          <Diorama
+            debug={debug === 'stage' ? 'stage' : 'final'}
+            clock={skyClock}
+            alive={alive}
+            tuning={aliveTuning}
+            cypressReady={refs.cypressReadyRef}
+            landReady={refs.landReadyRef}
+            touch={landTouch}
+          />
         )}
         {debug !== 'stage' && !idsPass && (
           <PaintingFlowSky3D
@@ -600,7 +614,7 @@ type PortalWindow = Window & {
    * `pose` is the controls' orbit pose: during the flight the camera aims past its target, so `view` reads the camera
    * itself, its rotation and its lens (Codex branch review F4)
    */
-  __portal?: () => { place: PortalPlace; on: boolean; layer: number; saved: Pose | null; pose: Pose | null; view: CameraView | null }
+  __portal?: () => { place: PortalPlace; on: boolean; layer: number; saved: Pose | null; pose: Pose | null; view: CameraView | null; diorama: boolean }
   __portalEnter?: () => void
   __portalLeave?: () => void
   __portalFlight?: number
@@ -617,6 +631,11 @@ export function DioramaExperience({ clean = false, reduced = false, sky = 'light
   const [place, setPlace] = useState<PortalPlace>(streetMode ? 'street' : 'diorama')
   const [portalFailed, setPortalFailed] = useState(false)
   const portalOn = portalFlag && !portalFailed
+  // a phone or a tablet (no hover, a coarse pointer: the walk's own test) asks before its first entry, since the street
+  // alone ended the page on Mark's iPhone (2026-10-28). Mark: the phone still enters, told a computer is recommended
+  const phone = useMemo(() => typeof window !== 'undefined' && window.matchMedia('(hover: none) and (pointer: coarse)').matches, [])
+  const [asking, setAsking] = useState(false)
+  const askedRef = useRef(false)
   const live = useRef({ place, still, arriving, portalOn })
   useLayoutEffect(() => {
     live.current = { place, still, arriving, portalOn }
@@ -625,7 +644,7 @@ export function DioramaExperience({ clean = false, reduced = false, sky = 'light
   const glRef = useRef<HTMLCanvasElement | null>(null)
   const portalLayerRef = useRef<HTMLCanvasElement>(null)
   const hintRef = useRef<HTMLDivElement>(null)
-  const drive = useRef<PortalDrive>({ seen: 'diorama', s: 0, from: PORTAL.flightEnd, t: 0, settled: 0, ok: null, sent: false })
+  const drive = useRef<PortalDrive>({ seen: 'diorama', s: 0, from: PORTAL.flightEnd, t: 0, settled: 0, ok: null, sent: false, held: false })
   const send = useCallback((event: PortalEvent) => {
     setPlace((current) => portalStep(current, event, { still: live.current.still, arriving: live.current.arriving }))
   }, [])
@@ -653,6 +672,10 @@ export function DioramaExperience({ clean = false, reduced = false, sky = 'light
     const { place: current, still: cut, arriving: held, portalOn: on } = live.current
     const controls = controlsRef.current
     if (!on || !controls || portalStep(current, 'enter', { still: cut, arriving: held }) === current) return
+    if (phone && !askedRef.current) {
+      setAsking(true)
+      return
+    }
     controls.saveState()
     const d = drive.current
     d.from = {
@@ -665,7 +688,14 @@ export function DioramaExperience({ clean = false, reduced = false, sky = 'light
     if (cut) copyToLayer()
     prefetch()
     send('enter')
-  }, [copyToLayer, prefetch, send])
+  }, [phone, copyToLayer, prefetch, send])
+  // the card's answers: once answered "enter", the visit's later entries go straight in
+  const enterAnyway = useCallback(() => {
+    askedRef.current = true
+    setAsking(false)
+    enter()
+  }, [enter])
+  const stay = useCallback(() => setAsking(false), [])
   // the leave copies in the handler, before the place changes (decision (d)). It ends the street's fade first: the canvas
   // sees `leaving` a frame or more later, and its street frames in between must not touch the copy (Codex F1)
   const leave = useCallback(() => {
@@ -688,7 +718,10 @@ export function DioramaExperience({ clean = false, reduced = false, sky = 'light
         : undefined,
     [portalFlag, portalOn, send, enter, prefetch, copyToLayer, onStreetReady, onStreetFailed],
   )
-  const portalControl = useMemo<PortalControl | null>(() => (portalOn ? { place, enter, leave, prefetch } : null), [portalOn, place, enter, leave, prefetch])
+  const portalControl = useMemo<PortalControl | null>(
+    () => (portalOn ? { place, enter, leave, prefetch, asking: asking && place === 'diorama', enterAnyway, stay } : null),
+    [portalOn, place, enter, leave, prefetch, asking, enterAnyway, stay],
+  )
   // Escape in the street goes back, as the dock's control does (decision (j))
   useEffect(() => {
     if (!portalFlag || place !== 'street') return
@@ -715,6 +748,8 @@ export function DioramaExperience({ clean = false, reduced = false, sky = 'light
           ? { position: [controls.object.position.x, controls.object.position.y, controls.object.position.z], target: [controls.target.x, controls.target.y, controls.target.z] }
           : null,
         view: controls ? viewOf(controls.object as PerspectiveCameraImpl) : null,
+        // the cypress's and the land's seams: false while the diorama is unmounted, true once a mount has built
+        diorama: cypressReadyRef.current && landReadyRef.current,
       }
     }
     w.__portalEnter = enter

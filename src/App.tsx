@@ -71,8 +71,9 @@ export default function App() {
   const street = isStreetMode(typeof window !== 'undefined' ? window.location.search : '')
   // The opening plays once per session on a plain visit; `?arrival=1` always plays it, that being the link's point
   const arrival = !street && (params.get('arrival') === '1' || (!off('arrival') && !arrivedThisSession()))
-  // The portal into the village street (slice 4), behind `?portal=1` until Mark's gate; never with `?street=1`
-  const portal = !street && params.get('portal') === '1'
+  // The portal into the village street (slice 4) is on for every visitor (Mark, 2026-10-28: "promote the portal to
+  // main"). `?portal=0` turns it off, `=1` still works for links. Never with `?street=1`
+  const portal = !street && !off('portal')
   // The shipped defaults for A's knobs live in sky-tuning.json (the tuner's "set as default" writes them);
   // a URL knob overrides them, and with the tuner open the last slider positions are remembered per browser.
   const [aliveTuning, setAliveTuning] = useState<AliveTuning>(() => {

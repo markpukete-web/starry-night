@@ -1,5 +1,93 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-10-28 (20:40): Mark passed the portal on for every visitor; its PR opens
+
+Mark passed it on the combined preview (`253d8f7`): "Love it! Gate passed!" The PR opens against `main` as a draft,
+then ready so Codex fires. Read Codex's review through the timeline API and answer every thread. K3 (#32) and V1 also
+touch this file and `CLAUDE.md`'s Tunables: whichever merges later resolves those two.
+
+## Pickup — 2026-10-28 (20:02): phones enter the village, told first that a computer is recommended
+
+Mark wants phones to enter, told first. `1169994` shows a card before a phone's first entry, "A computer is recommended
+for the village scene. On a phone it may load slowly or not open.", with "Enter anyway" and "Stay with the painting". It
+replaces `8531440`'s note, which kept phones out. The record is the last section of `tasks/2026-10-28-portal-iphone.md`.
+
+The preview (behind Vercel's login, `5689ef0`): `https://starry-night-6y334p0c0-markpukete-webs-projects.vercel.app`
+
+**Next:** Mark looks at the card on his phone and at the portal on a computer, on the preview. Then the portal-on
+slice's PR path after K3 (#32) merges.
+
+**Proposed slice, not started: the street on phones.** Mark asked for phones to read the village. Measure the street's
+memory, then cut it, starting with the painting decoded about eight times at 1600 × 1267 (8 MB each). Mark tests each
+cut on his iPhone through "Enter anyway".
+
+## Pickup — 2026-10-28 (19:40): the village on computers, phones keep the painting (superseded by the pickup above)
+
+The street alone ended the page on Mark's iPhone with every other tab closed, so the portal fix cannot make the phone
+hold it. Mark chose "Village on computers": `8531440` keeps phones and tablets on the painting with a note, and
+`?phoneVillage=1` opens the village there. The record is the last two sections of `tasks/2026-10-28-portal-iphone.md`.
+
+The preview (behind Vercel's login, `7d744d3`): `https://starry-night-jc3dbyb0h-markpukete-webs-projects.vercel.app`
+
+**Next:** Mark looks at the note on his phone and at the portal on a computer, on the preview. Then the portal-on
+slice's PR path after K3 (#32) merges.
+
+**Proposed slice, not started: the street on phones.** Mark asked for phones to read the village too. Measure the
+street's memory on the phone build, then cut it, starting with the painting decoded about eight times at 1600 × 1267
+(8 MB each, the probe's 2D canvases). Mark tests each cut with `?phoneVillage=1` on his iPhone. The note comes off
+phones once it holds.
+
+## Pickup — 2026-10-28 (19:10): the iPhone fix is built and pushed for Mark's phone (superseded by the 19:40 pickup above)
+
+The diorama now unmounts while the street is mounted (`35bf02e`, the record `tasks/2026-10-28-portal-iphone.md`). In
+headless Chrome as the phone it frees 35 MB of WebGL buffers and 125 MB of live heap after the entry. The way back
+holds the layer until the diorama has rebuilt. Every portal check passes, and three mutations go red.
+The preview (behind Vercel's login, `f68ff3f`): `https://starry-night-7z89d2kjh-markpukete-webs-projects.vercel.app`
+
+**Next:** Mark enters the street through the portal on his iPhone, on the preview. If it holds, the portal-on slice
+goes to its PR path after K3 (#32) merges. If it still crashes, build option (b): enter by a page load to `?street=1`.
+
+## Pickup — 2026-10-28 (18:28): the portal crashes Mark's iPhone; do not ship it until that is fixed (superseded by the 19:10 pickup above)
+
+Mark, 16:47, on the preview `starry-night-ewdxv13gq`: "I couldn't get into the street", then a screenshot from his
+iPhone's in-app browser: "A problem repeatedly occurred on https://starry-night-ewdxv13gq-…". iOS killed the page's
+process, almost always for memory, and it crashed again on the reload. At 18:2x the street alone (`?street=1` on V1's
+preview) loaded on the same phone. So the painting and the street held together are too much for the iPhone. Through
+the portal the diorama stays mounted while the street shows (`src/scene/DioramaExperience.tsx`, the comment above
+`<Diorama`).
+
+The deployed files match the local build of `cb4fed1` (`index-9aIiyKsT.js`, `Street-BouKM_C9.js`). Headless Chrome as a
+touch phone enters the street by the pill and by a house tap, with no errors. The measurements are in
+`scratch/vincent-wander-2026-10-28/repro/`, by `tools/phone-enter.mjs`. Chrome's renderer process peaks at 858 MB loading
+the painting, 708 MB entering through the portal and 951 MB opening the street directly. GPU memory goes from 306 to
+357 MB, the JS heap peaks at 133 MB and 2D canvases total 71 MB (48 MB direct). Chrome does not model the iPhone's
+limit. Only Mark's phone can confirm a fix.
+
+Also seen: when the street fails once, `portalFailed` turns the portal off for the visit and the pill disappears with
+no message.
+
+**Next: choose the fix with Mark, then build it.** (a) Unmount the diorama while in the street and rebuild it on the
+way back, the layer held until it is ready. R3F does not dispose a geometry passed as a prop, so check that each
+diorama part frees its geometries and textures on unmount. (b) Enter by a page load to `?street=1`, which is proven on
+his phone, at the cost of the seamless flight into the street. The Lead had not recommended one yet. Mark's earlier
+call stands: five pills cover the village at 667 × 375.
+
+## Pickup — 2026-10-28 (15:35): the portal on for every visitor, built on `feat/portal-on` off `main`
+
+**The slice** (the plan and its revision 1 `tasks/2026-10-28-portal-on-plan.md`, the evidence
+`scratch/portal-on-2026-10-28/`): `?portal=0` turns the portal off. The placard and the dock share one bottom stack,
+so the fifth pill no longer breaks the phone's chrome. Codex read the plan (three P2 findings, answered in revision 1).
+K3 (PR #32) and V1 (`feat/vincent-form`) are ahead of `main` and touch other files, apart from this file and the
+Tunables in `CLAUDE.md`. Rebase after they merge.
+
+**The preview** (behind Vercel's login, `565d6c0`): `https://starry-night-ewdxv13gq-markpukete-webs-projects.vercel.app`. The Lead's gate passed at 15:35.
+
+**Mark's calls, and two notes kept out of the slice:**
+- At 667 × 375 (an iPhone SE in landscape) five pills wrap to two rows across the village. Options: leave it, stack
+  the dock down the right edge on short landscapes, or show icons only there.
+- The tuner (`?tune=1`, Mark's dev tool) keeps its fixed `bottom: 132px` on a phone, and the dock's third row can now
+  reach it.
+
 ## Pickup — 2026-10-28 (11:10): Mark passed K3, and its PR is open for Codex's review
 
 **Mark passed K3 on the preview** at 11:07 ("Morning Claude, gate passed"), as built, the build's +64 ms with it (the

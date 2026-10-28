@@ -129,6 +129,10 @@ export function BrushIsland({
 
   useEffect(() => {
     if (readyRef) readyRef.current = land !== null || failed
+    // the portal's way back mounts the land again: an unmount clears the seam, so no frame reads the last mount's
+    return () => {
+      if (readyRef) readyRef.current = false
+    }
   }, [readyRef, land, failed])
 
   useEffect(() => () => geometries.solid.dispose(), [geometries])

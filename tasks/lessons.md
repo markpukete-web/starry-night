@@ -3367,3 +3367,36 @@ must be byte-identical before the stimulus's difference means anything.
   93 ribbons at a quarter of the lane's cover and still cost 62 ms, because `traceFace` resamples a 64-row flow crop
   over each face, and a long narrow leg gives a wide crop. The plan counted triangles, not faces, and the build came in
   10.9% over K2's against a 10% bound. A plan that adds faces probes the build's time per face before it sets a bound.
+
+## 2026-10-28 — the portal on for every visitor
+
+- **A feature behind a flag never met the chrome guard with the flag on** (the probe, 14:45). The portal shipped on
+  2026-10-25 behind `?portal=1`, and its fifth pill broke four of the viewport check's chrome cases: the placard over
+  the phone's three-row dock, the dock off a 667 px landscape. No gate had run the check with the flag set. When a
+  flagged feature adds chrome, run the viewport check with the flag on at its own gate, not at the flip.
+- **A fixed offset encodes a row count** (the bottom stack). The placard's `bottom: 128px` was right for two rows of
+  the dock and wrong for one or three. Put the two in one flow, so the clearance follows the dock. Measure the old
+  numbers first: the pairs then prove every layout but the one the old number got wrong.
+- **A pixel pair proves layout only where the frame is pinned.** The flat route's canvas is not pinned by `__skyTime`,
+  so its pairs differed by 1,406 to 220,852 px with every rect equal. Report the rects beside the pixels, and split a
+  differing pair into pixels inside and outside the chrome before reading it as a layout change.
+- **A JavaScript `.click()` proves the handler, not the control** (Codex plan review F2). A control hidden by CSS still
+  takes `.click()`. A check of a visible control clicks at its drawn centre after `elementFromPoint` and a visibility
+  test. Codex's counterexample, the street's dock hidden by `:has`, passed case 4 and failed the new 4b.
+
+## 2026-10-28 — the portal crashed the iPhone while every Mac check passed
+
+- **Memory that fits on the Mac can crash the iPhone.** The portal keeps the diorama mounted while it builds the street.
+  Every gate run passed in Chrome, including real touch taps at phone sizes. On Mark's iPhone the page was killed ("A
+  problem repeatedly occurred"), while the street alone loaded. Headless Chrome's process memory does not model iOS's
+  limit. A change that holds two scenes at once needs Mark's phone as a check before the preview is called done.
+
+## 2026-10-28 (evening) — the portal's iPhone crash
+
+- **Measure whether an unmount frees memory before choosing it as the fix** (the portal's iPhone crash). Both
+  options were on the table for hours, and the doubt was whether R3F and drei's caches free anything. A ten-minute
+  probe (one line, `!showStreet`, and the repro tool counting WebGL bytes net of deletes) showed it frees 35 MB of
+  buffers and 125 MB of live heap. Textures barely move (37 to 32 MB): drei's loader cache keeps them.
+- **A ready seam set in an effect needs a cleanup once its component can mount twice** (the portal's way back). The
+  cypress's and the land's seams were written for the arrival, which mounts the diorama once. Without a reset on
+  unmount, a remount reads the last mount's `true`. Mutation 3 removed both cleanups and case 2 went red.

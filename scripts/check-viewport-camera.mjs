@@ -54,6 +54,8 @@ const CHROME_VIEWPORTS = [
   ['phone-landscape-small', { width: 667, height: 375 }],
   ['short-and-narrow', { width: 640, height: 360 }],
   ['desktop', { width: 1600, height: 900 }],
+  // the portal's pill wraps the dock to four rows here (2026-10-28, Codex plan review F3)
+  ['phone-320', { width: 320, height: 568 }],
 ]
 
 async function urlOk(url) {
@@ -240,10 +242,17 @@ async function chromeRects(page) {
         title: rect(document.querySelector('.visitor-title')),
         dock: rect(document.querySelector('.visitor-dock')),
         reference: rect(document.querySelector('.visitor-reference')),
-        controls: [...document.querySelectorAll('.visitor-control')].map((el) => ({
-          label: el.getAttribute('aria-label'),
-          ...rect(el),
-        })),
+        controls: [...document.querySelectorAll('.visitor-control')].map((el) => {
+          const b = el.getBoundingClientRect()
+          const at = document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2)
+          return { label: el.getAttribute('aria-label'), ...rect(el), hit: Boolean(at && el.contains(at)) }
+        }),
+        // the bottom stack is pointer-events none: beside the dock a drag must start on the canvas (Codex F2)
+        besideDock: (() => {
+          const d = document.querySelector('.visitor-dock')?.getBoundingClientRect()
+          if (!d || d.x < 24) return null
+          return document.elementFromPoint(d.x - 8, d.y + d.height / 2)?.tagName ?? 'nothing'
+        })(),
       }
     })()`,
     returnByValue: true,
@@ -270,6 +279,8 @@ function chromeFaults(r) {
   inViewport('dock', r.dock)
   inViewport('placard', r.reference)
   for (const c of r.controls) inViewport(`control "${c.label}"`, c)
+  for (const c of r.controls) if (!c.hit) faults.push(`control "${c.label}" is not the element at its centre`)
+  if (r.besideDock && r.besideDock !== 'CANVAS') faults.push(`beside the dock a press lands on ${r.besideDock}, not the canvas`)
 
   // The title is decorative text with pointer-events:none, but the placard sitting on top of it
   // still reads as a broken layout — and the dock must never be covered, it is interactive.
@@ -331,6 +342,7 @@ async function main() {
       ['rotate portrait->landscape', { width: 390, height: 844 }, { width: 844, height: 390 }],
       ['rotate landscape->portrait', { width: 844, height: 390 }, { width: 390, height: 844 }],
       ['rotate phone->desktop', { width: 390, height: 844 }, { width: 1600, height: 900 }],
+      ['resize phone->320', { width: 390, height: 844 }, { width: 320, height: 568 }],
     ]) {
       const page = await newPage(port, from, errors, { clean: false })
       await showOriginal(page)

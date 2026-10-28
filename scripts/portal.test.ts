@@ -4,7 +4,7 @@ import { DIORAMA_CAMERAS, DIORAMA_ORBIT } from '../src/scene/dioramaContract.ts'
 import { islandHeightAt } from '../src/scene/islandShape.ts'
 import {
   controlsEnabled,
-  dioramaVisible,
+  dioramaMounted,
   flightPose,
   flightStep,
   PORTAL,
@@ -48,7 +48,7 @@ test('reduced motion enters with no flight, and the arrival holds the diorama', 
 test('what each place mounts, shows and enables', () => {
   const mounted = PLACES.filter(streetMounted)
   assert.deepEqual(mounted, ['entering', 'street'])
-  for (const place of PLACES) assert.equal(dioramaVisible(place), !streetMounted(place), place)
+  for (const place of PLACES) assert.equal(dioramaMounted(place), !streetMounted(place), place)
   assert.deepEqual(PLACES.filter(controlsEnabled), ['diorama'])
 })
 
