@@ -1,8 +1,10 @@
 import {
   BufferAttribute,
   BufferGeometry,
+  CanvasTexture,
   Object3D,
   PerspectiveCamera,
+  SRGBColorSpace,
   Vector3,
 } from 'three'
 import type { AliveInjection } from './aliveMaterial.ts'
@@ -46,6 +48,24 @@ export function haloScaleOf(sprite: Object3D, camera: PerspectiveCamera): number
   sprite.getWorldPosition(vWorld)
   vWorld.applyMatrix4(camera.matrixWorldInverse)
   return lampHaloScale(-vWorld.z, camera.fov, camera.aspect)
+}
+
+/** The glows' soft disc (moved here from `streetLife.tsx` for Vincent's lantern, V1, 2026-10-28). */
+export function radialTexture(): CanvasTexture {
+  const size = 128
+  const canvas = document.createElement('canvas')
+  canvas.width = size
+  canvas.height = size
+  const g = canvas.getContext('2d')!
+  const grad = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2)
+  grad.addColorStop(0, 'rgba(255,255,255,1)')
+  grad.addColorStop(0.35, 'rgba(255,255,255,0.45)')
+  grad.addColorStop(1, 'rgba(255,255,255,0)')
+  g.fillStyle = grad
+  g.fillRect(0, 0, size, size)
+  const t = new CanvasTexture(canvas)
+  t.colorSpace = SRGBColorSpace
+  return t
 }
 
 /** One clock for the sway and the fireflies. */

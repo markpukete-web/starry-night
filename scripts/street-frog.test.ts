@@ -110,8 +110,9 @@ test('Vincent keeps his strokes: the lift parameter defaults to his 0.0004', { s
     h.update(JSON.stringify(part.strokes.arrays.positions))
     h.update(JSON.stringify(part.underpaint.positions))
   }
-  // read at cc56207, before `stroke` and `clad` took a lift
-  assert.equal(h.digest('hex').slice(0, 16), '79338a361cd6b11c')
+  // read at cc56207, before `stroke` and `clad` took a lift, as 79338a361cd6b11c; read again at V1 task 1, whose
+  // Tarascon form changes `body` and `armLeft` by design (the head and the right arm leave the body, the easel joins it)
+  assert.equal(h.digest('hex').slice(0, 16), '3ac8284c958086e0')
 })
 
 /** A frog's frame to the street's: its group's uniform scale, then its yaw, then its place. */
