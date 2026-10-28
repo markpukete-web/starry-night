@@ -1,6 +1,6 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-28 (15:40): the portal on for every visitor, built on `feat/portal-on` off `main`
+## Pickup — 2026-10-28 (15:35): the portal on for every visitor, built on `feat/portal-on` off `main`
 
 **The slice** (the plan and its revision 1 `tasks/2026-10-28-portal-on-plan.md`, the evidence
 `scratch/portal-on-2026-10-28/`): `?portal=0` turns the portal off. The placard and the dock share one bottom stack,
