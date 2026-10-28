@@ -22,28 +22,11 @@ import type { BrushArraysWithCls } from './streetGeometry.ts'
 import { FOG, fogInjection } from './streetFog.ts'
 import type { ImageData2D } from './useImageData.ts'
 import { pathPoint, pathTangent, STREET_CHURCH, STREET_HOUSES, STREET_TREES } from './streetLayout.ts'
-import { HILL_PAINT, LIFE, lifeTimeUniform, lifeTime, litWindows, hillsGeometry, LAMP_LIGHT, haloScaleOf } from './streetLife.ts'
+import { HILL_PAINT, LIFE, lifeTimeUniform, lifeTime, litWindows, hillsGeometry, LAMP_LIGHT, haloScaleOf, radialTexture } from './streetLife.ts'
 
 /** The life's builds, each counted once: StrictMode runs a mount's effect twice in development on the same `parts`, and a
  * real rebuild is a new object. A count deleted in the effect's cleanup read 1 after any number of rebuilds (Fable C1). */
 const countedBuilds = new WeakSet<object>()
-
-function radialTexture(): CanvasTexture {
-  const size = 128
-  const canvas = document.createElement('canvas')
-  canvas.width = size
-  canvas.height = size
-  const g = canvas.getContext('2d')!
-  const grad = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2)
-  grad.addColorStop(0, 'rgba(255,255,255,1)')
-  grad.addColorStop(0.35, 'rgba(255,255,255,0.45)')
-  grad.addColorStop(1, 'rgba(255,255,255,0)')
-  g.fillStyle = grad
-  g.fillRect(0, 0, size, size)
-  const t = new CanvasTexture(canvas)
-  t.colorSpace = SRGBColorSpace
-  return t
-}
 
 /** A soft-edged dark rectangle: the ground's shadow under a house (the footprint fills the middle 0.53). */
 const FOOT_FILL = 68 / 128

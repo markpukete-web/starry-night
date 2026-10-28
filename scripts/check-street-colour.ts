@@ -252,13 +252,14 @@ const refThatch = meanLab(rectLabs(workPainting, STREET_SOURCES.thatch))
 // Vincent references, both from palette.json, never from VINCENT_SOURCES (Codex T1: a target read from the builder's own
 // patch moves with it). refSmock is the village's ultramarine swatch, #2a3f6f: the plan's mean of the village's two
 // blues has chroma 22, the grey-blue that read as the ground. The source patch's mean is the smock's diagnostic.
-// refHat is the weight-averaged mean of all villageWarm swatches
+// refHat is the crescent's ochre edge, its rectangle written here and not read from FORM, so the target stays put if the
+// hat's patch moves (Codex T1). palette.json has no ochre: its nearest gold, the moon's #c0b451, is 14 from this patch
 const villageBlues = (palette.regions as Record<string, { colours: { hex: string; lab: number[] }[] }>).village.colours
 const ultramarine = villageBlues.find((c) => c.hex === '#2a3f6f')
 if (!ultramarine) throw new Error('palette.json has no village swatch #2a3f6f')
 const refSmock: Lab = { l: ultramarine.lab[0], a: ultramarine.lab[1], b: ultramarine.lab[2] }
 const diagSmockSource = meanLab(rectLabs(workPainting, VINCENT_SOURCES.smock))
-const refHat: Lab = regionWeightedMeanLab('villageWarm')
+const refHat = meanLab(rectLabs(workPainting, [1490, 280, 1514, 304]))
 
 const SOURCES: Record<string, { idR: number; idG: number; idB: number; ref: Lab }> = {
   wallA: { idR: 255, idG: 0, idB: 0, ref: refWallA },

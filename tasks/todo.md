@@ -1,5 +1,76 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-10-28 (21:05): K3 (#32) and the portal (#33) are on `main`; V1's PR #34 waits for Codex
+
+Mark had the Lead merge #32 at 20:57 (`8800b56`) and #33 at 21:04 (`3d34f3b`). #34 now targets `main`, and this
+branch has `main` merged in, with only `tasks/lessons.md` and `tasks/todo.md` in conflict, both sides kept. **Next:**
+read Codex's review of #34 through the timeline API and answer every thread, then Mark merges. After that, delete
+`preview/all-2026-10-28`. Proposed, not started: the street on phones (the portal's pickup below).
+
+## Pickup — 2026-10-28 (20:40): Mark passed V1; its PR opens stacked on K3's
+
+Mark passed V1 on the combined preview (`253d8f7`): "Love it! Gate passed!" The PR opens as a draft with the base
+`feat/village-lived-in`, so its diff is V1's alone, then ready so Codex fires. When #32 merges, retarget the PR to
+`main`. Read Codex's review through the timeline API and answer every thread.
+
+## Pickup — 2026-10-28 (18:48): the hat's colour is done and pushed for Mark's preview
+
+`5b000f9` paints the hat from the crescent's lower-right edge `[1490, 280, 1514, 304]`, the painting's darkest and
+warmest gold. The colour gate passes it at every stop (ΔE 5.4 to 6.5 from that patch). In the lit frames its median L
+falls 3 to 5. The record is the last section of `tasks/2026-10-28-vincent-form.md`, the look pass
+`scratch/vincent-hat-2026-10-28/look/p3`. The preview (behind Vercel's login, `da4a86c`):
+`https://starry-night-bucvl0enl-markpukete-webs-projects.vercel.app/?street=1`
+
+**Next:** Mark looks at the preview. If he passes V1, open its PR as a draft, then mark it ready so Codex fires, and
+answer every thread. K3's PR #32 merges first; V1 rebases on `main` after it. The portal's iPhone crash waits on Mark's
+choice of fix (the 18:28 pickup on `feat/portal-on`).
+
+## Pickup — 2026-10-28 (18:28): the hat after Van Gogh's own, pushed; its colour is next (superseded by the 18:48 pickup above)
+
+Mark at 18:00: "Where did we get this hat from actually? it looks like a fishing man. But if that's something that
+Vincent Van Gogh drew then let's use his painting." `7850cc7` reshapes it from "The Painter on the Road to Tarascon"
+(1888) and the Met's "Self-Portrait with a Straw Hat" (1887): a rounded crown, a flat brim turned up on one side. The
+record is the last section of `tasks/2026-10-28-vincent-form.md`, the references and look passes
+`scratch/vincent-hat-2026-10-28/` (`ref/`, `look/p1`, `look/p2`). Pushed for a preview:
+`https://starry-night-4ei6xjp4p-markpukete-webs-projects.vercel.app/?street=1`. Mark, on his phone: "Saw it on my phone,
+and it's auto moved, love it."
+
+**Next: the hat's colour.** Mark: "Go for your recommendations for the hat's colour." The recommendation was a darker
+golden straw from The Starry Night, like Tarascon's ochre, so the hat is no longer the brightest thing on him. The hat
+paints from `FORM.tarascon.hat` (`vincent.ts`, the moon's body `[1376, 216, 1408, 248]`). K3's hat painted from
+`STREET_SOURCES.thatch` and was gated against `villageWarm`. Compare both against the Tarascon hat's mean
+(`scratch/vincent-hat-2026-10-28/ref/tarascon.jpg`, the hat about x 1150–1650, y 820–1200) before choosing. Then move the
+colour gate's `refHat` (`scripts/check-street-colour.ts:255`, V1 Decision (e)) to the new source, run tsc, lint and
+`test:sky`, take a look pass with `scratch/vincent-hat-2026-10-28/tools/look.sh` (it compares port 5214 with 5209:
+restart both servers first), and push for Mark's preview. Then V1's PR path in the 14:40 pickup below.
+
+## Pickup — 2026-10-28 (14:40): V1 passes the Lead's gate and is pushed for Mark's preview
+
+**V1, Vincent's form** (`feat/vincent-form` at `b6c6404` plus the docs, off K3's `ed464c9`, pushed for a Vercel
+preview, no PR): the record is `tasks/2026-10-28-vincent-form.md`. Builders on Sonnet 5.5 built Tasks 1 to 3, the Lead
+Task 4. Codex's branch review found B1 and B2 (both P2), and the Lead fixed both (`b6c6404`). Every gate
+run passes on the final head. Mark's three calls are at the end of the record: the hat fails the colour gate against
+the moon swatch (ΔE 16.2 to 17.2), the form's refinements, and the motion.
+
+**The preview** (behind Vercel's login, `0e7205f`): `https://starry-night-aqkftn0ko-markpukete-webs-projects.vercel.app/?street=1`
+
+**Next:** Mark looks at the preview. If he passes it, the Lead opens the PR as a draft, then marks it ready, so Codex's
+review fires. K3's PR #32 merges first, and V1 rebases on it if main moves. Then the roadmap in the 12:07 pickup below.
+
+## Pickup — 2026-10-28 (12:07): Vincent's form V1 planned and under review; the roadmap after it (superseded by the 14:40 pickup above)
+
+**V1, Vincent's form** (`feat/vincent-form` off K3's `ed464c9`): Mark's calls are made. Tarascon is the form, the turn
+90/45, a 4 s dwell, no cane, and the right arm swings. The plan is `tasks/2026-10-28-vincent-form-plan.md`, revision 0
+(`3595bb1`). Codex (correctness) and the worker (buildability) read it from 11:44. Next: revision 1, then the build.
+
+**The roadmap after V1** (Mark, 12:07: "I think we can promote the portal to main then the Vincent wander"):
+1. **The portal on for every visitor.** Today it opens only with `?portal=1`. It becomes the default, with `?portal=0`
+   to turn it off, as the flags A, B and C did on 2026-10-20. Its own small slice after V1.
+2. **Vincent's wander, the camera kept on the path.** Mark is not sure it reads better, or how the control works
+   once Vincent can leave the path. The Lead's proposal: a throwaway spike behind a flag before any slice, as for his
+   form. Tap or click a spot on the verge, and he walks there. The camera stays on the path and turns to keep him in
+   frame. Mark decides from the spike whether it becomes a slice.
+
 ## Pickup — 2026-10-28 (20:40): Mark passed the portal on for every visitor; its PR opens
 
 Mark passed it on the combined preview (`253d8f7`): "Love it! Gate passed!" The PR opens against `main` as a draft,
@@ -88,7 +159,7 @@ Tunables in `CLAUDE.md`. Rebase after they merge.
 - The tuner (`?tune=1`, Mark's dev tool) keeps its fixed `bottom: 132px` on a phone, and the dock's third row can now
   reach it.
 
-## Pickup — 2026-10-28 (11:10): Mark passed K3, and its PR is open for Codex's review
+## Pickup — 2026-10-28 (11:10): Mark passed K3, and its PR is open for Codex's review (superseded by the 12:07 pickup above)
 
 **Mark passed K3 on the preview** at 11:07 ("Morning Claude, gate passed"), as built, the build's +64 ms with it (the
 record `tasks/2026-10-27-village-lived-in.md`, its last section). The Lead opens the PR as a draft, then marks it ready, so

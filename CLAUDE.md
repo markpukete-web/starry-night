@@ -361,6 +361,19 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   worst point 1,429,031 (desktop, `t` 0.26); 60 fps at stops 0 and 3 at dpr 1.5 (p95 at most 18.5 ms), 308 draw calls
   at stop 0. The build 653 ms against K2's 589 (+10.9%, over the plan's 10%, accepted with Mark's pass). Two look passes of four.
   Passed by Mark on the preview, 2026-10-28 ("gate passed"), untuned.
+- Vincent's form, V1 (2026-10-28, `src/scene/vincent.ts` `FORM`, `streetWalk.ts` `WALK`, `PAUSE`, `streetLantern.ts`
+  `LANTERN_GROUND`, `streetMode.ts` `lanternShown`; the record `tasks/2026-10-28-vincent-form.md`): the Tarascon form
+  with legs and the lantern, no cane, 2,840 triangles. The gait a bob of 0.003, a roll of 0.015, each arm 0.12 with the
+  opposite leg 0.35, pitch 0.06. On the automatic walk a 4 s dwell at each station: a 0.5 s rest, the turn in over
+  0.6 s, out over 0.3 s from 0.45 s before the dwell ends, the body π/2 and the head π/4, the left arm raised 0.75 with
+  the lantern lagging 0.15. He strides only while turned under 0.2. A scroll or a key carries him past a stop. The lantern's lift
+  on the ground, the grass's base and the grass is the lamps' glow × 1.5 over a reach of 0.08, before the fog. Its halo
+  0.18 of a lamp's, its pool 0.1 × 0.16 placed 0.046 ahead. With `walk=0`, `flat=1`, `vincent=0`, `light=0` or `ids=1`
+  there is no lantern. The street's build unchanged (596,919 triangles, the same hash), the sweep's worst point
+  1,429,793 (desktop, `t` 0.26), 60 fps at stops 0 and 3 at dpr 1.5 (p50 16.7 ms, p95 at most 18.5), 321 draw calls
+  at stop 0 (K3 308). Two look passes of four. The hat (2026-10-28, Mark's "Go for your recommendations") paints from
+  the crescent's lower-right edge `[1490, 280, 1514, 304]` (L 63 at hue 90), gated against that patch's mean, ΔE 5.4 to
+  6.5. Passed by Mark on the combined preview `253d8f7`, 2026-10-28 ("Love it! Gate passed!").
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)

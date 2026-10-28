@@ -221,6 +221,15 @@ async function main() {
       if (ran.exceptionDetails) throw new Error(`--eval threw: ${ran.exceptionDetails.exception?.description ?? ran.exceptionDetails.text}`)
       evalResult = ran.result.value ?? null
     }
+    // Vincent's turn and his lantern's swing run on the walk's real time, as the walk does, not on the pinned clock: wait
+    // for them to rest, here after the eval because a portal entry first shows him there (V1). A figure that never rests,
+    // walking on, is left to the self-check below
+    const restStart = Date.now()
+    while (Date.now() - restStart < 10000) {
+      const probe = await page.send('Runtime.evaluate', { expression: '!window.__vincentForm || window.__vincentForm().settled', returnByValue: true })
+      if (probe.result?.value === true) break
+      await sleep(100)
+    }
     // the new fields only when their options are on, so the old path's JSON is the old JSON (code review F14)
     const summary = { url, viewport, times, ...(arrivalTimes ? { arrivalTimes } : {}), ...(screenshot ? { screenshot } : {}), ...(waitFor ? { waitFor } : {}), ...(moving ? { moving } : {}), evalBefore, evalResult, frames: [], errors: page.errors }
     const firstMoving = times.find((t) => t > 0)

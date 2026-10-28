@@ -3368,6 +3368,45 @@ must be byte-identical before the stimulus's difference means anything.
   over each face, and a long narrow leg gives a wide crop. The plan counted triangles, not faces, and the build came in
   10.9% over K2's against a 10% bound. A plan that adds faces probes the build's time per face before it sets a bound.
 
+## 2026-10-28 — V1, Vincent's form: the build, review and gate
+
+- **Motion on the frame's real time breaks a pinned capture** (V1's gate, the portal's case 9). The capture seam pins
+  the sky, the street's life and the frogs. The walk's state never followed it, and V1's turn and lantern swing are walk
+  state, so a capture 2.5 s after load caught him mid-turn on every run. The fix went in the shared capture script, not
+  in each caller: it waits for `__vincentForm().settled` after any eval, which also covers a portal entry that first
+  shows him after the eval. New motion either follows `__skyTime` or reports when it rests.
+- **A check that sleeps a fixed time reads a pose mid-animation** (V1 Task 3, the walk check's K3 leg). Two loads read
+  500 ms after ready moved his box 3.39 px with the anchor's offset right. Poll the state that ends the animation, then
+  wait about six times the slowest lag's τ.
+- **Judge a multiplicative light by its footprint, not by eye** (V1 look pass 1). The lantern's lift multiplies the
+  paint, so at reach 0.05 it showed only on the pale path. The Lead's eye read reach 0.08 as dimmer. The frame against
+  the term off, stretched, settled it: 15,222 px lit against 4,937, no pixel more than 21 of 255 brighter.
+- **Commit before a mutation that restores to HEAD** (V1, the B1 and B2 fixes). The Lead's helper restored each mutated
+  file to HEAD while the fixes were uncommitted, which wiped the fixes and voided two results. The Task 2 builder had
+  committed first for this reason.
+- **Do not run unit-test batches beside browser checks** (V1's gate). The mutation runner, Codex and a build put the
+  load average at 12.7. The grass check's 200 ms read after a pin and the portal's 1.5 s damping wait both failed, and
+  both passed alone. A separate checkout keeps edits from reloading the server's pages, but it does not share the CPU
+  fairly.
+- **Two guards that decide one thing drift apart** (V1, Codex B1). The lantern rendered under one condition and was
+  placed under another, so `walk=0` drew the halo at 41 times its size and the pool upright at the origin. One function
+  now decides both, and a test pins it.
+- **A station's stop must come from the automatic walk alone** (V1, Codex B2). Clearing the dwell on input read as
+  giving input priority, but the next branch made a fresh dwell from the same frame's scroll. A scroll's ease also
+  crosses a station on later frames with no input, so the fix tests both: input on the frame, and `target` ahead of
+  `t`.
+
+## 2026-10-28 (evening) — V1, the hat's colour
+
+- **A reference reproduction's chroma is not a target** (the hat's colour). The Tarascon hat measures chroma 45 at
+  hue 84, and no gold patch in The Starry Night falls under chroma 50. Scoring candidates on ΔE to Tarascon's mean
+  ranked mixed patches of gold, brown and pale halo first. Its reference is a 1930s colour photograph of a burnt
+  canvas, so only the direction transfers: darker and warmer. Choose the patch in the painting on those two signals,
+  then gate it against the painting.
+- **`palette.json` cannot gate every colour the scene uses** (the hat's colour). It has no ochre swatch. A darker,
+  warmer hat moves away from every swatch, so the gate's target is a rectangle of the painting written in the gate
+  itself. That keeps Codex T1's rule: the target does not move when the builder's patch moves.
+
 ## 2026-10-28 — the portal on for every visitor
 
 - **A feature behind a flag never met the chrome guard with the flag on** (the probe, 14:45). The portal shipped on
@@ -3400,3 +3439,10 @@ must be byte-identical before the stimulus's difference means anything.
 - **A ready seam set in an effect needs a cleanup once its component can mount twice** (the portal's way back). The
   cypress's and the land's seams were written for the arrival, which mounts the diorama once. Without a reset on
   unmount, a remount reads the last mount's `true`. Mutation 3 removed both cleanups and case 2 went red.
+
+## 2026-10-28 (night) — V1, Codex's review of `95088af`
+
+- **A crossing test needs no margin below the mark** (Codex, PR #34, P2). `prev.t < st - 1e-6` left a 1e-6 band
+  under each station. An automatic step that landed in it crossed the station with no dwell, about once in 560
+  frames at 60 fps. The strict `prev.t < st` and the `last` guard already exclude a start on the station. A margin
+  in a crossing test is a hole unless something needs it. Name what it is for, or leave it out.

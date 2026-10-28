@@ -7,6 +7,8 @@
  * 3. Phone auto-walk, tap toggling, pause holds, multi-touch and drag rejected.
  * 4. Reduced motion stays still, tap cuts to 0.23, captures byte-identical.
  * 5. Flat panel camera holds FLAT_VIEW, walk and vincent undefined.
+ * 6. The review's fixes K1 to K4 (K4 waits on the turn, V1).
+ * 7. The dwell: 4 s on the form's own clock, the turn in and out, the lantern lit, a tap ends it (V1).
  */
 import { execSync, spawn } from 'node:child_process'
 import { existsSync, mkdtempSync, rmSync } from 'node:fs'
@@ -667,7 +669,10 @@ async function main() {
     const poseAt = async (extra) => {
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=2&arrival=0&walkMode=input${extra}` })
       await page.waitForStreetReady()
-      await sleep(500)
+      // V1: his box takes in his figure, which turns side-on after a rest. Read it once he has turned and the lantern
+      // has settled (τ 0.15 s), not mid-turn, where two loads differ by the turn's timing
+      for (let i = 0; i < 150 && !((await page.evaluate(() => window.__vincentForm?.()))?.turn >= 1); i++) await sleep(100)
+      await sleep(1000)
       return page.evaluate(() => ({ pose: window.__vincentPose?.(), box: window.__vincentBox?.() }))
     }
     const k3B = await poseAt('')
@@ -697,12 +702,92 @@ async function main() {
     }
     await page.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'ArrowUp', code: 'ArrowUp', windowsVirtualKeyCode: 38 })
     if (k4Roll < 0.005 || k4Arm < 0.05) throw new Error(`Case 6 failed (K4): walking, his largest roll was ${k4Roll.toFixed(4)} and arm ${k4Arm.toFixed(4)}, expected ≥ 0.005 and ≥ 0.05`)
-    await sleep(1500)
-    const k4End = await page.evaluate(() => window.__vincentPose?.())
-    if (Math.abs(k4End.roll) > 1e-6 || Math.abs(k4End.arm) > 1e-6) {
-      throw new Error(`Case 6 failed (K4): standing, his roll ${k4End.roll} and arm ${k4End.arm}, expected 0`)
+    // V1: standing, he turns side-on after a rest and holds the lantern out. Wait on the turn, not on a fixed time (the
+    // plan's Task 3 Step 1): his roll is 0, the left arm raised at -0.75 and the right arm at rest.
+    let k4Turn = 0
+    for (let i = 0; i < 150 && !(k4Turn >= 1 - 1e-9); i++) {
+      await sleep(100)
+      k4Turn = (await page.evaluate(() => window.__vincentForm?.()))?.turn ?? 0
     }
-    console.log(`PASS: the review's fixes: a queued wheel dies with a blur and a stopping tap (drift ${k1Drift.toFixed(5)}, ${k1TapDrift.toFixed(5)}), a key released over an input stops him (${k2Drift.toFixed(5)}), anchor A moves him by [${k3D.map((v) => v.toFixed(3))}] and his box by ${k3Box.toFixed(2)} px, his gait shows while he walks (roll ${k4Roll.toFixed(4)}, arm ${k4Arm.toFixed(4)}) and settles to 0`)
+    if (!(k4Turn >= 1 - 1e-9)) throw new Error(`Case 6 failed (K4): standing, his turn was ${k4Turn} after 15 s, expected 1`)
+    const k4End = await page.evaluate(() => window.__vincentPose?.())
+    if (Math.abs(k4End.roll) > 1e-6 || Math.abs(k4End.arm + 0.75) > 1e-6 || Math.abs(k4End.armRight) > 1e-6) {
+      throw new Error(`Case 6 failed (K4): standing and turned, his roll ${k4End.roll}, left arm ${k4End.arm} and right arm ${k4End.armRight}, expected 0, -0.75 and 0`)
+    }
+    console.log(`PASS: the review's fixes: a queued wheel dies with a blur and a stopping tap (drift ${k1Drift.toFixed(5)}, ${k1TapDrift.toFixed(5)}), a key released over an input stops him (${k2Drift.toFixed(5)}), anchor A moves him by [${k3D.map((v) => v.toFixed(3))}] and his box by ${k3Box.toFixed(2)} px, his gait shows while he walks (roll ${k4Roll.toFixed(4)}, arm ${k4Arm.toFixed(4)}) and settles to a roll of 0 with the left arm raised at -0.75 and the right at 0`)
+
+    // -------------------------------------------------------------
+    // Case 7 (V1): the dwell. ?street=1&walkT=0.2&walkMode=auto&arrival=0 at 390 × 844. __vincentForm() is recorded on
+    // every animation frame until t has passed 0.23. On the form's own `clock` (the frame loop's clamped dt, not wall
+    // time): the first frame at t 0.23 is the arrival, the first later frame above it the departure, the departure's
+    // clock less the arrival's lies in [3.9, 4.2], turn reaches 1 between them and is 0 at the departure, and the
+    // lantern's strength is 1 on every frame. Then the tap leg: a tap on him in a dwell stops the walk and ends the
+    // dwell, a second tap starts the walk again.
+    // -------------------------------------------------------------
+    await page.send('Emulation.setEmulatedMedia', { media: 'screen', features: [] })
+    await page.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true })
+    await page.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 })
+    const c7Url = `${origin}/?street=1&walkT=0.2&walkMode=auto&arrival=0`
+    await page.send('Page.navigate', { url: c7Url })
+    await page.waitForStreetReady()
+    const c7Run = await page.send('Runtime.evaluate', {
+      awaitPromise: true,
+      returnByValue: true,
+      expression: `new Promise((resolve) => {
+        const frames = []
+        const start = performance.now()
+        const step = () => {
+          const f = window.__vincentForm?.()
+          if (f) frames.push(f)
+          if ((f && f.t > 0.23 + 1e-9) || performance.now() - start > 40000) resolve(frames)
+          else requestAnimationFrame(step)
+        }
+        requestAnimationFrame(step)
+      })`,
+    })
+    const c7Frames = c7Run.result?.value
+    if (!Array.isArray(c7Frames) || c7Frames.length === 0) throw new Error('Case 7 precondition failed: __vincentForm gave no frame')
+    const c7Arrive = c7Frames.findIndex((f) => Math.abs(f.t - 0.23) < 1e-9)
+    if (c7Arrive < 0) throw new Error(`Case 7 failed: no frame at t 0.23 in ${c7Frames.length} frames (last t ${c7Frames.at(-1).t})`)
+    const c7Depart = c7Frames.findIndex((f, i) => i > c7Arrive && f.t > 0.23 + 1e-9)
+    if (c7Depart < 0) throw new Error(`Case 7 failed: he never left 0.23 within 40 s (${c7Frames.length} frames)`)
+    const c7Dwell = c7Frames[c7Depart].clock - c7Frames[c7Arrive].clock
+    if (!(c7Dwell >= 3.9 && c7Dwell <= 4.2)) throw new Error(`Case 7 failed: the dwell lasted ${c7Dwell.toFixed(3)} s on the form's clock, expected [3.9, 4.2]`)
+    const c7Turn = Math.max(...c7Frames.slice(c7Arrive, c7Depart + 1).map((f) => f.turn))
+    if (!(c7Turn >= 1 - 1e-9)) throw new Error(`Case 7 failed: the turn peaked at ${c7Turn} in the dwell, expected 1`)
+    if (c7Frames[c7Depart].turn !== 0) throw new Error(`Case 7 failed: the turn was ${c7Frames[c7Depart].turn} at the departure, expected 0`)
+    const c7Dark = c7Frames.filter((f) => f.lantern !== 1).length
+    if (c7Dark > 0) throw new Error(`Case 7 failed: the lantern was not 1 on ${c7Dark} of ${c7Frames.length} frames`)
+
+    // the tap leg
+    await page.send('Page.navigate', { url: c7Url })
+    await page.waitForStreetReady()
+    const waitFor = async (fn, ms) => {
+      const from = Date.now()
+      while (Date.now() - from < ms) {
+        if (await page.evaluate(fn)) return true
+        await sleep(50)
+      }
+      return false
+    }
+    if (!(await waitFor(() => window.__vincentForm?.().dwell > 0, 40000))) throw new Error('Case 7 failed: no dwell began within 40 s')
+    const c7Tap = async () => {
+      const b = await page.evaluate(() => window.__vincentBox?.())
+      if (!b) throw new Error('Case 7 precondition failed: __vincentBox missing')
+      const x = Math.round((b.x0 + b.x1) / 2)
+      const y = Math.round((b.y0 + b.y1) / 2)
+      await page.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 0 }] })
+      await sleep(50)
+      await page.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+    }
+    await c7Tap()
+    if (!(await waitFor(() => window.__vincentForm?.().dwell === 0 && window.__vincentForm?.().auto === false, 2000))) {
+      throw new Error(`Case 7 failed: after a tap in the dwell, state is ${JSON.stringify(await page.evaluate(() => window.__vincentForm?.()))}, expected dwell 0 and auto false`)
+    }
+    await c7Tap()
+    if (!(await waitFor(() => window.__vincentForm?.().auto === true, 2000))) throw new Error('Case 7 failed: a second tap did not start the walk again')
+    if (!(await waitFor(() => window.__vincentForm?.().t > 0.23 + 1e-9, 5000))) throw new Error('Case 7 failed: after the second tap t did not rise above 0.23 within 5 s')
+    console.log(`PASS: the dwell lasts ${c7Dwell.toFixed(3)} s on the form's clock, the turn peaks at ${c7Turn}, the lantern is 1 on ${c7Frames.length} frames, a tap in the dwell stops the walk and a second tap restarts it`)
 
     await page.close()
   } finally {
