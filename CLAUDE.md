@@ -300,7 +300,7 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   crashed Mark's iPhone), so the way back holds the layer until the cypress and the land report ready and 2 frames
   draw, at most 15 s, then fades. A phone or a tablet (no hover, a coarse pointer) asks before its first entry: "A
   computer is recommended for the village scene. On a phone it may load slowly or not open.", with "Enter anyway" and
-  "Stay with the painting"; once entered, the visit goes straight in (Mark, 2026-10-28). The street gets 15 s to be ready (the arrival's `readyTimeout`). The hover casts once
+  "Stay with the painting"; once entered, the visit goes straight in (Mark, 2026-10-28; passed on the combined preview `253d8f7`, "Love it! Gate passed!"). The street gets 15 s to be ready (the arrival's `readyTimeout`). The hover casts once
   per move against the village with the land and the island in front: the hand, and the hint "Enter the village" 16 px
   right and 18 px below the pointer. A tap on a house enters, and the sky's surge is masked there. Escape and the
   dock's "Back to the painting" return. Reduced motion cuts both ways. Untuned by Mark. On for every visitor

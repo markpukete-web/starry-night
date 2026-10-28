@@ -1,5 +1,11 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-10-28 (20:40): Mark passed the portal on for every visitor; its PR opens
+
+Mark passed it on the combined preview (`253d8f7`): "Love it! Gate passed!" The PR opens against `main` as a draft,
+then ready so Codex fires. Read Codex's review through the timeline API and answer every thread. K3 (#32) and V1 also
+touch this file and `CLAUDE.md`'s Tunables: whichever merges later resolves those two.
+
 ## Pickup — 2026-10-28 (20:02): phones enter the village, told first that a computer is recommended
 
 Mark wants phones to enter, told first. `1169994` shows a card before a phone's first entry, "A computer is recommended

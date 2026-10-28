@@ -101,3 +101,8 @@ Lead pushed `preview/all-2026-10-28` (`253d8f7`, V1 merged with this branch, onl
 sides kept; never merged): 451 tests, tsc, lint and every `check-portal` case pass on it. In headless Chrome as the
 phone, the street through the card holds a 141 MB JS heap after the entry (this branch 155). Preview:
 `https://starry-night-9yhn2axt0-markpukete-webs-projects.vercel.app`
+
+## Mark's gate (20:38)
+
+Mark, on the combined preview on his iPhone: "Love it! Gate passed!" The portal on for every visitor, the diorama
+unmounted in the street and the phone's card pass as built. Next: the PR against `main`.
