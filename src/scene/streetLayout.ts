@@ -214,6 +214,195 @@ export const STREET_HOUSES: readonly StreetHouse[] = HOUSE_DATA.map((h) => {
 /** A recessed door's step: a box this high and this deep, the door's width */
 export const STEP = { height: 0.012, depth: 0.03 } as const
 
+export const LIVED_PATH = { margin: 0.02, lateral: 0.06, leg: 0.08, clear: 0.03, cover: 0.25, baseInset: 0.3 } as const
+export const STREET_PATHS = [
+  { house: 'L1', end: 0.265, legs: 1 },
+  { house: 'L2', end: 0.341, legs: 2, first: 0.11, margin: 0 },
+  { house: 'L3', end: 0.499, legs: 2 },
+  { house: 'L4', end: 0.875, legs: 2 },
+  { house: 'R1', end: 0.062, legs: 2 },
+  { house: 'R2', end: 0.457, legs: 2 },
+  { house: 'R3', end: 0.627, legs: 1 },
+  { house: 'R4', end: 0.71, legs: 1 },
+  { house: 'R5', end: null, legs: 1, first: 0.056 },
+] as const
+
+export type DoorPath = {
+  house: string
+  index: number
+  width: number
+  end: number | null
+  points: [number, number][]
+}
+
+export function doorPathLegs(): DoorPath[] {
+  return STREET_PATHS.map((p) => {
+    const index = STREET_HOUSES.findIndex((h) => h.id === p.house)
+    const h = STREET_HOUSES[index]
+    const f = doorStepFrame(h, index)
+    const door = doorOf(h, index)
+    const u: [number, number] = [f.ux, f.uz]
+    const n: [number, number] = [f.nx, f.nz]
+    const width = door.w * h.w + ('margin' in p && p.margin !== undefined ? p.margin : LIVED_PATH.margin)
+    const S: [number, number] = [
+      f.ox + u[0] * door.cu * h.w + n[0] * STEP.depth,
+      f.oz + u[1] * door.cu * h.w + n[1] * STEP.depth,
+    ]
+    const first = ('first' in p && p.first !== undefined ? p.first : LIVED_PATH.leg)
+    let E: [number, number]
+    if (p.end === null) {
+      E = [S[0] + n[0] * first, S[1] + n[1] * first]
+    } else {
+      const e = laneAt(p.end, h.side * LIVED_PATH.lateral)
+      E = [e.x, e.z]
+    }
+    const points: [number, number][] = p.legs === 2 ? [S, [S[0] + n[0] * first, S[1] + n[1] * first], E] : [S, E]
+    return { house: p.house, index, width, end: p.end, points }
+  })
+}
+
+const sub2 = (a: [number, number], b: [number, number]): [number, number] => [a[0] - b[0], a[1] - b[1]]
+const add2 = (a: [number, number], b: [number, number]): [number, number] => [a[0] + b[0], a[1] + b[1]]
+const mul2 = (a: [number, number], s: number): [number, number] => [a[0] * s, a[1] * s]
+const dot2 = (a: [number, number], b: [number, number]): number => a[0] * b[0] + a[1] * b[1]
+const norm2 = (a: [number, number]): [number, number] => {
+  const l = Math.hypot(a[0], a[1])
+  return [a[0] / l, a[1] / l]
+}
+const meet2 = (p: [number, number], d: [number, number], q: [number, number], e: [number, number]): [number, number] => {
+  const den = d[0] * e[1] - d[1] * e[0]
+  const s = ((q[0] - p[0]) * e[1] - (q[1] - p[1]) * e[0]) / den
+  return add2(p, mul2(d, s))
+}
+
+export function pathLegShapes(path: DoorPath): { clip: [number, number][]; base: [number, number][]; rect: OrientedBox }[] {
+  const h = STREET_HOUSES[path.index]
+  const f = doorStepFrame(h, path.index)
+  const u: [number, number] = [f.ux, f.uz]
+  const width = path.width
+  const pts = path.points
+
+  let endDir: [number, number]
+  if (path.end === null) {
+    const [fx, , fz] = STREET.forward
+    endDir = norm2([fx, fz])
+  } else {
+    const [tx, , tz] = pathTangent(path.end)
+    endDir = norm2([tx, tz])
+  }
+
+  const legs: { clip: [number, number][]; base: [number, number][]; rect: OrientedBox }[] = []
+  for (let k = 0; k < pts.length - 1; k++) {
+    const d = norm2(sub2(pts[k + 1], pts[k]))
+    const a: [number, number] = [-d[1], d[0]]
+    const startLine: [number, number] =
+      k === 0
+        ? u
+        : (() => {
+            const dp = norm2(sub2(pts[k], pts[k - 1]))
+            return norm2(add2([-dp[1], dp[0]], a))
+          })()
+    const endLine: [number, number] =
+      k === pts.length - 2
+        ? endDir
+        : (() => {
+            const dn = norm2(sub2(pts[k + 2], pts[k + 1]))
+            return norm2(add2(a, [-dn[1], dn[0]]))
+          })()
+
+    const side = (s: number) => add2(pts[k], mul2(a, (s * width) / 2))
+    const clip: [number, number][] = [
+      meet2(side(-1), d, pts[k], startLine),
+      meet2(side(-1), d, pts[k + 1], endLine),
+      meet2(side(1), d, pts[k + 1], endLine),
+      meet2(side(1), d, pts[k], startLine),
+    ]
+
+    const band = (s: number) => add2(pts[k], mul2(a, s * (0.5 - LIVED_PATH.baseInset) * width))
+    // The free end's base stops short of the clip by the same inset, so the strokes, not the flat base, meet the lane
+    const baseEnd = k === pts.length - 2 ? sub2(pts[k + 1], mul2(d, LIVED_PATH.baseInset * width)) : pts[k + 1]
+    const base: [number, number][] = [
+      meet2(band(-1), d, pts[k], startLine),
+      meet2(band(-1), d, baseEnd, endLine),
+      meet2(band(1), d, baseEnd, endLine),
+      meet2(band(1), d, pts[k], startLine),
+    ]
+
+    const sValues = clip.map((c) => dot2(sub2(c, pts[k]), d))
+    const s0 = Math.min(...sValues)
+    const s1 = Math.max(...sValues)
+    const origin = add2(add2(pts[k], mul2(d, s0)), mul2(a, -width / 2))
+    const rect: OrientedBox = {
+      ox: origin[0],
+      oz: origin[1],
+      ux: d[0],
+      uz: d[1],
+      nx: a[0],
+      nz: a[1],
+      u0: 0,
+      u1: s1 - s0,
+      k0: 0,
+      k1: width,
+    }
+
+    legs.push({ clip, base, rect })
+  }
+  return legs
+}
+
+export function pathClearings(): OrientedBox[] {
+  return doorPathLegs().flatMap((p) => pathLegShapes(p).map((s) => s.rect))
+}
+
+export const STREET_OBJECTS: readonly { kind: 'bench' | 'pot' | 'pail'; house: string; a: number; k: number; side: -1 | 1 }[] = [
+  { kind: 'bench', house: 'L2', a: 0.19, k: 0.025, side: 1 },
+  { kind: 'pot', house: 'R4', a: 0.2, k: 0.021, side: 1 },
+  { kind: 'pail', house: 'L4', a: 0.196, k: 0.018, side: 1 },
+]
+
+export function objectPlaces(): {
+  kind: 'bench' | 'pot' | 'pail'
+  house: string
+  index: number
+  centre: [number, number]
+  frame: ReturnType<typeof doorStepFrame>
+}[] {
+  return STREET_OBJECTS.map((obj) => {
+    const index = STREET_HOUSES.findIndex((h) => h.id === obj.house)
+    const h = STREET_HOUSES[index]
+    const frame = doorStepFrame(h, index)
+    const door = doorOf(h, index)
+    const a = obj.side === -1 ? 2 * door.cu * h.w - obj.a : obj.a
+    const centre: [number, number] = [
+      frame.ox + a * frame.ux + obj.k * frame.nx,
+      frame.oz + a * frame.uz + obj.k * frame.nz,
+    ]
+    return { kind: obj.kind, house: obj.house, index, centre, frame }
+  })
+}
+
+export function objectClearings(): OrientedBox[] {
+  return objectPlaces().map((p) => {
+    const spec = STREET_OBJECTS.find((o) => o.kind === p.kind)!
+    const h = STREET_HOUSES[p.index]
+    const door = doorOf(h, p.index)
+    const a = spec.side === -1 ? 2 * door.cu * h.w - spec.a : spec.a
+    const box = p.kind === 'bench' ? [0.1, 0.03] : p.kind === 'pot' ? [0.022, 0.022] : [0.016, 0.016]
+    return {
+      ox: p.frame.ox,
+      oz: p.frame.oz,
+      ux: p.frame.ux,
+      uz: p.frame.uz,
+      nx: p.frame.nx,
+      nz: p.frame.nz,
+      u0: a - box[0] / 2,
+      u1: a + box[0] / 2,
+      k0: spec.k - box[1] / 2,
+      k1: spec.k + box[1] / 2,
+    }
+  })
+}
+
 export function houseFrame(h: StreetHouse): { along: Vector3; toPath: Vector3 } {
   const thetaRad = (h.theta * Math.PI) / 180
   const along = new Vector3(Math.cos(h.yaw), 0, Math.sin(h.yaw))
@@ -266,7 +455,7 @@ export function doorStepFoot(h: StreetHouse, index: number): [number, number][] 
 
 export const STREET_WALLS = [
   { side: -1 as const, t0: 0.06, t1: 0.22 },
-  { side: 1 as const, t0: 0.14, t1: 0.47 },
+  { side: 1 as const, t0: 0.14, t1: 0.41 },
   { side: -1 as const, t0: 0.54, t1: 0.84 },
 ] as const
 
@@ -368,7 +557,7 @@ export function wallClearings(): OrientedBox[] {
 }
 
 export function streetClearings(): OrientedBox[] {
-  return [...stepClearings(), ...wallClearings()]
+  return [...stepClearings(), ...wallClearings(), ...pathClearings(), ...objectClearings()]
 }
 
 // The square: map (500, 300), radius 0.25

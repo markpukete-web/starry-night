@@ -254,14 +254,14 @@ export function faceCrop(flow: ImageData2D, face: StreetFace, minRows = 64, pain
  * length of L crop heights is L × the face's height, so the length is L × ref / height. The count covers the face
  * `COVER` times over before the clip.
  */
-export function faceConfig(face: StreetFace, count?: number, rows = 64): CypressRibbonConfig {
+export function faceConfig(face: StreetFace, count?: number, rows = 64, lengthScale = 1): CypressRibbonConfig {
   const width = face.u.length()
   const height = face.v.length()
   const scale = SOURCE_STROKES[face.source]
   const minHalfWidth = (0.5 * scale.width[0] * face.refHeight) / width
   const maxHalfWidth = (0.5 * scale.width[1] * face.refHeight) / width
-  const minLength = (scale.length[0] * face.refHeight) / height
-  const maxLength = (scale.length[1] * face.refHeight) / height
+  const minLength = ((scale.length[0] * face.refHeight) / height) * lengthScale
+  const maxLength = ((scale.length[1] * face.refHeight) / height) * lengthScale
   const area = 2 * ((minHalfWidth + maxHalfWidth) / 2) * Math.min(1, Math.sqrt(minLength * maxLength))
   // a triangle keeps the quad's count: the clip takes the strokes past its sloped sides
   const auto = Math.round(Math.min(800, Math.max(16, (scale.cover ?? COVER) / area)))
@@ -337,11 +337,11 @@ export function rectUnderpaint(painting: ImageData2D, rect: readonly [number, nu
  * steps go. Colours per sample from the source, lit by the moon's share on the face's normal. `options` are the
  * tests' seams: a fixed count, half-width and taper.
  */
-export function traceFace(face: StreetFace, flow: ImageData2D, painting: ImageData2D, options: { count?: number; fixedHalfWidth?: number; taper?: number; tint?: number; density?: number } = {}): FaceStrokes {
+export function traceFace(face: StreetFace, flow: ImageData2D, painting: ImageData2D, options: { count?: number; fixedHalfWidth?: number; taper?: number; tint?: number; density?: number; clip?: [number, number][]; lengthScale?: number } = {}): FaceStrokes {
   const width = face.u.length()
   const height = face.v.length()
   const { crop, rows, pigment } = faceCrop(flow, face, 64, painting)
-  const config = faceConfig(face, options.count, crop.height)
+  const config = faceConfig(face, options.count, crop.height, options.lengthScale ?? 1)
   if (options.density !== undefined) {
     config.frontCount = Math.round(config.frontCount * options.density)
   }
@@ -351,7 +351,7 @@ export function traceFace(face: StreetFace, flow: ImageData2D, painting: ImageDa
   }
   if (options.taper !== undefined) config.taper = options.taper
   const ribbons = traceCypressRibbons(crop, pigment ?? painting, rows, config.frontCount, face.seed, config, acceptFor(face, painting))
-  const polygon = facePolygon(face, width, height)
+  const polygon = options.clip ?? facePolygon(face, width, height)
   // half an outline's width past the edge, under the ink; the ground and the path draw no outline (Fable R8)
   const allowance = (face.kind === 'ground' || face.kind === 'path' ? 0 : 0.5 * OUTLINE_FRACTION * face.refHeight) + 1e-12
   const shade = 1 + STREET_MOON_LIFT * moonShade(face.normal)
@@ -402,7 +402,7 @@ export function traceFace(face: StreetFace, flow: ImageData2D, painting: ImageDa
  * and 0.6 of it at the ends, wobbling across by at most a quarter of its width, run past each corner by half its
  * width so the corners close, lifted over the strokes.
  */
-export function outlineFace(face: StreetFace, edges: readonly (readonly [Vector3, Vector3])[], ink: Color, seed: number, maxSamples?: number): FaceStrokes {
+export function outlineFace(face: StreetFace, edges: readonly (readonly [Vector3, Vector3])[], ink: Color, seed: number, maxSamples?: number, lift = OUTLINE_LIFT): FaceStrokes {
   const arrays = makeBrushArrays()
   const stroke: number[] = []
   const seeds: number[] = []
@@ -426,7 +426,7 @@ export function outlineFace(face: StreetFace, edges: readonly (readonly [Vector3
       const t = k / (n - 1)
       const taper = 1 - 0.4 * Math.abs(2 * t - 1) ** 2
       const wobble = (vnoise(edgeSeed + t * 3.1, 0.7) - 0.5) * 0.5 * width
-      const centre = start.clone().addScaledVector(along, t * total).addScaledVector(across, wobble).addScaledVector(face.normal, OUTLINE_LIFT)
+      const centre = start.clone().addScaledVector(along, t * total).addScaledVector(across, wobble).addScaledVector(face.normal, lift)
       const half = (width * taper) / 2
       steps.push([centre.clone().addScaledVector(across, -half), centre.clone(), centre.clone().addScaledVector(across, half)])
       colours.push(ink.clone().multiplyScalar(tone))
