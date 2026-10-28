@@ -202,7 +202,7 @@ export function stepPause(
     // past (Codex B2). On the automatic walk `target` equals `t` until a wheel moves it
     const automatic = i.wheelPx === 0 && i.keys === 0 && prev.target === prev.t
     for (const st of STATION_T) {
-      if (automatic && st < WALK_T.max && st !== last && prev.t < st - 1e-6 && t >= st) {
+      if (automatic && st < WALK_T.max && st !== last && prev.t < st && t >= st) {
         t = st
         target = st
         dwell = PAUSE.dwell

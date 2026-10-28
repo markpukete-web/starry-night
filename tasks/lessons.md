@@ -3439,3 +3439,10 @@ must be byte-identical before the stimulus's difference means anything.
 - **A ready seam set in an effect needs a cleanup once its component can mount twice** (the portal's way back). The
   cypress's and the land's seams were written for the arrival, which mounts the diorama once. Without a reset on
   unmount, a remount reads the last mount's `true`. Mutation 3 removed both cleanups and case 2 went red.
+
+## 2026-10-28 (night) — V1, Codex's review of `95088af`
+
+- **A crossing test needs no margin below the mark** (Codex, PR #34, P2). `prev.t < st - 1e-6` left a 1e-6 band
+  under each station. An automatic step that landed in it crossed the station with no dwell, about once in 560
+  frames at 60 fps. The strict `prev.t < st` and the `last` guard already exclude a start on the station. A margin
+  in a crossing test is a hole unless something needs it. Name what it is for, or leave it out.

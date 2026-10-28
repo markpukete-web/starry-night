@@ -236,6 +236,13 @@ test('no dwell starting on a station', () => {
   assert.equal(r.p.dwell, 0)
 })
 
+test('a step from just under a station stops on it', () => {
+  // Codex, PR #34: a frame that lands within 1e-6 below 0.23 crossed it on the next step with no dwell
+  const r = frame(initialWalk(STATION_T[1] - 5e-7, true), initialPause())
+  assert.equal(r.s.t, STATION_T[1])
+  assert.equal(r.p.dwell, PAUSE.dwell)
+})
+
 test("no dwell at the walk's end", () => {
   let r = { s: initialWalk(0.89, true), p: initialPause() }
   for (let k = 0; k < 600 && r.s.t < WALK_T.max; k++) {
