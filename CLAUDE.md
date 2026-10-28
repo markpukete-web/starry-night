@@ -351,8 +351,8 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   plaster houses' strokes 0.7 of the measured row, the cover scaled to hold the count; the church keeps its row. W2
   ends at `t` 0.41. `lived: false` builds K2's street byte for byte. 596,919 street triangles (K2 576,295); the sweep's
   worst point 1,429,031 (desktop, `t` 0.26); 60 fps at stops 0 and 3 at dpr 1.5 (p95 at most 18.5 ms), 308 draw calls
-  at stop 0. The build 653 ms against K2's 589 (+10.9%, over the plan's 10%: Mark's call). Two look passes of four.
-  Untuned by Mark.
+  at stop 0. The build 653 ms against K2's 589 (+10.9%, over the plan's 10%, accepted with Mark's pass). Two look passes of four.
+  Passed by Mark on the preview, 2026-10-28 ("gate passed"), untuned.
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)

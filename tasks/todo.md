@@ -1,6 +1,15 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-28 (02:30): K3 gated and pushed for Mark's preview; Vincent's form spike pushed beside it
+## Pickup — 2026-10-28 (11:10): Mark passed K3, and its PR is open for Codex's review
+
+**Mark passed K3 on the preview** at 11:07 ("Morning Claude, gate passed"), as built, the build's +64 ms with it (the
+record `tasks/2026-10-27-village-lived-in.md`, its last section). The Lead opens the PR as a draft, then marks it ready, so
+Codex's review fires. **Next:** read Codex's review through the timeline API, answer every thread, then Mark merges.
+
+**Vincent's form spike** (`spike/vincent-form`, its preview in the 02:30 pickup below): Mark's four calls are still
+open (`tasks/2026-10-28-vincent-form-spike.md` on that branch).
+
+## Pickup — 2026-10-28 (02:30): K3 gated and pushed for Mark's preview; Vincent's form spike pushed beside it (superseded by the 11:10 pickup above)
 
 **K3 passes the Lead's gate with one criterion open** (the record `tasks/2026-10-27-village-lived-in.md`, branch
 `feat/village-lived-in` at the head after `1b7402e`, pushed for a Vercel preview, no PR). The worker built Tasks 2 to

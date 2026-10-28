@@ -136,3 +136,9 @@ time is 10.9% over K2's, against a bound of 10%. The miss is named above with it
    clear the grass round them, the pot plant built outside `grassChunks`, K2's subset test amended.
 3. The build's time, +64 ms (+10.9%).
 4. The paths as trodden earth: R1's end now meets the lane with the strokes' tips (`1b7402e`).
+
+## Mark's gate: passed
+
+Mark passed K3 on the preview at 11:07 on 2026-10-28: "Morning Claude, gate passed." He passed it as built, so each of
+the four calls above stands as built, the build's +64 ms with them. The Lead opens the PR as a draft, then marks it ready
+so Codex's review fires.
