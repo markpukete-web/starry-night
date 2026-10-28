@@ -40,3 +40,12 @@ the hold's 15 s timeout path. The timeout is one condition, the same as the entr
 Mark enters the street through the portal on his iPhone. If it still crashes, the fallback is option (b): enter by a
 page load to `?street=1`. A further cut, if needed: the painting is decoded at 1600 × 1267 by each part (the 2D
 canvases count 139 MB, never decremented by the probe).
+
+## Mark's phone, before the portal test (19:27)
+
+At about 19:24, V1's hat preview (`da4a86c`) opened, ran for about 3 s, then Chrome on his iPhone showed "Can't open
+this page". With every other tab closed, the older preview `7850cc7` at `?street=1` failed the same way. That one
+opened on the same phone at about 18:20. The two builds differ only in the hat's source rectangle. So the street on its
+own is at or past the iPhone's limit, depending on the phone's state. The portal fix brings the entry close to the
+direct load, so it cannot make the phone hold the street. Mark: "I think we need to let users know the site works
+better in computer".
