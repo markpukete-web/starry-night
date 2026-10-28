@@ -1,5 +1,24 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-10-28 (18:28): the hat after Van Gogh's own, pushed; its colour is next
+
+Mark at 18:00: "Where did we get this hat from actually? it looks like a fishing man. But if that's something that
+Vincent Van Gogh drew then let's use his painting." `7850cc7` reshapes it from "The Painter on the Road to Tarascon"
+(1888) and the Met's "Self-Portrait with a Straw Hat" (1887): a rounded crown, a flat brim turned up on one side. The
+record is the last section of `tasks/2026-10-28-vincent-form.md`, the references and look passes
+`scratch/vincent-hat-2026-10-28/` (`ref/`, `look/p1`, `look/p2`). Pushed for a preview:
+`https://starry-night-4ei6xjp4p-markpukete-webs-projects.vercel.app/?street=1`. Mark, on his phone: "Saw it on my phone,
+and it's auto moved, love it."
+
+**Next: the hat's colour.** Mark: "Go for your recommendations for the hat's colour." The recommendation was a darker
+golden straw from The Starry Night, like Tarascon's ochre, so the hat is no longer the brightest thing on him. The hat
+paints from `FORM.tarascon.hat` (`vincent.ts`, the moon's body `[1376, 216, 1408, 248]`). K3's hat painted from
+`STREET_SOURCES.thatch` and was gated against `villageWarm`. Compare both against the Tarascon hat's mean
+(`scratch/vincent-hat-2026-10-28/ref/tarascon.jpg`, the hat about x 1150–1650, y 820–1200) before choosing. Then move the
+colour gate's `refHat` (`scripts/check-street-colour.ts:255`, V1 Decision (e)) to the new source, run tsc, lint and
+`test:sky`, take a look pass with `scratch/vincent-hat-2026-10-28/tools/look.sh` (it compares port 5214 with 5209:
+restart both servers first), and push for Mark's preview. Then V1's PR path in the 14:40 pickup below.
+
 ## Pickup — 2026-10-28 (14:40): V1 passes the Lead's gate and is pushed for Mark's preview
 
 **V1, Vincent's form** (`feat/vincent-form` at `b6c6404` plus the docs, off K3's `ed464c9`, pushed for a Vercel
