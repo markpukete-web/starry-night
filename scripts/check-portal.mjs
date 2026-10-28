@@ -3,10 +3,12 @@
  * The portal's checks (tasks/2026-10-25-street-portal-plan.md, Task 6), against a running dev server:
  *   DIORAMA_CAPTURE_URL=http://127.0.0.1:5198/ node scripts/check-portal.mjs
  * 1. A hover over a house gives the hand and the hint and loads the street's chunk; a hover over the sky gives neither.
- * 2. A tap on a house goes flying, entering, street; the camera is at stop 0's pose. On the phone, with the automatic
- *    walk, Vincent is still at stop 0 when the layer starts to fade (F4), and walks after.
+ * 2. A tap on a house goes flying, entering, street; the camera is at stop 0's pose; the diorama is unmounted in the
+ *    street (its seams clear). On the phone, with the automatic walk, Vincent is still at stop 0 when the layer starts
+ *    to fade (F4), and walks after.
  * 3. Escape goes back to the diorama, the pose the saved one within 1e-6 the frame after and 0.5 s later, the camera's
- *    rotation the one before the entry and its lens the aspect's default. 3b: Escape while the entry's fade runs still
+ *    rotation the one before the entry and its lens the aspect's default; the layer holds until the diorama, mounted
+ *    again, has built (the iPhone fix, 2026-10-28). 3b: Escape while the entry's fade runs still
  *    fades the return from full, never down then up (Codex branch review F1).
  * 4. The dock's control does the same both ways.
  * 5. `?streetFail=painting` ends on the diorama at the saved pose, the portal still on. A failed chunk ends there too,
@@ -179,7 +181,7 @@ const PAGE_HELPERS = `(() => {
     const tick = () => {
       if (!window.__recOn) return
       const s = window.__portal()
-      window.__rec.push({ ms: performance.now(), place: s.place, layer: s.layer, pose: s.pose, saved: s.saved, view: s.view, walk: window.__streetWalk?.t ?? null })
+      window.__rec.push({ ms: performance.now(), place: s.place, layer: s.layer, pose: s.pose, saved: s.saved, view: s.view, walk: window.__streetWalk?.t ?? null, diorama: s.diorama })
       requestAnimationFrame(tick)
     }
     requestAnimationFrame(tick)
@@ -309,14 +311,21 @@ async function main() {
     const camGap = Math.max(...cam2.position.map((v, i) => Math.abs(v - stop0.position[i])), ...cam2.quaternion.map((v, i) => Math.abs(v - stop0.quaternion[i])), Math.abs(cam2.fov - stop0.fov))
     if (camGap > 1e-9) throw new Error(`case 2: the camera is ${camGap} from stop 0's`)
     const tFlight = (rec2.find((f) => f.place === 'entering').ms - rec2.find((f) => f.place === 'flying').ms) / 1000
-    console.log(`PASS 2: a tap goes ${order2}; the flight ${tFlight.toFixed(2)} s; the camera at stop 0's pose (gap ${camGap})`)
+    // the iPhone fix (2026-10-28): the street builds with the diorama unmounted, so its seams are clear in the street
+    const street2 = rec2.filter((f) => f.place === 'street')
+    if (!street2.length || street2.some((f) => f.diorama)) throw new Error(`case 2: ${street2.filter((f) => f.diorama).length} of ${street2.length} street frames have the diorama mounted`)
+    console.log(`PASS 2: a tap goes ${order2}; the flight ${tFlight.toFixed(2)} s; the camera at stop 0's pose (gap ${camGap}); the diorama unmounted`)
 
     // ---- case 3: Escape
     const rec3 = await record(page, () => page.key('Escape'), `window.__portal().place === 'diorama'`)
     const r3 = assertReturn(rec3, 'case 3', view2)
     const fade3 = rec3.filter((f) => f.place === 'leaving' && f.layer > 0 && f.layer < 1).length
     if (!fade3) throw new Error('case 3: the return did not fade')
-    console.log(`PASS 3: Escape returns, the pose ${r3.now} then ${r3.after} from the saved one, its rotation and lens, ${fade3} fade frames`)
+    // the layer holds the street's frame until the diorama, mounted again, has built: no fading frame shows it unbuilt
+    const early3 = rec3.filter((f) => f.place === 'leaving' && f.layer < 1 && !f.diorama).length
+    const held3 = rec3.filter((f) => f.place === 'leaving' && f.layer === 1).length
+    if (early3) throw new Error(`case 3: ${early3} leaving frames fade with the diorama not built`)
+    console.log(`PASS 3: Escape returns, the pose ${r3.now} then ${r3.after} from the saved one, its rotation and lens, ${held3} held and ${fade3} fade frames`)
 
     // ---- case 3b: Escape while the entry's fade runs (Codex F1)
     await page.evaluate('window.__portalEnter()')

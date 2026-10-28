@@ -291,8 +291,12 @@ export function BrushCypress({
   }, [alive, geometries])
 
   // C: the arrival waits for the tree; its CPU images do not suspend, so the sky's own seam cannot cover it
+  // and the portal's way back, which mounts the tree again: an unmount clears the seam, so no frame reads the last mount's
   useLayoutEffect(() => {
     if (readyRef) readyRef.current = geometries !== null
+    return () => {
+      if (readyRef) readyRef.current = false
+    }
   }, [readyRef, geometries])
   useEffect(() => () => geometries?.solid.dispose(), [geometries])
   useEffect(() => () => geometries?.strokes.dispose(), [geometries])

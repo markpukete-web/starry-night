@@ -44,7 +44,8 @@ export function portalStep(place: PortalPlace, event: PortalEvent, { still = fal
 }
 
 export const streetMounted = (place: PortalPlace) => place === 'entering' || place === 'street'
-export const dioramaVisible = (place: PortalPlace) => !streetMounted(place)
+/** the diorama is unmounted while the street is: both held at once crashed Mark's iPhone (2026-10-28) */
+export const dioramaMounted = (place: PortalPlace) => !streetMounted(place)
 export const controlsEnabled = (place: PortalPlace) => place === 'diorama'
 
 /** The flight's progress after a frame: a bounded step, so a hidden tab's 30 s frame moves it 0.1 s. */
