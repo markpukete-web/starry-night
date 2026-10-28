@@ -12,8 +12,13 @@ import { lanternUniform } from './vincent.ts'
  */
 export const STREET_GROUND_BODY: StrokeBody = { ...CYPRESS_STROKE_BODY, gaps: null, laneEdge: null, dryFrom: 0.85, fray: 0.08 }
 
-/** Vincent's lantern on the street's paint (V1 task 4): the lamps' glow, `gain` at the glass, falling off over `reach`. */
-export const LANTERN_GROUND = { reach: 0.05, gain: 1.5 }
+/**
+ * Vincent's lantern on the street's paint (V1 task 4): the lamps' glow, `gain` at the glass, falling off over `reach`.
+ * Look pass 1 set `reach` 0.08 (was 0.05): the lift multiplies the paint, so at 0.05 it showed only on the pale path by
+ * his feet and left the grass round him dark. At 0.08 it lights 15,222 px of stop 2's desktop frame (4,937 at 0.05),
+ * no pixel more than 21 of 255 brighter.
+ */
+export const LANTERN_GROUND = { reach: 0.08, gain: 1.5 }
 
 type Body = Omit<AliveInjection, 'key' | 'uniforms'>
 const glsl = (v: number) => v.toFixed(6)
