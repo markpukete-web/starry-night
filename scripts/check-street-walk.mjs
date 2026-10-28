@@ -669,7 +669,10 @@ async function main() {
     const poseAt = async (extra) => {
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=2&arrival=0&walkMode=input${extra}` })
       await page.waitForStreetReady()
-      await sleep(500)
+      // V1: his box takes in his figure, which turns side-on after a rest. Read it once he has turned and the lantern
+      // has settled (τ 0.15 s), not mid-turn, where two loads differ by the turn's timing
+      for (let i = 0; i < 150 && !((await page.evaluate(() => window.__vincentForm?.()))?.turn >= 1); i++) await sleep(100)
+      await sleep(1000)
       return page.evaluate(() => ({ pose: window.__vincentPose?.(), box: window.__vincentBox?.() }))
     }
     const k3B = await poseAt('')
