@@ -12,7 +12,7 @@ switch"). Codex gives revision 1 a bounded confirmation read before any build.
 F9. It kept F1 open and found N1 and N2. The last three rows of the table below say where they went. Codex reads
 revision 2's three changes while Tasks 1 and 2 are built. Its verdict comes before Task 3 starts.
 
-**Revision 3 (2026-10-28, 13:15).** Codex's second confirmation (`$E/plan-confirm2-codex.md`) closed N1 and N2. It
+**Revision 3 (2026-10-28, 13:12).** Codex's second confirmation (`$E/plan-confirm2-codex.md`) closed N1 and N2. It
 kept F1 open on the lantern's halo: a sprite, drawn facing the camera, so its group's box does not bound it. The halo
 is the lantern's light, not his figure, so the figure's bounds now take his meshes only. Revision 3 also fixes
 Decision (j): in the spike, Vincent's lantern term is already in his body, before the fog. Tasks 1 and 2 were built
