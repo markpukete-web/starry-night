@@ -3347,3 +3347,10 @@ must be byte-identical before the stimulus's difference means anything.
 - **A JavaScript `.click()` proves the handler, not the control** (Codex plan review F2). A control hidden by CSS still
   takes `.click()`. A check of a visible control clicks at its drawn centre after `elementFromPoint` and a visibility
   test. Codex's counterexample, the street's dock hidden by `:has`, passed case 4 and failed the new 4b.
+
+## 2026-10-28 — the portal crashed the iPhone while every Mac check passed
+
+- **Memory that fits on the Mac can crash the iPhone.** The portal keeps the diorama mounted while it builds the street.
+  Every gate run passed in Chrome, including real touch taps at phone sizes. On Mark's iPhone the page was killed ("A
+  problem repeatedly occurred"), while the street alone loaded. Headless Chrome's process memory does not model iOS's
+  limit. A change that holds two scenes at once needs Mark's phone as a check before the preview is called done.
