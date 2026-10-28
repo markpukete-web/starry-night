@@ -435,7 +435,7 @@ export default function StreetWalk({
     // Vincent sway & placement
     if (flags.vincent && vincentGroupRef.current && armGroupRef.current) {
       const { position: vPos, yaw } = vincentPlace(nextState.t)
-      const g = gait(nextState.distance, nextState.speed, still)
+      const g = gait(nextState.distance, nextState.speed, !still, 0)
       // his group sits inside the street's, which already carries the anchor's offset (Codex K3): local, not world
       vincentGroupRef.current.position.set(vPos[0], vPos[1] + g.lift, vPos[2])
       vincentGroupRef.current.rotation.set(0, yaw, g.roll)

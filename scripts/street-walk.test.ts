@@ -1,15 +1,25 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { STREET, WALK_T } from '../src/scene/streetLayout.ts'
+import { STATION_T, STREET, WALK_T } from '../src/scene/streetLayout.ts'
 import {
   admitGesture,
+  flicker,
   gait,
   hitBox,
+  initialPause,
   initialWalk,
+  lag,
+  limbs,
+  PAUSE,
+  stepPause,
   stepWalk,
   stopWalk,
   toggleWalk,
+  turnPose,
   wheelPixels,
+  type Pause,
+  type WalkInput,
+  type WalkState,
 } from '../src/scene/streetWalk.ts'
 
 test('the wheel walks forward and eases', () => {
@@ -184,24 +194,164 @@ test('wheel units', () => {
   assert.equal(wheelPixels({ deltaY: 10, deltaMode: 1, ctrlKey: true }, 800), 0)
 })
 
-test('the gait settles', () => {
-  const g0 = gait(0.05, 0, false)
-  assert.equal(g0.lift, 0)
-  assert.equal(g0.roll, 0)
+// V1 task 2: the pause, the turn and the stride (Decisions (f), (g), (h), (i) of the plan)
+const STEP: WalkInput = { dt: 0.01, wheelPx: 0, keys: 0, autoMode: true, paused: false, still: false }
 
-  const gMid = gait(0.02, 0.15, false)
-  assert.ok(Math.abs(gMid.lift - 0.0015) < 1e-6, `mid-step lift is 0.0015 (got ${gMid.lift})`)
+function frame(
+  s: WalkState,
+  p: Pause,
+  over: Partial<WalkInput> = {},
+  immediate = false,
+): { s: WalkState; p: Pause } {
+  const i = { ...STEP, ...over }
+  const r = stepPause(s, stepWalk(s, i), p, i, immediate)
+  return { s: r.next, p: r.pause }
+}
 
-  // the roll leans one way on a step and the other way on the next; the arm is at the end of its swing as a foot lands
-  assert.ok(Math.abs(gMid.roll - 0.03) < 1e-9, `mid-step roll is 0.03 (got ${gMid.roll})`)
-  assert.ok(Math.abs(gait(0.06, 0.15, false).roll + 0.03) < 1e-9, 'the next step rolls the other way')
-  assert.ok(Math.abs(gait(0, 0.15, false).arm - 0.25) < 1e-9, 'the arm at the end of its swing as a foot lands')
-  assert.ok(Math.abs(gMid.arm) < 1e-9, 'the arm passes the body mid-step')
+/** Walks from `t0` until the first frame whose `t` is the station's: frame 0, the arrival. */
+function arrive(t0: number, station: number): { s: WalkState; p: Pause } {
+  let r = { s: initialWalk(t0, true), p: initialPause() }
+  for (let k = 0; k < 50 && r.s.t !== station; k++) r = frame(r.s, r.p)
+  assert.equal(r.s.t, station, 'precondition: the walk reached the station')
+  return r
+}
 
-  const gStill = gait(0.02, 0.15, true)
-  assert.equal(gStill.lift, 0)
-  assert.equal(gStill.roll, 0)
-  assert.equal(gStill.arm, 0)
+const near = (a: number, b: number, tol = 1e-12): boolean => Math.abs(a - b) <= tol
+
+test('a dwell holds the walk 4 s at a station', () => {
+  const station = STATION_T[1]
+  let r = arrive(0.229, station)
+  assert.equal(r.p.dwell, PAUSE.dwell, 'frame 0 starts the dwell')
+  for (let k = 1; k < 400; k++) {
+    r = frame(r.s, r.p)
+    assert.equal(r.s.t, station, `t is the station's on frame ${k}`)
+  }
+  r = frame(r.s, r.p)
+  assert.ok(r.s.t > station, 't moves on frame 400')
+})
+
+test('no dwell starting on a station', () => {
+  const r = frame(initialWalk(STATION_T[1], true), initialPause())
+  assert.ok(r.s.t > STATION_T[1], 't rises on the first step')
+  assert.equal(r.p.dwell, 0)
+})
+
+test("no dwell at the walk's end", () => {
+  let r = { s: initialWalk(0.89, true), p: initialPause() }
+  for (let k = 0; k < 600 && r.s.t < WALK_T.max; k++) {
+    r = frame(r.s, r.p)
+    assert.equal(r.p.dwell, 0, `no dwell on frame ${k}`)
+  }
+  assert.equal(r.s.t, WALK_T.max, 'the walk reached its end')
+  assert.equal(r.p.dwell, 0)
+})
+
+test('the turn comes in after the rest and leaves before the dwell ends', () => {
+  let r = arrive(0.229, STATION_T[1])
+  const turn: number[] = [r.p.turn]
+  for (let k = 1; k <= 410; k++) {
+    r = frame(r.s, r.p)
+    turn.push(r.p.turn)
+  }
+  assert.equal(turn[49], 0, 'frame 49')
+  assert.ok(turn[51] > 0, 'frame 51')
+  assert.equal(turn[111], 1, 'frame 111')
+  assert.ok(turn[357] < 1, 'frame 357')
+  for (let k = 387; k <= 410; k++) assert.equal(turn[k], 0, `frame ${k}`)
+})
+
+test('input ends a dwell', () => {
+  for (const over of [{ wheelPx: 100 }, { keys: 1 as const }]) {
+    const r = frame(initialWalk(STATION_T[1], true), { dwell: 2, rest: 0, turn: 0, last: STATION_T[1] }, over)
+    assert.equal(r.p.dwell, 0, `${JSON.stringify(over)} ends the dwell`)
+    assert.ok(r.s.t > STATION_T[1], `${JSON.stringify(over)}: that frame's walk step stands`)
+  }
+})
+
+test('a dwell ended by a step back does not start again', () => {
+  let r = frame(initialWalk(STATION_T[1], true), { dwell: 2, rest: 0, turn: 0, last: STATION_T[1] }, { keys: -1 })
+  assert.equal(r.p.dwell, 0, 'the step back ends the dwell')
+  for (let k = 0; k < 20; k++) {
+    r = frame(r.s, r.p)
+    assert.equal(r.p.dwell, 0, `no dwell on step ${k + 1}`)
+  }
+  assert.ok(r.s.t > STATION_T[1], 'he walked on past the station')
+})
+
+test('a walk back past the station re-arms it', () => {
+  let r = { s: initialWalk(0.215, true), p: { dwell: 0, rest: 0, turn: 0, last: STATION_T[1] } as Pause }
+  for (let k = 0; k < 50 && r.p.dwell === 0; k++) r = frame(r.s, r.p)
+  assert.equal(r.p.dwell, PAUSE.dwell, 'the crossing of 0.23 starts a 4 s dwell')
+  assert.equal(r.p.last, STATION_T[1])
+})
+
+test('a stop on blur keeps the dwell', () => {
+  const s = stopWalk(initialWalk(STATION_T[1], true))
+  const r = frame(s, { dwell: 2, rest: 0, turn: 0, last: STATION_T[1] })
+  assert.equal(r.s.auto, true)
+  assert.equal(r.s.t, STATION_T[1])
+  assert.ok(near(r.p.dwell, 1.99), `dwell is 1.99 (got ${r.p.dwell})`)
+})
+
+test('the input walk turns at rest', () => {
+  let r = { s: initialWalk(0.3, false), p: initialPause() }
+  for (let k = 0; k < 111; k++) r = frame(r.s, r.p, { autoMode: false })
+  assert.equal(r.p.turn, 1, 'turn is 1 after 1.11 s')
+})
+
+test('reduced motion stands turned', () => {
+  const r = frame(initialWalk(0.3, false), initialPause(), { autoMode: false }, true)
+  assert.equal(r.p.turn, 1)
+})
+
+test('no stride walking backward, turned or still', () => {
+  const zero = { lift: 0, roll: 0, arm: 0, leg: 0, pitch: 0 }
+  assert.deepEqual(gait(0.02, 0.15, false, 0), zero, 'not forward')
+  assert.deepEqual(gait(0.02, 0.15, true, PAUSE.turnGate), zero, 'turn 0.2')
+  assert.deepEqual(gait(0.02, 0, true, 0), zero, 'speed 0')
+  const walking = gait(0.02, 0.15, true, 0)
+  assert.notEqual(walking.arm, 0, 'control: the arm swings')
+  assert.notEqual(walking.leg, 0, 'control: the leg swings')
+  // the plan's control sits at mid-step, where cos is 6e-17: at the end of the swing the control means something
+  const swing = gait(0, 0.15, true, 0)
+  assert.ok(near(swing.arm, 0.12) && near(swing.leg, 0.35) && near(swing.pitch, 0.06), 'control: full swing')
+})
+
+test('the head lags the body', () => {
+  const quarter = turnPose(0.25)
+  assert.equal(quarter.head, 0)
+  assert.ok(quarter.body > 0)
+  const full = turnPose(1)
+  assert.ok(near(full.body, Math.PI / 2) && near(full.head, Math.PI / 4) && near(full.raise, 0.75))
+})
+
+test('each arm moves with the opposite leg', () => {
+  const w = limbs(gait(0.02, 0.15, true, 0), turnPose(0))
+  assert.equal(w.armRight, -w.armLeft)
+  assert.equal(w.legLeft, -w.legRight)
+  assert.equal(Math.sign(w.armLeft), Math.sign(w.legRight))
+  // away from mid-step, where the swings are not rounding noise
+  const s = limbs(gait(0, 0.15, true, 0), turnPose(0))
+  assert.ok(near(s.armLeft, 0.12) && near(s.armRight, -0.12), 'the arms swing against each other')
+  assert.ok(near(s.legLeft, -0.35) && near(s.legRight, 0.35), 'left leg −leg, right leg +leg')
+  assert.ok(s.armLeft > 0 && s.legRight > 0 && s.armRight < 0 && s.legLeft < 0, 'each arm with the opposite leg')
+  const still = limbs(gait(0.02, 0, true, 1), turnPose(1))
+  assert.ok(near(still.armLeft, -0.75), 'left arm raised')
+  assert.ok(near(still.armRight, 0) && near(still.legLeft, 0) && near(still.legRight, 0))
+  assert.ok(near(still.hang, 0.75))
+})
+
+test('the lantern lags the hand', () => {
+  assert.ok(near(lag(0, 1, PAUSE.lag), 1 - Math.exp(-1), 1e-9))
+})
+
+test('the pool is still under reduced motion', () => {
+  for (const t of [0, 0.37, 1.2, 2.5, 7.9]) {
+    assert.equal(flicker(t, true), 1, `still at ${t}`)
+    const f = flicker(t, false)
+    assert.ok(f >= 0.92 && f <= 1, `lit flicker at ${t} is ${f}`)
+  }
+  assert.ok(near(flicker(0, false), 0.96))
 })
 
 test('the hit box is at least 48 px', () => {
