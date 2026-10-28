@@ -8,6 +8,8 @@ so the fifth pill no longer breaks the phone's chrome. Codex read the plan (thre
 K3 (PR #32) and V1 (`feat/vincent-form`) are ahead of `main` and touch other files, apart from this file and the
 Tunables in `CLAUDE.md`. Rebase after they merge.
 
+**The preview** (behind Vercel's login, `565d6c0`): `https://starry-night-ewdxv13gq-markpukete-webs-projects.vercel.app`. The Lead's gate passed at 15:35.
+
 **Mark's calls, and two notes kept out of the slice:**
 - At 667 × 375 (an iPhone SE in landscape) five pills wrap to two rows across the village. Options: leave it, stack
   the dock down the right edge on short landscapes, or show icons only there.
