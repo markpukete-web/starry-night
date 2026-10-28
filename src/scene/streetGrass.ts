@@ -58,6 +58,24 @@ export function inFootprint(x: number, z: number): boolean {
   )
 }
 
+export function insideHouse(x: number, z: number, m: number): boolean {
+  return STREET_HOUSES.some((h) => {
+    const dx = x - h.x
+    const dz = z - h.z
+    const c = Math.cos(h.yaw)
+    const s = Math.sin(h.yaw)
+    return Math.abs(dx * c + dz * s) < h.w / 2 + m && Math.abs(-dx * s + dz * c) < h.d / 2 + m
+  })
+}
+
+export function isExcluded(x: number, z: number): boolean {
+  return (
+    insideHouse(x, z, GRASS.house) ||
+    Math.hypot(x - STREET_CYPRESS.x, z - STREET_CYPRESS.z) < GRASS.cypress ||
+    Math.hypot(x - STREET_SQUARE.x, z - STREET_SQUARE.z) < STREET_SQUARE.radius
+  )
+}
+
 export const PLANT = { scale: 0.7, y: 0.022, latIn: 10 } as const
 
 export type GrassChunk = {
@@ -136,20 +154,6 @@ export function grassChunks(painting: ImageData2D, customDensity?: number, clear
   const meanClump = (GRASS_BLADE.clump[0] + GRASS_BLADE.clump[1]) / 2
 
   const walkCameras = grassWalkCameras()
-
-  const insideHouse = (x: number, z: number, m: number) =>
-    STREET_HOUSES.some((h) => {
-      const dx = x - h.x
-      const dz = z - h.z
-      const c = Math.cos(h.yaw)
-      const s = Math.sin(h.yaw)
-      return Math.abs(dx * c + dz * s) < h.w / 2 + m && Math.abs(-dx * s + dz * c) < h.d / 2 + m
-    })
-
-  const isExcluded = (x: number, z: number) =>
-    insideHouse(x, z, GRASS.house) ||
-    Math.hypot(x - STREET_CYPRESS.x, z - STREET_CYPRESS.z) < GRASS.cypress ||
-    Math.hypot(x - STREET_SQUARE.x, z - STREET_SQUARE.z) < STREET_SQUARE.radius
 
   const chunks: GrassChunk[] = []
 

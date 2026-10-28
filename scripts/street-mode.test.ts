@@ -37,6 +37,23 @@ test('walk flags', () => {
   assert.equal(walkOn(readStreetFlags('?street=1')), true)
 })
 
+test('the wander spike flags', () => {
+  const def = readStreetFlags('?street=1')
+  assert.equal(def.wander, false)
+  assert.equal(def.wanderCam, 'follow')
+  assert.equal(def.wanderAim, 20)
+  assert.equal(readStreetFlags('?street=1&wander=1').wander, true)
+  assert.equal(readStreetFlags('?street=1&wander=0').wander, false)
+  assert.equal(readStreetFlags('?street=1&wander').wander, false)
+  assert.equal(readStreetFlags('?street=1&wanderCam=hold').wanderCam, 'hold')
+  assert.equal(readStreetFlags('?street=1&wanderCam=other').wanderCam, 'follow')
+  assert.equal(readStreetFlags('?street=1&wanderAim=0').wanderAim, 0)
+  assert.equal(readStreetFlags('?street=1&wanderAim=33.5').wanderAim, 33.5)
+  assert.equal(readStreetFlags('?street=1&wanderAim=90').wanderAim, 40)
+  assert.equal(readStreetFlags('?street=1&wanderAim=-5').wanderAim, 0)
+  assert.equal(readStreetFlags('?street=1&wanderAim=x').wanderAim, 20)
+})
+
 test('the lantern shows only where the walk places it', () => {
   // Codex B1: the walk's frame loop alone places the halo and the pool and lights the ground
   assert.equal(lanternShown(readStreetFlags('?street=1')), true)

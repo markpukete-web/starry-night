@@ -16,7 +16,12 @@ import { LAMP_LIGHT, LIFE, haloScaleOf, lifeTimeUniform, radialTexture } from '.
 import { FOG, fogInjection } from './streetFog.ts'
 import {
   STATION_T,
+  STREET,
+  VINCENT_RIG,
   WALK_T,
+  laneOffset,
+  laneParam,
+  streetGroundAt,
   vincentPlace,
   vincentTapCorners,
   walkPose,
@@ -55,6 +60,15 @@ import {
   type WalkState,
 } from './streetWalk.ts'
 import { material, plainGeometry } from './streetMaterial.ts'
+import {
+  aimAngle,
+  clearLine,
+  stepWander,
+  turnTarget,
+  walkable,
+  WANDER,
+  type WanderState,
+} from './streetWander.ts'
 
 export type StreetWalkProps = {
   painting: ImageData2D | null
@@ -74,6 +88,9 @@ type StreetWalkWindow = Window & {
   __vincentBox?: () => { x0: number; y0: number; x1: number; y1: number }
   /** the rendered figure's own transform, for the checks (Codex K3, K4): his world position, roll and both arms' swing */
   __vincentPose?: () => { world: [number, number, number]; roll: number; arm: number; armRight: number } | null
+  /** the wander spike's seams for the Lead's captures (2026-10-28) */
+  __wander?: () => { mode: WanderState['mode']; x: number; z: number; tx: number; tz: number; camT: number; aimDeg: number }
+  __wanderTo?: (x: number, z: number) => boolean
   __walkProject?: (t: number, point: [number, number, number]) => [number, number]
   /**
    * the pause's state for the checks (V1): `clock` is the frame loop's own clamped time, `lantern` the light's strength,
@@ -120,6 +137,14 @@ export default function StreetWalk({
     down: PointerSample
     vincent: boolean
   } | null>(null)
+
+  const wanderRef = useRef<WanderState>(null as unknown as WanderState)
+  if (wanderRef.current === null) {
+    const place = vincentPlace(initialT)
+    wanderRef.current = { mode: 'lane', x: place.position[0], z: place.position[2], tx: place.position[0], tz: place.position[2], yaw: place.yaw, walked: 0 }
+  }
+  const aimRef = useRef(0)
+  const markRef = useRef<Mesh>(null)
 
   const vincentGroupRef = useRef<Group>(null)
   const armGroupRef = useRef<Group>(null)
@@ -305,6 +330,38 @@ export default function StreetWalk({
     }
   }, [camera, offset, gl.domElement])
 
+  // the wander spike: a tap's ground point, in the street's frame
+  const groundHit = useCallback(
+    (clientX: number, clientY: number): [number, number] | null => {
+      const persp = camera as PerspectiveCamera
+      const rect = gl.domElement.getBoundingClientRect()
+      const ndc = new Vector3(((clientX - rect.left) / rect.width) * 2 - 1, 1 - ((clientY - rect.top) / rect.height) * 2, 0.5)
+      const dir = ndc.unproject(persp).sub(persp.position).normalize()
+      if (dir.y >= 0) return null
+      const s = (offset[1] - persp.position.y) / dir.y
+      return [persp.position.x + s * dir.x - offset[0], persp.position.z + s * dir.z - offset[2]]
+    },
+    [camera, offset, gl.domElement],
+  )
+
+  // a tap at a ground point: out to a clear verge point, or back to the lane slot
+  const wanderTo = useCallback((x: number, z: number): 'going' | 'returning' | null => {
+    const w = wanderRef.current
+    const slot = w.mode === 'lane' ? vincentPlace(walkStateRef.current.t) : null
+    const fx = slot ? slot.position[0] : w.x
+    const fz = slot ? slot.position[2] : w.z
+    if (walkable(x, z) && clearLine(fx, fz, x, z)) {
+      wanderRef.current = { ...w, mode: 'going', x: fx, z: fz, tx: x, tz: z, yaw: slot ? slot.yaw : w.yaw }
+      queuedWheelPxRef.current = 0
+      return 'going'
+    }
+    if (w.mode !== 'lane' && Math.abs(laneOffset(x, z)) <= WANDER.laneHalf) {
+      wanderRef.current = { ...w, mode: 'returning' }
+      return 'returning'
+    }
+    return null
+  }, [])
+
   // Capture seams on window
   useEffect(() => {
     const w = window as StreetWalkWindow
@@ -351,6 +408,13 @@ export default function StreetWalk({
         ]
       }
     }
+    if (walkOnActive && flags.wander) {
+      w.__wander = () => {
+        const s = wanderRef.current
+        return { mode: s.mode, x: s.x, z: s.z, tx: s.tx, tz: s.tz, camT: walkStateRef.current.t, aimDeg: (aimRef.current * 180) / Math.PI }
+      }
+      w.__wanderTo = (x: number, z: number) => wanderTo(x, z) === 'going'
+    }
     if (!flags.flat && flags.vincent) {
       w.__vincentBox = getVincentBox
       w.__vincentPose = () => {
@@ -379,11 +443,13 @@ export default function StreetWalk({
     return () => {
       delete w.__streetWalk
       delete w.__walkProject
+      delete w.__wander
+      delete w.__wanderTo
       delete w.__vincentBox
       delete w.__vincentPose
       delete w.__vincentForm
     }
-  }, [walkOnActive, flags.flat, flags.vincent, getVincentBox, portrait, size, offset, gl.domElement])
+  }, [walkOnActive, flags.flat, flags.vincent, flags.wander, wanderTo, getVincentBox, portrait, size, offset, gl.domElement])
 
   // Input listeners: only when walkOn is true
   /* eslint-disable react-hooks/immutability -- canvas touchAction must be none for pointer gestures */
@@ -477,6 +543,9 @@ export default function StreetWalk({
         walkStateRef.current = toggleWalk(walkStateRef.current, still)
         // a wheel turned before the tap must not move him after it (Codex K1)
         queuedWheelPxRef.current = 0
+      } else if (res === 'tap' && !gesture.vincent && flags.vincent && flags.wander) {
+        const hit = groundHit(e.clientX, e.clientY)
+        if (hit) wanderTo(hit[0], hit[1])
       }
     }
 
@@ -501,7 +570,7 @@ export default function StreetWalk({
       window.removeEventListener('pointercancel', onPointerCancel)
       gl.domElement.style.touchAction = prevTouchAction
     }
-  }, [walkOnActive, flags.vincent, gl.domElement, getVincentBox, still])
+  }, [walkOnActive, flags.vincent, flags.wander, gl.domElement, getVincentBox, groundHit, wanderTo, still])
   /* eslint-enable react-hooks/immutability */
 
   // Frame loop: priority -1 (before sky reads camera)
@@ -531,9 +600,29 @@ export default function StreetWalk({
 
     clockRef.current += dt
     const prevState = walkStateRef.current
-    const stepped = stepPause(prevState, stepWalk(prevState, input), pauseRef.current, input, reduced || still)
-    const nextState = stepped.next
-    pauseRef.current = stepped.pause
+    // the wander spike: while he is off the lane the automatic walk and V1's pause stand still, and t is held or follows him
+    let w = wanderRef.current
+    const offLane = flags.wander && w.mode !== 'lane'
+    let moved = 0
+    let nextState: WalkState
+    if (offLane) {
+      if (w.mode === 'going' && (wheelPx !== 0 || keys !== 0)) w = { ...w, mode: 'returning' }
+      const slot = vincentPlace(prevState.t)
+      const stepped = stepWander(w, dt, { x: slot.position[0], z: slot.position[2], yaw: slot.yaw })
+      moved = stepped.walked - w.walked
+      w = stepped
+      wanderRef.current = w
+      let t = prevState.t
+      if (flags.wanderCam === 'follow' && w.mode !== 'lane') {
+        t = Math.min(WALK_T.max, Math.max(WALK_T.min, laneParam(w.x, w.z)[0] - VINCENT_RIG.ahead / STREET.pathLength))
+      }
+      nextState = { ...prevState, t, target: t, speed: 0 }
+      pauseRef.current = { ...pauseRef.current, dwell: 0, rest: 0, turn: 0 }
+    } else {
+      const stepped = stepPause(prevState, stepWalk(prevState, input), pauseRef.current, input, reduced || still)
+      nextState = stepped.next
+      pauseRef.current = stepped.pause
+    }
     walkStateRef.current = nextState
 
     // Camera placement
@@ -551,18 +640,35 @@ export default function StreetWalk({
       pose.position[1] + offset[1],
       pose.position[2] + offset[2],
     )
+    let aimed = pose.target
+    if (flags.wander) {
+      // the aim turns toward him by at most the knob, eased both ways; the position stays on the rail
+      const want = w.mode !== 'lane' ? aimAngle(pose.position, pose.target, [w.x, 0, w.z], flags.wanderAim) : 0
+      aimRef.current += (want - aimRef.current) * (1 - Math.exp(-dt / WANDER.aimEase))
+      if (Math.abs(aimRef.current) < 1e-6 && want === 0) aimRef.current = 0
+      if (aimRef.current !== 0) aimed = turnTarget(pose.position, pose.target, aimRef.current)
+      if (markRef.current) {
+        const show = w.mode === 'going' && Math.hypot(w.tx - w.x, w.tz - w.z) > WANDER.arrive
+        markRef.current.visible = show
+        if (show) markRef.current.position.set(w.tx, streetGroundAt(w.tx, w.tz) + 0.002, w.tz)
+      }
+    }
     persp.lookAt(
-      pose.target[0] + offset[0],
-      pose.target[1] + offset[1],
-      pose.target[2] + offset[2],
+      aimed[0] + offset[0],
+      aimed[1] + offset[1],
+      aimed[2] + offset[2],
     )
     persp.updateMatrixWorld()
 
     // Vincent sway & placement
     if (flags.vincent && vincentGroupRef.current && armGroupRef.current) {
-      const { position: vPos, yaw } = vincentPlace(nextState.t)
+      const { position: vPos, yaw } = offLane
+        ? { position: [w.x, streetGroundAt(w.x, w.z), w.z] as [number, number, number], yaw: w.yaw }
+        : vincentPlace(nextState.t)
       const { turn } = pauseRef.current
-      const g = gait(nextState.distance, nextState.speed, nextState.t - prevState.t > 1e-7, turn)
+      const g = offLane
+        ? gait(w.walked, dt > 0 ? moved / dt : 0, moved > 0, 0)
+        : gait(nextState.distance, nextState.speed, nextState.t - prevState.t > 1e-7, turn)
       const turned = turnPose(turn)
       const l = limbs(g, turned)
       const body = vincentGroupRef.current
@@ -606,6 +712,11 @@ export default function StreetWalk({
 
   return (
     <>
+      {flags.wander && (
+        <mesh ref={markRef} visible={false} rotation={[-Math.PI / 2, 0, 0]} material={vincentMaterials.pool} renderOrder={4}>
+          <circleGeometry args={[0.012, 24]} />
+        </mesh>
+      )}
       {lanternOn && (
         <mesh ref={poolRef} material={vincentMaterials.pool} renderOrder={4}>
           <planeGeometry args={[0.1, 0.16]} />
