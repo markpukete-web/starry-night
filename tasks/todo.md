@@ -8,6 +8,8 @@ Task 4. Codex's branch review found B1 and B2 (both P2), and the Lead fixed both
 run passes on the final head. Mark's three calls are at the end of the record: the hat fails the colour gate against
 the moon swatch (ΔE 16.2 to 17.2), the form's refinements, and the motion.
 
+**The preview** (behind Vercel's login, `0e7205f`): `https://starry-night-aqkftn0ko-markpukete-webs-projects.vercel.app/?street=1`
+
 **Next:** Mark looks at the preview. If he passes it, the Lead opens the PR as a draft, then marks it ready, so Codex's
 review fires. K3's PR #32 merges first, and V1 rebases on it if main moves. Then the roadmap in the 12:07 pickup below.
 

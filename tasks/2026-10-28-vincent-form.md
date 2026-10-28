@@ -139,7 +139,8 @@ the Lead verified them and did not ask Codex to review them again.
 The Lead read the whole diff `ed464c9..b6c6404` against revision 3, ran every check above on the final head, ran the
 twenty mutations and the three fix mutations, opened the look passes' captures, and answered Codex's two findings in
 the code. Every acceptance check the plan names passes, except the hat's colour, which the plan leaves to Mark. V1
-passes the Lead's gate. The branch is pushed for a Vercel preview. No PR until Mark has looked.
+passes the Lead's gate. The branch is pushed for a Vercel preview (behind Vercel's login, `0e7205f`):
+`https://starry-night-aqkftn0ko-markpukete-webs-projects.vercel.app/?street=1`. No PR until Mark has looked.
 
 ## Mark's calls at the preview
 
