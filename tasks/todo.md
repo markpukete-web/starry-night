@@ -6,6 +6,8 @@ The street alone ended the page on Mark's iPhone with every other tab closed, so
 hold it. Mark chose "Village on computers": `8531440` keeps phones and tablets on the painting with a note, and
 `?phoneVillage=1` opens the village there. The record is the last two sections of `tasks/2026-10-28-portal-iphone.md`.
 
+The preview (behind Vercel's login, `7d744d3`): `https://starry-night-jc3dbyb0h-markpukete-webs-projects.vercel.app`
+
 **Next:** Mark looks at the note on his phone and at the portal on a computer, on the preview. Then the portal-on
 slice's PR path after K3 (#32) merges.
 
