@@ -6,6 +6,7 @@ import {
   aimToward,
   clearLine,
   passable,
+  seenFrom,
   stepWander,
   walkable,
   WANDER,
@@ -100,4 +101,19 @@ test('aimToward turns by exactly maxDeg when the bearing is farther, fully when 
   assert.ok(Math.abs(bearing(near) - (Math.atan2(0.2, 1) * 180) / Math.PI) < 1e-9)
   const none = aimToward(pos, tgt, [1, 0, 1], 0)
   assert.ok(Math.abs(bearing(none)) < 1e-9)
+})
+
+test('a ground point behind a house is not seen from the camera', () => {
+  // look pass 1: a plane cast through a wall sent him behind the house
+  const h = STREET_HOUSES[0]
+  const c = Math.cos(h.yaw)
+  const s = Math.sin(h.yaw)
+  // two points on either side of the house along its own x axis, past its half-width
+  const far = h.w / 2 + 0.05
+  const a = [h.x - c * far, h.z - s * far] as const
+  const b = [h.x + c * far, h.z + s * far] as const
+  assert.equal(seenFrom(a[0], a[1], b[0], b[1]), false)
+  // the same point seen from beside it, not across the house
+  const beside = [b[0] + c * 0.05, b[1] + s * 0.05] as const
+  assert.equal(seenFrom(beside[0], beside[1], b[0], b[1]), true)
 })

@@ -63,6 +63,7 @@ import { material, plainGeometry } from './streetMaterial.ts'
 import {
   aimAngle,
   clearLine,
+  seenFrom,
   stepWander,
   turnTarget,
   walkable,
@@ -339,7 +340,9 @@ export default function StreetWalk({
       const dir = ndc.unproject(persp).sub(persp.position).normalize()
       if (dir.y >= 0) return null
       const s = (offset[1] - persp.position.y) / dir.y
-      return [persp.position.x + s * dir.x - offset[0], persp.position.z + s * dir.z - offset[2]]
+      const x = persp.position.x + s * dir.x - offset[0]
+      const z = persp.position.z + s * dir.z - offset[2]
+      return seenFrom(persp.position.x - offset[0], persp.position.z - offset[2], x, z) ? [x, z] : null
     },
     [camera, offset, gl.domElement],
   )

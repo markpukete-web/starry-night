@@ -1,4 +1,4 @@
-import { inFootprint, isExcluded } from './streetGrass.ts'
+import { inFootprint, insideHouse, isExcluded } from './streetGrass.ts'
 import { laneOffset, streetClearings, STREET, type OrientedBox } from './streetLayout.ts'
 import { WALK } from './streetWalk.ts'
 
@@ -130,4 +130,18 @@ export function aimToward(
   maxDeg: number,
 ): [number, number, number] {
   return turnTarget(position, target, aimAngle(position, target, toward, maxDeg))
+}
+
+/**
+ * A tap's ground point is one the camera sees: the ray from the camera to it crosses no house's footprint (look pass 1:
+ * a plane cast went through a wall and sent him behind the house). The eye is below every eave, so any crossing is a
+ * wall. Samples every `WANDER.step` along the ray's ground track.
+ */
+export function seenFrom(cx: number, cz: number, x: number, z: number): boolean {
+  const n = Math.max(1, Math.ceil(Math.hypot(x - cx, z - cz) / WANDER.step))
+  for (let i = 1; i < n; i++) {
+    const f = i / n
+    if (insideHouse(cx + (x - cx) * f, cz + (z - cz) * f, 0)) return false
+  }
+  return true
 }
