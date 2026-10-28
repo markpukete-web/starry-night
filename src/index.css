@@ -100,12 +100,27 @@ button {
   outline-offset: 3px;
 }
 
-.visitor-dock {
+/* The placard over the dock, in one stack: the placard clears the dock however many rows it wraps to. 10px is the
+   clearance the placard's fixed `bottom: 84px` gave (16 + the dock's 58 + 10). The space between them is the canvas's.
+   Left 8px: four pills make a 639px row, which must still fit at 667px wide, as with the dock's old `right: 16px` alone. */
+.visitor-bottom {
   position: fixed;
   right: 16px;
   bottom: 16px;
+  left: 8px;
   z-index: 12;
   display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  pointer-events: none;
+}
+
+/* Wraps, right-aligned, where five pills do not fit one row (a phone in landscape, 667 × 375) */
+.visitor-dock {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 8px;
   padding: 8px;
   border: 1px solid rgba(244, 234, 211, 0.2);
@@ -116,6 +131,7 @@ button {
   box-shadow: 0 18px 46px rgba(4, 7, 19, 0.34);
   backdrop-filter: blur(10px) saturate(1.15);
   -webkit-backdrop-filter: blur(10px) saturate(1.15);
+  pointer-events: auto;
 }
 
 /* Labelled pill buttons — icon + text, so the controls (especially 'Show original') are obvious and
@@ -178,10 +194,8 @@ button {
 /* Small original-painting reference in the corner — visible AT THE SAME TIME as the living painting
    so you can compare the two side by side without losing either. */
 .visitor-reference {
-  position: fixed;
-  left: 16px;
-  bottom: 84px;
-  z-index: 11;
+  align-self: flex-start;
+  margin-left: 8px;
   width: min(300px, calc(100vw - 32px));
   padding: 8px;
   border: 1px solid rgba(244, 234, 211, 0.18);
@@ -190,6 +204,7 @@ button {
   box-shadow: 0 18px 46px rgba(4, 7, 19, 0.34);
   backdrop-filter: blur(10px) saturate(1.12);
   -webkit-backdrop-filter: blur(10px) saturate(1.12);
+  pointer-events: auto;
 }
 
 .visitor-reference img {
@@ -220,12 +235,16 @@ button {
   /* Span the width and wrap rather than centring a too-wide row — three labelled pills do not fit
      a 390px phone, and translateX(-50%) clipped them off BOTH edges. Labels are kept (the point of
      the pills) and the row wraps instead. */
-  .visitor-dock {
+  .visitor-bottom {
     right: 14px;
     bottom: max(14px, env(safe-area-inset-bottom));
     left: 14px;
-    transform: none;
-    flex-wrap: wrap;
+    align-items: stretch;
+    /* the clearance the placard's fixed `bottom: 128px` gave two rows (14 + 98 + 16) */
+    gap: 16px;
+  }
+
+  .visitor-dock {
     justify-content: center;
   }
 
@@ -236,19 +255,10 @@ button {
   }
 
   /* On a phone the 300px placard swallowed most of the frame; it must read as a reference, not
-     replace the piece. Sits clear of a wrapped dock. */
+     replace the piece. The stack's left is the dock's 14px, and the placard keeps its 16. */
   .visitor-reference {
     width: min(196px, 52vw);
-    bottom: 128px;
-  }
-}
-
-/* Below 360px the four pills wrap to three rows (3 × 36 + 4 × 8 + 14 = 154px) and covered the placard's
-   lower 28px at 320px (review F7). 172 keeps the 18px clearance two rows have. Only here: at 640 × 360 a
-   higher placard ran into the title (check:viewport, short-and-narrow). */
-@media (max-width: 359px) {
-  .visitor-reference {
-    bottom: 172px;
+    margin-left: 2px;
   }
 }
 

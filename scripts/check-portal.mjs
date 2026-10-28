@@ -270,6 +270,19 @@ async function main() {
     await page.waitFor('window.__streetReady && window.__streetCamera', 30000, 'the street')
     const stop0 = await page.evaluate('window.__streetCamera()')
 
+    // ---- case 0: the flag. On for every visitor (2026-10-28), off with `?portal=0`
+    await open(page, '?arrival=0&walkMode=input')
+    if (!(await page.evaluate('window.__portal().on'))) throw new Error('case 0: the portal is off on a plain visit')
+    const villagePill = `[...document.querySelectorAll('.visitor-dock button')].some((b) => b.getAttribute('aria-label') === 'Enter the village')`
+    if (!(await page.evaluate(villagePill))) throw new Error('case 0: no "Enter the village" in the dock on a plain visit')
+    await page.send('Page.navigate', { url: `${origin}/?arrival=0&walkMode=input&portal=0` })
+    await sleep(500)
+    await page.waitFor('window.__skyReady', 30000, 'the sky with portal=0')
+    await sleep(1000)
+    if (await page.evaluate('Boolean(window.__portal)')) throw new Error('case 0: the portal is on with portal=0')
+    if (await page.evaluate(villagePill)) throw new Error('case 0: "Enter the village" in the dock with portal=0')
+    console.log('PASS 0: the portal is on with its pill on a plain visit, and off without its pill with portal=0')
+
     // ---- case 1: the hover
     await open(page, BASE)
     const house = await page.evaluate(`window.__findPick('village', 16)`)
@@ -332,6 +345,26 @@ async function main() {
     const rec4 = await record(page, () => page.evaluate(`document.querySelector('button[aria-label="Back to the painting"]').click()`), `window.__portal().place === 'diorama'`)
     const r4 = assertReturn(rec4, 'case 4', view4)
     console.log(`PASS 4: the dock enters and returns, the pose ${r4.now} then ${r4.after} from the saved one`)
+
+    // ---- case 4b: the dock's pill clicked where it is drawn, on the phones the bottom stack wraps (Codex plan review F2)
+    const pillAt = (label) => page.evaluate(`(() => {
+      const el = document.querySelector('button[aria-label="${label}"]')
+      const b = el.getBoundingClientRect()
+      const x = b.x + b.width / 2, y = b.y + b.height / 2
+      const at = document.elementFromPoint(x, y)
+      return { x, y, hit: Boolean(at && el.contains(at)) && !el.disabled && getComputedStyle(el).visibility === 'visible' }
+    })()`)
+    const sizes4b = [PHONE, { ...PHONE, width: 667, height: 375 }, { ...PHONE, width: 320, height: 568 }]
+    for (const vp of sizes4b) {
+      await open(page, BASE, vp)
+      const enter = await pillAt('Enter the village')
+      if (!enter.hit) throw new Error(`case 4b: at ${vp.width} × ${vp.height} "Enter the village" is not clickable at its centre`)
+      await enterAndSettle(page, () => page.tap(enter.x, enter.y))
+      const back = await pillAt('Back to the painting')
+      if (!back.hit) throw new Error(`case 4b: at ${vp.width} × ${vp.height} "Back to the painting" is not clickable at its centre`)
+      await record(page, () => page.tap(back.x, back.y), `window.__portal().place === 'diorama'`)
+    }
+    console.log(`PASS 4b: a click on the pill where it is drawn enters and returns at ${sizes4b.map((v) => `${v.width} × ${v.height}`).join(', ')}`)
 
     // ---- case 5: a street that fails, then a chunk that fails
     await open(page, `${BASE}&streetFail=painting`)

@@ -117,56 +117,59 @@ export function VisitorChrome({
           </a>
         </p>
       </header>
-      {showOriginal && (
-        <aside className="visitor-reference" aria-label="Original painting reference">
-          <img src="/reference/painting.jpg" alt="The original Starry Night painting" draggable={false} />
-        </aside>
-      )}
-      <nav className="visitor-dock" aria-label="Artwork controls">
-        {/* Disabled while the camera flies or the scenes swap: the control acts only in the diorama and the street */}
-        {portal && (
-          <VisitorButton
-            disabled={portal.place !== 'diorama' && !inStreet}
-            icon={inStreet ? '↩' : '⌂'}
-            label={inStreet ? 'Back to the painting' : 'Enter the village'}
-            onClick={inStreet ? portal.leave : portal.enter}
-            onPrefetch={inStreet ? undefined : portal.prefetch}
-          />
+      {/* The placard and the dock in one stack at the bottom, so the placard clears the dock however many rows it wraps to */}
+      <div className="visitor-bottom">
+        {showOriginal && (
+          <aside className="visitor-reference" aria-label="Original painting reference">
+            <img src="/reference/painting.jpg" alt="The original Starry Night painting" draggable={false} />
+          </aside>
         )}
-        {/* Under system reduced motion the sky is the painted still, so the choice is disabled, like the
-            pause button: removing it dropped keyboard focus to the page (review F8). The choice is kept. */}
-        {onToggleSky && (
+        <nav className="visitor-dock" aria-label="Artwork controls">
+          {/* Disabled while the camera flies or the scenes swap: the control acts only in the diorama and the street */}
+          {portal && (
+            <VisitorButton
+              disabled={portal.place !== 'diorama' && !inStreet}
+              icon={inStreet ? '↩' : '⌂'}
+              label={inStreet ? 'Back to the painting' : 'Enter the village'}
+              onClick={inStreet ? portal.leave : portal.enter}
+              onPrefetch={inStreet ? undefined : portal.prefetch}
+            />
+          )}
+          {/* Under system reduced motion the sky is the painted still, so the choice is disabled, like the
+              pause button: removing it dropped keyboard focus to the page (review F8). The choice is kept. */}
+          {onToggleSky && (
+            <VisitorButton
+              active={!reduced && sky === 'moving'}
+              disabled={reduced}
+              icon="≋"
+              label={reduced ? 'Sky choice paused by system setting' : sky === 'moving' ? 'Switch sky to painted light' : 'Switch sky to moving strokes'}
+              text={reduced || sky === 'light' ? 'Sky: painted light' : 'Sky: moving strokes'}
+              onClick={onToggleSky}
+            />
+          )}
           <VisitorButton
-            active={!reduced && sky === 'moving'}
+            active={motionPaused}
             disabled={reduced}
-            icon="≋"
-            label={reduced ? 'Sky choice paused by system setting' : sky === 'moving' ? 'Switch sky to painted light' : 'Switch sky to moving strokes'}
-            text={reduced || sky === 'light' ? 'Sky: painted light' : 'Sky: moving strokes'}
-            onClick={onToggleSky}
+            icon={motionPaused ? '▶' : 'Ⅱ'}
+            label={reduced ? 'Motion paused by system setting' : visitorPaused ? 'Play motion' : 'Pause motion'}
+            text={reduced ? 'Motion paused' : visitorPaused ? 'Play motion' : 'Pause motion'}
+            onClick={onTogglePause}
           />
-        )}
-        <VisitorButton
-          active={motionPaused}
-          disabled={reduced}
-          icon={motionPaused ? '▶' : 'Ⅱ'}
-          label={reduced ? 'Motion paused by system setting' : visitorPaused ? 'Play motion' : 'Pause motion'}
-          text={reduced ? 'Motion paused' : visitorPaused ? 'Play motion' : 'Pause motion'}
-          onClick={onTogglePause}
-        />
-        <VisitorButton
-          active={showOriginal}
-          icon="◨"
-          label={showOriginal ? 'Hide original' : 'Show original'}
-          onClick={onToggleOriginal}
-        />
-        <VisitorButton
-          active={fullscreen}
-          disabled={!fullscreenSupported}
-          icon="⛶"
-          label={fullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-          onClick={toggleFullscreen}
-        />
-      </nav>
+          <VisitorButton
+            active={showOriginal}
+            icon="◨"
+            label={showOriginal ? 'Hide original' : 'Show original'}
+            onClick={onToggleOriginal}
+          />
+          <VisitorButton
+            active={fullscreen}
+            disabled={!fullscreenSupported}
+            icon="⛶"
+            label={fullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+            onClick={toggleFullscreen}
+          />
+        </nav>
+      </div>
     </>
   )
 }
