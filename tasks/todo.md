@@ -1,6 +1,19 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-28 (23:15): the case 2 (phone) race fixed in the check
+## Pickup — 2026-10-28 (23:45): end of the night; nothing open
+
+Mark called it for the night. On `main` (`1c77ab6`): K3, the portal on for every visitor, V1 (#34), the phone's memory
+(#35) and the case 2 (phone) check fix (#36). Codex passed #36 on `df72a18` with no findings, CI green, merged on
+Mark's word. `fix/portal-case2-race` is deleted on GitHub and locally. No PR is open. Nothing is running.
+
+This note is committed on the local branch `docs/pickup-2026-10-28-night`, not pushed (docs only). Branch the next
+slice from it, so the note goes up with the next code push.
+
+**Next, each Mark's call:** Vincent's wander (`spike/vincent-wander`, `74d8856`), whether it becomes a slice. Then
+Mark's noted ideas. Then a performance review across the piece, with `scratch/phone-memory-2026-10-28/tools/` as its
+first tools. Seven older worktrees remain under `/private/tmp/claude-502/`. Ask Mark before removing them.
+
+## Pickup — 2026-10-28 (23:15): the case 2 (phone) race fixed in the check (done: #36 merged)
 
 Mark: "fix the case 2 race first". The defect was in `check-portal.mjs`, not the walk. The walk is held in `entering`
 only (`tasks/2026-10-25-street-portal-plan.md:133`), and it steps on the first frame the canvas sees `street`. R3F
