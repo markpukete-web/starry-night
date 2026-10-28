@@ -134,7 +134,7 @@ the Lead verified them and did not ask Codex to review them again.
   and 666 ms on V1 against 658, 661 and 666 on K3, unchanged, as its identical hash says. `buildVincent` takes 1.1 ms
   against K3's 0.8.
 
-## The Lead's gate (14:45)
+## The Lead's gate (14:40)
 
 The Lead read the whole diff `ed464c9..b6c6404` against revision 3, ran every check above on the final head, ran the
 twenty mutations and the three fix mutations, opened the look passes' captures, and answered Codex's two findings in

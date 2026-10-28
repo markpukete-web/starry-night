@@ -1,6 +1,6 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-28 (14:50): V1 passes the Lead's gate and is pushed for Mark's preview
+## Pickup — 2026-10-28 (14:40): V1 passes the Lead's gate and is pushed for Mark's preview
 
 **V1, Vincent's form** (`feat/vincent-form` at `b6c6404` plus the docs, off K3's `ed464c9`, pushed for a Vercel
 preview, no PR): the record is `tasks/2026-10-28-vincent-form.md`. Builders on Sonnet 5.5 built Tasks 1 to 3, the Lead
@@ -13,7 +13,7 @@ the moon swatch (ΔE 16.2 to 17.2), the form's refinements, and the motion.
 **Next:** Mark looks at the preview. If he passes it, the Lead opens the PR as a draft, then marks it ready, so Codex's
 review fires. K3's PR #32 merges first, and V1 rebases on it if main moves. Then the roadmap in the 12:07 pickup below.
 
-## Pickup — 2026-10-28 (12:07): Vincent's form V1 planned and under review; the roadmap after it (superseded by the 14:50 pickup above)
+## Pickup — 2026-10-28 (12:07): Vincent's form V1 planned and under review; the roadmap after it (superseded by the 14:40 pickup above)
 
 **V1, Vincent's form** (`feat/vincent-form` off K3's `ed464c9`): Mark's calls are made. Tarascon is the form, the turn
 90/45, a 4 s dwell, no cane, and the right arm swings. The plan is `tasks/2026-10-28-vincent-form-plan.md`, revision 0
