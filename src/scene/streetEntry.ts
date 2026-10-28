@@ -31,6 +31,15 @@ export function streetSkyAnchor(search: string, portal = false): SkyAnchor | und
   return { follow: params.get('skyAnchor') !== 'A', worldFixed: params.get('skyTurn') !== 'lock' }
 }
 
+/**
+ * Whether the portal opens the village street on this device. A phone or a tablet (`phone`: no hover and a coarse
+ * pointer, the walk's own test) gets a note instead: the street alone ended the page on Mark's iPhone (2026-10-28).
+ * `?phoneVillage=1` opens it there, for tests on the phone.
+ */
+export function villageOnDevice(search: string, phone: boolean): boolean {
+  return !phone || new URLSearchParams(search).get('phoneVillage') === '1'
+}
+
 export function touchEnabled({ touch, reduced, arriving, street }: { touch: boolean; reduced: boolean; arriving: boolean; street: boolean }): boolean {
   if (street) return false
   return touch && !reduced && !arriving

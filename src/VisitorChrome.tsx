@@ -124,6 +124,12 @@ export function VisitorChrome({
             <img src="/reference/painting.jpg" alt="The original Starry Night painting" draggable={false} />
           </aside>
         )}
+        {/* the phone's note: always in the page, so a screen reader announces the text when it appears */}
+        {portal && (
+          <p className="visitor-note" role="status">
+            {portal.note ? 'The village walk opens on a computer for now.' : ''}
+          </p>
+        )}
         <nav className="visitor-dock" aria-label="Artwork controls">
           {/* Disabled while the camera flies or the scenes swap: the control acts only in the diorama and the street */}
           {portal && (

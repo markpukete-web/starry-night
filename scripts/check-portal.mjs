@@ -23,6 +23,8 @@
  * 11. Three round trips leave the renderer's geometries and textures where the first left them.
  * 12. On the phone, a finger pressed and dragged over a tree adds sky surges, no land touch and no land cast, and a
  *    finger's tap on a tree adds a kick and no land touch or cast. A mouse over a tree casts and adds one (the control).
+ * 13. A touch phone (no hover, a coarse pointer) keeps the painting: the pill shows the note and the place stays the
+ *    diorama. With `?phoneVillage=1` the same phone enters (2026-10-28, the street alone ended the page on Mark's iPhone).
  * Each case prints PASS or throws; the run exits 1 on the first failure.
  */
 import { execFileSync, execSync, spawn } from 'node:child_process'
@@ -604,6 +606,24 @@ async function main() {
     await page.mouse('mouseReleased', tree12b[0], tree12b[1])
     if (l12mouse <= l12tap || c12mouse <= c12b) throw new Error(`case 12: the control failed, a mouse over a tree took the land touches from ${l12tap} to ${l12mouse} and the casts from ${c12b} to ${c12mouse}`)
     console.log(`PASS 12: on the phone a finger's drag over a tree added ${s12b - s12a} sky surges and its tap a kick, with no land touch and no cast; a mouse over a tree cast ${c12mouse - c12b} times and added ${l12mouse - l12tap} touch`)
+
+    // ---- case 13: a phone keeps the painting; the note, then the override enters
+    await page.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 })
+    await open(page, BASE, PHONE)
+    const coarse13 = await page.evaluate(`window.matchMedia('(hover: none) and (pointer: coarse)').matches`)
+    if (!coarse13) throw new Error('case 13: the touch emulation does not read as a phone')
+    const note13 = `document.querySelector('.visitor-note')?.textContent ?? ''`
+    if (await page.evaluate(note13)) throw new Error('case 13: the note shows before the tap')
+    await page.evaluate(`document.querySelector('button[aria-label="Enter the village"]').click()`)
+    await sleep(800)
+    const shown13 = await page.evaluate(note13)
+    const place13 = await placeOf(page)
+    if (place13 !== 'diorama' || !shown13.includes('computer')) throw new Error(`case 13: the pill on a phone went to ${place13} with the note "${shown13}"`)
+    await open(page, `${BASE}&phoneVillage=1`, PHONE)
+    const rec13 = await enterAndSettle(page, () => page.evaluate(`document.querySelector('button[aria-label="Enter the village"]').click()`))
+    if (!placesOf(rec13).includes('street')) throw new Error(`case 13: with ?phoneVillage=1 the phone ran ${placesOf(rec13)}`)
+    await page.send('Emulation.setTouchEmulationEnabled', { enabled: false })
+    console.log(`PASS 13: a touch phone keeps the painting with the note ("${shown13}"); ?phoneVillage=1 enters (${placesOf(rec13).join(',')})`)
 
     if (page.errors.length) throw new Error(`page errors:\n  ${page.errors.join('\n  ')}`)
     page.ws.close()

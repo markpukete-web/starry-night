@@ -193,6 +193,22 @@ button {
 
 /* Small original-painting reference in the corner — visible AT THE SAME TIME as the living painting
    so you can compare the two side by side without losing either. */
+/* the phone's note above the dock (2026-10-28): the reference placard's panel, the dock's ink */
+.visitor-note {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid rgba(244, 234, 211, 0.2);
+  border-radius: 8px;
+  background: rgba(7, 13, 29, 0.78);
+  color: #f7e7b5;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.visitor-note:empty {
+  display: none;
+}
+
 .visitor-reference {
   align-self: flex-start;
   margin-left: 8px;

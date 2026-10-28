@@ -6,5 +6,5 @@ import type { PortalPlace } from './portal'
  * on. The dock is its child, so it reads them here rather than through `App`. Its own file, so fast refresh keeps
  * working in the components on both sides.
  */
-export type PortalControl = { place: PortalPlace; enter: () => void; leave: () => void; prefetch: () => void }
+export type PortalControl = { place: PortalPlace; enter: () => void; leave: () => void; prefetch: () => void; note: boolean }
 export const PortalContext = createContext<PortalControl | null>(null)
