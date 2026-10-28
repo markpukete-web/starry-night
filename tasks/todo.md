@@ -1,5 +1,11 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-10-28 (18:28): Mark's read of the wander spike
+
+Mark at 18:00: "The wondering links feels okay!" He has not said to make it a slice. If he does, the open points are
+in the draft's last section (`tasks/2026-10-28-vincent-wander-spike.md`): the lantern hides in the grass when he stops,
+the verge has few places to walk to, and the square is not walkable. The spike branch is never merged.
+
 ## Pickup — 2026-10-28 (15:52): Vincent's wander, a throwaway spike, built and pushed for Mark's preview (on `spike/vincent-wander` only)
 
 **The spike** (`tasks/2026-10-28-vincent-wander-spike.md`, off V1's `b93e0f0`, never merged): `?wander=1` in the street.
