@@ -66,6 +66,8 @@ One fault, fixed (`e055b53`): the tap's ray met the ground plane through walls, 
 the ground behind it. `seenFrom` now refuses a point whose ray from the camera crosses a house's footprint. Its test
 goes red without the check.
 
+The preview (`2d0a98b`, behind Vercel's login): `https://starry-night-eur8ala40-markpukete-webs-projects.vercel.app/?street=1&wander=1`.
+
 Seen and left for Mark:
 - In the grass his lantern hangs lower than the blades, so its glass and pool are hidden once he stops. It shows while he
   walks.

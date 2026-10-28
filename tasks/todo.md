@@ -5,7 +5,7 @@
 **The spike** (`tasks/2026-10-28-vincent-wander-spike.md`, off V1's `b93e0f0`, never merged): `?wander=1` in the street.
 A tap on the verge sends Vincent there. The camera stays on its rail and turns toward him by up to `?wanderAim=`
 degrees. `?wanderCam=follow` or `hold`. Built (`c529702`) and look pass 1 done (`e055b53`, the draft's last section),
-pushed for Mark's preview. **Next:** Mark's read. Mark decides from the preview: a slice, a change,
+pushed for Mark's preview: `https://starry-night-eur8ala40-markpukete-webs-projects.vercel.app/?street=1&wander=1` (behind Vercel's login). **Next:** Mark's read. Mark decides from the preview: a slice, a change,
 or no.
 
 ## Pickup — 2026-10-28 (14:40): V1 passes the Lead's gate and is pushed for Mark's preview
