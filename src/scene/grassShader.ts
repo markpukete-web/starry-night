@@ -11,6 +11,7 @@ import { PALETTE } from './palette.ts'
 import { fogInjection } from './streetFog.ts'
 import { lifeTimeUniform } from './streetLife.ts'
 import { STREET_MOON } from './streetLight.ts'
+import { withLantern } from './streetLantern.ts'
 import { material } from './streetMaterial.ts'
 
 /**
@@ -136,8 +137,9 @@ export function buildGrassMaterial(
 ): MeshBasicMaterial {
   const stroke = strokeGlslWith(GRASS_STROKE_BODY)
   const moon = lit && !ids
+  // lit, the lantern's lift after the moon's colour and before the fog (V1 task 4), at the blade's root and height
   const strokeBody = moon
-    ? { ...stroke, fragmentHead: `${stroke.fragmentHead}\n${MOON_VARYINGS}`, fragmentBody: MOON_FRAGMENT + stroke.fragmentBody }
+    ? withLantern({ ...stroke, fragmentHead: `${stroke.fragmentHead}\n${MOON_VARYINGS}`, fragmentBody: MOON_FRAGMENT + stroke.fragmentBody }, 'vec3(aRoot.x, position.y * aHeight, aRoot.y)')
     : stroke
   const injection = grassInjection(trailTexture, trailRect, moon)
   return material(

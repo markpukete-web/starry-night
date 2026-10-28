@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useThree } from '@react-three/fiber'
 import type { PerspectiveCamera } from 'three'
-import { CYPRESS_STROKE_BODY, strokeGlslWith, type StrokeBody } from './cypressStrokeShader.ts'
+import { CYPRESS_STROKE_BODY, strokeGlslWith } from './cypressStrokeShader.ts'
 import type { BakedMass } from './landDomes.ts'
 import { buildFlatPanel, buildStreet, FLAT_VIEW, type StreetBuild, type StreetCounts } from './streetGeometry.ts'
 import { FOG, fogInjection } from './streetFog.ts'
@@ -23,6 +23,7 @@ import StreetWalk from './StreetWalk.tsx'
 import StreetGrass from './StreetGrass.tsx'
 import StreetFrog from './StreetFrog.tsx'
 import { useImageData } from './useImageData.ts'
+import { grassBaseMaterial, groundMaterial } from './streetLantern.ts'
 import { material, plainGeometry } from './streetMaterial.ts'
 
 type StreetWindow = Window & {
@@ -30,13 +31,6 @@ type StreetWindow = Window & {
   __streetCounts?: StreetCounts
   __streetCamera?: () => { position: number[]; quaternion: number[]; fov: number; near: number; far: number }
 }
-
-/**
- * The ground's and the path's body (pass 4): the cypress's (E4) without its gap discards, with soft lanes, the dry brush
- * only in the last 15% and half the fray. It was aimed at the path's rectangles close to the camera, which turned out
- * to be z-fighting, fixed by the lift levels (`734903f`); whether the ground returns to E4's body is Mark's call.
- */
-const STREET_GROUND_BODY: StrokeBody = { ...CYPRESS_STROKE_BODY, gaps: null, laneEdge: null, dryFrom: 0.85, fray: 0.08 }
 
 /**
  * The street (S1, tasks/2026-10-23-street-s1-plan.md): built once from the painting, the land flow and the baked
@@ -135,18 +129,19 @@ export default function Street({
     return {
       solid: material('street-solid', null, fog(), false, ids),
       strokes: material('street-strokes', strokeGlslWith(CYPRESS_STROKE_BODY), fog(), true, ids),
-      ground: material('street-ground', strokeGlslWith(STREET_GROUND_BODY), fog(), true, ids),
+      // Vincent's lantern lights the ground (V1 task 4), lit only: `?light=0` keeps the base's program
+      ground: groundMaterial(fog(), ids, flags.light),
       // pass 1: the land's body broke the curls into combs at walking distance; the cypress's (E4) holds them
       // the trees sway in a breeze (streetLife.tsx)
       trees: material('street-trees-sway', strokeGlslWith(CYPRESS_STROKE_BODY), fog(), true, ids, swayInjection()),
       treeSolid: material('street-trees-solid-sway', null, fog(), false, ids, swayInjection()),
     }
-  }, [fog, flags.ids])
+  }, [fog, flags.ids, flags.light])
   useEffect(() => () => { for (const m of Object.values(materials)) m.dispose() }, [materials])
   // the base under the grass, painted with the bushes' dark dabs (S3b pass 5): its paint is the painting's, so it waits for it
   const baseMaterial = useMemo(
-    () => (flags.grass && paintingData ? material('street-grass-base', grassBaseBody(grassBasePalette(paintingData)), fog(), false, flags.ids > 0) : null),
-    [flags.grass, flags.ids, paintingData, fog],
+    () => (flags.grass && paintingData ? grassBaseMaterial(grassBaseBody(grassBasePalette(paintingData)), fog(), flags.ids > 0, flags.light) : null),
+    [flags.grass, flags.ids, flags.light, paintingData, fog],
   )
   useEffect(() => () => baseMaterial?.dispose(), [baseMaterial])
 

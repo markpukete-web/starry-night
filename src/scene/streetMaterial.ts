@@ -57,7 +57,8 @@ export function idInjection(threshold = FOG.near + 0.6 * (FOG.far - FOG.near)): 
 
 export function material(
   key: string,
-  body: Omit<AliveInjection, 'key' | 'uniforms'> | null,
+  /** a body may bring its own uniforms (V1 task 4's lantern): they are kept, as the body is spread over `{ uniforms: {} }` */
+  body: (Omit<AliveInjection, 'key' | 'uniforms'> & Partial<Pick<AliveInjection, 'uniforms'>>) | null,
   fog: Omit<AliveInjection, 'key'>,
   stroke: boolean,
   ids: boolean,
