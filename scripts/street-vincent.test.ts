@@ -178,7 +178,7 @@ test('the right arm swings on its own', () => {
   assert.ok(build.armRight.strokes.cls.every((c) => c === VINCENT_CLASS.smock), 'his right sleeve is the smock')
 })
 
-test("the hat is the moon's yellow", () => {
+test("the hat is the crescent's ochre", () => {
   const want = underpaintColour(painting, FORM.tarascon.hat)
   const { positions, colors, cls } = build.head.underpaint
   let hat = 0
@@ -259,9 +259,9 @@ test('his paint is the painting\'s', { skip: !existsSync(workPainting) && 'needs
   const smockMean = meanOf(real.body, VINCENT_CLASS.smock)
   const smock = dE(smockMean, swatchMean('village', [1]))
   const fidelity = dE(smockMean, sourceMeanOf(VINCENT_SOURCES.smock))
-  // the hat is the head's, in the moon's yellow (Decision (e)): its strokes keep their source patch's colour. The moon's
-  // body swatch #c0b451 is printed, not asserted: the raw patch is 13.6 from it (the plan's Facts), and the render gate
-  // measures it
+  // the hat is the head's, in the crescent's ochre edge: its strokes keep their source patch's colour. The moon's body
+  // swatch #c0b451 is printed, not asserted: the raw patch is 14.1 from it, and the render gate measures the hat against
+  // the patch
   const hatMean = meanOf(real.head, VINCENT_CLASS.hat)
   const hat = dE(hatMean, sourceMeanOf(FORM.tarascon.hat))
   const moonBody = (palette.regions as Record<string, { colours: { hex: string; lab: number[] }[] }>).moon.colours.find((c) => c.hex === '#c0b451')

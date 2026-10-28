@@ -23,7 +23,7 @@ import type { ImageData2D } from './useImageData.ts'
  * `village` rectangle, 4.3 from its ultramarine swatch `#2a3f6f` (look pass 4, Codex T1: pass 3's patch at the right
  * edge was 18.8 from it, past the bar of 10). Its chroma is 35, where the first source, the hills' grey-blue, was 23
  * (Mark: "vincent's cloth is similar to the ground"). `hat` is S2's, the cottages' thatch; the Tarascon hat is the
- * moon's yellow, `FORM.tarascon.hat`. */
+ * crescent's ochre edge, `FORM.tarascon.hat`. */
 export const VINCENT_SOURCES = {
   smock: [1176, 840, 1208, 872],
   hat: STREET_SOURCES.thatch,
@@ -58,7 +58,7 @@ export type VincentBuild = {
 /**
  * The form's sizes (V1, from the form spike `70acd5b`, `scratch/vincent-form-2026-10-28/consult-fable.md`): the hem
  * raised to the calf over two legs in pale trousers and ink boots, a head of its own about the neck, a lantern in the
- * left hand. Tarascon: the yellow straw hat from the moon's body, the easel and the paint box strapped to his back.
+ * left hand. Tarascon: the straw hat from the crescent's ochre edge, the easel and the paint box strapped to his back.
  */
 export const FORM = {
   hem: [[0.028, 0.0145], [0.034, 0.0135]] as [number, number][],
@@ -75,7 +75,10 @@ export const FORM = {
   shade: 0.45,
   lantern: { handle: 0.008, cap: 0.003, r: 0.0035, h: 0.01 },
   tarascon: {
-    hat: [1376, 216, 1408, 248] as Rect,
+    /** the crescent's lower-right edge, the painting's darkest and warmest gold, brown stroke lines through it: mean L 63
+     * at hue 90, where the moon's body (V1's first hat) is L 69 at hue 94 and Tarascon's straw hue 84. Mark, 2026-10-28:
+     * "Go for your recommendations for the hat's colour" */
+    hat: [1490, 280, 1514, 304] as Rect,
     back: -0.0115,
   },
 }
