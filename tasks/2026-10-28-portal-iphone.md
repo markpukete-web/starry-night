@@ -90,3 +90,14 @@ is a `role="alertdialog"`. The note, its 5 s timer, `villageOnDevice` and `?phon
 - The look (`mem/ask-crop.png`, 390 × 844 at dpr 3, touch): the card above the dock, the text on two lines, the two
   answers as the dock's pills.
 - A phone that enters may still lose the page: the street alone failed on Mark's iPhone. The card says so.
+
+## Mark's iPhone enters the village through the portal (about 20:05)
+
+Mark, on `5689ef0`'s preview: "Good, this is what I want. and it loads well this time." It is the first entry his
+iPhone held, through the card's "Enter anyway", with the diorama unmounted in the street. One entry is not a rate.
+
+He noticed the old Vincent: this branch is off `main`, and V1's form sits on `feat/vincent-form` over K3. At 20:33 the
+Lead pushed `preview/all-2026-10-28` (`253d8f7`, V1 merged with this branch, only the notes files in conflict, both
+sides kept; never merged): 451 tests, tsc, lint and every `check-portal` case pass on it. In headless Chrome as the
+phone, the street through the card holds a 141 MB JS heap after the entry (this branch 155). Preview:
+`https://starry-night-9yhn2axt0-markpukete-webs-projects.vercel.app`
