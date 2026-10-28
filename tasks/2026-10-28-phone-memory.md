@@ -59,7 +59,11 @@ passes `reduced={reduced || hold}` to the walk, so once `place` flips the walk's
 browser frame, before the check's `requestAnimationFrame` records it. Under a millimetre, not visible. Not this
 slice's: noted in `tasks/todo.md` for its own commit.
 
+## Mark's iPhone
+
+On the preview of `cd3f85e` (`https://starry-night-kxrkvpoz4-markpukete-webs-projects.vercel.app`), entered through
+"Enter anyway". Mark: "it holds". Stage 3 is not needed now. It stays in the plan for a phone that fails later.
+
 ## Next
 
-Mark enters the village through "Enter anyway" on his iPhone, more than once, with his usual tabs open. If it holds,
-the PR. If it does not, stage 3 (the plan).
+The PR against `main`, as a draft, then ready so Codex reviews it.

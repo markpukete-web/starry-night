@@ -1,6 +1,12 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-28 (22:35): the street on phones, stages 1 and 2 built, gating for Mark's iPhone
+## Pickup — 2026-10-28 (late): Mark's iPhone holds the village; the PR opens
+
+Mark, on the preview of `cd3f85e`: "it holds". The PR goes against `main` as a draft, then ready so Codex reviews it.
+Read Codex's review through the timeline API and answer every thread. Codex's 5-hour window was at 39% tonight, so a
+second review goes to Fable (`w4:p6`) unless a P0 or P1 needs Codex.
+
+## Pickup — 2026-10-28 (22:35): the street on phones, stages 1 and 2 built, gating for Mark's iPhone (superseded by the pickup above)
 
 V1 (#34) merged at about 21:55 (`c1c6fbc`), after Codex's P2 fix `63631c5`. Mark: "go with the phone memory slice".
 The plan and the production numbers are `tasks/2026-10-28-phone-memory-plan.md`, on `feat/phone-memory`. Stage 1
