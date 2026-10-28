@@ -74,17 +74,21 @@ export default function Street({
 
   const readiness = useMemo(() => streetReadiness({ painting: paintingStatus, flow: flowStatus, masses: massesState.status }), [paintingStatus, flowStatus, massesState.status])
 
-  const build = useMemo<StreetBuild | null>(() => {
+  // the build and its meshes in one memo, which keeps only what the street reads after it: the build's plain arrays
+  // go out of scope when it returns (the phone's memory, 2026-10-28: they held 54 MB for the street's life)
+  const built = useMemo(() => {
     if (!readiness.render) return null
-    return flags.flat ? buildFlatPanel(paintingData, flowData, massesState.data, flags.grass) : buildStreet(paintingData, flowData, massesState.data, { lit: flags.light, grass: flags.grass })
-  }, [readiness.render, flags.flat, flags.light, flags.grass, paintingData, flowData, massesState.data])
+    const build = flags.flat ? buildFlatPanel(paintingData, flowData, massesState.data, flags.grass) : buildStreet(paintingData, flowData, massesState.data, { lit: flags.light, grass: flags.grass })
+    if (!build) return null
+    return { meshes: streetMeshes(build, flags.ids), windows: build.windows, lamps: build.report.lane.lamps, counts: build.counts }
+  }, [readiness.render, flags.flat, flags.light, flags.grass, flags.ids, paintingData, flowData, massesState.data])
 
   useEffect(() => {
     const w = window as StreetWindow
     w.__streetReady = readiness.ready
-    if (build) w.__streetCounts = { ...build.counts, builds: (w.__streetCounts?.builds ?? 0) + 1 }
+    if (built) w.__streetCounts = { ...built.counts, builds: (w.__streetCounts?.builds ?? 0) + 1 }
     else delete w.__streetCounts
-  }, [readiness.ready, build])
+  }, [readiness.ready, built])
   const reportedRef = useRef(false)
   useEffect(() => {
     if (!readiness.ready || reportedRef.current) return
@@ -145,26 +149,7 @@ export default function Street({
   )
   useEffect(() => () => baseMaterial?.dispose(), [baseMaterial])
 
-  const meshes = useMemo(() => {
-    if (!build) return null
-    const isSrc = flags.ids === 2
-    const upCls = isSrc ? build.underpaint.src : build.underpaint.cls
-    const strokesCls = isSrc ? build.strokes.src : build.strokes.cls
-    const groundCls = isSrc ? build.ground.src : build.ground.cls
-    const outlinesCls = isSrc ? build.outlines.src : build.outlines.cls
-    const windowsCls = isSrc ? build.windows.src : build.windows.cls
-    const treeCls = isSrc ? 255 : 5
-    return {
-      underpaint: plainGeometry(build.underpaint, upCls),
-      grassBase: build.grassBase.indices.length > 0 ? plainGeometry(build.grassBase, isSrc ? build.grassBase.src : build.grassBase.cls) : null,
-      strokes: strokeGeometry(build.strokes.arrays, build.strokes.stroke, build.strokes.seed, undefined, strokesCls),
-      ground: strokeGeometry(build.ground.arrays, build.ground.stroke, build.ground.seed, undefined, groundCls),
-      outlines: strokeGeometry(build.outlines.arrays, build.outlines.stroke, build.outlines.seed, undefined, outlinesCls),
-      windows: plainGeometry(build.windows, windowsCls),
-      treeSolid: plainGeometry(build.trees.solid, treeCls),
-      treeStrokes: strokeGeometry(build.trees.strokes, build.trees.stroke, build.trees.seed, undefined, treeCls),
-    }
-  }, [build, flags.ids])
+  const meshes = built?.meshes ?? null
   useEffect(() => () => { if (meshes) for (const g of Object.values(meshes)) g?.dispose() }, [meshes])
 
   if (!meshes) return null
@@ -192,9 +177,10 @@ export default function Street({
           viewFrom={STOP0_CAMERA}
           stride={cypressStride}
           alive={false}
+          painting={paintingData ?? undefined}
         />
       )}
-      {!flags.flat && flags.ids === 0 && flags.light && build && paintingData && <StreetLife windows={build.windows} painting={paintingData} reduced={reduced} lamps={build.report.lane.lamps} />}
+      {!flags.flat && flags.ids === 0 && flags.light && built && paintingData && <StreetLife windows={built.windows} painting={paintingData} reduced={reduced} lamps={built.lamps} />}
       {!flags.flat && flags.grass && paintingData && (
         <StreetGrass
           painting={paintingData}
@@ -217,4 +203,24 @@ export default function Street({
       )}
     </group>
   )
+}
+
+/**
+ * The street's geometry from its build: typed copies of the build's arrays, which the caller then lets go. The class
+ * attribute only for the ID views, which alone read it, and no vertex normals (Codex P3, the phone's memory: 8 MB).
+ */
+function streetMeshes(build: StreetBuild, ids: number) {
+  const isSrc = ids === 2
+  const cls = (a: { cls: number[]; src: number[] }) => (ids === 0 ? undefined : isSrc ? a.src : a.cls)
+  const treeCls = ids === 0 ? undefined : isSrc ? 255 : 5
+  return {
+    underpaint: plainGeometry(build.underpaint, cls(build.underpaint), false),
+    grassBase: build.grassBase.indices.length > 0 ? plainGeometry(build.grassBase, cls(build.grassBase), false) : null,
+    strokes: strokeGeometry(build.strokes.arrays, build.strokes.stroke, build.strokes.seed, undefined, cls(build.strokes), false),
+    ground: strokeGeometry(build.ground.arrays, build.ground.stroke, build.ground.seed, undefined, cls(build.ground), false),
+    outlines: strokeGeometry(build.outlines.arrays, build.outlines.stroke, build.outlines.seed, undefined, cls(build.outlines), false),
+    windows: plainGeometry(build.windows, cls(build.windows), false),
+    treeSolid: plainGeometry(build.trees.solid, treeCls, false),
+    treeStrokes: strokeGeometry(build.trees.strokes, build.trees.stroke, build.trees.seed, undefined, treeCls, false),
+  }
 }

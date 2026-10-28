@@ -3446,3 +3446,22 @@ must be byte-identical before the stimulus's difference means anything.
   under each station. An automatic step that landed in it crossed the station with no dwell, about once in 560
   frames at 60 fps. The strict `prev.t < st` and the `last` guard already exclude a start on the station. A margin
   in a crossing test is a hole unless something needs it. Name what it is for, or leave it out.
+
+## 2026-10-28 (night) — the phone's memory: the slice's first hour
+
+- **Check for the panes before going solo, and never stop a working delegate to move it.** The Lead ran the plan
+  review through the plugin's Codex subagent without checking Herdr. Codex and Gemini were open in `w4:p4` and `w4:p5`.
+  When Mark said so, the Lead stopped the subagent after 5+ minutes of work and sent the same review to the pane. The
+  work was lost, the review was paid twice, and Codex's 5-hour window fell to 39%. Run `herdr agent list` at the start.
+  Let paid work finish, and route only the next job.
+- **Measure memory on the production build, and read the probe's counters for what they are.** The "painting decoded
+  about eight times" came from the dev server, where StrictMode loads everything twice, and from a 2D-canvas counter that
+  never subtracts. On `vite build` the street holds three painting-sized decodes. Live memory is the heap and the
+  ArrayBuffer stores after a forced GC (`Runtime.getHeapUsage`'s `backingStorageSize`), not cumulative allocations.
+- **A heap-id diff between two snapshots misattributes native buffers.** Freed buffers' addresses are reused, so the
+  street's own stroke buffers carried the diorama's ids. Label allocations by the property names on their retainer path
+  instead, and compare two runs that differ in one thing.
+- **R3F 9.6 with zustand 5 keeps the initial state, and with it the first `internal`.** The first unsubscribe replaces
+  only the live copy's arrays, so every `useFrame` callback registered before it stays reachable from the initial copy,
+  with its component's last closure. In the street that was the unmounted diorama: 56 MB. A component that empties the
+  initial copy's three filtered arrays after mount frees it (`ReleaseInitialInternal`).

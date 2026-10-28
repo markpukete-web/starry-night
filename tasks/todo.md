@@ -1,5 +1,33 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-10-28 (late): Mark's iPhone holds the village; the PR opens
+
+Mark, on the preview of `cd3f85e`: "it holds". The PR goes against `main` as a draft, then ready so Codex reviews it.
+Read Codex's review through the timeline API and answer every thread. Codex's 5-hour window was at 39% tonight, so a
+second review goes to Fable (`w4:p6`) unless a P0 or P1 needs Codex.
+
+## Pickup — 2026-10-28 (22:35): the street on phones, stages 1 and 2 built, gating for Mark's iPhone (superseded by the pickup above)
+
+V1 (#34) merged at about 21:55 (`c1c6fbc`), after Codex's P2 fix `63631c5`. Mark: "go with the phone memory slice".
+The plan and the production numbers are `tasks/2026-10-28-phone-memory-plan.md`, on `feat/phone-memory`. Stage 1
+(`ef2e5ec`, `989840c`) releases R3F's initial `internal`, which kept the unmounted diorama alive in the street
+(56 MB). Stage 2 (`57e3503`) keeps only what the street reads after its build, one painting decode, and no unused
+attributes (about 70 MB). Next: the gate, the preview for Mark's iPhone, then the PR. Stage 3 only if the phone
+still fails.
+
+**Found while gating, not this slice's: `check-portal.mjs` case 2 (phone) fails on `main`** (4 of 4 runs at
+`c1c6fbc`, 2 of 4 on this branch). Vincent's walk reads `t` 0.00012 to 0.00054 on the first frame the check records
+as the street, where it requires 0. `Street.tsx` passes `reduced={reduced || hold}` to the walk, so once `place` flips
+to `street` the walk's `useFrame` can step in the same browser frame, before the check's own `requestAnimationFrame`
+records it. Under a millimetre of travel, not visible. It appeared with V1's walk on top of the portal, each
+branch's checks having run without the other. A small fix: the check reads the walk one frame after the flip, or the
+walk holds for the first street frame. Its own commit, after this slice.
+
+**Roadmap after this slice** (Mark, 2026-10-28 evening: "I think we will need to do a performace review at some point when all of
+my ideas implemented"): Vincent's wander (the spike `spike/vincent-wander` `74d8856`, Mark's call whether it becomes a
+slice), then Mark's noted ideas, then a performance review across the piece. This slice's probe and snapshot readers
+(`scratch/phone-memory-2026-10-28/tools/`) are that review's first tools.
+
 ## Pickup — 2026-10-28 (21:05): K3 (#32) and the portal (#33) are on `main`; V1's PR #34 waits for Codex
 
 Mark had the Lead merge #32 at 20:57 (`8800b56`) and #33 at 21:04 (`3d34f3b`). #34 now targets `main`, and this

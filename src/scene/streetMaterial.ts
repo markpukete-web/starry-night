@@ -3,7 +3,8 @@ import type { BrushArrays } from './brushForms.ts'
 import { type AliveInjection, concatInjections, injectAlive } from './aliveMaterial.ts'
 import { FOG } from './streetFog.ts'
 
-export function plainGeometry(a: BrushArrays, cls?: number[] | number): BufferGeometry {
+/** `normals` false for the street, whose basic materials read no vertex normal (the phone's memory, 2026-10-28). */
+export function plainGeometry(a: BrushArrays, cls?: number[] | number, normals = true): BufferGeometry {
   const g = new BufferGeometry()
   const vertices = a.positions.length / 3
   g.setAttribute('position', new BufferAttribute(new Float32Array(a.positions), 3))
@@ -13,7 +14,7 @@ export function plainGeometry(a: BrushArrays, cls?: number[] | number): BufferGe
     g.setAttribute('aClass', new BufferAttribute(clsArr, 1))
   }
   g.setIndex(a.indices)
-  g.computeVertexNormals()
+  if (normals) g.computeVertexNormals()
   g.computeBoundingSphere()
   return g
 }
