@@ -1,10 +1,12 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-28 (19:55): phones enter the village, told first that a computer is recommended
+## Pickup — 2026-10-28 (20:02): phones enter the village, told first that a computer is recommended
 
 Mark wants phones to enter, told first. `1169994` shows a card before a phone's first entry, "A computer is recommended
 for the village scene. On a phone it may load slowly or not open.", with "Enter anyway" and "Stay with the painting". It
 replaces `8531440`'s note, which kept phones out. The record is the last section of `tasks/2026-10-28-portal-iphone.md`.
+
+The preview (behind Vercel's login, `5689ef0`): `https://starry-night-6y334p0c0-markpukete-webs-projects.vercel.app`
 
 **Next:** Mark looks at the card on his phone and at the portal on a computer, on the preview. Then the portal-on
 slice's PR path after K3 (#32) merges.
