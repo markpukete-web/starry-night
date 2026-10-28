@@ -112,3 +112,26 @@ All in `scratch/vincent-form-2026-10-28/` (ignored by git):
 - `p8/`: every station, both viewports, classic, lantern and Tarascon side by side (`s<N>-<vp>-row.png`)
 - `motion/`: the stride (`gait-strip.png`, classic above, lantern below), the dwell at stop 1 (`dwell-strip.png`),
   a scroll backward (`back-strip.png`), and reduced motion on the phone (`reduced-phone-sheet.png`)
+
+## Mark's answers (2026-10-28, about 11:15)
+
+1. "less creepy, I pick Tarascon but I think we still have room for refinement." Tarascon becomes the form. This
+   reverses the spike's "never the default". He has not yet named what to refine.
+2. "how can I see the turns? what's your recommendation". Open in progress. The Lead captured Tarascon at stops 1 to 3,
+   both viewports, both turns (`scratch/vincent-form-2026-10-28/turns/s<N>-<vp>-row.png`, 90/45 left, 120/30 right).
+   The Lead's read: 90/45. Side-on, the lantern hangs clear of his body and the easel reads in profile. At 120/30 the
+   lantern sits in front of his legs and he reads as a blue block. Neither turn shows his face under the brim. To see
+   it live: open the preview with `?street=1&vform=tarascon`, walk to a stop and stop scrolling. He turns 0.5 s later.
+   Add `&vturn=120,30` for the other turn. On a phone the automatic walk stops at each station.
+3. "for with your advice" (the dwell). The Lead's advice: 4 s. At 3 s he holds the full turn for 1.45 s (0.5 s rest,
+   0.6 s in, 0.45 s out before the end). At 4 s he holds it 2.45 s. The walk from stop 0 to 4 is 27 s at 0.08 a second,
+   plus three dwells.
+4. "I think it should" (a slice). Next: the slice's plan from this spike, with the full loop (plan, Codex and the
+   worker's reads, the build, Codex's review, the Lead's gate). Its scope: Tarascon as the form, Mark's refinements,
+   the lantern's light on the ground and the grass (one `uLantern` uniform), tests, the colour gate and the perf sweep.
+
+**Next after a restart:** send Mark the turns sheet and the 90/45 recommendation, and ask what he wants refined in
+Tarascon. Then write the slice's plan.
+
+**Mark's picks, 2026-10-28 (11:21):** "Go with 90/45 and 4 s." The slice takes the body's turn 90° and the head's
+45°, and a dwell of 4 s. Still open: what Mark wants refined in Tarascon. Ask him before the slice's plan is written.
