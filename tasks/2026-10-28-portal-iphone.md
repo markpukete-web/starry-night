@@ -49,3 +49,26 @@ opened on the same phone at about 18:20. The two builds differ only in the hat's
 own is at or past the iPhone's limit, depending on the phone's state. The portal fix brings the entry close to the
 direct load, so it cannot make the phone hold the street. Mark: "I think we need to let users know the site works
 better in computer".
+
+## The village on computers (19:39, `8531440`)
+
+Mark chose it at about 19:30: "Village on computers". A device with no hover and a coarse pointer (the walk's own
+test, `StreetWalk.tsx:78`) keeps the painting. A tap on "Enter the village" or on a house shows "The village walk opens
+on a computer for now." above the dock for 5 s (`VILLAGE_NOTE_MS`), in a `role="status"` line that is always in the
+page. `?phoneVillage=1` opens the village there, for tests on the phone. The gate is in the portal's `enter`
+(`DioramaExperience.tsx`), where the pill, the house tap and the check's seam all route, and the rule is
+`villageOnDevice` in `streetEntry.ts`. `?street=1` is not gated: it is the previews' and the checks' link.
+
+- `check-portal.mjs` all pass (`gate/portal-note.log`). Case 13: a touch phone keeps the painting with the note, and
+  `?phoneVillage=1` enters (flying, entering, street).
+- Mutation 4, the gate removed: case 13 red ("the pill on a phone went to flying with the note \"\""), the tree clean
+  after (`gate/mutations/m4-no-phone-gate.log`).
+- tsc, lint and `test:sky` (402, one new: `villageOnDevice`) pass.
+- The look (`mem/note-sheet.png`, 390 × 844 at dpr 3, touch): the note above the dock in the dock's ink on the
+  placard's panel, gone after 5 s.
+- Not covered: an iPad with a trackpad reads as hovering, so it enters the village. Its limit is unmeasured.
+
+Mark then asked whether a loading card could let a phone read the village. It cannot alone: the phone runs out of
+memory and iOS closes the page, card and all. The way to phones is a lighter street, measured on his phone. One cut is
+in the measurements: the street decodes the painting about eight times at 1600 × 1267, 8 MB each. Proposed as the
+next slice in `tasks/todo.md`.

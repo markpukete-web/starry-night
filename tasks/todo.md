@@ -1,6 +1,20 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-28 (19:10): the iPhone fix is built and pushed for Mark's phone
+## Pickup — 2026-10-28 (19:40): the village on computers, phones keep the painting
+
+The street alone ended the page on Mark's iPhone with every other tab closed, so the portal fix cannot make the phone
+hold it. Mark chose "Village on computers": `8531440` keeps phones and tablets on the painting with a note, and
+`?phoneVillage=1` opens the village there. The record is the last two sections of `tasks/2026-10-28-portal-iphone.md`.
+
+**Next:** Mark looks at the note on his phone and at the portal on a computer, on the preview. Then the portal-on
+slice's PR path after K3 (#32) merges.
+
+**Proposed slice, not started: the street on phones.** Mark asked for phones to read the village too. Measure the
+street's memory on the phone build, then cut it, starting with the painting decoded about eight times at 1600 × 1267
+(8 MB each, the probe's 2D canvases). Mark tests each cut with `?phoneVillage=1` on his iPhone. The note comes off
+phones once it holds.
+
+## Pickup — 2026-10-28 (19:10): the iPhone fix is built and pushed for Mark's phone (superseded by the 19:40 pickup above)
 
 The diorama now unmounts while the street is mounted (`35bf02e`, the record `tasks/2026-10-28-portal-iphone.md`). In
 headless Chrome as the phone it frees 35 MB of WebGL buffers and 125 MB of live heap after the entry. The way back
