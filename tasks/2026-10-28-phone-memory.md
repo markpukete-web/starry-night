@@ -59,6 +59,9 @@ passes `reduced={reduced || hold}` to the walk, so once `place` flips the walk's
 browser frame, before the check's `requestAnimationFrame` records it. Under a millimetre, not visible. Not this
 slice's: noted in `tasks/todo.md` for its own commit.
 
+Fixed in the check on `fix/portal-case2-race` (`tasks/todo.md`, the 23:15 pickup): case 2 (phone) now reads the hold
+in the `entering` frames.
+
 ## Mark's iPhone
 
 On the preview of `cd3f85e` (`https://starry-night-kxrkvpoz4-markpukete-webs-projects.vercel.app`), entered through

@@ -525,12 +525,16 @@ async function main() {
     // ---- case 2, the phone: Vincent held at stop 0 under the layer, then walking
     await open(page, '?portal=1&arrival=0&walkMode=auto', PHONE)
     const recPhone = await enterAndSettle(page, () => page.evaluate('window.__portalEnter()'))
-    const firstStreet = recPhone.find((f) => f.place === 'street')
-    if (!firstStreet || firstStreet.walk === null || Math.abs(firstStreet.walk) > 1e-9) throw new Error(`case 2 (phone): the walk at the street's first frame is ${firstStreet?.walk}`)
+    // the hold is `entering`'s (Street's `hold`). The street's first frame is not: the walk may step in the canvas's frame
+    // before this page's recorder reads it, so every `entering` frame that reads the walk must read 0
+    const heldFrames = recPhone.filter((f) => f.place === 'entering' && f.walk !== null)
+    if (!heldFrames.length) throw new Error(`case 2 (phone): no frame read the walk while entering: [${placesOf(recPhone)}]`)
+    const moved = heldFrames.find((f) => Math.abs(f.walk) > 1e-9)
+    if (moved) throw new Error(`case 2 (phone): the walk moved under the layer while entering (t ${moved.walk})`)
     await sleep(1500)
     const walked = await page.evaluate('window.__streetWalk.t')
     if (!(walked > 0)) throw new Error(`case 2 (phone): the automatic walk did not start after the layer (t ${walked})`)
-    console.log(`PASS 2 (phone): Vincent at stop 0 when the street shows (t ${firstStreet.walk}), walking after (t ${walked.toFixed(4)})`)
+    console.log(`PASS 2 (phone): Vincent at stop 0 in ${heldFrames.length} entering frames, walking after (t ${walked.toFixed(4)})`)
     // the flight and the way back keep the phone's fitted lens, with no zoom out at the start or snap at the end
     // (portraitFov, Codex PR #29 P2)
     const fitted = portraitFov(PHONE.width / PHONE.height)

@@ -3465,3 +3465,11 @@ must be byte-identical before the stimulus's difference means anything.
   only the live copy's arrays, so every `useFrame` callback registered before it stays reachable from the initial copy,
   with its component's last closure. In the street that was the unmounted diorama: 56 MB. A component that empties the
   initial copy's three filtered arrays after mount frees it (`ReleaseInitialInternal`).
+
+## 2026-10-28 (night) — the case 2 (phone) race
+
+- **A page's frame recorder runs after R3F's frame loop, so it can read the loop's first step of a new phase.** R3F's
+  `loop` requests its next frame at its top (`events-*.esm.js`), so a recorder started later is queued behind it in
+  every frame. The old check passed on some runs and failed on others. The inferred variable, not observed: whether the
+  canvas's root commits the new place in the same gap as the page's root. Assert the state inside the phase that owns
+  it (every `entering` frame reads 0), and require at least one frame read, so the assertion is never empty.
