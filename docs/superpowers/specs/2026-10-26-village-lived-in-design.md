@@ -305,6 +305,13 @@ The paths' joins at a bend (no doubled paint where two legs overlap), the seeds,
 of its own. The objects' exact places in their houses' frames. The shape of `WALL_PAINT`'s per-owner length factor. The
 order of the knob trials inside a pass. The test seams, the build test's density rule among them (Fact 5).
 
+## Mark's three calls (2026-10-27 21:11)
+
+Mark took the recommendation on each: **W2 ends at `t` 0.41** (Decision (b), way 1: R2's path lands at `t` 0.457, two
+legs, 0.344 long), **a wooden pail by L4's door** (Decision (c)), and **the far houses' paths at full length**. The
+design is approved on these. The plan follows (`superpowers:writing-plans`), then both plan reviews, then the build on
+`feat/village-lived-in` once K2 (#31) is merged. The section below records the question as it stood.
+
 ## Open for Mark now
 
 - R2's path against W2 (Decision (b)): the recommendation is 1, W2 ending at `t` 0.41.

@@ -3331,3 +3331,39 @@ must be byte-identical before the stimulus's difference means anything.
   in both logs, a failed module fetch in the lane's), and passed on K1 in the same minute and on the lane's server
   restarted alone. The grass check's case 4 failed the same way. Restart the server under test after a mutation run
   and before the browser gates, with no other server up, and read both servers' logs when a timing case fails.
+
+## 2026-10-27 (night) — K3's plan and Task 1
+
+- **Moving a wall's end re-runs every test that measures the wall, not only the ones the change names** (K3 Task 1,
+  2026-10-27). The plan expected the full suite to pass with W2 at 0.41, and both plan reads ran only the grass and frog
+  tests against it. K2's flush test failed: two courses stopped 0.008 and 0.0126 short of the new head. The planner
+  sized the last stone from the lane's speed at the stone's start, and near `t` 0.41 that speed rises 15% across one
+  stone. The old end at 0.47 sat on a steadier stretch, so K2 never showed it. The formula was the Lead's, from K2 pass 5's brief
+  (`k2/t6/brief-k2-pass5.md:77`, "so the course ends at the wall head whatever the walk's curvature error"). The worker
+  built it as written, and the Lead's K2 gate passed it. A plan that moves a K2 geometry
+  parameter now names the K2 tests that read it, and a probe runs them before the plan claims the suite passes.
+- **"Seen from stop N" is a distance unless a frame proves it** (K3's plan, 2026-10-27). The design named a stop for each
+  object, measured as the distance from the stop to the door. None of the three is in frame at its stop. The probe that
+  projects each object from every walk pose took a minute and changed the look pass's crops and Mark's gate brief.
+
+## 2026-10-28 (overnight) — K3's build, review and gate
+
+- **A worker's task step that names the suites but not tsc and lint lets the build break the compiler** (K3 Tasks 2 to
+  4, Codex F1). Every task's suite passed, and the branch still had five tsc errors and six lint errors: unused imports
+  and locals, and a `side` that `as const` typed as the literal `1`, so the plan's `=== -1` branch did not compile. The
+  gate would have caught it at Task 6, after the look passes. A build brief now asks for `npx tsc -b` and
+  `npm run -s lint` in each task's green step.
+- **A test that pins an exact sample count over a tunable rejects the plan's own range** (K3 Task 3, Codex F2). The leaf
+  test asserted 816 rays, the count at `PLANT.scale` 0.7. At 0.6 and 0.8, both inside the plan's range, leaf points cross
+  the frame's edge and the count moves. Assert what must hold at every setting (each ray hits, each side point misses,
+  the named counterexample is cast) and keep a measured count in the record, not in the test.
+- **A base inset across its width but not at a free end shows as a slab** (K3 look pass 1, R1's path). A stroke ends
+  short of its clip, so the base ran past the strokes as a flat pale quad with a hard edge, and the path read as paving.
+  K2's square insets its base on all four sides. Inset a base at every edge that is not shared with another face.
+- **A capture helper that waits on a hook another flag turns off times out without a word** (K3 look pass 1). The helper
+  waited for `__vincentBox`, the shots passed `vincent=0`, and each shot ran its 60 s timeout before failing. Wait on
+  a hook every mode has (`__streetWalk`), and print the wait condition when it times out.
+- **A `clad` face costs about 4 ms however few strokes it draws** (K3's gate, the build's time). The 14 path legs draw
+  93 ribbons at a quarter of the lane's cover and still cost 62 ms, because `traceFace` resamples a 64-row flow crop
+  over each face, and a long narrow leg gives a wide crop. The plan counted triangles, not faces, and the build came in
+  10.9% over K2's against a 10% bound. A plan that adds faces probes the build's time per face before it sets a bound.

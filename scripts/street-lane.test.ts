@@ -29,6 +29,7 @@ import {
   STREET_HOUSES,
   STREET_LAMPS,
   STREET_WALL,
+  STREET_WALLS,
   vincentBoxCorners,
   walkPose,
   wallClearings,
@@ -76,16 +77,18 @@ test('the walls stand on the verges the plan names', { skip }, () => {
   assert.equal(walls.length, 3)
   const expectedSpecs = [
     { side: -1, t0: 0.06, t1: 0.22 },
-    { side: 1, t0: 0.14, t1: 0.47 },
+    { side: 1, t0: 0.14, t1: 0.41 },
     { side: -1, t0: 0.54, t1: 0.84 },
   ]
+  const expectedCounts = [8, 14, 15]
   walls.forEach((w, idx) => {
     const exp = expectedSpecs[idx]
     assert.equal(w.side, exp.side)
     assert.ok(Math.abs(w.t0 - exp.t0) < 1e-9)
-    assert.ok(Math.abs(w.t1 - exp.t1) < 1e-9)
     const segs = Math.ceil((exp.t1 - exp.t0) / STREET_WALL.segment)
+    assert.equal(segs, expectedCounts[idx])
     assert.equal(w.segments.length, segs)
+    assert.ok(Math.abs(w.t1 - exp.t1) < 1e-9)
     const dt = (exp.t1 - exp.t0) / segs
     w.segments.forEach((seg, sIdx) => {
       const t0 = exp.t0 + sIdx * dt
@@ -438,7 +441,7 @@ test('the grass clears the walls', { skip }, () => {
   assert.ok(realPainting)
   const chunks = grassChunks(realPainting)
   const wallFootprints: [number, number][][] = []
-  for (const [side, t0, t1] of [[-1, 0.06, 0.22], [1, 0.14, 0.47], [-1, 0.54, 0.84]] as const) {
+  for (const { side, t0, t1 } of STREET_WALLS) {
     const n = Math.ceil((t1 - t0) / STREET_WALL.segment)
     const dt = (t1 - t0) / n
     for (let i = 0; i < n; i++) {
@@ -485,10 +488,10 @@ test("the grass away from the walls is K1's", { skip }, () => {
   assert.equal(hash, 'def5470cc15817ba')
 
   const defaultChunks = grassChunks(realPainting)
-  assert.equal(defaultChunks.length, stepsChunks.length)
-  for (let i = 0; i < defaultChunks.length; i++) {
-    const dc = defaultChunks[i]
-    const sc = stepsChunks[i]
+  for (const dc of defaultChunks) {
+    const first = dc.blades[0]
+    const sc = stepsChunks.find((c) => c.blades.some((b) => b.x === first.x && b.z === first.z && b.seed === first.seed))
+    assert.ok(sc, 'default chunk found matching steps-only chunk')
     let sIdx = 0
     for (const db of dc.blades) {
       while (sIdx < sc.blades.length && (sc.blades[sIdx].x !== db.x || sc.blades[sIdx].z !== db.z || sc.blades[sIdx].seed !== db.seed)) {

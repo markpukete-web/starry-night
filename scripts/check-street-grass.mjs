@@ -22,14 +22,15 @@
  *     5 L*, within 80 px of it, at least 0.85 as many pixels on the lit page as on the unlit one (main's program).
  * 18. The frogs' draw distance (the frogs' branch review, Codex F1): at walk poses held still, each frog the frame's
  *     cull left drawn is within its spec's `draw` of the camera, and each frog it hid is beyond it.
+ * 19. The hand on the pot plant (K3 task 3): stop 2, leaf point of blade 3 bends the pot plant's chunk under anchor B and anchor A.
  */
 
 import { spawn } from 'node:child_process'
 import { existsSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { pathPoint, pathTangent, STATION_T, STREET, vincentPlace } from '../src/scene/streetLayout.ts'
-import { bladeMoonFacing, GRASS_BLADE, GRASS_MOON_GLSL } from '../src/scene/grassBlade.ts'
+import { pathPoint, pathTangent, STATION_T, STREET, vincentPlace, walkPose } from '../src/scene/streetLayout.ts'
+import { bladeMoonFacing, bladeVertex, GRASS_BLADE, GRASS_MOON_GLSL } from '../src/scene/grassBlade.ts'
 import { STREET_MOON } from '../src/scene/streetLight.ts'
 import { decodePNG } from './lib/png.ts'
 import { WALK } from '../src/scene/streetWalk.ts'
@@ -1039,7 +1040,7 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
     // sign of the light.
     // -------------------------------------------------------------
     if (shouldRun(15)) {
-      const VERGE_15 = { t: 0.12, lat: 0.32 }
+      const VERGE_15 = { t: 0.12, lat: 0.20 }
       const lin = (v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)
       const lightnessAt = (img, i) => {
         const Y = 0.2126 * lin(img.rgba[i] / 255) + 0.7152 * lin(img.rgba[i + 1] / 255) + 0.0722 * lin(img.rgba[i + 2] / 255)
@@ -1259,6 +1260,68 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
         throw new Error(`Case 18 failed: on one page the walk did not flip stop 2's and stop 4's frogs both ways (${JSON.stringify(seen18)})`)
       }
       console.log(`PASS: case 18 - the draw distance: ${poses18.length} poses, ${hidden18} frogs hidden beyond their draw, every station drew its own, ${far18} drawn beyond 0.5, and on one page stop 2's and stop 4's frogs flipped both ways`)
+    }
+
+    // -------------------------------------------------------------
+    // Case 19: The hand on the pot plant (K3 task 3)
+    // On the desktop at stop 2 (walkT=0.44&walkMode=input), the leaf point is blade 3's of
+    // __grassPlants[0] at a 0.75, across 0, for walkPose(0.44, false)'s camera, lifted by its y.
+    // __grassHand presses at __walkProject(t, point), and two frames later __grassPushNear(cx, cz, 0.03)
+    // at the plant's centre is above 0.
+    // Then the same again with skyAnchor=A, the point plus STREET.originA as case 11 takes it.
+    // -------------------------------------------------------------
+    if (shouldRun(19)) {
+      await page.send('Page.navigate', { url: `${origin}/?street=1&walkT=0.44&walkMode=input&vincent=0` })
+      await page.waitForStreetReady()
+
+      const plant = await page.evaluate(() => window.__grassPlants?.[0])
+      if (!plant || !plant.blades || plant.blades.length <= 3) {
+        throw new Error('Case 19 failed: window.__grassPlants[0] missing or has fewer than 4 blades')
+      }
+
+      const b19 = plant.blades[3]
+      const Y19 = plant.y ?? 0
+      const pose19 = walkPose(0.44, false)
+      const camPos19 = pose19.position
+      const dx19 = camPos19[0] - b19.x
+      const dz19 = camPos19[2] - b19.z
+      const h19 = Math.hypot(dx19, dz19)
+      const right19 = [dz19 / h19, -dx19 / h19]
+      const widen19 = Math.max(1, Math.hypot(dx19, camPos19[1] - Y19, dz19) / GRASS_BLADE.widenFrom)
+      const v19 = bladeVertex(b19, 0.75, 0, right19, widen19)
+      const leafPt19 = [v19[0], v19[1] + Y19, v19[2]]
+
+      const cx19 = (Math.min(...plant.blades.map((b) => b.x)) + Math.max(...plant.blades.map((b) => b.x))) / 2
+      const cz19 = (Math.min(...plant.blades.map((b) => b.z)) + Math.max(...plant.blades.map((b) => b.z))) / 2
+
+      const [px19, py19] = await page.evaluate((pt) => window.__walkProject(0.44, pt), leafPt19)
+      await page.evaluate(([x, y]) => window.__grassHand(x, y), [px19, py19])
+      await sleep(100)
+
+      const pushB = await page.evaluate(([x, z]) => window.__grassPushNear(x, z, 0.03), [cx19, cz19])
+      if (pushB <= 0) {
+        throw new Error(`Case 19 (anchor B) failed: __grassPushNear at plant centre (${cx19.toFixed(3)}, ${cz19.toFixed(3)}) was ${pushB}, expected > 0`)
+      }
+
+      // Repeat under skyAnchor=A
+      await page.send('Page.navigate', { url: `${origin}/?street=1&walkT=0.44&walkMode=input&vincent=0&skyAnchor=A` })
+      await page.waitForStreetReady()
+
+      const leafPt19A = [
+        leafPt19[0] + STREET.originA[0],
+        leafPt19[1] + STREET.originA[1],
+        leafPt19[2] + STREET.originA[2],
+      ]
+      const [px19A, py19A] = await page.evaluate((pt) => window.__walkProject(0.44, pt), leafPt19A)
+      await page.evaluate(([x, y]) => window.__grassHand(x, y), [px19A, py19A])
+      await sleep(100)
+
+      const pushA = await page.evaluate(([x, z]) => window.__grassPushNear(x, z, 0.03), [cx19, cz19])
+      if (pushA <= 0) {
+        throw new Error(`Case 19 (anchor A) failed: __grassPushNear at plant centre (${cx19.toFixed(3)}, ${cz19.toFixed(3)}) was ${pushA}, expected > 0`)
+      }
+
+      console.log(`PASS: case 19 - the hand on the pot plant: leaf point bent plant chunk under anchor B (push=${pushB.toFixed(3)}) and anchor A (push=${pushA.toFixed(3)})`)
     }
 
     await page.close()

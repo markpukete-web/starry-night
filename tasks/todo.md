@@ -1,6 +1,111 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-27 (21:00): K2 pass 5, the stone wall, passed the Lead's gate, pushed for Mark's preview
+## Pickup — 2026-10-28 (11:10): Mark passed K3, and its PR is open for Codex's review
+
+**Mark passed K3 on the preview** at 11:07 ("Morning Claude, gate passed"), as built, the build's +64 ms with it (the
+record `tasks/2026-10-27-village-lived-in.md`, its last section). The Lead opens the PR as a draft, then marks it ready, so
+Codex's review fires. **Next:** read Codex's review through the timeline API, answer every thread, then Mark merges.
+
+**Vincent's form spike** (`spike/vincent-form`, its preview in the 02:30 pickup below): Mark's four calls are still
+open (`tasks/2026-10-28-vincent-form-spike.md` on that branch).
+
+## Pickup — 2026-10-28 (02:30): K3 gated and pushed for Mark's preview; Vincent's form spike pushed beside it (superseded by the 11:10 pickup above)
+
+**K3 passes the Lead's gate with one criterion open** (the record `tasks/2026-10-27-village-lived-in.md`, branch
+`feat/village-lived-in` at the head after `1b7402e`, pushed for a Vercel preview, no PR). The worker built Tasks 2 to
+4. Codex's branch review found F1 (P1, tsc and lint failed), F2 (P2) and F3 (P3). The Lead fixed all three (`e14ed17`),
+and the look pass's one defect, R1's path ending in a bare slab (`1b7402e`). Codex's confirmation read: APPROVE. Every
+gate run passes, and the fifteen mutations are red on the final head. The build's time is +10.9% against the plan's
+10% bound, 62 ms of it in the paths' 14 faces: Mark's call. His four calls are at the end of the record.
+
+**Vincent's form, a throwaway spike** (`spike/vincent-form`, rebased on K3, pushed for its own preview, never merged):
+`?street=1&vform=lantern` or `&vform=tarascon`. The design draft and Mark's four calls are in
+`tasks/2026-10-28-vincent-form-spike.md` on that branch.
+
+**The previews (behind Vercel's login):** K3 `https://starry-night-96swuihn2-markpukete-webs-projects.vercel.app/?street=1`
+(`61b7c2e`), the spike `https://starry-night-e1rdn3w9w-markpukete-webs-projects.vercel.app/?street=1&vform=lantern`
+(`5eb98c2`, rebased on `1b7402e`; tsc, lint, the build and 426 tests pass on it).
+
+**Next, after Mark's look:** K3's PR as a draft, then ready, so Codex's review fires; Vincent's form as a slice if he
+wants it, planned from the spike's answers.
+
+## Pickup — 2026-10-27 (23:40): K3's plan at revision 2, Task 1 built, Tasks 2 to 4 with the worker (superseded by the 02:30 pickup above)
+
+**K3's plan is at revision 2** (`tasks/2026-10-27-village-lived-in-plan.md` on `feat/village-lived-in`, the worktree
+`lived-wt` in session `49dba370`'s scratchpad, its dev server on 5206). Codex's confirmation read closed eleven of its
+twelve findings and kept F6, the hand on the pot plant (`k3/plan-confirm-codex.md`). Revision 2 makes the plant's hit a
+vertical cylinder of its blades' rest reach (`k3/probe/lead-k3-plant-cylinder.mjs`: 816 leaf rays hit, 1,632 side
+points miss). Codex's usage ran low, so Mark routed the rest to Fable in the Consultant tab (`w4:p6`): BUILD, no
+finding at P2 or higher (`k3/plan-confirm-fable.md`). Fable is a Claude model, so that read is not independent of the
+Lead's provider.
+
+**Task 1 is built** (`5f3753c`): W2 ends at `t` 0.41. K2's flush test then failed, because the last stone of a course
+was sized from the lane's speed at its start (the Lead's K2 pass 5 formula). The Lead's fix sizes it from the rest of
+the run, measured. `test:sky` 401 of 401, `B1` `5f3ea9c0e97f6e46`, `G1` `aa265c36150f8105`.
+
+**Running at 23:40:** the worker builds Tasks 2 to 4 and the fifteen mutation proofs (`k3/brief-k3-build.md` →
+`k3/t4/report-worker.md`), its waiter armed. **Next:** the Lead's look passes (Task 5, Fable's P3 on W2's outer top row
+among the crops) and gate (Task 6), the push for Mark's preview, the PR as a draft then ready (Codex reviews it).
+
+## Pickup — 2026-10-27 (22:45): K3's plan at revision 1, Task 1 building, Codex confirming the fixes (superseded by the 23:40 pickup above)
+
+**K3's plan is at revision 1** (`tasks/2026-10-27-village-lived-in-plan.md`, `855ede5` on `feat/village-lived-in`, the
+worktree `lived-wt` in session `49dba370`'s scratchpad, its dev server on 5206). Both reads of revision 0 are folded in:
+the worker's W01 to W11 and Codex's F1 to F12 (REVISE). The largest change answers F3 and F12: each door path's legs
+are clipped to the step's front, a mitre at the bend and the lane's edge, so no paint runs onto the lane and none is
+doubled (the Lead's probe `k3/probe/lead-k3-clip.mjs`, all pass). The plaster row is 0.7, the objects' ink is lifted
+0.0005, the plant's bounds come from the verge's code and the hand casts against it.
+
+**One fact for Mark's gate:** none of the three objects is in frame at the stop the design names. Each is seen while
+walking, widest at 76 px (the bench), 32 px (the pot) and 22 px (the pail) on a 1600 × 900 desktop, and 35, 14 and 6 px
+on a phone (`k3/probe/lead-k3-objects-view.log`). The plan keeps the design's doors and scale.
+
+**Running at 22:42:** the worker builds Task 1 alone (W2 to `t` 0.41, `k3/brief-k3-task1.md` → `k3/t1/report-worker.md`).
+Codex reads revision 1's fixes, bounded to four questions (`k3/brief-plan-confirm-codex.md` → `k3/plan-confirm-codex.md`,
+BUILD or REVISE). Both waiters are armed. **Next:** on BUILD, the Lead checks Task 1 and sends Tasks 2 to 4 with the
+fourteen mutation proofs (`k3/brief-k3-build.md`, to be rewritten from revision 1). Then the Lead's look passes and gate,
+the push for Mark's preview, the PR as a draft then ready.
+
+**Quotas at 22:36 (Quota Finch):** Claude 2% of the session and 9% of the week, Codex 72% of the session (resets 00:24)
+and 23% of the week, the worker 18% of the session and 58% of the week.
+
+## Pickup — 2026-10-27 (21:45): K3's plan written and out for both reads; the build follows on this branch (superseded by the 22:45 pickup above)
+
+**K2 is merged** (#31, main `1b5e62f`, Codex's review clean). Its worktrees and server are gone.
+
+**K3, the lived-in houses: the plan is at revision 0**, `tasks/2026-10-27-village-lived-in-plan.md` (`f04c0e8` on
+`feat/village-lived-in`, the worktree `lived-wt` in session `49dba370`'s scratchpad). The plaster measurement is done
+first, as the design asked (`scratch/village-craft-2026-10-25/k3/t0/plaster/measurement.md`): the walls carry strokes
+0.35 to 0.75 of their height in two or three tiers, so the plan takes 0.65 of the row on the four plaster houses with
+the cover scaled to hold the count. Four calls against the design's text are open to Mark at the gate (the plan's
+head). Both plan reads were sent at 21:45: Codex's correctness read (`k3/brief-plan-review-codex.md` →
+`k3/plan-review-codex.md`) and the worker's buildability read (`k3/brief-plan-build-worker.md` →
+`k3/plan-build-worker.md`), waiters armed. **Next:** fold both reads into revision 1, dispatch Tasks 1 to 4 to the
+worker (`k3/brief-k3-build.md`), the Lead's look passes and gate, the push for Mark's preview, the PR as a draft then
+ready. Then Vincent's form (a throwaway lantern spike for Mark's eye), then his wander with the camera kept.
+
+**Quotas at 21:35 (Quota Finch):** Claude 47% of the session and 7% of the week, Codex 25% / 15%, the worker 14% of
+the session and 57% of the week.
+
+## Pickup — 2026-10-27 (21:15) (superseded by the 21:45 pickup above): K2 passed by Mark and reviewed clean on PR #31; K3's three calls made, the plan next
+
+**K2 is done bar the merge.** Mark passed pass 5 on the preview at 21:06. PR #31 (`feat/village-lane` on main, head
+`27e2001`) is open and ready; Codex's review completed at 21:09 with no findings. The merge is Mark's click, or the
+Lead's on his word. After the merge: delete the branch, prune the worktrees `craft-wt` and `lane-wt` (session
+`fc6c46e1`'s scratchpad), stop the dev server on 5206 (this session's background job).
+
+**K3, the lived-in houses: the design is approved.** Mark's three calls at 21:11, all the recommendations: W2 ends at
+`t` 0.41, a wooden pail by L4's door, the far paths at full length (recorded in the design,
+`docs/superpowers/specs/2026-10-26-village-lived-in-design.md`, "Mark's three calls"). This branch,
+`feat/village-lived-in`, is stacked on `feat/village-lane` at `27e2001`; its worktree `lived-wt` is in session
+`49dba370`'s scratchpad (`node_modules` and `reference/derived` linked to the main checkout's). **Next:** the K3 plan
+(`superpowers:writing-plans`, from the design's Decisions table), Codex's correctness read and the worker's buildability
+read, then the build here after #31 merges (rebase onto main first). Then Vincent's form (a throwaway lantern spike for
+Mark's eye), then his wander with the camera kept (the 2026-10-26 21:00 pickup).
+
+**Quotas at 21:10:** Claude about 5% of the week, Codex about 13%, the worker about 57%.
+
+## Pickup — 2026-10-27 (21:00): K2 pass 5, the stone wall, passed the Lead's gate, pushed for Mark's preview (superseded by the 21:15 pickup above)
 
 **K2 pass 5 (S4, the stone wall) passed the Lead's gate at 20:57** (the record `tasks/2026-10-26-village-craft-k2.md`,
 its last section; the evidence `scratch/village-craft-2026-10-25/k2/t6/`, the gate's runs `k2/t5/` and `k2/gate/`).

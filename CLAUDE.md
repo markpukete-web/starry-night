@@ -321,7 +321,7 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
 - The village craft, K2, the lane's walls, rail and lamps (2026-10-26, `src/scene/streetLayout.ts` `STREET_WALL`,
   `STREET_WALLS`, `STREET_RAIL`, `STREET_LAMPS`, `streetGeometry.ts` `LANE_CRAFT`, `streetLife.ts` `LAMP_LIGHT`,
   `haloScaleOf`; the record `tasks/2026-10-26-village-craft-k2.md`): three dry-stone walls on the open verges (W1 left
-  `t` 0.06 to 0.22, W2 right 0.14 to 0.47, W3 left 0.54 to 0.84), the lane face at lateral 0.135, 0.03 thick, 0.055
+  `t` 0.06 to 0.22, W2 right 0.14 to 0.41 in 14 segments since K3 (0.47 before), W3 left 0.54 to 0.84), the lane face at lateral 0.135, 0.03 thick, 0.055
   high, segments of at most 0.02 in `t`, the grass cleared 0.012 round each segment's rectangle with a 0.002 end overlap
   (1,373 blades fewer, the rest K1's byte for byte). A wall's stones are draped dabs (`stoneDab`, 3 × 3, 8 triangles) on
   wallB's darkest 40% (pass 5, 2026-10-27, past the cap on Mark's word, Mark's pick S4 of four probed recipes; passes 1
@@ -340,6 +340,19 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   0.40; 1,411,299 at K1's 0.295; the ceiling 1,444,930); 60 fps at stops 0 and 3 at dpr 1.5 (p50 16.7 ms, p95 at most 17.6 at pass 5, 18.1 at pass 4), 309 draw calls at stop 0 (K1 288).
   Five look passes, the fifth past the cap on Mark's word: 1 the build, 2 wallB and the halo, 3 four recipes probed in place at stop 3, 4 the full
   capture, 5 the stone wall from four recipes probed in place at stop 0. Mark chose S4 from them and passed the wall on the preview (2026-10-27 21:06, "Passed").
+- The village lived in, K3 (2026-10-28, `src/scene/streetLayout.ts` `LIVED_PATH`, `STREET_PATHS`, `STREET_OBJECTS`,
+  `streetGeometry.ts` `doorPaths`, `signsOfLife`, `streetGrass.ts` `PLANT`, `plantHit`, `WALL_PAINT.plasterLength`; the
+  record `tasks/2026-10-27-village-lived-in.md`): a trodden path from every front door but L5 to the lane, nine paths in
+  14 legs, each the door's width plus 0.02 (L2's 0), the first leg 0.08 (L2 0.11, R5 0.056), clipped to the step's
+  front, a mitre at a bend and the lane's edge at lateral 0.06, the lane's paint at cover 0.25, the base inset 0.3 of
+  the width across and at the free end. A bench by L2 (a plank 0.10 × 0.03 × 0.012, its top at 0.037), a pot 0.022 by
+  R4 with a clump of the grass's blades at scale 0.7, a pail by L4 (0.016 across, 0.018 high, the handle to 0.026),
+  each clearing the grass round it; the hand bends the plant through a cylinder of its blades' rest reach. The four
+  plaster houses' strokes 0.7 of the measured row, the cover scaled to hold the count; the church keeps its row. W2
+  ends at `t` 0.41. `lived: false` builds K2's street byte for byte. 596,919 street triangles (K2 576,295); the sweep's
+  worst point 1,429,031 (desktop, `t` 0.26); 60 fps at stops 0 and 3 at dpr 1.5 (p95 at most 18.5 ms), 308 draw calls
+  at stop 0. The build 653 ms against K2's 589 (+10.9%, over the plan's 10%, accepted with Mark's pass). Two look passes of four.
+  Passed by Mark on the preview, 2026-10-28 ("gate passed"), untuned.
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)

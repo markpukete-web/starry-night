@@ -21,6 +21,8 @@ import {
   grassChunks,
   grassDrawCount,
   grassRect,
+  plantChunks,
+  plantHit,
   type GrassChunk,
 } from './streetGrass.ts'
 import { createTrail, releaseSource, stampSegment, stepTrail, TRAIL } from './grassTrail.ts'
@@ -48,6 +50,8 @@ export default function StreetGrass({
 
   // 1. Chunks & Bounding Rect
   const chunks = useMemo<GrassChunk[]>(() => grassChunks(painting), [painting])
+  const plants = useMemo<GrassChunk[]>(() => plantChunks(painting), [painting])
+  const allChunks = useMemo(() => [...chunks, ...plants], [chunks, plants])
   const rect = useMemo(() => grassRect(chunks), [chunks])
 
   // 2. Trail Map & Texture
@@ -84,7 +88,7 @@ export default function StreetGrass({
   // 4. Geometries per chunk
   const chunkGeometries = useMemo(() => {
     const tmpl = bladeTemplate()
-    return chunks.map((chunk) => {
+    return allChunks.map((chunk) => {
       const geom = new InstancedBufferGeometry()
       geom.instanceCount = chunk.blades.length
       geom.setIndex(tmpl.indices)
@@ -149,7 +153,7 @@ export default function StreetGrass({
       )
       return geom
     })
-  }, [chunks])
+  }, [allChunks])
 
   useEffect(() => {
     return () => {
@@ -328,14 +332,15 @@ export default function StreetGrass({
 
   // 6. Capture seams
   const totalBlades = useMemo(
-    () => chunks.reduce((acc, ch) => acc + ch.blades.length, 0),
-    [chunks],
+    () => allChunks.reduce((acc, ch) => acc + ch.blades.length, 0),
+    [allChunks],
   )
   const stampsRef = useRef({ hand: 0, feet: 0 })
 
   useEffect(() => {
     const w = window as unknown as Record<string, unknown>
     w.__grassCount = totalBlades
+    w.__grassPlants = plants.map((p) => ({ y: p.y ?? 0, blades: p.blades }))
     w.__grassStamps = stampsRef.current
     w.__grassPeak = 0
     w.__grassPushNear = (x: number, z: number, r: number): number => {
@@ -379,6 +384,7 @@ export default function StreetGrass({
 
     return () => {
       delete w.__grassCount
+      delete w.__grassPlants
       delete w.__grassStamps
       delete w.__grassPeak
       delete w.__grassPushNear
@@ -386,7 +392,7 @@ export default function StreetGrass({
       delete w.__grassHit
       delete w.__grassHand
     }
-  }, [totalBlades, trail])
+  }, [totalBlades, trail, plants])
 
   // 7. Raycaster & Planes
   const raycaster = useMemo(() => new Raycaster(), [])
@@ -416,8 +422,8 @@ export default function StreetGrass({
       camWorld.y - offset[1],
       camWorld.z - offset[2],
     ]
-    for (let i = 0; i < chunks.length; i++) {
-      chunkGeometries[i].instanceCount = grassDrawCount(chunks[i], camStreet)
+    for (let i = 0; i < allChunks.length; i++) {
+      chunkGeometries[i].instanceCount = grassDrawCount(allChunks[i], camStreet)
     }
 
     // Motion & pause mode
@@ -444,19 +450,26 @@ export default function StreetGrass({
 
       ndc.set(ndcX, ndcY)
       raycaster.setFromCamera(ndc, camera)
-      const hit = raycaster.ray.intersectPlane(castPlane, hitWorld)
-      if (hit) {
-        const hitStreetX = hit.x - offset[0]
-        const hitStreetZ = hit.z - offset[2]
-        const [x0, z0, rw, rd] = trail.rect
-        if (
-          hitStreetX >= x0 &&
-          hitStreetX <= x0 + rw &&
-          hitStreetZ >= z0 &&
-          hitStreetZ <= z0 + rd
-        ) {
-          currentHandHit = [hitStreetX, hitStreetZ]
-          hitRecorded = { x: hit.x, z: hit.z, t: walkT }
+      const streetOrigin = raycaster.ray.origin.clone().sub(new Vector3(...offset))
+      const pHit = plantHit(streetOrigin, raycaster.ray.direction, plants)
+      if (pHit) {
+        currentHandHit = pHit
+        hitRecorded = { x: pHit[0] + offset[0], z: pHit[1] + offset[2], t: walkT }
+      } else {
+        const hit = raycaster.ray.intersectPlane(castPlane, hitWorld)
+        if (hit) {
+          const hitStreetX = hit.x - offset[0]
+          const hitStreetZ = hit.z - offset[2]
+          const [x0, z0, rw, rd] = trail.rect
+          if (
+            hitStreetX >= x0 &&
+            hitStreetX <= x0 + rw &&
+            hitStreetZ >= z0 &&
+            hitStreetZ <= z0 + rd
+          ) {
+            currentHandHit = [hitStreetX, hitStreetZ]
+            hitRecorded = { x: hit.x, z: hit.z, t: walkT }
+          }
         }
       }
     }
@@ -537,10 +550,11 @@ export default function StreetGrass({
 
   return (
     <group name="street-grass">
-      {chunks.map((_, i) => (
+      {allChunks.map((chunk, i) => (
         <mesh
           key={i}
           name={`street-grass-${i}`}
+          position-y={chunk.y ?? 0}
           geometry={chunkGeometries[i]}
           material={grassMat}
           renderOrder={2}
