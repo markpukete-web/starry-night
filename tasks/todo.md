@@ -1,6 +1,19 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-28 (late): Mark's iPhone holds the village; the PR opens
+## Pickup — 2026-10-28 (23:15): the case 2 (phone) race fixed in the check
+
+Mark: "fix the case 2 race first". The defect was in `check-portal.mjs`, not the walk. The walk is held in `entering`
+only (`tasks/2026-10-25-street-portal-plan.md:133`), and it steps on the first frame the canvas sees `street`. R3F
+requests its next frame first, so the check's recorder always runs after R3F's loop. When the canvas commits `street`
+in the same gap as the page (inferred, not observed), the recorder's first `street` frame reads one step: `t` 0.00012
+to 0.00054 is 0.08 × dt / 2.396. The layer still covers that step: the hold is `entering`'s by design, and the walk
+starts under the layer's 1.0 s fade. Case 2 (phone) now requires every `entering` frame that reads the walk to read 0, and at least one
+such frame. Evidence in `scratch/case2-race/` (git-ignored): 4 of 4 full runs pass on `vite build`, each reading the
+walk in 3 `entering` frames (`main` failed 4 of 4). With the hold removed (`Street.tsx` `reduced={reduced}`), case 2
+(phone) fails: "the walk moved under the layer while entering (t 0.0049)". Restored, the tree holds only the check's
+change. Next: the PR, draft then ready for Codex. Mark merges.
+
+## Pickup — 2026-10-28 (late): Mark's iPhone holds the village; the PR opens (done: #35 merged)
 
 Mark, on the preview of `cd3f85e`: "it holds". The PR goes against `main` as a draft, then ready so Codex reviews it.
 Read Codex's review through the timeline API and answer every thread. Codex's 5-hour window was at 39% tonight, so a
