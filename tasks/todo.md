@@ -1,5 +1,30 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-10-28 (18:28): the portal crashes Mark's iPhone; do not ship it until that is fixed
+
+Mark, 16:47, on the preview `starry-night-ewdxv13gq`: "I couldn't get into the street", then a screenshot from his
+iPhone's in-app browser: "A problem repeatedly occurred on https://starry-night-ewdxv13gq-…". iOS killed the page's
+process, almost always for memory, and it crashed again on the reload. At 18:2x the street alone (`?street=1` on V1's
+preview) loaded on the same phone. So the painting and the street held together are too much for the iPhone. Through
+the portal the diorama stays mounted while the street shows (`src/scene/DioramaExperience.tsx`, the comment above
+`<Diorama`).
+
+The deployed files match the local build of `cb4fed1` (`index-9aIiyKsT.js`, `Street-BouKM_C9.js`). Headless Chrome as a
+touch phone enters the street by the pill and by a house tap, with no errors. The measurements are in
+`scratch/vincent-wander-2026-10-28/repro/`, by `tools/phone-enter.mjs`. Chrome's renderer process peaks at 858 MB loading
+the painting, 708 MB entering through the portal and 951 MB opening the street directly. GPU memory goes from 306 to
+357 MB, the JS heap peaks at 133 MB and 2D canvases total 71 MB (48 MB direct). Chrome does not model the iPhone's
+limit. Only Mark's phone can confirm a fix.
+
+Also seen: when the street fails once, `portalFailed` turns the portal off for the visit and the pill disappears with
+no message.
+
+**Next: choose the fix with Mark, then build it.** (a) Unmount the diorama while in the street and rebuild it on the
+way back, the layer held until it is ready. R3F does not dispose a geometry passed as a prop, so check that each
+diorama part frees its geometries and textures on unmount. (b) Enter by a page load to `?street=1`, which is proven on
+his phone, at the cost of the seamless flight into the street. The Lead had not recommended one yet. Mark's earlier
+call stands: five pills cover the village at 667 × 375.
+
 ## Pickup — 2026-10-28 (15:35): the portal on for every visitor, built on `feat/portal-on` off `main`
 
 **The slice** (the plan and its revision 1 `tasks/2026-10-28-portal-on-plan.md`, the evidence
