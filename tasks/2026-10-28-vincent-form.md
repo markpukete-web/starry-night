@@ -186,3 +186,10 @@ hat within 3 of its source patch (2.86). The margin is small because the solid u
   (stop 1 55.3 to 50.3, stop 3 47.0 to 44.2, stop 0 52.6 to 48.1, stop 2's phone 52.9 to 48.6). It is now below the
   trousers' median at stops 0, 2 and 3, and above it at stop 1. It still reads as gold, a deeper ochre than before.
 - 451 tests, tsc and lint pass. One look pass.
+
+## Mark's gate (20:38)
+
+Mark, on the combined preview `preview/all-2026-10-28` (`253d8f7`, V1 merged with `feat/portal-on`,
+`https://starry-night-9yhn2axt0-markpukete-webs-projects.vercel.app`) on his iPhone: "Love it! Gate passed!" V1
+passes as built: the Tarascon form, the hat's shape and its ochre, the lantern and the motion. Next: the PR, stacked
+on K3's branch until #32 merges.

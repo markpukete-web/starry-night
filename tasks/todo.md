@@ -1,5 +1,11 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-10-28 (20:40): Mark passed V1; its PR opens stacked on K3's
+
+Mark passed V1 on the combined preview (`253d8f7`): "Love it! Gate passed!" The PR opens as a draft with the base
+`feat/village-lived-in`, so its diff is V1's alone, then ready so Codex fires. When #32 merges, retarget the PR to
+`main`. Read Codex's review through the timeline API and answer every thread.
+
 ## Pickup — 2026-10-28 (18:48): the hat's colour is done and pushed for Mark's preview
 
 `5b000f9` paints the hat from the crescent's lower-right edge `[1490, 280, 1514, 304]`, the painting's darkest and

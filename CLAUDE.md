@@ -365,7 +365,7 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   1,429,793 (desktop, `t` 0.26), 60 fps at stops 0 and 3 at dpr 1.5 (p50 16.7 ms, p95 at most 18.5), 321 draw calls
   at stop 0 (K3 308). Two look passes of four. The hat (2026-10-28, Mark's "Go for your recommendations") paints from
   the crescent's lower-right edge `[1490, 280, 1514, 304]` (L 63 at hue 90), gated against that patch's mean, ΔE 5.4 to
-  6.5. Untuned by Mark.
+  6.5. Passed by Mark on the combined preview `253d8f7`, 2026-10-28 ("Love it! Gate passed!").
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)
