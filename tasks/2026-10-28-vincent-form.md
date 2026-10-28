@@ -166,7 +166,7 @@ pass 1 (`look/p1`) lifted one side by 0.0016 and it did not show. Pass 2 (`look/
 and 3. The colour is unchanged: the moon's yellow (Mark's open call 1 above). Tarascon's hat is a darker ochre.
 451 tests pass, tsc and lint clean.
 
-## The hat's colour (18:50, `5b000f9`, `scratch/vincent-hat-2026-10-28/look/p3`, `gate/`)
+## The hat's colour (18:48, `5b000f9`, `scratch/vincent-hat-2026-10-28/look/p3`, `gate/`)
 
 Mark: "Go for your recommendations for the hat's colour." The hat now paints from the crescent's lower-right edge,
 `[1490, 280, 1514, 304]`: the painting's darkest and warmest gold, with brown stroke lines through it. Its mean is L 63.1
