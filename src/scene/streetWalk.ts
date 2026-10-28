@@ -1,3 +1,4 @@
+import { Box3, type Mesh, type Object3D } from 'three'
 import { STATION_T, STREET, WALK_T } from './streetLayout.ts'
 
 export const WALK = {
@@ -266,6 +267,19 @@ export function lag(swing: number, hang: number, dt: number): number {
 /** The pool's opacity: still under reduced motion. */
 export function flicker(time: number, reduced: boolean): number {
   return reduced ? 1 : 0.96 + 0.04 * Math.sin(7.3 * time) * Math.sin(11.1 * time)
+}
+
+/**
+ * His figure's world bounds, from his meshes only (Decision (d), Codex confirm 2): the union of `Box3.expandByObject` over
+ * each mesh. A sprite is the lantern's halo, drawn facing the camera, so no box bounds it, and the halo is light on the
+ * street, not his figure. Null when `root` holds no mesh.
+ */
+export function vincentFigureBounds(root: Object3D): { min: [number, number, number]; max: [number, number, number] } | null {
+  const box = new Box3()
+  root.traverse((o) => {
+    if ((o as Mesh).isMesh) box.expandByObject(o)
+  })
+  return box.isEmpty() ? null : { min: box.min.toArray(), max: box.max.toArray() }
 }
 
 export function hitBox(

@@ -2,10 +2,11 @@
 import assert from 'node:assert/strict'
 import { existsSync, readFileSync } from 'node:fs'
 import test from 'node:test'
-import { Color, Vector3 } from 'three'
+import { BufferGeometry, Color, Float32BufferAttribute, Group, Mesh, PerspectiveCamera, Sprite, Vector3 } from 'three'
 import palette from '../public/reference/palette.json' with { type: 'json' }
 import { mulberry32 } from '../src/scene/brush.ts'
-import { VINCENT_RIG } from '../src/scene/streetLayout.ts'
+import { STREET, VINCENT_RIG, vincentPlace, vincentTapCorners, walkPose } from '../src/scene/streetLayout.ts'
+import { hitBox, turnPose, vincentFigureBounds, WALK } from '../src/scene/streetWalk.ts'
 import { rectUnderpaint, sourceUnderpaint, STREET_SOURCES, type StreetSourceName } from '../src/scene/streetStrokes.ts'
 import type { ImageData2D } from '../src/scene/useImageData.ts'
 import {
@@ -270,4 +271,112 @@ test('his paint is the painting\'s', { skip: !existsSync(workPainting) && 'needs
   assert.ok(fidelity < 3, `smock ΔE76 ${fidelity.toFixed(2)} from its source patch`)
   assert.ok(hat < 3, `hat ΔE76 ${hat.toFixed(2)} from its source patch`)
   console.log(`[margin] smock ${smock.toFixed(2)} from the ultramarine, ${fidelity.toFixed(2)} from its source; hat ${hat.toFixed(2)} from its source, ${hatToMoon.toFixed(2)} from #c0b451`)
+})
+
+/** The figure as the component nests it (`70acd5b:src/scene/StreetWalk.tsx:571-627`): a mesh a part, the arm, head and leg
+ * groups at their pivots, the lantern's group inside the left arm's, and a sprite (the halo) in the lantern's group at the
+ * glass. Posed at Codex's mid-turn pose (the plan's Facts, `$E/probe/codex-v1-confirm/visible-click-probe.json`). */
+const MID_TURN = { t: 0.7251969475, bodyPast: 1.2315043202, turn: 0.7, armLeft: -0.588, lantern: 0.3616545427 }
+
+function figureTree(withSprite: boolean): { root: Group; meshes: Mesh[] } {
+  const meshes: Mesh[] = []
+  const mesh = (part: { positions: number[]; indices: number[] }) => {
+    const g = new BufferGeometry()
+    g.setAttribute('position', new Float32BufferAttribute(part.positions, 3))
+    g.setIndex(part.indices)
+    const m = new Mesh(g)
+    meshes.push(m)
+    return m
+  }
+  const partMeshes = (part: VincentPart) => [mesh({ positions: part.strokes.arrays.positions, indices: part.strokes.arrays.indices }), mesh(part.underpaint)]
+  const pivoted = (part: VincentPart & { pivot: [number, number, number] }) => {
+    const g = new Group()
+    g.position.set(...part.pivot)
+    g.add(...partMeshes(part))
+    return g
+  }
+  const place = vincentPlace(MID_TURN.t)
+  const root = new Group()
+  root.rotation.order = 'YXZ'
+  root.position.set(...place.position)
+  root.rotation.set(0, place.yaw + MID_TURN.bodyPast, 0)
+  root.add(...partMeshes(build.body))
+  const armLeft = pivoted(build.armLeft)
+  armLeft.rotation.set(MID_TURN.armLeft, 0, 0)
+  const lantern = new Group()
+  lantern.position.set(...build.lantern.pivot)
+  lantern.rotation.set(MID_TURN.lantern, 0, 0)
+  lantern.add(mesh(build.lantern.ink), mesh(build.lantern.glass))
+  if (withSprite) {
+    const halo = new Sprite()
+    halo.position.set(0, -FORM.lantern.handle - FORM.lantern.cap - FORM.lantern.h / 2, 0)
+    halo.scale.setScalar(0.05)
+    lantern.add(halo)
+  }
+  armLeft.add(lantern)
+  const head = pivoted(build.head)
+  head.rotation.set(0, turnPose(MID_TURN.turn).head, 0)
+  root.add(armLeft, pivoted(build.armRight), head, ...build.legs.map(pivoted), mesh(build.shadow))
+  root.updateMatrixWorld(true)
+  return { root, meshes }
+}
+
+test('a tap on him lands in his tap rect, mid-turn', () => {
+  const { root, meshes } = figureTree(true)
+  const figure = vincentFigureBounds(root)
+  assert.ok(figure, 'the tree holds meshes')
+  const world: Vector3[] = []
+  for (const m of meshes) {
+    const pos = m.geometry.getAttribute('position')
+    for (let i = 0; i < pos.count; i++) world.push(new Vector3().fromBufferAttribute(pos, i).applyMatrix4(m.matrixWorld))
+  }
+  for (const [width, height, portrait] of [[1280, 800, false], [390, 844, true]] as const) {
+    const pose = walkPose(MID_TURN.t, portrait)
+    const camera = new PerspectiveCamera(pose.fov, width / height, STREET.near, STREET.far)
+    camera.position.set(...pose.position)
+    camera.lookAt(...pose.target)
+    camera.updateMatrixWorld()
+    const px = (p: Vector3) => {
+      const v = p.clone().project(camera)
+      return { x: ((v.x + 1) / 2) * width, y: ((1 - v.y) / 2) * height }
+    }
+    const rect = (corners: [number, number, number][]) => {
+      const pts = corners.map((c) => px(new Vector3(...c)))
+      return { x0: Math.min(...pts.map((p) => p.x)), x1: Math.max(...pts.map((p) => p.x)), y0: Math.min(...pts.map((p) => p.y)), y1: Math.max(...pts.map((p) => p.y)) }
+    }
+    const withFigure = rect(vincentTapCorners(MID_TURN.t, figure))
+    const without = rect(vincentTapCorners(MID_TURN.t, null))
+    let outside = 0
+    let worst = 0
+    for (const p of world) {
+      const q = px(p)
+      assert.ok(hitBox(withFigure, q.x, q.y), `${width} x ${height}: a vertex at (${q.x.toFixed(2)}, ${q.y.toFixed(2)}) lies outside the rect ${JSON.stringify(withFigure)}`)
+      if (!hitBox(without, q.x, q.y)) {
+        outside++
+        // by how far the vertex lies outside the K3 rect, hitBox's own minimum size included
+        const cx = (without.x0 + without.x1) / 2
+        const cy = (without.y0 + without.y1) / 2
+        const hw = Math.max((without.x1 - without.x0) / 2, WALK.hitMin / 2)
+        const hh = Math.max((without.y1 - without.y0) / 2, WALK.hitMin / 2)
+        worst = Math.max(worst, Math.abs(q.x - cx) - hw, Math.abs(q.y - cy) - hh)
+      }
+    }
+    // the control: the K3 box alone misses part of him in this pose, or the test proves nothing
+    assert.ok(outside > 0, `${width} x ${height}: with figure null no vertex lies outside the K3 rect`)
+    console.log(`[control] ${width} x ${height}: with figure null ${outside} of ${world.length} vertices lie outside, the worst by ${worst.toFixed(2)} px`)
+  }
+})
+
+test('the lantern\'s light is not his figure', () => {
+  const withHalo = vincentFigureBounds(figureTree(true).root)
+  const without = vincentFigureBounds(figureTree(false).root)
+  assert.ok(withHalo && without)
+  for (const k of [0, 1, 2]) {
+    assert.ok(Math.abs(withHalo.min[k] - without.min[k]) < 1e-12, `min[${k}]: ${withHalo.min[k]} against ${without.min[k]}`)
+    assert.ok(Math.abs(withHalo.max[k] - without.max[k]) < 1e-12, `max[${k}]: ${withHalo.max[k]} against ${without.max[k]}`)
+  }
+  const onlyHalo = new Group()
+  onlyHalo.add(new Sprite())
+  onlyHalo.updateMatrixWorld(true)
+  assert.equal(vincentFigureBounds(onlyHalo), null)
 })

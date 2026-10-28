@@ -873,6 +873,24 @@ export function vincentBoxCorners(t: number): [number, number, number][] {
 }
 
 /**
+ * The corners of his tap rect: the rig box's, and with `figure` the corners of his rendered figure's bounds too, so a tap
+ * on any part of him in any pose lands on him (V1 Decision (d)). `figure` is in the street's frame, as the box is.
+ */
+export function vincentTapCorners(
+  t: number,
+  figure: { min: [number, number, number]; max: [number, number, number] } | null,
+): [number, number, number][] {
+  const corners = vincentBoxCorners(t)
+  if (!figure) return corners
+  for (const x of [figure.min[0], figure.max[0]]) {
+    for (const y of [figure.min[1], figure.max[1]]) {
+      for (const z of [figure.min[2], figure.max[2]]) corners.push([x, y, z])
+    }
+  }
+  return corners
+}
+
+/**
  * The street's triangle budget: 1,444,930 ceiling − 660,388 non-street share (Task 0, station 4 mobile, scratch/street-s1b-2026-10-23/t0/numbers.md)
  * − 143,232 street cypress at stride 4 (Task 5 report, scratch/street-s1b-2026-10-23/t5/cap/4-desktop-frames.json) = 641,310.
  */
