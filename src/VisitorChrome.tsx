@@ -10,6 +10,7 @@ function VisitorButton({
   text,
   onClick,
   onPrefetch,
+  autoFocus,
 }: {
   active?: boolean
   disabled?: boolean
@@ -21,6 +22,8 @@ function VisitorButton({
   onClick: () => void
   /** A pointer over the control or focus on it: the portal loads the street's chunk before the click. */
   onPrefetch?: () => void
+  /** The phone's card: its first answer takes focus when it shows. */
+  autoFocus?: boolean
 }) {
   return (
     <button
@@ -32,6 +35,7 @@ function VisitorButton({
       onClick={onClick}
       onPointerEnter={onPrefetch}
       onFocus={onPrefetch}
+      autoFocus={autoFocus}
     >
       <span aria-hidden="true">{icon}</span>
       <span className="visitor-control-label">{text ?? label}</span>
@@ -124,11 +128,15 @@ export function VisitorChrome({
             <img src="/reference/painting.jpg" alt="The original Starry Night painting" draggable={false} />
           </aside>
         )}
-        {/* the phone's note: always in the page, so a screen reader announces the text when it appears */}
-        {portal && (
-          <p className="visitor-note" role="status">
-            {portal.note ? 'The village walk opens on a computer for now.' : ''}
-          </p>
+        {/* a phone's first entry: a computer is recommended, and the visitor chooses (Mark, 2026-10-28) */}
+        {portal?.asking && (
+          <div className="visitor-ask" role="alertdialog" aria-labelledby="visitor-ask-text">
+            <p id="visitor-ask-text">A computer is recommended for the village scene. On a phone it may load slowly or not open.</p>
+            <div className="visitor-ask-actions">
+              <VisitorButton icon="⌂" label="Enter anyway" onClick={portal.enterAnyway} autoFocus />
+              <VisitorButton icon="✕" label="Stay with the painting" onClick={portal.stay} />
+            </div>
+          </div>
         )}
         <nav className="visitor-dock" aria-label="Artwork controls">
           {/* Disabled while the camera flies or the scenes swap: the control acts only in the diorama and the street */}

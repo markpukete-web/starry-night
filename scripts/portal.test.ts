@@ -2,7 +2,6 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { DIORAMA_CAMERAS, DIORAMA_ORBIT } from '../src/scene/dioramaContract.ts'
 import { islandHeightAt } from '../src/scene/islandShape.ts'
-import { villageOnDevice } from '../src/scene/streetEntry.ts'
 import {
   controlsEnabled,
   dioramaMounted,
@@ -108,12 +107,4 @@ test("the flight's clock takes at most 0.1 s from a frame, so a hidden tab canno
   assert.equal(flightStep(0.99, 0.1), 1)
   assert.equal(flightStep(0.5, Number.NaN), 0.5)
   assert.ok(Math.abs(flightStep(0, PORTAL.flight / 100) - 0.01) < 1e-12)
-})
-
-test('the village opens on a computer, and on a phone only with ?phoneVillage=1', () => {
-  assert.equal(villageOnDevice('', false), true)
-  assert.equal(villageOnDevice('?phoneVillage=1', false), true)
-  assert.equal(villageOnDevice('', true), false)
-  assert.equal(villageOnDevice('?phoneVillage=0', true), false)
-  assert.equal(villageOnDevice('?street=1&phoneVillage=1', true), true)
 })

@@ -24,7 +24,7 @@ import { useTouchInput } from './useTouchInput'
 import { emptyLandStore, type LandStore } from './landTouch'
 import { ARRIVAL, ARRIVAL_CUE, ArrivalClock, CUE_FADE, VINCENTS_CITE, VINCENTS_LINE, arrivalCamera, arrivalFrame, boundedDt, rememberArrived } from './arrival'
 import { dropBootCurtain, keepBootCurtain } from '../bootCurtain'
-import { isStreetMode, streetIdsPass, streetSkyAnchor, touchEnabled, villageOnDevice } from './streetEntry'
+import { isStreetMode, streetIdsPass, streetSkyAnchor, touchEnabled } from './streetEntry'
 import {
   controlsEnabled,
   dioramaMounted,
@@ -608,9 +608,6 @@ function VincentsLine() {
   )
 }
 
-/** ms the phone's note shows after a tap on "Enter the village" */
-const VILLAGE_NOTE_MS = 5000
-
 /** The portal's seams for the checks: the place, the layer's opacity and the saved pose; enter and leave as the dock does. */
 type PortalWindow = Window & {
   /**
@@ -634,17 +631,11 @@ export function DioramaExperience({ clean = false, reduced = false, sky = 'light
   const [place, setPlace] = useState<PortalPlace>(streetMode ? 'street' : 'diorama')
   const [portalFailed, setPortalFailed] = useState(false)
   const portalOn = portalFlag && !portalFailed
-  // a phone or a tablet keeps the painting: its entry shows the note for `VILLAGE_NOTE_MS` (Mark, 2026-10-28)
-  const villageOpens = useMemo(
-    () => typeof window === 'undefined' || villageOnDevice(window.location.search, window.matchMedia('(hover: none) and (pointer: coarse)').matches),
-    [],
-  )
-  const [villageNote, setVillageNote] = useState(false)
-  useEffect(() => {
-    if (!villageNote) return
-    const id = window.setTimeout(() => setVillageNote(false), VILLAGE_NOTE_MS)
-    return () => window.clearTimeout(id)
-  }, [villageNote])
+  // a phone or a tablet (no hover, a coarse pointer: the walk's own test) asks before its first entry, since the street
+  // alone ended the page on Mark's iPhone (2026-10-28). Mark: the phone still enters, told a computer is recommended
+  const phone = useMemo(() => typeof window !== 'undefined' && window.matchMedia('(hover: none) and (pointer: coarse)').matches, [])
+  const [asking, setAsking] = useState(false)
+  const askedRef = useRef(false)
   const live = useRef({ place, still, arriving, portalOn })
   useLayoutEffect(() => {
     live.current = { place, still, arriving, portalOn }
@@ -681,8 +672,8 @@ export function DioramaExperience({ clean = false, reduced = false, sky = 'light
     const { place: current, still: cut, arriving: held, portalOn: on } = live.current
     const controls = controlsRef.current
     if (!on || !controls || portalStep(current, 'enter', { still: cut, arriving: held }) === current) return
-    if (!villageOpens) {
-      setVillageNote(true)
+    if (phone && !askedRef.current) {
+      setAsking(true)
       return
     }
     controls.saveState()
@@ -697,7 +688,14 @@ export function DioramaExperience({ clean = false, reduced = false, sky = 'light
     if (cut) copyToLayer()
     prefetch()
     send('enter')
-  }, [villageOpens, copyToLayer, prefetch, send])
+  }, [phone, copyToLayer, prefetch, send])
+  // the card's answers: once answered "enter", the visit's later entries go straight in
+  const enterAnyway = useCallback(() => {
+    askedRef.current = true
+    setAsking(false)
+    enter()
+  }, [enter])
+  const stay = useCallback(() => setAsking(false), [])
   // the leave copies in the handler, before the place changes (decision (d)). It ends the street's fade first: the canvas
   // sees `leaving` a frame or more later, and its street frames in between must not touch the copy (Codex F1)
   const leave = useCallback(() => {
@@ -720,7 +718,10 @@ export function DioramaExperience({ clean = false, reduced = false, sky = 'light
         : undefined,
     [portalFlag, portalOn, send, enter, prefetch, copyToLayer, onStreetReady, onStreetFailed],
   )
-  const portalControl = useMemo<PortalControl | null>(() => (portalOn ? { place, enter, leave, prefetch, note: villageNote } : null), [portalOn, place, enter, leave, prefetch, villageNote])
+  const portalControl = useMemo<PortalControl | null>(
+    () => (portalOn ? { place, enter, leave, prefetch, asking: asking && place === 'diorama', enterAnyway, stay } : null),
+    [portalOn, place, enter, leave, prefetch, asking, enterAnyway, stay],
+  )
   // Escape in the street goes back, as the dock's control does (decision (j))
   useEffect(() => {
     if (!portalFlag || place !== 'street') return
