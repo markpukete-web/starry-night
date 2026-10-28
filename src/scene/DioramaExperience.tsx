@@ -141,6 +141,8 @@ function ReleaseInitialInternal() {
     initial.subscribers = []
     initial.interaction = []
     initial.initialHits = []
+    // for check-portal's case 2: the count stays 0 in the street
+    ;(window as Window & { __r3fInitialSubscribers?: () => number }).__r3fInitialSubscribers = () => initial.subscribers.length
   }, [store])
   return null
 }

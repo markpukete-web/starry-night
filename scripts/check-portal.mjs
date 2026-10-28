@@ -317,7 +317,10 @@ async function main() {
     // the iPhone fix (2026-10-28): the street builds with the diorama unmounted, so its seams are clear in the street
     const street2 = rec2.filter((f) => f.place === 'street')
     if (!street2.length || street2.some((f) => f.diorama)) throw new Error(`case 2: ${street2.filter((f) => f.diorama).length} of ${street2.length} street frames have the diorama mounted`)
-    console.log(`PASS 2: a tap goes ${order2}; the flight ${tFlight.toFixed(2)} s; the camera at stop 0's pose (gap ${camGap}); the diorama unmounted`)
+    // the phone's memory (2026-10-28): R3F's initial internal keeps none of the unmounted diorama's frame callbacks
+    const stale2 = await page.evaluate('window.__r3fInitialSubscribers?.() ?? -1')
+    if (stale2 !== 0) throw new Error(`case 2: R3F's initial internal holds ${stale2} frame callbacks in the street`)
+    console.log(`PASS 2: a tap goes ${order2}; the flight ${tFlight.toFixed(2)} s; the camera at stop 0's pose (gap ${camGap}); the diorama unmounted, its callbacks released`)
 
     // ---- case 3: Escape
     const rec3 = await record(page, () => page.key('Escape'), `window.__portal().place === 'diorama'`)
