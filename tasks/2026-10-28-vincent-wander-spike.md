@@ -50,3 +50,26 @@ and one for the straight-line rejection. No gate loop, no mutations: a spike.
 The preview with `?street=1&wander=1`, then `&wanderCam=hold`, and `&wanderAim=0` or `40`. Two captures a variant at
 stop 0 and stop 2, on the phone and desktop: before the tap, and with him on the verge. He decides: a slice, a change,
 or no.
+
+## The build and look pass 1 (15:52, `scratch/vincent-wander-2026-10-28/`)
+
+A Sonnet builder built the draft (`c529702`, its report `build-report.md`): 456 tests, both street hashes unchanged,
+eight departures named, among them a turn rate of 9 rad/s so his yaw never snaps. The Lead read the diff: off the lane
+the camera's position is still `walkPose(t)`, and only its aim turns.
+
+The captures (`look/`): at stop 1 he walks from the lane to the dark house's front in about 1 s with the walk's stride.
+In "follow" the camera moves from `t` 0.23 to 0.25 and its aim turns the full 20°. In "hold" it stays at 0.23 and turns
+18°. On the phone he stands small at the house front, in frame. Real taps: a tap on the house's wall does not send him,
+a tap on the verge does, and a scroll brings him back to the lane in 0.83 s, after which the walk goes on.
+
+One fault, fixed (`e055b53`): the tap's ray met the ground plane through walls, so a tap on a house's wall sent him to
+the ground behind it. `seenFrom` now refuses a point whose ray from the camera crosses a house's footprint. Its test
+goes red without the check.
+
+Seen and left for Mark:
+- In the grass his lantern hangs lower than the blades, so its glass and pool are hidden once he stops. It shows while he
+  walks.
+- The verge is sparse. K2's walls and the houses line most of it: stop 0 has one clear spot ahead of him, stop 2 two,
+  stops 1 and 3 several. The square at stop 4 is not walkable, because the grass's footprint leaves it out.
+- At stop 3 a spot beside a house can leave him half behind its gable. The camera stays on its rail and cannot see round
+  the corner.
