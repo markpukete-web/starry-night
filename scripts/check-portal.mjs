@@ -3,10 +3,12 @@
  * The portal's checks (tasks/2026-10-25-street-portal-plan.md, Task 6), against a running dev server:
  *   DIORAMA_CAPTURE_URL=http://127.0.0.1:5198/ node scripts/check-portal.mjs
  * 1. A hover over a house gives the hand and the hint and loads the street's chunk; a hover over the sky gives neither.
- * 2. A tap on a house goes flying, entering, street; the camera is at stop 0's pose. On the phone, with the automatic
- *    walk, Vincent is still at stop 0 when the layer starts to fade (F4), and walks after.
+ * 2. A tap on a house goes flying, entering, street; the camera is at stop 0's pose; the diorama is unmounted in the
+ *    street (its seams clear). On the phone, with the automatic walk, Vincent is still at stop 0 when the layer starts
+ *    to fade (F4), and walks after.
  * 3. Escape goes back to the diorama, the pose the saved one within 1e-6 the frame after and 0.5 s later, the camera's
- *    rotation the one before the entry and its lens the aspect's default. 3b: Escape while the entry's fade runs still
+ *    rotation the one before the entry and its lens the aspect's default; the layer holds until the diorama, mounted
+ *    again, has built (the iPhone fix, 2026-10-28). 3b: Escape while the entry's fade runs still
  *    fades the return from full, never down then up (Codex branch review F1).
  * 4. The dock's control does the same both ways.
  * 5. `?streetFail=painting` ends on the diorama at the saved pose, the portal still on. A failed chunk ends there too,
@@ -21,6 +23,9 @@
  * 11. Three round trips leave the renderer's geometries and textures where the first left them.
  * 12. On the phone, a finger pressed and dragged over a tree adds sky surges, no land touch and no land cast, and a
  *    finger's tap on a tree adds a kick and no land touch or cast. A mouse over a tree casts and adds one (the control).
+ * 13. A touch phone (no hover, a coarse pointer) asks before its first entry: the pill shows the card and the place
+ *    stays the diorama; "Stay with the painting" closes it; "Enter anyway" enters; the visit's next entry goes straight
+ *    in (2026-10-28, the street alone ended the page on Mark's iPhone, and Mark wants phones to enter, told).
  * Each case prints PASS or throws; the run exits 1 on the first failure.
  */
 import { execFileSync, execSync, spawn } from 'node:child_process'
@@ -179,7 +184,7 @@ const PAGE_HELPERS = `(() => {
     const tick = () => {
       if (!window.__recOn) return
       const s = window.__portal()
-      window.__rec.push({ ms: performance.now(), place: s.place, layer: s.layer, pose: s.pose, saved: s.saved, view: s.view, walk: window.__streetWalk?.t ?? null })
+      window.__rec.push({ ms: performance.now(), place: s.place, layer: s.layer, pose: s.pose, saved: s.saved, view: s.view, walk: window.__streetWalk?.t ?? null, diorama: s.diorama })
       requestAnimationFrame(tick)
     }
     requestAnimationFrame(tick)
@@ -270,6 +275,19 @@ async function main() {
     await page.waitFor('window.__streetReady && window.__streetCamera', 30000, 'the street')
     const stop0 = await page.evaluate('window.__streetCamera()')
 
+    // ---- case 0: the flag. On for every visitor (2026-10-28), off with `?portal=0`
+    await open(page, '?arrival=0&walkMode=input')
+    if (!(await page.evaluate('window.__portal().on'))) throw new Error('case 0: the portal is off on a plain visit')
+    const villagePill = `[...document.querySelectorAll('.visitor-dock button')].some((b) => b.getAttribute('aria-label') === 'Enter the village')`
+    if (!(await page.evaluate(villagePill))) throw new Error('case 0: no "Enter the village" in the dock on a plain visit')
+    await page.send('Page.navigate', { url: `${origin}/?arrival=0&walkMode=input&portal=0` })
+    await sleep(500)
+    await page.waitFor('window.__skyReady', 30000, 'the sky with portal=0')
+    await sleep(1000)
+    if (await page.evaluate('Boolean(window.__portal)')) throw new Error('case 0: the portal is on with portal=0')
+    if (await page.evaluate(villagePill)) throw new Error('case 0: "Enter the village" in the dock with portal=0')
+    console.log('PASS 0: the portal is on with its pill on a plain visit, and off without its pill with portal=0')
+
     // ---- case 1: the hover
     await open(page, BASE)
     const house = await page.evaluate(`window.__findPick('village', 16)`)
@@ -296,14 +314,21 @@ async function main() {
     const camGap = Math.max(...cam2.position.map((v, i) => Math.abs(v - stop0.position[i])), ...cam2.quaternion.map((v, i) => Math.abs(v - stop0.quaternion[i])), Math.abs(cam2.fov - stop0.fov))
     if (camGap > 1e-9) throw new Error(`case 2: the camera is ${camGap} from stop 0's`)
     const tFlight = (rec2.find((f) => f.place === 'entering').ms - rec2.find((f) => f.place === 'flying').ms) / 1000
-    console.log(`PASS 2: a tap goes ${order2}; the flight ${tFlight.toFixed(2)} s; the camera at stop 0's pose (gap ${camGap})`)
+    // the iPhone fix (2026-10-28): the street builds with the diorama unmounted, so its seams are clear in the street
+    const street2 = rec2.filter((f) => f.place === 'street')
+    if (!street2.length || street2.some((f) => f.diorama)) throw new Error(`case 2: ${street2.filter((f) => f.diorama).length} of ${street2.length} street frames have the diorama mounted`)
+    console.log(`PASS 2: a tap goes ${order2}; the flight ${tFlight.toFixed(2)} s; the camera at stop 0's pose (gap ${camGap}); the diorama unmounted`)
 
     // ---- case 3: Escape
     const rec3 = await record(page, () => page.key('Escape'), `window.__portal().place === 'diorama'`)
     const r3 = assertReturn(rec3, 'case 3', view2)
     const fade3 = rec3.filter((f) => f.place === 'leaving' && f.layer > 0 && f.layer < 1).length
     if (!fade3) throw new Error('case 3: the return did not fade')
-    console.log(`PASS 3: Escape returns, the pose ${r3.now} then ${r3.after} from the saved one, its rotation and lens, ${fade3} fade frames`)
+    // the layer holds the street's frame until the diorama, mounted again, has built: no fading frame shows it unbuilt
+    const early3 = rec3.filter((f) => f.place === 'leaving' && f.layer < 1 && !f.diorama).length
+    const held3 = rec3.filter((f) => f.place === 'leaving' && f.layer === 1).length
+    if (early3) throw new Error(`case 3: ${early3} leaving frames fade with the diorama not built`)
+    console.log(`PASS 3: Escape returns, the pose ${r3.now} then ${r3.after} from the saved one, its rotation and lens, ${held3} held and ${fade3} fade frames`)
 
     // ---- case 3b: Escape while the entry's fade runs (Codex F1)
     await page.evaluate('window.__portalEnter()')
@@ -332,6 +357,26 @@ async function main() {
     const rec4 = await record(page, () => page.evaluate(`document.querySelector('button[aria-label="Back to the painting"]').click()`), `window.__portal().place === 'diorama'`)
     const r4 = assertReturn(rec4, 'case 4', view4)
     console.log(`PASS 4: the dock enters and returns, the pose ${r4.now} then ${r4.after} from the saved one`)
+
+    // ---- case 4b: the dock's pill clicked where it is drawn, on the phones the bottom stack wraps (Codex plan review F2)
+    const pillAt = (label) => page.evaluate(`(() => {
+      const el = document.querySelector('button[aria-label="${label}"]')
+      const b = el.getBoundingClientRect()
+      const x = b.x + b.width / 2, y = b.y + b.height / 2
+      const at = document.elementFromPoint(x, y)
+      return { x, y, hit: Boolean(at && el.contains(at)) && !el.disabled && getComputedStyle(el).visibility === 'visible' }
+    })()`)
+    const sizes4b = [PHONE, { ...PHONE, width: 667, height: 375 }, { ...PHONE, width: 320, height: 568 }]
+    for (const vp of sizes4b) {
+      await open(page, BASE, vp)
+      const enter = await pillAt('Enter the village')
+      if (!enter.hit) throw new Error(`case 4b: at ${vp.width} × ${vp.height} "Enter the village" is not clickable at its centre`)
+      await enterAndSettle(page, () => page.tap(enter.x, enter.y))
+      const back = await pillAt('Back to the painting')
+      if (!back.hit) throw new Error(`case 4b: at ${vp.width} × ${vp.height} "Back to the painting" is not clickable at its centre`)
+      await record(page, () => page.tap(back.x, back.y), `window.__portal().place === 'diorama'`)
+    }
+    console.log(`PASS 4b: a click on the pill where it is drawn enters and returns at ${sizes4b.map((v) => `${v.width} × ${v.height}`).join(', ')}`)
 
     // ---- case 5: a street that fails, then a chunk that fails
     await open(page, `${BASE}&streetFail=painting`)
@@ -562,6 +607,31 @@ async function main() {
     await page.mouse('mouseReleased', tree12b[0], tree12b[1])
     if (l12mouse <= l12tap || c12mouse <= c12b) throw new Error(`case 12: the control failed, a mouse over a tree took the land touches from ${l12tap} to ${l12mouse} and the casts from ${c12b} to ${c12mouse}`)
     console.log(`PASS 12: on the phone a finger's drag over a tree added ${s12b - s12a} sky surges and its tap a kick, with no land touch and no cast; a mouse over a tree cast ${c12mouse - c12b} times and added ${l12mouse - l12tap} touch`)
+
+    // ---- case 13: a phone asks before its first entry, then enters as it chooses
+    await page.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 })
+    await open(page, BASE, PHONE)
+    const coarse13 = await page.evaluate(`window.matchMedia('(hover: none) and (pointer: coarse)').matches`)
+    if (!coarse13) throw new Error('case 13: the touch emulation does not read as a phone')
+    const card13 = `document.querySelector('.visitor-ask')?.textContent ?? ''`
+    const pill13 = (label) => page.evaluate(`document.querySelector('button[aria-label="${label}"]').click()`)
+    if (await page.evaluate(card13)) throw new Error('case 13: the card shows before the tap')
+    await pill13('Enter the village')
+    await sleep(800)
+    const shown13 = await page.evaluate(card13)
+    if ((await placeOf(page)) !== 'diorama' || !shown13.includes('computer')) throw new Error(`case 13: the pill on a phone went to ${await placeOf(page)} with the card "${shown13}"`)
+    await pill13('Stay with the painting')
+    await sleep(400)
+    if ((await page.evaluate(card13)) || (await placeOf(page)) !== 'diorama') throw new Error('case 13: "Stay with the painting" did not close the card on the painting')
+    await pill13('Enter the village')
+    await sleep(400)
+    const rec13 = await enterAndSettle(page, () => pill13('Enter anyway'))
+    if (!placesOf(rec13).includes('street') || (await page.evaluate(card13))) throw new Error(`case 13: "Enter anyway" ran ${placesOf(rec13)}`)
+    await record(page, () => page.evaluate('window.__portalLeave()'), `window.__portal().place === 'diorama'`)
+    const rec13b = await enterAndSettle(page, () => pill13('Enter the village'))
+    if (!placesOf(rec13b).includes('street')) throw new Error(`case 13: the second entry ran ${placesOf(rec13b)}`)
+    await page.send('Emulation.setTouchEmulationEnabled', { enabled: false })
+    console.log(`PASS 13: a touch phone asks first ("${shown13}"), stays on "Stay", enters on "Enter anyway" (${placesOf(rec13).join(',')}), and the second entry goes straight in`)
 
     if (page.errors.length) throw new Error(`page errors:\n  ${page.errors.join('\n  ')}`)
     page.ws.close()
