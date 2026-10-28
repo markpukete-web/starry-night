@@ -149,3 +149,19 @@ passes the Lead's gate. The branch is pushed for a Vercel preview (behind Vercel
 2. **The form's refinements**, seen and left for him: the hat is the brightest thing on him, the trousers are pale
    (`vincent.ts:360`), and the rolled canvas on his back reads as a pale slab.
 3. **The motion**: the 4 s dwell, the 90° and 45° turn, and the lantern's light on the grass round him (reach 0.08).
+
+## The hat after Van Gogh's own (18:14, `scratch/vincent-hat-2026-10-28/`)
+
+Mark, at the preview: "Where did we get this hat from actually? it looks like a fishing man. But if that's something
+that Vincent Van Gogh drew then let's use his painting." The hat came from the spike's reading of a description of the
+Tarascon painting, not from the painting: a dome crown over a brim that drooped all round, which reads as a conical hat.
+The references are now in `scratch/vincent-hat-2026-10-28/ref/`: "The Painter on the Road to Tarascon" (1888, the
+Wikipedia scan of the 1930s colour photograph, the painting burnt in 1945) and the Met's "Self-Portrait with a Straw
+Hat" (1887, 67.187.70a, Open Access). Both show a rounded crown about half as tall as it is wide and a broad brim, flat
+off the crown, curling up toward its edge. In Tarascon one side is turned up.
+
+`vincent.ts`: the crown 0.0075 tall (top 0.082, under the rig test's 0.0825) with rounded shoulders, the brim flat off
+the crown with `curl` 0.0012 all round and `lift` 0.0026 toward his right at the edge, its normal by differences. Look
+pass 1 (`look/p1`) lifted one side by 0.0016 and it did not show. Pass 2 (`look/p2`, `lift` 0.0026) shows it at stops 1
+and 3. The colour is unchanged: the moon's yellow (Mark's open call 1 above). Tarascon's hat is a darker ochre.
+451 tests pass, tsc and lint clean.

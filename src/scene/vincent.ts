@@ -85,11 +85,14 @@ const INK = new Color(PALETTE.ground)
 const SMOCK: readonly [number, number][] = [...FORM.hem, [0.04, 0.0121], [0.056, 0.0109], [0.062, 0.0105], [0.0645, 0.0085], [0.066, 0.004]]
 const SMOCK_SCALE = { x: 1.2, z: 0.8 }
 const HEAD = { y: 0.071, r: 0.0065 }
-/** A straw hat: a low crown that tapers into a dome under a brim as wide as his shoulders (look pass 1: a straight
- * 0.0068 crown under a 0.0145 brim read as a top hat). The crown's top is 0.0805, a constant of its own apart from the
- * rig's height (Decision (d)). */
-const CROWN = { y0: 0.0745, y1: 0.0805, r: 0.0074 }
-const BRIM = { y: 0.0745, r: 0.017, droop: 0.0025 }
+/** Van Gogh's own straw hat, from "The Painter on the Road to Tarascon" (1888) and the Met's "Self-Portrait with a Straw
+ * Hat" (1887): a rounded crown about half as tall as it is wide, and a broad brim flat off the crown that curls up toward
+ * its edge, highest on his right (Mark, 2026-10-28: the dome over a drooping brim "looks like a fishing man"; look pass
+ * 1 of V1: a straight 0.0068 crown under a 0.0145 brim read as a top hat). The crown's top is 0.082, a constant of its
+ * own apart from the rig's height (Decision (d)). */
+const CROWN = { y0: 0.0745, y1: 0.082, r: 0.0072 }
+/** `curl` all round and `lift` toward `side` (his right, −x) at the edge, so the far side dips by `lift − curl`. */
+const BRIM = { y: 0.0745, r: 0.017, curl: 0.0012, lift: 0.0026, side: Math.PI }
 /** The arms hang outside the smock: at the plan's (±0.0135, 0.034) the hands sat inside it (the hem is 0.0155 × 1.2). */
 const ARM = { shoulder: [0.0125, 0.059] as const, hand: [0.0185, 0.032] as const, r: 0.0032, rHand: 0.0026 }
 /** The rolled canvas stands up his back beside the easel. */
@@ -141,14 +144,17 @@ export function tube(from: Vector3, to: Vector3, r0: number, r1: number): Surfac
   }
 }
 
-/** The hat's brim: `a` round it, `s` from the crown out to the drooping edge. */
+/** The hat's brim: `a` round it, `s` from the crown out to the edge. The normal is the surface's, by differences. */
 function brim(): Surface {
-  const slope = new Vector3(BRIM.r - CROWN.r, -BRIM.droop, 0)
+  const at = (th: number, s: number) => {
+    const r = CROWN.r + (BRIM.r - CROWN.r) * s
+    return new Vector3(Math.cos(th) * r, BRIM.y + s * s * (BRIM.curl + BRIM.lift * Math.cos(th - BRIM.side)), Math.sin(th) * r)
+  }
   return (a, s) => {
     const th = a * Math.PI * 2
-    const r = CROWN.r + (BRIM.r - CROWN.r) * s
-    const n = new Vector3(BRIM.droop * Math.cos(th), slope.x, BRIM.droop * Math.sin(th)).normalize()
-    return { p: new Vector3(Math.cos(th) * r, BRIM.y - BRIM.droop * s * s, Math.sin(th) * r), n }
+    const e = 1e-3
+    const n = new Vector3().crossVectors(at(th + e, s).sub(at(th - e, s)), at(th, s + e).sub(at(th, s - e))).normalize()
+    return { p: at(th, s), n }
   }
 }
 
@@ -314,7 +320,7 @@ export function buildVincent(painting: ImageData2D): VincentBuild {
   // the beard: the hair's paint, the warmest dark note in the painting (the scan has no red), chin and jaw
   clad(headPart, head, 5, 4, painting, VINCENT_SOURCES.hair, VINCENT_CLASS.none, rand, [0.06, 0.44], [0.1, 0.32])
 
-  const crown = shifted(revolve([[CROWN.y0, CROWN.r], [CROWN.y1 - 0.0035, CROWN.r * 0.92], [CROWN.y1 - 0.001, CROWN.r * 0.62], [CROWN.y1, CROWN.r * 0.3], [CROWN.y1, 0]], 1, 1), dy)
+  const crown = shifted(revolve([[CROWN.y0, CROWN.r], [CROWN.y1 - 0.005, CROWN.r * 0.98], [CROWN.y1 - 0.0022, CROWN.r * 0.88], [CROWN.y1 - 0.0008, CROWN.r * 0.68], [CROWN.y1 - 0.0002, CROWN.r * 0.38], [CROWN.y1, 0]], 1, 1), dy)
   const hatColour = underpaintColour(painting, FORM.tarascon.hat)
   solid(headPart.underpaint, crown, 16, 4, hatColour, VINCENT_CLASS.hat)
   clad(headPart, crown, 8, 4, painting, FORM.tarascon.hat, VINCENT_CLASS.hat, rand, [0, 1], [0, 0.75])
