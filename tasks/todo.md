@@ -1,6 +1,20 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-28 (11:10): Mark passed K3, and its PR is open for Codex's review
+## Pickup — 2026-10-28 (12:07): Vincent's form V1 planned and under review; the roadmap after it
+
+**V1, Vincent's form** (`feat/vincent-form` off K3's `ed464c9`): Mark's calls are made. Tarascon is the form, the turn
+90/45, a 4 s dwell, no cane, and the right arm swings. The plan is `tasks/2026-10-28-vincent-form-plan.md`, revision 0
+(`3595bb1`). Codex (correctness) and the worker (buildability) read it from 11:44. Next: revision 1, then the build.
+
+**The roadmap after V1** (Mark, 12:07: "I think we can promote the portal to main then the Vincent wander"):
+1. **The portal on for every visitor.** Today it opens only with `?portal=1`. It becomes the default, with `?portal=0`
+   to turn it off, as the flags A, B and C did on 2026-10-20. Its own small slice after V1.
+2. **Vincent's wander, the camera kept on the path.** Mark is not sure it reads better, or how the control works
+   once Vincent can leave the path. The Lead's proposal: a throwaway spike behind a flag before any slice, as for his
+   form. Tap or click a spot on the verge, and he walks there. The camera stays on the path and turns to keep him in
+   frame. Mark decides from the spike whether it becomes a slice.
+
+## Pickup — 2026-10-28 (11:10): Mark passed K3, and its PR is open for Codex's review (superseded by the 12:07 pickup above)
 
 **Mark passed K3 on the preview** at 11:07 ("Morning Claude, gate passed"), as built, the build's +64 ms with it (the
 record `tasks/2026-10-27-village-lived-in.md`, its last section). The Lead opens the PR as a draft, then marks it ready, so
