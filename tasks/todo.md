@@ -5,6 +5,7 @@
 The diorama now unmounts while the street is mounted (`35bf02e`, the record `tasks/2026-10-28-portal-iphone.md`). In
 headless Chrome as the phone it frees 35 MB of WebGL buffers and 125 MB of live heap after the entry. The way back
 holds the layer until the diorama has rebuilt. Every portal check passes, and three mutations go red.
+The preview (behind Vercel's login, `f68ff3f`): `https://starry-night-7z89d2kjh-markpukete-webs-projects.vercel.app`
 
 **Next:** Mark enters the street through the portal on his iPhone, on the preview. If it holds, the portal-on slice
 goes to its PR path after K3 (#32) merges. If it still crashes, build option (b): enter by a page load to `?street=1`.
