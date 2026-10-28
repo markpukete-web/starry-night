@@ -72,3 +72,21 @@ Mark then asked whether a loading card could let a phone read the village. It ca
 memory and iOS closes the page, card and all. The way to phones is a lighter street, measured on his phone. One cut is
 in the measurements: the street decodes the painting about eight times at 1600 × 1267, 8 MB each. Proposed as the
 next slice in `tasks/todo.md`.
+
+## Phones enter, told first (20:02, `1169994`, replacing `8531440`)
+
+Mark, on the note: "I want phone user still be able to enter the village but there should be warning or a message
+telling the user that computer would have a better experience or tell the user computer would be recommended for
+entering the village scene". So a phone or a tablet now asks before its first entry. The card above the dock reads "A
+computer is recommended for the village scene. On a phone it may load slowly or not open." It has "Enter anyway"
+(focused) and "Stay with the painting". Once a phone has entered, the visit's later entries go straight in. The card
+is a `role="alertdialog"`. The note, its 5 s timer, `villageOnDevice` and `?phoneVillage=1` are gone.
+
+- `check-portal.mjs` all pass (`gate/portal-ask.log`). Case 13: the card on the first tap with the place still the
+  diorama, "Stay with the painting" closes it, "Enter anyway" enters (flying, entering, street), the second entry goes
+  straight in.
+- Mutation 5, the ask removed: case 13 red, the tree clean after (`gate/mutations/m5-no-ask.log`).
+- tsc, lint and `test:sky` (401) pass.
+- The look (`mem/ask-crop.png`, 390 × 844 at dpr 3, touch): the card above the dock, the text on two lines, the two
+  answers as the dock's pills.
+- A phone that enters may still lose the page: the street alone failed on Mark's iPhone. The card says so.
