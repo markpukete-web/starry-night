@@ -1,4 +1,4 @@
-import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import { Canvas, useFrame, useStore, useThree } from '@react-three/fiber'
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei'
 import {
   Component,
@@ -125,6 +125,24 @@ type PerfWindow = Window & {
 
 function setRendererInfoAutoReset(info: { autoReset: boolean }, autoReset: boolean) {
   info.autoReset = autoReset
+}
+
+/**
+ * R3F 9.6 keeps zustand's initial state, and its Provider copies `internal` once the canvas mounts. The first unsubscribe
+ * then filters only the live copy's arrays, so the initial one keeps every callback and pointer target registered
+ * before it, each holding its component's last closure: in the street, the unmounted diorama's 53 MB (2026-10-28).
+ * Once the copy exists, empty the initial one's three filtered arrays. R3F reads `internal` only through `getState()`.
+ */
+function ReleaseInitialInternal() {
+  const store = useStore()
+  useEffect(() => {
+    const initial = store.getInitialState().internal
+    if (initial === store.getState().internal) return
+    initial.subscribers = []
+    initial.interaction = []
+    initial.initialHits = []
+  }, [store])
+  return null
 }
 
 /** Opt-in timing probe. `perf=1` leaves the selected presentation/debug pipeline untouched. */
@@ -820,6 +838,7 @@ export function DioramaExperience({ clean = false, reduced = false, sky = 'light
           glRef.current = gl.domElement
         }}
       >
+        <ReleaseInitialInternal />
         <Scene
           reduced={reduced}
           sky={sky}
