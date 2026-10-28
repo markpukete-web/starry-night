@@ -3331,3 +3331,19 @@ must be byte-identical before the stimulus's difference means anything.
   in both logs, a failed module fetch in the lane's), and passed on K1 in the same minute and on the lane's server
   restarted alone. The grass check's case 4 failed the same way. Restart the server under test after a mutation run
   and before the browser gates, with no other server up, and read both servers' logs when a timing case fails.
+
+## 2026-10-28 — the portal on for every visitor
+
+- **A feature behind a flag never met the chrome guard with the flag on** (the probe, 14:45). The portal shipped on
+  2026-10-25 behind `?portal=1`, and its fifth pill broke four of the viewport check's chrome cases: the placard over
+  the phone's three-row dock, the dock off a 667 px landscape. No gate had run the check with the flag set. When a
+  flagged feature adds chrome, run the viewport check with the flag on at its own gate, not at the flip.
+- **A fixed offset encodes a row count** (the bottom stack). The placard's `bottom: 128px` was right for two rows of
+  the dock and wrong for one or three. Put the two in one flow, so the clearance follows the dock. Measure the old
+  numbers first: the pairs then prove every layout but the one the old number got wrong.
+- **A pixel pair proves layout only where the frame is pinned.** The flat route's canvas is not pinned by `__skyTime`,
+  so its pairs differed by 1,406 to 220,852 px with every rect equal. Report the rects beside the pixels, and split a
+  differing pair into pixels inside and outside the chrome before reading it as a layout change.
+- **A JavaScript `.click()` proves the handler, not the control** (Codex plan review F2). A control hidden by CSS still
+  takes `.click()`. A check of a visible control clicks at its drawn centre after `elementFromPoint` and a visibility
+  test. Codex's counterexample, the street's dock hidden by `:has`, passed case 4 and failed the new 4b.

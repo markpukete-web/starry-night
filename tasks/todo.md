@@ -1,5 +1,19 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-10-28 (15:40): the portal on for every visitor, built on `feat/portal-on` off `main`
+
+**The slice** (the plan and its revision 1 `tasks/2026-10-28-portal-on-plan.md`, the evidence
+`scratch/portal-on-2026-10-28/`): `?portal=0` turns the portal off. The placard and the dock share one bottom stack,
+so the fifth pill no longer breaks the phone's chrome. Codex read the plan (three P2 findings, answered in revision 1).
+K3 (PR #32) and V1 (`feat/vincent-form`) are ahead of `main` and touch other files, apart from this file and the
+Tunables in `CLAUDE.md`. Rebase after they merge.
+
+**Mark's calls, and two notes kept out of the slice:**
+- At 667 × 375 (an iPhone SE in landscape) five pills wrap to two rows across the village. Options: leave it, stack
+  the dock down the right edge on short landscapes, or show icons only there.
+- The tuner (`?tune=1`, Mark's dev tool) keeps its fixed `bottom: 132px` on a phone, and the dock's third row can now
+  reach it.
+
 ## Pickup — 2026-10-27 (21:00): K2 pass 5, the stone wall, passed the Lead's gate, pushed for Mark's preview
 
 **K2 pass 5 (S4, the stone wall) passed the Lead's gate at 20:57** (the record `tasks/2026-10-26-village-craft-k2.md`,

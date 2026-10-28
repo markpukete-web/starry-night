@@ -65,5 +65,62 @@ portal's pill the dock's third row can reach it. It goes in `tasks/todo.md`, not
 1. A drag that starts in the stack's empty space, between the placard and the dock, must still orbit the diorama.
 2. The arrival hides the dock by `visibility`. The placard is not hidden by it today. Neither must change.
 3. In the street the dock's pill reads "Back to the painting". The stack must hold it as it holds "Enter the village".
-4. The other routes (`?mode=relief` and `?mode=canopy`) share `VisitorChrome`. Their chrome must not move.
+4. The flat 2D route (any other `mode`, such as `?mode=painting`) shares `VisitorChrome`. Its chrome must not move.
+   (`?mode=relief` and `?mode=canopy` draw no chrome. Revision 0 named them, wrongly: Codex.)
 5. A phone at 320 px wide: the dock wraps to four rows with the portal's pill. The placard must still clear it.
+
+## Revision 1 (15:35): Codex's plan review and the build's own findings
+
+Codex read revision 0 (`scratch/portal-on-2026-10-28/review-plan-codex.md`, REVISE, three P2 findings and two notes).
+The Lead read each against the code. The build, run in parallel, found the same first fault and one more.
+
+- **F1, P2, declined.** At 640 × 360 with `?portal=0` and the placard shown, the four pills fit one row. The placard's
+  fixed `bottom: 128px` assumed two, so the stack puts it 44 px lower, 16 px above the dock. The Lead found this in the
+  pixel pairs too. It is the one pair that differs from `main`. The placard moves away from the title, which is the
+  fault the old 640 × 360 comment names. A press that once fell in the 60 px gap now lands on the placard, because the
+  placard is drawn there. Two layouts, one for `?portal=0`, would keep a fixed height that is wrong for any dock but
+  two rows. The opposite corners on desktop hold: the placard is `align-self: flex-start` and the desktop pairs match.
+- **The build's own find.** With the stack's `left: 16px`, `main`'s four-pill dock (639 px) wrapped at 667 × 375 and
+  covered the village. The stack's left is 8 px, and the placard's margin 8 px keeps it at 16. At 667 × 375 the
+  portal's five pills still wrap to two rows across the village: Mark's call at the preview.
+- **F2, P2, accepted.** The portal check's case 4b clicks "Enter the village", then "Back to the painting", where each
+  is drawn, at 390 × 844, 667 × 375 and 320 × 568, after an `elementFromPoint` test and a visibility test. Codex's
+  counterexample (the street's dock hidden by `:has`) passes case 4 and fails 4b. The viewport check now tests that
+  each control is the element at its centre, and that a press beside the dock lands on the canvas. With the stack's
+  `pointer-events: none` removed, that test fails at five viewports. Case 0 waits for `__skyReady` and 1 s, then
+  asserts no seam and no pill under `?portal=0`.
+- **F3, P2, accepted.** The viewport check adds 320 × 568 and a live resize from 390 × 844 to it. `main` with
+  `?portal=1` fails both. The branch passes.
+- **The cost of the flag, accepted as a measurement.** The portal casts once per mouse move over the sky and twice
+  per finger tap. A mouse swept over the sky at about 60 moves a second, desktop at dpr 1.5: p50 16.7 ms and p95 16.7
+  to 16.8 ms, with the portal on and off alike (`movefps.log`).
+- **The route list**: Review focus 4 now names the flat route. The pairs run the flat route at 390 × 844 and 1600 × 900: the
+  rects of the dock, the placard and every control match `main`. Its pixels differ because the 2D canvas is not pinned.
+- **The arrival.** The rule stays on `.visitor-dock`. The placard is off on load and the dock is hidden while the
+  opening plays, so no placard can show during it.
+
+No confirmation read: every finding is P2 and each answer is a check that runs at the gate.
+
+## The gate (`c3022ce`, `scratch/portal-on-2026-10-28/gate/`, `tools/gate.sh`)
+
+- tsc, lint and the build pass. `test:sky` runs 401 tests, 401 pass.
+- The viewport check passes on the default and on `?portal=0`, with 320 × 568, the resize to it, the hit test and the
+  canvas test. `main` with `?portal=1` fails six of its cases (`vp/main-portal1-red.log`). With the stack's
+  `pointer-events: none` removed, five fail (`vp/mut-pointer.log`).
+- The portal check passes every case, 0 and 4b among them. On `main`, case 0 fails: no portal on a plain visit
+  (`portal-red-main.log`). With the street's dock hidden, case 4 passes and 4b fails (`portal-mut-back.log`).
+- The sky transform, reduced motion (diorama and street), walk, rotation, grass and cypress-hang checks pass.
+- The pixel pairs (`pairs.log`): fifteen of sixteen diorama pairs byte-identical to `main`, the sixteenth the 640 × 360
+  placard above. The flat route's rects equal `main`'s at 390 × 844 and 1600 × 900.
+- The frame time under a sweeping mouse (`movefps.log`): p50 16.7 ms, p95 16.7 to 16.8 ms, portal on and off alike.
+
+## Look pass 1 (`scratch/portal-on-2026-10-28/look/`)
+
+The default with the chrome at 390 × 844, 360 × 800, 320 × 568, 667 × 375, 844 × 390 and 1600 × 900, the placard off
+and on, and the street through the portal at 390 × 844 and 320 × 568. On a phone in portrait the dock is three rows,
+"Enter the village" and the sky's pill on the first, and the placard sits 16 px above it, clear of the title. In the
+street "Back to the painting" takes the same place. On desktop and at 844 × 390 the five pills fit one row. At 320 × 568
+the dock is four rows, and the placard, shown only on the visitor's tap, rises over the village. At 667 × 375 the dock
+is two rows across the village: Mark's call (the pickup in `tasks/todo.md`).
+
+The Lead's gate passes the slice. The branch is pushed for a Vercel preview. No PR until Mark has looked.

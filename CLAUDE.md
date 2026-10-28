@@ -290,7 +290,7 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   panel at tint 0.3 × 0.6 (`REVEAL_SHADE`), a step 0.012 high and 0.03 deep, three windows down the moonlit side,
   centred at 0.55 of the wall's height, each 0.08 of its run wide and 0.3 of its height tall. The church 875 ribbons,
   the walk's worst point 1,442,727 triangles. Untuned by Mark.
-- The portal, slice 4, behind `?portal=1` (2026-10-25, `src/scene/portal.ts`, `usePortalPointer.ts`, `portalContext.ts`,
+- The portal, slice 4, on for every visitor since 2026-10-28 (`?portal=0` turns it off; was behind `?portal=1`) (2026-10-25, `src/scene/portal.ts`, `usePortalPointer.ts`, `portalContext.ts`,
   the driver in `DioramaExperience.tsx`; the record `tasks/2026-10-25-street-portal.md`): the flight 2.4 s, one
   smoothstep on position and target from the visitor's orbit pose to v2 (position [0.9, 0.35, 1.5], target
   [0.4, 0.1, 0.2]), the default camera's lens written every frame. The flight's last frame is copied to a 2D layer
@@ -299,7 +299,11 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   diorama 0.8 s on the way back. The street gets 15 s to be ready (the arrival's `readyTimeout`). The hover casts once
   per move against the village with the land and the island in front: the hand, and the hint "Enter the village" 16 px
   right and 18 px below the pointer. A tap on a house enters, and the sky's surge is masked there. Escape and the
-  dock's "Back to the painting" return. Reduced motion cuts both ways. Untuned by Mark.
+  dock's "Back to the painting" return. Reduced motion cuts both ways. Untuned by Mark. On for every visitor
+  (2026-10-28, Mark: "promote the portal to main"; the record `tasks/2026-10-28-portal-on-plan.md`): the placard and the
+  dock share one fixed stack, `.visitor-bottom`, so the placard clears the dock however many rows it wraps to. The
+  gap 10 px over 640 px wide, 16 px on a phone. The stack's left 8 px, so four pills (639 px) still fit one row at
+  667 px. The desktop dock wraps where five pills do not fit.
 - The frogs, five, one by each stop (2026-10-25, `src/scene/frog.ts` `FROG`, `FROGS`; the record
   `tasks/2026-10-25-street-frogs.md`), replacing S3b's one: 1,212 triangles each, `FROG.size` 0.0108 (about 22 cm
   beside Vincent; look pass 1, was 0.0086), one blink clock for all five as S3b's. Stops 0 to 3 in a grass gap at `t`
