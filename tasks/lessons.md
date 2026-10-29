@@ -3518,3 +3518,14 @@ must be byte-identical before the stimulus's difference means anything.
 - **A browser check needs its server.** The walk check run bare timed out on `__streetReady` before case 1. It reads
   `DIORAMA_CAPTURE_URL` and needs vite on that port, as `tools/gate-final.sh` starts it. Run the checks from a runner
   that starts the server.
+- **A size on screen is a projection, not a guess from a distance.** The church design said the owl would be 29 px
+  at stop 4 from a guessed 0.6 away. The perch is 0.91 from the camera, and the real camera gives 19 px on the
+  desktop and 11 on the phone (Codex's probe, 2026-10-29). The same for the moths: the lamp I named at stop 3 is
+  beside the camera, out of frame. Before a design claims a size, project the real point through the real camera.
+- **A light's reach is a number. Check the distance before saying it lights a thing.** The design said Vincent's
+  lantern lights the church door at stop 4. The glass is 0.265 from the door and the reach is 0.08, so the lift there
+  is 0.00002 of its value at the glass. The square lamp's pool (0.16) is 0.36 from the wall bed. Both were one
+  subtraction away (Codex F3, 2026-10-29).
+- **A reviewer's long read can be the probe you did not write.** Codex took 35 minutes on the church design and
+  came back with an executable probe (`review/probe-design-r0.mjs`) that found the two faults above plus three more.
+  Check the pane and the review folder before calling a long read a stall: a growing probe log is work.

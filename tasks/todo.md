@@ -1,6 +1,30 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-29 (14:45): Vincent's wander, passed by Mark; the PR is open, Fable reviews
+## Pickup — 2026-10-29 (17:05): #37 merged; the church and its square designed (revision 1), Mark's approval next
+
+**On `main` (`e96c7c0`):** Vincent's wander, PR #37, merged on Mark's word ("Merge #37"), production deploys from
+it. The Codex bot passed `487e053` with no findings. Fable's round 0 (REVISE: F1 P2, a tap where he stood at stop 4
+did not bring him home, and two P3s) was fixed in `f864770` and answered in the thread. The record is
+`tasks/2026-10-29-vincent-wander.md`.
+
+**Cleaned on Mark's word:** thirteen worktrees and fourteen merged local branches removed, and the merged branches
+deleted on GitHub. GitHub holds `main`, `spike/vincent-form` and `spike/vincent-wander` (the Tunables cite the wander
+spike's `74d8856`). Local: `main`, `feat/church-square`, `docs/pickup-2026-10-28-night` and the two spikes. The two
+worktrees' uncommitted leftovers are in `scratch/worktree-leftovers-2026-10-29/`.
+
+**Next (Mark: "Animals besides the frogs", then "the church is a bit dull", "we can just build it if it's well
+planned"):** the design `docs/superpowers/specs/2026-10-29-church-square-design.md`, revision 1, on this branch
+(`feat/church-square` off `555b6c0`, local, not pushed). The builder check (`scratch/church-animals-2026-10-29/review/
+builder-check-r0.md`, seven questions) and Codex's read (`codex-design-r0.md`, REVISE: three P2, two P3, all facts
+audited) are folded. Three calls are Mark's, under "Open for Mark": the church's two tones, the flowers (the ring in
+the lamp's pool is the recommendation), and the owl's species and size. Then: Mark approves the design, the slice 1
+plan (the church's paint, the spire, the trees, the flowers) with its two reads, the build, then slice 2 (the owl and
+the moths). Stop 4's captures as it stands are in `scratch/church-animals-2026-10-29/look0/`.
+
+**Panes at 16:54:** Codex `w4:p4` idle, 70% of its 5-hour window left. Fable `w4:p6` done. Gemini `w4:p5` idle, its
+week 70% used. Nothing is running. No PR is open.
+
+## Pickup — 2026-10-29 (14:45): Vincent's wander, passed by Mark; the PR is open, Fable reviews (superseded by the pickup above)
 
 Branch `feat/vincent-wander`, PR #37 (https://github.com/markpukete-web/starry-night/pull/37). The record is `tasks/2026-10-29-vincent-wander.md`. The slice fixes the spike's four faults and adds the walk
 home after the dwell (Mark, 11:45). Task 4's runs (Gemini) and the Lead's gate on `a21767e` are green. Codex's branch
