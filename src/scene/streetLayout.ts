@@ -483,6 +483,29 @@ export const STREET_RAIL = {
   gap: 0.02,
 } as const
 
+/**
+ * The garden rail round L2's front, as its four chains in the door frame's `(a, k)` pairs (a along the front, k out
+ * toward the lane): `gardenRail` builds its posts and rails on them, and Vincent's legs may not cross them. The front
+ * chain is open at the door, a gap wide.
+ */
+export function railChains(): { frame: ReturnType<typeof doorStepFrame>; chains: [number, number][][] } {
+  const l2Index = STREET_HOUSES.findIndex((h) => h.id === STREET_RAIL.house)
+  const h = STREET_HOUSES[l2Index]
+  const frame = doorStepFrame(h, l2Index)
+  const door = doorOf(h, l2Index)
+  const W = h.w
+  const g = door.w * W + STREET_RAIL.gap
+  const a0 = door.cu * W - g / 2
+  const a1 = door.cu * W + g / 2
+  const chains: [number, number][][] = [
+    [[-STREET_RAIL.margin, STREET_RAIL.back], [-STREET_RAIL.margin, STREET_RAIL.depth]],
+    [[-STREET_RAIL.margin, STREET_RAIL.depth], [a0, STREET_RAIL.depth]],
+    [[a1, STREET_RAIL.depth], [W + STREET_RAIL.margin, STREET_RAIL.depth]],
+    [[W + STREET_RAIL.margin, STREET_RAIL.depth], [W + STREET_RAIL.margin, STREET_RAIL.back]],
+  ]
+  return { frame, chains }
+}
+
 export const STREET_LAMPS = [
   { t: 0.1, lateral: 0.11 },
   { t: 0.24, lateral: -0.11 },
@@ -855,6 +878,12 @@ export function vincentBoxCorners(t: number): [number, number, number][] {
   const { position } = vincentPlace(t)
   const tv = t + VINCENT_RIG.ahead / measuredLength
   const [tx, , tz] = walkTangent(tv)
+  return vincentBoxCornersAt(position, [tx, tz])
+}
+
+/** The rig box's corners where he stands, facing `forward` (a unit vector on the ground): the lane's slot, or off the lane */
+export function vincentBoxCornersAt(position: [number, number, number], forward: [number, number]): [number, number, number][] {
+  const [tx, tz] = forward
   const rx = -tz
   const rz = tx
   const corners: [number, number, number][] = []
@@ -879,8 +908,9 @@ export function vincentBoxCorners(t: number): [number, number, number][] {
 export function vincentTapCorners(
   t: number,
   figure: { min: [number, number, number]; max: [number, number, number] } | null,
+  rig: [number, number, number][] = vincentBoxCorners(t),
 ): [number, number, number][] {
-  const corners = vincentBoxCorners(t)
+  const corners = [...rig]
   if (!figure) return corners
   for (const x of [figure.min[0], figure.max[0]]) {
     for (const y of [figure.min[1], figure.max[1]]) {

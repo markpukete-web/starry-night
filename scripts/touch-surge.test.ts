@@ -10,6 +10,7 @@ import {
   kickShape,
   kickTerms,
   liftSum,
+  strayed,
   nearestStar,
   NO_END,
   pruneKicks,
@@ -159,6 +160,15 @@ test('T23 the classifier: a quick still down-up is a tap, anything longer or fur
   assert.equal(classifyGesture({ x: 100, y: 100, ms: 0 }, { x: 100, y: 100, ms: 301 }), 'drag')
   assert.equal(classifyGesture({ x: 100, y: 100, ms: 0 }, { x: 109, y: 100, ms: 100 }), 'drag')
   assert.equal(classifyGesture({ x: 100, y: 100, ms: 0 }, { x: 100, y: 108, ms: 300 }), 'tap')
+})
+
+test('T23b strayed: any sample of a move more than tapPx from the press is a drag, the parent alone is not enough (the wander, Codex r1)', () => {
+  const down = { x: 100, y: 100, ms: 0 }
+  assert.equal(strayed(down, [{ x: 160, y: 100 }, { x: 102, y: 100 }]), true, 'out 60 px and back within one coalesced move')
+  assert.equal(strayed(down, [{ x: 102, y: 100 }]), false)
+  assert.equal(strayed(down, [{ x: 100, y: 108 }]), false, 'at the allowance, as classifyGesture')
+  assert.equal(strayed(down, [{ x: 100, y: 109 }]), true)
+  assert.equal(strayed(down, []), false)
 })
 
 test('T25 the star hit test and the flare', () => {

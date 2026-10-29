@@ -26,6 +26,8 @@
  * 13. A touch phone (no hover, a coarse pointer) asks before its first entry: the pill shows the card and the place
  *    stays the diorama; "Stay with the painting" closes it; "Enter anyway" enters; the visit's next entry goes straight
  *    in (2026-10-28, the street alone ended the page on Mark's iPhone, and Mark wants phones to enter, told).
+ * 14. wander-remount (2026-10-29): in the street, the capture seam `__wanderTo` sends Vincent off the lane (the control:
+ *    `__wander().mode` is `going` and he has moved); Escape and a second entry start him on the lane (`mode` `lane`, no route).
  * Each case prints PASS or throws; the run exits 1 on the first failure.
  */
 import { execFileSync, execSync, spawn } from 'node:child_process'
@@ -34,6 +36,8 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { DIORAMA_CAMERAS, portraitFov } from '../src/scene/dioramaContract.ts'
+import { vincentPlace } from '../src/scene/streetLayout.ts'
+import { initialWander, wanderTo } from '../src/scene/streetWander.ts'
 
 const appUrl = process.env.DIORAMA_CAPTURE_URL || 'http://127.0.0.1:5198/'
 const origin = new URL(appUrl).origin
@@ -639,6 +643,34 @@ async function main() {
     if (!placesOf(rec13b).includes('street')) throw new Error(`case 13: the second entry ran ${placesOf(rec13b)}`)
     await page.send('Emulation.setTouchEmulationEnabled', { enabled: false })
     console.log(`PASS 13: a touch phone asks first ("${shown13}"), stays on "Stay", enters on "Enter anyway" (${placesOf(rec13).join(',')}), and the second entry goes straight in`)
+
+    // ---- case 14, wander-remount: a second entry starts him on the lane, not where the first visit left him
+    // street points read as world points: true under the default anchor B only, not with ?skyAnchor=A (Fable F3)
+    await open(page, BASE, DESKTOP)
+    await enterAndSettle(page, () => page.evaluate('window.__portalEnter()'))
+    await page.waitFor('window.__wander && window.__wanderTo', 20000, 'the wander seams in the street')
+    const slot14 = vincentPlace(0)
+    const here14 = { x: slot14.position[0], z: slot14.position[2], yaw: slot14.yaw, t: 0 }
+    let spot14 = null
+    for (let dx = -0.4; dx <= 0.4 && !spot14; dx += 0.02) {
+      for (let dz = -0.4; dz <= 0.4 && !spot14; dz += 0.02) {
+        const x = here14.x + dx
+        const z = here14.z + dz
+        if (Math.hypot(dx, dz) >= 0.1 && wanderTo(initialWander(), here14, x, z, null)) spot14 = [x, z]
+      }
+    }
+    if (!spot14) throw new Error('case 14: no point the wander accepts within 0.4 of his slot at stop 0')
+    if ((await page.evaluate('window.__wander().mode')) !== 'lane') throw new Error('case 14: the first entry did not start him on the lane')
+    if (!(await page.evaluate(`window.__wanderTo(${spot14[0]}, ${spot14[1]})`))) throw new Error(`case 14: __wanderTo refused ${spot14}`)
+    await page.waitFor(`window.__wander().mode === 'going'`, 2000, 'him going')
+    await page.waitFor(`Math.hypot(window.__wander().x - ${here14.x}, window.__wander().z - ${here14.z}) > 0.05`, 4000, 'him 0.05 off his slot')
+    const off14 = await page.evaluate('window.__wander()')
+    await record(page, () => page.key('Escape'), `window.__portal().place === 'diorama'`)
+    await enterAndSettle(page, () => page.evaluate('window.__portalEnter()'))
+    await page.waitFor('window.__wander', 20000, 'the wander seam at the second entry')
+    const second14 = await page.evaluate('window.__wander()')
+    if (second14.mode !== 'lane' || second14.route.length !== 0) throw new Error(`case 14: at the second entry his mode is ${second14.mode} with route ${JSON.stringify(second14.route)}, expected lane and none`)
+    console.log(`PASS 14: sent to ${spot14.map((v) => v.toFixed(3))} (${Math.hypot(off14.x - here14.x, off14.z - here14.z).toFixed(3)} off his slot before Escape), then Escape and a second entry: mode ${second14.mode}`)
 
     if (page.errors.length) throw new Error(`page errors:\n  ${page.errors.join('\n  ')}`)
     page.ws.close()

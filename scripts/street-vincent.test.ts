@@ -5,7 +5,7 @@ import test from 'node:test'
 import { BufferGeometry, Color, Float32BufferAttribute, Group, Mesh, PerspectiveCamera, Sprite, Vector3 } from 'three'
 import palette from '../public/reference/palette.json' with { type: 'json' }
 import { mulberry32 } from '../src/scene/brush.ts'
-import { STREET, VINCENT_RIG, vincentPlace, vincentTapCorners, walkPose } from '../src/scene/streetLayout.ts'
+import { STREET, VINCENT_RIG, vincentBoxCorners, vincentBoxCornersAt, vincentPlace, vincentTapCorners, walkPose } from '../src/scene/streetLayout.ts'
 import { hitBox, turnPose, vincentFigureBounds, WALK } from '../src/scene/streetWalk.ts'
 import { rectUnderpaint, sourceUnderpaint, STREET_SOURCES, type StreetSourceName } from '../src/scene/streetStrokes.ts'
 import type { ImageData2D } from '../src/scene/useImageData.ts'
@@ -379,4 +379,14 @@ test('the lantern\'s light is not his figure', () => {
   onlyHalo.add(new Sprite())
   onlyHalo.updateMatrixWorld(true)
   assert.equal(vincentFigureBounds(onlyHalo), null)
+})
+
+test('the tap corners: the lane\'s rig box by default, the wander\'s when it is given, the figure\'s bounds on top of either', () => {
+  const t = 0.23
+  assert.deepEqual(vincentTapCorners(t, null), vincentBoxCorners(t))
+  const off = vincentBoxCornersAt([0.1, 0, -0.5], [Math.sin(0.7), Math.cos(0.7)])
+  assert.deepEqual(vincentTapCorners(t, null, off), off)
+  const figure = { min: [0, 0, 0] as [number, number, number], max: [1, 1, 1] as [number, number, number] }
+  assert.equal(vincentTapCorners(t, figure, off).length, off.length + 8)
+  assert.deepEqual(vincentTapCorners(t, figure, off).slice(0, off.length), off)
 })

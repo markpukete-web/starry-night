@@ -1,6 +1,57 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-28 (23:15): the case 2 (phone) race fixed in the check
+## Pickup — 2026-10-29 (14:45): Vincent's wander, passed by Mark; the PR is open, Fable reviews
+
+Branch `feat/vincent-wander`, PR #37 (https://github.com/markpukete-web/starry-night/pull/37). The record is `tasks/2026-10-29-vincent-wander.md`. The slice fixes the spike's four faults and adds the walk
+home after the dwell (Mark, 11:45). Task 4's runs (Gemini) and the Lead's gate on `a21767e` are green. Codex's branch
+review took three rounds: r0 REVISE (F1 to F5), r1 REVISE (the folded drag, the phone's sight fixture), r2 BUILD. F3
+was declined with evidence and decision (l) reworded. Codex's plan is drained (Mark, after round 2): Fable, in pane `w4:p6`,
+reviews from here, the PR's review included.
+
+**Passed by Mark on the preview, 14:44.** The PR is open, and Fable reviews it (Mark: "Passed, open the PR and get
+Fable to review"). Fable's round 0 on `487e053`: REVISE, one P2 (F1, the tap where he stood at stop 4) and two P3s,
+all fixed in one push and answered in the thread (the record's "Fable's PR review"). Next: Mark merges.
+
+**Next after #37 (Mark, 2026-10-29: "Animals besides the frogs"):** a little owl on a roof ridge that turns its head to
+follow Vincent, and moths at some of the lamps and lit windows. A throwaway spike behind a flag first, for Mark's eye.
+The description is in the chat, waiting for his corrections.
+
+**Left in place, ask Mark before removing:** the worktrees `scratchpad/wander-wt`, `wander-2b`, `wander-r1`,
+`wander-r1-mut`, the builders' `.claude/worktrees/agent-a7f026db3af066847` and `agent-a7062abd1b12521f5`, and the
+branches `wander-t1`, `wander-t2`,
+`wander-t2b`, `wander-r1`.
+
+## Pickup — 2026-10-29 (11:10): Vincent's wander, the plan passed review, Task 1 building (superseded by the pickup above)
+
+Mark, 09:58: "Wander as a slice". The plan is `tasks/2026-10-29-vincent-wander-plan.md` on `feat/vincent-wander`
+(off `8c3f9a5`). It fixes the spike's four faults: the lantern hidden in the grass, the sparse verge, the square, and
+the spot half behind a gable. Revision 3 (`d55c7c6`) passed Codex's review (BUILD) after three rounds: r0 eight P2s
+and the builder's read, r1 two new P2s in the return (N1, N2), r2 one phone test fixture. The reviews are in
+`scratch/vincent-wander-2026-10-29/review/`. A Sonnet builder builds Task 1 from `d55c7c6` (Mark: "Start Task 1
+now"). The worker (Gemini) ran the gate's runs on `main` as the baseline (`scratch/vincent-wander-2026-10-29/base/`):
+all pass but lint, and the hashes and the triangle sweep match V1's.
+
+**Found by the baseline:** `npm run -s lint` fails in the main checkout with 1,848 parsing errors. `eslint .` walks
+into `scratch/`, whose repo copies carry their own `eslint.config.js`. Worktrees have no `scratch/`, so CI and past gates were
+clean. The fix ignores `scratch` in `eslint.config.js` (Task 0).
+
+**Mark's call, made (11:45):** "Yes, walk him back after the dwell". On the automatic walk, Vincent goes home after
+V1's 4 s dwell. It is the plan's decision (p), built by the Lead in Task 2b after Task 2.
+
+## Pickup — 2026-10-28 (23:45): end of the night; nothing open
+
+Mark called it for the night. On `main` (`1c77ab6`): K3, the portal on for every visitor, V1 (#34), the phone's memory
+(#35) and the case 2 (phone) check fix (#36). Codex passed #36 on `df72a18` with no findings, CI green, merged on
+Mark's word. `fix/portal-case2-race` is deleted on GitHub and locally. No PR is open. Nothing is running.
+
+This note is committed on the local branch `docs/pickup-2026-10-28-night`, not pushed (docs only). Branch the next
+slice from it, so the note goes up with the next code push.
+
+**Next, each Mark's call:** Vincent's wander (`spike/vincent-wander`, `74d8856`), whether it becomes a slice. Then
+Mark's noted ideas. Then a performance review across the piece, with `scratch/phone-memory-2026-10-28/tools/` as its
+first tools. Seven older worktrees remain under `/private/tmp/claude-502/`. Ask Mark before removing them.
+
+## Pickup — 2026-10-28 (23:15): the case 2 (phone) race fixed in the check (done: #36 merged)
 
 Mark: "fix the case 2 race first". The defect was in `check-portal.mjs`, not the walk. The walk is held in `entering`
 only (`tasks/2026-10-25-street-portal-plan.md:133`), and it steps on the first frame the canvas sees `street`. R3F

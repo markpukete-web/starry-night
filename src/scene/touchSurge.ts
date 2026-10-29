@@ -265,6 +265,11 @@ export function classifyGesture(down: PointerSample, up: PointerSample, T = TOUC
   return quick && still ? 'tap' : 'drag'
 }
 
+/** A press strayed: some sample of a move is further than `tapPx` from the press (a move may carry several, coalesced). */
+export function strayed(down: PointerSample, samples: readonly { x: number; y: number }[], T = TOUCH_SURGE): boolean {
+  return samples.some((p) => Math.hypot(p.x - down.x, p.y - down.y) > T.tapPx)
+}
+
 export type HoverMark = { ms: number; u: number; v: number }
 
 /** Whether a hover surge is due: far enough from the last one and long enough after it. */

@@ -9,11 +9,22 @@
  * 5. Flat panel camera holds FLAT_VIEW, walk and vincent undefined.
  * 6. The review's fixes K1 to K4 (K4 waits on the turn, V1).
  * 7. The dwell: 4 s on the form's own clock, the turn in and out, the lantern lit, a tap ends it (V1).
+ * 8. The wander (2026-10-29, tasks/2026-10-29-vincent-wander-plan.md, Task 2): a tap on open ground sends him; a house's
+ *    wall, a drag and a refused leg do not; his tap box, the trail at his feet, the wheel, the Pause control and reduced
+ *    motion, on the desktop with a mouse and on the phone with a finger; on the automatic walk, his walk home after the
+ *    dwell (decision (p)); at stop 4, a tap where he stood, off the lane's strip (Fable F1).
+ * Case 8 reads street points as world points: true under the default anchor B only (anchor A moves the street to
+ * `STREET.originA`). Do not run it with `?skyAnchor=A` (Fable F3).
  */
 import { execSync, spawn } from 'node:child_process'
 import { existsSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { PerspectiveCamera, Vector3 } from 'three'
+import { STATION_T, STREET_HOUSES, laneParam, vincentPlace, walkPose } from '../src/scene/streetLayout.ts'
+import { inFootprint } from '../src/scene/streetGrass.ts'
+import { PAUSE, WALK } from '../src/scene/streetWalk.ts'
+import { WANDER, followT, hidden, inFrame, initialWander, legSeen, standable, tripFrom, wanderTo } from '../src/scene/streetWander.ts'
 
 const appUrl = process.env.DIORAMA_CAPTURE_URL || 'http://127.0.0.1:5191/'
 const parsedUrl = new URL(appUrl)
@@ -33,6 +44,167 @@ if (!chromePath) {
 }
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+// --- the wander's point choice (pure; Case 8 reads these, and a node dry run can load them) ---
+
+/** the camera the page draws, from `__streetCamera()` (the aim turned toward him included), for projecting in node */
+function liveCamera(cam, size) {
+  const persp = new PerspectiveCamera(cam.fov, size.width / size.height, cam.near, cam.far)
+  persp.position.fromArray(cam.position)
+  persp.quaternion.fromArray(cam.quaternion)
+  persp.updateMatrixWorld()
+  persp.updateProjectionMatrix()
+  return persp
+}
+
+/** a street point in client pixels, as `__walkProject` gives them */
+function toClient(persp, size, [x, y, z]) {
+  const v = new Vector3(x, y, z).project(persp)
+  return [size.left + ((v.x + 1) / 2) * size.width, size.top + ((1 - v.y) / 2) * size.height]
+}
+
+/** the street-frame ground point a tap at a client pixel lands on (the plane y = 0), or null above the horizon */
+function groundCast(persp, size, px, py) {
+  const ndc = new Vector3(((px - size.left) / size.width) * 2 - 1, 1 - ((py - size.top) / size.height) * 2, 0.5)
+  const dir = ndc.unproject(persp).sub(persp.position).normalize()
+  if (dir.y >= 0) return null
+  const k = -persp.position.y / dir.y
+  return [persp.position.x + k * dir.x, persp.position.z + k * dir.z]
+}
+
+const insideBox = (b, x, y) => x >= b.x0 && x <= b.x1 && y >= b.y0 && y <= b.y1
+const insideCanvas = (size, x, y, margin) => x >= size.left + margin && x <= size.left + size.width - margin && y >= size.top + margin && y <= size.top + size.height - margin
+
+/** his place on the lane at the walk's `t`, as the page's tap reads it */
+function slotAt(t) {
+  const slot = vincentPlace(t)
+  return { x: slot.position[0], z: slot.position[2], yaw: slot.yaw, t }
+}
+
+/**
+ * Points `wanderTo` accepts from his lane slot at `t`, each on the canvas by 24 px, outside his box, with the ground
+ * test and the sight test both passing (`onCanvas(x, y)` is the page's elementFromPoint). Sorted by the change in his
+ * lane coordinate, so the camera moves least, then by distance from the slot.
+ */
+function acceptedPoints(persp, size, box, view, t, onCanvas, { min = 0.12, max = 0.3, reach = 0.5 } = {}) {
+  const here = slotAt(t)
+  const out = []
+  for (let dx = -reach; dx <= reach; dx += 0.01) {
+    for (let dz = -reach; dz <= reach; dz += 0.01) {
+      const x = here.x + dx
+      const z = here.z + dz
+      const d = Math.hypot(dx, dz)
+      if (d < min || d > max || !standable(x, z)) continue
+      if (!wanderTo(initialWander(), here, x, z, view) || hidden(persp.position.x, persp.position.z, x, z)) continue
+      const [px, py] = toClient(persp, size, [x, 0, z])
+      if (!insideCanvas(size, px, py, 40) || insideBox(box, px, py) || !onCanvas(px, py)) continue
+      out.push({ x, z, px, py, d, dLane: Math.abs(laneParam(x, z)[0] - laneParam(here.x, here.z)[0]) })
+    }
+  }
+  return out.sort((a, b) => a.dLane - b.dLane || a.d - b.d)
+}
+
+/**
+ * The sight guard's qualification (Codex F8): the point is in front of the camera, on the canvas by 24 px and outside
+ * his box, and its pixel casts back to it (Codex r1 N1); standable, reached by a clear leg and seen from the live
+ * camera (so only the leg's sight can refuse it); refused by `wanderTo` with the view; the leg's own samples less the
+ * last are seen (so the last sample alone refuses it, `seenButLast`), and the leg ending one `WANDER.sightStep` short
+ * passes `legSeen`.
+ */
+function sightQualifies(persp, size, box, view, t, x, z) {
+  const here = slotAt(t)
+  const depth = new Vector3(x, 0, z).project(persp).z
+  if (!(depth > -1 && depth < 1)) return false
+  const [px, py] = toClient(persp, size, [x, 0, z])
+  if (!insideCanvas(size, px, py, 24) || insideBox(box, px, py)) return false
+  const back = groundCast(persp, size, px, py)
+  if (!back || Math.hypot(back[0] - x, back[1] - z) > 1e-4) return false
+  if (hidden(persp.position.x, persp.position.z, x, z)) return false
+  if (!wanderTo(initialWander(), here, x, z, null)) return false
+  if (wanderTo(initialWander(), here, x, z, view)) return false
+  const len = Math.hypot(x - here.x, z - here.z)
+  if (len <= WANDER.sightStep) return false
+  const k = (len - WANDER.sightStep) / len
+  if (!seenButLast(tripFrom(here), here.x, here.z, x, z, view)) return false
+  return legSeen(tripFrom(here), here.x, here.z, here.x + (x - here.x) * k, here.z + (z - here.z) * k, view)
+}
+
+/**
+ * `legSeen`'s own samples, the last left out, written here so a mutation of `legSeen` cannot move it (Codex r1 N1): with
+ * the last sample dropped from the module, no point is both refused and seen but for the last, and the case fails.
+ */
+function seenButLast(s, ax, az, bx, bz, view) {
+  const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, bz - az) / WANDER.sightStep))
+  for (let k = 1; k < n; k++) {
+    const x = ax + ((bx - ax) * k) / n
+    const z = az + ((bz - az) * k) / n
+    const pose = walkPose(followT(s, x, z), view.portrait)
+    if (hidden(pose.position[0], pose.position[2], x, z) || !inFrame(pose, x, z, view.halfFovDeg)) return false
+  }
+  return true
+}
+
+/** the qualifying point on a 0.01 grid over `reach` of the slot, nearest the canvas centre, off the page's chrome */
+function sightPoint(persp, size, box, view, t, onCanvas, reach = 1.6) {
+  const here = slotAt(t)
+  const cx = size.left + size.width / 2
+  const cy = size.top + size.height / 2
+  let best = null
+  for (let dx = -reach; dx <= reach; dx += 0.01) {
+    for (let dz = -reach; dz <= reach; dz += 0.01) {
+      const x = here.x + dx
+      const z = here.z + dz
+      if (!standable(x, z) || !sightQualifies(persp, size, box, view, t, x, z)) continue
+      const [px, py] = toClient(persp, size, [x, 0, z])
+      if (!onCanvas(px, py)) continue
+      const away = Math.hypot(px - cx, py - cy)
+      if (!best || away < best.away) best = { x, z, px, py, away }
+    }
+  }
+  return best
+}
+
+/**
+ * A house's wall (Codex F4): a pixel on an 8 px grid whose ray meets a house's bare footprint below its eave before it
+ * reaches the ground, found by sampling the ray in plan, not by the page's sight test. Its ground point must be one
+ * `wanderTo` accepts with the view, so only the wall can refuse the tap. The pixel nearest the canvas centre.
+ */
+function wallPoint(persp, size, box, view, t, onCanvas) {
+  const here = slotAt(t)
+  const cx = size.left + size.width / 2
+  const cy = size.top + size.height / 2
+  const ex = persp.position.x
+  const ey = persp.position.y
+  const ez = persp.position.z
+  const meetsWall = (x, z) => {
+    for (let k = 1; k < 400; k++) {
+      const f = k / 400
+      const sx = ex + (x - ex) * f
+      const sz = ez + (z - ez) * f
+      for (const h of STREET_HOUSES) {
+        const c = Math.cos(h.yaw)
+        const s = Math.sin(h.yaw)
+        const u = (sx - h.x) * c + (sz - h.z) * s
+        const v = -(sx - h.x) * s + (sz - h.z) * c
+        if (Math.abs(u) <= h.w / 2 && Math.abs(v) <= h.d / 2 && ey * (1 - f) < h.eave) return true
+      }
+    }
+    return false
+  }
+  let best = null
+  for (let py = size.top + 24; py <= size.top + size.height - 24; py += 8) {
+    for (let px = size.left + 24; px <= size.left + size.width - 24; px += 8) {
+      if (insideBox(box, px, py) || !onCanvas(px, py)) continue
+      const hit = groundCast(persp, size, px, py)
+      if (!hit || !meetsWall(hit[0], hit[1]) || !wanderTo(initialWander(), here, hit[0], hit[1], view)) continue
+      const away = Math.hypot(px - cx, py - cy)
+      if (!best || away < best.away) best = { px, py, hit, away }
+    }
+  }
+  return best
+}
+
+// --- end of the wander's point choice ---
 
 function countHeadlessChromes() {
   try {
@@ -613,9 +785,10 @@ async function main() {
     const k1T0 = await tNow()
     await page.evaluate(wheelOnCanvas)
     await sleep(800)
-    const k1T1 = await tNow()
+    // he is still walking at the cap from the first wheel: read t in the same task as the pair, so no frame falls
+    // between them (a frame there moved him 0.0035, the flake of 2026-10-26 and 10-29)
+    const k1T1 = await page.evaluate(`(() => { const t = window.__streetWalk.t; ${wheelOnCanvas}; window.dispatchEvent(new Event('blur')); return t })()`)
     if (!(k1T1 - k1T0 > 0.01 / L)) throw new Error(`Case 6 precondition failed: a synthetic wheel did not walk (Δt ${k1T1 - k1T0})`)
-    await page.evaluate(`${wheelOnCanvas}; window.dispatchEvent(new Event('blur'))`)
     await sleep(800)
     const k1Drift = Math.abs((await tNow()) - k1T1)
     if (k1Drift >= 0.002 / L) throw new Error(`Case 6 failed (K1): a wheel before a blur moved him by ${k1Drift.toFixed(5)}`)
@@ -788,6 +961,453 @@ async function main() {
     if (!(await waitFor(() => window.__vincentForm?.().auto === true, 2000))) throw new Error('Case 7 failed: a second tap did not start the walk again')
     if (!(await waitFor(() => window.__vincentForm?.().t > 0.23 + 1e-9, 5000))) throw new Error('Case 7 failed: after the second tap t did not rise above 0.23 within 5 s')
     console.log(`PASS: the dwell lasts ${c7Dwell.toFixed(3)} s on the form's clock, the turn peaks at ${c7Turn}, the lantern is 1 on ${c7Frames.length} frames, a tap in the dwell stops the walk and a second tap restarts it`)
+
+    // -------------------------------------------------------------
+    // Case 8 (the wander, 2026-10-29): see the header. Points are chosen in node, with the page's own live camera, view and
+    // box, from the same `wanderTo` the page runs. Every wait is on a condition, never a fixed sleep; every read of
+    // `settled` is followed by ten frames in which the camera's matrix does not move.
+    // -------------------------------------------------------------
+    const DESKTOP = { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false }
+    const PHONE = { width: 390, height: 844, deviceScaleFactor: 1, mobile: true }
+    const c8 = {
+      fail: (msg) => {
+        throw new Error(`Case 8 failed: ${msg}`)
+      },
+      until: async (expr, ms, what) => {
+        const from = Date.now()
+        for (;;) {
+          if (await page.evaluate(`Boolean(${expr})`)) return Date.now() - from
+          if (Date.now() - from > ms) c8.fail(`${what} not within ${ms} ms (${expr}); state ${JSON.stringify(await page.evaluate('window.__wander?.()'))}`)
+          await sleep(40)
+        }
+      },
+      open: async (vp, touch, station, mode) => {
+        await page.send('Emulation.setEmulatedMedia', { media: 'screen', features: [] })
+        await page.send('Emulation.setDeviceMetricsOverride', vp)
+        await page.send('Emulation.setTouchEmulationEnabled', touch ? { enabled: true, maxTouchPoints: 5 } : { enabled: false })
+        await page.send('Page.navigate', { url: `${origin}/?street=1&station=${station}&arrival=0&walkMode=${mode}` })
+        await page.waitForStreetReady()
+        await c8.until('window.__wander && window.__vincentBox && window.__streetCamera', 10000, 'the seams')
+      },
+      wander: () => page.evaluate('window.__wander()'),
+      pose: () => page.evaluate('window.__vincentPose()'),
+      cam: () => page.evaluate('window.__streetCamera()'),
+      auto: () => page.evaluate('window.__streetWalk.auto'),
+      t: () => page.evaluate('window.__streetWalk.t'),
+      // his box as a tap reads it: at least `WALK.hitMin` square about its centre
+      box: async () => {
+        const b = await page.evaluate('window.__vincentBox()')
+        const cx = (b.x0 + b.x1) / 2
+        const cy = (b.y0 + b.y1) / 2
+        const hw = Math.max((b.x1 - b.x0) / 2, WALK.hitMin / 2)
+        const hh = Math.max((b.y1 - b.y0) / 2, WALK.hitMin / 2)
+        return { x0: cx - hw, x1: cx + hw, y0: cy - hh, y1: cy + hh }
+      },
+      onCanvas: (px, py) => page.evaluate(`document.elementFromPoint(${px}, ${py}) === document.querySelector('canvas')`),
+      // a synchronous canvas test for the point choice: the page's chrome (title, dock, placard) as boxes of a 12 px grid
+      mask: async (vp) => {
+        const blocked = await page.evaluate(`(() => { const out = []; const c = document.querySelector('canvas'); for (let y = 0; y < ${vp.height}; y += 12) for (let x = 0; x < ${vp.width}; x += 12) if (document.elementFromPoint(x + 6, y + 6) !== c) out.push([x, y]); return out })()`)
+        const set = new Set(blocked.map(([x, y]) => `${x},${y}`))
+        return (px, py) => !set.has(`${Math.floor(px / 12) * 12},${Math.floor(py / 12) * 12}`)
+      },
+      // the live scene as node sees it: camera, canvas rectangle, his box and the view a tap would use
+      scene: async () => {
+        const size = await page.evaluate(() => {
+          const r = document.querySelector('canvas').getBoundingClientRect()
+          return { left: r.left, top: r.top, width: r.width, height: r.height }
+        })
+        return { size, persp: liveCamera(await c8.cam(), size), box: await c8.box(), view: (await c8.wander()).view }
+      },
+      tap: async (touch, x, y) => {
+        if (touch) {
+          await page.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 0 }] })
+          await sleep(50)
+          await page.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+        } else {
+          await page.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, button: 'none', buttons: 0 })
+          await page.send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1 })
+          await sleep(50)
+          await page.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 0, clickCount: 1 })
+        }
+      },
+      // down, out 60 px and back to 2 px from the press, up: about 120 ms, inside the tap's 300 ms (Codex F2)
+      outAndBack: async (touch, x, y) => {
+        if (touch) {
+          await page.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 0 }] })
+          await sleep(40)
+          await page.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x + 60, y, id: 0 }] })
+          await sleep(40)
+          await page.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x + 2, y, id: 0 }] })
+          await sleep(40)
+          await page.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+        } else {
+          await page.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, button: 'none', buttons: 0 })
+          await page.send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1 })
+          await sleep(40)
+          await page.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: x + 60, y, button: 'left', buttons: 1 })
+          await sleep(40)
+          await page.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: x + 2, y, button: 'left', buttons: 1 })
+          await sleep(40)
+          await page.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: x + 2, y, button: 'left', buttons: 0, clickCount: 1 })
+        }
+      },
+      // a mouse parked over the Pause control is off the canvas, so the hand stays off the grass; the control's label says its state
+      pauseAt: () =>
+        page.evaluate(() => {
+          const b = Array.from(document.querySelectorAll('button')).find((e) => /Pause|Play/.test(e.getAttribute('aria-label') ?? ''))
+          if (!b) return null
+          const r = b.getBoundingClientRect()
+          return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2), label: b.getAttribute('aria-label') }
+        }),
+      park: async (at) => page.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: at.x, y: at.y, button: 'none', buttons: 0 }),
+      click: async (x, y) => {
+        await page.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, button: 'none', buttons: 0 })
+        await page.send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1 })
+        await page.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 0, clickCount: 1 })
+      },
+      wheel: () => page.evaluate(`document.querySelector('canvas').dispatchEvent(new WheelEvent('wheel', { deltaY: 200, deltaMode: 0, bubbles: true, cancelable: true }))`),
+      settle: async (what) => {
+        await c8.until('window.__vincentForm().settled', 25000, `${what}: settled`)
+        const run = await page.send('Runtime.evaluate', {
+          awaitPromise: true,
+          returnByValue: true,
+          expression: `new Promise((resolve) => { const out = []; const step = () => { const c = window.__streetCamera(); out.push([...c.position, ...c.quaternion]); if (out.length >= 11) resolve(out); else requestAnimationFrame(step) }; requestAnimationFrame(step) })`,
+        })
+        const out = run.result.value
+        const drift = Math.max(...out.slice(1).flatMap((f) => f.map((v, k) => Math.abs(v - out[0][k]))))
+        if (drift > 1e-9) c8.fail(`${what}: settled, yet the camera's matrix moved by ${drift} over ten frames`)
+      },
+      // his position and the camera's matrix over `ms`: the largest change, and the wander's state after
+      hold: async (what, ms) => {
+        const a = { pose: (await c8.pose()).world, cam: await c8.cam() }
+        await sleep(ms)
+        const b = { pose: (await c8.pose()).world, cam: await c8.cam(), w: await c8.wander() }
+        const gap = Math.max(...a.pose.map((v, i) => Math.abs(v - b.pose[i])), ...a.cam.position.map((v, i) => Math.abs(v - b.cam.position[i])), ...a.cam.quaternion.map((v, i) => Math.abs(v - b.cam.quaternion[i])))
+        if (gap > 1e-9) c8.fail(`${what}: his position and the camera moved by ${gap} over ${ms} ms`)
+        return b.w
+      },
+      // the seconds a trip of `len` may take: len over his speed, plus the slack
+      bound: (len, slack) => (len / WANDER.speed) * 1000 + slack,
+    }
+    const slotXZ = (t) => {
+      const p = vincentPlace(t)
+      return [p.position[0], p.position[2]]
+    }
+    const away = (world, x, z) => Math.hypot(world[0] - x, world[2] - z)
+
+    // ---- 8a. desktop, stop 1: a wall, a drag, a tap that sends him, his box, the trail, the wheel
+    await c8.open(DESKTOP, false, 1, 'input')
+    const t8 = STATION_T[1]
+    if ((await c8.t()) !== t8) c8.fail(`the street opened at t ${await c8.t()}, not ${t8}`)
+    if ((await c8.wander()).mode !== 'lane') c8.fail('he did not start on the lane')
+    const [slotX, slotZ] = slotXZ(t8)
+    let sc = await c8.scene()
+    const maskD = await c8.mask(DESKTOP)
+
+    // the wall: a tap on a house leaves him on the lane
+    const wall = wallPoint(sc.persp, sc.size, sc.box, sc.view, t8, maskD)
+    if (!wall) c8.fail('no house wall on the canvas at stop 1 whose ground the wander would accept')
+    await c8.tap(false, wall.px, wall.py)
+    await sleep(400)
+    if ((await c8.wander()).mode !== 'lane') c8.fail(`a tap on a house's wall at [${wall.px.toFixed(0)}, ${wall.py.toFixed(0)}] (ground ${wall.hit.map((v) => v.toFixed(3))}) sent him: ${JSON.stringify(await c8.wander())}`)
+
+    const spots = acceptedPoints(sc.persp, sc.size, sc.box, sc.view, t8, maskD)
+    if (!spots.length) c8.fail('no accepted point 0.12 to 0.3 from his slot on the canvas at stop 1')
+    const P = spots.find((p) => inFootprint(p.x, p.z))
+    if (!P) c8.fail('no accepted point in the grass footprint')
+    const trip = Math.hypot(P.x - slotX, P.z - slotZ)
+
+    // a press and a drag from the same point never sends him
+    await page.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: P.px, y: P.py, button: 'none', buttons: 0 })
+    await page.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: P.px, y: P.py, button: 'left', buttons: 1, clickCount: 1 })
+    for (let i = 1; i <= 4; i++) {
+      await page.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: P.px + i * 12, y: P.py, button: 'left', buttons: 1 })
+      await sleep(30)
+    }
+    await page.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: P.px + 48, y: P.py, button: 'left', buttons: 0, clickCount: 1 })
+    await sleep(400)
+    if ((await c8.wander()).mode !== 'lane') c8.fail('a press and a drag of 48 px sent him')
+
+    // a drag out 60 px and back to 2 px from the press, within the tap's 300 ms, never sends him (Codex F2)
+    await c8.outAndBack(false, P.px, P.py)
+    await sleep(400)
+    if ((await c8.wander()).mode !== 'lane') c8.fail('a drag out 60 px and back to the press sent him')
+
+    // the same drag folded into one move, as a browser may coalesce its samples (Codex r1): the move's own point is 2 px
+    // from the press, its first coalesced sample 60 px
+    await page.evaluate(`window.__pid = null; window.addEventListener('pointerdown', (e) => { window.__pid = e.pointerId }, { once: true })`)
+    await page.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: P.px, y: P.py, button: 'none', buttons: 0 })
+    await page.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: P.px, y: P.py, button: 'left', buttons: 1, clickCount: 1 })
+    const folded = await page.evaluate(`(() => { const o = { pointerId: window.__pid, isPrimary: true, pointerType: 'mouse', buttons: 1, bubbles: true, clientY: ${P.py} }; const at = (x) => new PointerEvent('pointermove', { ...o, clientX: x }); const e = new PointerEvent('pointermove', { ...o, clientX: ${P.px + 2}, coalescedEvents: [at(${P.px + 60}), at(${P.px + 2})] }); window.dispatchEvent(e); return e.getCoalescedEvents().length })()`)
+    await page.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: P.px + 2, y: P.py, button: 'left', buttons: 0, clickCount: 1 })
+    await sleep(400)
+    if (folded !== 2) c8.fail(`the folded move carried ${folded} coalesced samples, not 2`)
+    if ((await c8.wander()).mode !== 'lane') c8.fail('a drag out 60 px and back folded into one move sent him')
+
+    // the tap: he goes, and arrives within the trip's length over his speed, plus a second
+    const park = await c8.pauseAt()
+    if (!park) c8.fail('no Pause control on the page')
+    const tapMs = Date.now()
+    await c8.tap(false, P.px, P.py)
+    await c8.park(park)
+    await c8.until(`window.__wander().mode === 'going'`, 1000, 'a tap on an accepted point sending him')
+    await c8.until('window.__wander().arrived > 0', c8.bound(trip, 1000), `him arriving at ${P.x.toFixed(3)}, ${P.z.toFixed(3)} (${trip.toFixed(3)} away at ${WANDER.speed.toFixed(3)} a second)`)
+    const took = Date.now() - tapMs
+    const here8 = (await c8.pose()).world
+    if (away(here8, P.x, P.z) > 1e-6) c8.fail(`he arrived ${away(here8, P.x, P.z)} from his point`)
+    const w8 = await c8.wander()
+    if (w8.route.length !== 1 || Math.hypot(w8.route[0][0] - slotX, w8.route[0][1] - slotZ) > 1e-9) c8.fail(`route is ${JSON.stringify(w8.route)}, expected his slot`)
+    await c8.until('window.__wander().turn === 1', 4000, 'the lantern raised at his point')
+    await c8.settle('arrived at his point')
+    // the camera stays on the rail, its aim turned toward him by at most the knob
+    const rail8 = walkPose(await c8.t(), false).position
+    const cam8 = await c8.cam()
+    const railGap = Math.max(...rail8.map((v, i) => Math.abs(v - cam8.position[i])))
+    const aim8 = (await c8.wander()).aimDeg
+    if (railGap > 1e-9) c8.fail(`the camera is ${railGap} off the walk's rail`)
+    if (Math.abs(aim8) > WANDER.aimMax + 1e-9) c8.fail(`the aim is ${aim8} degrees, over ${WANDER.aimMax}`)
+
+    // the trail at his feet: at 6.5 s after the tap, none at his slot and some at his point; the hand stayed on the Pause control
+    const spent = Date.now() - tapMs
+    if (spent < 6500) await sleep(6500 - spent)
+    const pushAt = (x, z) => page.evaluate(`window.__grassPushNear(${x}, ${z}, 0.03)`)
+    const slotPush = await pushAt(slotX, slotZ)
+    const herePush = await pushAt(P.x, P.z)
+    if (!(herePush > 0)) c8.fail(`the trail at his point is ${herePush} at 6.5 s, expected over 0`)
+    if (slotPush !== 0) c8.fail(`the trail at his old slot is ${slotPush} at 6.5 s, expected 0`)
+
+    // his box follows him: a tap at its centre toggles the walk and leaves him there
+    const box8 = await c8.box()
+    const bx = Math.round((box8.x0 + box8.x1) / 2)
+    const by = Math.round((box8.y0 + box8.y1) / 2)
+    const auto0 = await c8.auto()
+    await c8.tap(false, bx, by)
+    await sleep(300)
+    if ((await c8.auto()) === auto0) c8.fail('a tap on his figure off the lane did not toggle the walk')
+    const stayed = await c8.hold('after the tap on his figure', 1000)
+    if (stayed.mode !== 'going' || stayed.arrived <= 0) c8.fail(`a tap on his figure moved him: ${JSON.stringify(stayed)}`)
+    await c8.tap(false, bx, by)
+    await sleep(300)
+    if ((await c8.auto()) !== auto0) c8.fail('a second tap on his figure did not toggle the walk back')
+    await c8.park(park)
+
+    // his old slot, off his figure: not a toggle, and it sends him back
+    const live8 = await c8.scene()
+    const [sx, sy] = toClient(live8.persp, live8.size, [slotX, 0, slotZ])
+    if (!insideCanvas(live8.size, sx, sy, 24) || insideBox(live8.box, sx, sy) || !(await c8.onCanvas(sx, sy))) c8.fail(`his old slot at [${sx.toFixed(0)}, ${sy.toFixed(0)}] is not tappable (off the canvas or on his box)`)
+    await c8.tap(false, sx, sy)
+    await c8.until(`['returning', 'lane'].includes(window.__wander().mode)`, 1000, 'a tap on his old slot sending him back')
+    if ((await c8.auto()) !== auto0) c8.fail('a tap on his old slot toggled the walk')
+    await c8.until(`window.__wander().mode === 'lane'`, c8.bound(trip, 4000), 'him home on the lane')
+    await sleep(100)
+    const home8 = (await c8.pose()).world
+    if (away(home8, slotX, slotZ) > 1e-6 || Math.abs((await c8.t()) - t8) > 1e-9) c8.fail(`home is ${away(home8, slotX, slotZ)} from his slot, t ${await c8.t()}`)
+    // home, the aim eases back to the rail's: settled only once it has (n; Task 4's b03 survived without this)
+    await c8.settle('home on the lane')
+
+    // a wheel turn sends him back and is dropped; the next one walks
+    await c8.tap(false, P.px, P.py)
+    await c8.park(park)
+    await c8.until(`window.__wander().mode === 'going'`, 1000, 'the second tap sending him')
+    await c8.until('window.__wander().arrived > 0', c8.bound(trip, 1000), 'him arriving a second time')
+    await c8.wheel()
+    await c8.until(`window.__wander().mode === 'lane'`, c8.bound(trip, 4000), 'a wheel turn bringing him home')
+    await sleep(100)
+    if (Math.abs((await c8.t()) - t8) > 1e-9) c8.fail(`the wheel that sent him home moved t to ${await c8.t()}`)
+    await c8.wheel()
+    await sleep(800)
+    if (!((await c8.t()) - t8 > 0.01 / L)) c8.fail(`the next wheel did not walk: t ${await c8.t()}`)
+    console.log(`PASS: the wander, desktop stop 1: a wall at [${wall.px}, ${wall.py}] (ground ${wall.hit.map((v) => v.toFixed(3))}, accepted but for the wall), a 48 px drag and a 60 px drag out and back, apart and folded into one move, leave him; a tap at [${P.px.toFixed(0)}, ${P.py.toFixed(0)}] sends him ${trip.toFixed(3)} and he arrives in ${(took / 1000).toFixed(2)} s (bound ${(c8.bound(trip, 1000) / 1000).toFixed(2)} s), the camera on the rail, the aim ${aim8.toFixed(1)} degrees, the trail ${herePush.toFixed(2)} at his point and ${slotPush} at his slot; his box toggles the walk, his old slot and a wheel turn bring him home`)
+
+    // ---- 8b. desktop, stop 2: the sight guard
+    await c8.open(DESKTOP, false, 2, 'input')
+    sc = await c8.scene()
+    const codex = [0.5412437098392479, -1.4405122792319607]
+    if (!sightQualifies(sc.persp, sc.size, sc.box, sc.view, STATION_T[2], codex[0], codex[1])) c8.fail(`Codex's point ${codex} does not qualify at stop 2 on the desktop`)
+    const [cpx, cpy] = toClient(sc.persp, sc.size, [codex[0], 0, codex[1]])
+    if (!(await c8.onCanvas(cpx, cpy))) c8.fail(`Codex's point at [${cpx.toFixed(0)}, ${cpy.toFixed(0)}] is under the page's chrome`)
+    const auto2 = await c8.auto()
+    await c8.tap(false, cpx, cpy)
+    await sleep(500)
+    if ((await c8.wander()).mode !== 'lane' || (await c8.auto()) !== auto2) c8.fail(`a tap on Codex's point sent him or toggled the walk: ${JSON.stringify(await c8.wander())}`)
+    // the control: an accepted point at the same stop does send him
+    const spots2 = acceptedPoints(sc.persp, sc.size, sc.box, sc.view, STATION_T[2], await c8.mask(DESKTOP))
+    if (!spots2.length) c8.fail('no accepted point at stop 2 for the control')
+    await c8.tap(false, spots2[0].px, spots2[0].py)
+    await c8.until(`window.__wander().mode === 'going'`, 1000, 'the control tap at stop 2 sending him')
+    console.log(`PASS: the sight guard, desktop stop 2: Codex's point ${codex.map((v) => v.toFixed(3))} qualifies, a real tap at [${cpx.toFixed(0)}, ${cpy.toFixed(0)}] leaves him on the lane and the walk alone, and an accepted point sends him`)
+
+    // ---- 8c. desktop, stop 1: the Pause control, then reduced motion, with him walking off the lane
+    await c8.open(DESKTOP, false, 1, 'input')
+    sc = await c8.scene()
+    const far = acceptedPoints(sc.persp, sc.size, sc.box, sc.view, t8, await c8.mask(DESKTOP), { min: 0.45, max: 0.8, reach: 0.8 })
+    if (!far.length) c8.fail('no accepted point 0.45 to 0.8 from his slot at stop 1')
+    const F = far[0]
+    const farTrip = Math.hypot(F.x - slotX, F.z - slotZ)
+    const park2 = await c8.pauseAt()
+    const away0 = `Math.hypot(window.__vincentPose().world[0] - ${slotX}, window.__vincentPose().world[2] - ${slotZ}) > 0.05`
+    await c8.tap(false, F.px, F.py)
+    await c8.park(park2)
+    await c8.until(`window.__wander().mode === 'going'`, 1000, 'the far tap sending him')
+    await c8.until(away0, 3000, 'him walking away from his slot')
+    await c8.click(park2.x, park2.y)
+    await c8.until(`document.querySelector('button[aria-label="Play motion"]')`, 1000, 'the Pause control turning on')
+    await sleep(120)
+    const still0 = await c8.hold('Pause on', 1000)
+    if (still0.arrived > 0) c8.fail('he arrived while Pause was on')
+    await c8.click(park2.x, park2.y)
+    await c8.until(`document.querySelector('button[aria-label="Pause motion"]')`, 1000, 'the Pause control turning off')
+    await c8.until('window.__wander().arrived > 0', c8.bound(farTrip, 3000), 'him going on and arriving after Pause')
+    if (away((await c8.pose()).world, F.x, F.z) > 1e-6) c8.fail('after Pause he did not arrive at his point')
+    // home, then reduced motion turned on mid-walk
+    await c8.wheel()
+    await c8.until(`window.__wander().mode === 'lane'`, c8.bound(farTrip, 4000), 'him home before the reduced-motion leg')
+    // the aim eases back for up to 3.3 s; F's pixel is the unturned camera's, so wait for it (round 2)
+    await c8.settle('home before the reduced-motion leg')
+    await c8.tap(false, F.px, F.py)
+    await c8.park(park2)
+    await c8.until(`window.__wander().mode === 'going'`, 1000, 'the second far tap sending him')
+    await c8.until(away0, 3000, 'him walking away again')
+    await page.send('Emulation.setEmulatedMedia', { media: 'screen', features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] })
+    await sleep(250)
+    const reduced0 = await c8.hold('reduced motion on', 1000)
+    if (reduced0.arrived > 0) c8.fail('he arrived under reduced motion')
+    // a tap does nothing under reduced motion: on his old slot, which would send him back, he stays `going`; else on another far point
+    const liveR = await c8.scene()
+    const [rsx, rsy] = toClient(liveR.persp, liveR.size, [slotX, 0, slotZ])
+    const other = far.find((p) => Math.hypot(p.x - F.x, p.z - F.z) > 0.1)
+    const slotTappable = insideCanvas(liveR.size, rsx, rsy, 24) && !insideBox(liveR.box, rsx, rsy) && (await c8.onCanvas(rsx, rsy))
+    const tapR = slotTappable ? [rsx, rsy] : other ? [other.px, other.py] : null
+    if (!tapR) c8.fail('no point to tap under reduced motion')
+    await c8.tap(false, tapR[0], tapR[1])
+    await sleep(300)
+    const afterR = await c8.wander()
+    if (afterR.mode !== 'going' || afterR.tx !== reduced0.tx || afterR.tz !== reduced0.tz || afterR.route.length !== reduced0.route.length) c8.fail(`a tap under reduced motion (${slotTappable ? 'on his old slot' : 'on another point'}) changed his trip: ${JSON.stringify(afterR)}`)
+    await page.send('Emulation.setEmulatedMedia', { media: 'screen', features: [] })
+    await c8.until('window.__wander().arrived > 0', c8.bound(farTrip, 3000), 'him going on and arriving after reduced motion')
+    console.log(`PASS: the Pause control and reduced motion hold his position and the camera's matrix over 1 s while he walks off the lane (${farTrip.toFixed(3)} trip), and he goes on and arrives when each ends; a tap under reduced motion changes nothing`)
+
+    // ---- 8d. the phone, the automatic walk (p). With the walk stopped, he stays past the dwell's mark, and a finger on
+    // him starts the walk and sends him home at once. With it on, a finger in stop 2's dwell sends him, the walk waits,
+    // and he goes home by himself at the mark; the walk then goes on with no second dwell
+    const mark = (PAUSE.dwell - PAUSE.endTurn) * 1000
+    await c8.open(PHONE, true, 1, 'auto')
+    if ((await c8.auto()) !== true) c8.fail('the phone did not open on the automatic walk')
+    {
+      const b = await c8.box()
+      await c8.tap(true, Math.round((b.x0 + b.x1) / 2), Math.round((b.y0 + b.y1) / 2))
+    }
+    await c8.until('window.__streetWalk.auto === false', 1500, 'a finger on him stopping the walk')
+    await sleep(300)
+    const tPhone = await c8.t()
+    sc = await c8.scene()
+    const phoneSpots = acceptedPoints(sc.persp, sc.size, sc.box, sc.view, tPhone, await c8.mask(PHONE))
+    if (!phoneSpots.length) c8.fail(`no accepted point on the phone at t ${tPhone}`)
+    const Q = phoneSpots[0]
+    const [phoneSlotX, phoneSlotZ] = slotXZ(tPhone)
+    const phoneTrip = Math.hypot(Q.x - phoneSlotX, Q.z - phoneSlotZ)
+    await c8.outAndBack(true, Q.px, Q.py)
+    await sleep(400)
+    if ((await c8.wander()).mode !== 'lane' || (await c8.auto()) !== false) c8.fail(`a finger's drag out 60 px and back sent him or toggled the walk: ${JSON.stringify(await c8.wander())}`)
+    await c8.tap(true, Q.px, Q.py)
+    await c8.until(`window.__wander().mode === 'going'`, 1000, 'a finger sending him')
+    await c8.until('window.__wander().arrived > 0', c8.bound(phoneTrip, 1000), 'him arriving on the phone')
+    await c8.until('window.__wander().turn === 1', 4000, 'the lantern raised on the phone')
+    await c8.settle('arrived on the phone')
+    await c8.until(`window.__wander().arrived > ${(mark + 1000) / 1000}`, mark + 3000, 'him a second past the mark with the walk stopped')
+    const stayed8d = await c8.wander()
+    if (stayed8d.mode !== 'going' || (await c8.auto()) !== false) c8.fail(`with the walk stopped he did not stay: ${JSON.stringify(stayed8d)}`)
+    const bPhone = await c8.box()
+    await c8.tap(true, Math.round((bPhone.x0 + bPhone.x1) / 2), Math.round((bPhone.y0 + bPhone.y1) / 2))
+    await c8.until('window.__streetWalk.auto === true', 1500, 'a finger on his figure starting the walk')
+    await c8.until(`window.__wander().mode !== 'going'`, 1000, 'him setting off home once the walk runs')
+    await c8.until(`window.__wander().mode === 'lane'`, c8.bound(phoneTrip, 4000), 'him home on the phone')
+    const tHome = await c8.t()
+    if (tHome < tPhone - 1e-9 || tHome > tPhone + 0.02) c8.fail(`home on the phone at t ${tHome}, expected the trip's ${tPhone}`)
+    await c8.until(`window.__streetWalk.t > ${tPhone} + 0.003`, 3000, 'the automatic walk going on after he is home')
+
+    // the walk on throughout: the point is chosen from stop 2's camera in the input mode, the camera of stop 2's dwell
+    await c8.open(PHONE, true, 2, 'input')
+    await c8.settle('the phone at stop 2')
+    sc = await c8.scene()
+    const t2d = STATION_T[2]
+    const spots2d = acceptedPoints(sc.persp, sc.size, sc.box, sc.view, t2d, await c8.mask(PHONE))
+    if (!spots2d.length) c8.fail('no accepted point on the phone at stop 2')
+    const R = spots2d[0]
+    const [slot2x, slot2z] = slotXZ(t2d)
+    const trip2d = Math.hypot(R.x - slot2x, R.z - slot2z)
+    await c8.open(PHONE, true, 1, 'auto')
+    await c8.until(`window.__vincentForm().dwell > 0 && window.__streetWalk.t === ${t2d}`, 8000, 'the automatic walk dwelling at stop 2')
+    await c8.until('window.__vincentForm().turn === 1', 2000, 'the lantern raised in the dwell')
+    const left = await page.evaluate('window.__vincentForm().dwell')
+    if (left < 0.8) c8.fail(`only ${left} s of the dwell left for the tap`)
+    await c8.tap(true, R.px, R.py)
+    await c8.until(`window.__wander().mode === 'going'`, 1000, 'a finger in the dwell sending him')
+    if ((await c8.auto()) !== true) c8.fail('a finger on the ground toggled the walk')
+    await c8.until('window.__wander().arrived > 0', c8.bound(trip2d, 1000), 'him arriving with the walk on')
+    const arrivedAt = Date.now()
+    if (Math.abs((await c8.t()) - t2d) > 0.05) c8.fail(`the walk moved on while he was off the lane: t ${await c8.t()}`)
+    await c8.until(`window.__wander().mode === 'returning'`, mark + 1500, 'him setting off home by himself')
+    const waited = Date.now() - arrivedAt
+    if (waited < mark - 300) c8.fail(`he set off home ${waited} ms after arriving, before the mark at ${mark} ms`)
+    await c8.until(`window.__wander().mode === 'lane'`, c8.bound(trip2d, 4000), 'him home with the walk on')
+    const tBack = await c8.t()
+    if (tBack < t2d - 1e-9 || tBack > t2d + 0.02) c8.fail(`home with the walk on at t ${tBack}, expected ${t2d}`)
+    await c8.until(`window.__streetWalk.t > ${t2d} + 0.003`, 3000, 'the walk going on from stop 2 with no second dwell')
+    console.log(`PASS: the phone, the automatic walk (p): stopped, a finger at [${Q.px.toFixed(0)}, ${Q.py.toFixed(0)}] sends him ${phoneTrip.toFixed(3)}, he stays past the mark, and a finger on him starts the walk and brings him home; on, a finger in stop 2's dwell at [${R.px.toFixed(0)}, ${R.py.toFixed(0)}] sends him ${trip2d.toFixed(3)}, he sets off home ${(waited / 1000).toFixed(2)} s after arriving (mark ${(mark / 1000).toFixed(2)} s), and the walk goes on from t ${tBack}`)
+
+    // ---- 8e. the phone: the sight guard. Stop 2, then 1 and 3, on a 0.01 grid; the first stop with a qualifying point
+    let guard = null
+    for (const stop of [2, 1, 3]) {
+      await c8.open(PHONE, true, stop, 'input')
+      sc = await c8.scene()
+      const found = sightPoint(sc.persp, sc.size, sc.box, sc.view, STATION_T[stop], await c8.mask(PHONE))
+      if (found) {
+        guard = { stop, ...found }
+        break
+      }
+    }
+    if (!guard) c8.fail('no qualifying sight-guard point on the phone at stops 2, 1 or 3')
+    console.log(`the phone's sight-guard point: stop ${guard.stop}, street [${guard.x.toFixed(4)}, ${guard.z.toFixed(4)}], client [${guard.px.toFixed(0)}, ${guard.py.toFixed(0)}]`)
+    const autoG = await c8.auto()
+    await c8.tap(true, guard.px, guard.py)
+    await sleep(500)
+    if ((await c8.wander()).mode !== 'lane' || (await c8.auto()) !== autoG) c8.fail(`a finger on the sight-guard point sent him or toggled the walk: ${JSON.stringify(await c8.wander())}`)
+    console.log(`PASS: the sight guard, phone stop ${guard.stop}: a finger at [${guard.px.toFixed(0)}, ${guard.py.toFixed(0)}] leaves him on the lane and the walk alone`)
+    await page.send('Emulation.setTouchEmulationEnabled', { enabled: false })
+
+    // ---- 8f. desktop, stop 4: his slot is on the square, off the lane's strip, and a tap where he stood still brings
+    // him home by the leg he walked, never out to his point first (Fable F1)
+    await c8.open(DESKTOP, false, 4, 'input')
+    const t8f = STATION_T[4]
+    const [slotFX, slotFZ] = slotXZ(t8f)
+    if (!standable(slotFX, slotFZ)) c8.fail('his slot at stop 4 is on the strip, so the case is gone')
+    const scF = await c8.scene()
+    const parkF = await c8.pauseAt()
+    const PF = acceptedPoints(scF.persp, scF.size, scF.box, scF.view, t8f, await c8.mask(DESKTOP), { min: 0.2 })[0]
+    if (!PF) c8.fail('no accepted point 0.2 to 0.3 from his slot at stop 4')
+    const tripF = Math.hypot(PF.x - slotFX, PF.z - slotFZ)
+    await c8.tap(false, PF.px, PF.py)
+    await c8.park(parkF)
+    await c8.until('window.__wander().arrived > 0', c8.bound(tripF, 1000), 'him arriving at stop 4')
+    const liveF = await c8.scene()
+    const [sfx, sfy] = toClient(liveF.persp, liveF.size, [slotFX, 0, slotFZ])
+    if (!insideCanvas(liveF.size, sfx, sfy, 24) || insideBox(liveF.box, sfx, sfy) || !(await c8.onCanvas(sfx, sfy))) c8.fail(`his old slot at stop 4 at [${sfx.toFixed(0)}, ${sfy.toFixed(0)}] is not tappable`)
+    await c8.tap(false, sfx, sfy)
+    await c8.park(parkF)
+    await c8.until(`window.__wander().mode === 'returning' && window.__wander().route.length === 1`, 1000, 'a tap where he stood at stop 4 turning him home')
+    let farF = tripF
+    const fromF = Date.now()
+    for (let w = await c8.wander(); w.mode !== 'lane'; w = await c8.wander()) {
+      const d = Math.hypot(w.x - slotFX, w.z - slotFZ)
+      if (d > farF + 1e-6) c8.fail(`on his way home from stop 4's point he walked away from his slot: ${d} after ${farF}`)
+      farF = d
+      if (Date.now() - fromF > c8.bound(tripF, 4000)) c8.fail(`him home from stop 4's point not within ${c8.bound(tripF, 4000)} ms`)
+      await sleep(40)
+    }
+    await sleep(100)
+    if (away((await c8.pose()).world, slotFX, slotFZ) > 1e-6) c8.fail('home at stop 4 is not his slot')
+    console.log(`PASS: stop 4, desktop: out ${tripF.toFixed(3)} to [${PF.px.toFixed(0)}, ${PF.py.toFixed(0)}], a tap where he stood at [${sfx.toFixed(0)}, ${sfy.toFixed(0)}], off the strip, brings him straight home in ${((Date.now() - fromF) / 1000).toFixed(2)} s`)
 
     await page.close()
   } finally {

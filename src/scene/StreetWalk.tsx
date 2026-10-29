@@ -16,14 +16,18 @@ import { LAMP_LIGHT, LIFE, haloScaleOf, lifeTimeUniform, radialTexture } from '.
 import { FOG, fogInjection } from './streetFog.ts'
 import {
   STATION_T,
+  STREET_SQUARE,
   WALK_T,
+  streetGroundAt,
+  vincentBoxCornersAt,
   vincentPlace,
   vincentTapCorners,
   walkPose,
 } from './streetLayout.ts'
+import { SQUARE_TOP } from './frog.ts'
 import { lanternShown, walkOn, type StreetFlags } from './streetMode.ts'
 import { strokeGeometry } from './strokeGeometry.ts'
-import { classifyGesture, type PointerSample } from './touchSurge.ts'
+import { classifyGesture, strayed, type PointerSample } from './touchSurge.ts'
 import type { ImageData2D } from './useImageData.ts'
 import {
   buildVincent,
@@ -36,6 +40,7 @@ import {
 } from './vincent.ts'
 import {
   admitGesture,
+  autoOn,
   flicker,
   gait,
   initialPause,
@@ -43,6 +48,7 @@ import {
   lag,
   limbs,
   setStreetGesture,
+  setVincentGround,
   stepPause,
   stepWalk,
   stopWalk,
@@ -55,6 +61,23 @@ import {
   type WalkState,
 } from './streetWalk.ts'
 import { material, plainGeometry } from './streetMaterial.ts'
+import {
+  aimAngle,
+  followT,
+  hidden,
+  initialWander,
+  offLanePose,
+  stepWander,
+  turnTarget,
+  wanderTo,
+  WANDER,
+  type Here,
+  type View,
+  type WanderState,
+} from './streetWander.ts'
+
+/** his lantern's halo as a share of a lamp's (look pass 4 of the spike: Fable's 0.4 washed his smock grey); the wander's mark too */
+const HALO_SHARE = 0.18
 
 export type StreetWalkProps = {
   painting: ImageData2D | null
@@ -75,6 +98,25 @@ type StreetWalkWindow = Window & {
   /** the rendered figure's own transform, for the checks (Codex K3, K4): his world position, roll and both arms' swing */
   __vincentPose?: () => { world: [number, number, number]; roll: number; arm: number; armRight: number } | null
   __walkProject?: (t: number, point: [number, number, number]) => [number, number]
+  /**
+   * the wander's state for the checks (2026-10-29): `x`, `z` his ground position (his lane slot on the lane), `tx`, `tz`
+   * the tap he is sent to, `route` the points home, `aimDeg` the camera's aim turned toward him, `view` the `View` a tap
+   * would use now
+   */
+  __wander?: () => {
+    mode: WanderState['mode']
+    x: number
+    z: number
+    tx: number
+    tz: number
+    route: [number, number][]
+    arrived: number
+    turn: number
+    aimDeg: number
+    view: View
+  }
+  /** `wanderTo` with no sight tests, for captures: true if he was sent */
+  __wanderTo?: (x: number, z: number) => boolean
   /**
    * the pause's state for the checks (V1): `clock` is the frame loop's own clamped time, `lantern` the light's strength,
    * `settled` true once the turn is 0 or 1 and the lantern hangs within 1e-6 rad of its rest, so a pinned capture holds
@@ -119,7 +161,16 @@ export default function StreetWalk({
     pointerId: number
     down: PointerSample
     vincent: boolean
+    /** some sample of the pointer went past the tap's allowance, so a release back at the press is not a tap (Codex F2) */
+    dragged: boolean
   } | null>(null)
+
+  // the wander (2026-10-29): module state while he is off the lane. On the lane its `turn` is kept equal to the pause's
+  const wanderOn = flags.wander && flags.vincent
+  const wanderRef = useRef<WanderState>(initialWander())
+  const aimRef = useRef(0)
+  const busyRef = useRef(false)
+  const markRef = useRef<Sprite>(null)
 
   const vincentGroupRef = useRef<Group>(null)
   const armGroupRef = useRef<Group>(null)
@@ -260,6 +311,9 @@ export default function StreetWalk({
     }
   }, [vincentGeometries])
 
+  // the grass reads his ground position from the walk; it is null once the walk is gone
+  useEffect(() => () => setVincentGround(null), [])
+
   // Stop walk when pause or reduced motion turns on
   const prevReducedRef = useRef(reduced)
   const prevStillRef = useRef(still)
@@ -287,7 +341,13 @@ export default function StreetWalk({
         }
       }
     }
-    const corners = vincentTapCorners(walkStateRef.current.t, figure)
+    // off the lane the rig box follows him (decision (j)); on it, the lane's own
+    const w = wanderRef.current
+    const rig =
+      wanderOn && w.mode !== 'lane'
+        ? vincentBoxCornersAt([w.x, 0, w.z], [Math.sin(w.yaw), Math.cos(w.yaw)])
+        : undefined
+    const corners = vincentTapCorners(walkStateRef.current.t, figure, rig)
     const persp = camera as PerspectiveCamera
     const rect = gl.domElement.getBoundingClientRect()
     const pts = corners.map(([x, y, z]) => {
@@ -303,7 +363,50 @@ export default function StreetWalk({
       y0: Math.min(...pts.map((p) => p.y)),
       y1: Math.max(...pts.map((p) => p.y)),
     }
-  }, [camera, offset, gl.domElement])
+  }, [camera, offset, gl.domElement, wanderOn])
+
+  // the wander: the View a tap would use now, from the live camera
+  const viewNow = useCallback((): View => {
+    const persp = camera as PerspectiveCamera
+    const aspect = size.width / size.height
+    return { portrait, halfFovDeg: (Math.atan(Math.tan((persp.fov * Math.PI) / 360) * aspect) * 180) / Math.PI }
+  }, [camera, size, portrait])
+
+  // a tap's ground point, in the street's frame (the ground is the plane at the anchor's height). Null where a house or
+  // the church hides that ground from the camera: the tap is on its wall (Codex F1)
+  const groundHit = useCallback(
+    (clientX: number, clientY: number): [number, number] | null => {
+      const persp = camera as PerspectiveCamera
+      const rect = gl.domElement.getBoundingClientRect()
+      const ndc = new Vector3(((clientX - rect.left) / rect.width) * 2 - 1, 1 - ((clientY - rect.top) / rect.height) * 2, 0.5)
+      const dir = ndc.unproject(persp).sub(persp.position).normalize()
+      if (dir.y >= 0) return null
+      const s = (offset[1] - persp.position.y) / dir.y
+      const x = persp.position.x + s * dir.x - offset[0]
+      const z = persp.position.z + s * dir.z - offset[2]
+      return hidden(persp.position.x - offset[0], persp.position.z - offset[2], x, z) ? null : [x, z]
+    },
+    [camera, offset, gl.domElement],
+  )
+
+  // a tap at a ground point: out to it, or back to the lane, if `wanderTo` accepts it; `view` null skips the sight tests
+  const sendTo = useCallback((x: number, z: number, view: View | null): boolean => {
+    const w = wanderRef.current
+    const t = walkStateRef.current.t
+    let here: Here
+    if (w.mode === 'lane') {
+      const slot = vincentPlace(t)
+      here = { x: slot.position[0], z: slot.position[2], yaw: slot.yaw, t }
+    } else {
+      here = { x: w.x, z: w.z, yaw: w.yaw, t: w.t0 }
+    }
+    const next = wanderTo(w, here, x, z, view)
+    if (!next) return false
+    wanderRef.current = next
+    // a wheel turned before the tap must not move him after it
+    queuedWheelPxRef.current = 0
+    return true
+  }, [])
 
   // Capture seams on window
   useEffect(() => {
@@ -351,6 +454,25 @@ export default function StreetWalk({
         ]
       }
     }
+    if (walkOnActive && wanderOn) {
+      w.__wander = () => {
+        const s = wanderRef.current
+        const ground = s.mode === 'lane' ? vincentPlace(walkStateRef.current.t).position : [s.x, 0, s.z]
+        return {
+          mode: s.mode,
+          x: ground[0],
+          z: ground[2],
+          tx: s.tx,
+          tz: s.tz,
+          route: s.route,
+          arrived: s.arrived,
+          turn: s.turn,
+          aimDeg: (aimRef.current * 180) / Math.PI,
+          view: viewNow(),
+        }
+      }
+      w.__wanderTo = (x: number, z: number) => sendTo(x, z, null)
+    }
     if (!flags.flat && flags.vincent) {
       w.__vincentBox = getVincentBox
       w.__vincentPose = () => {
@@ -373,17 +495,21 @@ export default function StreetWalk({
         clock: clockRef.current,
         lantern: lanternUniform.value.w,
         settled:
-          (pauseRef.current.turn === 0 || pauseRef.current.turn === 1) && Math.abs(swingRef.current - hangRef.current) < 1e-6,
+          (pauseRef.current.turn === 0 || pauseRef.current.turn === 1) &&
+          Math.abs(swingRef.current - hangRef.current) < 1e-6 &&
+          !busyRef.current,
       })
     }
     return () => {
       delete w.__streetWalk
       delete w.__walkProject
+      delete w.__wander
+      delete w.__wanderTo
       delete w.__vincentBox
       delete w.__vincentPose
       delete w.__vincentForm
     }
-  }, [walkOnActive, flags.flat, flags.vincent, getVincentBox, portrait, size, offset, gl.domElement])
+  }, [walkOnActive, wanderOn, flags.flat, flags.vincent, getVincentBox, viewNow, sendTo, portrait, size, offset, gl.domElement])
 
   // Input listeners: only when walkOn is true
   /* eslint-disable react-hooks/immutability -- canvas touchAction must be none for pointer gestures */
@@ -451,8 +577,18 @@ export default function StreetWalk({
         pointerId: e.pointerId,
         down: { x: e.clientX, y: e.clientY, ms: performance.now() },
         vincent: isVincent,
+        dragged: false,
       }
       setStreetGesture({ pointerId: e.pointerId, vincent: isVincent })
+    }
+
+    const onPointerMove = (e: PointerEvent) => {
+      const g = activeGestureRef.current
+      if (g?.pointerId !== e.pointerId) return
+      // the browser may fold several samples into one move: read them all, or the move itself where there are none (Codex r1)
+      const folded = e.getCoalescedEvents?.() ?? []
+      const samples = (folded.length ? folded : [e]).map((p) => ({ x: p.clientX, y: p.clientY }))
+      if (strayed(g.down, samples)) g.dragged = true
     }
 
     const onPointerCancel = (e: PointerEvent) => {
@@ -477,6 +613,10 @@ export default function StreetWalk({
         walkStateRef.current = toggleWalk(walkStateRef.current, still)
         // a wheel turned before the tap must not move him after it (Codex K1)
         queuedWheelPxRef.current = 0
+      } else if (res === 'tap' && !gesture.vincent && !gesture.dragged && wanderOn && !reduced && !still) {
+        // a tap that misses him: the open ground sends him there, the lane brings him back (l: nothing under reduced motion or the still state)
+        const hit = groundHit(e.clientX, e.clientY)
+        if (hit) sendTo(hit[0], hit[1], viewNow())
       }
     }
 
@@ -486,6 +626,7 @@ export default function StreetWalk({
     window.addEventListener('blur', onBlurOrHidden)
     document.addEventListener('visibilitychange', onVisibilityChange)
     window.addEventListener('pointerdown', onPointerDown)
+    window.addEventListener('pointermove', onPointerMove)
     window.addEventListener('pointerup', onPointerUp)
     window.addEventListener('pointercancel', onPointerCancel)
 
@@ -497,11 +638,12 @@ export default function StreetWalk({
       window.removeEventListener('blur', onBlurOrHidden)
       document.removeEventListener('visibilitychange', onVisibilityChange)
       window.removeEventListener('pointerdown', onPointerDown)
+      window.removeEventListener('pointermove', onPointerMove)
       window.removeEventListener('pointerup', onPointerUp)
       window.removeEventListener('pointercancel', onPointerCancel)
       gl.domElement.style.touchAction = prevTouchAction
     }
-  }, [walkOnActive, flags.vincent, gl.domElement, getVincentBox, still])
+  }, [walkOnActive, flags.vincent, wanderOn, gl.domElement, getVincentBox, groundHit, sendTo, viewNow, reduced, still])
   /* eslint-enable react-hooks/immutability */
 
   // Frame loop: priority -1 (before sky reads camera)
@@ -531,9 +673,35 @@ export default function StreetWalk({
 
     clockRef.current += dt
     const prevState = walkStateRef.current
-    const stepped = stepPause(prevState, stepWalk(prevState, input), pauseRef.current, input, reduced || still)
-    const nextState = stepped.next
-    pauseRef.current = stepped.pause
+    // the wander: while he is off the lane the walk and the pause stand still, and `t` follows his lane coordinate (b)
+    let w = wanderRef.current
+    const offLane = wanderOn && w.mode !== 'lane'
+    const yawBefore = w.yaw
+    let moved = 0
+    let nextState: WalkState
+    if (offLane) {
+      // a wheel turn or an arrow key sends him back; the wheel was read above, so it is dropped (m)
+      if (w.mode === 'going' && (wheelPx !== 0 || keys !== 0)) w = { ...w, mode: 'returning', arrived: 0 }
+      const stepped = stepWander(w, dt, reduced || still, autoOn(prevState, input))
+      moved = stepped.walked - w.walked
+      w = stepped
+      wanderRef.current = w
+      if (w.mode === 'lane') {
+        // home: the walk takes him at the trip's `t0`, the pause as a lantern lowered, its `last` kept (h)
+        nextState = { ...prevState, t: w.t0, target: w.t0, speed: 0 }
+        pauseRef.current = { dwell: 0, rest: 0, turn: 0, last: pauseRef.current.last }
+      } else {
+        const t = followT(w, w.x, w.z)
+        nextState = { ...prevState, t, target: t, speed: 0 }
+        pauseRef.current = { ...pauseRef.current, dwell: 0, rest: 0, turn: w.turn }
+      }
+    } else {
+      const stepped = stepPause(prevState, stepWalk(prevState, input), pauseRef.current, input, reduced || still)
+      nextState = stepped.next
+      pauseRef.current = stepped.pause
+      // on the lane the wander's `turn` is the pause's, so a tap takes the lantern with him
+      if (wanderOn && w.turn !== pauseRef.current.turn) wanderRef.current = { ...w, turn: pauseRef.current.turn }
+    }
     walkStateRef.current = nextState
 
     // Camera placement
@@ -551,19 +719,45 @@ export default function StreetWalk({
       pose.position[1] + offset[1],
       pose.position[2] + offset[2],
     )
+    // the aim turns toward him by at most `WANDER.aimMax`, the position staying on the rail (k); 0 on the lane
+    let aimed = pose.target
+    if (wanderOn) {
+      const want = w.mode !== 'lane' ? aimAngle(pose.position, pose.target, [w.x, 0, w.z], WANDER.aimMax) : 0
+      let aim = aimRef.current
+      aim = reduced || still ? want : aim + (want - aim) * (1 - Math.exp(-dt / WANDER.aimEase))
+      if (Math.abs(aim - want) < WANDER.aimSnap) aim = want
+      aimRef.current = aim
+      if (aim !== 0) aimed = turnTarget(pose.position, pose.target, aim)
+      busyRef.current = (offLane && (moved > 0 || w.yaw !== yawBefore)) || aim !== want
+      // the mark where he is going (i): a glow at the height his raised lantern will have there (look pass 1)
+      if (markRef.current) {
+        const show = w.mode === 'going' && Math.hypot(w.tx - w.x, w.tz - w.z) > WANDER.arrive
+        markRef.current.visible = show
+        if (show) {
+          const onSquare = Math.hypot(w.tx - STREET_SQUARE.x, w.tz - STREET_SQUARE.z) <= STREET_SQUARE.radius
+          markRef.current.position.set(w.tx, streetGroundAt(w.tx, w.tz) + (onSquare ? SQUARE_TOP : 0) + WANDER.markY, w.tz)
+        }
+      }
+    }
     persp.lookAt(
-      pose.target[0] + offset[0],
-      pose.target[1] + offset[1],
-      pose.target[2] + offset[2],
+      aimed[0] + offset[0],
+      aimed[1] + offset[1],
+      aimed[2] + offset[2],
     )
     persp.updateMatrixWorld()
+    if (markRef.current?.visible) markRef.current.scale.setScalar(HALO_SHARE * haloScaleOf(markRef.current, persp))
 
     // Vincent sway & placement
     if (flags.vincent && vincentGroupRef.current && armGroupRef.current) {
-      const { position: vPos, yaw } = vincentPlace(nextState.t)
+      const { position: vPos, yaw } = offLane
+        ? { position: [w.x, streetGroundAt(w.x, w.z), w.z] as [number, number, number], yaw: w.yaw }
+        : vincentPlace(nextState.t)
       const { turn } = pauseRef.current
-      const g = gait(nextState.distance, nextState.speed, nextState.t - prevState.t > 1e-7, turn)
-      const turned = turnPose(turn)
+      const g = offLane
+        ? gait(w.walked, dt > 0 ? moved / dt : 0, moved > 0, turn)
+        : gait(nextState.distance, nextState.speed, nextState.t - prevState.t > 1e-7, turn)
+      const turned = offLane ? offLanePose(turn) : turnPose(turn)
+      setVincentGround([vPos[0], vPos[2]])
       const l = limbs(g, turned)
       const body = vincentGroupRef.current
       // his group sits inside the street's, which already carries the anchor's offset (Codex K3): local, not world
@@ -583,8 +777,7 @@ export default function StreetWalk({
       if (lanternGroupRef.current) {
         const glass = lanternGroupRef.current.localToWorld(new Vector3(0, -FORM.lantern.handle - FORM.lantern.cap - FORM.lantern.h / 2, 0))
         lanternUniform.value.set(glass.x, glass.y, glass.z, 1)
-        // look pass 4 of the spike: 0.18 of a lamp's halo (Fable's 0.4 washed his smock grey with the lantern raised)
-        if (haloRef.current) haloRef.current.scale.setScalar(0.18 * haloScaleOf(haloRef.current, persp))
+        if (haloRef.current) haloRef.current.scale.setScalar(HALO_SHARE * haloScaleOf(haloRef.current, persp))
         if (poolRef.current && body.parent) {
           // the pool lies on the ground ahead of the lantern, the way he faces, flickering a little
           const local = body.parent.worldToLocal(glass.clone())
@@ -606,6 +799,9 @@ export default function StreetWalk({
 
   return (
     <>
+      {wanderOn && (
+        <sprite ref={markRef} visible={false} material={vincentMaterials.halo} renderOrder={6} />
+      )}
       {lanternOn && (
         <mesh ref={poolRef} material={vincentMaterials.pool} renderOrder={4}>
           <planeGeometry args={[0.1, 0.16]} />
