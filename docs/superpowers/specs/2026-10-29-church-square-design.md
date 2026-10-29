@@ -201,7 +201,7 @@ circle in the light. Nothing moves fast, nothing glows on its own, and nothing i
 - (i) **The owl.** A barn owl: the Dutch name is "kerkuil", the church owl, because it nests in church towers, and Van
   Gogh was Dutch. 0.018 tall (36 cm beside Vincent's 1.7 m). From stop 4 the perch is 0.91 from the camera, so it is
   19 px tall on the desktop and 11 on the phone, and 13 and 7 from stop 3 (Codex F1's projection). The frog was sized
-  up from 15 px to 22 so the phone finds it, and the same choice is open here: at 0.024 (a large bird, 48 cm) it is 25
+  up from 15 px to 22 so the phone finds it. The same choice is open here: at 0.024 (a large bird, 48 cm) it is 25
   and 14 px at stop 4. The Lead's recommendation is the barn owl at 0.018, open to Mark against the little owl (22 cm,
   dark, 0.011) and against the larger size.
 - (j) **Its perch** is the nave's ridge, 0.08 back from the front gable's peak, facing the square. In numbers: the
