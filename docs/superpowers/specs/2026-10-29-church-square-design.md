@@ -184,8 +184,9 @@ circle in the light. Nothing moves fast, nothing glows on its own, and nothing i
 - (g) **The flowers** (Mark's suggestion, read from "owl flowers" as the owl and flowers). A ring round the square's
   lamp post, radius 0.03, in the lamp's pool. The wall bed is dropped (Mark's call 2: nothing lights it). The ring is
   6 clumps, each a clump of the grass's own blades at scale 0.5 (K3's plant's build, 5 to 9 blades of four segments),
-  and 2 to 4 of each clump's blades carry a head at the tip: a comma dab of 8 triangles in the shape of K2's `stoneDab` (the grass base's comma
-  is a fragment shader, not a mesh, so the head is new geometry), no more than 0.004 across, in the painting's pale
+  and 2 to 4 of each clump's blades carry a head at the tip. A head is a comma dab of 8 triangles in the shape of K2's
+  `stoneDab`, no more than 0.004 across (the grass base's comma is a fragment shader, not a mesh, so the head is new
+  geometry). The heads are in the painting's pale
   yellows from the `stars` region's palette, gated against the `windowLit` mean (ΔE over 5) so no head is a window's
   colour. About 6 clumps, 18 heads: about 350 triangles of blades and 150 of heads. The flowers are their own static
   mesh, built with the grass's blade function but outside the grass's chunks and the trail, so the grass hash does
