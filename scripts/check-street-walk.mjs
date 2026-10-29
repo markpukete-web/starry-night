@@ -783,9 +783,10 @@ async function main() {
     const k1T0 = await tNow()
     await page.evaluate(wheelOnCanvas)
     await sleep(800)
-    const k1T1 = await tNow()
+    // he is still walking at the cap from the first wheel: read t in the same task as the pair, so no frame falls
+    // between them (a frame there moved him 0.0035, the flake of 2026-10-26 and 10-29)
+    const k1T1 = await page.evaluate(`(() => { const t = window.__streetWalk.t; ${wheelOnCanvas}; window.dispatchEvent(new Event('blur')); return t })()`)
     if (!(k1T1 - k1T0 > 0.01 / L)) throw new Error(`Case 6 precondition failed: a synthetic wheel did not walk (Δt ${k1T1 - k1T0})`)
-    await page.evaluate(`${wheelOnCanvas}; window.dispatchEvent(new Event('blur'))`)
     await sleep(800)
     const k1Drift = Math.abs((await tNow()) - k1T1)
     if (k1Drift >= 0.002 / L) throw new Error(`Case 6 failed (K1): a wheel before a blur moved him by ${k1Drift.toFixed(5)}`)
