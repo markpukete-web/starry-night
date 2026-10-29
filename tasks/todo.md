@@ -14,8 +14,8 @@ all pass but lint, and the hashes and the triangle sweep match V1's.
 into `scratch/`, whose repo copies carry their own `eslint.config.js`. Worktrees have no `scratch/`, so CI and past gates were
 clean. The fix ignores `scratch` in `eslint.config.js` (Task 0).
 
-**Mark's call, not built:** on the automatic walk, whether Vincent walks back to the lane on his own after V1's 4 s
-dwell. Today the plan leaves him at the tapped point until a tap on the lane.
+**Mark's call, made (11:45):** "Yes, walk him back after the dwell". On the automatic walk, Vincent goes home after
+V1's 4 s dwell. It is the plan's decision (p), built by the Lead in Task 2b after Task 2.
 
 ## Pickup — 2026-10-28 (23:45): end of the night; nothing open
 

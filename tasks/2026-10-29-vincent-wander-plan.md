@@ -32,11 +32,10 @@ This slice reads it as the spike did. **The camera's position stays on the walk'
 every frame. Only its **aim** turns toward Vincent, by at most 20°. This is a reading of the criterion, not an edit to
 it. Codex's review of revision 0: "The plan's positional reading holds." The gate record repeats it for Mark.
 
-## Mark's call, not built
+## Mark's call
 
-- **He walks back on his own.** On the automatic walk (the phone's default), he stands at the tapped point until a tap
-  on the lane. A return after V1's 4 s dwell would let the walk go on with no second tap. Mark did not ask for it, so
-  it waits for his word (`tasks/todo.md`).
+- **He walks back on his own** (Mark, 2026-10-29: "Yes, walk him back after the dwell"). On the automatic walk he
+  goes home after V1's dwell. Decision (p), built in Task 2b.
 
 ## Decisions
 
@@ -121,6 +120,21 @@ it. Codex's review of revision 0: "The plan's positional reading holds." The gat
 - (o) **The lint fix**, done in Task 0 (`46d0d0b`): `globalIgnores(['dist', 'scratch', '.claude'])`. `eslint .`
   walked into repo copies under `scratch/` and builder worktrees under `.claude/worktrees/`. Each carries its own
   `eslint.config.js`, and typescript-eslint then failed every file with a parsing error.
+
+- (p) **The automatic walk takes him home after the dwell** (Mark, 2026-10-29).
+  - `stepWander(s, dt, frozen, autoOn)`. `autoOn` is true while the automatic walk runs, by `stepPause`'s own test.
+    That test moves into `streetWalk.ts` as `autoOn(prev: WalkState, i: WalkInput): boolean`, and `stepPause` calls
+    it.
+  - Going, at his tap, with `autoOn`: once `arrived` reaches `PAUSE.dwell - PAUSE.endTurn` (3.55 s), the mode becomes
+    `returning` with `arrived` 0, as a lane tap makes it. The lantern lowers at `PAUSE.turnOut`, and he walks the route
+    home as in (c) and (h). The lane then takes him at `t0`, and the automatic walk goes on from there. At a station,
+    `last` is kept, so that station does not dwell again.
+  - At a station he faces the lane again `PAUSE.endTurn` before the dwell ends. Here the lantern lowers from 3.55 s,
+    and he moves once `turn` is under `PAUSE.turnGate`, about 0.24 s later.
+  - A new tap starts the count again, because `wanderTo` sets `arrived` to 0.
+  - Without `autoOn` (the input mode, or the walk stopped by a tap on him), he stays until a lane tap, a wheel turn or
+    an arrow key, as before. If the walk starts again with `arrived` past 3.55 s, he goes home at once.
+  - Frozen, `arrived` does not grow, so reduced motion and the still state are as in (l).
 
 ## Values
 
@@ -324,6 +338,30 @@ Every new value is a first guess. The look passes may move them, and each move g
 - [ ] **Step 5: Commit**: `feat(street): Vincent's wander, a tap on open ground sends him there (Task 2)`
 - [ ] **Step 6 (Lead): Run** `check-street-walk.mjs`, `check-street-grass.mjs`, `check-portal.mjs` and
   `check-reduced-motion.mjs` from wander-wt on its own port. Expected: all pass, the new cases included.
+
+### Task 2b (Lead): home after the dwell, decision (p)
+
+**Files:** Modify `src/scene/streetWalk.ts` (`autoOn`), `src/scene/streetWander.ts` (`stepWander`),
+`src/scene/StreetWalk.tsx` (the call). Tests: `scripts/street-wander.test.ts`, `scripts/street-walk.test.ts`,
+`scripts/check-street-walk.mjs`.
+
+- [ ] **Step 1: Write the failing tests.**
+  - `stepWander: the automatic walk takes him home after the dwell`: at stop 1 (`t` 0.23), a tap on a standable point,
+    stepped at 1/60 s with `autoOn` true. The mode stays `going` while `arrived` is under
+    `PAUSE.dwell - PAUSE.endTurn`. On the first frame that would carry it there, the mode is `returning` with `arrived`
+    0. The trip ends `lane` at `route[0]`, with the N2 test's yaw and `turn`.
+  - The same with `autoOn` false: after 10 s at the spot, the mode is `going` and `turn` 1.
+  - Frozen with `autoOn` true, past 3.55 s: the step returns its input.
+  - `autoOn` in `street-walk.test.ts`: true only with `auto` and `autoMode` true and `paused` and `still` false.
+  - In `check-street-walk.mjs`, case `wander`, the phone: after a real tap, `__wander().mode` is `lane` within
+    `PAUSE.dwell` plus the trip both ways at `WANDER.speed` plus 3 s, and `__streetWalk().t` then grows over 1 s. The
+    desktop (input mode): the same wait plus 2 s, and the mode is still `going`. The phone's other wander cases stop
+    the walk first or open with `walkMode=input`, so the return does not move him during a case.
+- [ ] **Step 2: Run** `node --test scripts/street-wander.test.ts scripts/street-walk.test.ts`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the green step and both hashes, to `$E/t2b/`. Expected: all pass, both hashes unchanged.
+- [ ] **Step 5: Commit**: `feat(street): on the automatic walk, Vincent goes home after the dwell (decision (p))`
+- [ ] **Step 6: Run** the browser checks with Task 2's Step 6.
 
 ### Task 3 (Lead): the look passes, at most four
 
