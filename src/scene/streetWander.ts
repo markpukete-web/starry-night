@@ -31,7 +31,7 @@ import { PAUSE, turnPose, WALK } from './streetWalk.ts'
  */
 
 export const WANDER = {
-  /** world units a second: the automatic walk's own pace */
+  /** world units a second: the spike's wander speed, kept (about 2.4 times the lane's automatic walk, `WALK.auto`) */
   speed: WALK.auto * STREET.pathLength,
   /** the distance at which he counts as there, and snaps */
   arrive: 0.004,

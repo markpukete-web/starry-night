@@ -109,8 +109,10 @@ it. Codex's review of revision 0: "The plan's positional reading holds." The gat
 - (k) **The aim** (Codex F7). It eases toward its target with τ `WANDER.aimEase` and snaps to it within
   `WANDER.aimSnap` rad. On the lane its target is 0. Under reduced motion or the still state it is set to its target
   at once.
-- (l) **Reduced motion and the still state.** A tap does nothing. If he is off the lane, he and his pose stand where
-  they are. When either ends, he goes on.
+- (l) **Reduced motion and the still state.** A tap does nothing. If he is off the lane, he stands where he is, his turn
+  held. His limbs stand at rest and the lantern hangs still, as V1's (i) draws him on the lane. When either ends, he goes
+  on. (Wording clarified in the branch review's round 1: "his pose" meant his place and his turn, not a stride held
+  mid-step. Codex F3.)
 - (m) **Input.** A wheel turn or an arrow key while he is off the lane sends him back, and the queued wheel is dropped,
   as in the spike. Escape and "Back to the painting" unmount the street, and a second entry starts him on the lane.
 - (n) **The capture seams.** `__vincentForm().settled` is false while he is off the lane and moving, while `turn` is
