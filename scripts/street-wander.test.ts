@@ -446,6 +446,38 @@ test('wanderTo: the lane first, and taps during a trip', () => {
   assert.equal(again.route.length, stepped.route.length + 1)
 })
 
+test('wanderTo: at stop 4 a tap where he stood brings him home, though his slot is off the strip (Fable F1)', () => {
+  const stop4 = hereAt(0.9)
+  assert.ok(!onLane(stop4.x, stop4.z) && standable(stop4.x, stop4.z), 'the case: his slot is on the square, off the strip')
+  const target = vergeNear(stop4)
+  const out = run(wanderTo(initialWander(), stop4, target[0], target[1], null)!, arrived)
+
+  const back = wanderTo(out, stop4, stop4.x, stop4.z, VIEW)
+  assert.equal(back?.mode, 'returning', 'a tap on his slot turns him home')
+  assert.equal(back.route.length, 1, 'nothing is pushed')
+  let far = Math.hypot(out.x - stop4.x, out.z - stop4.z)
+  const done = run(back, home, (s) => {
+    const d = Math.hypot(s.x - stop4.x, s.z - stop4.z)
+    assert.ok(d <= far + 1e-9, `he walks away from his slot: ${d} after ${far}`)
+    far = d
+  })
+
+  /** a standable point at `r` from the slot whose leg from (ax, az) is clear */
+  const ring = (r: number, ax: number, az: number) =>
+    Array.from({ length: 36 }, (_, k) => {
+      const a = (k / 36) * 2 * Math.PI
+      return [stop4.x + r * Math.cos(a), stop4.z + r * Math.sin(a)] as const
+    }).find(([x, z]) => standable(x, z) && clearLeg(ax, az, x, z))
+  // just past laneHalf from the slot, a tap is a new leg again
+  const past = ring(WANDER.laneHalf + 0.01, out.x, out.z)
+  assert.ok(past, 'a standable point just past laneHalf from the slot')
+  assert.equal(wanderTo(out, stop4, past[0], past[1], null)?.mode, 'going')
+  // home again, the old route is no home: a tap by the slot is a new trip
+  const by = ring(0.04, stop4.x, stop4.z)
+  assert.ok(by, 'a standable point 0.04 from the slot')
+  assert.equal(wanderTo(done, stop4, by[0], by[1], null)?.mode, 'going', 'on the lane, a tap by his slot sends him')
+})
+
 test('followT: no jump at the tap, none at stop 4', () => {
   for (const t of [0.23, 0.9]) {
     const s = tripFrom(hereAt(t))

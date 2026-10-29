@@ -129,7 +129,7 @@ export function standable(x: number, z: number): boolean {
   const ground =
     Math.hypot(x - STREET_SQUARE.x, z - STREET_SQUARE.z) <= STREET_SQUARE.radius ||
     c.paths.some((b) => inBox(x, z, b)) ||
-    (inFootprint(x, z) && ![...c.steps, ...c.walls, ...c.paths, ...c.objects].some((b) => inBox(x, z, b)))
+    (inFootprint(x, z) && ![...c.steps, ...c.walls, ...c.objects].some((b) => inBox(x, z, b)))
   return ground && !keptOff(x, z)
 }
 
@@ -328,12 +328,16 @@ export function legSeen(s: WanderState, ax: number, az: number, bx: number, bz: 
 }
 
 /**
- * A tap at (x, z). Null when it does nothing. A tap on the lane sends him back if he is off it (e). Any other tap is
- * accepted only if its one new leg, from where he stands, is clear and seen (c): the legs home are legs already walked.
- * `view` null skips the sight tests (the capture seam).
+ * A tap at (x, z). Null when it does nothing. A tap on the lane sends him back if he is off it (e), and so does a tap
+ * within `laneHalf` of his slot `route[0]` where the slot is off the strip, as it is from `t` 0.825 (Fable F1). Any other
+ * tap is accepted only if its one new leg, from where he stands, is clear and seen (c): the legs home are legs already
+ * walked. `view` null skips the sight tests (the capture seam).
  */
 export function wanderTo(s: WanderState, here: Here, x: number, z: number, view: View | null): WanderState | null {
-  if (onLane(x, z)) return s.mode === 'going' ? { ...s, mode: 'returning', arrived: 0 } : null
+  const slot = s.route[0]
+  const bySlot = s.mode !== 'lane' && !onLane(slot[0], slot[1]) && Math.hypot(x - slot[0], z - slot[1]) <= WANDER.laneHalf
+  const home = onLane(x, z) || bySlot
+  if (home) return s.mode === 'going' ? { ...s, mode: 'returning', arrived: 0 } : null
   if (!standable(x, z)) return null
   const fromLane = s.mode === 'lane'
   // from the lane, the trip begins at his slot, in the yaw he is drawn in (a lantern raised turns his body)

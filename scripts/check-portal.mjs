@@ -645,6 +645,7 @@ async function main() {
     console.log(`PASS 13: a touch phone asks first ("${shown13}"), stays on "Stay", enters on "Enter anyway" (${placesOf(rec13).join(',')}), and the second entry goes straight in`)
 
     // ---- case 14, wander-remount: a second entry starts him on the lane, not where the first visit left him
+    // street points read as world points: true under the default anchor B only, not with ?skyAnchor=A (Fable F3)
     await open(page, BASE, DESKTOP)
     await enterAndSettle(page, () => page.evaluate('window.__portalEnter()'))
     await page.waitFor('window.__wander && window.__wanderTo', 20000, 'the wander seams in the street')

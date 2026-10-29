@@ -12,7 +12,9 @@
  * 8. The wander (2026-10-29, tasks/2026-10-29-vincent-wander-plan.md, Task 2): a tap on open ground sends him; a house's
  *    wall, a drag and a refused leg do not; his tap box, the trail at his feet, the wheel, the Pause control and reduced
  *    motion, on the desktop with a mouse and on the phone with a finger; on the automatic walk, his walk home after the
- *    dwell (decision (p)).
+ *    dwell (decision (p)); at stop 4, a tap where he stood, off the lane's strip (Fable F1).
+ * Case 8 reads street points as world points: true under the default anchor B only (anchor A moves the street to
+ * `STREET.originA`). Do not run it with `?skyAnchor=A` (Fable F3).
  */
 import { execSync, spawn } from 'node:child_process'
 import { existsSync, mkdtempSync, rmSync } from 'node:fs'
@@ -1373,6 +1375,39 @@ async function main() {
     if ((await c8.wander()).mode !== 'lane' || (await c8.auto()) !== autoG) c8.fail(`a finger on the sight-guard point sent him or toggled the walk: ${JSON.stringify(await c8.wander())}`)
     console.log(`PASS: the sight guard, phone stop ${guard.stop}: a finger at [${guard.px.toFixed(0)}, ${guard.py.toFixed(0)}] leaves him on the lane and the walk alone`)
     await page.send('Emulation.setTouchEmulationEnabled', { enabled: false })
+
+    // ---- 8f. desktop, stop 4: his slot is on the square, off the lane's strip, and a tap where he stood still brings
+    // him home by the leg he walked, never out to his point first (Fable F1)
+    await c8.open(DESKTOP, false, 4, 'input')
+    const t8f = STATION_T[4]
+    const [slotFX, slotFZ] = slotXZ(t8f)
+    if (!standable(slotFX, slotFZ)) c8.fail('his slot at stop 4 is on the strip, so the case is gone')
+    const scF = await c8.scene()
+    const parkF = await c8.pauseAt()
+    const PF = acceptedPoints(scF.persp, scF.size, scF.box, scF.view, t8f, await c8.mask(DESKTOP), { min: 0.2 })[0]
+    if (!PF) c8.fail('no accepted point 0.2 to 0.3 from his slot at stop 4')
+    const tripF = Math.hypot(PF.x - slotFX, PF.z - slotFZ)
+    await c8.tap(false, PF.px, PF.py)
+    await c8.park(parkF)
+    await c8.until('window.__wander().arrived > 0', c8.bound(tripF, 1000), 'him arriving at stop 4')
+    const liveF = await c8.scene()
+    const [sfx, sfy] = toClient(liveF.persp, liveF.size, [slotFX, 0, slotFZ])
+    if (!insideCanvas(liveF.size, sfx, sfy, 24) || insideBox(liveF.box, sfx, sfy) || !(await c8.onCanvas(sfx, sfy))) c8.fail(`his old slot at stop 4 at [${sfx.toFixed(0)}, ${sfy.toFixed(0)}] is not tappable`)
+    await c8.tap(false, sfx, sfy)
+    await c8.park(parkF)
+    await c8.until(`window.__wander().mode === 'returning' && window.__wander().route.length === 1`, 1000, 'a tap where he stood at stop 4 turning him home')
+    let farF = tripF
+    const fromF = Date.now()
+    for (let w = await c8.wander(); w.mode !== 'lane'; w = await c8.wander()) {
+      const d = Math.hypot(w.x - slotFX, w.z - slotFZ)
+      if (d > farF + 1e-6) c8.fail(`on his way home from stop 4's point he walked away from his slot: ${d} after ${farF}`)
+      farF = d
+      if (Date.now() - fromF > c8.bound(tripF, 4000)) c8.fail(`him home from stop 4's point not within ${c8.bound(tripF, 4000)} ms`)
+      await sleep(40)
+    }
+    await sleep(100)
+    if (away((await c8.pose()).world, slotFX, slotFZ) > 1e-6) c8.fail('home at stop 4 is not his slot')
+    console.log(`PASS: stop 4, desktop: out ${tripF.toFixed(3)} to [${PF.px.toFixed(0)}, ${PF.py.toFixed(0)}], a tap where he stood at [${sfx.toFixed(0)}, ${sfy.toFixed(0)}], off the strip, brings him straight home in ${((Date.now() - fromF) / 1000).toFixed(2)} s`)
 
     await page.close()
   } finally {
