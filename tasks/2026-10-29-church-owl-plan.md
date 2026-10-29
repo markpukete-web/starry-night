@@ -3,6 +3,16 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or
 > superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+**Revision 1 (2026-10-29, 23:10).** Codex's correctness read (`C/owl/review/codex-plan-r0.md`, REVISE, F1 to F10,
+Q1 to Q3) and the builder's buildability read (`builder-plan-r0.md`, NOT BUILDABLE, A1 to A6, B1 to B5) folded,
+the dispositions in `lead-plan-r0.md`. The two that mattered most: `ellipsoid`'s polar axis is z, so revision 0's
+paint bands put the chest on the back (F2, A2), and the look compared the neck in world space with `vincentGround`
+in the street's frame (F3, A4). Also: the face proud of the head (A3), the easing test against the delta clamp (F5),
+the moths' rest point past the lantern's half-diagonal (F6), the loop's wobble zero at the rest point and the bound
+`rest + radius + wobble` (F1, B1), the billboard's full width (F7), the fog on the moths (Q3), the sightline test's
+file (F8, A1), the fixture without `paint` (F4, B2), the seams' fields (F9, B3), case 20's Pause page (F10). Mark's
+call at 23:00: Argon builds Task 1 (the bigger task, on its own budget), the Sonnet builder Task 2.
+
 **Revision 0 (2026-10-29, 22:50).** Written from the design's slice 2 section and a code sweep (`C/owl/t0/`), after
 Mark passed slice 1 on the preview at 22:10. Codex's correctness read and a builder's buildability read come next.
 
@@ -30,9 +40,10 @@ owl at 0.024, its size a tunable), with its Constraints and Anti-goals. Slice 1 
 Lead: Claude Fable `w4:p1`, in the worktree
 `/private/tmp/claude-502/-Users-markma-Projects-starry-night/7b901d75-9d6a-49c2-8abd-525273745dfd/scratchpad/church-wt`
 on `feat/church-owl`, off `32e692b` (the head of PR #38's branch `feat/church-square`, not yet in `main`. After Mark
-merges #38, `git merge origin/main`). Reviewer: Codex `w4:p4`, Fable `w4:p6` when Codex is low. Builders: the
-`builder` subagent (Sonnet 5.5, effort high, its own worktree) for Task 1 and Task 2, in parallel on
-`feat/church-owl-t1` and `feat/church-owl-t2`, both off `32e692b`. Each brief names this plan, the task, the base
+merges #38, `git merge origin/main`). Reviewer: Codex `w4:p4`, Fable `w4:p6` when Codex is low. Builders: Gemini 4
+Argon `w4:p5` for Task 1 (the owl), in its own worktree added from the main checkout, and the `builder` subagent
+(Sonnet 5.5, effort high, its own worktree) for Task 2 (the moths), in parallel on `feat/church-owl-t1` and
+`feat/church-owl-t2`, both off revision 1's commit. Each brief names this plan, the task, the base
 commit and the branch. The Lead does Task 0 (done), Task 3 and Task 4, and merges the two branches (both add one
 line to `Street.tsx` and one file to `package.json`'s `test:sky`). Evidence goes to
 `/Users/markma/Projects/starry-night/scratch/church-animals-2026-10-29/owl/` (below, `C/owl/`), one folder per task.
@@ -54,6 +65,8 @@ A builder's raw test log must show the painting tests ran, not skipped.
 - `prefers-reduced-motion` and Pause (`reduced`): the owl's eyes open, its head held, the moths at rest on the glass's
   frame, every frame byte-identical to the last.
 - The camera is never the head's target. The target is `vincentGround` (`streetWalk.ts:321`), null without him.
+- `hold` (the portal's entering frames) is not passed to the owl or the moths, as it is not to the frogs: they take
+  `reduced` alone (Codex Q2).
 - `?light=0` draws the owl unlit with the frog's unlit materials and no moths (they mount with `StreetLife`, which
   needs `light`). `ids` 1 or 2: the owl's strokes carry class 255 as the frog's do, the moths are absent.
 - The retune cap: four look passes. The levers are named in Task 3 and nothing else is lifted by hand.
@@ -72,8 +85,12 @@ Five inputs the design implies and no decision names. Each has its test in the t
 3. The flat panel (`flat=1`): no owl and no moths, as there are no frogs. Task 1 and Task 2's mount conditions, case
    20's `flat=1` page (`window.__owl` undefined) and case 21's.
 4. Pause mid-turn: `reduced` rises while the head is part way round. The head holds where it is (no snap, no
-   drift), the moths go to their anchors as the frogs' eyes open. Task 1's loop skips the easing under `reduced`.
-   Task 2's `mothPositions(specs, 0)` returns the anchors.
+   drift), the moths go to their anchors as the frogs' eyes open. Task 1's loop skips the easing under `reduced`,
+   and case 20's page (g) turns reduced motion on after the turn and reads the pose held. Task 2's
+   `mothPositions(specs, 0)` returns the anchors.
+6. The wander: off the lane, `vincentGround` follows him and `vincentPlace(t)` does not. The loop reads
+   `vincentGround` and the seam `__owl().target` shows what it read. A browser page cannot send him wandering
+   without a tap at a projected point, so the gate's diff read checks that one line (Codex F10's second half).
 5. A lit window behind the camera, within 0.6: its two moths are drawn and the halo's plane is behind the camera,
    so they are faint, not dark. Task 2, `mothBright` depends on the glass's distance only, never on the camera.
 
@@ -89,9 +106,12 @@ Five inputs the design implies and no decision names. Each has its test in the t
   well, eased with the yaw, capped at `OWL.look.pitch` 0.7 rad. The Lead's call.
 - **The moths' loop on the CPU.** 29 points a frame in `mothPositions`, written to one instanced attribute. The
   geometry is still built once. The loop is one function the test runs at any time, with no second copy in GLSL.
-- **The moths' rest point.** The lantern's glass is its centre (`lamps[].lantern`), inside the box. A moth at rest
-  sits on the lantern's face, 0.008 out horizontally (the box is 0.006 wide), and on a window 0.003 out along its
-  normal from the quad, which is already 0.0055 off the wall.
+- **The moths' rest point.** The lantern's glass is its centre (`lamps[].lantern`), inside the 0.012 square box. A
+  moth at rest sits 0.0105 out horizontally from that centre, past the box's half-diagonal (0.0085) by 0.002 at any
+  yaw (Codex F6), and on a window 0.003 out along its normal from the quad, which is already 0.0055 off the wall.
+- **The fog.** The moths take the street's linear fog in their own shader (`FOG`, near 0.8, far 3.5), so a far lamp's
+  moths fade as its post does. The halos do not fog. Codex Q3, the Lead's call: an unfogged pale quad two units away
+  is a spark.
 
 ---
 
@@ -121,7 +141,7 @@ above the gable's right slope, against the sky. From stop 3 it crosses at 0.41 a
 **Files:**
 - Create: `src/scene/owl.ts`, `src/scene/StreetOwl.tsx`, `scripts/street-owl.test.ts`
 - Modify: `src/scene/frog.ts:84` (export `ellipsoid`), `src/scene/Street.tsx:194` (the mount, after `StreetFrog`),
-  `package.json:22` (`scripts/street-owl.test.ts` appended to `test:sky`), `scripts/street-trees.test.ts` (the
+  `package.json:22` (`scripts/street-owl.test.ts` appended to `test:sky`), `scripts/street-church.test.ts:374-393` (the
   sightline test slice 1's Task 3 added: the owl's head joins its targets), `scripts/check-street-grass.mjs` (case
   20, after case 19)
 
@@ -136,11 +156,14 @@ above the gable's right slope, against the sky. From stop 3 it crosses at 0.41 a
   - `buildOwl(painting: ImageData2D): OwlBuild` with
     `type OwlBuild = { body: VincentPart; head: VincentPart; eye: BrushArrays & { cls: number[]; src: number[] }; neck: [number, number, number]; triangles: number }`.
     The body's vertices are about the feet (y 0 at the ridge), the head's about the neck, so the head's group turns
-    in place. One eye, about its own centre, drawn twice at `OWL_EYES` (the frog's way).
+    in place. One eye, about its own centre, drawn twice at `OWL_EYES` (the frog's way), and `triangles` counts it
+    twice. `Vec3` and `m` (owl lengths to world units) are `owl.ts`'s own, as `frog.ts:78-81` has them.
   - `owlPerch(): { position: [number, number, number]; yaw: number }`: the perch and the body's yaw from Task 0's
     expressions, computed from `STREET_CHURCH.nave` and `churchFront()`, never typed in.
   - `owlLook(neck: [number, number, number], bodyYaw: number, target: [number, number] | null): { yaw: number; pitch: number }`:
-    the head's local yaw and pitch toward the point `(target[0], OWL.look.targetY, target[1])`, both 0 when `target`
+    the head's local yaw and pitch toward the point `(target[0], OWL.look.targetY, target[1])`, `neck` and `target`
+    both in the street's frame (`vincentGround`'s, Codex F3), the yaw the target's bearing less `bodyYaw` wrapped
+    to (−π, π], both 0 when `target`
     is null, when the horizontal distance from the perch exceeds `OWL.look.reach`, or when the yaw's magnitude
     exceeds `OWL.look.yaw`. The pitch is `atan2(dy, horizontal)`, negative for a target below, clamped to
     ±`OWL.look.pitch`.
@@ -159,14 +182,19 @@ above the gable's right slope, against the sky. From stop 3 it crosses at 0.41 a
     /** the perch: this far back from the front gable's peak along the ridge, standing on the ridge's ink */
     back: 0.08,
     lift: 0.0002,
-    /** the rest in owl lengths (size 1 = feet to crown), +z the way the body faces: an upright barn owl */
-    body: { centre: [0, 0.40, 0], radii: [0.21, 0.40, 0.19], pitch: 0.12 },
+    /** the rest in owl lengths (size 1 = feet to crown), +z the way the body faces: an upright barn owl. Every
+     * ellipsoid takes `pitch` π/2, so `ellipsoid`'s polar axis (z, `frog.ts:84-96`) stands up: `s` runs feet to
+     * crown and the strokes with it, and `a` 0.75 is the front (+z), 0.25 the back (Codex F2, the builder's A2) */
+    body: { centre: [0, 0.40, 0], radii: [0.21, 0.40, 0.19], pitch: Math.PI / 2 },
     neck: [0, 0.66, 0.02],
-    head: { centre: [0, 0.16, 0.0], radii: [0.21, 0.18, 0.19] },
-    /** the heart face: a flattened cap on the head's front, pale */
-    face: { centre: [0, 0.14, 0.12], radii: [0.17, 0.16, 0.06] },
-    eye: { centre: [0.075, 0.17, 0.17], r: 0.045 },
-    wing: { around: [0.56, 0.94] as [number, number], along: [0.1, 0.9] as [number, number] },
+    head: { centre: [0, 0.16, 0.0], radii: [0.21, 0.18, 0.19], pitch: Math.PI / 2 },
+    /** the heart face: a flattened cap proud of the head's front by 0.03 (its tip at z 0.22 against the head's
+     * 0.19, the builder's A3), pale */
+    face: { centre: [0, 0.14, 0.16], radii: [0.17, 0.16, 0.06], pitch: Math.PI / 2 },
+    eye: { centre: [0.075, 0.17, 0.19], r: 0.045 },
+    /** the paint's bands in `a` (round) and `s` (feet to crown): the chest pale, the back and wings the thatch's */
+    chest: { around: [0.62, 0.88] as [number, number], along: [0.05, 0.95] as [number, number] },
+    wing: { around: [-0.12, 0.62] as [number, number], along: [0.05, 0.95] as [number, number] },
     /** the head toward Vincent: within `reach` of the perch and within `yaw` of the body's facing, eased over `tau` */
     look: { reach: 0.6, yaw: 1.2217, pitch: 0.7, tau: 0.6, targetY: 0.07 },
     /** the frogs' blink table, this many seconds ahead of them (`frogBlink(phase)` is 0: the eyes open at time 0) */
@@ -176,7 +204,10 @@ above the gable's right slope, against the sky. From stop 3 it crosses at 0.41 a
   `look.yaw` is 70° in radians. The head's centre, face and eye are about the neck.
 
 - [ ] **Step 1: write the failing tests** in `scripts/street-owl.test.ts`, with the painting loaded as
-  `scripts/street-frog.test.ts:21-22` does (`{ skip }` without it) and its projection helper for "in frame" copied.
+  `scripts/street-frog.test.ts:21-22` does (`{ skip }` without it), its `camera` helper and `ASPECTS`
+  (`street-frog.test.ts:135-146`) copied, and the file's own `distance(a, b)`, `lowestY(part)` and `highestY(part)`
+  (over a part's underpaint and strokes positions), `linear(srgb)` (`new Color().setRGB(..., SRGBColorSpace)`) and
+  `dist(c, d)` (in linear RGB).
 
 ```ts
 test('the owl fits: at most 1,500 triangles, its feet on the perch, its crown at its size', { skip }, () => {
@@ -184,6 +215,21 @@ test('the owl fits: at most 1,500 triangles, its feet on the perch, its crown at
   assert.ok(owl.triangles <= 1500, `${owl.triangles} triangles`)
   assert.ok(Math.abs(lowestY(owl.body)) <= 0.0002)                 // every vertex of body.underpaint and body.strokes
   assert.ok(Math.abs(owl.neck[1] + highestY(owl.head) - OWL.size) <= 0.0015)
+})
+test('the chest is pale and the back is the thatch: the strokes by their side', { skip }, () => {
+  const owl = buildOwl(painting)
+  const lit = linear(sourceUnderpaint(painting, 'churchLit', 1)), thatch = linear(sourceUnderpaint(painting, 'thatch', 1))
+  const front: number[] = [], back: number[] = []
+  const { positions, colors } = owl.body.strokes.arrays                 // the stroke vertices' colours are linear
+  for (let i = 0; i < positions.length; i += 3) {
+    const z = positions[i + 2], c = [colors[i], colors[i + 1], colors[i + 2]]
+    const nearerLit = dist(c, lit) < dist(c, thatch) ? 1 : 0
+    if (z > 0.03 * OWL.size) front.push(nearerLit)
+    else if (z < -0.03 * OWL.size) back.push(nearerLit)
+  }
+  assert.ok(front.length > 50 && back.length > 50, `${front.length} front, ${back.length} back`)
+  assert.ok(mean(front) >= 0.8, `front nearer churchLit: ${mean(front)}`)        // Codex F2: the sides, not a band
+  assert.ok(mean(back) <= 0.2, `back nearer churchLit: ${mean(back)}`)
 })
 test('the perch is on the ridge, 0.08 behind the front peak, on the ridge ink', () => {
   const { position: [x, y, z], yaw } = owlPerch()
@@ -203,9 +249,9 @@ test('the owl is drawn at stops 3 and 4 and not before, and is in frame there on
   // NDC of the head's centre within 0.95 at stops 3 and 4 for each aspect, as the frog test's in-frame check
 })
 test('the owl is seen from stops 3 and 4: the line to its head clears the nave', () => {
-  // the nave's ten triangles from STREET_CHURCH.nave with along, toPath, w, d, eave, pitch and OVERHANG:
-  // four walls (two triangles each), two gables, two roof planes (two each); Ray.intersectTriangle from each
-  // stop's camera (desktop and phone) to the head's centre; no hit nearer than the head's distance less 0.01
+  // the church's faces from build.report.faces (owner 'church', as street-church.test.ts:30 reads them), each
+  // quad two triangles, assert.ok(faces.length > 0). Ray.intersectTriangle from each stop's camera (desktop and
+  // phone) to the head's centre, backface culling off. No hit nearer than the head's distance less 0.01.
 })
 test('the head turns toward a target within reach and inside the cone, never without one', () => {
   const { position: perch, yaw } = owlPerch()
@@ -229,8 +275,9 @@ test('the head turns toward a target within reach and inside the cone, never wit
 })
 test('the easing reaches 95% in three taus and holds at dt 0', () => {
   let a = 0
-  for (let i = 0; i < 3; i++) a = easeLook(a, 1, OWL.look.tau)
-  assert.ok(a > 0.94 && a < 0.96)
+  for (let i = 0; i < 18; i++) a = easeLook(a, 1, 0.1)                 // 1.8 s of 0.1 s frames, three taus (Codex F5)
+  assert.ok(a > 0.94 && a < 0.96, `${a}`)
+  assert.equal(easeLook(0, 1, 0.6), easeLook(0, 1, 0.1), 'a frame over 0.1 s counts as 0.1')
   assert.equal(easeLook(0.3, 1, 0), 0.3)
 })
 test('the owl blinks on the frogs\' table with its own phase, open at 0 and under reduced motion', () => {
@@ -245,37 +292,43 @@ test('the owl blinks on the frogs\' table with its own phase, open at 0 and unde
 
 - [ ] **Step 2: run them.** `node --test scripts/street-owl.test.ts`. Expected: FAIL, `owl.ts` not found.
 - [ ] **Step 3: `src/scene/owl.ts`.** `OWL` as above. `buildOwl`: `mulberry32(0x0a1)`, class `VINCENT_CLASS.none`,
-  `m()` scales owl lengths by `OWL.size` as `frog.ts:81`. The body: `solid` underpaint in `thatch`'s underpaint
-  (`underpaintColour(painting, STREET_SOURCES.thatch, 0.4)`), the chest clad from `STREET_SOURCES.churchLit` over
-  `around` [0.06, 0.44] and the back and wings from `STREET_SOURCES.thatch` over `OWL.wing.around`, 6 strokes by 4
-  steps each, `OWL.lift`. The head about `OWL.neck`: `solid` in `thatch`'s underpaint, clad `thatch` over the back
-  half, the face `OWL.face` an ellipsoid `solid` in `underpaintColour(painting, STREET_SOURCES.churchLit, 1)` with
-  3 × 3 `churchLit` strokes, the eye `sphere` at the origin in `new Color(PALETTE.ground)`, `OWL_EYES` = `m(eye.centre)`
-  and its mirror. No legs, no tail: at 25 px they are under a pixel. `owlPerch`, `owlLook`, `easeLook`, `owlBlink` as
-  the Interfaces say.
+  `m()` scales owl lengths by `OWL.size` as `frog.ts:81` (its own copy, with `Vec3`). The body: `solid` underpaint
+  (8 round, 5 along) in `underpaintColour(painting, STREET_SOURCES.thatch, 0.4)`, the chest clad from
+  `STREET_SOURCES.churchLit` over `OWL.chest` (4 strokes by 4 steps) and the back and wings from
+  `STREET_SOURCES.thatch` over `OWL.wing` (8 by 4), `OWL.lift`. The head about `OWL.neck`: `solid` (8, 5) in the
+  same underpaint, clad `thatch` over `OWL.wing`'s band, the face `OWL.face` an ellipsoid `solid` (6, 3) in
+  `underpaintColour(painting, STREET_SOURCES.churchLit, 1)` with 3 `churchLit` strokes by 3 steps over its front
+  band, the eye `sphere` (5, 3) at the origin in `new Color(PALETTE.ground)`, `OWL_EYES` = `m(eye.centre)` and its
+  mirror. `triangles` counts the eye twice. No legs, no tail: at 25 px they are under a pixel. `owlPerch`, `owlLook`
+  (the yaw wrapped to (−π, π]), `easeLook` (`dt` clamped to [0, 0.1]), `owlBlink` as the Interfaces say.
 - [ ] **Step 4: `src/scene/StreetOwl.tsx`**, from `StreetFrog.tsx`: the same `material()` keys, geometries from
   `OwlBuild` (`bodyUnder`, `bodyStrokes`, `headUnder`, `headStrokes`, `eye`), the JSX
   `<group name="street-owl" position={perch} rotation={[0, yaw, 0]}>` with the body's two meshes and
   `<group ref={headRef} position={neck}>` holding the head's two meshes and the two eye groups. `useFrame((state, delta))`:
   `shut = owlBlink(lifeTime(w.__skyTime, state.clock.elapsedTime, reduced))` into the eyes as `StreetFrog.tsx:60-64`
   does with `FROG.blink` and `OWL.eye.r`; `visible = distance to state.camera.position < OWL.draw`; then, unless
-  `reduced`, `wanted = owlLook(neckWorld, yaw, vincentGround)`, `lookRef.yaw = easeLook(lookRef.yaw, wanted.yaw, delta)`,
+  `reduced`, `wanted = owlLook(neckStreet, yaw, vincentGround)` (the neck in the street's frame: the perch plus the
+  neck's offset turned by the yaw, once in `useMemo`, never `getWorldPosition`, which adds anchor A's offset, Codex
+  F3), `lookRef.yaw = easeLook(lookRef.yaw, wanted.yaw, delta)`,
   the same for the pitch, `head.rotation.order = 'YXZ'`, `head.rotation.set(-lookRef.pitch, lookRef.yaw, 0)`. The seam
-  `window.__owl = () => ({ visible, yaw: lookRef.yaw, pitch: lookRef.pitch, shut })`, removed on unmount. Props
+  `window.__owl = () => ({ visible, yaw: lookRef.yaw, pitch: lookRef.pitch, shut, target: vincentGround })`, removed on unmount. Props
   `{ painting: ImageData2D; flags: StreetFlags; reduced: boolean }`.
 - [ ] **Step 5: the mount.** `Street.tsx:194`, after the frogs:
   `{!flags.flat && paintingData && <StreetOwl painting={paintingData} flags={flags} reduced={reduced} />}`.
   `frog.ts:84`: `export function ellipsoid`.
 - [ ] **Step 6: run the tests.** `node --test scripts/street-owl.test.ts`, then `npm run -s test:sky` with the file
   appended to `package.json`'s list. Expected: PASS, and the build hash pins untouched.
-- [ ] **Step 7: the trees' sightline.** In `scripts/street-trees.test.ts`'s line-of-sight test (slice 1, Task 3), add
+- [ ] **Step 7: the trees' sightline.** In `scripts/street-church.test.ts:374`'s line-of-sight test (slice 1, Task 3,
+  its targets at lines 385-391), add
   the owl's head centre (the perch plus `OWL.neck[1] * OWL.size` plus `OWL.head.centre[1] * OWL.size` in y) to the
-  targets for stops 3 and 4. Expected: PASS with a margin named in the commit message.
-- [ ] **Step 8: case 20** in `scripts/check-street-grass.mjs`, after case 19, as cases 17 and 18 are written: four
-  pages. (a) `street=1&station=4&walkT=0.9&arrival=0`: wait for `__streetReady` and 2.5 s, `__owl()` visible, `|yaw|`
-  at least 0.6. (b) `station=3`: visible, `|yaw|` under 0.05. (c) `station=0`: not visible. (d) `station=4` with
-  `walk=0`: `|yaw|` under 0.05. (e) `station=4` under `prefers-reduced-motion: reduce` (as case 17 emulates it):
-  `yaw` 0 and `shut` 0 after 2.5 s. (f) `flat=1`: `window.__owl` undefined. Run:
+  targets for stops 3 and 4. Expected: PASS, the test's margin (over all its targets) named in the commit message.
+- [ ] **Step 8: case 20** in `scripts/check-street-grass.mjs`, after case 19, as cases 17 and 18 are written: seven
+  pages, each with `walkMode=input&arrival=0`. (a) `street=1&station=4&walkT=0.9`: wait for `__streetReady` and
+  2.5 s, `__owl()` visible, `|yaw|` at least 0.6. (b) `station=3`: visible, `|yaw|` under 0.05. (c) `station=0`: not
+  visible. (d) `station=4` with `walk=0`: `|yaw|` under 0.05. (e) `station=4` under `prefers-reduced-motion: reduce`
+  from the start (as case 17 emulates it): `yaw` 0 and `shut` 0 after 2.5 s. (f) `flat=1`: `window.__owl` undefined.
+  (g) page (a) again, then reduced motion turned on once `|yaw|` is at least 0.6: a read 1 s later shows the same
+  `yaw` within 1e-6 (Pause mid-turn holds the pose, Codex F10). Run:
   `DIORAMA_CAPTURE_URL=http://127.0.0.1:<port>/ node scripts/check-street-grass.mjs --case 20` (or the file's own case
   selector). Expected: PASS.
 - [ ] **Step 9: commit**, one per green step: `feat(owl): the barn owl on the nave's ridge, built as the frog is`,
@@ -311,8 +364,9 @@ test('the owl blinks on the frogs\' table with its own phase, open at 0 and unde
     wobble: 0.006,
     /** the wings' beat, seconds a cycle (5 to 8 a second) */
     flap: [0.12, 0.2] as [number, number],
-    /** the rest point: on the lantern's face, or off the window's glass */
-    rest: 0.008,
+    /** the rest point: out from the lantern's centre past its 0.012 square's half-diagonal (0.0085) by 0.002 at
+     * any yaw (Codex F6), or off the window's glass */
+    rest: 0.0105,
     restWindow: 0.003,
     /** brightness 1 at the glass, falling to `dimFloor` at the halo's edge (`LAMP_LIGHT.halo` is the sprite's side) */
     dimRadius: LAMP_LIGHT.halo / 2,
@@ -325,9 +379,10 @@ test('the owl blinks on the frogs\' table with its own phase, open at 0 and unde
   ```
   `u` is the horizontal unit direction from the glass to the rest point: for a lamp a yaw from the seed (`mulberry32(0x3074)`),
   for a window its normal. `anchor` = `glass + u × rest` (or `restWindow`). The loop at `time > 0`, with
-  `θ = 2π time / period + phase` and `v = up × u`: `p = anchor + u (r/2)(1 − cos θ) + v (r/2) sin θ + up × wobble × sin(2θ + phase)`,
-  so the moth passes its rest point once a lap and never leaves `radius + wobble` of the glass. At `time ≤ 0` every
-  moth is at its anchor. `mothBright(d)` = `max(dimFloor, 1 − d / dimRadius)`.
+  `θ = 2π time / period + phase` (`phase` in [0, 2π)) and `v = up × u`:
+  `p = anchor + u (r/2)(1 − cos θ) + v (r/2) sin θ + up × wobble × sin(2θ)`, so the moth is at its rest point at every
+  `θ` of 2πk (the wobble is 0 there, Codex F1) and never leaves `rest + radius + wobble` of the glass (the loop's far
+  side is `rest + radius` out, the builder's B1). At `time ≤ 0` every moth is at its anchor. `mothBright(d)` = `max(dimFloor, 1 − d / dimRadius)`.
 
 - [ ] **Step 1: write the failing tests** in `scripts/street-moths.test.ts`, with synthetic lamps and windows (seven
   lanterns at y 0.138 along a line, four windows with unit normals) and one test on the real build (`buildStreet` as
@@ -347,6 +402,8 @@ test('each moth rests on its glass\'s frame and loops within its radius', () => 
     const rest = distance(s.anchor, s.glass)
     assert.ok(Math.abs(rest - (s.window ? MOTHS.restWindow : MOTHS.rest)) < 1e-9)
     assert.ok(Math.abs(s.anchor[1] - s.glass[1]) < 1e-9, 'the rest point is level with the glass')
+    assert.ok(s.phase >= 0 && s.phase < 2 * Math.PI)
+    if (!s.window) assert.ok(Math.hypot(s.anchor[0] - s.glass[0], s.anchor[2] - s.glass[2]) > 0.006 * Math.SQRT2 + 0.0015, 'clear of the lantern box at any yaw')
   }
   const specs = mothSpecs(lamps, windows)
   const out = new Float32Array(specs.length * 3)
@@ -354,8 +411,13 @@ test('each moth rests on its glass\'s frame and loops within its radius', () => 
   specs.forEach((s, i) => assert.ok(distance([out[3 * i], out[3 * i + 1], out[3 * i + 2]], s.anchor) < 1e-6, 'at rest at time 0'))
   for (let t = 0.05; t <= 5; t += 0.05) {
     mothPositions(specs, t, out)
-    specs.forEach((s, i) => assert.ok(distance([out[3 * i], out[3 * i + 1], out[3 * i + 2]], s.glass) <= s.radius + MOTHS.wobble + 1e-6))
+    specs.forEach((s, i) => assert.ok(distance([out[3 * i], out[3 * i + 1], out[3 * i + 2]], s.glass) <= s.radius + (s.window ? MOTHS.restWindow : MOTHS.rest) + MOTHS.wobble + 1e-6))
   }
+  specs.forEach((s, i) => {
+    const t0 = (1 - s.phase / (2 * Math.PI)) * s.period                 // θ = 2π: a lap's crossing of the rest point
+    mothPositions(specs, t0, out)
+    assert.ok(distance([out[3 * i], out[3 * i + 1], out[3 * i + 2]], s.anchor) < 1e-6, 'at its rest point once a lap (Codex F1)')
+  })
 })
 test('a moth at the glass is bright and one at the halo\'s edge is faint', () => {
   assert.equal(mothBright(0), 1)
@@ -363,7 +425,10 @@ test('a moth at the glass is bright and one at the halo\'s edge is faint', () =>
   assert.ok(mothBright(0.02) > mothBright(0.05))
 })
 test('the built street has seven lamps and four lit windows, so 29 moths', { skip }, () => {
-  const build = buildStreet(painting, flow, masses, { grass: true, lit: true, lane: true, lived: true, paint: true, flowers: true })
+  // flow and masses loaded as street-lived.test.ts:48-56 does. No `paint`: it is a WallPaint, not a flag (Codex F4)
+  const build = buildStreet(painting, flow, masses, { grass: true, lit: true, lane: true, lived: true, flowers: true })
+  assert.equal(build.report.lane.lamps.length, 7)
+  assert.equal(litWindows(build.windows).length, 4)
   assert.equal(mothSpecs(build.report.lane.lamps, litWindows(build.windows)).length, 29)
 })
 ```
@@ -372,27 +437,34 @@ test('the built street has seven lamps and four lit windows, so 29 moths', { ski
 - [ ] **Step 3: `src/scene/moths.ts`** as the Interfaces say.
 - [ ] **Step 4: `src/scene/StreetMoths.tsx`.** Props `{ painting: ImageData2D; lamps: readonly { lantern: Vector3 }[]; windows: BrushArraysWithCls; offset: [number, number, number]; reduced: boolean }`.
   `useMemo`: `specs = mothSpecs(lamps, litWindows(windows))`, an `InstancedBufferGeometry` from a 4-vertex quad
-  (`position` the corners at ±0.5, `uv`) with `instanceCount = specs.length` and `InstancedBufferAttribute`s
-  `aAt` (3, written each frame), `aBright` (1, each frame), `aFlap` (1, the period), `aFlapPhase` (1). A
-  `ShaderMaterial` after the fireflies' (`streetLife.tsx:72-95`): uniforms `uTime`, `uColour` (the `windowLit` mean
-  through `sourceUnderpaint(painting, 'windowLit', 1)`), `uSize` (`MOTHS.size`). The vertex billboards the corner in
-  view space (`modelViewMatrix * vec4(aAt, 1)` plus `position.x * half.x * wing` right and `position.y * half.y` up,
-  with `wing = 0.3 + 0.7 * abs(cos(6.2832 * uTime / aFlap + aFlapPhase))`). The fragment is a soft oval
-  (`alpha = 1 - smoothstep(0.7, 1.0, length((vUv - 0.5) * 2.0))`), `gl_FragColor = vec4(uColour * vBright, alpha)`,
-  `discard` when `vBright <= 0.0`. `transparent`, `depthWrite: false`, `depthTest: true`, normal blending (a moth is
-  lit, it does not glow), `toneMapped: false` as the halos. The mesh `frustumCulled = false`, `renderOrder` one
-  below the lamp halos' sprites. `useFrame`: `time = lifeTime(w.__skyTime, elapsed, reduced)`, `mothPositions` into
-  `aAt`, then for each moth `bright = mothBright(distance(at, glass))`, and 0 for a window moth whose glass is
-  farther than `MOTHS.windowReach` from `state.camera.position` less `offset`. Both attributes `needsUpdate`, then
-  `uTime.value = time`. The seam `window.__moths = () => ({ count, time, moths: [{ at, glass, bright, window }] })`.
+  (`position` the corners at ±0.5, `uv`, the index `[0, 1, 2, 0, 2, 3]`) with `instanceCount = specs.length` and
+  `InstancedBufferAttribute`s `aAt` (3, written each frame), `aBright` (1, each frame), `aFlap` (1, the period),
+  `aFlapPhase` (1). A `ShaderMaterial` after the fireflies' (`streetLife.tsx:72-95`), every colour sRGB and written
+  raw (no colour-space include, as the project's own shaders): uniforms `uTime`, `uColour` (the `windowLit` triple
+  from `sourceUnderpaint(painting, 'windowLit', 1)`, sRGB 0 to 1, unconverted), `uFog` (`FOG.colour`'s sRGB
+  components, `new Color(FOG.colour).getRGB(new Color(), SRGBColorSpace)`), `uSize` (`MOTHS.size`). The vertex
+  billboards the corner in view space: `mv = modelViewMatrix * vec4(aAt, 1)`, then `position.x * uSize.x * wing`
+  right and `position.y * uSize.y` up, so the unflapped quad is the full 0.006 × 0.0045 (Codex F7), with
+  `wing = 0.3 + 0.7 * abs(cos(6.2832 * uTime / aFlap + aFlapPhase))`, and `vDepth = -mv.z`. The fragment is a soft
+  oval (`alpha = 1 - smoothstep(0.7, 1.0, length((vUv - 0.5) * 2.0))`), the colour
+  `mix(uColour * vBright, uFog, smoothstep(FOG.near, FOG.far, vDepth))` (the street's linear fog, `streetFog.ts`,
+  Codex Q3), `discard` when `vBright <= 0.0`. `transparent`, `depthWrite: false`, `depthTest: true`, normal
+  blending (a moth is lit, it does not glow), `toneMapped: false`. The mesh `frustumCulled = false`, `renderOrder` 3
+  (the window halos' planes are at 4, `streetLife.tsx:223`). `useFrame`: `time = lifeTime(w.__skyTime, elapsed,
+  reduced)`, `mothPositions` into `aAt`, then for each moth `bright = mothBright(distance(at, glass))`, and 0 for a
+  window moth whose glass is farther than `MOTHS.windowReach` from `state.camera.position` less `offset`. Both
+  attributes `needsUpdate`, then `uTime.value = time`. The seam
+  `window.__moths = () => ({ count, time, moths: [{ at, glass, anchor, radius, bright, window }] })`.
 - [ ] **Step 5: the mount.** `Street.tsx:183`, after `StreetLife`, under its condition:
   `{!flags.flat && flags.ids === 0 && flags.light && built && paintingData && <StreetMoths painting={paintingData} lamps={built.lamps} windows={built.windows} offset={offset} reduced={reduced} />}`.
 - [ ] **Step 6: run the tests.** `node --test scripts/street-moths.test.ts`, then `npm run -s test:sky` with the file
   appended. Expected: PASS.
-- [ ] **Step 7: case 21** in `scripts/check-street-grass.mjs`: (a) `street=1&station=3&arrival=0`: `__moths().count`
-  29, every lamp moth within `radius + wobble` of its glass, and the window moths whose glass is farther than 0.6
-  from the camera at `bright` 0. (b) The same page under reduced motion: every `at` equals its anchor within 1e-6
-  and `time` 0. (c) `light=0`: `window.__moths` undefined. Expected: PASS.
+- [ ] **Step 7: case 21** in `scripts/check-street-grass.mjs`: (a) `street=1&station=3&arrival=0&walkMode=input`:
+  `__moths().count` 29 with 21 lamp moths and 8 window moths, every coordinate finite, every lamp moth within
+  `radius + rest + wobble` of its glass (`rest` the seam's `anchor` to `glass` distance), and the window moths whose
+  glass is farther than 0.6 from the camera (`window.__streetCamera().position`, the street's offset 0 by default)
+  at `bright` 0, the others above 0. (b) The same page under reduced motion: every `at` equals its `anchor` within
+  1e-6 and `time` 0. (c) `light=0`: `window.__moths` undefined. Expected: PASS.
 - [ ] **Step 8: commit** per green step: `feat(moths): three moths a lamp and two a lit window, one instanced mesh`,
   `test(moths): case 21, the moths in the browser`. The report to `C/owl/t2/report.md` with the raw logs.
 
