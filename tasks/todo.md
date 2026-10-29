@@ -15,6 +15,17 @@ the bigger task, on its own budget). Briefs `C/owl/briefs/builder-t1-r0.md`, `bu
 `C/owl/t1/report.md`, `C/owl/t2/report.md`. Then the Lead's gate on each, the merge, the look passes (Task 3), the
 gate (Task 4, `C/owl/t4/gate.sh` ready), Codex's branch review, and the PR once #38 is in `main`.
 
+**Slice 2 (23:35):** Task 2, the moths, built by the Sonnet builder, gated (tsc, lint, 486 tests, two mutants
+caught) and merged, `e1cf321`. Look pass 1 at stop 3 (`C/owl/t3/notes.md`): in the lantern's own amber the moths
+read as sparks, so the paint is mixed 0.6 toward white (`MOTHS.pale`, `49e6d0a`, a departure from the design's (m)
+for Mark's eye on the preview). Pass 2: pale flecks, they draw no eye. Task 1, the owl: Argon stopped at Step 3
+(`C/owl/t1/report-stop.md`), two blockers in the plan's values, both the Lead's (under `pitch` π/2 the radii are
+[across, depth, height], and Test 2's counts). Plan revision 2 (`373c214`) takes Argon's probed values. Argon
+re-dispatched at 23:27 (`builder-t1-r1.md`, its branch merges `feat/church-owl` first), Codex on a bounded
+confirmation read of revision 2 at 23:33 (`codex-plan-r2.md`, BUILD or STOP). Then the owl's gate (Test 2's
+`mean(front)` margin recorded: the probe's 0.83 against 0.8), the merge, the owl's look passes at stops 3 and 4,
+the gate, Codex's branch review, the PR once #38 is in `main`.
+
 ## Pickup — 2026-10-29 (19:40): slice 1 gated and reviewed, PR #38 open for Mark's preview pass
 
 **Done by 19:40:** the gate on `1e3da3d` (the green step, the six browser checks, the sweep 1,433,053 against
