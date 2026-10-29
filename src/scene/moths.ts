@@ -10,6 +10,9 @@ import { LAMP_LIGHT } from './streetLife.ts'
 export const MOTHS = {
   /** a moth's quad, world units: a giant peacock moth's 12 cm, inside the species' 10 to 15 (fact 10) */
   size: [0.006, 0.0045] as [number, number],
+  /** the paint: the lantern's lit mean mixed this far toward white (look pass 1: in the lantern's own amber the moths
+   * read as sparks off the glass; a moth's wings in lamplight are a pale cream) */
+  pale: 0.6,
   perLamp: 3,
   perWindow: 2,
   /** a window's moths are drawn while its glass is within this of the camera */

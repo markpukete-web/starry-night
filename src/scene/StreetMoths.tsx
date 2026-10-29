@@ -109,8 +109,8 @@ export default function StreetMoths({
     const material = new ShaderMaterial({
       uniforms: {
         uTime,
-        // sRGB 0 to 1, unconverted: the shader writes raw
-        uColour: { value: new Vector3(...sourceUnderpaint(painting, 'windowLit', 1)) },
+        // sRGB 0 to 1, unconverted: the shader writes raw. Mixed toward white by `MOTHS.pale` (look pass 1)
+        uColour: { value: new Vector3(...sourceUnderpaint(painting, 'windowLit', 1).map((c) => c + (1 - c) * MOTHS.pale)) },
         uFog: { value: new Vector3(fog.r, fog.g, fog.b) },
         uSize: { value: new Vector2(...MOTHS.size) },
       },
