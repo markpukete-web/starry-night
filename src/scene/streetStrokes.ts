@@ -83,10 +83,12 @@ export const SOURCE_STROKES: Record<StreetSourceName, { width: [number, number];
   windowLit: { width: [0.2, 0.35], length: [0.5, 1.0], axis: [1, 0], blend: 0.6, cover: 4 },
   // the church's four (`t0/recipe.md`: ten strokes a face read at 1:1, as fractions of CHURCH.stroke 0.16). The covers
   // are the recipe's measured 3.5 / 3.5 / 6 / 3.5 scaled 0.5 to the triangle budget (`t2/ledger.md`: street 600,275)
-  churchLit: { width: [0.08, 0.13], length: [0.33, 0.8], axis: [0.15, 0.99], blend: 0.75, cover: 1.75 },
-  churchShade: { width: [0.075, 0.11], length: [0.42, 0.85], axis: [0, 1], blend: 0.75, cover: 1.75 },
-  spire: { width: [0.05, 0.09], length: [0.7, 1.9], axis: [0, 1], blend: 0.9, cover: 3 },
-  belfry: { width: [0.08, 0.13], length: [0.28, 0.47], axis: [1, 0], blend: 0.75, cover: 1.75 },
+  // look pass 3 (`t5/looks.md`): the two walls' widths at the top of their measured ranges and their cover up, paid by the
+  // spire's and the belfry's cover, within the ledger's bound (the gaps between the strokes showed the shaded underpaint)
+  churchLit: { width: [0.11, 0.13], length: [0.33, 0.8], axis: [0.15, 0.99], blend: 0.75, cover: 2.5 },
+  churchShade: { width: [0.095, 0.11], length: [0.42, 0.85], axis: [0, 1], blend: 0.75, cover: 2.2 },
+  spire: { width: [0.05, 0.09], length: [0.7, 1.9], axis: [0, 1], blend: 0.9, cover: 2.5 },
+  belfry: { width: [0.08, 0.13], length: [0.28, 0.47], axis: [1, 0], blend: 0.75, cover: 1.25 },
 }
 
 /** the outlines' full width as a fraction of the wall (task 1: 0.12–0.18; the painting's are thick) */

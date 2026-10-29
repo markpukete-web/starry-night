@@ -21,7 +21,7 @@ export type StreetLight = { ambient: number; key: number; max?: number }
  * Look pass 1: 0.7 → 0.8, the plaster's L p50 41 → 44 at stop 4 against the painting's 52. Above about 0.81 the
  * moonlit side reaches `max` and the two walls stop 4 sees lose their step.
  */
-export const CHURCH_LIGHT: StreetLight = { ambient: 0.8, key: 0.9, max: 1 }
+export const CHURCH_LIGHT: StreetLight = { ambient: 0.81, key: 0.9, max: 1 }
 
 export function lightOf(face: StreetFace, lit = true, light: StreetLight = STREET_LIGHT): number {
   if (!lit || (face.kind !== 'wall' && face.kind !== 'roof')) return 1
@@ -34,9 +34,14 @@ export function wallShade(face: StreetFace, x: number, y: number, z: number, lit
   const rel = new Vector3(x, y, z).sub(face.origin)
   const s = rel.dot(face.u) / face.u.lengthSq()
   const t = rel.dot(face.v) / face.v.lengthSq()
-  const ground = 0.5 + 0.5 * smooth(0, 0.5, t)
+  // church slice 1, look pass 4 (`scratch/church-animals-2026-10-29/t5/looks.md`, departure P7): the church's two tones
+  // take no foot shadow. The painting's church has none, and with it the moonlit wall read L 42 against its source's
+  // 50 after every lever the design names (the underpaint quad interpolates 0.5 to 0.75 of its mean). Every house keeps it
+  const church = face.source === 'churchLit' || face.source === 'churchShade'
+  const ground = church ? 1 : 0.5 + 0.5 * smooth(0, 0.5, t)
   const eaves = 1 - 0.25 * smooth(0.8, 1, t)
-  const corner = 0.78 + 0.22 * smooth(0, 0.14, Math.min(s, 1 - s))
+  // look pass 2: nor the corner term (the design's own lever, (e))
+  const corner = church ? 1 : 0.78 + 0.22 * smooth(0, 0.14, Math.min(s, 1 - s))
   return ground * eaves * corner
 }
 
