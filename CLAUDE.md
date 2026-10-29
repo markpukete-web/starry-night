@@ -377,7 +377,8 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
 - Vincent's wander, on for every visitor (2026-10-29, `src/scene/streetWander.ts` `WANDER`, `StreetWalk.tsx`; the record
   `tasks/2026-10-29-vincent-wander.md`; `?wander=0` turns it off): a tap on open ground sends him there at the
   spike's wander speed (0.19 world units a second, 2.4 times the lane's automatic walk), and a tap on the lane brings him back the way he came (`route`,
-  8 entries at most). He stands on the verge, the door paths and the square, off the lane (|offset| ≤ 0.06), a house, a
+  8 entries at most). So does a tap within 0.06 of where he stood once his slot is off the lane's strip, from `t` 0.825
+  (Fable F1). He stands on the verge, the door paths and the square, off the lane (|offset| ≤ 0.06), a house, a
   step, a wall, an object, the cypress, the church (0.02), a lamp post (0.015), a frog (0.02) and a trunk (0.03). A leg
   is sampled every 0.01 and may not cross the garden rail. A tap is refused unless every 0.02 of its leg is in frame
   (the half-field less 4°) and not hidden from the follow camera (three ground lines 0.025 apart, the houses grown 0.03,

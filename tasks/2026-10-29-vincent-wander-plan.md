@@ -72,7 +72,8 @@ it. Codex's review of revision 0: "The plan's positional reading holds." The gat
     end points too and found them equal, but the local pairs keep the build's arithmetic as it is.
 - (e) **A tap on the lane comes first** (Codex F2). The square's disc covers the lane at stop 4, so the order matters.
   A tap within the lane's strip sends him back if he is off the lane, and does nothing if he is on it. Only a tap off
-  the strip can send him out. `standable` excludes the strip, so the two never overlap.
+  the strip can send him out. `standable` excludes the strip, so the two never overlap. From `t` 0.825 his slot itself
+  is off the strip, so off the lane a tap within `laneHalf` of `route[0]` also sends him back there (Fable F1, PR #37).
 - (f) **Where the camera sees him** (fault 4, the gable, and Codex F6). Every leg is sampled every `WANDER.sightStep`,
   the end included. At each sample the eye is `walkPose(followT(sample), portrait).position`. Two tests at each
   sample:

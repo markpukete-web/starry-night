@@ -121,6 +121,32 @@ twice in case 6, before its finger case: a flake older than this slice. After th
 (K2's record had 0.0033). `a21767e` reads `t` in the same task as the pair. On `a21767e`, alone, `m-f2-touch` is RED
 at 8d's finger out-and-back after 10 cases (`E/r1/m-f2-touch-alone.log`).
 
+## Fable's PR review
+
+Codex's plan is drained, so Fable (pane `w4:p6`) reviewed PR #37 on `487e053`, round 0, REVISE
+(`E/review/fable-pr37-r0.md`, probes `fable-probe-r0.mjs` and `-r0b.mjs`). The Codex bot also reviewed `487e053` when
+the PR opened and passed it with no findings (a thumbs-up and a "Completed" comment).
+
+- F1, P2: from `t` 0.825 his lane slot is off the lane's strip (the rig's lateral eases to 0.07 over stops 3 to 4, the
+  strip is 0.06, and past the lane's end the offset is the distance to the end). At stop 4 a tap where he stood sent
+  him there as a new leg, and the walk home then went out to his point first. Fixed in `wanderTo`: off the lane, a tap
+  within `laneHalf` of `route[0]` is the lane tap where `route[0]` is off the strip. Stops 0 to 3 are unchanged, since
+  there the slot is on the strip. The unit test is at stop 4, and case 8f repeats case 8a's slot tap at stop 4 on the
+  desktop.
+- On the phone at stop 4 the automatic walk has ended (`t` 0.9 is `WALK_T.max`), so decision (p) never takes him home,
+  and a phone has no wheel or key. He comes home on a finger on the lane's strip, a finger where he stood (F1's fix),
+  or a finger on him, which starts the walk and so (p).
+- F2, P3: `standable`'s verge exclusion listed the door paths, which the term before it already admits. The term is
+  removed. No behaviour changes: the build and grass hashes are unchanged.
+- F3, P3: the walk check's case 8 and the portal check's case 14 read street points as world points, true under the
+  default anchor B only. Each check now says so.
+
+The round's runs, one at a time (`E/fable-r0/summary.txt`, `E/tools/fable-r0.sh`): the unit tests 473 of 473, the
+hashes unchanged. Five mutants of F1's condition are RED (`E/fable-r0/m-*.log`), each at its own assertion but
+`m-nomode`, which only crashes on an empty route, so `m-stale` (the guard on `route[0]` alone) covers that term. The
+walk check is green (13 cases). With the slot term removed it is RED at 8f after 12 cases: the tap where he stood left
+him `going`, the route two hops. The portal check is green (20).
+
 ## For Mark
 
 Passed by Mark on the preview (`4f05302`), 14:44 ("Passed, open the PR and get Fable to review"). Codex's plan is

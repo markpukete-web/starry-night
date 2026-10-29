@@ -3510,3 +3510,11 @@ must be byte-identical before the stimulus's difference means anything.
   and the blur in the next, while he still walked at the 0.5 cap. One frame between them moved him 0.0035, over the
   0.002 / L bar, so the case failed now and then (K2's record, and round 2's touch mutant twice). Read the state in the
   same task as the events it is compared with.
+- **A rule about a region must hold for the point it stands for, at every stop.** "A tap on the lane brings him home"
+  stood for "a tap where he stood". From `t` 0.825 his slot is off the lane's strip (the rig's lateral 0.07 against the
+  strip's 0.06, and past the lane's end the offset is the distance to the end), so at stop 4 a tap there sent him on a
+  new leg (Fable F1, PR #37). Every case tested the slot tap at stop 1. Sweep a rule's stand-in over the whole walk, not
+  at one stop.
+- **A browser check needs its server.** The walk check run bare timed out on `__streetReady` before case 1. It reads
+  `DIORAMA_CAPTURE_URL` and needs vite on that port, as `tools/gate-final.sh` starts it. Run the checks from a runner
+  that starts the server.

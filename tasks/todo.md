@@ -9,7 +9,12 @@ was declined with evidence and decision (l) reworded. Codex's plan is drained (M
 reviews from here, the PR's review included.
 
 **Passed by Mark on the preview, 14:44.** The PR is open, and Fable reviews it (Mark: "Passed, open the PR and get
-Fable to review"). Next: answer Fable's findings in the PR thread, then Mark merges.
+Fable to review"). Fable's round 0 on `487e053`: REVISE, one P2 (F1, the tap where he stood at stop 4) and two P3s,
+all fixed in one push and answered in the thread (the record's "Fable's PR review"). Next: Mark merges.
+
+**Next after #37 (Mark, 2026-10-29: "Animals besides the frogs"):** a little owl on a roof ridge that turns its head to
+follow Vincent, and moths at some of the lamps and lit windows. A throwaway spike behind a flag first, for Mark's eye.
+The description is in the chat, waiting for his corrections.
 
 **Left in place, ask Mark before removing:** the worktrees `scratchpad/wander-wt`, `wander-2b`, `wander-r1`,
 `wander-r1-mut`, the builders' `.claude/worktrees/agent-a7f026db3af066847` and `agent-a7062abd1b12521f5`, and the
