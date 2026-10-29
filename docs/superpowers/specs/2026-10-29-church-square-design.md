@@ -64,7 +64,7 @@ circle in the light. Nothing moves fast, nothing glows on its own, and nothing i
 - No new dependency. `?street=1` builds it for every visitor once it ships. `?light=0` still builds the street unlit.
 - The street's build hash changes (the church's strokes change) and the plan names the new one. The grass hash stays,
   because nothing here clears grass: the church's foot and the square's lamp stand on the ground tiles, past the grass's
-  footprint (Task 0 confirms).
+  footprint (Task 0 checks it).
 - The layout test's clearances: a tree's built crown 0.025 clear of every house (Codex T2), and here of the church's
   walls too.
 - The retune cap: four look passes a slice. Visual work and the look passes are the Lead's. Mechanical build goes to a
@@ -97,10 +97,10 @@ circle in the light. Nothing moves fast, nothing glows on its own, and nothing i
    0.18 forward of it. The church's nave centre is 0.425 forward of the square's centre (0.25 + 0.155 + 0.02). So the
    trees are about 0.25 short of the church's centre line and 0.4 to 0.45 out from its walls: at stop 4 they sit at the
    frame's edges. Crown radii are clamped to 0.12 to 0.17.
-6. **Triangles.** At stop 4 the walk draws 1,274,039 triangles (desktop; the wander's gate sweep), 170,000 under the
+6. **Triangles.** At stop 4 the walk draws 1,274,039 triangles (desktop, the wander's gate sweep), 170,000 under the
    ceiling. The walk's worst point is 1,429,793 at `t` 0.26, where none of the church, the square's lamp or the flowers
-   is near. The trees have no distance rule: all three are drawn at every `t` (the Lead's read of `streetTrees.ts`;
-   Task 0 confirms by the sweep).
+   is near. The trees have no distance rule: all three are drawn at every `t` (the Lead's read of `streetTrees.ts`.
+   Task 0 checks it by the sweep).
 7. **The square's light.** The seventh lamp stands at `t` 1.0, lateral 0.2 (`STREET_LAMPS`), its halo 0.134 world at
    most, scaled by depth, its pool on the square. The church's windows are unlit. Vincent's lantern lifts the ground
    within 0.08 at 1.5 × the lamps' glow, so when he reaches stop 4 the door's foot is lit by him.
