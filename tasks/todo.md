@@ -1,5 +1,27 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-10-29 (19:05): revision 3, three builders running, Mark at dinner ("Take the lead")
+
+**Revision 3 (`086b6d9`)** folds Codex's confirmation read of revision 2 (`review/codex-plan-r2.md`: five of six
+closed, F2 open because `wallSource: 'churchLit'` reached the door's strokes). The church keeps `wallSource` plaster,
+the tones in a separate field, the guard on the openings' strokes (`cls` 255 in the nave's box: 2,287 vertices, hash
+`51a2c84e0b745f72` at the base).
+
+**Task 2's ledger is written** (`t2/ledger.md`): the recipes at full cover put the street at 631,507 triangles (the
+church 1,393 ribbons, about 50 triangles each). The Lead's decision: the four covers halved (1.75 / 1.75 / 3 / 1.75),
+street 600,275, church 781 ribbons. The synthetic fixture's bound in `street-build.test.ts` becomes 644,605 (its base
+639,524 plus the design's allowance 5,081), said in the test and the ledger. Look pass 1 judges the thinner paint.
+
+**Running at 19:05:** the Task 1 Sonnet builder on its fix round (`briefs/builder-t1-r1.md`: the cover, the fixture,
+the guard, the squash into the Step 8 commit; its WIP `61b5b43` on `feat/church-square-t1`). Argon (`w4:p5`) on Task 4
+from revision 2 (`briefs/builder-t4-r1.md`, report `t4/report-2.md`). A Sonnet builder on Task 3 from revision 3
+(`briefs/builder-t3-r0.md`, branch `feat/church-square-t3`, report `t3/report.md`). Codex is idle; its next job is
+the branch review (Task 6 Step 7). Mark, 18:58: "Take the lead I am having dinner".
+
+**Then:** gate each branch (the diff, the raw logs, the suite run by the Lead), merge Task 1, Task 4, Task 3 into
+`feat/church-square`, re-pin once, look pass 1 (capture stops 3 and 4, both viewports, `C/look0/capture.mjs`), the
+look passes, Task 6's gate, Codex's branch review, push and the PR for Mark's preview pass.
+
 ## Pickup — 2026-10-29 (18:15): slice 1's plan at revision 2, Task 0 done, Argon on Task 4, Task 1 to a Sonnet builder
 
 The times in the two pickups below this one were written wrong (the Lead carried them forward instead of reading the
