@@ -40,6 +40,7 @@ import {
 } from './vincent.ts'
 import {
   admitGesture,
+  autoOn,
   flicker,
   gait,
   initialPause,
@@ -660,7 +661,7 @@ export default function StreetWalk({
     if (offLane) {
       // a wheel turn or an arrow key sends him back; the wheel was read above, so it is dropped (m)
       if (w.mode === 'going' && (wheelPx !== 0 || keys !== 0)) w = { ...w, mode: 'returning', arrived: 0 }
-      const stepped = stepWander(w, dt, reduced || still)
+      const stepped = stepWander(w, dt, reduced || still, autoOn(prevState, input))
       moved = stepped.walked - w.walked
       w = stepped
       wanderRef.current = w

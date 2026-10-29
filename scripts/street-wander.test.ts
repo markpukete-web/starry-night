@@ -540,3 +540,34 @@ test('stepWander: from a full dwell and back (Codex N2)', () => {
   assert.equal(previous.turn, 0)
   assert.deepEqual(offLanePose(previous.turn), turnPose(0))
 })
+
+test('stepWander: the automatic walk takes him home after the dwell (p)', () => {
+  const dt = 1 / 60
+  const slot = hereAt(0.23)
+  const [tx, tz] = vergeNear(slot)
+  const start = wanderTo({ ...initialWander(), turn: 1 }, slot, tx, tz, null)!
+  const mark = PAUSE.dwell - PAUSE.endTurn
+
+  // without the automatic walk he stays: 10 s at his tap, the lantern up
+  let s = run(start, arrived)
+  for (let i = 0; i < 600; i++) s = stepWander(s, dt, false, false)
+  assert.equal(s.mode, 'going')
+  assert.equal(s.turn, 1)
+  assert.equal(stepWander(s, dt, true, true), s, 'frozen past the mark, the step returns its input')
+
+  // with it: going while arrived is under the mark, then returning with arrived 0 on the frame that would carry it there
+  s = run(start, arrived)
+  for (let frames = 0; s.mode === 'going'; frames++) {
+    const before = s.arrived
+    s = stepWander(s, dt, false, true)
+    if (s.mode === 'going') assert.ok(s.arrived < mark, `still going at arrived ${s.arrived}`)
+    else assert.ok(before < mark && before + dt >= mark, `returning from arrived ${before}`)
+    if (frames > 1000) throw new Error('he never went home')
+  }
+  assert.equal(s.mode, 'returning')
+  assert.equal(s.arrived, 0)
+  s = run(s, home)
+  assert.deepEqual([s.x, s.z], [slot.x, slot.z])
+  assert.ok(Math.abs(wrap(s.yaw - slot.yaw)) <= WANDER.yawSnap, 'his yaw is the slot\'s')
+  assert.equal(s.turn, 0)
+})

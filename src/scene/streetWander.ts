@@ -365,9 +365,10 @@ export function offLanePose(turn: number): ReturnType<typeof turnPose> {
  * One frame. Going, he walks to his tap. Returning, he walks the route back, a leg at a time, to `route[0]`, lowers the
  * lantern and turns to his slot's yaw, and then the lane has him. Once he has rested `PAUSE.rest` at a tap he raises the
  * lantern. He does not move while the lantern is up (`turn` at or over `PAUSE.turnGate`). A frozen step (reduced motion,
- * the still state) returns `s`.
+ * the still state) returns `s`. With the automatic walk on (`autoOn`), he goes home `PAUSE.endTurn` before a station's
+ * dwell would end, so the lantern is down by then (p).
  */
-export function stepWander(s: WanderState, dt: number, frozen: boolean): WanderState {
+export function stepWander(s: WanderState, dt: number, frozen: boolean, autoOn = false): WanderState {
   if (frozen || s.mode === 'lane') return s
   const returning = s.mode === 'returning'
   const [tx, tz] = returning ? s.route[s.route.length - 1] : [s.tx, s.tz]
@@ -380,7 +381,11 @@ export function stepWander(s: WanderState, dt: number, frozen: boolean): WanderS
   if (dist <= WANDER.arrive) {
     const landed = s.x !== tx || s.z !== tz
     const snapped = { ...s, x: tx, z: tz, turn, walked: s.walked + dist }
-    if (!returning) return { ...snapped, arrived: landed ? 0 : s.arrived + dt }
+    if (!returning) {
+      const arrived = landed ? 0 : s.arrived + dt
+      if (autoOn && arrived >= PAUSE.dwell - PAUSE.endTurn) return { ...snapped, mode: 'returning', arrived: 0 }
+      return { ...snapped, arrived }
+    }
     if (s.route.length > 1) return { ...snapped, route: s.route.slice(0, -1) }
     // at `route[0]`: lantern down, then turn in place to the slot's yaw
     const yaw = turn < PAUSE.turnGate ? turnToward(s.yaw, s.syaw, WANDER.turn * dt) : s.yaw
