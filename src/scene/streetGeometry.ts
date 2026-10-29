@@ -97,7 +97,8 @@ export type StreetBuild = {
         triangles: number
         roots: [number, number][]
         headColours: [number, number, number][]
-        /** each head's middle centre and the blade point it is lifted from, for the depth test (Codex branch r0 F1) */
+        /** each head's emitted middle-row centre vertex and the blade point it is lifted from, for the depth test
+         * (Codex branch r0 F1, bound to the emitted vertex after r1) */
         headCentres: [number, number, number][]
         headTips: [number, number, number][]
       } | null
@@ -2111,10 +2112,12 @@ function flowers(ctx: Context): void {
         return new Vector3(px, FLOWERS.rootY + py, pz).addScaledVector(normal, FLOWERS.headLift)
       }) as [Vector3, Vector3, Vector3]
       const pick = pool[Math.floor(rand() * pool.length)]
+      const start = local.arrays.positions.length   // the dab's 9 vertices follow, 3 along × 3 across: vertex 4 is the middle row's centre
       stoneDab(local, centres, acrossTip, FLOWERS.headWidth, new Color(pick.hex), Math.round(spec.seed))
       headColours.push([pick.srgb[0], pick.srgb[1], pick.srgb[2]])
       const [tx, ty, tz] = bladeVertex(spec, 0.93, 0, right)
-      headCentres.push([centres[1].x, centres[1].y, centres[1].z])
+      // the emitted vertex, not the argument, so the depth test reads what is drawn (Codex branch review r1)
+      headCentres.push([local.arrays.positions[start + 12], local.arrays.positions[start + 13], local.arrays.positions[start + 14]])
       headTips.push([tx, FLOWERS.rootY + ty, tz])
       headsCount++
     }
