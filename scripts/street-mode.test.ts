@@ -37,6 +37,13 @@ test('walk flags', () => {
   assert.equal(walkOn(readStreetFlags('?street=1')), true)
 })
 
+test('wander flag: on for every visitor, off under wander=0', () => {
+  assert.equal(readStreetFlags('').wander, true)
+  assert.equal(readStreetFlags('?street=1').wander, true)
+  assert.equal(readStreetFlags('?street=1&wander=0').wander, false)
+  assert.equal(readStreetFlags('?street=1&wander=1').wander, true)
+})
+
 test('the lantern shows only where the walk places it', () => {
   // Codex B1: the walk's frame loop alone places the halo and the pool and lights the ground
   assert.equal(lanternShown(readStreetFlags('?street=1')), true)
