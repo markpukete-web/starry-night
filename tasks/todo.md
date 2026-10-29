@@ -1,20 +1,24 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-29 (20:40): slice 1's plan at revision 1, Task 0 done, Argon on Task 4, Codex's read still running
+## Pickup — 2026-10-29 (18:15): slice 1's plan at revision 2, Task 0 done, Argon on Task 4, Task 1 to a Sonnet builder
 
-**Revision 1 (`c9b7f05`)** folds the advisor's read (L1 to L8) and the Sonnet builder's (`review/builder-plan-r0.md`).
-Task 0 is done: the four sources `churchLit` [886, 1050, 906, 1072], `churchShade` [936, 1056, 954, 1094], `spire`
-[904, 860, 914, 990], `belfry` [898, 1000, 922, 1012] (`scratch/church-animals-2026-10-29/t0/sources.md`), the recipe
-at 1:1 (`t0/recipe.md`), the trees to map (666, 181) and (308, 184) (`t0/tree-search.log`), the baseline
-(`t0/baseline.md`).
+The times in the two pickups below this one were written wrong (the Lead carried them forward instead of reading the
+clock): the git log holds the truth. The design's calls were committed 17:16, revision 0 at 17:30, revision 1 at 17:56.
 
-**Running at 20:40:** Argon (`w4:p5`, Gemini 4 Argon, Mark's switch of 20:25) builds Task 4 on `feat/church-square-t4`
-in its own worktree (brief `briefs/builder-t4-r0.md`, report `t4/report.md`, a Monitor armed). Codex's correctness read
-of the plan (`w4:p4`, started 18:40) had not reported; its findings become revision 2, and any on Task 4 go to Argon as
-a fix round. Task 1 waits for Codex (brief `briefs/builder-t1-r0.md` drafted for a Sonnet builder, base `c9b7f05`).
-Mark's call of 20:28: "Start Task 4 on Argon now". Then: Task 1, Task 2's ledger, Task 3, the look passes, the gate.
+**Revision 2** folds Codex's correctness read of revision 0 (`review/codex-plan-r0.md`, REVISE, ten findings, landed
+17:58). Revision 1 (`c9b7f05`) had closed five (F1, F4, F6, F7, F8). Revision 2 closes F2 (the openings keep the plaster
+face), F3 (a distance test against the sway's bound), F5 (the flowers' test asserts the geometry), F9 (the tones by
+name, no light rule), F10 (1,100 triangles reserved for the flowers) and Codex's answers 6 and 7. Task 0 is done
+(`scratch/church-animals-2026-10-29/t0/`).
 
-## Pickup — 2026-10-29 (18:35): the design approved, the slice 1 plan written, its two reads running
+**Running at 18:15:** Argon (`w4:p5`, Gemini 4 Argon, Mark's switch before 17:50) builds Task 4 on
+`feat/church-square-t4` from revision 1 (brief `briefs/builder-t4-r0.md`, report `t4/report.md`, a Monitor armed).
+Its fix round (`briefs/builder-t4-r1.md`: F5, answers 6 and 7, the palette check) goes out when its report lands.
+Task 1 goes to a Sonnet `builder` subagent from revision 2 (brief `briefs/builder-t1-r0.md`). Codex gets a bounded
+confirmation read of revision 2 (`briefs/codex-plan-r2.md`). Mark's call of about 17:50: "Start Task 4 on Argon now".
+Then: Task 2's ledger, Task 3, the look passes, the gate.
+
+## Pickup — 2026-10-29 (17:32, written as 18:35): the design approved, the slice 1 plan written, its two reads running
 
 **Mark approved the design at 17:20** ("Go ahead with your recommendations and I like the tunable owl idea"): the two
 tones mirrored, the ring of flowers in the lamp's pool only, the barn owl at 0.024 with `OWL.size` tunable. The calls
