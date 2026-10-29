@@ -14,9 +14,11 @@ import {
   stepPause,
   stepWalk,
   stopWalk,
+  setVincentGround,
   toggleWalk,
   turnPose,
   wheelPixels,
+  vincentGround,
   type Pause,
   type WalkInput,
   type WalkState,
@@ -408,4 +410,12 @@ test('admitGesture: down inside with box moved away at up is still Vincent\'s', 
 test('admitGesture: null box is a hand gesture', () => {
   const kind = admitGesture(null, 150, 150)
   assert.equal(kind, 'hand', 'null box is a hand gesture')
+})
+
+test('vincentGround: null until the walk writes it, a live binding after, null again when the walk goes', () => {
+  assert.equal(vincentGround, null)
+  setVincentGround([0.25, -0.5])
+  assert.deepEqual(vincentGround, [0.25, -0.5])
+  setVincentGround(null)
+  assert.equal(vincentGround, null)
 })
