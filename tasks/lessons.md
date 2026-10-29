@@ -3473,3 +3473,40 @@ must be byte-identical before the stimulus's difference means anything.
   every frame. The old check passed on some runs and failed on others. The inferred variable, not observed: whether the
   canvas's root commits the new place in the same gap as the page's root. Assert the state inside the phase that owns
   it (every `entering` frame reads 0), and require at least one frame read, so the assertion is never empty.
+
+## 2026-10-29 — Vincent's wander
+
+- **A baseline run in the main checkout finds what worktrees hide.** `npm run -s lint` failed there with 1,848 parsing
+  errors, because `eslint .` walked into the repo copies under `scratch/`, each with its own `eslint.config.js`. Every
+  gate ran in a worktree, which has no `scratch/`, so CI and past gates were clean. Ignore `scratch` and `.claude`.
+- **A measurement that says "hidden" is not a capture that shows it.** The raised glass stood 0.023 over the ground,
+  under blade tips of 0.033 to 0.050 round the worst spots. The plan said "choose the fix from the numbers". The captures
+  showed the glass clear at every stop but one: the camera looks down past the blades. Measure, then look, then choose.
+  A fix chosen from the numbers alone would have flattened grass that needed nothing.
+- **A flat mark at ground level does not read in this scene.** A disc 0.002 over the ground is under the blades on the
+  verge and edge on from the camera's height on the square. A marker needs height and to face the camera. The lantern's
+  own halo at the raised glass's height reads on both.
+- **Change the browser cases with the behaviour they hold.** Decision (p) sends him home on the automatic walk, and the
+  builder's phone case held him still with the walk on for 1.5 s. The Lead's change rewrote that case in the same commit.
+  Grep the cases for the state a decision changes before building it.
+- **A worker's pane status is not its job's state.** Gemini read "idle" while its mutation script still wrote logs, and
+  again while the gate script ran in its background. Wait on the artefact and the process list.
+- **Two browser checks at once poison each other's leak count.** The walk check counts every headless Chrome on the
+  machine, before and after. The Lead ran its own walk check beside the worker's control run, and the control failed
+  "before=0, after=2" with all 12 of its cases passed. One browser check at a time, or ports and counts of its own.
+- **A waiter must not match its own pattern.** `while pgrep -f 'headless'` waited on its own shell, whose command line
+  holds the word, and would have waited forever. The worker's "headless chrome left: 1" was the same shell. Match the
+  process's own name (`'Chrome.*headless'`, as the checks do), never a word the waiter's own text holds.
+- **A flag with three terms needs a case for each term.** `settled` is false while he moves, while the turn eases and
+  while the aim eases. No case asked for `settled` while only the aim eased, so dropping that term survived (Task 4's
+  b03). Run a mutation for each term of a compound guard, not one for the guard.
+- **A fixture chosen by the code under test passes with it.** The wall fixture skipped every wall tap the page
+  accepted, so a page that accepted walls passed (Codex F4). The phone's sight fixture, searched with a mutated module,
+  found a point the mutant refused for another reason (Codex N1). Choose a negative fixture by geometry of its own, or
+  require the one rule it tests to be the only one refusing it.
+- **A pointer move may carry several samples.** The drag latch read only the move's own point. A browser may fold an
+  out-and-back into one move (`getCoalescedEvents`, the W3C Pointer Events spec). Read every coalesced sample.
+- **A read and an act in two calls leave a frame between them.** Case 6 read his `t` in one CDP call and sent the wheel
+  and the blur in the next, while he still walked at the 0.5 cap. One frame between them moved him 0.0035, over the
+  0.002 / L bar, so the case failed now and then (K2's record, and round 2's touch mutant twice). Read the state in the
+  same task as the events it is compared with.

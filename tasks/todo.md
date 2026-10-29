@@ -1,6 +1,23 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-29 (11:10): Vincent's wander, the plan passed review, Task 1 building
+## Pickup — 2026-10-29 (14:10): Vincent's wander, gated and pushed for Mark's preview
+
+Branch `feat/vincent-wander` (head after this note's commit), pushed for a Vercel preview; no PR yet (Mark looks
+first). The record is `tasks/2026-10-29-vincent-wander.md`. The slice fixes the spike's four faults and adds the walk
+home after the dwell (Mark, 11:45). Task 4's runs (Gemini) and the Lead's gate on `a21767e` are green. Codex's branch
+review took three rounds: r0 REVISE (F1 to F5), r1 REVISE (the folded drag, the phone's sight fixture), r2 BUILD. F3
+was declined with evidence and decision (l) reworded. Codex's plan is drained (Mark, after round 2): Fable, in pane `w4:p6`,
+reviews from here, the PR's review included.
+
+**Open for Mark:** the preview's look; the three points in the record's "For Mark" (the stop 4 aim into a near wall,
+the stop 2 lamp outshining his lantern, the new mark). Then the PR, its review by Fable, and the merge.
+
+**Left in place, ask Mark before removing:** the worktrees `scratchpad/wander-wt`, `wander-2b`, `wander-r1`,
+`wander-r1-mut`, the builders' `.claude/worktrees/agent-a7f026db3af066847` and `agent-a7062abd1b12521f5`, and the
+branches `wander-t1`, `wander-t2`,
+`wander-t2b`, `wander-r1`.
+
+## Pickup — 2026-10-29 (11:10): Vincent's wander, the plan passed review, Task 1 building (superseded by the pickup above)
 
 Mark, 09:58: "Wander as a slice". The plan is `tasks/2026-10-29-vincent-wander-plan.md` on `feat/vincent-wander`
 (off `8c3f9a5`). It fixes the spike's four faults: the lantern hidden in the grass, the sparse verge, the square, and

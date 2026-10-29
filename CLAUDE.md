@@ -374,6 +374,21 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   at stop 0 (K3 308). Two look passes of four. The hat (2026-10-28, Mark's "Go for your recommendations") paints from
   the crescent's lower-right edge `[1490, 280, 1514, 304]` (L 63 at hue 90), gated against that patch's mean, ΔE 5.4 to
   6.5. Passed by Mark on the combined preview `253d8f7`, 2026-10-28 ("Love it! Gate passed!").
+- Vincent's wander, on for every visitor (2026-10-29, `src/scene/streetWander.ts` `WANDER`, `StreetWalk.tsx`; the record
+  `tasks/2026-10-29-vincent-wander.md`; `?wander=0` turns it off): a tap on open ground sends him there at the
+  spike's wander speed (0.19 world units a second, 2.4 times the lane's automatic walk), and a tap on the lane brings him back the way he came (`route`,
+  8 entries at most). He stands on the verge, the door paths and the square, off the lane (|offset| ≤ 0.06), a house, a
+  step, a wall, an object, the cypress, the church (0.02), a lamp post (0.015), a frog (0.02) and a trunk (0.03). A leg
+  is sampled every 0.01 and may not cross the garden rail. A tap is refused unless every 0.02 of its leg is in frame
+  (the half-field less 4°) and not hidden from the follow camera (three ground lines 0.025 apart, the houses grown 0.03,
+  the church 0.02), and refused where a house or the church hides the ground from the live camera (a tap on the
+  wall, Codex F1). A press any of whose samples, coalesced ones too, strays past 8 px is a drag and sends him nowhere
+  (Codex F2). The camera stays on the walk's rail at his lane coordinate, its aim turned toward him by at most
+  20°, eased over τ 0.4 s. At his tap he rests 0.5 s and raises the lantern (V1's turn, the body straight). On the
+  automatic walk he goes home 3.55 s after he arrives (Mark: "Yes, walk him back after the dwell"). With the walk
+  stopped, he stays. The mark is his lantern's halo at 0.023 over the ground, the raised glass's height (look pass 2).
+  The street's build unchanged (596,919 triangles, the same hash), the walk's worst point 1,429,793 (V1's), 60 fps at
+  stops 0 and 3 at dpr 1.5 (p50 16.7 ms, p95 at most 18.6, `main` 18.7). Two look passes of four. Untuned by Mark.
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)
