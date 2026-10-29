@@ -3,7 +3,13 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or
 > superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Revision 3 (2026-10-29, 18:45).** Codex's confirmation read of revision 2 (`review/codex-plan-r2.md`) closed five
+**Revision 4 (2026-10-29, 18:45).** Task 5's look passes are done (`C/t5/looks.md`): the design's levers took the
+moonlit wall from L 37.1 to 42.3 against 49.7, and the ground term's exemption (departure P7, outside the design's
+list, Mark's call at the gate) to 48.1. Task 2's ledger (`C/t2/ledger.md`) halved the four covers to the budget and
+raised the synthetic fixture's bound to 644,605. The Task 1 builder kept `wallSource` plaster with `litSource`,
+`shadeSource` and `litWalls` (three fields where revision 3 said one `paint` object: equivalent, kept).
+
+**Revision 3 (2026-10-29, 18:30).** Codex's confirmation read of revision 2 (`review/codex-plan-r2.md`) closed five
 of six and left F2 open: the church's `wallSource` was `churchLit`, so the retained face reached the door, the windows,
 the reveals and the step as `churchLit`, and the `windows` guard did not see it (the dark openings' strokes are in
 `strokes`). Now the church keeps `wallSource` `plaster`, the paint is a separate `paint` field, and the guard reads the
@@ -95,6 +101,7 @@ Each is open to Mark at the gate.
 | P3 | (f) "an ID-mask check in the plan" for the trees' cover | A distance test in `node --test` gates the move. Every line of sight to the door, the windows and the peak stays farther from each crown triangle than its vertices can sway. The ID frames at the gate check the rest once | A test runs on every build. A capture runs once. The sway (`LIFE.sway`, y² × 0.06 along x and 0.6 of that along z) deforms a crown, so a finite set of poses is not a bound (Codex F3) |
 | P4 | (e) "the church record's measure takes the class as a parameter" and masks inside the church's box | The measure masks by the new classes alone, no box | No house uses the church's sources, so the mask is the church's |
 | P5 | (b) the tones follow `lightOf` | The tones are fixed by name: the right wall `churchLit`, every other wall and gable `churchShade`, the list (b) gives | The tone is paint, not light. Under `CHURCH_LIGHT` the back faces read 1 (Codex F9). A light rule would paint them lit, against (b). They are hidden faces, clad at 0.25. The colour gate runs unlit |
+| P7 | (e) the levers are the ambient, the corner term, the recipes and the cover, and "nothing else is lifted by hand" | The church's two tones are also exempt from `wallShade`'s ground term (one line in `streetLight.ts`, by source). Look pass 4 | After the design's levers (passes 2 and 3) the moonlit wall read L 42.3 against its source's 49.7 and the gable 21.8 against 26.8. The cause is the foot shadow: the underpaint quad interpolates 0.5 to 0.75 of its mean, and the painting's church has none. With the exemption, 48.1 and 24.2, inside the bar. Every house keeps its shadow. Reversible by one line, the crops `t5/p3` (without) and `t5/probe-C` (with) side by side for Mark |
 | P6 | (a) each source "wider than the 10 × 21 px plaster patch" | `spire` is 10 × 130 and `belfry` 24 × 12: the shaft is 10 px wide and the band 12 px tall in the work painting | A wider rectangle leaves the painted church |
 
 ## Session mapping
