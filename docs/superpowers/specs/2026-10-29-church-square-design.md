@@ -180,11 +180,11 @@ circle in the light. Nothing moves fast, nothing glows on its own, and nothing i
 ## What each gate shows
 
 - Slice 1: 1:1 crops of the church at stops 3 and 4 on both viewports, before and after, beside the painting's church,
-  with the L measure; the two full frames at stop 4; the tree move as a plan drawing and the ID-mask check; the colour
-  gate per class; the triangle sweep's worst point and stop 4; perf at stops 0 and 3; the build hash named.
-- Slice 2: stop 4 with Vincent arrived and the owl's head turned to him, both viewports; a short frame sequence of the
-  turn and a blink; stop 3's nearest lamp with its moths, and the same under reduced motion; the triangle sweep; perf;
-  the draw calls at stop 0.
+  with the L measure. The two full frames at stop 4. The tree move as a plan drawing and the ID-mask check. The colour
+  gate per class. The triangle sweep's worst point and stop 4. Perf at stops 0 and 3. The build hash named.
+- Slice 2: stop 4 with Vincent arrived and the owl's head turned to him, both viewports. A short frame sequence of the
+  turn and a blink. Stop 3's nearest lamp with its moths, and the same under reduced motion. The triangle sweep. Perf.
+  The draw calls at stop 0.
 - Both: the six browser checks, the unit tests, the hashes, and Mark's pass on the preview.
 
 ## Left to the builder
