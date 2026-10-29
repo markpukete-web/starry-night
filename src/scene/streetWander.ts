@@ -57,6 +57,8 @@ export const WANDER = {
   frog: 0.02,
   /** a street tree's keep-off radius round its centre (d) */
   trunk: 0.03,
+  /** the square lamp's ring of flowers keep-off radius: 0.03 + 0.012 + 0.018 */
+  ring: 0.06,
   /** a house's footprint grown by this for the sight test, the painting houses' eave (f) */
   eave: 0.03,
   /** degrees inside the horizontal half-field (f) */
@@ -112,6 +114,8 @@ function keptOff(x: number, z: number): boolean {
     const p = laneAt(l.t, l.lateral)
     if (Math.hypot(x - p.x, z - p.z) < WANDER.post) return true
   }
+  const sqLamp = laneAt(STREET_LAMPS[6].t, STREET_LAMPS[6].lateral)
+  if (Math.hypot(x - sqLamp.x, z - sqLamp.z) < WANDER.ring) return true
   for (const f of FROGS) {
     const [fx, , fz] = frogPlace(f).position
     if (Math.hypot(x - fx, z - fz) < WANDER.frog) return true

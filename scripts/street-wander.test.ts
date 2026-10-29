@@ -603,3 +603,22 @@ test('stepWander: the automatic walk takes him home after the dwell (p)', () => 
   assert.ok(Math.abs(wrap(s.yaw - slot.yaw)) <= WANDER.yawSnap, 'his yaw is the slot\'s')
   assert.equal(s.turn, 0)
 })
+
+test('Vincent cannot stand in the ring of flowers, and can stand past it', () => {
+  const foot = laneAt(STREET_LAMPS[6].t, STREET_LAMPS[6].lateral)
+  assert.ok(!standable(foot.x, foot.z))
+  assert.equal(WANDER.ring, 0.06)
+  const points = Array.from({ length: 12 }, (_, k) => {
+    const a = (k / 12) * 2 * Math.PI
+    return [foot.x + 0.05 * Math.cos(a), foot.z + 0.05 * Math.sin(a)] as const
+  })
+  ;(WANDER as { ring: number }).ring = WANDER.post            // the ring off
+  const witnesses = points.filter(([x, z]) => standable(x, z))
+  ;(WANDER as { ring: number }).ring = 0.06
+  assert.ok(witnesses.length >= 9, `${witnesses.length} of 12 points stand without the ring (9 today, Codex's table)`)
+  for (const [x, z] of witnesses) assert.ok(!standable(x, z), `standable at ${x}, ${z}`)
+  // one point 0.08 from the foot toward the square's centre: on the disc and off everything kept off. If this fails,
+  // move the probe point, not the ring
+  const toCentre = Math.atan2(STREET_SQUARE.z - foot.z, STREET_SQUARE.x - foot.x)
+  assert.ok(standable(foot.x + 0.08 * Math.cos(toCentre), foot.z + 0.08 * Math.sin(toCentre)))
+})

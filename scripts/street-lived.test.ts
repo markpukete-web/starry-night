@@ -8,16 +8,18 @@ import { existsSync, readFileSync } from 'node:fs'
 import test from 'node:test'
 import { PerspectiveCamera, Raycaster, Vector2, Vector3 } from 'three'
 
+import palette from '../public/reference/palette.json' with { type: 'json' }
 import { FROG, frogPlace, FROGS } from '../src/scene/frog.ts'
 import { bladeVertex, bladeWidth, GRASS_BLADE } from '../src/scene/grassBlade.ts'
 import type { BakedMass } from '../src/scene/landDomes.ts'
-import { buildStreet, LIVED_CRAFT, type StreetBuild, WALL_PAINT } from '../src/scene/streetGeometry.ts'
+import { buildFlatPanel, buildStreet, LIVED_CRAFT, type StreetBuild, WALL_PAINT } from '../src/scene/streetGeometry.ts'
 import { grassChunks, grassDrawCount, grassRect, PLANT, plantChunks, plantHit } from '../src/scene/streetGrass.ts'
 import {
   doorOf,
   doorPathLegs,
   doorStepFoot,
   doorStepFrame,
+  FLOWERS,
   houseFrame,
   laneAt,
   laneParam,
@@ -38,7 +40,7 @@ import {
   walkPose,
   wallClearings,
 } from '../src/scene/streetLayout.ts'
-import { faceConfig, OUTLINE_FRACTION, type StreetFace } from '../src/scene/streetStrokes.ts'
+import { faceConfig, OUTLINE_FRACTION, sourceUnderpaint, srgbToLab, type StreetFace } from '../src/scene/streetStrokes.ts'
 import type { ImageData2D } from '../src/scene/useImageData.ts'
 import { decodePNG } from './lib/png.ts'
 
@@ -467,7 +469,7 @@ test('the default street fits its budget', { skip }, () => {
 
 test("K2's street without the lived-in parts", { skip }, () => {
   assert.ok(realPainting)
-  const build = buildStreet(realPainting, flow, masses, { grass: true, lived: false })!
+  const build = buildStreet(realPainting, flow, masses, { grass: true, lived: false, flowers: false })!
   assert.deepEqual(build.report.lived, { paths: [], objects: [] })
   const hash = computeBuildHash(build)
   assert.equal(hash, '918dd24d40740805', 'B1 hash matches')
@@ -896,11 +898,50 @@ test("the church's openings keep the plaster face (the design's non-goal, Codex 
 
 test("K2's walls without the lived-in parts", { skip }, () => {
   assert.ok(realPainting)
-  const build = buildStreet(realPainting, flow, masses, { grass: true, lived: false })!
+  const build = buildStreet(realPainting, flow, masses, { grass: true, lived: false, flowers: false })!
   assert.ok(
     build.report.faces.every((f) => f.lengthScale === 1),
     'every face reports lengthScale 1',
   )
   const hash = computeBuildHash(build)
   assert.equal(hash, '918dd24d40740805', 'B1 hash matches')
+})
+
+const deltaE = (a: readonly number[], b: readonly number[]) =>
+  Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2])
+
+test("a ring of flowers stands in the square lamp's pool, pale heads at the tips, and none without the lane", { skip }, () => {
+  assert.ok(realPainting)
+  const painting = realPainting
+  const OPTIONS = { grass: true } as const
+  const build = buildStreet(painting, flow, masses, OPTIONS)!
+  const f = build.report.lane.flowers!
+  const [lx, lz] = [build.report.lane.lamps[6].foot.x, build.report.lane.lamps[6].foot.z]
+  assert.deepEqual(f.centre, [lx, lz])
+  for (const [x, z] of f.roots) {
+    const r = Math.hypot(x - lx, z - lz)
+    assert.ok(r >= FLOWERS.radius - GRASS_BLADE.spread && r <= FLOWERS.radius + GRASS_BLADE.spread, `a root at ${r}`)
+  }
+  assert.equal(f.roots.length, f.blades)
+  assert.equal(f.headColours.length, f.heads)
+  assert.ok(f.blades >= 30 && f.blades <= 54 && f.heads >= 12 && f.heads <= 24)
+  assert.equal(f.triangles, 16 * f.blades + 8 * f.heads)
+  assert.ok(f.triangles <= 1100)
+  const window = srgbToLab(...(sourceUnderpaint(painting, 'windowLit', 1).map((c) => c * 255) as [number, number, number]))
+  for (const c of f.headColours) assert.ok(deltaE(srgbToLab(...c), window) > FLOWERS.headGap)   // deltaE: hypot of the three differences
+  for (const c of palette.regions.stars.colours.slice(0, 3)) {                                   // the helper's units, against the palette's own Lab (F4)
+    const rgb = [1, 3, 5].map((i) => parseInt(c.hex.slice(i, i + 2), 16)) as [number, number, number]
+    assert.ok(deltaE(srgbToLab(...rgb), c.lab) < 1, c.hex)
+  }
+  assert.equal(buildStreet(painting, flow, masses, { ...OPTIONS, lane: false })!.report.lane.flowers, null)
+  assert.equal(buildFlatPanel(painting, flow, masses)!.report.lane.flowers, null)
+  const without = buildStreet(painting, flow, masses, { ...OPTIONS, flowers: false })!
+  assert.equal(without.counts.triangles, build.counts.triangles - f.triangles)
+  const [sa, wa] = [build.strokes.arrays, without.strokes.arrays]                               // F5: the geometry is there
+  assert.equal(sa.indices.length - wa.indices.length, 3 * f.triangles)
+  assert.equal(sa.positions.length - wa.positions.length, 3 * (15 * f.blades + 9 * f.heads))
+  assert.deepEqual(sa.positions.slice(0, wa.positions.length), wa.positions)                    // the flowers are the bucket's tail
+  const ys = sa.positions.filter((_, i) => i >= wa.positions.length && i % 3 === 1)
+  assert.ok(Math.min(...ys) >= FLOWERS.rootY - 1e-9 && Math.max(...ys) <= FLOWERS.rootY + 0.03)
+  assert.equal(computeBuildHash(without), '46f2bc6ba04296ab')                                   // answer 6: the flag off is the base, byte for byte
 })
