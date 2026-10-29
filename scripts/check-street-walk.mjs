@@ -1166,6 +1166,8 @@ async function main() {
     await sleep(100)
     const home8 = (await c8.pose()).world
     if (away(home8, slotX, slotZ) > 1e-6 || Math.abs((await c8.t()) - t8) > 1e-9) c8.fail(`home is ${away(home8, slotX, slotZ)} from his slot, t ${await c8.t()}`)
+    // home, the aim eases back to the rail's: settled only once it has (n; Task 4's b03 survived without this)
+    await c8.settle('home on the lane')
 
     // a wheel turn sends him back and is dropped; the next one walks
     await c8.tap(false, P.px, P.py)
