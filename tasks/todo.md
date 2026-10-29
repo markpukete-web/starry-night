@@ -1,5 +1,15 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-10-29 (22:10): slice 1 passed by Mark, slice 2 (the owl and the moths) starting
+
+**Mark's pass:** "Gate passed." on the preview at 22:10, the shipped state. P7 stands. The mirrored tones stand. The
+ring stays. Probe B's white front is open to his word (`litWalls` in `church()`). PR #38 is his to merge. The pass is
+recorded in the Tunables entry and in `tasks/2026-10-29-church-square.md`.
+
+**Then:** slice 2 on `feat/church-owl` off `dec4671`, stacked on #38 until Mark merges it, then `git merge origin/main`.
+The plan `tasks/2026-10-29-church-owl-plan.md` from the design's slice 2 section. Codex's correctness read and a
+builder's buildability read come before any build. Its PR opens once #38 is in `main`.
+
 ## Pickup — 2026-10-29 (19:40): slice 1 gated and reviewed, PR #38 open for Mark's preview pass
 
 **Done by 19:40:** the gate on `1e3da3d` (the green step, the six browser checks, the sweep 1,433,053 against

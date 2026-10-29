@@ -176,3 +176,8 @@ the fix are for.
    Reversible by one line (`streetLight.ts`, the `church` test in `wallShade`). The crops above.
 2. **Probe B, the painting's own sides.** Call 1 (mirrored) is built. If the white front reads better to him, the
    change is `litWalls` in `church()`, and the front then reads 39 against 50 at this light.
+
+**Mark's pass (22:10):** "Gate passed." on the preview, the shipped state. P7 stands: the church has no foot shadow.
+Call 1's mirrored tones stand. The ring stays (his call 2 held it loosely, to go if it read as decoration). Probe B's
+white front was not asked for. It stays open to his word, `litWalls` in `church()`. Mark merges #38. Slice 2 (the owl
+and the moths) starts on this pass, as the design sequences it.

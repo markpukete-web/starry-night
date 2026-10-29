@@ -415,7 +415,8 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   the sweep's worst point 1,433,053 (desktop, `t` 0.26; the ceiling 1,444,930), 60 fps at stops 0 and 3 at dpr 1.5
   (p50 16.7 ms, p95 at most 18.6), 321 draw calls at stop 0. Four look passes of four, two probes for Mark (B the
   painting's own sides, C no foot shadow). Codex's branch review, three rounds: F1 (the heads lifted behind their
-  blades) fixed, then the depth guard bound to the emitted vertex, then BUILD. Awaiting Mark's pass on the preview.
+  blades) fixed, then the depth guard bound to the emitted vertex, then BUILD. Passed by Mark on the preview,
+  2026-10-29 22:10 ("Gate passed."): P7 and the mirrored tones as shipped, the ring kept, probe B open to his word.
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)
