@@ -22,7 +22,7 @@ import { PerspectiveCamera, Vector3 } from 'three'
 import { STATION_T, STREET_HOUSES, laneParam, vincentPlace, walkPose } from '../src/scene/streetLayout.ts'
 import { inFootprint } from '../src/scene/streetGrass.ts'
 import { PAUSE, WALK } from '../src/scene/streetWalk.ts'
-import { WANDER, initialWander, legSeen, standable, tripFrom, wanderTo } from '../src/scene/streetWander.ts'
+import { WANDER, followT, hidden, inFrame, initialWander, legSeen, standable, tripFrom, wanderTo } from '../src/scene/streetWander.ts'
 
 const appUrl = process.env.DIORAMA_CAPTURE_URL || 'http://127.0.0.1:5191/'
 const parsedUrl = new URL(appUrl)
@@ -93,7 +93,7 @@ function acceptedPoints(persp, size, box, view, t, onCanvas, { min = 0.12, max =
       const z = here.z + dz
       const d = Math.hypot(dx, dz)
       if (d < min || d > max || !standable(x, z)) continue
-      if (!wanderTo(initialWander(), here, x, z, view)) continue
+      if (!wanderTo(initialWander(), here, x, z, view) || hidden(persp.position.x, persp.position.z, x, z)) continue
       const [px, py] = toClient(persp, size, [x, 0, z])
       if (!insideCanvas(size, px, py, 40) || insideBox(box, px, py) || !onCanvas(px, py)) continue
       out.push({ x, z, px, py, d, dLane: Math.abs(laneParam(x, z)[0] - laneParam(here.x, here.z)[0]) })
@@ -103,20 +103,43 @@ function acceptedPoints(persp, size, box, view, t, onCanvas, { min = 0.12, max =
 }
 
 /**
- * The sight guard's qualification (Codex F8): the point is on the canvas by 24 px and outside his box, standable and
- * reached by a clear leg (so only the sight can refuse it), refused by `wanderTo` with the view, and the leg ending one
- * `WANDER.sightStep` short passes `legSeen`.
+ * The sight guard's qualification (Codex F8): the point is in front of the camera, on the canvas by 24 px and outside
+ * his box, and its pixel casts back to it (Codex r1 N1); standable, reached by a clear leg and seen from the live
+ * camera (so only the leg's sight can refuse it); refused by `wanderTo` with the view; the leg's own samples less the
+ * last are seen (so the last sample alone refuses it, `seenButLast`), and the leg ending one `WANDER.sightStep` short
+ * passes `legSeen`.
  */
 function sightQualifies(persp, size, box, view, t, x, z) {
   const here = slotAt(t)
+  const depth = new Vector3(x, 0, z).project(persp).z
+  if (!(depth > -1 && depth < 1)) return false
   const [px, py] = toClient(persp, size, [x, 0, z])
   if (!insideCanvas(size, px, py, 24) || insideBox(box, px, py)) return false
+  const back = groundCast(persp, size, px, py)
+  if (!back || Math.hypot(back[0] - x, back[1] - z) > 1e-4) return false
+  if (hidden(persp.position.x, persp.position.z, x, z)) return false
   if (!wanderTo(initialWander(), here, x, z, null)) return false
   if (wanderTo(initialWander(), here, x, z, view)) return false
   const len = Math.hypot(x - here.x, z - here.z)
   if (len <= WANDER.sightStep) return false
   const k = (len - WANDER.sightStep) / len
+  if (!seenButLast(tripFrom(here), here.x, here.z, x, z, view)) return false
   return legSeen(tripFrom(here), here.x, here.z, here.x + (x - here.x) * k, here.z + (z - here.z) * k, view)
+}
+
+/**
+ * `legSeen`'s own samples, the last left out, written here so a mutation of `legSeen` cannot move it (Codex r1 N1): with
+ * the last sample dropped from the module, no point is both refused and seen but for the last, and the case fails.
+ */
+function seenButLast(s, ax, az, bx, bz, view) {
+  const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, bz - az) / WANDER.sightStep))
+  for (let k = 1; k < n; k++) {
+    const x = ax + ((bx - ax) * k) / n
+    const z = az + ((bz - az) * k) / n
+    const pose = walkPose(followT(s, x, z), view.portrait)
+    if (hidden(pose.position[0], pose.position[2], x, z) || !inFrame(pose, x, z, view.halfFovDeg)) return false
+  }
+  return true
 }
 
 /** the qualifying point on a 0.01 grid over `reach` of the slot, nearest the canvas centre, off the page's chrome */
@@ -139,26 +162,41 @@ function sightPoint(persp, size, box, view, t, onCanvas, reach = 1.6) {
   return best
 }
 
-/** a house's wall: a point on the near face at 0.05 high, on the canvas, whose ground cast `wanderTo` refuses */
+/**
+ * A house's wall (Codex F4): a pixel on an 8 px grid whose ray meets a house's bare footprint below its eave before it
+ * reaches the ground, found by sampling the ray in plan, not by the page's sight test. Its ground point must be one
+ * `wanderTo` accepts with the view, so only the wall can refuse the tap. The pixel nearest the canvas centre.
+ */
 function wallPoint(persp, size, box, view, t, onCanvas) {
   const here = slotAt(t)
   const cx = size.left + size.width / 2
   const cy = size.top + size.height / 2
+  const ex = persp.position.x
+  const ey = persp.position.y
+  const ez = persp.position.z
+  const meetsWall = (x, z) => {
+    for (let k = 1; k < 400; k++) {
+      const f = k / 400
+      const sx = ex + (x - ex) * f
+      const sz = ez + (z - ez) * f
+      for (const h of STREET_HOUSES) {
+        const c = Math.cos(h.yaw)
+        const s = Math.sin(h.yaw)
+        const u = (sx - h.x) * c + (sz - h.z) * s
+        const v = -(sx - h.x) * s + (sz - h.z) * c
+        if (Math.abs(u) <= h.w / 2 && Math.abs(v) <= h.d / 2 && ey * (1 - f) < h.eave) return true
+      }
+    }
+    return false
+  }
   let best = null
-  for (const h of STREET_HOUSES) {
-    const c = Math.cos(h.yaw)
-    const s = Math.sin(h.yaw)
-    for (const [lu, lv] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-      const u = (lu * h.w) / 2
-      const v = (lv * h.d) / 2
-      const x = h.x + u * c - v * s
-      const z = h.z + u * s + v * c
-      const [px, py] = toClient(persp, size, [x, 0.05, z])
-      if (!insideCanvas(size, px, py, 24) || insideBox(box, px, py) || !onCanvas(px, py)) continue
+  for (let py = size.top + 24; py <= size.top + size.height - 24; py += 8) {
+    for (let px = size.left + 24; px <= size.left + size.width - 24; px += 8) {
+      if (insideBox(box, px, py) || !onCanvas(px, py)) continue
       const hit = groundCast(persp, size, px, py)
-      if (!hit || wanderTo(initialWander(), here, hit[0], hit[1], view)) continue
+      if (!hit || !meetsWall(hit[0], hit[1]) || !wanderTo(initialWander(), here, hit[0], hit[1], view)) continue
       const away = Math.hypot(px - cx, py - cy)
-      if (!best || away < best.away) best = { x, z, px, py, hit, away }
+      if (!best || away < best.away) best = { px, py, hit, away }
     }
   }
   return best
@@ -989,6 +1027,27 @@ async function main() {
           await page.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 0, clickCount: 1 })
         }
       },
+      // down, out 60 px and back to 2 px from the press, up: about 120 ms, inside the tap's 300 ms (Codex F2)
+      outAndBack: async (touch, x, y) => {
+        if (touch) {
+          await page.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 0 }] })
+          await sleep(40)
+          await page.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x + 60, y, id: 0 }] })
+          await sleep(40)
+          await page.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x + 2, y, id: 0 }] })
+          await sleep(40)
+          await page.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+        } else {
+          await page.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, button: 'none', buttons: 0 })
+          await page.send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1 })
+          await sleep(40)
+          await page.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: x + 60, y, button: 'left', buttons: 1 })
+          await sleep(40)
+          await page.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: x + 2, y, button: 'left', buttons: 1 })
+          await sleep(40)
+          await page.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: x + 2, y, button: 'left', buttons: 0, clickCount: 1 })
+        }
+      },
       // a mouse parked over the Pause control is off the canvas, so the hand stays off the grass; the control's label says its state
       pauseAt: () =>
         page.evaluate(() => {
@@ -1044,7 +1103,7 @@ async function main() {
 
     // the wall: a tap on a house leaves him on the lane
     const wall = wallPoint(sc.persp, sc.size, sc.box, sc.view, t8, maskD)
-    if (!wall) c8.fail('no house wall on the canvas at stop 1')
+    if (!wall) c8.fail('no house wall on the canvas at stop 1 whose ground the wander would accept')
     await c8.tap(false, wall.px, wall.py)
     await sleep(400)
     if ((await c8.wander()).mode !== 'lane') c8.fail(`a tap on a house's wall at [${wall.px.toFixed(0)}, ${wall.py.toFixed(0)}] (ground ${wall.hit.map((v) => v.toFixed(3))}) sent him: ${JSON.stringify(await c8.wander())}`)
@@ -1065,6 +1124,22 @@ async function main() {
     await page.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: P.px + 48, y: P.py, button: 'left', buttons: 0, clickCount: 1 })
     await sleep(400)
     if ((await c8.wander()).mode !== 'lane') c8.fail('a press and a drag of 48 px sent him')
+
+    // a drag out 60 px and back to 2 px from the press, within the tap's 300 ms, never sends him (Codex F2)
+    await c8.outAndBack(false, P.px, P.py)
+    await sleep(400)
+    if ((await c8.wander()).mode !== 'lane') c8.fail('a drag out 60 px and back to the press sent him')
+
+    // the same drag folded into one move, as a browser may coalesce its samples (Codex r1): the move's own point is 2 px
+    // from the press, its first coalesced sample 60 px
+    await page.evaluate(`window.__pid = null; window.addEventListener('pointerdown', (e) => { window.__pid = e.pointerId }, { once: true })`)
+    await page.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: P.px, y: P.py, button: 'none', buttons: 0 })
+    await page.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: P.px, y: P.py, button: 'left', buttons: 1, clickCount: 1 })
+    const folded = await page.evaluate(`(() => { const o = { pointerId: window.__pid, isPrimary: true, pointerType: 'mouse', buttons: 1, bubbles: true, clientY: ${P.py} }; const at = (x) => new PointerEvent('pointermove', { ...o, clientX: x }); const e = new PointerEvent('pointermove', { ...o, clientX: ${P.px + 2}, coalescedEvents: [at(${P.px + 60}), at(${P.px + 2})] }); window.dispatchEvent(e); return e.getCoalescedEvents().length })()`)
+    await page.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: P.px + 2, y: P.py, button: 'left', buttons: 0, clickCount: 1 })
+    await sleep(400)
+    if (folded !== 2) c8.fail(`the folded move carried ${folded} coalesced samples, not 2`)
+    if ((await c8.wander()).mode !== 'lane') c8.fail('a drag out 60 px and back folded into one move sent him')
 
     // the tap: he goes, and arrives within the trip's length over his speed, plus a second
     const park = await c8.pauseAt()
@@ -1124,6 +1199,8 @@ async function main() {
     await sleep(100)
     const home8 = (await c8.pose()).world
     if (away(home8, slotX, slotZ) > 1e-6 || Math.abs((await c8.t()) - t8) > 1e-9) c8.fail(`home is ${away(home8, slotX, slotZ)} from his slot, t ${await c8.t()}`)
+    // home, the aim eases back to the rail's: settled only once it has (n; Task 4's b03 survived without this)
+    await c8.settle('home on the lane')
 
     // a wheel turn sends him back and is dropped; the next one walks
     await c8.tap(false, P.px, P.py)
@@ -1137,7 +1214,7 @@ async function main() {
     await c8.wheel()
     await sleep(800)
     if (!((await c8.t()) - t8 > 0.01 / L)) c8.fail(`the next wheel did not walk: t ${await c8.t()}`)
-    console.log(`PASS: the wander, desktop stop 1: a wall and a 48 px drag leave him; a tap at [${P.px.toFixed(0)}, ${P.py.toFixed(0)}] sends him ${trip.toFixed(3)} and he arrives in ${(took / 1000).toFixed(2)} s (bound ${(c8.bound(trip, 1000) / 1000).toFixed(2)} s), the camera on the rail, the aim ${aim8.toFixed(1)} degrees, the trail ${herePush.toFixed(2)} at his point and ${slotPush} at his slot; his box toggles the walk, his old slot and a wheel turn bring him home`)
+    console.log(`PASS: the wander, desktop stop 1: a wall at [${wall.px}, ${wall.py}] (ground ${wall.hit.map((v) => v.toFixed(3))}, accepted but for the wall), a 48 px drag and a 60 px drag out and back, apart and folded into one move, leave him; a tap at [${P.px.toFixed(0)}, ${P.py.toFixed(0)}] sends him ${trip.toFixed(3)} and he arrives in ${(took / 1000).toFixed(2)} s (bound ${(c8.bound(trip, 1000) / 1000).toFixed(2)} s), the camera on the rail, the aim ${aim8.toFixed(1)} degrees, the trail ${herePush.toFixed(2)} at his point and ${slotPush} at his slot; his box toggles the walk, his old slot and a wheel turn bring him home`)
 
     // ---- 8b. desktop, stop 2: the sight guard
     await c8.open(DESKTOP, false, 2, 'input')
@@ -1182,7 +1259,8 @@ async function main() {
     // home, then reduced motion turned on mid-walk
     await c8.wheel()
     await c8.until(`window.__wander().mode === 'lane'`, c8.bound(farTrip, 4000), 'him home before the reduced-motion leg')
-    await sleep(200)
+    // the aim eases back for up to 3.3 s; F's pixel is the unturned camera's, so wait for it (round 2)
+    await c8.settle('home before the reduced-motion leg')
     await c8.tap(false, F.px, F.py)
     await c8.park(park2)
     await c8.until(`window.__wander().mode === 'going'`, 1000, 'the second far tap sending him')
@@ -1225,6 +1303,9 @@ async function main() {
     const Q = phoneSpots[0]
     const [phoneSlotX, phoneSlotZ] = slotXZ(tPhone)
     const phoneTrip = Math.hypot(Q.x - phoneSlotX, Q.z - phoneSlotZ)
+    await c8.outAndBack(true, Q.px, Q.py)
+    await sleep(400)
+    if ((await c8.wander()).mode !== 'lane' || (await c8.auto()) !== false) c8.fail(`a finger's drag out 60 px and back sent him or toggled the walk: ${JSON.stringify(await c8.wander())}`)
     await c8.tap(true, Q.px, Q.py)
     await c8.until(`window.__wander().mode === 'going'`, 1000, 'a finger sending him')
     await c8.until('window.__wander().arrived > 0', c8.bound(phoneTrip, 1000), 'him arriving on the phone')

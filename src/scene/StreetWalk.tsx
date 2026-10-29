@@ -27,7 +27,7 @@ import {
 import { SQUARE_TOP } from './frog.ts'
 import { lanternShown, walkOn, type StreetFlags } from './streetMode.ts'
 import { strokeGeometry } from './strokeGeometry.ts'
-import { classifyGesture, type PointerSample } from './touchSurge.ts'
+import { classifyGesture, strayed, type PointerSample } from './touchSurge.ts'
 import type { ImageData2D } from './useImageData.ts'
 import {
   buildVincent,
@@ -64,6 +64,7 @@ import { material, plainGeometry } from './streetMaterial.ts'
 import {
   aimAngle,
   followT,
+  hidden,
   initialWander,
   offLanePose,
   stepWander,
@@ -160,6 +161,8 @@ export default function StreetWalk({
     pointerId: number
     down: PointerSample
     vincent: boolean
+    /** some sample of the pointer went past the tap's allowance, so a release back at the press is not a tap (Codex F2) */
+    dragged: boolean
   } | null>(null)
 
   // the wander (2026-10-29): module state while he is off the lane. On the lane its `turn` is kept equal to the pause's
@@ -369,7 +372,8 @@ export default function StreetWalk({
     return { portrait, halfFovDeg: (Math.atan(Math.tan((persp.fov * Math.PI) / 360) * aspect) * 180) / Math.PI }
   }, [camera, size, portrait])
 
-  // a tap's ground point, in the street's frame (the ground is the plane at the anchor's height)
+  // a tap's ground point, in the street's frame (the ground is the plane at the anchor's height). Null where a house or
+  // the church hides that ground from the camera: the tap is on its wall (Codex F1)
   const groundHit = useCallback(
     (clientX: number, clientY: number): [number, number] | null => {
       const persp = camera as PerspectiveCamera
@@ -378,7 +382,9 @@ export default function StreetWalk({
       const dir = ndc.unproject(persp).sub(persp.position).normalize()
       if (dir.y >= 0) return null
       const s = (offset[1] - persp.position.y) / dir.y
-      return [persp.position.x + s * dir.x - offset[0], persp.position.z + s * dir.z - offset[2]]
+      const x = persp.position.x + s * dir.x - offset[0]
+      const z = persp.position.z + s * dir.z - offset[2]
+      return hidden(persp.position.x - offset[0], persp.position.z - offset[2], x, z) ? null : [x, z]
     },
     [camera, offset, gl.domElement],
   )
@@ -571,8 +577,18 @@ export default function StreetWalk({
         pointerId: e.pointerId,
         down: { x: e.clientX, y: e.clientY, ms: performance.now() },
         vincent: isVincent,
+        dragged: false,
       }
       setStreetGesture({ pointerId: e.pointerId, vincent: isVincent })
+    }
+
+    const onPointerMove = (e: PointerEvent) => {
+      const g = activeGestureRef.current
+      if (g?.pointerId !== e.pointerId) return
+      // the browser may fold several samples into one move: read them all, or the move itself where there are none (Codex r1)
+      const folded = e.getCoalescedEvents?.() ?? []
+      const samples = (folded.length ? folded : [e]).map((p) => ({ x: p.clientX, y: p.clientY }))
+      if (strayed(g.down, samples)) g.dragged = true
     }
 
     const onPointerCancel = (e: PointerEvent) => {
@@ -597,7 +613,7 @@ export default function StreetWalk({
         walkStateRef.current = toggleWalk(walkStateRef.current, still)
         // a wheel turned before the tap must not move him after it (Codex K1)
         queuedWheelPxRef.current = 0
-      } else if (res === 'tap' && !gesture.vincent && wanderOn && !reduced && !still) {
+      } else if (res === 'tap' && !gesture.vincent && !gesture.dragged && wanderOn && !reduced && !still) {
         // a tap that misses him: the open ground sends him there, the lane brings him back (l: nothing under reduced motion or the still state)
         const hit = groundHit(e.clientX, e.clientY)
         if (hit) sendTo(hit[0], hit[1], viewNow())
@@ -610,6 +626,7 @@ export default function StreetWalk({
     window.addEventListener('blur', onBlurOrHidden)
     document.addEventListener('visibilitychange', onVisibilityChange)
     window.addEventListener('pointerdown', onPointerDown)
+    window.addEventListener('pointermove', onPointerMove)
     window.addEventListener('pointerup', onPointerUp)
     window.addEventListener('pointercancel', onPointerCancel)
 
@@ -621,6 +638,7 @@ export default function StreetWalk({
       window.removeEventListener('blur', onBlurOrHidden)
       document.removeEventListener('visibilitychange', onVisibilityChange)
       window.removeEventListener('pointerdown', onPointerDown)
+      window.removeEventListener('pointermove', onPointerMove)
       window.removeEventListener('pointerup', onPointerUp)
       window.removeEventListener('pointercancel', onPointerCancel)
       gl.domElement.style.touchAction = prevTouchAction
