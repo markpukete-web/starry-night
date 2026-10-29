@@ -1259,7 +1259,8 @@ async function main() {
     // home, then reduced motion turned on mid-walk
     await c8.wheel()
     await c8.until(`window.__wander().mode === 'lane'`, c8.bound(farTrip, 4000), 'him home before the reduced-motion leg')
-    await sleep(200)
+    // the aim eases back for up to 3.3 s; F's pixel is the unturned camera's, so wait for it (round 2)
+    await c8.settle('home before the reduced-motion leg')
     await c8.tap(false, F.px, F.py)
     await c8.park(park2)
     await c8.until(`window.__wander().mode === 'going'`, 1000, 'the second far tap sending him')
