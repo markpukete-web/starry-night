@@ -3,6 +3,12 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or
 > superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+**Revision 3 (2026-10-29, 18:45).** Codex's confirmation read of revision 2 (`review/codex-plan-r2.md`) closed five
+of six and left F2 open: the church's `wallSource` was `churchLit`, so the retained face reached the door, the windows,
+the reveals and the step as `churchLit`, and the `windows` guard did not see it (the dark openings' strokes are in
+`strokes`). Now the church keeps `wallSource` `plaster`, the paint is a separate `paint` field, and the guard reads the
+openings' own strokes. The class test skips the openings' vertices (`src` 255) in the nave's box.
+
 **Revision 2 (2026-10-29, 18:15).** Codex's correctness read of revision 0 (`review/codex-plan-r0.md`, REVISE, F1 to
 F10 and eight answers) is folded in "What revision 2 changed". Revision 1 had closed five of the ten (F1, F4, F6, F7,
 F8). Five were open (F2, F3, F5, F9, F10), and two of the answers (6 and 7). Task 4 was building on Argon from revision
@@ -75,6 +81,8 @@ Codex's read is of revision 0. Its probes ran inline on the pinned sources, read
 | Answer 3: `DoubleSide` | Moot in a distance test: `intersectTriangle` with culling off | Task 3 Step 1 |
 | Answer 6: `flowers: false` proves no byte identity | A guard pins the default build's hash with `flowers: false` to the base's, before and after | Task 4 Step 1, Step 5 |
 | Answer 7: three of the 12 ring witnesses stand outside the square and were never standable | The witnesses are the points standable with the ring off (`WANDER.ring` set to `WANDER.post` in the test). At least 9 of 12 are, and none stands with it on | Task 4 Step 1 |
+| Revision 3, Codex's confirmation read, point 1: F2 stayed open. `wallSource: 'churchLit'` built the retained face with `churchLit`, so the door's dark strokes changed colour while the `windows` hash held | `StreetShape.paint` carries the two tones and the lit walls. The church's `wallSource` stays `plaster`, so every retained consumer reads it. The guard is the openings' strokes (`cls` 255 in the nave's box) on the real painting, count and colour hash. The `windows` guard is dropped: it did not discriminate | Task 1 Interfaces, Step 1, Step 4 |
+| Revision 3: the class test's box rule would fail on the openings', the reveals' and the step's vertices (`src` 255 inside the nave's box) | Inside the nave's box a vertex's `src` is 10, 11 or 255. Inside the belfry's, 13 or 255 below its top | Task 1 Step 1 |
 
 ## Where this plan departs from the design's text
 
@@ -225,10 +233,11 @@ Five inputs the design implies and no decision names. Each has its test in the t
   `churchShade: { width: [0.075, 0.11], length: [0.42, 0.85], axis: [0, 1], blend: 0.75, cover: 3.5 }`,
   `spire: { width: [0.05, 0.09], length: [0.7, 1.9], axis: [0, 1], blend: 0.9, cover: 6 }`,
   `belfry: { width: [0.08, 0.13], length: [0.28, 0.47], axis: [1, 0], blend: 0.75, cover: 3.5 }`.
-  `SOURCE_CLASSES`: `churchLit: 10, churchShade: 11, spire: 12, belfry: 13`. `StreetShape.shadeSource?: StreetSourceName`
-  and `StreetShape.litWalls?: string[]`: a wall or gable named in `litWalls` is clad from `wallSource`, every other one
-  from `shadeSource` when it is set. No light rule: Codex's probe read the back and the back gable at 1 under
-  `CHURCH_LIGHT`, so any light rule paints them lit, and the design lists them shade.
+  `SOURCE_CLASSES`: `churchLit: 10, churchShade: 11, spire: 12, belfry: 13`.
+  `StreetShape.paint?: { lit: StreetSourceName; shade: StreetSourceName; litWalls: string[] }`: when set, a wall or
+  gable named in `litWalls` is clad from `lit`, every other one from `shade`. `wallSource` stays what the retained
+  face reads (the church: `plaster`, as today). No light rule: Codex's probe read the back and the back gable at 1
+  under `CHURCH_LIGHT`, so any light rule paints them lit, and the design lists them shade.
   The `cls` of a face whose source is one of the four: 10. The ID colours in the shader, 10 → (1, 128/255, 128/255),
   11 → (128/255, 1, 1), 12 → (1, 128/255, 1), 13 → (128/255, 128/255, 1), which the canvas captures as (255, 188, 188),
   (188, 255, 255), (255, 188, 255), (188, 188, 255). The report's faces carry `source` already.
@@ -259,15 +268,19 @@ test('the tones do not depend on the light flag', () => { /* guard */
 })
 ```
 
-  In `scripts/street-lived.test.ts`, a guard for the design's non-goal (F2): the `windows` buffer's hash,
-  `createHash('sha256').update(JSON.stringify([w.positions, w.colors, w.indices, w.cls, w.src])).digest('hex').slice(0, 16)`
-  of the default build's `windows`, equals the value computed at the base commit and named in the test. It passes before
-  the code and after it: the door's panel, the three side windows and the belfry's openings keep the plaster face.
+  In `scripts/street-lived.test.ts`, a guard for the design's non-goal (F2), on the real painting's default build: the
+  church's openings are the `strokes` vertices with `cls` 255 inside the nave's oriented box grown by 0.005 (the door's
+  panel and the three side windows, traced from the retained face's `plaster`). Their count, and
+  `createHash('sha256').update(JSON.stringify(<their colours, three floats each, in vertex order>)).digest('hex').slice(0, 16)`,
+  equal the values computed at the base commit and named in the test. It passes before the code and after it. A
+  vertex is inside the box when, with `dx = x − nave.x`, `dz = z − nave.z`, `u = dx cos(yaw) + dz sin(yaw)` and
+  `v = −dx sin(yaw) + dz cos(yaw)`, `|u| ≤ w / 2 + 0.005` and `|v| ≤ d / 2 + 0.005` (`STREET_CHURCH.nave`).
   In `scripts/street-build.test.ts`, the test "every vertex of underpaint and strokes has a source class, and the
   church is plaster" becomes "…and the church is its own", and fails before the code on the church's `src`. The range
   check accepts `0..6`, `10..13` and `255`, and refuses 14. A stroke or underpaint vertex is the church's when it lies
-  inside the nave's oriented box grown by 0.005 (then its `src` is 10 or 11 and its `cls` 10) or inside the belfry's
-  square grown by 0.005 (then `src` 13 and `cls` 10 below `belfry.topY − ground`, `src` 12 and `cls` 10 above). The
+  inside the nave's oriented box grown by 0.005 (then its `src` is 10 or 11 with `cls` 10, or 255: an opening, a
+  reveal or the step) or inside the belfry's square grown by 0.005 (then `src` 13 with `cls` 10 or 255 below
+  `belfry.topY − ground`, `src` 12 with `cls` 10 above). The
   plaster houses' strokes stay `src` 2, `cls` 0. The nave's box: `STREET_CHURCH.nave`'s `x, z, yaw, w, d`; the
   belfry's: `cx, cz, yaw, width`; the ground `islandHeightAt(VILLAGE_CHURCH.belfry.cx, VILLAGE_CHURCH.belfry.cz)`.
   In `scripts/street-lived.test.ts`, line 865's `churchPlasterRibbons` 729 becomes the church's own sources' ribbons,
@@ -275,19 +288,20 @@ test('the tones do not depend on the light flag', () => { /* guard */
 
 - [ ] **Step 2: run them.** `node --test scripts/street-church.test.ts scripts/street-build.test.ts
   scripts/street-lived.test.ts`. Expected: the tones test and the belfry test fail (`churchLit` is not a source), the
-  class test fails on `src` 2, the ribbons test on 0. The `windows` guard passes.
+  class test fails on `src` 2, the ribbons test on 0. The openings' guard passes.
 
 - [ ] **Step 3: the sources.** The four rectangles and recipes from the Interfaces, with a one-line comment each
   naming `C/t0/sources.md` and `recipe.md`. `SOURCE_CLASSES` gains the four numbers (TypeScript requires both).
 
-- [ ] **Step 4: the tones.** `StreetShape` gains `shadeSource?` and `litWalls?`. In `buildHouse`, each of the four
-  wall faces and the two gable faces is made by `orientedFace` into a variable before it is clad (the gables are inline
-  today, B7). Then `const painted = shape.shadeSource && !shape.litWalls?.includes(name) ? { ...face, source:
-  shape.shadeSource } : face`, and `clad` or `cladRound` takes `painted`. `wallFaces` keeps `face`, so `recessedDoor`,
-  the front `opening`, the side windows and the step read `plaster` as today (F2, the design's non-goal). `church()`
-  passes `wallSource: 'churchLit', shadeSource: 'churchShade', litWalls: ['right']`. The belfry: `clad` takes
-  `{ ...face, source: 'belfry' }` and `opening` keeps `face`. The spire's faces take `source: 'spire'`. In `clad`,
-  `cls` is 10 when the face's source is one of the four, else as today.
+- [ ] **Step 4: the tones.** `StreetShape` gains `paint?`. In `buildHouse`, each of the four wall faces and the two
+  gable faces is made by `orientedFace` into a variable before it is clad (the gables are inline today, B7). Then
+  `const painted = shape.paint ? { ...face, source: shape.paint.litWalls.includes(name) ? shape.paint.lit :
+  shape.paint.shade } : face`, and `clad` or `cladRound` takes `painted`. `wallFaces` keeps `face`, whose source is
+  `wallSource`, so `recessedDoor`, the front `opening`, the side windows and the step read `plaster` as today (F2, the
+  design's non-goal). `church()` keeps `wallSource: wallSource(nave.wall, 100)` and adds `paint: { lit: 'churchLit',
+  shade: 'churchShade', litWalls: ['right'] }`. The belfry: `clad` takes `{ ...face, source: 'belfry' }` and `opening`
+  keeps `face`. The spire's faces take `source: 'spire'`. In `clad`, `cls` is 10 when the face's source is one of the
+  four, else as today. The report's face is the one `clad` receives, so the tones test reads the painted source.
 
 - [ ] **Step 5: the ID colours.** `idInjection` gains the four lines for 10 to 13 (the shader values above). In
   `check-street-colour.ts`: the `--sources` mode's `maskIndices` and `SOURCES` gain the four, each `ref` from
