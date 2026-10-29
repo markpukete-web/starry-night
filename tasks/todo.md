@@ -15,6 +15,19 @@ the bigger task, on its own budget). Briefs `C/owl/briefs/builder-t1-r0.md`, `bu
 `C/owl/t1/report.md`, `C/owl/t2/report.md`. Then the Lead's gate on each, the merge, the look passes (Task 3), the
 gate (Task 4, `C/owl/t4/gate.sh` ready), Codex's branch review, and the PR once #38 is in `main`.
 
+**Slice 2 (23:55, Mark's close: "record where we at, I am calling it for a night"):** both tasks are merged on
+`feat/church-owl`, local only, nothing pushed. The owl: Argon's build under revision 2 (`5d1e42c`: 544 triangles,
+8 owl tests, the suite 494, case 20's seven pages, the sightline margin 0.12247), Codex's bounded read of revision 2
+BUILD (`C/owl/review/codex-plan-r2.md`, Test 2's `mean(front)` 0.8286 against 0.8, `lead-plan-r2.md`), the Lead's
+gate green (`C/owl/t1/lead-gate.md`: two mutants caught, tsc, lint, 494), merged `91da265`. The owl's look pass 1,
+a first read only (`C/owl/t3/notes.md`, `owl1/`): at stop 4 the gable's rake hides the body, so a 10 px head with a
+pale face peeks over it on the desktop and a 4 px nub on the phone; at stop 3 the whole bird shows side-on, 8 px.
+**Next session, first:** the owl's pass 2 with `OWL.back` smaller (0.03 to 0.04) or the perch at the peak, then
+`OWL.size` if the phone still loses it (the sightline test and Test 4 re-run); then Task 4's gate
+(`C/owl/t4/gate.sh 91da265` or the pass-2 head, under the browser lock), the record `tasks/2026-10-29-church-owl.md`,
+the Tunables entry, Codex's branch review (`w4:p4`), the PR once Mark merges #38 (open at 23:32). The capture script
+`C/owl/t3/capture-moths.mjs <out> 5218 <station> [&walkT=0.9]` takes three frames on the moths' clock.
+
 **Slice 2 (23:35):** Task 2, the moths, built by the Sonnet builder, gated (tsc, lint, 486 tests, two mutants
 caught) and merged, `e1cf321`. Look pass 1 at stop 3 (`C/owl/t3/notes.md`): in the lantern's own amber the moths
 read as sparks, so the paint is mixed 0.6 toward white (`MOTHS.pale`, `49e6d0a`, a departure from the design's (m)
