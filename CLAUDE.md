@@ -391,6 +391,31 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   The street's build unchanged (596,919 triangles, the same hash), the walk's worst point 1,429,793 (V1's), 60 fps at
   stops 0 and 3 at dpr 1.5 (p50 16.7 ms, p95 at most 18.6, `main` 18.7). Two look passes of four. Passed by
   Mark on the preview, 2026-10-29 ("Passed"), untuned.
+- The church and its square, slice 1 (2026-10-29, `src/scene/streetStrokes.ts` `STREET_SOURCES`, `SOURCE_STROKES`,
+  `streetGeometry.ts` `church()`, `flowers()`, `streetLight.ts` `CHURCH_LIGHT`, `wallShade`, `streetLayout.ts`
+  `TREE_SPECS`, `FLOWERS`, `streetWander.ts` `WANDER.ring`; the design
+  `docs/superpowers/specs/2026-10-29-church-square-design.md`, the record `tasks/2026-10-29-church-square.md`): the
+  church paints from its own four sources in the 1600 × 1267 work scan, `churchLit` [886, 1050, 906, 1072] (L p50
+  49.7), `churchShade` [936, 1056, 954, 1094] (26.8), `spire` [904, 860, 914, 990] (48.9), `belfry` [898, 1000, 922,
+  1012] (14.4). The tones by wall name (Mark's call 1, mirrored: the right wall `churchLit`, the front, its gable, the
+  back and the left `churchShade`), `wallSource` plaster for the openings, the step and the reveals. The recipes:
+  churchLit width [0.11, 0.13] length [0.33, 0.8] cover 2.5, churchShade [0.095, 0.11] [0.42, 0.85] cover 2.2, spire
+  [0.05, 0.09] [0.7, 1.9] along the shaft cover 2.5, belfry [0.08, 0.13] [0.28, 0.47] across cover 1.25 (the measured
+  covers 3.5 / 3.5 / 6 / 3.5 put the street at 631,507 triangles; halved by the ledger, then moved between the four
+  in look pass 3). `CHURCH_LIGHT` ambient 0.81 (the moonlit side at 0.996 of `max` 1), key 0.9. The two tones exempt
+  from `wallShade`'s corner term (look pass 2) and its ground term (pass 4, departure P7, Mark's call: the painting's
+  church has no foot shadow, and with it the moonlit wall read L 42 against 50). At stop 4: churchLit 48.1, churchShade
+  24.2, spire 48.6, belfry 14.7. At stop 3 the front's left half sits under the `t` 0.65 lamp's halo and reads 54; its
+  columns outside the halo read 26. The four sources take ID classes 10 to 13 (`ids=2`), one church class in `ids=1`.
+  The trees `orchard-lower` at map (666, 181) and `olive-right` at (308, 184), 0.049 and 0.048 from the nave, the sway
+  bounded against every line of sight from stops 3 and 4 (least margin 0.122). `FLOWERS` radius 0.03, 6 clumps, scale
+  0.5, heads 2 to 4 a clump 0.0035 wide, 5 Lab from the lit window's underpaint, roots at y 0.005, lifted 0.0004 toward
+  stop 4's eye: 45 blades, 19 heads, 872 triangles, appended last with class and source 255; `WANDER.ring` 0.06.
+  The street 600,179 triangles (the base 596,919, the design's bound 602,000), the church 763 ribbons (the cap 1,600),
+  the sweep's worst point 1,433,053 (desktop, `t` 0.26; the ceiling 1,444,930), 60 fps at stops 0 and 3 at dpr 1.5
+  (p50 16.7 ms, p95 at most 18.6), 321 draw calls at stop 0. Four look passes of four, two probes for Mark (B the
+  painting's own sides, C no foot shadow). Codex's branch review, three rounds: F1 (the heads lifted behind their
+  blades) fixed, then the depth guard bound to the emitted vertex, then BUILD. Awaiting Mark's pass on the preview.
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)
