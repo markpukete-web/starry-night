@@ -1,4 +1,4 @@
-# Vincent's wander, the slice: the plan, revision 2 (2026-10-29)
+# Vincent's wander, the slice: the plan, revision 3 (2026-10-29)
 
 > **For agentic workers:** a Sonnet `builder` builds Tasks 1 and 2, the Lead the rest. Steps use checkboxes.
 
@@ -19,7 +19,9 @@ Mark's call, 2026-10-29 09:58: make it a slice.
 builder's A1 to F (`review/builder-plan-r0.md`). Revision 0 is `review/plan-r0.md`. **Revision 2** answers Codex's
 confirmation read (`review/codex-plan-r1.md`): N1, an interrupted return that took an unchecked shortcut, N2, the yaw
 at the return's end, and F8's two browser controls. The main change: he keeps the points each leg began at, and he goes
-home back through them, so every leg home is a leg already checked, walked backwards.
+home back through them, so every leg home is a leg already checked, walked backwards. **Revision 3** answers the one
+item Codex's closing read left open (`review/codex-plan-r2.md`): the sight guard's browser tap was off the canvas on
+the phone, so the phone's run picks its own point.
 
 ## The locked criterion, and how this slice reads it
 
@@ -114,7 +116,8 @@ it. Codex's review of revision 0: "The plan's positional reading holds." The gat
   as in the spike. Escape and "Back to the painting" unmount the street, and a second entry starts him on the lane.
 - (n) **The capture seams.** `__vincentForm().settled` is false while he is off the lane and moving, while `turn` is
   between 0 and 1, while his yaw turns, and while the aim is not at its target. `__wanderTo(x, z)` runs `wanderTo`
-  with no sight tests, for captures. `__wander()` reports `{ mode, x, z, tx, tz, route, arrived, turn, aimDeg }`.
+  with no sight tests, for captures. `__wander()` reports `{ mode, x, z, tx, tz, route, arrived, turn, aimDeg, view }`, `view` being the `View` a tap
+  would use now.
 - (o) **The lint fix**, done in Task 0 (`46d0d0b`): `globalIgnores(['dist', 'scratch', '.claude'])`. `eslint .`
   walked into repo copies under `scratch/` and builder worktrees under `.claude/worktrees/`. Each carries its own
   `eslint.config.js`, and typescript-eslint then failed every file with a parsing error.
@@ -209,7 +212,9 @@ Every new value is a first guess. The look passes may move them, and each move g
   - `wanderTo(s: WanderState, here: Here, x: number, z: number, view: View | null): WanderState | null`. `here` is his
     current place: his lane slot and the walk's `t` and yaw when on the lane, else his wander position. `view` null
     skips the sight tests (the capture seam). It returns `null` when the tap does nothing. From the lane it sets the
-    trip's `route`, `t0`, `lane0` and `syaw` from `here` before it tests the leg.
+    trip's `route`, `t0`, `lane0` and `syaw` from `here` with `tripFrom` before it tests the leg.
+  - `tripFrom(here: Here): WanderState`, the trip a tap from the lane starts: `route` `[here]`, `t0` `here.t`,
+    `syaw` `here.yaw`.
   - `type Here = { x: number; z: number; yaw: number; t: number }`.
   - `type WanderState = { mode: 'lane' | 'going' | 'returning'; x; z; yaw; tx; tz; route: [number, number][];
     syaw; t0; lane0; walked; arrived; turn }`. `lane0` is `laneParam(...route[0])[0]`. `arrived` is 0 while he
@@ -297,9 +302,14 @@ Every new value is a first guess. The look passes may move them, and each move g
   - a tap on a house's wall at stop 1 leaves `mode` `lane`.
   - with him off the lane, a tap on his figure toggles the walk and leaves him there. A tap at his old lane slot, off
     his figure, does not toggle the walk (`__streetWalk().auto` unchanged) and sends him back.
-  - at stop 2, Codex's `t` 0.44 fixture `(0.5412437098392479, -1.4405122792319607)`: first assert its projected point
-    is outside `__vincentBox()`. Tapped for real, `mode` stays `lane` and `__streetWalk().auto` is unchanged. It is
-    refused at its leg's last sight sample, so the mutation that drops that sample turns this case red.
+  - the sight guard, on each viewport (Codex F8). A point qualifies if it projects inside the canvas by at least
+    24 px, lies outside `__vincentBox()`, is refused by `wanderTo` with `__wander().view`, and passes `legSeen` with
+    the leg's last sample left out (the leg ending one `WANDER.sightStep` short). On desktop at stop 2 the point is
+    Codex's `(0.5412437098392479, -1.4405122792319607)`, and the check asserts it qualifies. On the phone it is off the
+    canvas (Codex r2: x NDC 1.078 at 390 × 844), so the check searches the verge at stop 2 on a 0.01 grid, then stops 1
+    and 3, takes the first point that qualifies, and prints it. No point at any of the three stops fails the case.
+    Tapped for real, `mode` stays `lane` and `__streetWalk().auto` is unchanged. The mutation that drops the last
+    sample turns both viewports red.
   - the trail at his feet (Codex F8): send him to a verge point at least 0.1 from his lane slot. Once he has arrived,
     `__grassPushNear` at his position is over 0. At 6 s or more after he left the slot (the trail closes 4 to 5 s
     after a release, D1), it is 0 at the slot and still over 0 at his position. The hand stays off the canvas.
