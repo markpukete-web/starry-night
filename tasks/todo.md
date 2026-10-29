@@ -14,8 +14,10 @@ notification. The look server on 5199 stopped.
 **For Mark at the preview:** P7 (the church without a foot shadow; one line in `streetLight.ts`, reversible) and
 probe B (the painting's own sides, `litWalls` in `church()`). The crops: `C/for-mark/`.
 
-**Then:** read the Codex bot's review on #38 (the timeline API first), answer every thread, fix in one batch (at
-most two re-requests). Mark's pass, his merge. Slice 2 (the barn owl on the ridge, the moths at the lit windows)
+**The Codex bot's review** passed `489b9dd` at 19:39 (the timeline's receipt: "Didn't find any major issues") and
+`2c8db76` at 19:42, with no inline comment and no review object. The commits after `2c8db76` are docs only.
+
+**Then:** Mark's pass, his merge. Slice 2 (the barn owl on the ridge, the moths at the lit windows)
 after his word: the design's slice 2 section, a plan to Codex's read first.
 
 ## Pickup — 2026-10-29 (18:55): Tasks 1, 3 and 4 merged and gated, the look passes done, Task 6's gate and Codex's branch review running
