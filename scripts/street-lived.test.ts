@@ -29,6 +29,7 @@ import {
   pathLegShapes,
   pathTangent,
   STATION_T,
+  stationPose,
   stepClearings,
   STREET,
   STREET_CHURCH,
@@ -891,7 +892,8 @@ test("the church's openings keep the plaster face (the design's non-goal, Codex 
     if (Math.abs(u) <= nave.w / 2 + 0.005 && Math.abs(v) <= nave.d / 2 + 0.005) colours.push([col[i * 3], col[i * 3 + 1], col[i * 3 + 2]])
   }
   const hash = createHash('sha256').update(JSON.stringify(colours)).digest('hex').slice(0, 16)
-  // computed at the base commit 4ec0008: the door's panel, the side windows, the reveals and the step, strokes with cls 255
+  // computed at the base commit 4ec0008: the strokes with cls 255 inside the nave's box, the door's panel and the side
+  // windows. The reveals and the step are underpaint, and the belfry's opening is outside the box (Codex branch r0).
   assert.equal(colours.length, 2287, 'the church opening vertices')
   assert.equal(hash, '51a2c84e0b745f72', 'their colours are the base commit\'s')
 })
@@ -924,6 +926,14 @@ test("a ring of flowers stands in the square lamp's pool, pale heads at the tips
   }
   assert.equal(f.roots.length, f.blades)
   assert.equal(f.headColours.length, f.heads)
+  assert.equal(f.headCentres.length, f.heads)
+  assert.equal(f.headTips.length, f.heads)
+  const eye = stationPose(4, false).position                                                     // Codex branch r0 F1: every head is lifted toward stop 4's eye,
+  const toEye = (p: [number, number, number]) => Math.hypot(p[0] - eye[0], p[1] - eye[1], p[2] - eye[2])   // never behind its blade (the lift's dot with the eye's direction is 0.71 to 0.97)
+  for (let i = 0; i < f.heads; i++) {
+    const nearer = toEye(f.headTips[i]) - toEye(f.headCentres[i])
+    assert.ok(nearer > 0.5 * FLOWERS.headLift, `head ${i} is nearer the eye than its blade by ${nearer}`)
+  }
   assert.ok(f.blades >= 30 && f.blades <= 54 && f.heads >= 12 && f.heads <= 24)
   assert.equal(f.triangles, 16 * f.blades + 8 * f.heads)
   assert.ok(f.triangles <= 1100)

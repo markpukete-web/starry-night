@@ -3,6 +3,11 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or
 > superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+**Revision 5 (2026-10-29, 19:15).** Codex's branch review (`C/review/codex-branch-r0.md`, REVISE, one P2): Task 4's
+head lift normal `[az, 0, −ax]` is the camera's forward, so every head sat 0.0004 behind its blade at stop 4. The sign
+is corrected in the code and in Task 4 Step 3's text, and the test asserts each head nearer the eye than the blade
+point it is lifted from (the report's `headCentres` and `headTips`). Two comments narrowed on its quality notes.
+
 **Revision 4 (2026-10-29, 18:45).** Task 5's look passes are done (`C/t5/looks.md`): the design's levers took the
 moonlit wall from L 37.1 to 42.3 against 49.7, and the ground term's exemption (departure P7, outside the design's
 list, Mark's call at the gate) to 48.1. Task 2's ledger (`C/t2/ledger.md`) halved the four covers to the budget and
@@ -505,7 +510,9 @@ test('Vincent cannot stand in the ring of flowers, and can stand past it', () =>
   `(0.5 + 0.5 a, column / 2)` (the grass template's run, so the stroke body shapes the tip only) and the blade's `seed`
   per vertex. Heads: on the first `2 + floor(rand() × 3)` blades of each clump, a `stoneDab` of width
   `FLOWERS.headWidth`, its three centres at `a` 0.86, 0.93 and 1 (the tip last) by `bladeVertex` at `across` 0, each
-  lifted `FLOWERS.headLift` along the blade plane's normal (`[az, 0, −ax]` of the blade's across direction), `across` the
+  lifted `FLOWERS.headLift` toward stop 4's eye along the blade plane's normal (`[−az, 0, ax]` of the blade's across
+  direction: minus the camera's forward, since the across is its right. Revision 4 said `[az, 0, −ax]`, which put every
+  head 0.0004 behind its blade: Codex's branch review F1), `across` the
   blade's own across vector at the tip; the colour one of the `stars` region's colours whose `.lab` is more than
   `FLOWERS.headGap` from `srgbToLab` of the `windowLit` mean, chosen by `rand`. `append(ctx.strokes, local, 255, 255)`.
   Fill the report. Call it last in `buildStreet`: after every other appender to `ctx.strokes` and before the counts

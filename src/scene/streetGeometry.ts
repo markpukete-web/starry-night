@@ -97,6 +97,9 @@ export type StreetBuild = {
         triangles: number
         roots: [number, number][]
         headColours: [number, number, number][]
+        /** each head's middle centre and the blade point it is lifted from, for the depth test (Codex branch r0 F1) */
+        headCentres: [number, number, number][]
+        headTips: [number, number, number][]
       } | null
     }
     lived: {
@@ -2048,6 +2051,8 @@ function flowers(ctx: Context): void {
   const local: FaceStrokes = { arrays: makeBrushArrays(), stroke: [], seed: [], ribbons: 0 }
   const roots: [number, number][] = []
   const headColours: [number, number, number][] = []
+  const headCentres: [number, number, number][] = []
+  const headTips: [number, number, number][] = []
   let bladesCount = 0
   let headsCount = 0
 
@@ -2096,7 +2101,9 @@ function flowers(ctx: Context): void {
       const s = Math.sin(spec.yaw)
       const ax = right[0] * c + right[1] * s
       const az = -right[0] * s + right[1] * c
-      const normal = new Vector3(az, 0, -ax)
+      // the blade faces stop 4 (its across is the camera's right), so the lift toward the eye is minus the forward,
+      // (-az, 0, ax); (az, 0, -ax) put every head 0.0004 behind its blade (Codex branch review F1)
+      const normal = new Vector3(-az, 0, ax)
       const thTip = spec.lean + spec.curl
       const acrossTip = new Vector3(ax * Math.cos(thTip), -Math.sin(thTip), az * Math.cos(thTip))
       const centres = ([0.86, 0.93, 1] as const).map((a) => {
@@ -2106,6 +2113,9 @@ function flowers(ctx: Context): void {
       const pick = pool[Math.floor(rand() * pool.length)]
       stoneDab(local, centres, acrossTip, FLOWERS.headWidth, new Color(pick.hex), Math.round(spec.seed))
       headColours.push([pick.srgb[0], pick.srgb[1], pick.srgb[2]])
+      const [tx, ty, tz] = bladeVertex(spec, 0.93, 0, right)
+      headCentres.push([centres[1].x, centres[1].y, centres[1].z])
+      headTips.push([tx, FLOWERS.rootY + ty, tz])
       headsCount++
     }
   }
@@ -2119,6 +2129,8 @@ function flowers(ctx: Context): void {
     triangles: local.arrays.indices.length / 3,
     roots,
     headColours,
+    headCentres,
+    headTips,
   }
 }
 
