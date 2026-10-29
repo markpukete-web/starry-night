@@ -65,6 +65,8 @@ export const WANDER = {
   yawSnap: 1e-3,
   /** the most entries `route` holds (c) */
   hops: 8,
+  /** the mark's glow over the ground: his raised lantern glass's height, measured 0.0232 (look pass 1) */
+  markY: 0.023,
 } as const
 
 // --- where he may stand (d), (e) ---

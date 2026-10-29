@@ -75,6 +75,9 @@ import {
   type WanderState,
 } from './streetWander.ts'
 
+/** his lantern's halo as a share of a lamp's (look pass 4 of the spike: Fable's 0.4 washed his smock grey); the wander's mark too */
+const HALO_SHARE = 0.18
+
 export type StreetWalkProps = {
   painting: ImageData2D | null
   flags: StreetFlags
@@ -164,7 +167,7 @@ export default function StreetWalk({
   const wanderRef = useRef<WanderState>(initialWander())
   const aimRef = useRef(0)
   const busyRef = useRef(false)
-  const markRef = useRef<Mesh>(null)
+  const markRef = useRef<Sprite>(null)
 
   const vincentGroupRef = useRef<Group>(null)
   const armGroupRef = useRef<Group>(null)
@@ -708,13 +711,13 @@ export default function StreetWalk({
       aimRef.current = aim
       if (aim !== 0) aimed = turnTarget(pose.position, pose.target, aim)
       busyRef.current = (offLane && (moved > 0 || w.yaw !== yawBefore)) || aim !== want
-      // the mark on the ground where he is going (i)
+      // the mark where he is going (i): a glow at the height his raised lantern will have there (look pass 1)
       if (markRef.current) {
         const show = w.mode === 'going' && Math.hypot(w.tx - w.x, w.tz - w.z) > WANDER.arrive
         markRef.current.visible = show
         if (show) {
           const onSquare = Math.hypot(w.tx - STREET_SQUARE.x, w.tz - STREET_SQUARE.z) <= STREET_SQUARE.radius
-          markRef.current.position.set(w.tx, streetGroundAt(w.tx, w.tz) + (onSquare ? SQUARE_TOP + 0.001 : 0.002), w.tz)
+          markRef.current.position.set(w.tx, streetGroundAt(w.tx, w.tz) + (onSquare ? SQUARE_TOP : 0) + WANDER.markY, w.tz)
         }
       }
     }
@@ -724,6 +727,7 @@ export default function StreetWalk({
       aimed[2] + offset[2],
     )
     persp.updateMatrixWorld()
+    if (markRef.current?.visible) markRef.current.scale.setScalar(HALO_SHARE * haloScaleOf(markRef.current, persp))
 
     // Vincent sway & placement
     if (flags.vincent && vincentGroupRef.current && armGroupRef.current) {
@@ -755,8 +759,7 @@ export default function StreetWalk({
       if (lanternGroupRef.current) {
         const glass = lanternGroupRef.current.localToWorld(new Vector3(0, -FORM.lantern.handle - FORM.lantern.cap - FORM.lantern.h / 2, 0))
         lanternUniform.value.set(glass.x, glass.y, glass.z, 1)
-        // look pass 4 of the spike: 0.18 of a lamp's halo (Fable's 0.4 washed his smock grey with the lantern raised)
-        if (haloRef.current) haloRef.current.scale.setScalar(0.18 * haloScaleOf(haloRef.current, persp))
+        if (haloRef.current) haloRef.current.scale.setScalar(HALO_SHARE * haloScaleOf(haloRef.current, persp))
         if (poolRef.current && body.parent) {
           // the pool lies on the ground ahead of the lantern, the way he faces, flickering a little
           const local = body.parent.worldToLocal(glass.clone())
@@ -779,9 +782,7 @@ export default function StreetWalk({
   return (
     <>
       {wanderOn && (
-        <mesh ref={markRef} visible={false} rotation={[-Math.PI / 2, 0, 0]} material={vincentMaterials.pool} renderOrder={4}>
-          <circleGeometry args={[0.012, 24]} />
-        </mesh>
+        <sprite ref={markRef} visible={false} material={vincentMaterials.halo} renderOrder={6} />
       )}
       {lanternOn && (
         <mesh ref={poolRef} material={vincentMaterials.pool} renderOrder={4}>
