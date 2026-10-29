@@ -6,9 +6,14 @@
 ring stays. Probe B's white front is open to his word (`litWalls` in `church()`). PR #38 is his to merge. The pass is
 recorded in the Tunables entry and in `tasks/2026-10-29-church-square.md`.
 
-**Then:** slice 2 on `feat/church-owl` off `dec4671`, stacked on #38 until Mark merges it, then `git merge origin/main`.
-The plan `tasks/2026-10-29-church-owl-plan.md` from the design's slice 2 section. Codex's correctness read and a
-builder's buildability read come before any build. Its PR opens once #38 is in `main`.
+**Slice 2 (23:07):** on `feat/church-owl` off `32e692b`, stacked on #38 until Mark merges it, then `git merge origin/main`.
+The plan `tasks/2026-10-29-church-owl-plan.md` at revision 1 (`0f91f4d`): Codex's correctness read (REVISE, F1 to
+F10) and the Sonnet builder's buildability read (A1 to B5) folded, the dispositions in `C/owl/review/lead-plan-r0.md`.
+The builds dispatched at 23:07, in parallel: Gemini 4 Argon (`w4:p5`) on Task 1, the owl, in `owl-t1-wt` on
+`feat/church-owl-t1`, and the Sonnet builder on Task 2, the moths, on `feat/church-owl-t2` (Mark, 23:00: Argon on
+the bigger task, on its own budget). Briefs `C/owl/briefs/builder-t1-r0.md`, `builder-t2-r0.md`, reports to
+`C/owl/t1/report.md`, `C/owl/t2/report.md`. Then the Lead's gate on each, the merge, the look passes (Task 3), the
+gate (Task 4, `C/owl/t4/gate.sh` ready), Codex's branch review, and the PR once #38 is in `main`.
 
 ## Pickup — 2026-10-29 (19:40): slice 1 gated and reviewed, PR #38 open for Mark's preview pass
 
