@@ -133,23 +133,30 @@ circle in the light. Nothing moves fast, nothing glows on its own, and nothing i
 - (d) **The spire's strokes** run along its length, long (of the order of the thatch recipe's 0.8 to 1.6), in `spire`.
   The belfry's four walls take `belfry`, their openings kept. From stop 4 the belfry is behind the nave, so this shows
   only as the dark band the painting has where the spire meets the roof.
-- (e) **The lightness target.** On plaster-class pixels inside the church's box at stop 4 (the church record's measure,
-  `scratch/church-l.ts`), L p50 within 4 of the painting's 52.2, on both viewports, with the two walls' step kept. The
-  Lead's look passes may move `CHURCH_LIGHT.ambient` within 0.7 to 0.81 and may exempt the church from `wallShade`'s
-  corner term (fact 2's levers). Nothing else is lifted by hand.
+- (e) **The lightness target**, per wall against its own source, by the ID mask's class for that source (each new
+  source gets its own class, as `plaster` is class 2). At stop 4 on both viewports: the moonlit wall's pixels read L p50
+  within 4 of `churchLit`'s own L p50 in the scan, and the gable's within 4 of `churchShade`'s. Not a pooled figure,
+  which could pass with one wall wrong. The church record's measure (`scratch/church-l.ts`) takes the class as a
+  parameter. The two walls' step is kept. The Lead's look passes may move `CHURCH_LIGHT.ambient` within 0.7 to 0.81
+  and may exempt the church from `wallShade`'s corner term (fact 2's levers). Nothing else is lifted by hand.
 - (f) **The trees close in.** `orchard-lower` and `olive-right` move the fewest whole map pixels that put each crown's
   edge within 0.05 of the nave's wall, one each side, their tops above the eaves (fact 9). Each crown stays 0.025 clear
   of the church's walls and of every house. From stops 3 and 4 on both viewports, no crown covers the door, any of the
   three windows or the gable's peak (an ID-mask check in the plan, as the church's face probe). `olive-church` stays.
-  No tree is added (non-goals).
+  No tree is added (non-goals). Where the three rules cannot all be met, they give way in this order: closeness first
+  (the crown stops at the nearest whole pixel that keeps the other two), the clear gap never, the cover never. Each
+  tree keeps its side and its template. The plan's Task 0 finds the two positions by a search over whole map pixels
+  and prints them, so the move is a number before it is a build.
 - (g) **The flowers** (Mark's suggestion, read from "owl flowers" as the owl and flowers). A bed along the church's
   front wall's foot, either side of the door's band and step, the wall's length less 0.02 at each end, 0.03 deep. A
-  ring round the square's lamp post, radius 0.03. Each is a clump of the grass's own blades at scale 0.5 (K3's plant)
-  with heads: comma dabs (the grass base's dab, 8 triangles) no more than 0.004 across, in the painting's pale yellows
-  from the `stars` region's palette, gated against the `windowLit` mean (ΔE over 5) so no head is a window's colour.
-  About 40 heads at the wall and 16 at the lamp: under 1,500 triangles. The flowers take the lamp's and the lantern's
-  light as the grass does, and the hand does not bend them. The Lead's call on size and count, open to Mark whether
-  to keep them at all.
+  ring round the square's lamp post, radius 0.03. The bed is about 12 clumps and the ring 6, each a clump of the
+  grass's own blades at scale 0.5 (K3's plant's build, 5 to 9 blades of four segments), and 2 to 4 of each clump's
+  blades carry a head at the tip: a comma dab (the grass base's dab, 8 triangles) no more than 0.004 across, in the
+  painting's pale yellows from the `stars` region's palette, gated against the `windowLit` mean (ΔE over 5) so no head
+  is a window's colour. About 18 clumps, 56 heads: about 1,000 triangles of blades and 450 of heads. The flowers are
+  their own static mesh, built with the grass's blade function but outside the grass's chunks and the trail, so the
+  grass hash does not change and the hand does not bend them. They take the lamp's and the lantern's light as the
+  grass does. The Lead's call on size and count, open to Mark whether to keep them at all.
 - (h) **The colour gate** reads each new source's class against its own rectangle's palette (ΔE at most 10), as E1 did,
   not against the pooled village reference (the church record's open item 4).
 
@@ -158,22 +165,30 @@ circle in the light. Nothing moves fast, nothing glows on its own, and nothing i
 - (i) **The owl.** A barn owl: the Dutch name is "kerkuil", the church owl, because it nests in church towers, and Van
   Gogh was Dutch. 0.018 tall (36 cm beside Vincent's 1.7 m), about 29 px on the desktop at stop 4. The Lead's
   recommendation, open to Mark against the little owl (22 cm, dark, `0.011`).
-- (j) **Its perch** is the nave's ridge, 0.08 back from the front gable's peak, facing the square. The belfry's openings
-  are behind the nave from stop 4 (fact 4), so a bird there would not be seen. On the ridge it is a small shape against
+- (j) **Its perch** is the nave's ridge, 0.08 back from the front gable's peak, facing the square. In numbers: the
+  ridge is at the eave plus the pitch, 0.24 + 0.185 = 0.425 above the ground, along the nave's `along` axis. The
+  perch is `churchFront()` moved 0.08 toward the nave's centre, at y 0.425. The body faces the front wall's outward
+  normal, the direction from the nave's centre to `churchFront()`: toward the square and the lane's end. Stop 4's
+  camera is 37.8° off that normal (the church record), inside the head's reach below. The belfry's openings are
+  behind the nave from stop 4 (fact 4), so a bird there would not be seen. On the ridge it is a small shape against
   the sky from stops 3 and 4, and a speck from stop 0.
 - (k) **Its build.** As the frog's: a body ellipsoid, a round head with a flat heart face, two ink eyes, clad in the
   painting's strokes. The face and front from `churchLit`, the back and wings from `thatch` (the olive, brown and grey
   of a barn owl's back). At most 1,500 triangles, one draw call, drawn within 1.1 of the camera as the square's frog
   is.
-- (l) **Its behaviour.** It blinks on the frogs' shared clock with its own phase. Its head turns toward Vincent when he
-  is within 0.6 and within 70° of the body's facing, eased over τ 0.6 s, at most 70° either way, and turns back when he
-  is not. No flight, no hoot. Under reduced motion and Pause it holds still, as the frogs do.
-- (m) **The moths.** Three at every lamp and two at each lit window within 0.6 of the camera. Each is one camera-facing
-  quad 0.004 × 0.003 (an 8 cm moth), all in one instanced mesh, painted in the lantern's lit mean (`windowLit`) and
-  dimmed by the halo's falloff from the glass, so a moth at the glass is bright and one at the halo's edge is faint.
-  Each flies its own loop about the lantern, radius 0.02 to 0.05, period 1.2 to 2.5 s, with a small vertical wobble, its
-  phase and radius from its seed. 7 lamps × 3 + near windows: under 50 quads. Under reduced motion and Pause they rest
-  on the lantern's frame, still.
+- (l) **Its behaviour.** It blinks on the frogs' shared clock with its own phase. Its head turns toward Vincent's drawn
+  position (the walk's slot, or the wander's) when he is within 0.6 of the perch and within 70° of the body's facing,
+  eased over τ 0.6 s, at most 70° either way, and turns back when he is not. With no Vincent (`vincent=0`, `walk=0`,
+  the flat panel) the head stays straight. The camera is never the target. No flight, no hoot. Under reduced motion
+  and Pause it holds still, as the frogs do.
+- (m) **The moths.** Three at every lamp, at every `t`, and two at each lit window, shown while the window is within
+  0.6 of the camera. The lit windows are the build's class 2 quads with their outward normals (`streetLife.ts`
+  `litWindows`), and a window's glass is its quad's centre 0.005 out along that normal. A lamp's glass is its
+  lantern's centre. Each moth is one camera-facing quad 0.004 × 0.003 (an 8 cm moth), all in one instanced mesh
+  built once, painted in the lantern's lit mean (`windowLit`) and dimmed by the halo's falloff from the glass, so a
+  moth at the glass is bright and one at the halo's edge is faint. Each flies its own loop about its glass, radius 0.02
+  to 0.05, period 1.2 to 2.5 s, with a small vertical wobble, its phase and radius from its seed. 7 lamps × 3 + 2 per
+  lit window: under 70 quads, 140 triangles. Under reduced motion and Pause they rest on the glass's frame, still.
 - (n) **Draw calls.** Slice 1 adds one (the flowers, or none if they join the grass base's mesh). Slice 2 adds two
   (the owl, the moths). Stop 0 is at 321 today.
 
@@ -186,6 +201,14 @@ circle in the light. Nothing moves fast, nothing glows on its own, and nothing i
   turn and a blink. Stop 3's nearest lamp with its moths, and the same under reduced motion. The triangle sweep. Perf.
   The draw calls at stop 0.
 - Both: the six browser checks, the unit tests, the hashes, and Mark's pass on the preview.
+
+## How it is built
+
+The plan builds the decisions as written. Mark's answers under "Open for Mark" replace the Lead's calls before the
+plan is written, so the plan carries no switches for them. Slice 1 first, then slice 2 on its branch, because the owl
+sits on the church and the moths' light is the square's. Each slice gets a plan with the two reads, Sonnet builders
+for the mechanical tasks, the Lead for the paint and the look passes, a branch review, the Lead's gate and Mark's
+pass on the preview.
 
 ## Left to the builder
 
