@@ -1,4 +1,4 @@
-# Vincent's wander, the slice: the plan, revision 1 (2026-10-29)
+# Vincent's wander, the slice: the plan, revision 2 (2026-10-29)
 
 > **For agentic workers:** a Sonnet `builder` builds Tasks 1 and 2, the Lead the rest. Steps use checkboxes.
 
@@ -15,9 +15,11 @@ frame and turns the camera's aim. His ground position is module state, so the gr
 `spike/vincent-wander`, `74d8856`). Mark's read of its preview, 2026-10-28 18:00: "The wondering links feels okay!"
 Mark's call, 2026-10-29 09:58: make it a slice.
 
-**Revision 1** answers Codex's F1 to F8 (`scratch/vincent-wander-2026-10-29/review/codex-plan-r0.md`) and the builder's
-A1 to F (`review/builder-plan-r0.md`). Revision 0 is `review/plan-r0.md`. The main change: he comes back the way he
-went, to the point he left, and the whole trip is checked before a tap is accepted (Codex F3, F6, the builder's A1).
+**Revision 1** answered Codex's F1 to F8 (`scratch/vincent-wander-2026-10-29/review/codex-plan-r0.md`) and the
+builder's A1 to F (`review/builder-plan-r0.md`). Revision 0 is `review/plan-r0.md`. **Revision 2** answers Codex's
+confirmation read (`review/codex-plan-r1.md`): N1, an interrupted return that took an unchecked shortcut, N2, the yaw
+at the return's end, and F8's two browser controls. The main change: he keeps the points each leg began at, and he goes
+home back through them, so every leg home is a leg already checked, walked backwards.
 
 ## The locked criterion, and how this slice reads it
 
@@ -43,11 +45,17 @@ it. Codex's review of revision 0: "The plan's positional reading holds." The gat
   coordinate since then, inside `WALK_T`. The spike set it to his lane coordinate less the rig's 0.4. `laneParam`
   stops at `t` 1.0 (`streetLayout.ts:91`), so from camera `t` 0.833 that pulled the camera back in one frame (the
   builder's A1: at stop 4, about 0.16 world units). A change is 0 at the tap, so the first frame cannot move it.
-- (c) **The trip.** A tap sends him from where he stands to the point. He comes back along the same two legs, to the
-  point he left the lane from (`sx, sz`), with the walk's `t` at that moment (`t0`). The follow camera then ends where
-  it began. A tap while he is off the lane sends him on from where he stands, and the start stays the first one. A tap
-  is accepted only if every leg of the trip passes (d) and (f): from where he stands to the point, and from the point
-  to the start.
+- (c) **The trip** (Codex F3 and N1). `route` holds the points home: `route[0]` is his lane slot when he left, with
+  the walk's `t` then (`t0`), and the last entry is where the leg he is on began.
+  - A tap he may take, from where he stands (Q), pushes Q onto `route` and sends him from Q to the point. From the lane,
+    Q is his lane slot and `route` is `[Q]`. Q lies on a leg already checked, so Q to `route`'s last entry is checked.
+  - Going home (a wheel turn, an arrow key, a tap on the lane), he walks to `route`'s last entry, pops it, and goes on
+    to the next. Every leg home is part of a leg he walked out, walked backwards. Nothing is pushed.
+  - A tap is accepted only if its one new leg, Q to the point, passes (d) and (f). The legs home need no new test.
+    The ground test and the sight test read only the points on a leg (`followT` reads only the point), so a leg walked
+    backwards passes as it passed walked out, at the samples' spacing.
+  - `route` holds at most `WANDER.hops` entries. A tap that would push one more does nothing.
+  - When he reaches `route[0]`, the follow camera is back at `t0`, and the return ends (h).
 - (d) **Where he may stand, and which legs he may walk** (fault 2, the sparse verge, and fault 3, the square).
   - Three grounds: the spike's verge (the grass's footprint off every clearing), K3's door paths (`pathClearings()`),
     and the square's disc (`STREET_SQUARE`).
@@ -82,8 +90,13 @@ it. Codex's review of revision 0: "The plan's positional reading holds." The gat
   - A tap during a station's dwell: his drawn yaw (the slot's yaw plus `turnPose(turn).body`) becomes the trip's
     starting yaw, and `turn` eases toward 0 at `PAUSE.turnOut`. Off the lane `body` is 0, so the figure does not jump.
   - He does not move while `turn` is at or over `PAUSE.turnGate`, his position as well as his limbs.
-  - His yaw turns toward his heading at `WANDER.turn`. At the start he turns in place to the yaw he left with
-    (`syaw`), then the return ends.
+  - His yaw turns toward his heading at `WANDER.turn`.
+  - `syaw` is his lane slot's own yaw at `t0` (`vincentPlace(t0).yaw`), unturned, not the drawn yaw he set out with
+    (Codex N2). At `route[0]` he lowers the lantern first: `turn` eases to 0, as it does before every leg. Then he
+    turns in place to `syaw`. The return ends once his yaw is within `WANDER.yawSnap` of `syaw` and `turn` is 0. The
+    lane then takes him with `pause = { dwell: 0, rest: 0, turn: 0, last }` (`last` kept), so its first frame draws
+    `turnPose(0)` at the slot's yaw: the pose of his last frame off the lane. If he then stands still, the lane's own
+    rule turns him again after `PAUSE.rest`, as on `main`.
 - (i) **His height.** His figure stands at 0 off the lane, as on the lane. On `main` he already stands at 0 inside the
   square from camera `t` 0.75, 0.0064 under the strokes' top (`review/lead-probe-square.log`), and V1 passed so. The
   mark on the ground stands at `SQUARE_TOP + 0.001` on the square and at 0.002 elsewhere (Codex F5). Stop 4's look pass
@@ -101,7 +114,7 @@ it. Codex's review of revision 0: "The plan's positional reading holds." The gat
   as in the spike. Escape and "Back to the painting" unmount the street, and a second entry starts him on the lane.
 - (n) **The capture seams.** `__vincentForm().settled` is false while he is off the lane and moving, while `turn` is
   between 0 and 1, while his yaw turns, and while the aim is not at its target. `__wanderTo(x, z)` runs `wanderTo`
-  with no sight tests, for captures. `__wander()` reports `{ mode, x, z, tx, tz, arrived, turn, aimDeg }`.
+  with no sight tests, for captures. `__wander()` reports `{ mode, x, z, tx, tz, route, arrived, turn, aimDeg }`.
 - (o) **The lint fix**, done in Task 0 (`46d0d0b`): `globalIgnores(['dist', 'scratch', '.claude'])`. `eslint .`
   walked into repo copies under `scratch/` and builder worktrees under `.claude/worktrees/`. Each carries its own
   `eslint.config.js`, and typescript-eslint then failed every file with a parsing error.
@@ -122,6 +135,7 @@ WANDER = {
   eave: 0.03,          // the footprint growth for the sight test, the painting houses' eave (f)
   frameMargin: 4,      // degrees inside the horizontal half-field (f)
   yawSnap: 1e-3,       // rad, his yaw within this of `syaw` ends the return (h)
+  hops: 8,             // the most entries `route` holds (c)
 }
 ```
 
@@ -194,18 +208,19 @@ Every new value is a first guess. The look passes may move them, and each move g
   - `type View = { portrait: boolean; halfFovDeg: number }`.
   - `wanderTo(s: WanderState, here: Here, x: number, z: number, view: View | null): WanderState | null`. `here` is his
     current place: his lane slot and the walk's `t` and yaw when on the lane, else his wander position. `view` null
-    skips the sight tests (the capture seam). It returns `null` when the tap does nothing.
+    skips the sight tests (the capture seam). It returns `null` when the tap does nothing. From the lane it sets the
+    trip's `route`, `t0`, `lane0` and `syaw` from `here` before it tests the leg.
   - `type Here = { x: number; z: number; yaw: number; t: number }`.
-  - `type WanderState = { mode: 'lane' | 'going' | 'returning'; x; z; yaw; tx; tz; sx; sz; syaw; t0; lane0; walked;
-    arrived; turn }`. `lane0` is `laneParam(sx, sz)[0]`. `arrived` is 0 while he walks and on the frame he arrives,
-    then grows by `dt`. `wanderTo` resets it to 0.
+  - `type WanderState = { mode: 'lane' | 'going' | 'returning'; x; z; yaw; tx; tz; route: [number, number][];
+    syaw; t0; lane0; walked; arrived; turn }`. `lane0` is `laneParam(...route[0])[0]`. `arrived` is 0 while he
+    walks and on the frame he arrives, then grows by `dt`. `wanderTo` resets it to 0.
   - `stepWander(s: WanderState, dt: number, frozen: boolean): WanderState`, decisions (c), (g), (h) and (l). A frozen
     step returns `s` unchanged.
   - `offLanePose(turn: number)`: `turnPose(turn)` with `body` 0.
   - `aimAngle` and `turnTarget` as the spike's. The spike's `aimToward` goes, and its test uses the two.
 - Produces, in `streetLayout.ts`: `railChains(): { frame: ReturnType<typeof doorStepFrame>; chains: [number,
-  number][][] }`, the four chains in the door frame's `(a, k)`. `vincentBoxCornersAt(position: [number, number, number], forward: [number, number]): [number, number,
-  number][]`.
+  number][][] }`, the four chains in the door frame's `(a, k)`. `vincentBoxCornersAt(position: [number, number,
+  number], forward: [number, number]): [number, number, number][]`.
 - Produces, in `streetMode.ts`: `StreetFlags.wander: boolean`, true unless `wander=0`.
 
 - [ ] **Step 1: Write the failing tests** in `scripts/street-wander.test.ts`. Keep the spike's five, renamed. Add these.
@@ -224,23 +239,32 @@ Every new value is a first guess. The look passes may move them, and each move g
     line meets the grown footprint but misses the bare one is hidden. With `WANDER.eave` taken as 0, it is not.
   - `inFrame: the turned aim's field`: from `walkPose(0.23, false)` with a half-field of 40°: on the aim's line, true. At
     55° from the aim, true. At 60°, false. At 180°, false.
-  - `wanderTo: the trip is checked both ways` (Codex F3, F6, F8): Codex's three fixtures, each refused with a view
+  - `wanderTo: the new leg is checked` (Codex F3, F6, F8, N1). Codex's fixtures, with a view
     `{ portrait: false, halfFovDeg }` from a 1440 × 900 camera at the walk's `fov`:
-    - from `t` 0 (stop 0), the point `(-0.46913668405284825, -0.428633501576554)`: the return passes the lamp at `t`
-      0.24 under the spike's rule. Under (c) the return retraces, so assert what holds: accepted, and every sample of
-      both legs is standable or on the lane, and none within `WANDER.post` of that lamp.
+    - from `t` 0 (stop 0), A = `(-0.46913668405284825, -0.428633501576554)`: accepted, `route` is `[slot]`.
     - from `t` 0.06, `(-0.3595866636762092, -1.417455216001235)`: refused, a middle sample hidden by L3.
-    - from `t` 0.23, `(-0.2923531248524448, -1.1919155133212136)`: refused, hidden from the arriving eye.
+    - from `t` 0.23, `(-0.2923531248524448, -1.1919155133212136)`: refused at the leg's last sample.
+    - from `t` 0.44, `(0.5412437098392479, -1.4405122792319607)`: refused at the leg's last sample.
+    - Codex's N1: from `t` 0 to A, then at A a tap at B = `(-0.39455759959990633, -0.4873421896262576)`, accepted,
+      `route` `[slot, A]`. Step 60% of the way to B, then send him home (`mode` `returning`). Step to `lane`. On every
+      frame his position is standable or on the lane, and more than `WANDER.post` from the lamp at `t` 0.24. One
+      frame is within `WANDER.arrive` of A.
+    - After `WANDER.hops` accepted taps, one more standable tap gives `null`.
     If the builder's run shows a fixture accepted or refused for another reason than its line names, it reports the
     reason and does not change the assertion.
   - `wanderTo: the lane first, and taps during a trip`: at stop 4 from `lane`, a tap at `pathPoint(0.98)` gives `null`.
-    From `going`, the same tap gives `returning`. From `returning` at (x, z), a standable tap gives `going` from (x, z)
-    with `sx, sz` unchanged.
-  - `followT: no jump at the tap, none at stop 4`: `followT` at the start returns `t0` for `t0` 0.23 and 0.9.
+    From `going`, the same tap gives `returning`. From `returning` at (x, z), a standable tap gives `going` from (x, z),
+    with (x, z) pushed onto `route` and `route[0]` unchanged.
+  - `followT: no jump at the tap, none at stop 4`: `followT` at `route[0]` returns `t0` within 1e-9, for `t0` 0.23 and
+    0.9.
   - `stepWander: arrival, rest, raise and return`: `arrived` is 0 on the arrival frame. `turn` stays 0 until `arrived`
-    passes `PAUSE.rest`, then reaches 1 within `PAUSE.turnIn` + 2 frames. A `returning` trip ends `lane` at `(sx, sz)`
-    with `yaw` within `WANDER.yawSnap` of `syaw` and `turn` 0. From `turn` 1, he does not move until `turn` falls
-    under `PAUSE.turnGate`. A frozen step returns its input.
+    passes `PAUSE.rest`, then reaches 1 within `PAUSE.turnIn` + 2 frames. From `turn` 1, he does not move until `turn`
+    falls under `PAUSE.turnGate`. A frozen step returns its input.
+  - `stepWander: from a full dwell and back` (Codex N2): at stop 1 (`t` 0.23) with the lane's `turn` 1, a tap gives
+    `yaw` = `vincentPlace(0.23).yaw + turnPose(1).body` and `turn` 1, so the first frame off the lane draws the lane's
+    last pose. Send him out and home. The trip ends `lane` at `route[0]` with `yaw` within `WANDER.yawSnap` of
+    `vincentPlace(0.23).yaw` and `turn` 0. The frame before it draws the same yaw, head and raise as `turnPose(0)`
+    at the slot's yaw, the lane's first frame.
   - In `street-mode.test.ts`: `wander` is true for `?street=1`, false for `?street=1&wander=0`.
 - [ ] **Step 2: Run** `node --test scripts/street-wander.test.ts scripts/street-mode.test.ts`. Expected: FAIL, the new
   names undefined.
@@ -273,10 +297,13 @@ Every new value is a first guess. The look passes may move them, and each move g
   - a tap on a house's wall at stop 1 leaves `mode` `lane`.
   - with him off the lane, a tap on his figure toggles the walk and leaves him there. A tap at his old lane slot, off
     his figure, does not toggle the walk (`__streetWalk().auto` unchanged) and sends him back.
-  - Codex's `t` 0.23 fixture, tapped for real: refused (the arriving eye).
-  - after he arrives on a verge point, `__grassPushNear` at his position is over 0, and at his old lane slot it is 0
-    (Codex F8: the trail at his feet). The hand stays off the canvas for this read.
-  - a wheel turn returns him: `mode` `lane` at `(sx, sz)`, and the walk then moves `t`.
+  - at stop 2, Codex's `t` 0.44 fixture `(0.5412437098392479, -1.4405122792319607)`: first assert its projected point
+    is outside `__vincentBox()`. Tapped for real, `mode` stays `lane` and `__streetWalk().auto` is unchanged. It is
+    refused at its leg's last sight sample, so the mutation that drops that sample turns this case red.
+  - the trail at his feet (Codex F8): send him to a verge point at least 0.1 from his lane slot. Once he has arrived,
+    `__grassPushNear` at his position is over 0. At 6 s or more after he left the slot (the trail closes 4 to 5 s
+    after a release, D1), it is 0 at the slot and still over 0 at his position. The hand stays off the canvas.
+  - a wheel turn returns him: `mode` `lane` at `route[0]`, and the walk then moves `t`.
   - with him walking off the lane, the Pause control (`still`) on: his position and the camera's matrix hold over 1 s.
     Off: he goes on and arrives. Then the same with reduced motion turned on by `Emulation.setEmulatedMedia`.
   - every read of `settled` waits for it, never a fixed sleep, and once it is true the camera's matrix holds over the
@@ -306,7 +333,8 @@ Every new value is a first guess. The look passes may move them, and each move g
   16.7 ms.
 - [ ] `npm run -s build`.
 - [ ] The mutations, one at a time, in a checkout no builder uses, each against the case that names it: the rail test,
-  `hidden`'s grown footprint, the middle samples of a leg, the arriving eye, `inFrame`, the return's retrace, the lane's
+  `hidden`'s grown footprint, the middle samples of a leg, the leg's last sample, `inFrame`, the route's retrace (a
+  return straight to `route[0]`), the `hops` cap, the lane's
   precedence, the frog radius, the tap box off the lane, the feet's ground position, the frozen step, the aim in
   `settled`.
 
