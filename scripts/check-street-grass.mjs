@@ -23,6 +23,8 @@
  * 18. The frogs' draw distance (the frogs' branch review, Codex F1): at walk poses held still, each frog the frame's
  *     cull left drawn is within its spec's `draw` of the camera, and each frog it hid is beyond it.
  * 19. The hand on the pot plant (K3 task 3): stop 2, leaf point of blade 3 bends the pot plant's chunk under anchor B and anchor A.
+ * 20. The barn owl (church-owl plan, Task 1): drawn at stops 3 and 4 and hidden at stop 0, turns to Vincent at stop 4 (|yaw| >= 0.6)
+ *     and stays straight at stop 3 or with walk=0, open and straight under reduced motion, absent on flat=1, and holds its pose mid-turn.
  * 21. The moths (church-owl plan, Task 2): 29 at stop 3, a lamp's within its loop's reach of its glass, a window's lit only
  *     within 0.6 of the camera, at their anchors under reduced motion, absent with light=0.
  */
@@ -1324,6 +1326,103 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
       }
 
       console.log(`PASS: case 19 - the hand on the pot plant: leaf point bent plant chunk under anchor B (push=${pushB.toFixed(3)}) and anchor A (push=${pushA.toFixed(3)})`)
+    }
+
+    // -------------------------------------------------------------
+    // Case 20: The barn owl (church-owl plan, Task 1)
+    // Seven pages, each with walkMode=input&arrival=0:
+    // (a) station=4&walkT=0.9: after 2.5 s, __owl() visible, |yaw| >= 0.6.
+    // (b) station=3: visible, |yaw| < 0.05.
+    // (c) station=0: not visible.
+    // (d) station=4&walk=0: |yaw| < 0.05.
+    // (e) station=4 under prefers-reduced-motion: reduce from the start: yaw 0 and shut 0 after 2.5 s.
+    // (f) flat=1: window.__owl undefined.
+    // (g) page (a) again, reduced motion turned on once |yaw| >= 0.6: 1 s later yaw holds within 1e-6 (Codex F10).
+    // -------------------------------------------------------------
+    if (shouldRun(20)) {
+      const owl20 = () => page.evaluate(() => window.__owl?.() ?? null)
+      await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: '' }] })
+
+      // (a) stop 4 with Vincent at his slot: visible and turned
+      await page.send('Page.navigate', { url: `${origin}/?street=1&station=4&walkT=0.9&walkMode=input&arrival=0` })
+      await page.waitForStreetReady()
+      await sleep(2500)
+      const a20 = await owl20()
+      if (!a20 || !a20.visible || Math.abs(a20.yaw) < 0.6) {
+        throw new Error(`Case 20(a) failed: expected visible owl with |yaw| >= 0.6 at stop 4, got ${JSON.stringify(a20)}`)
+      }
+
+      // (b) stop 3: visible, Vincent 0.818 away so head stays straight
+      await page.send('Page.navigate', { url: `${origin}/?street=1&station=3&walkMode=input&arrival=0` })
+      await page.waitForStreetReady()
+      await sleep(500)
+      const b20 = await owl20()
+      if (!b20 || !b20.visible || Math.abs(b20.yaw) >= 0.05) {
+        throw new Error(`Case 20(b) failed: expected visible owl with |yaw| < 0.05 at stop 3, got ${JSON.stringify(b20)}`)
+      }
+
+      // (c) stop 0: culled beyond OWL.draw
+      await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&walkMode=input&arrival=0` })
+      await page.waitForStreetReady()
+      await sleep(300)
+      const c20 = await owl20()
+      if (!c20 || c20.visible) {
+        throw new Error(`Case 20(c) failed: expected hidden owl at stop 0, got ${JSON.stringify(c20)}`)
+      }
+
+      // (d) stop 4 with walk=0: vincentGround is null, head stays straight
+      await page.send('Page.navigate', { url: `${origin}/?street=1&station=4&walk=0&walkMode=input&arrival=0` })
+      await page.waitForStreetReady()
+      await sleep(500)
+      const d20 = await owl20()
+      if (!d20 || Math.abs(d20.yaw) >= 0.05) {
+        throw new Error(`Case 20(d) failed: expected |yaw| < 0.05 at stop 4 with walk=0, got ${JSON.stringify(d20)}`)
+      }
+
+      // (e) stop 4 under prefers-reduced-motion: reduce from the start: yaw 0 and shut 0 after 2.5 s
+      await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] })
+      await page.send('Page.navigate', { url: `${origin}/?street=1&station=4&walkMode=input&arrival=0` })
+      await page.waitForStreetReady()
+      await sleep(2500)
+      const e20 = await owl20()
+      if (!e20 || e20.yaw !== 0 || e20.shut !== 0) {
+        throw new Error(`Case 20(e) failed: expected yaw 0 and shut 0 under reduced motion, got ${JSON.stringify(e20)}`)
+      }
+      await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: '' }] })
+
+      // (f) flat=1: no owl mounted
+      await page.send('Page.navigate', { url: `${origin}/?street=1&flat=1&walkMode=input&arrival=0` })
+      await page.waitForStreetReady()
+      await sleep(300)
+      if ((await page.evaluate(() => typeof window.__owl)) !== 'undefined') {
+        throw new Error('Case 20(f) failed: window.__owl defined on flat=1')
+      }
+
+      // (g) page (a) again, then reduced motion turned on once |yaw| >= 0.6: holds within 1e-6 over 1 s (Codex F10)
+      await page.send('Page.navigate', { url: `${origin}/?street=1&station=4&walkT=0.9&walkMode=input&arrival=0` })
+      await page.waitForStreetReady()
+      let gTurn = null
+      const t20 = Date.now()
+      while (Date.now() - t20 < 6000) {
+        gTurn = await owl20()
+        if (gTurn && Math.abs(gTurn.yaw) >= 0.6) break
+        await sleep(25)
+      }
+      if (!gTurn || Math.abs(gTurn.yaw) < 0.6) {
+        throw new Error(`Case 20(g) precondition failed: |yaw| did not reach 0.6 within 6 s (${JSON.stringify(gTurn)})`)
+      }
+      await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] })
+      // allow both the DOM root and R3F's Canvas reconciler to commit `reduced = true` (as case 9 waits 300 ms)
+      await sleep(200)
+      const g0 = await owl20()
+      await sleep(1000)
+      const g1 = await owl20()
+      await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: '' }] })
+      if (!g0 || !g1 || Math.abs(g0.yaw) < 0.6 || Math.abs(g1.yaw - g0.yaw) > 1e-6) {
+        throw new Error(`Case 20(g) failed: pose did not hold mid-turn (${g0?.yaw} -> ${g1?.yaw})`)
+      }
+
+      console.log(`PASS: case 20 - the owl: turned at stop 4 (yaw=${a20.yaw.toFixed(3)}), straight at stop 3 (${b20.yaw.toFixed(3)}) and walk=0 (${d20.yaw.toFixed(3)}), culled at stop 0, still and open under reduced motion, absent on flat=1, held mid-turn (${g0.yaw.toFixed(4)} -> ${g1.yaw.toFixed(4)})`)
     }
 
     // -------------------------------------------------------------
