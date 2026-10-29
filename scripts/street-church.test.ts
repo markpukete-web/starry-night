@@ -252,3 +252,31 @@ test('the long side has three windows', () => {
     if (i > 0) assert.ok(spans[i - 1][1] < spans[i][0], `windows ${i - 1} and ${i} overlap`)
   }
 })
+
+// Slice 1, Task 1 (tasks/2026-10-29-church-square-plan.md): the church's own sources, by name
+test("the church's walls are painted by name: the right wall lit, the rest shade", () => {
+  const nave = churchFaces.filter((f) => f.owner === 'church' && !f.name.endsWith('roof'))
+  const byName = (n: string) => nave.find((f) => f.name === n)!
+  assert.equal(byName('right').source, 'churchLit')
+  for (const n of ['front gable', 'back', 'left', 'back gable']) assert.equal(byName(n).source, 'churchShade', n)
+  for (const f of nave.filter((f) => f.name.startsWith('front ') && f.name !== 'front gable')) assert.equal(f.source, 'churchShade', f.name)
+})
+
+test('the belfry takes belfry and the spire takes spire', () => {
+  assert.ok(churchFaces.some((f) => f.owner === 'belfry') && churchFaces.some((f) => f.owner === 'spire'))
+  for (const f of churchFaces.filter((f) => f.owner === 'belfry')) assert.equal(f.source, 'belfry')
+  for (const f of churchFaces.filter((f) => f.owner === 'spire')) assert.equal(f.source, 'spire')
+})
+
+test('no house uses a church source', () => {
+  /* guard: passes before the code too */
+  for (const f of build.report.faces.filter((f) => f.owner.startsWith('house-')))
+    assert.ok(!['churchLit', 'churchShade', 'spire', 'belfry'].includes(f.source), `${f.owner} ${f.name}`)
+})
+
+test('the tones do not depend on the light flag', () => {
+  /* guard: passes before the code too */
+  const unlit = buildStreet(plainPainting(), flow, masses, { lit: false })!
+  const srcOf = (b: typeof unlit) => b.report.faces.filter((f) => ['church', 'belfry', 'spire'].includes(f.owner)).map((f) => f.source)
+  assert.deepEqual(srcOf(unlit), srcOf(build))
+})

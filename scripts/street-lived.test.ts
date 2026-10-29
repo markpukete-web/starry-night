@@ -29,6 +29,7 @@ import {
   STATION_T,
   stepClearings,
   STREET,
+  STREET_CHURCH,
   STREET_HOUSES,
   STREET_OBJECTS,
   STREET_PATHS,
@@ -469,7 +470,7 @@ test("K2's street without the lived-in parts", { skip }, () => {
   const build = buildStreet(realPainting, flow, masses, { grass: true, lived: false })!
   assert.deepEqual(build.report.lived, { paths: [], objects: [] })
   const hash = computeBuildHash(build)
-  assert.equal(hash, '5f3ea9c0e97f6e46', 'B1 hash matches')
+  assert.equal(hash, 'b9bcb83a7f937b8c', 'B1 hash matches')
 })
 
 test('the three objects stand by their doors', { skip }, () => {
@@ -859,10 +860,38 @@ test("the plaster houses' ribbon count holds", { skip }, () => {
     `plaster house ribbons ${houseRibbons} in [392, 480]`,
   )
 
-  const churchPlasterRibbons = build.report.faces
-    .filter((f) => f.source === 'plaster' && ['church', 'belfry', 'spire'].includes(f.owner))
+  // slice 1 task 1: the church's walls take their own four sources, not the plaster; the plaster is the houses' alone
+  const churchOwn = ['churchLit', 'churchShade', 'spire', 'belfry']
+  const churchOwnRibbons = build.report.faces
+    .filter((f) => churchOwn.includes(f.source) && ['church', 'belfry', 'spire'].includes(f.owner))
     .reduce((sum, f) => sum + f.ribbons, 0)
-  assert.equal(churchPlasterRibbons, 729, 'church plaster ribbons 729 exactly')
+  assert.ok(churchOwnRibbons > 0 && churchOwnRibbons <= 1600, `church own-source ribbons ${churchOwnRibbons} in (0, 1600]`)
+  const churchRibbons = build.report.faces.filter((f) => ['church', 'belfry', 'spire'].includes(f.owner)).reduce((sum, f) => sum + f.ribbons, 0)
+  assert.ok(churchRibbons <= 1600, `the church's ribbons ${churchRibbons} <= 1600`)
+  assert.equal(build.report.faces.filter((f) => f.source === 'plaster' && ['church', 'belfry', 'spire'].includes(f.owner) && f.ribbons > 0).length, 0, 'no church face is clad from the plaster')
+  assert.ok(build.counts.triangles <= 602000, `the default street ${build.counts.triangles} triangles <= 602,000`)
+  console.log(`church ribbons ${churchRibbons}, own-source ribbons ${churchOwnRibbons}, street triangles ${build.counts.triangles}`)
+})
+
+test("the church's openings keep the plaster face (the design's non-goal, Codex F2)", { skip }, () => {
+  assert.ok(realPainting)
+  const b = buildStreet(realPainting, flow, masses, { grass: true })!
+  const { nave } = STREET_CHURCH
+  const pos = b.strokes.arrays.positions
+  const col = b.strokes.arrays.colors
+  const colours: number[][] = []
+  for (let i = 0; i < b.strokes.cls.length; i++) {
+    if (b.strokes.cls[i] !== 255) continue
+    const dx = pos[i * 3] - nave.x
+    const dz = pos[i * 3 + 2] - nave.z
+    const u = dx * Math.cos(nave.yaw) + dz * Math.sin(nave.yaw)
+    const v = -dx * Math.sin(nave.yaw) + dz * Math.cos(nave.yaw)
+    if (Math.abs(u) <= nave.w / 2 + 0.005 && Math.abs(v) <= nave.d / 2 + 0.005) colours.push([col[i * 3], col[i * 3 + 1], col[i * 3 + 2]])
+  }
+  const hash = createHash('sha256').update(JSON.stringify(colours)).digest('hex').slice(0, 16)
+  // computed at the base commit 4ec0008: the door's panel, the side windows, the reveals and the step, strokes with cls 255
+  assert.equal(colours.length, 2287, 'the church opening vertices')
+  assert.equal(hash, '51a2c84e0b745f72', 'their colours are the base commit\'s')
 })
 
 test("K2's walls without the lived-in parts", { skip }, () => {
@@ -873,5 +902,5 @@ test("K2's walls without the lived-in parts", { skip }, () => {
     'every face reports lengthScale 1',
   )
   const hash = computeBuildHash(build)
-  assert.equal(hash, '5f3ea9c0e97f6e46', 'B1 hash matches')
+  assert.equal(hash, 'b9bcb83a7f937b8c', 'B1 hash matches')
 })

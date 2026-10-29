@@ -58,7 +58,7 @@ test('the unlit grass compiles to main\'s program, and the moon gets a cache key
   }
   // main 5817279's program, hashed before S3b changed the shader (scratch/hash-grass.ts)
   assert.equal(compiled(false, false).hash, '4b0b48f47e712dbb')
-  assert.equal(compiled(true, false).hash, '87c32b59ccf433d6')
+  assert.equal(compiled(true, false).hash, '8c42ee526742c477')
   const lit = compiled(false, true)
   assert.notEqual(lit.hash, '4b0b48f47e712dbb')
   assert.notEqual(lit.key, compiled(false, false).key)

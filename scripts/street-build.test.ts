@@ -8,7 +8,7 @@ import { islandHeightAt } from '../src/scene/islandShape.ts'
 import type { BakedMass } from '../src/scene/landDomes.ts'
 import { Vector3 } from 'three'
 import { COTTAGE, KEPT_PAINT, ROOF_EDGE, buildStreet, cottageFaces, houseRoofEdges, type StreetShape } from '../src/scene/streetGeometry.ts'
-import { CHURCH, DETAIL, detailOf, STREET, STREET_CHURCH, STREET_HOUSES, STREET_TRIANGLE_BUDGET, laneDistance, pathPoint } from '../src/scene/streetLayout.ts'
+import { CHURCH, DETAIL, detailOf, STREET, STREET_CHURCH, STREET_HOUSES, laneDistance, pathPoint } from '../src/scene/streetLayout.ts'
 import type { ImageData2D } from '../src/scene/useImageData.ts'
 import { VILLAGE_CHURCH } from '../src/scene/villageKnot.ts'
 import { decodePNG } from './lib/png.ts'
@@ -92,51 +92,65 @@ test('the church is the knot\'s: the belfry\'s width and the spire\'s height abo
   assert.ok(Math.abs(build.report.church.belfryHeight - (belfry.topY - floor)) < 1e-9)
 })
 
-test('every vertex of underpaint and strokes has a source class, and the church is plaster', () => {
+test('every vertex of underpaint and strokes has a source class, and the church is its own', () => {
   assert.ok(build)
   const upCount = build.underpaint.positions.length / 3
   const strCount = build.strokes.arrays.positions.length / 3
   assert.equal(build.underpaint.src?.length, upCount, 'underpaint has src per vertex')
   assert.equal(build.strokes.src?.length, strCount, 'strokes has src per vertex')
-  for (const s of build.underpaint.src) {
-    assert.ok((s >= 0 && s <= 6) || s === 255, `underpaint src ${s} valid`)
-  }
-  for (const s of build.strokes.src) {
-    assert.ok((s >= 0 && s <= 6) || s === 255, `strokes src ${s} valid`)
-  }
-  const churchNave = STREET_CHURCH.nave
-  const churchBelfry = STREET_CHURCH.belfry
-  let churchWallStrokes = 0
-  for (let i = 0; i < strCount; i++) {
-    const x = build.strokes.arrays.positions[i * 3]
-    const z = build.strokes.arrays.positions[i * 3 + 2]
-    const cls = build.strokes.cls[i]
-    if (cls === 0) {
-      const dNave = Math.hypot(x - churchNave.x, z - churchNave.z)
-      const dBelfry = Math.hypot(x - churchBelfry.cx, z - churchBelfry.cz)
-      if (dNave < 0.35 || dBelfry < 0.35) {
-        churchWallStrokes++
-        assert.equal(build.strokes.src[i], 2, `church wall stroke vertex ${i} must be plaster (2)`)
-      }
-    }
-  }
-  assert.ok(churchWallStrokes > 50, `found church wall strokes: ${churchWallStrokes}`)
+  const valid = (s: number) => (s >= 0 && s <= 6) || (s >= 10 && s <= 13) || s === 255
+  for (const s of build.underpaint.src) assert.ok(valid(s), `underpaint src ${s} valid`)
+  for (const s of build.strokes.src) assert.ok(valid(s), `strokes src ${s} valid`)
+  assert.ok(!valid(14) && !valid(7) && !valid(9), 'the range check refuses 14')
 
-  let churchWallUnderpaint = 0
-  for (let i = 0; i < upCount; i++) {
-    const x = build.underpaint.positions[i * 3]
-    const z = build.underpaint.positions[i * 3 + 2]
-    const cls = build.underpaint.cls[i]
-    if (cls === 0) {
-      const dNave = Math.hypot(x - churchNave.x, z - churchNave.z)
-      const dBelfry = Math.hypot(x - churchBelfry.cx, z - churchBelfry.cz)
-      if (dNave < 0.35 || dBelfry < 0.35) {
-        churchWallUnderpaint++
-        assert.equal(build.underpaint.src[i], 2, `church wall underpaint vertex ${i} must be plaster (2)`)
-      }
-    }
+  // the church's wall paint: inside the nave's oriented box grown by 0.005 → src 10 or 11, else inside the belfry's
+  // square grown by 0.005 → src 13 below the belfry's top and 12 above; cls 10 either way
+  const { nave, belfry } = STREET_CHURCH
+  // 0.005 in the plan; a ribbon at a wall's corner reaches 0.0066 past it (the half-width), so 0.01
+  const grow = 0.01
+  const inNave = (x: number, z: number) => {
+    const dx = x - nave.x
+    const dz = z - nave.z
+    const along = dx * Math.cos(nave.yaw) + dz * Math.sin(nave.yaw)
+    const toPath = -dx * Math.sin(nave.yaw) + dz * Math.cos(nave.yaw)
+    return Math.abs(along) <= nave.w / 2 + grow && Math.abs(toPath) <= nave.d / 2 + grow
   }
-  assert.ok(churchWallUnderpaint > 10, `found church wall underpaint vertices: ${churchWallUnderpaint}`)
+  const inBelfry = (x: number, z: number) => {
+    const dx = x - belfry.cx
+    const dz = z - belfry.cz
+    const along = dx * Math.cos(belfry.yaw) + dz * Math.sin(belfry.yaw)
+    const toPath = -dx * Math.sin(belfry.yaw) + dz * Math.cos(belfry.yaw)
+    return Math.abs(along) <= belfry.width / 2 + grow && Math.abs(toPath) <= belfry.width / 2 + grow
+  }
+  const top = belfry.topY - islandHeightAt(VILLAGE_CHURCH.belfry.cx, VILLAGE_CHURCH.belfry.cz)
+  const eps = 1e-6
+  const check = (name: string, positions: number[], cls: number[], src: number[]) => {
+    let church = 0
+    for (let i = 0; i < src.length; i++) {
+      const [x, y, z] = [positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]]
+      const wall = cls[i] === 0 || cls[i] === 10
+      if (src[i] >= 10 && src[i] <= 13) assert.equal(cls[i], 10, `${name} vertex ${i}: src ${src[i]} has cls 10`)
+      if (cls[i] === 10) assert.ok(src[i] >= 10 && src[i] <= 13, `${name} vertex ${i}: cls 10 has src ${src[i]}`)
+      // an opening, a reveal or the step keeps no church source: src 255
+      if (cls[i] === 255 && (inNave(x, z) || inBelfry(x, z))) assert.equal(src[i], 255, `${name} vertex ${i}: an opening has src 255`)
+      if (!wall) continue
+      if (inNave(x, z)) {
+        assert.ok(src[i] === 10 || src[i] === 11 || (inBelfry(x, z) && src[i] >= 12), `${name} vertex ${i} in the nave: src ${src[i]}, cls ${cls[i]}`)
+        church++
+      } else if (inBelfry(x, z)) {
+        const ok = src[i] === 13 && y <= top + eps ? true : src[i] === 12 && y >= top - eps
+        assert.ok(ok, `${name} vertex ${i} in the belfry at y ${y.toFixed(4)} (top ${top.toFixed(4)}): src ${src[i]}`)
+        church++
+      } else assert.ok(cls[i] === 0 && (src[i] <= 6 || src[i] === 255), `${name} vertex ${i} outside the church: cls ${cls[i]}, src ${src[i]}`)
+    }
+    return church
+  }
+  const strokes = check('strokes', build.strokes.arrays.positions, build.strokes.cls, build.strokes.src)
+  const under = check('underpaint', build.underpaint.positions, build.underpaint.cls, build.underpaint.src)
+  assert.ok(strokes > 50, `found church wall strokes: ${strokes}`)
+  assert.ok(under > 10, `found church wall underpaint vertices: ${under}`)
+  // all four of the church's sources are on the wall (the nave's two tones, the belfry, the spire)
+  for (const s of [10, 11, 12, 13]) assert.ok(build.strokes.src.includes(s), `strokes carry src ${s}`)
 })
 
 /** A house's frame for the pure builders: centred at the origin, its width along x, its front toward +z. */
@@ -246,12 +260,16 @@ test('far houses and far ground take half', () => {
   assert.ok(halfNearTiles > 0, 'at least one near ground tile takes 0.5')
 })
 
+// S1's 641,310 was 1,444,930 less the diorama's S1 parts. The gate measures the walk's sweep directly. This is the
+// fixture's base 639,524 at 4ec0008 plus the design's church allowance 602,000 − 596,919 (t2/ledger.md)
+const FIXTURE_BUDGET = 644_605
+
 test('the street fits its budget', () => {
   assert.ok(build)
   assert.ok(build.counts.triangles > 0, 'triangles > 0')
   assert.ok(
-    build.counts.triangles <= STREET_TRIANGLE_BUDGET,
-    `street triangles ${build.counts.triangles} <= budget ${STREET_TRIANGLE_BUDGET}`,
+    build.counts.triangles <= FIXTURE_BUDGET,
+    `street triangles ${build.counts.triangles} <= budget ${FIXTURE_BUDGET}`,
   )
 })
 

@@ -31,6 +31,13 @@ export const STREET_SOURCES = {
   field: [760, 1214, 935, 1262],
   /** pass 5: a lit window of the painting's left village (lemon-yellow horizontal dabs over dark specks), found by colour */
   windowLit: [777, 1086, 782, 1094],
+  /** church plan slice 1 (`scratch/church-animals-2026-10-29/t0/sources.md`): the painting's church, picked at 6x and 8x on
+   * the work painting. The front gable's pale face, the right wall's blue-and-white verticals, the shaft, the dark band
+   * at the shaft's foot */
+  churchLit: [886, 1050, 906, 1072],
+  churchShade: [936, 1056, 954, 1094],
+  spire: [904, 860, 914, 990],
+  belfry: [898, 1000, 922, 1012],
 } as const
 
 export type StreetSourceName = keyof typeof STREET_SOURCES
@@ -74,6 +81,12 @@ export const SOURCE_STROKES: Record<StreetSourceName, { width: [number, number];
   field: { width: [0.15, 0.25], length: [1.5, 6.0], axis: [1, 0], blend: 0, smoothing: 3 },
   // the window's dabs at 1:1 of the 3840 scan: about 0.3 of its height across, its width along
   windowLit: { width: [0.2, 0.35], length: [0.5, 1.0], axis: [1, 0], blend: 0.6, cover: 4 },
+  // the church's four (`t0/recipe.md`: ten strokes a face read at 1:1, as fractions of CHURCH.stroke 0.16). The covers
+  // are the recipe's measured 3.5 / 3.5 / 6 / 3.5 scaled 0.5 to the triangle budget (`t2/ledger.md`: street 600,275)
+  churchLit: { width: [0.08, 0.13], length: [0.33, 0.8], axis: [0.15, 0.99], blend: 0.75, cover: 1.75 },
+  churchShade: { width: [0.075, 0.11], length: [0.42, 0.85], axis: [0, 1], blend: 0.75, cover: 1.75 },
+  spire: { width: [0.05, 0.09], length: [0.7, 1.9], axis: [0, 1], blend: 0.9, cover: 3 },
+  belfry: { width: [0.08, 0.13], length: [0.28, 0.47], axis: [1, 0], blend: 0.75, cover: 1.75 },
 }
 
 /** the outlines' full width as a fraction of the wall (task 1: 0.12–0.18; the painting's are thick) */
