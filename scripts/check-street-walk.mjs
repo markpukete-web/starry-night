@@ -22,7 +22,7 @@ import { PerspectiveCamera, Vector3 } from 'three'
 import { STATION_T, STREET_HOUSES, laneParam, vincentPlace, walkPose } from '../src/scene/streetLayout.ts'
 import { inFootprint } from '../src/scene/streetGrass.ts'
 import { PAUSE, WALK } from '../src/scene/streetWalk.ts'
-import { WANDER, hidden, initialWander, legSeen, standable, tripFrom, wanderTo } from '../src/scene/streetWander.ts'
+import { WANDER, followT, hidden, inFrame, initialWander, legSeen, standable, tripFrom, wanderTo } from '../src/scene/streetWander.ts'
 
 const appUrl = process.env.DIORAMA_CAPTURE_URL || 'http://127.0.0.1:5191/'
 const parsedUrl = new URL(appUrl)
@@ -103,21 +103,43 @@ function acceptedPoints(persp, size, box, view, t, onCanvas, { min = 0.12, max =
 }
 
 /**
- * The sight guard's qualification (Codex F8): the point is on the canvas by 24 px and outside his box, standable,
- * reached by a clear leg and seen from the live camera (so only the leg's sight can refuse it), refused by `wanderTo`
- * with the view, and the leg ending one `WANDER.sightStep` short passes `legSeen`.
+ * The sight guard's qualification (Codex F8): the point is in front of the camera, on the canvas by 24 px and outside
+ * his box, and its pixel casts back to it (Codex r1 N1); standable, reached by a clear leg and seen from the live
+ * camera (so only the leg's sight can refuse it); refused by `wanderTo` with the view; the leg's own samples less the
+ * last are seen (so the last sample alone refuses it, `seenButLast`), and the leg ending one `WANDER.sightStep` short
+ * passes `legSeen`.
  */
 function sightQualifies(persp, size, box, view, t, x, z) {
   const here = slotAt(t)
+  const depth = new Vector3(x, 0, z).project(persp).z
+  if (!(depth > -1 && depth < 1)) return false
   const [px, py] = toClient(persp, size, [x, 0, z])
   if (!insideCanvas(size, px, py, 24) || insideBox(box, px, py)) return false
+  const back = groundCast(persp, size, px, py)
+  if (!back || Math.hypot(back[0] - x, back[1] - z) > 1e-4) return false
   if (hidden(persp.position.x, persp.position.z, x, z)) return false
   if (!wanderTo(initialWander(), here, x, z, null)) return false
   if (wanderTo(initialWander(), here, x, z, view)) return false
   const len = Math.hypot(x - here.x, z - here.z)
   if (len <= WANDER.sightStep) return false
   const k = (len - WANDER.sightStep) / len
+  if (!seenButLast(tripFrom(here), here.x, here.z, x, z, view)) return false
   return legSeen(tripFrom(here), here.x, here.z, here.x + (x - here.x) * k, here.z + (z - here.z) * k, view)
+}
+
+/**
+ * `legSeen`'s own samples, the last left out, written here so a mutation of `legSeen` cannot move it (Codex r1 N1): with
+ * the last sample dropped from the module, no point is both refused and seen but for the last, and the case fails.
+ */
+function seenButLast(s, ax, az, bx, bz, view) {
+  const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, bz - az) / WANDER.sightStep))
+  for (let k = 1; k < n; k++) {
+    const x = ax + ((bx - ax) * k) / n
+    const z = az + ((bz - az) * k) / n
+    const pose = walkPose(followT(s, x, z), view.portrait)
+    if (hidden(pose.position[0], pose.position[2], x, z) || !inFrame(pose, x, z, view.halfFovDeg)) return false
+  }
+  return true
 }
 
 /** the qualifying point on a 0.01 grid over `reach` of the slot, nearest the canvas centre, off the page's chrome */
@@ -1108,6 +1130,17 @@ async function main() {
     await sleep(400)
     if ((await c8.wander()).mode !== 'lane') c8.fail('a drag out 60 px and back to the press sent him')
 
+    // the same drag folded into one move, as a browser may coalesce its samples (Codex r1): the move's own point is 2 px
+    // from the press, its first coalesced sample 60 px
+    await page.evaluate(`window.__pid = null; window.addEventListener('pointerdown', (e) => { window.__pid = e.pointerId }, { once: true })`)
+    await page.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: P.px, y: P.py, button: 'none', buttons: 0 })
+    await page.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: P.px, y: P.py, button: 'left', buttons: 1, clickCount: 1 })
+    const folded = await page.evaluate(`(() => { const o = { pointerId: window.__pid, isPrimary: true, pointerType: 'mouse', buttons: 1, bubbles: true, clientY: ${P.py} }; const at = (x) => new PointerEvent('pointermove', { ...o, clientX: x }); const e = new PointerEvent('pointermove', { ...o, clientX: ${P.px + 2}, coalescedEvents: [at(${P.px + 60}), at(${P.px + 2})] }); window.dispatchEvent(e); return e.getCoalescedEvents().length })()`)
+    await page.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: P.px + 2, y: P.py, button: 'left', buttons: 0, clickCount: 1 })
+    await sleep(400)
+    if (folded !== 2) c8.fail(`the folded move carried ${folded} coalesced samples, not 2`)
+    if ((await c8.wander()).mode !== 'lane') c8.fail('a drag out 60 px and back folded into one move sent him')
+
     // the tap: he goes, and arrives within the trip's length over his speed, plus a second
     const park = await c8.pauseAt()
     if (!park) c8.fail('no Pause control on the page')
@@ -1181,7 +1214,7 @@ async function main() {
     await c8.wheel()
     await sleep(800)
     if (!((await c8.t()) - t8 > 0.01 / L)) c8.fail(`the next wheel did not walk: t ${await c8.t()}`)
-    console.log(`PASS: the wander, desktop stop 1: a wall at [${wall.px}, ${wall.py}] (ground ${wall.hit.map((v) => v.toFixed(3))}, accepted but for the wall), a 48 px drag and a 60 px drag out and back leave him; a tap at [${P.px.toFixed(0)}, ${P.py.toFixed(0)}] sends him ${trip.toFixed(3)} and he arrives in ${(took / 1000).toFixed(2)} s (bound ${(c8.bound(trip, 1000) / 1000).toFixed(2)} s), the camera on the rail, the aim ${aim8.toFixed(1)} degrees, the trail ${herePush.toFixed(2)} at his point and ${slotPush} at his slot; his box toggles the walk, his old slot and a wheel turn bring him home`)
+    console.log(`PASS: the wander, desktop stop 1: a wall at [${wall.px}, ${wall.py}] (ground ${wall.hit.map((v) => v.toFixed(3))}, accepted but for the wall), a 48 px drag and a 60 px drag out and back, apart and folded into one move, leave him; a tap at [${P.px.toFixed(0)}, ${P.py.toFixed(0)}] sends him ${trip.toFixed(3)} and he arrives in ${(took / 1000).toFixed(2)} s (bound ${(c8.bound(trip, 1000) / 1000).toFixed(2)} s), the camera on the rail, the aim ${aim8.toFixed(1)} degrees, the trail ${herePush.toFixed(2)} at his point and ${slotPush} at his slot; his box toggles the walk, his old slot and a wheel turn bring him home`)
 
     // ---- 8b. desktop, stop 2: the sight guard
     await c8.open(DESKTOP, false, 2, 'input')

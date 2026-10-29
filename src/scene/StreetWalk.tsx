@@ -27,7 +27,7 @@ import {
 import { SQUARE_TOP } from './frog.ts'
 import { lanternShown, walkOn, type StreetFlags } from './streetMode.ts'
 import { strokeGeometry } from './strokeGeometry.ts'
-import { classifyGesture, TOUCH_SURGE, type PointerSample } from './touchSurge.ts'
+import { classifyGesture, strayed, type PointerSample } from './touchSurge.ts'
 import type { ImageData2D } from './useImageData.ts'
 import {
   buildVincent,
@@ -161,7 +161,7 @@ export default function StreetWalk({
     pointerId: number
     down: PointerSample
     vincent: boolean
-    /** the pointer went past the tap's allowance at some point, so a release back at the press is not a tap (Codex F2) */
+    /** some sample of the pointer went past the tap's allowance, so a release back at the press is not a tap (Codex F2) */
     dragged: boolean
   } | null>(null)
 
@@ -584,7 +584,11 @@ export default function StreetWalk({
 
     const onPointerMove = (e: PointerEvent) => {
       const g = activeGestureRef.current
-      if (g?.pointerId === e.pointerId && Math.hypot(e.clientX - g.down.x, e.clientY - g.down.y) > TOUCH_SURGE.tapPx) g.dragged = true
+      if (g?.pointerId !== e.pointerId) return
+      // the browser may fold several samples into one move: read them all, or the move itself where there are none (Codex r1)
+      const folded = e.getCoalescedEvents?.() ?? []
+      const samples = (folded.length ? folded : [e]).map((p) => ({ x: p.clientX, y: p.clientY }))
+      if (strayed(g.down, samples)) g.dragged = true
     }
 
     const onPointerCancel = (e: PointerEvent) => {
