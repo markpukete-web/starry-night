@@ -469,7 +469,7 @@ test("K2's street without the lived-in parts", { skip }, () => {
   const build = buildStreet(realPainting, flow, masses, { grass: true, lived: false })!
   assert.deepEqual(build.report.lived, { paths: [], objects: [] })
   const hash = computeBuildHash(build)
-  assert.equal(hash, '5f3ea9c0e97f6e46', 'B1 hash matches')
+  assert.equal(hash, '8a2e3fbfd34ababe', 'B1 hash matches')
 })
 
 test('the three objects stand by their doors', { skip }, () => {
@@ -873,5 +873,5 @@ test("K2's walls without the lived-in parts", { skip }, () => {
     'every face reports lengthScale 1',
   )
   const hash = computeBuildHash(build)
-  assert.equal(hash, '5f3ea9c0e97f6e46', 'B1 hash matches')
+  assert.equal(hash, '8a2e3fbfd34ababe', 'B1 hash matches')
 })

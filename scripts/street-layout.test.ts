@@ -289,7 +289,9 @@ test('houses and trees do not overlap', () => {
     for (const b of boxes) {
       const gap = distPointToBox(c.x, c.z, b) - c.r
       if (gap < minCircleBoxGap) minCircleBoxGap = gap
-      assert.ok(gap >= 0.02, `overlap between circle ${c.id} and box ${b.id}: gap ${gap.toFixed(4)} < 0.02`)
+      // the two trees that flank the nave stand close against it (church slice 1, Task 3), so their floor to it is 0.025
+      const floor = b.id === 'nave' && (c.id === 'orchard-lower' || c.id === 'olive-right') ? 0.025 : 0.02
+      assert.ok(gap >= floor, `overlap between circle ${c.id} and box ${b.id}: gap ${gap.toFixed(4)} < ${floor}`)
     }
   }
 
