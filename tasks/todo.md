@@ -2,8 +2,7 @@
 
 ## Pickup — 2026-10-29 (14:45): Vincent's wander, passed by Mark; the PR is open, Fable reviews
 
-Branch `feat/vincent-wander` (head after this note's commit), pushed for a Vercel preview; no PR yet (Mark looks
-first). The record is `tasks/2026-10-29-vincent-wander.md`. The slice fixes the spike's four faults and adds the walk
+Branch `feat/vincent-wander`, PR #37 (https://github.com/markpukete-web/starry-night/pull/37). The record is `tasks/2026-10-29-vincent-wander.md`. The slice fixes the spike's four faults and adds the walk
 home after the dwell (Mark, 11:45). Task 4's runs (Gemini) and the Lead's gate on `a21767e` are green. Codex's branch
 review took three rounds: r0 REVISE (F1 to F5), r1 REVISE (the folded drag, the phone's sight fixture), r2 BUILD. F3
 was declined with evidence and decision (l) reworded. Codex's plan is drained (Mark, after round 2): Fable, in pane `w4:p6`,
