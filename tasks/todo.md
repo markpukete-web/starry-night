@@ -1,11 +1,14 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-29 (10:15): Vincent's wander becomes a slice
+## Pickup — 2026-10-29 (11:10): Vincent's wander, the plan passed review, Task 1 building
 
-Mark, 09:58: "Wander as a slice". The plan is `tasks/2026-10-29-vincent-wander-plan.md`, revision 0, on
-`feat/vincent-wander` (off `8c3f9a5`). It fixes the spike's four faults: the lantern hidden in the grass, the sparse
-verge, the square, and the spot half behind a gable. Codex reads it for correctness, a Sonnet builder for buildability.
-The worker (Gemini) ran the gate's runs on `main` as the baseline (`scratch/vincent-wander-2026-10-29/base/`).
+Mark, 09:58: "Wander as a slice". The plan is `tasks/2026-10-29-vincent-wander-plan.md` on `feat/vincent-wander`
+(off `8c3f9a5`). It fixes the spike's four faults: the lantern hidden in the grass, the sparse verge, the square, and
+the spot half behind a gable. Revision 3 (`d55c7c6`) passed Codex's review (BUILD) after three rounds: r0 eight P2s
+and the builder's read, r1 two new P2s in the return (N1, N2), r2 one phone test fixture. The reviews are in
+`scratch/vincent-wander-2026-10-29/review/`. A Sonnet builder builds Task 1 from `d55c7c6` (Mark: "Start Task 1
+now"). The worker (Gemini) ran the gate's runs on `main` as the baseline (`scratch/vincent-wander-2026-10-29/base/`):
+all pass but lint, and the hashes and the triangle sweep match V1's.
 
 **Found by the baseline:** `npm run -s lint` fails in the main checkout with 1,848 parsing errors. `eslint .` walks
 into `scratch/`, whose repo copies carry their own `eslint.config.js`. Worktrees have no `scratch/`, so CI and past gates were
