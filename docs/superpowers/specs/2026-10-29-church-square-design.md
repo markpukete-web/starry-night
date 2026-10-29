@@ -1,6 +1,7 @@
 # The church and its square: the church's paint, the trees, the flowers, then the owl and the moths
 
-**Status:** revision 1, 2026-10-29 (evening), a draft for Mark's approval. Nothing is built. A builder (Sonnet) read
+**Status:** revision 1, approved by Mark 2026-10-29 (17:20, "Go ahead with your recommendations and I like the
+tunable owl idea"). His three calls are at the end. The slice 1 plan follows. Nothing is built. A builder (Sonnet) read
 revision 0 as a planner (`scratch/church-animals-2026-10-29/review/builder-check-r0.md`, seven questions) and Codex
 read its facts against the code (`review/codex-design-r0.md`, REVISE, three P2 and two P3, with the probe
 `probe-design-r0.mjs`). This revision folds both. Two slices come out of it, each with its own plan.
@@ -46,7 +47,7 @@ circle in the light. Nothing moves fast, nothing glows on its own, and nothing i
 - The church's walls, belfry and spire take their paint from the painting's own church, in its two tones: white where
   the moon lights, blue-shaded elsewhere. The plaster's lightness at stop 4 closes most of the gap to the painting's.
 - The two trees that flank the square stand close against the church, as the painting's do.
-- A ring of pale flowers round the square's lamp, and a bed along the church's front wall if Mark wants a moonlit one.
+- A ring of pale flowers round the square's lamp, held loosely: it goes if it reads as decoration on the preview.
 - One owl on the church's ridge: still, blinking, its head following Vincent when he is near.
 - Moths at the lamps and at the lit windows near the camera.
 - All of it inside today's triangle ceiling, frame rate and gates, and still under reduced motion.
@@ -180,19 +181,17 @@ circle in the light. Nothing moves fast, nothing glows on its own, and nothing i
   (the crown stops at the nearest whole pixel that keeps the other two), the clear gap never, the cover never. Each
   tree keeps its side and its template. The plan's Task 0 finds the two positions by a search over whole map pixels
   and prints them, so the move is a number before it is a build.
-- (g) **The flowers** (Mark's suggestion, read from "owl flowers" as the owl and flowers). A bed along the church's
-  front wall's foot, either side of the door's band and step, the wall's length less 0.02 at each end, 0.03 deep. A
-  ring round the square's lamp post, radius 0.03. The bed is about 12 clumps and the ring 6, each a clump of the
-  grass's own blades at scale 0.5 (K3's plant's build, 5 to 9 blades of four segments), and 2 to 4 of each clump's
-  blades carry a head at the tip: a comma dab of 8 triangles in the shape of K2's `stoneDab` (the grass base's comma
+- (g) **The flowers** (Mark's suggestion, read from "owl flowers" as the owl and flowers). A ring round the square's
+  lamp post, radius 0.03, in the lamp's pool. The wall bed is dropped (Mark's call 2: nothing lights it). The ring is
+  6 clumps, each a clump of the grass's own blades at scale 0.5 (K3's plant's build, 5 to 9 blades of four segments),
+  and 2 to 4 of each clump's blades carry a head at the tip: a comma dab of 8 triangles in the shape of K2's `stoneDab` (the grass base's comma
   is a fragment shader, not a mesh, so the head is new geometry), no more than 0.004 across, in the painting's pale
   yellows from the `stars` region's palette, gated against the `windowLit` mean (ΔE over 5) so no head is a window's
-  colour. About 18 clumps, 56 heads: about 1,000 triangles of blades and 450 of heads. The flowers are their own
-  static mesh, built with the grass's blade function but outside the grass's chunks and the trail, so the grass hash
-  does not change and the hand does not bend them. The ring sits in the lamp's painted pool and reads by it. The wall
-  bed has no light but the moon's and the church's own (fact 7): pale heads by a pale wall, a moonlit bed, and
-  Vincent's lantern reaches it only when he wanders to the door. So the Lead's recommendation is the ring alone, and
-  the wall bed is Mark's call. The size and the count are the Lead's call.
+  colour. About 6 clumps, 18 heads: about 350 triangles of blades and 150 of heads. The flowers are their own static
+  mesh, built with the grass's blade function but outside the grass's chunks and the trail, so the grass hash does
+  not change and the hand does not bend them. The ring sits in the lamp's painted pool and reads by it. It is held
+  loosely: the painting has no flowers, and if the ring reads as decoration on the preview it goes (the Lead's
+  recommendation, Mark's "go ahead"). The size and the count are the Lead's call.
 - (h) **The colour gate** reads each new source's class against its own rectangle's palette (ΔE under 10, the
   project's strict bar), as E1 did, not against the pooled village reference (the church record's open item 4).
 
@@ -202,8 +201,9 @@ circle in the light. Nothing moves fast, nothing glows on its own, and nothing i
   Gogh was Dutch. 0.018 tall (36 cm beside Vincent's 1.7 m). From stop 4 the perch is 0.91 from the camera, so it is
   19 px tall on the desktop and 11 on the phone, and 13 and 7 from stop 3 (Codex F1's projection). The frog was sized
   up from 15 px to 22 so the phone finds it. The same choice is open here: at 0.024 (a large bird, 48 cm) it is 25
-  and 14 px at stop 4. The Lead's recommendation is the barn owl at 0.018, open to Mark against the little owl (22 cm,
-  dark, 0.011) and against the larger size.
+  and 14 px at stop 4. Mark's call 3: the barn owl at 0.024, its size a tunable (`OWL.size`, with the true scale
+  0.018 noted beside it), so a look pass can bring it back toward true scale if 0.024 reads too big. The little owl
+  (22 cm, dark, 0.011) is out: dark on a dark roof, a silhouette at best.
 - (j) **Its perch** is the nave's ridge, 0.08 back from the front gable's peak, facing the square. In numbers: the
   ridge is at the eave plus the pitch, 0.24 + 0.185 = 0.425 above the ground, and runs along the nave's depth
   (`toPath`: `along` is the width, `streetGeometry.ts:459`). The perch is `churchFront()` moved 0.08 toward the
@@ -262,11 +262,17 @@ pass on the preview.
   heads' spacing within the bed, and the instancing.
 - Which lit windows count as near, within the 0.6 rule.
 
-## Open for Mark
+## Mark's three calls (2026-10-29, 17:20)
 
-1. The two tones mirrored (decision (b)): white on the moonlit side, blue-shade on the front. Or the painting's way,
-   white on the front, which would need the church's light turned against the street's moon.
-2. The flowers: the ring in the lamp's pool (the Lead's recommendation), the wall bed as well (moonlit, lit by
-   Vincent only when he wanders to the door), or none.
-3. The owl: barn owl (pale face, the church link) or little owl (small and dark). And its size: true to life (0.018,
-   19 px on the desktop and 11 on the phone at stop 4) or sized up as the frog was (0.024, 25 and 14 px).
+Mark asked for the Lead's honest opinion on the three open items and took it: "Go ahead with your recommendations and
+I like the tunable owl idea".
+
+1. **The two tones mirrored** (decision (b)): white on the moonlit side, blue-shade on the front. The Lead's reason:
+   the street's moon lights everything else, so a church lit from the other side would be the one thing lit from
+   nowhere, which is how a thing starts to look ghostly. The painting gives two tones on one building, seen at once,
+   and stop 4 sees both faces.
+2. **The flowers: the ring in the lamp's pool only.** The wall bed is dropped, since nothing lights it. The ring is
+   held loosely: if it reads as decoration on the preview, it goes.
+3. **The owl: a barn owl at 0.024, its size a tunable.** At true scale (0.018) it is 19 px on the desktop and 11 on
+   the phone, and its face would not read. The frog was sized up for the same reason. `OWL.size` starts at 0.024
+   with 0.018 noted beside it, so a look pass can bring it back.
