@@ -1,5 +1,19 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-10-29 (10:15): Vincent's wander becomes a slice
+
+Mark, 09:58: "Wander as a slice". The plan is `tasks/2026-10-29-vincent-wander-plan.md`, revision 0, on
+`feat/vincent-wander` (off `8c3f9a5`). It fixes the spike's four faults: the lantern hidden in the grass, the sparse
+verge, the square, and the spot half behind a gable. Codex reads it for correctness, a Sonnet builder for buildability.
+The worker (Gemini) ran the gate's runs on `main` as the baseline (`scratch/vincent-wander-2026-10-29/base/`).
+
+**Found by the baseline:** `npm run -s lint` fails in the main checkout with 1,848 parsing errors. `eslint .` walks
+into `scratch/`, whose repo copies carry their own `eslint.config.js`. Worktrees have no `scratch/`, so CI and past gates were
+clean. The fix ignores `scratch` in `eslint.config.js` (Task 0).
+
+**Mark's call, not built:** on the automatic walk, whether Vincent walks back to the lane on his own after V1's 4 s
+dwell. Today the plan leaves him at the tapped point until a tap on the lane.
+
 ## Pickup — 2026-10-28 (23:45): end of the night; nothing open
 
 Mark called it for the night. On `main` (`1c77ab6`): K3, the portal on for every visitor, V1 (#34), the phone's memory
