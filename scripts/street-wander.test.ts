@@ -176,6 +176,10 @@ test('standable: lamp posts, frogs and trunks', () => {
     assert.equal(standable(x + 0.015, z), false, `0.015 from the frog of stop ${f.stop}`)
   }
   for (const tr of STREET_TREES) assert.equal(standable(tr.x, tr.z), false, `tree ${tr.id}`)
+  // the spike's: no house, and nothing past the verge
+  for (const h of STREET_HOUSES) assert.equal(standable(h.x, h.z), false, `house ${h.id}`)
+  const far = laneAt(0.3, 0.7)
+  assert.equal(standable(far.x, far.z), false, 'past the verge')
 })
 
 /** a point in L2's garden, in the rail's door frame (a along the front, k out toward the lane) */
@@ -531,7 +535,8 @@ test('stepWander: from a full dwell and back (Codex N2)', () => {
   assert.ok(Math.abs(wrap(s.yaw - slot.yaw)) <= WANDER.yawSnap, 'his yaw is the slot\'s')
   assert.equal(s.turn, 0)
   // the frame before the lane takes him draws the lane's own first frame
-  assert.ok(Math.abs(wrap(previous.yaw - slot.yaw)) <= WANDER.yawSnap * 1000, 'the last frame off the lane is on the slot\'s yaw')
+  // one frame's turn at most: the lane's first frame follows it as a step of the turn, not a jump
+  assert.ok(Math.abs(wrap(previous.yaw - slot.yaw)) <= WANDER.turn / 60 + WANDER.yawSnap, 'the last frame off the lane is within a frame\'s turn of the slot\'s yaw')
   assert.equal(previous.turn, 0)
   assert.deepEqual(offLanePose(previous.turn), turnPose(0))
 })
