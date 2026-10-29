@@ -21,7 +21,7 @@ vertices, hash `51a2c84e0b745f72`). Revision 4 (18:40, `de5d5f0`) adds departure
 
 ## Task 0: the four sources (the Lead, `C/t0/sources.md`, 17:41)
 
-Picked at 6× and 8× on the 1600 × 1267 work scan, the painting's church at work px x 820 to 960, y 820 to 1110.
+Picked at 6× and 8× on the 1600 × 1267 work scan. The painting's church sits at work px x 820 to 960, y 820 to 1110.
 
 | Source | Rectangle (work px) | L p10 / p50 / p90 | ΔE to plaster |
 | --- | --- | --- | --- |
@@ -116,12 +116,12 @@ chunks, 14,986 blades: the trees' move touched no grass), the six browser checks
 production build.
 
 The colour gate (`C/t6/colour.sh`, 19:06 to 19:09, `t6/colour/`): stops 0 to 4, both viewports, `light=0`, the
-classes with the church's own class; then stops 3 and 4 lit, the four sources against their own rectangles. The
-church class passes where the church is near: stop 3 (5.95) and stop 4 (3.04) on the desktop. The failures: the
-baseline's (the walls 11.6 at stop 0, the roofs 11.0 and 11.35 at stop 1, the fog's and the smock's areas on the
-phone, the walls' 10.79 at stop 4 on the desktop, where K3 and V1 read 19.5 before the church left the walls class),
-and the church class where it is a sliver or far (areas of 110, 80 and 7 px at stops 0 and 2; 15.1 at stop 1, where
-the fog's blue takes it, as it takes the roofs). The four sources at stop 4: churchLit 0.91, churchShade 1.27, spire
+classes with the church's own class. Then stops 3 and 4 lit, the four sources against their own rectangles. The
+church class passes where the church is near: stop 3 (5.95) and stop 4 (3.04) on the desktop. The failures are the
+baseline's. The walls read 11.6 at stop 0 and the roofs 11.0 and 11.35 at stop 1. The fog's and the smock's areas
+fall short on the phone. The walls read 10.79 at stop 4 on the desktop, where K3 and V1 read 19.5 before the church
+left the walls class. The church class fails only where it is a sliver or far. Its areas are 110, 80 and 7 px at
+stops 0 and 2. At stop 1 it reads 15.1, where the fog's blue takes it, as it takes the roofs. The four sources at stop 4: churchLit 0.91, churchShade 1.27, spire
 3.37 (the belfry 588 px, under the area floor), the phone the same verdicts. At stop 3 churchShade fails at 21.9
 (L 44.8 against 26.8) on both viewports, and `wallB` at 15.0. Not the paint and not the fog (`C/t6/halo-probe.mjs`,
 `halo-probe.log`): the front's columns by screen x read L 54, 55, 41, 26 from left to right. The lamp at `t` 0.65
@@ -133,7 +133,7 @@ three windows or the gable's peak (Step 4, Task 3's probe held).
 
 Perf (`C/t6/perf.sh`, 19:09 to 19:15, `t6/perf/summary.txt`, Codex's probe finished before it started): five rounds at
 stops 0 and 3, dpr 1.5, `capture-diorama.mjs --perf` (desktop final, desktop nopost, the phone viewport). p50 16.6 to
-16.7 ms in every run. p95 at most 18.6 (stop 0 round 3 on the phone viewport; the desktop at most 18.4). Draw calls
+16.7 ms in every run. p95 at most 18.6 (stop 0 round 3 on the phone viewport, the desktop at most 18.4). Draw calls
 321 at stop 0 and 166 at stop 3, unchanged. Triangles at stop 0 1,430,165 on the desktop, 1,424,331 on the phone.
 
 On the fix `e29bc36` (`C/t6/fix/`, 19:15 to 19:16): the mutant (the old sign) fails the new assertion and nothing else
@@ -143,18 +143,18 @@ browser checks, the sweep, the colour gate and the perf run stand on `1e3da3d`.
 
 ## Codex's branch review
 
-Round 0 (`C/briefs/codex-branch-r0.md`, sent 18:52; `C/review/codex-branch-r0.md`, 19:09, REVISE): one P2. F1: the
+Round 0 (`C/briefs/codex-branch-r0.md`, sent 18:52, the report `C/review/codex-branch-r0.md` at 19:09, REVISE): one P2. F1: the
 heads' lift normal `(az, 0, −ax)` is the camera's forward, so every head sat 0.0004 behind its blade at stop 4 (its
 probe: 19 of 19 biased away, the blade met first on every centre ray). The plan's Task 4 text carried the sign and
 Argon built it as written. The heads showed only where they reach past the blades' cut edges, which is what the look
 at `t` 0.84 saw. Fixed in `e29bc36`: the opposite normal, the report's `headCentres` and `headTips`, the test's depth
-assertion (each head nearer stop 4's eye than its blade point by more than half the lift; the old sign fails it), the
-plan at revision 5. Codex's other notes: the empty pool cannot happen at `headGap` 5 (two star colours 10.76 apart),
-left as is; `srgbToLab`'s copy in the checker, left as is; two comments narrowed (the openings guard's, which reads the
-strokes in the nave's box only, and `CHURCH_LIGHT`'s). The dispositions: `C/review/lead-branch-r0.md`.
+assertion (each head nearer stop 4's eye than its blade point by more than half the lift, which the old sign fails),
+the plan at revision 5. Codex's other notes: the empty pool cannot happen at `headGap` 5 (two star colours 10.76
+apart), left as is. `srgbToLab`'s copy in the checker, left as is. Two comments narrowed (the openings guard's, which
+reads the strokes in the nave's box only, and `CHURCH_LIGHT`'s). The dispositions: `C/review/lead-branch-r0.md`.
 
-Round 1, the bounded confirmation read (`C/briefs/codex-branch-r1.md`, sent 19:19; `C/review/codex-branch-r1.md`,
-19:27, REVISE): F1 closed (19 of 19 normals toward the eye, no centre ray blocked, a margin of 0.24 over the whole
+Round 1, the bounded confirmation read (`C/briefs/codex-branch-r1.md`, sent 19:19, the report
+`C/review/codex-branch-r1.md` at 19:27, REVISE): F1 closed (19 of 19 normals toward the eye, no centre ray blocked, a margin of 0.24 over the whole
 authored yaw range), the comments closed, and one new P2: the depth guard read `centres[1]`, the point passed to
 `stoneDab`, not the vertex it emitted, so a geometry-only control (the dab's centres shifted by minus twice the lift,
 the report untouched) drew the heads behind the blades and passed. Fixed in the next commit: `headCentres` reads the
@@ -162,7 +162,8 @@ emitted middle-row centre vertex after the call. Two mutants alone with the test
 each fail the assertion (`C/t6/fix2/mutant-sign.log`, `mutant-geometry.log`). The emitted geometry is unchanged, the
 build hash `69db1abe1f64b82b` holds. The dispositions: `C/review/lead-branch-r1.md`.
 
-Round 2, one question (`C/briefs/codex-branch-r2.md`, sent 19:31; `C/review/codex-branch-r2.md`, 19:37, BUILD):
+Round 2, one question (`C/briefs/codex-branch-r2.md`, sent 19:31, the report `C/review/codex-branch-r2.md` at 19:37,
+BUILD):
 CLOSED. The reported centres equal the emitted vertex-4 positions in every variant, the current code passes all 19,
 the old sign and the geometry-only control fail all 19 (head 0 at −0.00035, the same figure as the mutant logs), the
 build hash `69db1abe1f64b82b` unchanged. The fix is `f1a3cf8`. Three rounds in all, the review's limit stated in its

@@ -1,5 +1,42 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-10-29 (19:40): slice 1 gated and reviewed, PR #38 open for Mark's preview pass
+
+**Done by 19:40:** the gate on `1e3da3d` (the green step, the six browser checks, the sweep 1,433,053 against
+1,444,930, the colour gate, the ID frames, perf p95 at most 18.6 ms, 321 draw calls; `C/t6/`). Codex's branch review,
+three rounds: r0 REVISE (the heads lifted behind their blades, fixed `e29bc36`), r1 REVISE (the depth guard read the
+dab's argument, fixed `f1a3cf8`), r2 BUILD. The record `tasks/2026-10-29-church-square.md`, the Tunables entry, seven
+lessons (`489b9dd`). Pushed; **PR #38** open (`https://github.com/markpukete-web/starry-night/pull/38`), the Codex
+bot's review requested at 19:38. The Vercel preview is ready:
+`https://starry-night-git-feat-church-square-markpukete-webs-projects.vercel.app`. Mark sent the crops and a push
+notification. The look server on 5199 stopped.
+
+**For Mark at the preview:** P7 (the church without a foot shadow; one line in `streetLight.ts`, reversible) and
+probe B (the painting's own sides, `litWalls` in `church()`). The crops: `C/for-mark/`.
+
+**Then:** read the Codex bot's review on #38 (the timeline API first), answer every thread, fix in one batch (at
+most two re-requests). Mark's pass, his merge. Slice 2 (the barn owl on the ridge, the moths at the lit windows)
+after his word: the design's slice 2 section, a plan to Codex's read first.
+
+## Pickup — 2026-10-29 (18:55): Tasks 1, 3 and 4 merged and gated, the look passes done, Task 6's gate and Codex's branch review running
+
+**Done by 18:55:** Task 4 (Argon, `1056cd9`) merged `1e3da3d` (18:46) after the Lead's gate (the diff read, the suite
+run, 482 pass, tsc and lint clean; the flag-off pin re-pinned to `46f2bc6ba04296ab`). Look passes 1 to 4
+(`C/t5/looks.md`, `b322690`): the design's levers reached 42.3 of 49.7, and pass 4 exempts the church's two tones from
+`wallShade`'s ground term (departure P7, revision 4 `de5d5f0`), reading 48.1 / 24.2 against 49.7 / 26.8. Probes B (the
+painting's own sides) and C (P7) captured for Mark. The ring of flowers read at `t` 0.84 (`C/t5/p5`): a quiet tuft with
+pale heads in the lamp's pool, no retune. The record drafted (`tasks/2026-10-29-church-square.md`, the gate and the
+review to fill). Five lessons appended.
+
+**Running at 18:55:** the gate `C/t6/gate.sh 1e3da3d` (tsc, lint, the suite, the hashes, the six browser checks on
+port 5213, the sweep with 0.26 and 0.9, the build; `C/t6/summary.txt`), then `C/t6/colour.sh` (5214) and
+`C/t6/perf.sh` (5215), chained one after another. Codex `w4:p4` on the branch review (`C/briefs/codex-branch-r0.md`,
+report `C/review/codex-branch-r0.md`), sent 18:52.
+
+**Then:** the ID-frame look at stops 3 and 4 (Step 4), the gate's numbers into the record and the Tunables entry,
+Codex's findings fixed in one batch, push `feat/church-square`, the PR with P7 and probe B at the top for Mark's
+decision, a push notification to Mark. Slice 2 (the owl, the moths) after his word.
+
 ## Pickup — 2026-10-29 (18:35): revision 3, Tasks 1 and 3 merged, Argon on Task 4, Mark at dinner ("Take the lead")
 
 **Revision 3 (`086b6d9`)** folds Codex's confirmation read of revision 2 (`review/codex-plan-r2.md`: five of six
