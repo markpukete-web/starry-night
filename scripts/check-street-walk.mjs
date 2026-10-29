@@ -11,7 +11,8 @@
  * 7. The dwell: 4 s on the form's own clock, the turn in and out, the lantern lit, a tap ends it (V1).
  * 8. The wander (2026-10-29, tasks/2026-10-29-vincent-wander-plan.md, Task 2): a tap on open ground sends him; a house's
  *    wall, a drag and a refused leg do not; his tap box, the trail at his feet, the wheel, the Pause control and reduced
- *    motion, on the desktop with a mouse and on the phone with a finger.
+ *    motion, on the desktop with a mouse and on the phone with a finger; on the automatic walk, his walk home after the
+ *    dwell (decision (p)).
  */
 import { execSync, spawn } from 'node:child_process'
 import { existsSync, mkdtempSync, rmSync } from 'node:fs'
@@ -20,7 +21,7 @@ import { join } from 'node:path'
 import { PerspectiveCamera, Vector3 } from 'three'
 import { STATION_T, STREET_HOUSES, laneParam, vincentPlace, walkPose } from '../src/scene/streetLayout.ts'
 import { inFootprint } from '../src/scene/streetGrass.ts'
-import { WALK } from '../src/scene/streetWalk.ts'
+import { PAUSE, WALK } from '../src/scene/streetWalk.ts'
 import { WANDER, initialWander, legSeen, standable, tripFrom, wanderTo } from '../src/scene/streetWander.ts'
 
 const appUrl = process.env.DIORAMA_CAPTURE_URL || 'http://127.0.0.1:5191/'
@@ -1205,7 +1206,10 @@ async function main() {
     await c8.until('window.__wander().arrived > 0', c8.bound(farTrip, 3000), 'him going on and arriving after reduced motion')
     console.log(`PASS: the Pause control and reduced motion hold his position and the camera's matrix over 1 s while he walks off the lane (${farTrip.toFixed(3)} trip), and he goes on and arrives when each ends; a tap under reduced motion changes nothing`)
 
-    // ---- 8d. the phone, stop 1, the automatic walk: a finger sends him, and the walk stands still while he is off the lane
+    // ---- 8d. the phone, the automatic walk (p). With the walk stopped, he stays past the dwell's mark, and a finger on
+    // him starts the walk and sends him home at once. With it on, a finger in stop 2's dwell sends him, the walk waits,
+    // and he goes home by himself at the mark; the walk then goes on with no second dwell
+    const mark = (PAUSE.dwell - PAUSE.endTurn) * 1000
     await c8.open(PHONE, true, 1, 'auto')
     if ((await c8.auto()) !== true) c8.fail('the phone did not open on the automatic walk')
     {
@@ -1226,23 +1230,47 @@ async function main() {
     await c8.until('window.__wander().arrived > 0', c8.bound(phoneTrip, 1000), 'him arriving on the phone')
     await c8.until('window.__wander().turn === 1', 4000, 'the lantern raised on the phone')
     await c8.settle('arrived on the phone')
-    // his figure starts the automatic walk; he and the camera stay where they are
+    await c8.until(`window.__wander().arrived > ${(mark + 1000) / 1000}`, mark + 3000, 'him a second past the mark with the walk stopped')
+    const stayed8d = await c8.wander()
+    if (stayed8d.mode !== 'going' || (await c8.auto()) !== false) c8.fail(`with the walk stopped he did not stay: ${JSON.stringify(stayed8d)}`)
     const bPhone = await c8.box()
     await c8.tap(true, Math.round((bPhone.x0 + bPhone.x1) / 2), Math.round((bPhone.y0 + bPhone.y1) / 2))
     await c8.until('window.__streetWalk.auto === true', 1500, 'a finger on his figure starting the walk')
-    const tHeld = await c8.t()
-    const held = await c8.hold('the automatic walk on, he off the lane', 1500)
-    if (held.mode !== 'going' || Math.abs((await c8.t()) - tHeld) > 1e-9) c8.fail(`the automatic walk moved the camera or him while he was off the lane: t ${tHeld} to ${await c8.t()}, ${JSON.stringify(held)}`)
-    // his old slot, off his figure: the walk stays on, he comes home, and the walk then goes on
-    const livePhone = await c8.scene()
-    const [psx, psy] = toClient(livePhone.persp, livePhone.size, [phoneSlotX, 0, phoneSlotZ])
-    if (!insideCanvas(livePhone.size, psx, psy, 24) || insideBox(livePhone.box, psx, psy) || !(await c8.onCanvas(psx, psy))) c8.fail(`his old slot on the phone at [${psx.toFixed(0)}, ${psy.toFixed(0)}] is not tappable`)
-    await c8.tap(true, psx, psy)
-    await c8.until(`['returning', 'lane'].includes(window.__wander().mode)`, 1000, 'a finger on his old slot sending him back')
-    if ((await c8.auto()) !== true) c8.fail('a finger on his old slot toggled the walk')
+    await c8.until(`window.__wander().mode !== 'going'`, 1000, 'him setting off home once the walk runs')
     await c8.until(`window.__wander().mode === 'lane'`, c8.bound(phoneTrip, 4000), 'him home on the phone')
+    const tHome = await c8.t()
+    if (tHome < tPhone - 1e-9 || tHome > tPhone + 0.02) c8.fail(`home on the phone at t ${tHome}, expected the trip's ${tPhone}`)
     await c8.until(`window.__streetWalk.t > ${tPhone} + 0.003`, 3000, 'the automatic walk going on after he is home')
-    console.log(`PASS: the phone, stop 1: a finger at [${Q.px.toFixed(0)}, ${Q.py.toFixed(0)}] sends him ${phoneTrip.toFixed(3)}; with the automatic walk on, he and the camera hold over 1.5 s (t ${tHeld}); his old slot brings him home and the walk goes on`)
+
+    // the walk on throughout: the point is chosen from stop 2's camera in the input mode, the camera of stop 2's dwell
+    await c8.open(PHONE, true, 2, 'input')
+    await c8.settle('the phone at stop 2')
+    sc = await c8.scene()
+    const t2d = STATION_T[2]
+    const spots2d = acceptedPoints(sc.persp, sc.size, sc.box, sc.view, t2d, await c8.mask(PHONE))
+    if (!spots2d.length) c8.fail('no accepted point on the phone at stop 2')
+    const R = spots2d[0]
+    const [slot2x, slot2z] = slotXZ(t2d)
+    const trip2d = Math.hypot(R.x - slot2x, R.z - slot2z)
+    await c8.open(PHONE, true, 1, 'auto')
+    await c8.until(`window.__vincentForm().dwell > 0 && window.__streetWalk.t === ${t2d}`, 8000, 'the automatic walk dwelling at stop 2')
+    await c8.until('window.__vincentForm().turn === 1', 2000, 'the lantern raised in the dwell')
+    const left = await page.evaluate('window.__vincentForm().dwell')
+    if (left < 0.8) c8.fail(`only ${left} s of the dwell left for the tap`)
+    await c8.tap(true, R.px, R.py)
+    await c8.until(`window.__wander().mode === 'going'`, 1000, 'a finger in the dwell sending him')
+    if ((await c8.auto()) !== true) c8.fail('a finger on the ground toggled the walk')
+    await c8.until('window.__wander().arrived > 0', c8.bound(trip2d, 1000), 'him arriving with the walk on')
+    const arrivedAt = Date.now()
+    if (Math.abs((await c8.t()) - t2d) > 0.05) c8.fail(`the walk moved on while he was off the lane: t ${await c8.t()}`)
+    await c8.until(`window.__wander().mode === 'returning'`, mark + 1500, 'him setting off home by himself')
+    const waited = Date.now() - arrivedAt
+    if (waited < mark - 300) c8.fail(`he set off home ${waited} ms after arriving, before the mark at ${mark} ms`)
+    await c8.until(`window.__wander().mode === 'lane'`, c8.bound(trip2d, 4000), 'him home with the walk on')
+    const tBack = await c8.t()
+    if (tBack < t2d - 1e-9 || tBack > t2d + 0.02) c8.fail(`home with the walk on at t ${tBack}, expected ${t2d}`)
+    await c8.until(`window.__streetWalk.t > ${t2d} + 0.003`, 3000, 'the walk going on from stop 2 with no second dwell')
+    console.log(`PASS: the phone, the automatic walk (p): stopped, a finger at [${Q.px.toFixed(0)}, ${Q.py.toFixed(0)}] sends him ${phoneTrip.toFixed(3)}, he stays past the mark, and a finger on him starts the walk and brings him home; on, a finger in stop 2's dwell at [${R.px.toFixed(0)}, ${R.py.toFixed(0)}] sends him ${trip2d.toFixed(3)}, he sets off home ${(waited / 1000).toFixed(2)} s after arriving (mark ${(mark / 1000).toFixed(2)} s), and the walk goes on from t ${tBack}`)
 
     // ---- 8e. the phone: the sight guard. Stop 2, then 1 and 3, on a 0.01 grid; the first stop with a qualifying point
     let guard = null

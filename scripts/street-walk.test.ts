@@ -3,6 +3,7 @@ import test from 'node:test'
 import { STATION_T, STREET, WALK_T } from '../src/scene/streetLayout.ts'
 import {
   admitGesture,
+  autoOn,
   flicker,
   gait,
   hitBox,
@@ -418,4 +419,18 @@ test('vincentGround: null until the walk writes it, a live binding after, null a
   assert.deepEqual(vincentGround, [0.25, -0.5])
   setVincentGround(null)
   assert.equal(vincentGround, null)
+})
+
+test('autoOn: true exactly when the automatic walk moves him, for all sixteen inputs (the wander\'s walk home, (p))', () => {
+  for (const auto of [false, true]) {
+    for (const autoMode of [false, true]) {
+      for (const paused of [false, true]) {
+        for (const still of [false, true]) {
+          const s = { ...initialWalk(0.3, autoMode), auto }
+          const i: WalkInput = { dt: 1 / 60, wheelPx: 0, keys: 0, autoMode, paused, still }
+          assert.equal(autoOn(s, i), stepWalk(s, i).t > s.t, JSON.stringify({ auto, autoMode, paused, still }))
+        }
+      }
+    }
+  }
 })

@@ -170,6 +170,11 @@ export function initialPause(): Pause {
   return { dwell: 0, rest: 0, turn: 0, last: -1 }
 }
 
+/** the automatic walk runs: switched on, in its mode, neither paused nor still (`stepPause`'s test, and the wander's walk home, (p)) */
+export function autoOn(s: WalkState, i: WalkInput): boolean {
+  return s.auto && i.autoMode && !i.paused && !i.still
+}
+
 /**
  * The dwell and the rest on top of `stepWalk`'s result: the automatic walk's own step undone while a dwell runs, its
  * crossing of a station clamped onto it. The camera still reads only `t`. Only this function ends a dwell: input ends
@@ -183,13 +188,13 @@ export function stepPause(
   immediate: boolean,
 ): { next: WalkState; pause: Pause } {
   const L = STREET.pathLength
-  const autoOn = prev.auto && i.autoMode && !i.paused && !i.still
+  const running = autoOn(prev, i)
   let { t, target } = next
   let dwell = p.dwell
   let last = p.last
   if (i.wheelPx !== 0 || i.keys !== 0) dwell = 0
   if (t < last - PAUSE.rearm) last = -1
-  if (autoOn && dwell > 0) {
+  if (running && dwell > 0) {
     dwell -= i.dt
     if (dwell < 1e-9) dwell = 0
     if (dwell > 0) {
@@ -197,7 +202,7 @@ export function stepPause(
       t = prev.t
       target = prev.target
     }
-  } else if (autoOn) {
+  } else if (running) {
     // only the automatic walk's own step makes a stop: a frame with input, or a scroll still easing in, carries him
     // past (Codex B2). On the automatic walk `target` equals `t` until a wheel moves it
     const automatic = i.wheelPx === 0 && i.keys === 0 && prev.target === prev.t
