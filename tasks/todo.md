@@ -1,5 +1,21 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-10-29 (18:35): the design approved, the slice 1 plan written, its two reads running
+
+**Mark approved the design at 17:20** ("Go ahead with your recommendations and I like the tunable owl idea"): the two
+tones mirrored, the ring of flowers in the lamp's pool only, the barn owl at 0.024 with `OWL.size` tunable. The calls
+are recorded in the design (`967af52`).
+
+**The slice 1 plan, revision 0:** `tasks/2026-10-29-church-square-plan.md` (`78e8634`, this branch, local). Seven
+tasks: 0 the facts (the Lead picks the four source rectangles and measures the strokes at 1:1, a builder writes the
+sources probe and the tree search), 1 the sources, classes and tones (builder), 2 the ledger (Lead), 3 the trees
+(builder), 4 the flowers (builder, into the street's strokes bucket, no new mesh), 5 the look passes (Lead, four at
+most), 6 the gate. Five departures from the design's text are in its table P1 to P5, open to the reads and to Mark.
+
+**Running at 18:35:** Codex's correctness read of the plan on `w4:p4` (brief
+`scratch/church-animals-2026-10-29/briefs/codex-plan-r0.md`, report `review/codex-plan-r0.md`, a Monitor armed) and a
+Sonnet buildability read (report `review/builder-plan-r0.md`). Next: fold both into revision 1, then Task 0.
+
 ## Pickup — 2026-10-29 (17:05): #37 merged; the church and its square designed (revision 1), Mark's approval next
 
 **On `main` (`e96c7c0`):** Vincent's wander, PR #37, merged on Mark's word ("Merge #37"), production deploys from
