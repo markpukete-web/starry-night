@@ -908,8 +908,9 @@ export function vincentBoxCornersAt(position: [number, number, number], forward:
 export function vincentTapCorners(
   t: number,
   figure: { min: [number, number, number]; max: [number, number, number] } | null,
+  rig: [number, number, number][] = vincentBoxCorners(t),
 ): [number, number, number][] {
-  const corners = vincentBoxCorners(t)
+  const corners = [...rig]
   if (!figure) return corners
   for (const x of [figure.min[0], figure.max[0]]) {
     for (const y of [figure.min[1], figure.max[1]]) {

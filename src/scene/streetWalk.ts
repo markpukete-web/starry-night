@@ -309,6 +309,16 @@ export function setStreetGesture(g: StreetGesture | null): void {
   streetGesture = g
 }
 
+/**
+ * His ground position (x, z) in the street's frame, written by the walk's frame loop every frame: his lane slot or, off the
+ * lane, where the wander has him. Null with no walk running. The grass bends under it (the wander, Task 2).
+ */
+export let vincentGround: [number, number] | null = null
+
+export function setVincentGround(p: [number, number] | null): void {
+  vincentGround = p
+}
+
 export function admitGesture(
   box: { x0: number; y0: number; x1: number; y1: number } | null,
   x: number,

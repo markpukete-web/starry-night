@@ -28,7 +28,7 @@ import {
 import { createTrail, releaseSource, stampSegment, stepTrail, TRAIL } from './grassTrail.ts'
 import { STATION_T, vincentPlace } from './streetLayout.ts'
 import type { StreetFlags } from './streetMode.ts'
-import { admitGesture, streetGesture } from './streetWalk.ts'
+import { admitGesture, streetGesture, vincentGround } from './streetWalk.ts'
 import type { ImageData2D } from './useImageData.ts'
 
 export type StreetGrassProps = {
@@ -408,7 +408,6 @@ export default function StreetGrass({
   const hitWorld = useMemo(() => new Vector3(), [])
   const lastHandHitRef = useRef<[number, number] | null>(null)
   const lastFeetHitRef = useRef<[number, number] | null>(null)
-  const lastFeetTRef = useRef<number | null>(null)
 
   // 8. Frame loop (priority 0: after walk places camera)
   /* eslint-disable react-hooks/immutability -- R3F render loop mutations: instanceCount and trail bytes */
@@ -498,21 +497,16 @@ export default function StreetGrass({
       lastHandHitRef.current = null
     }
 
-    // Vincent's feet
+    // Vincent's feet: where he stands (the walk's frame loop writes it), his lane slot when no walk runs
     if (flags.vincent && mode === 'swing') {
-      const jumped =
-        lastFeetTRef.current !== null &&
-        Math.abs(walkT - lastFeetTRef.current) > 0.05
-
-      if (jumped) {
-        lastFeetHitRef.current = null
-      }
-
-      const { position: vPos } = vincentPlace(walkT)
-      const feetPos: [number, number] = [vPos[0], vPos[2]]
+      const place = vincentPlace(walkT).position
+      const feetPos: [number, number] = vincentGround ? [vincentGround[0], vincentGround[1]] : [place[0], place[2]]
+      // a move of more than 0.12 between frames breaks the segment (the old jump of 0.05 in `t`)
+      const last = lastFeetHitRef.current
+      const jumped = last !== null && Math.hypot(feetPos[0] - last[0], feetPos[1] - last[1]) > 0.12
       stampSegment(
         trail,
-        lastFeetHitRef.current,
+        jumped ? null : last,
         feetPos,
         TRAIL.feet,
         now,
@@ -520,10 +514,8 @@ export default function StreetGrass({
       )
       lastFeetHitRef.current = feetPos
       stampsRef.current.feet++
-      lastFeetTRef.current = walkT
     } else {
       lastFeetHitRef.current = null
-      lastFeetTRef.current = null
     }
 
     // Step trail
