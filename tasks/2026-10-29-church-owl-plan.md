@@ -3,6 +3,17 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or
 > superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+**Revision 2 (2026-10-29, 23:30).** Argon stopped Task 1 at Step 3 (`C/owl/t1/report.md`) and probed why against
+the real tests. Two blockers in revision 1's values, both the Lead's: under `pitch` π/2, `ellipsoid` makes `radii[2]`
+the vertical half-height and `radii[1]` the front-to-back depth, so revision 1's unswapped radii gave a body 0.19 tall
+and 0.40 deep (Test 1 failed by 24×). And Test 2 could not pass: 4 chest strokes by 4 steps are 48 vertices against
+the test's "more than 50", and the wing band [−0.12, 0.62] wrapped a third of its span onto the front. The values
+now: the body's radii `[0.21, 0.19, 0.40]`, the head's `[0.21, 0.19, 0.18]`, the face's `[0.17, 0.06, 0.16]`, the
+chest 6 strokes by 4 steps, the wing band `[0.05, 0.45]`, the face's strokes over its +z half. Argon's probe of that
+set: Test 1 passes (the feet 0.00007 off, the crown 0.00012), Test 2 passes (70 front, 80 back, 0.83 and 0),
+544 triangles. The tests stand as written. Task 2 (the moths) was built and merged meanwhile (`e1cf321`), so Task 1's
+branch merges `feat/church-owl` first and the `Street.tsx` and `test:sky` conflicts go away.
+
 **Revision 1 (2026-10-29, 23:10).** Codex's correctness read (`C/owl/review/codex-plan-r0.md`, REVISE, F1 to F10,
 Q1 to Q3) and the builder's buildability read (`builder-plan-r0.md`, NOT BUILDABLE, A1 to A6, B1 to B5) folded,
 the dispositions in `lead-plan-r0.md`. The two that mattered most: `ellipsoid`'s polar axis is z, so revision 0's
@@ -184,17 +195,19 @@ above the gable's right slope, against the sky. From stop 3 it crosses at 0.41 a
     lift: 0.0002,
     /** the rest in owl lengths (size 1 = feet to crown), +z the way the body faces: an upright barn owl. Every
      * ellipsoid takes `pitch` π/2, so `ellipsoid`'s polar axis (z, `frog.ts:84-96`) stands up: `s` runs feet to
-     * crown and the strokes with it, and `a` 0.75 is the front (+z), 0.25 the back (Codex F2, the builder's A2) */
-    body: { centre: [0, 0.40, 0], radii: [0.21, 0.40, 0.19], pitch: Math.PI / 2 },
+     * crown and the strokes with it, and `a` 0.75 is the front (+z), 0.25 the back (Codex F2, the builder's A2).
+     * Under that pitch `radii` is [across, front-to-back, feet-to-crown]: `radii[2]` is the vertical half-height and
+     * `radii[1]` the depth (revision 2, Argon's blocker 1) */
+    body: { centre: [0, 0.40, 0], radii: [0.21, 0.19, 0.40], pitch: Math.PI / 2 },
     neck: [0, 0.66, 0.02],
-    head: { centre: [0, 0.16, 0.0], radii: [0.21, 0.18, 0.19], pitch: Math.PI / 2 },
+    head: { centre: [0, 0.16, 0.0], radii: [0.21, 0.19, 0.18], pitch: Math.PI / 2 },
     /** the heart face: a flattened cap proud of the head's front by 0.03 (its tip at z 0.22 against the head's
      * 0.19, the builder's A3), pale */
-    face: { centre: [0, 0.14, 0.16], radii: [0.17, 0.16, 0.06], pitch: Math.PI / 2 },
+    face: { centre: [0, 0.14, 0.16], radii: [0.17, 0.06, 0.16], pitch: Math.PI / 2 },
     eye: { centre: [0.075, 0.17, 0.19], r: 0.045 },
     /** the paint's bands in `a` (round) and `s` (feet to crown): the chest pale, the back and wings the thatch's */
     chest: { around: [0.62, 0.88] as [number, number], along: [0.05, 0.95] as [number, number] },
-    wing: { around: [-0.12, 0.62] as [number, number], along: [0.05, 0.95] as [number, number] },
+    wing: { around: [0.05, 0.45] as [number, number], along: [0.05, 0.95] as [number, number] },
     /** the head toward Vincent: within `reach` of the perch and within `yaw` of the body's facing, eased over `tau` */
     look: { reach: 0.6, yaw: 1.2217, pitch: 0.7, tau: 0.6, targetY: 0.07 },
     /** the frogs' blink table, this many seconds ahead of them (`frogBlink(phase)` is 0: the eyes open at time 0) */
@@ -294,11 +307,12 @@ test('the owl blinks on the frogs\' table with its own phase, open at 0 and unde
 - [ ] **Step 3: `src/scene/owl.ts`.** `OWL` as above. `buildOwl`: `mulberry32(0x0a1)`, class `VINCENT_CLASS.none`,
   `m()` scales owl lengths by `OWL.size` as `frog.ts:81` (its own copy, with `Vec3`). The body: `solid` underpaint
   (8 round, 5 along) in `underpaintColour(painting, STREET_SOURCES.thatch, 0.4)`, the chest clad from
-  `STREET_SOURCES.churchLit` over `OWL.chest` (4 strokes by 4 steps) and the back and wings from
+  `STREET_SOURCES.churchLit` over `OWL.chest` (6 strokes by 4 steps: 72 vertices, Test 2 asks more than 50 on the
+  front; revision 2) and the back and wings from
   `STREET_SOURCES.thatch` over `OWL.wing` (8 by 4), `OWL.lift`. The head about `OWL.neck`: `solid` (8, 5) in the
   same underpaint, clad `thatch` over `OWL.wing`'s band, the face `OWL.face` an ellipsoid `solid` (6, 3) in
-  `underpaintColour(painting, STREET_SOURCES.churchLit, 1)` with 3 `churchLit` strokes by 3 steps over its front
-  band, the eye `sphere` (5, 3) at the origin in `new Color(PALETTE.ground)`, `OWL_EYES` = `m(eye.centre)` and its
+  `underpaintColour(painting, STREET_SOURCES.churchLit, 1)` with 3 `churchLit` strokes by 3 steps over its +z half
+  (`around` [0.5, 1.0], `along` [0.05, 0.95]; revision 2), the eye `sphere` (5, 3) at the origin in `new Color(PALETTE.ground)`, `OWL_EYES` = `m(eye.centre)` and its
   mirror. `triangles` counts the eye twice. No legs, no tail: at 25 px they are under a pixel. `owlPerch`, `owlLook`
   (the yaw wrapped to (−π, π]), `easeLook` (`dt` clamped to [0, 0.1]), `owlBlink` as the Interfaces say.
 - [ ] **Step 4: `src/scene/StreetOwl.tsx`**, from `StreetFrog.tsx`: the same `material()` keys, geometries from

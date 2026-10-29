@@ -22,6 +22,7 @@ import { swayInjection } from './streetLife.ts'
 import StreetWalk from './StreetWalk.tsx'
 import StreetGrass from './StreetGrass.tsx'
 import StreetFrog from './StreetFrog.tsx'
+import StreetMoths from './StreetMoths.tsx'
 import { useImageData } from './useImageData.ts'
 import { grassBaseMaterial, groundMaterial } from './streetLantern.ts'
 import { material, plainGeometry } from './streetMaterial.ts'
@@ -181,6 +182,7 @@ export default function Street({
         />
       )}
       {!flags.flat && flags.ids === 0 && flags.light && built && paintingData && <StreetLife windows={built.windows} painting={paintingData} reduced={reduced} lamps={built.lamps} />}
+      {!flags.flat && flags.ids === 0 && flags.light && built && paintingData && <StreetMoths painting={paintingData} lamps={built.lamps} windows={built.windows} offset={offset} reduced={reduced} />}
       {!flags.flat && flags.grass && paintingData && (
         <StreetGrass
           painting={paintingData}

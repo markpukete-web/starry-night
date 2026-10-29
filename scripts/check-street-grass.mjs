@@ -23,6 +23,8 @@
  * 18. The frogs' draw distance (the frogs' branch review, Codex F1): at walk poses held still, each frog the frame's
  *     cull left drawn is within its spec's `draw` of the camera, and each frog it hid is beyond it.
  * 19. The hand on the pot plant (K3 task 3): stop 2, leaf point of blade 3 bends the pot plant's chunk under anchor B and anchor A.
+ * 21. The moths (church-owl plan, Task 2): 29 at stop 3, a lamp's within its loop's reach of its glass, a window's lit only
+ *     within 0.6 of the camera, at their anchors under reduced motion, absent with light=0.
  */
 
 import { spawn } from 'node:child_process'
@@ -1322,6 +1324,57 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
       }
 
       console.log(`PASS: case 19 - the hand on the pot plant: leaf point bent plant chunk under anchor B (push=${pushB.toFixed(3)}) and anchor A (push=${pushA.toFixed(3)})`)
+    }
+
+    // -------------------------------------------------------------
+    // Case 21: The moths (church-owl plan, Task 2)
+    // (a) stop 3, walkMode=input: __moths().count 29, 21 lamp moths and 8 window moths, every coordinate finite, each lamp
+    //     moth within radius + rest + wobble of its glass, each window moth beyond 0.6 of the camera at bright 0 and the rest
+    //     above 0. (b) reduced motion: every moth at its anchor within 1e-6 and time 0. (c) light=0: no __moths.
+    // -------------------------------------------------------------
+    if (shouldRun(21)) {
+      const moths21 = () => page.evaluate(() => ({ moths: window.__moths?.() ?? null, camera: window.__streetCamera?.() ?? null }))
+      const dist21 = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2])
+      await page.send('Page.navigate', { url: `${origin}/?street=1&station=3&arrival=0&walkMode=input` })
+      await page.waitForStreetReady()
+      await sleep(1500)
+      const a21 = await moths21()
+      if (!a21.moths || !a21.camera) throw new Error('Case 21 failed: no __moths or __streetCamera at stop 3')
+      const list21 = a21.moths.moths
+      if (a21.moths.count !== 29 || list21.length !== 29) throw new Error(`Case 21 failed: ${a21.moths.count} moths, expected 29`)
+      const lampMoths = list21.filter((m) => !m.window)
+      const windowMoths = list21.filter((m) => m.window)
+      if (lampMoths.length !== 21 || windowMoths.length !== 8) throw new Error(`Case 21 failed: ${lampMoths.length} lamp and ${windowMoths.length} window moths, expected 21 and 8`)
+      let far21 = 0
+      let near21 = 0
+      for (const m of list21) {
+        if (![...m.at, ...m.glass, ...m.anchor, m.radius, m.bright].every(Number.isFinite)) throw new Error('Case 21 failed: a non-finite moth value')
+        const rest = dist21(m.anchor, m.glass)
+        if (!m.window && dist21(m.at, m.glass) > m.radius + rest + 0.006 + 1e-5) throw new Error(`Case 21 failed: a lamp moth ${dist21(m.at, m.glass)} from its glass, beyond ${m.radius + rest + 0.006}`)
+        if (m.window) {
+          const d = dist21(m.glass, a21.camera.position)
+          if (d > 0.6) {
+            far21++
+            if (m.bright !== 0) throw new Error(`Case 21 failed: a window moth ${d.toFixed(3)} from the camera at bright ${m.bright}`)
+          } else {
+            near21++
+            if (!(m.bright > 0)) throw new Error(`Case 21 failed: a window moth ${d.toFixed(3)} from the camera at bright ${m.bright}`)
+          }
+        } else if (!(m.bright > 0)) throw new Error(`Case 21 failed: a lamp moth at bright ${m.bright}`)
+      }
+      await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] })
+      await page.send('Page.navigate', { url: `${origin}/?street=1&station=3&arrival=0&walkMode=input` })
+      await page.waitForStreetReady()
+      await sleep(1000)
+      const b21 = (await moths21()).moths
+      if (!b21 || b21.count !== 29) throw new Error('Case 21 failed: no moths under reduced motion')
+      if (b21.time !== 0) throw new Error(`Case 21 failed: reduced time ${b21.time}`)
+      for (const m of b21.moths) if (dist21(m.at, m.anchor) > 1e-6) throw new Error(`Case 21 failed: a moth ${dist21(m.at, m.anchor)} from its anchor under reduced motion`)
+      await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: '' }] })
+      await page.send('Page.navigate', { url: `${origin}/?street=1&station=3&arrival=0&walkMode=input&light=0` })
+      await page.waitForStreetReady()
+      if ((await page.evaluate(() => typeof window.__moths)) !== 'undefined') throw new Error('Case 21 failed: moths with light=0')
+      console.log(`PASS: case 21 - the moths: 29 (21 lamp, 8 window) at stop 3, ${near21} window moths lit and ${far21} dark beyond 0.6, at their anchors under reduced motion, absent with light=0`)
     }
 
     await page.close()
