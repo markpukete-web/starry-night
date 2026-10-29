@@ -1,15 +1,16 @@
 import { Color, SRGBColorSpace, Vector3 } from 'three'
+import palette from '../../public/reference/palette.json' with { type: 'json' }
 import { mulberry32, sampleColour } from './brush.ts'
-import { makeBrushArrays, moonShade, type BrushArrays } from './brushForms.ts'
-import { bladeTemplate, bladeVertex, clump, GRASS_BLADE } from './grassBlade.ts'
+import { makeBrushArrays, moonShade, pushDrapedRibbon, type BrushArrays } from './brushForms.ts'
+import { bladeTemplate, bladeVertex, bladeWidth, clump, GRASS_BLADE } from './grassBlade.ts'
 import { GRASS, inFootprint } from './streetGrass.ts'
 import { islandHeightAt } from './islandShape.ts'
 import { buildLandTrees, type BakedMass, type LandTrees } from './landDomes.ts'
 import { buildStreetTrees } from './streetTrees.ts'
 import { PALETTE } from './palette.ts'
 import { CHURCH_LIGHT, leanOf, lightOf, shadeNew, STREET_LIGHT, type StreetLight } from './streetLight.ts'
-import { CHURCH, DETAIL, doorOf, doorPathLegs, doorStepFrame, houseFrame, LIVED_PATH, objectPlaces, pathLegShapes, STEP, STREET, STREET_CHURCH, STREET_HOUSES, STREET_LAMPS, STREET_RAIL, STREET_SQUARE, STREET_TREES, detailOf, laneDistance, pathPoint, pathTangent, streetGroundAt, type StreetHouse, laneAt, railChains, STREET_WALLS, STREET_WALL } from './streetLayout.ts'
-import { outlineFace, OUTLINE_LIFT, PATH_LIFT, sourceUnderpaint, streetMassConfig, STREET_MOON_LIFT, traceFace, type FaceStrokes, type StreetFace, type StreetSourceName, stoneDab, STREET_SOURCES, STROKE_LIFT } from './streetStrokes.ts'
+import { CHURCH, DETAIL, doorOf, doorPathLegs, doorStepFrame, FLOWERS, houseFrame, LIVED_PATH, objectPlaces, pathLegShapes, stationPose, STEP, STREET, STREET_CHURCH, STREET_HOUSES, STREET_LAMPS, STREET_RAIL, STREET_SQUARE, STREET_TREES, detailOf, laneDistance, pathPoint, pathTangent, streetGroundAt, type StreetHouse, laneAt, railChains, STREET_WALLS, STREET_WALL } from './streetLayout.ts'
+import { outlineFace, OUTLINE_LIFT, PATH_LIFT, sourceUnderpaint, srgbToLab, streetMassConfig, STREET_MOON_LIFT, traceFace, type FaceStrokes, type StreetFace, type StreetSourceName, stoneDab, STREET_SOURCES, STROKE_LIFT } from './streetStrokes.ts'
 import type { ImageData2D } from './useImageData.ts'
 import { VILLAGE_CHURCH, type Pigment } from './villageKnot.ts'
 
@@ -89,6 +90,14 @@ export type StreetBuild = {
       }[]
       rail: { house: string; posts: Vector3[]; opening: [Vector3, Vector3]; underpaint: [number, number] } | null
       lamps: { foot: Vector3; lantern: Vector3; underpaint: [number, number] }[]
+      flowers: {
+        centre: [number, number]
+        blades: number
+        heads: number
+        triangles: number
+        roots: [number, number][]
+        headColours: [number, number, number][]
+      } | null
     }
     lived: {
       paths: LivedPath[]
@@ -2004,7 +2013,97 @@ function signsOfLife(ctx: Context): void {
   }
 }
 
-export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | null, masses: BakedMass[] | null, { lit = true, grass = false, paint = WALL_PAINT, lane = true, lived = true }: { lit?: boolean; grass?: boolean; paint?: WallPaint; lane?: boolean; lived?: boolean } = {}): StreetBuild | null {
+function flowers(ctx: Context): void {
+  const rand = mulberry32(0x7f10)
+  const s4 = stationPose(4, false)
+  const dx = s4.target[0] - s4.position[0]
+  const dz = s4.target[2] - s4.position[2]
+  const flen = Math.hypot(dx, dz)
+  const right: [number, number] = [-dz / flen, dx / flen]
+  const foot = ctx.report.lane.lamps[6].foot
+  const [lx, lz] = [foot.x, foot.z]
+  const winLab = srgbToLab(...(sourceUnderpaint(ctx.painting, 'windowLit', 1).map((c) => c * 255) as [number, number, number]))
+  const pool = palette.regions.stars.colours.filter(
+    (c) => Math.hypot(c.lab[0] - winLab[0], c.lab[1] - winLab[1], c.lab[2] - winLab[2]) > FLOWERS.headGap,
+  )
+  const local: FaceStrokes = { arrays: makeBrushArrays(), stroke: [], seed: [], ribbons: 0 }
+  const roots: [number, number][] = []
+  const headColours: [number, number, number][] = []
+  let bladesCount = 0
+  let headsCount = 0
+
+  for (let k = 0; k < FLOWERS.clumps; k++) {
+    const ang = (k / FLOWERS.clumps) * 2 * Math.PI + 0.3
+    const cx = lx + FLOWERS.radius * Math.cos(ang)
+    const cz = lz + FLOWERS.radius * Math.sin(ang)
+    const blades = clump(rand, ctx.painting, cx, cz, FLOWERS.scale * GRASS_BLADE.height)
+    for (const b of blades) b.halfWidth *= FLOWERS.scale
+
+    for (const spec of blades) {
+      roots.push([spec.x, spec.z])
+      bladesCount++
+      const steps: Vector3[][] = []
+      const colours: Color[] = []
+      for (let j = 0; j <= 4; j++) {
+        const a = j / 4
+        const w = bladeWidth(a)
+        steps.push(
+          [-w, 0, w].map((across) => {
+            const [vx, vy, vz] = bladeVertex(spec, a, across, right)
+            return new Vector3(vx, FLOWERS.rootY + vy, vz)
+          }),
+        )
+        const shade = GRASS_BLADE.shade[0] + (GRASS_BLADE.shade[1] - GRASS_BLADE.shade[0]) * a
+        colours.push(new Color(spec.colour[0] * shade, spec.colour[1] * shade, spec.colour[2] * shade))
+      }
+      pushDrapedRibbon(local.arrays, steps, colours)
+      for (let j = 0; j <= 4; j++) {
+        const a = j / 4
+        for (let col = 0; col < 3; col++) {
+          local.stroke.push(0.5 + 0.5 * a, col / 2)
+          local.seed.push(spec.seed)
+        }
+      }
+      local.ribbons++
+    }
+
+    const nHeads = Math.min(
+      blades.length,
+      FLOWERS.heads[0] + Math.floor(rand() * (FLOWERS.heads[1] - FLOWERS.heads[0] + 1)),
+    )
+    for (let i = 0; i < nHeads; i++) {
+      const spec = blades[i]
+      const c = Math.cos(spec.yaw)
+      const s = Math.sin(spec.yaw)
+      const ax = right[0] * c + right[1] * s
+      const az = -right[0] * s + right[1] * c
+      const normal = new Vector3(az, 0, -ax)
+      const thTip = spec.lean + spec.curl
+      const acrossTip = new Vector3(ax * Math.cos(thTip), -Math.sin(thTip), az * Math.cos(thTip))
+      const centres = ([0.86, 0.93, 1] as const).map((a) => {
+        const [px, py, pz] = bladeVertex(spec, a, 0, right)
+        return new Vector3(px, FLOWERS.rootY + py, pz).addScaledVector(normal, FLOWERS.headLift)
+      }) as [Vector3, Vector3, Vector3]
+      const pick = pool[Math.floor(rand() * pool.length)]
+      stoneDab(local, centres, acrossTip, FLOWERS.headWidth, new Color(pick.hex), Math.round(spec.seed))
+      headColours.push([pick.srgb[0], pick.srgb[1], pick.srgb[2]])
+      headsCount++
+    }
+  }
+
+  append(ctx.strokes, local, 255, 255)
+  ctx.ribbons += local.ribbons
+  ctx.report.lane.flowers = {
+    centre: [lx, lz],
+    blades: bladesCount,
+    heads: headsCount,
+    triangles: local.arrays.indices.length / 3,
+    roots,
+    headColours,
+  }
+}
+
+export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | null, masses: BakedMass[] | null, { lit = true, grass = false, paint = WALL_PAINT, lane = true, lived = true, flowers: withFlowers = true }: { lit?: boolean; grass?: boolean; paint?: WallPaint; lane?: boolean; lived?: boolean; flowers?: boolean } = {}): StreetBuild | null {
   if (!painting || !flow || !masses) return null
   const ctx: Context = {
     flow,
@@ -2015,7 +2114,7 @@ export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | nu
     outlines: { arrays: makeBrushArrays(), stroke: [], seed: [], cls: [], src: [] },
     windows: Object.assign(makeBrushArrays(), { cls: [], src: [] }),
     grassBase: Object.assign(makeBrushArrays(), { cls: [], src: [] }),
-    report: { faces: [], outlines: [], windows: [], church: { belfryWidth: 0, belfryHeight: 0, spireHeight: 0 }, craft: [], lane: { walls: [], rail: null, lamps: [] }, lived: { paths: [], objects: [] } },
+    report: { faces: [], outlines: [], windows: [], church: { belfryWidth: 0, belfryHeight: 0, spireHeight: 0 }, craft: [], lane: { walls: [], rail: null, lamps: [], flowers: null }, lived: { paths: [], objects: [] } },
     ribbons: 0,
     lit,
     wallLight: STREET_LIGHT,
@@ -2069,6 +2168,7 @@ export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | nu
     doorPaths(ctx)
     signsOfLife(ctx)
   }
+  if (lane && withFlowers) flowers(ctx)
   const trees = buildStreetTrees(painting, STREET_TREES)
   const triangles = (ctx.underpaint.indices.length + ctx.grassBase.indices.length + ctx.strokes.arrays.indices.length + ctx.ground.arrays.indices.length + ctx.outlines.arrays.indices.length + ctx.windows.indices.length + trees.solid.indices.length + trees.strokes.indices.length) / 3
   return {
@@ -2140,7 +2240,7 @@ export function buildFlatPanel(painting: ImageData2D | null, flow: ImageData2D |
     outlines: { arrays: makeBrushArrays(), stroke: [], seed: [], cls: [], src: [] },
     windows: Object.assign(makeBrushArrays(), { cls: [], src: [] }),
     grassBase: Object.assign(makeBrushArrays(), { cls: [], src: [] }),
-    report: { faces: [], outlines: [], windows: [], church: { belfryWidth: 0, belfryHeight: 0, spireHeight: 0 }, craft: [], lane: { walls: [], rail: null, lamps: [] }, lived: { paths: [], objects: [] } },
+    report: { faces: [], outlines: [], windows: [], church: { belfryWidth: 0, belfryHeight: 0, spireHeight: 0 }, craft: [], lane: { walls: [], rail: null, lamps: [], flowers: null }, lived: { paths: [], objects: [] } },
     ribbons: 0,
     lit: true,
     wallLight: STREET_LIGHT,

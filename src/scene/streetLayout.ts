@@ -516,6 +516,17 @@ export const STREET_LAMPS = [
   { t: 1.0, lateral: 0.2 },
 ] as const
 
+export const FLOWERS = {
+  radius: 0.03,
+  clumps: 6,
+  scale: 0.5,
+  heads: [2, 4],
+  headWidth: 0.0035,
+  headGap: 5,
+  rootY: 0.005,
+  headLift: 0.0004,
+} as const
+
 export type OrientedBox = {
   ox: number
   oz: number

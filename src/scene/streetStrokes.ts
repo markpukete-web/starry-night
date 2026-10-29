@@ -305,6 +305,20 @@ function acceptFor(face: StreetFace, painting: ImageData2D): TexelAccept {
   return EVERY_TEXEL
 }
 
+/** D65 CIELAB of an 8-bit sRGB triple (0..255), matching `scripts/check-street-colour.ts`. */
+export function srgbToLab(r: number, g: number, b: number): [number, number, number] {
+  const lin = (v: number) => {
+    const c = v / 255
+    return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)
+  }
+  const [lr, lg, lb] = [lin(r), lin(g), lin(b)]
+  const x = (0.4124564 * lr + 0.3575761 * lg + 0.1804375 * lb) / 0.95047
+  const y = 0.2126729 * lr + 0.7151522 * lg + 0.072175 * lb
+  const z = (0.0193339 * lr + 0.119192 * lg + 0.9503041 * lb) / 1.08883
+  const f = (val: number) => (val > 216 / 24389 ? Math.cbrt(val) : ((24389 / 27) * val) / 116 + 16 / 116)
+  return [116 * f(y) - 16, 500 * (f(x) - f(y)), 200 * (f(y) - f(z))]
+}
+
 /** The mean of the darkest `share` of the source's texels (sRGB 0..1), or of the lightest with `lightest`: a tenth for a
  * face's underpaint, all of them for a lit window's base. */
 export function sourceUnderpaint(painting: ImageData2D, source: StreetSourceName, share = 0.1, lightest = false): [number, number, number] {
