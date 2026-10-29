@@ -232,7 +232,14 @@ export const SOURCE_CLASSES: Record<StreetSourceName, number> = {
   thatch: 6,
   field: 255,
   windowLit: 255,
+  churchLit: 10,
+  churchShade: 11,
+  spire: 12,
+  belfry: 13,
 }
+
+/** the church's own four sources: their faces take class 10 in the ID view (the church plan, slice 1) */
+const CHURCH_SOURCES: readonly StreetSourceName[] = ['churchLit', 'churchShade', 'spire', 'belfry']
 
 function append(into: Strokes, from: FaceStrokes, cls: number, src = 255): void {
   const base = into.arrays.positions.length / 3
@@ -319,7 +326,7 @@ function clad(
   // (`t9/wall-bases.png`). The ground and the path keep a darker share, because on the whole mean they read as a flat
   // grey plane (`t9/ground-bases.png`). Look pass 3: the path's base takes its strokes' lift, or pale strokes sit on a
   // dark base, and stops short of the path's edges, where the clipped strokes left it as a ruled grey band
-  const cls = face.kind === 'wall' ? 0 : face.kind === 'roof' ? 1 : face.kind === 'ground' ? 3 : 4
+  const cls = CHURCH_SOURCES.includes(face.source) ? 10 : face.kind === 'wall' ? 0 : face.kind === 'roof' ? 1 : face.kind === 'ground' ? 3 : 4
   const src = face.kind === 'wall' || face.kind === 'roof' ? (SOURCE_CLASSES[face.source] ?? 255) : 255
   const light = lightOf(face, ctx.lit, face.kind === 'wall' ? ctx.wallLight : STREET_LIGHT)
   const underFrom = ctx.underpaint.positions.length
@@ -440,6 +447,11 @@ export type StreetShape = {
   roofSource: StreetSourceName
   /** the brush's `refHeight` for every face, in place of the eave and the slope (the church) */
   brush?: number
+  /** the walls and gables named in `litWalls` are clad from this source, every other one from `shadeSource` (the church's
+   * two tones). `wallSource` stays the plaster the door, the windows and the step read (Codex F2) */
+  litSource?: StreetSourceName
+  shadeSource?: StreetSourceName
+  litWalls?: string[]
   /** the door set this deep into the front wall, over a step (the church) */
   recess?: number
   /** dark windows down the +along side, their centres across it (the church) */
@@ -623,16 +635,20 @@ function buildHouse(ctx: Context, owner: string, index: number, shape: StreetSha
   const upE = UP.clone().multiplyScalar(eave)
   const walls: [string, Vector3, Vector3][] = [['front', fl, fr], ['right', fr, br], ['back', br, bl], ['left', bl, fl]]
   const door = doorOf(shape, index)
+  // the paint of a wall or a gable is named, not read from the light (church plan, Codex F9). The face the door, the
+  // windows and the step read keeps the wall's own source (F2, the design's non-goal)
+  const painted = (name: string, face: StreetFace): StreetFace => (shape.shadeSource && shape.litSource ? { ...face, source: shape.litWalls?.includes(name) ? shape.litSource : shape.shadeSource } : face)
   const wallFaces = walls.map(([name, a, z], i) => {
     const face = orientedFace(a, z.clone().sub(a), upE, inside, { shape: 'quad', kind: 'wall', source: wall, refHeight: shape.brush ?? eave, seed: seed + i, mirror: i % 2 === 1 })
-    if (i === 0 && shape.recess) cladRound(ctx, owner, face, door, density)
-    else clad(ctx, owner, name, face, density)
+    if (i === 0 && shape.recess) cladRound(ctx, owner, painted(name, face), door, density)
+    else clad(ctx, owner, name, painted(name, face), density)
     return face
   })
   // the gables over the front and the back
   const upP = UP.clone().multiplyScalar(pitch)
   for (const [name, a, z, i] of [['front gable', fl, fr, 4], ['back gable', br, bl, 5]] as const) {
-    clad(ctx, owner, name, orientedFace(a.clone().setY(eave), z.clone().sub(a), upP, inside, { shape: 'triangle', kind: 'wall', source: wall, refHeight: shape.brush ?? eave, seed: seed + i, mirror: i === 5 }), density)
+    const gable = orientedFace(a.clone().setY(eave), z.clone().sub(a), upP, inside, { shape: 'triangle', kind: 'wall', source: wall, refHeight: shape.brush ?? eave, seed: seed + i, mirror: i === 5 })
+    clad(ctx, owner, name, painted(name, gable), density)
   }
   // the roof planes, from the eave (overhung) to the ridge; the ridge runs along the depth at the width's middle
   const planes = houseRoofPlanes(shape, centre, along, toPath)
@@ -981,6 +997,9 @@ function church(ctx: Context): StreetBuild['report']['church'] {
     pitch: nave.pitch,
     storeys: 1,
     wallSource: wallSource(nave.wall, 100),
+    litSource: 'churchLit',
+    shadeSource: 'churchShade',
+    litWalls: ['right'],
     roofSource: roofSource(nave.roof, 100),
     brush: CHURCH.stroke,
     recess: CHURCH.recess,
@@ -1007,13 +1026,13 @@ function church(ctx: Context): StreetBuild['report']['church'] {
     const a = foot[k]
     const b = foot[(k + 1) % 4]
     const face = orientedFace(a, b.clone().sub(a), height, inside, { shape: 'quad', kind: 'wall', source: 'plaster', refHeight: CHURCH.stroke, seed: 0x6100 + k, mirror: k % 2 === 1 })
-    clad(ctx, 'belfry', `wall ${k}`, face)
+    clad(ctx, 'belfry', `wall ${k}`, { ...face, source: 'belfry' })
     opening(ctx, face, 0.5, 0.82, 0.32, 0.2, false, 0x6110 + k)
     const at = a.clone().setY(top)
     const bt = b.clone().setY(top)
     const mid = at.clone().lerp(bt, 0.5)
     const spireInside = centre.clone().setY(top + (tipY - top) * 0.3)
-    clad(ctx, 'spire', `side ${k}`, orientedFace(at, bt.clone().sub(at), tip.clone().sub(mid), spireInside, { shape: 'triangle', kind: 'wall', source: 'plaster', refHeight: CHURCH.stroke, seed: 0x6200 + k, mirror: k % 2 === 1 }))
+    clad(ctx, 'spire', `side ${k}`, orientedFace(at, bt.clone().sub(at), tip.clone().sub(mid), spireInside, { shape: 'triangle', kind: 'wall', source: 'spire', refHeight: CHURCH.stroke, seed: 0x6200 + k, mirror: k % 2 === 1 }))
     edges.push([at, bt, face.normal], [a, at, face.normal], [at, tip, face.normal])
   }
   ink(ctx, 'belfry', VILLAGE_CHURCH.nave.eave, edges, 0x6300)
