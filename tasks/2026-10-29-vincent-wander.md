@@ -123,6 +123,10 @@ at 8d's finger out-and-back after 10 cases (`E/r1/m-f2-touch-alone.log`).
 
 ## For Mark
 
+Passed by Mark on the preview (`4f05302`), 14:44 ("Passed, open the PR and get Fable to review"). Codex's plan is
+drained, so Fable reviews the PR.
+
+
 - His walk home is built: on the automatic walk he goes home after the dwell. With the walk stopped by a tap on him, he
   stays until a tap on the lane, a wheel turn or an arrow key.
 - At stop 4, a spot by a house's corner turns the aim 20° toward him, and the near wall fills the right quarter of the

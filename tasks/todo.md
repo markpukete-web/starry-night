@@ -1,6 +1,6 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-29 (14:10): Vincent's wander, gated and pushed for Mark's preview
+## Pickup — 2026-10-29 (14:45): Vincent's wander, passed by Mark; the PR is open, Fable reviews
 
 Branch `feat/vincent-wander` (head after this note's commit), pushed for a Vercel preview; no PR yet (Mark looks
 first). The record is `tasks/2026-10-29-vincent-wander.md`. The slice fixes the spike's four faults and adds the walk
@@ -9,8 +9,8 @@ review took three rounds: r0 REVISE (F1 to F5), r1 REVISE (the folded drag, the 
 was declined with evidence and decision (l) reworded. Codex's plan is drained (Mark, after round 2): Fable, in pane `w4:p6`,
 reviews from here, the PR's review included.
 
-**Open for Mark:** the preview's look; the three points in the record's "For Mark" (the stop 4 aim into a near wall,
-the stop 2 lamp outshining his lantern, the new mark). Then the PR, its review by Fable, and the merge.
+**Passed by Mark on the preview, 14:44.** The PR is open, and Fable reviews it (Mark: "Passed, open the PR and get
+Fable to review"). Next: answer Fable's findings in the PR thread, then Mark merges.
 
 **Left in place, ask Mark before removing:** the worktrees `scratchpad/wander-wt`, `wander-2b`, `wander-r1`,
 `wander-r1-mut`, the builders' `.claude/worktrees/agent-a7f026db3af066847` and `agent-a7062abd1b12521f5`, and the

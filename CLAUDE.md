@@ -388,7 +388,8 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   automatic walk he goes home 3.55 s after he arrives (Mark: "Yes, walk him back after the dwell"). With the walk
   stopped, he stays. The mark is his lantern's halo at 0.023 over the ground, the raised glass's height (look pass 2).
   The street's build unchanged (596,919 triangles, the same hash), the walk's worst point 1,429,793 (V1's), 60 fps at
-  stops 0 and 3 at dpr 1.5 (p50 16.7 ms, p95 at most 18.6, `main` 18.7). Two look passes of four. Untuned by Mark.
+  stops 0 and 3 at dpr 1.5 (p50 16.7 ms, p95 at most 18.6, `main` 18.7). Two look passes of four. Passed by
+  Mark on the preview, 2026-10-29 ("Passed"), untuned.
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)
