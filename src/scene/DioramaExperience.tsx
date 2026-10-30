@@ -1,5 +1,5 @@
 import { Canvas, useFrame, useStore, useThree } from '@react-three/fiber'
-import { OrbitControls, PerspectiveCamera } from '@react-three/drei'
+import { OrbitControls, PerformanceMonitor, PerspectiveCamera } from '@react-three/drei'
 import {
   Component,
   lazy,
@@ -38,6 +38,7 @@ import {
   type Pose,
 } from './portal'
 import { usePortalPointer } from './usePortalPointer'
+import { LIGHTER } from './lighterView'
 import { PortalContext, type PortalControl } from './portalContext'
 // (ARRIVAL.reveal feeds the chrome's fade-in through a custom property; the clock owns every other constant)
 import {
@@ -87,6 +88,10 @@ type Props = {
   arrival?: boolean
   /** The portal behind `?portal=1` (slice 4): the village enters the street, and the street returns. */
   portal?: boolean
+  /** The lighter view (lighterView.ts): the visitor chose the lower pixel ratio. */
+  lighter?: boolean
+  /** Given while the lighter view is watched for: called when the settled diorama stays under the bar. */
+  onSlow?: () => void
   /** Visitor chrome (attribution, original placard, control dock) — rendered over the canvas. */
   children?: ReactNode
 }
@@ -145,6 +150,25 @@ function ReleaseInitialInternal() {
     ;(window as Window & { __r3fInitialSubscribers?: () => number }).__r3fInitialSubscribers = () => initial.subscribers.length
   }, [store])
   return null
+}
+
+/**
+ * The lighter view's watch (lighterView.ts): drei's monitor, mounted only once the diorama has settled, so the start-up
+ * dip is never read. When 8 of 10 quarter-second windows fall under the bar, it calls `onSlow`.
+ */
+function SlowWatch({ ready, lower, onSlow }: { ready: () => boolean; lower: number; onSlow: () => void }) {
+  const since = useRef<number | null>(null)
+  const [settled, setSettled] = useState(false)
+  useFrame(() => {
+    if (settled) return
+    if (!ready()) {
+      since.current = null
+      return
+    }
+    since.current ??= performance.now()
+    if (performance.now() - since.current >= LIGHTER.settleMs) setSettled(true)
+  })
+  return settled ? <PerformanceMonitor bounds={() => [lower, Infinity]} onDecline={onSlow} /> : null
 }
 
 /** Opt-in timing probe. `perf=1` leaves the selected presentation/debug pipeline untouched. */
@@ -466,6 +490,7 @@ function Scene({
   place,
   portal,
   hintRef,
+  slow,
   ...refs
 }: ArrivalRefs & {
   reduced: boolean
@@ -480,6 +505,8 @@ function Scene({
   place: PortalPlace
   portal?: ScenePortal
   hintRef: RefObject<HTMLDivElement | null>
+  /** the lighter view's watch: the bar's fps for this device, and the call when the diorama stays under it */
+  slow?: { lower: number; onSlow: () => void }
 }) {
   const streetMode = useMemo(() => isStreetMode(typeof window !== 'undefined' ? window.location.search : ''), [])
   const idsPass = useMemo(() => streetIdsPass(typeof window !== 'undefined' ? window.location.search : ''), [])
@@ -563,6 +590,9 @@ function Scene({
         />
       )}
       {measurePerformance && <PerfProbe />}
+      {slow && !streetMode && !arriving && place === 'diorama' && (
+        <SlowWatch ready={() => refs.cypressReadyRef.current && refs.landReadyRef.current} lower={slow.lower} onSlow={slow.onSlow} />
+      )}
       {!streetMode && arrival && <ArrivalDriver home={defaultCamera} reduced={still} onDone={onArrived} {...refs} />}
       {portal && <PortalDriver place={place} still={still} lens={lens} portal={portal} dioramaReady={() => refs.cypressReadyRef.current && refs.landReadyRef.current} />}
       {showStreet && (
@@ -640,7 +670,7 @@ type PortalWindow = Window & {
   __portalFlight?: number
 }
 
-export function DioramaExperience({ clean = false, reduced = false, sky = 'light', still = false, alive = false, aliveTuning, touch = false, arrival = false, portal = false, children }: Props) {
+export function DioramaExperience({ clean = false, reduced = false, sky = 'light', still = false, alive = false, aliveTuning, touch = false, arrival = false, portal = false, lighter = false, onSlow, children }: Props) {
   const streetMode = useMemo(() => isStreetMode(typeof window !== 'undefined' ? window.location.search : ''), [])
   const effectiveArrival = !streetMode && arrival
   const [arrived, setArrived] = useState(false)
@@ -834,7 +864,7 @@ export function DioramaExperience({ clean = false, reduced = false, sky = 'light
     >
       <Canvas
         frameloop="always"
-        dpr={[1, 1.5]}
+        dpr={[1, lighter ? LIGHTER.lighterDpr : LIGHTER.dpr]}
         gl={{ preserveDrawingBuffer: true, antialias: true }}
         onCreated={({ gl }) => {
           glRef.current = gl.domElement
@@ -867,6 +897,7 @@ export function DioramaExperience({ clean = false, reduced = false, sky = 'light
           place={place}
           portal={scenePortal}
           hintRef={hintRef}
+          slow={onSlow ? { lower: phone ? LIGHTER.phoneFps : LIGHTER.computerFps, onSlow } : undefined}
         />
       </Canvas>
       {/* the portal's layer comes after R3F's canvas, so every script's first canvas is still the WebGL one (F6); it

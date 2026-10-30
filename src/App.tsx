@@ -15,6 +15,7 @@ import { dropBootCurtainUnlessKept } from './bootCurtain'
 import { isStreetMode } from './scene/streetEntry'
 import { ReliefExperience } from './scene/ReliefExperience'
 import { VisitorChrome } from './VisitorChrome'
+import type { LighterState } from './scene/lighterView'
 
 const TUNER_STORAGE_KEY = 'starry-night:alive-tuning'
 
@@ -59,6 +60,9 @@ export default function App() {
   const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
   const mode = params.get('mode') ?? 'diorama'
   const clean = params.get('clean') === '1'
+  // The lighter view (src/scene/lighterView.ts): offered once the diorama has settled, if its frames stay under the bar.
+  // `?slow=1` offers it at once, so the card can be seen and captured
+  const [lighter, setLighter] = useState<LighterState>(() => (params.get('slow') === '1' ? 'offered' : 'watching'))
   // `?tune=1` opens Mark's tuner for A's knobs
   const tune = params.get('tune') === '1'
   // Make-it-alive A (tasks/2026-10-13-alive-a-plan.md), B (touch, 2026-10-13-touch-b-plan.md) and C (the arrival,
@@ -109,6 +113,7 @@ export default function App() {
         sky={sky}
         // only the 3D diorama has the two skies; the flat 2D route never shows the choice
         onToggleSky={mode === 'diorama' ? () => setSky((current) => (current === 'moving' ? 'light' : 'moving')) : undefined}
+        lighterOffer={mode === 'diorama' && lighter === 'offered' ? { accept: () => setLighter('lighter'), keep: () => setLighter('full') } : undefined}
       />
       {tune && mode === 'diorama' && <AliveTuner tuning={aliveTuning} defaults={SHIPPED_ALIVE} onChange={onTune} touch={touch} />}
     </>
@@ -124,7 +129,19 @@ export default function App() {
 
   if (mode === 'diorama') {
     return (
-      <DioramaExperience clean={clean} reduced={motionPaused} sky={sky} still={reduced} alive={alive} aliveTuning={aliveTuning} touch={touch} arrival={arrival} portal={portal}>
+      <DioramaExperience
+        clean={clean}
+        reduced={motionPaused}
+        sky={sky}
+        still={reduced}
+        alive={alive}
+        aliveTuning={aliveTuning}
+        touch={touch}
+        arrival={arrival}
+        portal={portal}
+        lighter={lighter === 'lighter'}
+        onSlow={lighter === 'watching' ? () => setLighter((current) => (current === 'watching' ? 'offered' : current)) : undefined}
+      >
         {chrome}
       </DioramaExperience>
     )

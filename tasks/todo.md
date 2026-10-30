@@ -1,5 +1,22 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-10-30 (21:34): the lighter view is PR #42; the tidy waits on Mark's permission
+
+**PR #41 merged** (`7b7d38d`): the unlocked perf capture, the small favicon, the review and the Tunables cut.
+
+**The lighter view is PR #42** (`feat/lighter-view`, record `tasks/2026-10-30-lighter-view.md`). Mark: "Yes go with
+your recommendations", then "Take the lead once done push and merge to main then tidy our branch". The gate is green:
+504 of 504, lint, build, `check-portal.mjs` every case, reduced motion and viewport camera (the worker's logs in
+`scratch/lighter-view/checks/`). The portal check's first two runs failed because the round 0 brief did not set
+`DIORAMA_CAPTURE_URL`: the check needs a running server and looks on port 5198 by default.
+
+**The tidy, part done.** Deleted locally: `docs/pickup-2026-10-28-night`, `feat/church-square`,
+`perf/review-2026-10-30`. Local `main` fast-forwarded to `7b7d38d`. The auto-mode classifier refused the rest:
+removing the eight old worktrees ("Irreversible Local Destruction") and deleting the four merged remote branches
+("Git Destructive"). Each worktree had no uncommitted change. The trim worktree's two differing scratch files are
+saved in `scratch/docs-trim-2026-10-30/from-worktree/`. The rest waits on Mark. `spike/vincent-form` and
+`spike/vincent-wander` stay: they hold unmerged commits.
+
 ## Pickup — 2026-10-30 (21:05): findings 2 and 5 built, the PR open for Codex
 
 **Mark's iPhone** (recorded in `tasks/2026-10-30-perf-review.md`, finding 3): the painting holds 60. The street's

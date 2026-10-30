@@ -116,7 +116,8 @@ with your recommendations for tunables"). The values as written before the cut a
   and the `count` knob): painted light 3,200 requested ribbons, moving strokes 25,600. One count for every device, so a
   resize never rebuilds.
 - Palette tolerance: ΔE < 10 per region to start with. Tighten as quality improves.
-- devicePixelRatio cap: 1.5 on every device (`DioramaExperience.tsx`, the Canvas's `dpr={[1, 1.5]}`). Corrected
+- devicePixelRatio cap: 1.5 on every device (`src/scene/lighterView.ts` `LIGHTER.dpr`, the Canvas's `dpr` in
+  `DioramaExperience.tsx`), 1 in the lighter view below. Corrected
   2026-10-30 to the code, which has shipped it since 2026-07-06 (Mark: "Tunables follow code"). The performance review
   (2026-10-30, `tasks/2026-10-30-perf-review.md`) found that desktop cannot afford 2 on the diorama, so the cap stays
   1.5. The street could afford 2.
@@ -276,6 +277,10 @@ with your recommendations for tunables"). The values as written before the cut a
   `docs/superpowers/specs/2026-10-30-street-cat-design.md`): sitting on wall W3's top stones by stops 2 and 3, facing
   the lane, a little larger than true (the Lead's call on Mark's "Make calls for me"). It watches
   Vincent from stop 2. Untuned by Mark.
+- The lighter view (2026-10-30, `src/scene/lighterView.ts` `LIGHTER`, `SlowWatch` in `DioramaExperience.tsx`, the
+  record `tasks/2026-10-30-lighter-view.md`): once the diorama has settled, a frame rate under the bar offers a pixel
+  ratio of 1 in a card, and the visitor chooses. Mark: "Yes go with your recommendations". `?slow=1` shows the card at
+  once. Untuned by Mark.
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)

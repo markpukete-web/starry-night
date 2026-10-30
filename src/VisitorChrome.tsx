@@ -54,6 +54,8 @@ type Props = {
   sky?: SkyStyle
   /** Given only on the diorama route, which has the two skies. */
   onToggleSky?: () => void
+  /** The lighter view's offer (src/scene/lighterView.ts), given while it waits for the visitor's answer. */
+  lighterOffer?: { accept: () => void; keep: () => void }
 }
 
 /**
@@ -69,6 +71,7 @@ export function VisitorChrome({
   onToggleOriginal,
   sky = 'light',
   onToggleSky,
+  lighterOffer,
 }: Props) {
   const portal = useContext(PortalContext)
   const inStreet = portal?.place === 'street'
@@ -135,6 +138,17 @@ export function VisitorChrome({
             <div className="visitor-ask-actions">
               <VisitorButton icon="⌂" label="Enter anyway" onClick={portal.enterAnyway} autoFocus />
               <VisitorButton icon="✕" label="Stay with the painting" onClick={portal.stay} />
+            </div>
+          </div>
+        )}
+        {/* the settled painting stays under the bar: the lighter view is offered, never imposed (2026-10-30). No focus is
+            taken, since the visitor did not ask; the status role reads the offer out */}
+        {lighterOffer && (
+          <div className="visitor-ask" role="status">
+            <p>The painting is running slowly on this device. The lighter view moves more smoothly and looks a little softer.</p>
+            <div className="visitor-ask-actions">
+              <VisitorButton icon="◐" label="Use the lighter view" onClick={lighterOffer.accept} />
+              <VisitorButton icon="✕" label="Keep full detail" onClick={lighterOffer.keep} />
             </div>
           </div>
         )}
