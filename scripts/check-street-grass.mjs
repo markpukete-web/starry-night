@@ -1428,12 +1428,14 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
     // -------------------------------------------------------------
     // Case 21: The moths (church-owl plan, Task 2)
     // (a) stop 3, walkMode=input: __moths().count 29, 21 lamp moths and 8 window moths, every coordinate finite, each lamp
-    //     moth within radius + rest + wobble of its glass, each window moth beyond 0.6 of the camera at bright 0 and the rest
-    //     above 0. (b) reduced motion: every moth at its anchor within 1e-6 and time 0. (c) light=0: no __moths.
+    //     moth within radius + rest + wobble + 1.5√3 jitter of its glass (moths.ts's bound, as street-moths.test.ts's),
+    //     each window moth beyond 0.6 of the camera at bright 0 and the rest above 0. (b) reduced motion: every moth at its anchor within 1e-6 and time 0. (c) light=0: no __moths.
     // -------------------------------------------------------------
     if (shouldRun(21)) {
       const moths21 = () => page.evaluate(() => ({ moths: window.__moths?.() ?? null, camera: window.__streetCamera?.() ?? null }))
       const dist21 = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2])
+      // past the loop: MOTHS.wobble 0.006 and 1.5√3 × MOTHS.jitter 0.0045 (look pass 5 added the jitter, 5668c5c)
+      const reach21 = 0.006 + 1.5 * Math.sqrt(3) * 0.0045
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=3&arrival=0&walkMode=input` })
       await page.waitForStreetReady()
       await sleep(1500)
@@ -1449,7 +1451,7 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
       for (const m of list21) {
         if (![...m.at, ...m.glass, ...m.anchor, m.radius, m.bright].every(Number.isFinite)) throw new Error('Case 21 failed: a non-finite moth value')
         const rest = dist21(m.anchor, m.glass)
-        if (!m.window && dist21(m.at, m.glass) > m.radius + rest + 0.006 + 1e-5) throw new Error(`Case 21 failed: a lamp moth ${dist21(m.at, m.glass)} from its glass, beyond ${m.radius + rest + 0.006}`)
+        if (!m.window && dist21(m.at, m.glass) > m.radius + rest + reach21 + 1e-5) throw new Error(`Case 21 failed: a lamp moth ${dist21(m.at, m.glass)} from its glass, beyond ${m.radius + rest + reach21}`)
         if (m.window) {
           const d = dist21(m.glass, a21.camera.position)
           if (d > 0.6) {
