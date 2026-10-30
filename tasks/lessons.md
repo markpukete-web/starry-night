@@ -311,6 +311,7 @@ The full history, 2026-06-13 to 2026-10-30, is in `tasks/archive/2026-10-30-less
 - A sketch map's scale is a decision. Its dots are not footprints. `2026-10-23 · A sketch map's scale`
 - With OrbitControls, target height and camera height are one lever. Fill a tall frame with fov and distance. `2026-07-28 · With OrbitControls`
 - A home that looks down may sit on the polar limit. `2026-06-21 · Angle`
+- The diorama's azimuth is clamped asymmetrically, −15° toward the rear cypress and +45° the other way (`DIORAMA_ORBIT`). A symmetric side arc shows the blank source edge behind the cypress. `2026-07-06 · Mark caught the remaining back-of-cypress void`
 - An authored camera outside the orbit envelope is silently clamped. State poses as azimuth, polar and distance. `2026-07-28 · The shipped portrait camera`
 - drei's `reset()` aims at the origin when `target` is a prop. Set position and target, then `update()`. `2026-06-15 · Reset control`
 - A portrait framing holds its horizontal field, and the vertical fov follows the aspect. `2026-10-25 · A fixed vertical fov`
