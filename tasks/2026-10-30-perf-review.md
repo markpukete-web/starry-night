@@ -147,10 +147,11 @@ No switch lowers the pixel ratio. That test needs a `?dpr=` switch on a preview 
 Mark's split, 2026-10-30 evening: no grass "once stable: 60", unlit 60, no Vincent "28 at start then 60". Every link
 failed to open at first try and showed after a refresh. No Vincent took three refreshes. What the failure looked like,
 and whether the earlier links' tabs were still open, is not yet known. Mark: "We can try our best to get the phone
-working but I don't want to lower our quality". So a lower pixel ratio on the phone (finding 1) is out.
+working but I don't want to lower our quality". So a lower pixel ratio on the phone (finding 1) is out. Whether a step-down on a weak desktop GPU is also out is not yet asked.
 
-The reading: every switch reaches 60, so no one part is the cost. Safari shows about 60 or about 30 fps and little
-between, because a frame that misses one display refresh waits for the next. A frame just over 16.7 ms reads as about
-30. So the plain street is probably only a little over the phone's budget, and removing any one part brings it under.
-The other reading is that the first stop readings were taken before the scene settled. One plain reading of stop 0
-after a wait, in a fresh tab, separates the two.
+The reading: every switch reaches 60, so no one part is the cost. First, the street has a start-up dip that outlasts
+10 seconds on a phone (no Vincent: "28 at start then 60"). The links above said "wait 10 seconds", so the stop readings
+were probably taken inside that dip. Second, a frame over 16.7 ms waits for the next display refresh and shows as 30
+fps. A reading of 25 to 32 means most frames missed one refresh. So the plain street may be a little over the phone's
+budget, and removing any one part brings it under. One plain reading of stop 0 in a fresh tab, after the number stops
+moving, separates the two.
