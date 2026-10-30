@@ -125,7 +125,7 @@ test('the chest is pale and the back is the thatch: the strokes by their side', 
   assert.ok(mean(back) <= 0.2, `back nearer churchLit: ${mean(back)}`)
 })
 
-test('the perch is on the ridge, 0.08 behind the front peak, on the ridge ink', () => {
+test('the perch is on the ridge, OWL.back behind the front peak, on the ridge ink', () => {
   const { position: [x, y, z], yaw } = owlPerch()
   const nave = STREET_CHURCH.nave
   const toPath = [-Math.sin(nave.yaw), Math.cos(nave.yaw)]
@@ -202,7 +202,7 @@ test('the head turns toward a target within reach and inside the cone, never wit
   assert.ok(Math.abs(Math.abs(l4.yaw) - 0.976) < 0.05, `stop 4 yaw ${l4.yaw}`) // 55.9° at look pass 4's perch (Task 0's 49.7° at back 0.08)
   assert.equal(l4.pitch, -OWL.look.pitch) // 50.8° down, capped
   const s3 = vincentPlace(STATION_T[3]).position
-  assert.deepEqual(owlLook(neck, yaw, [s3[0], s3[2]]), { yaw: 0, pitch: 0 }) // 0.818 away
+  assert.deepEqual(owlLook(neck, yaw, [s3[0], s3[2]]), { yaw: 0, pitch: 0 }) // 0.786 away
 })
 
 test('the easing reaches 95% in three taus and holds at dt 0', () => {

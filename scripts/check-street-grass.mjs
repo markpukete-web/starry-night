@@ -1352,7 +1352,7 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
         throw new Error(`Case 20(a) failed: expected visible owl with |yaw| >= 0.6 at stop 4, got ${JSON.stringify(a20)}`)
       }
 
-      // (b) stop 3: visible, Vincent 0.818 away so head stays straight
+      // (b) stop 3: visible, Vincent 0.786 away so head stays straight
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=3&walkMode=input&arrival=0` })
       await page.waitForStreetReady()
       await sleep(500)
@@ -1413,7 +1413,7 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
       }
       await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] })
       // allow both the DOM root and R3F's Canvas reconciler to commit `reduced = true` (as case 9 waits 300 ms)
-      await sleep(200)
+      await sleep(300)
       const g0 = await owl20()
       await sleep(1000)
       const g1 = await owl20()

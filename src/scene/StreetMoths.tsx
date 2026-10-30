@@ -38,7 +38,8 @@ const VERTEX = `
     gl_Position = projectionMatrix * mv;
   }`
 
-// a soft oval in the lantern's lit mean, dimmed away from the glass, in the street's linear fog (Codex Q3). Every colour
+// a soft oval in the lantern's lit mean mixed toward white (`MOTHS.pale`), dimmed away from the glass, in the street's
+// linear fog (Codex Q3). Every colour
 // is sRGB and written raw, as the project's own shaders do
 const FRAGMENT = `
   uniform vec3 uColour;
