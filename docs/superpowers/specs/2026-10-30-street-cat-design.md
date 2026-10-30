@@ -178,3 +178,28 @@ Lead's, and he sees them at the preview:
 
 1. **The size:** 0.015 (20 px on the phone at stop 3), the true 0.0125 noted, a tunable up to 0.018 in a look pass.
 2. **The coat:** `roofSienna`, the red-brown.
+
+## The build (a light slice, 2026-10-30)
+
+Mark: "Go with your recommendations". The cat is a light slice: its own component, nothing else changed, the build hash
+unchanged. So this section is its plan, with no code in it. The Lead builds every task, each test written and seen to
+fail before its code. Gemini runs the batches (the capture sets, the sweep, the perf rounds). Codex reviews the PR.
+
+1. **The shared look.** `owlLook` and `easeLook` take the look's constants as a last argument, defaulting to
+   `OWL.look`. Tests: the owl's nine pass unchanged. A target 98° off the facing and 0.44 away turns a head with the
+   cat's cone (1.75 rad) and leaves the owl's (1.2217) straight.
+2. **The cat's form** (`src/scene/cat.ts`, `CAT`, `catPlace`, `buildCat`). Tests: feet to ear tips is `CAT.size` within
+   2%. At most 1,500 triangles. The chest's strokes are nearer `churchLit`'s mean than `roofSienna`'s, the coat's the
+   other way. The place is on W3's top at `t` 0.81, lateral −0.15, the feet at 0.057 plus the contact gap, the body
+   facing the lane. The haunches reach past both top rows' near edges (lateral −0.148 and −0.152), so the cat sits on
+   stone.
+3. **The component** (`src/scene/StreetCat.tsx`, in `Street.tsx` beside the owl). The head by task 1, the blink on the
+   frogs' clock with its own phase, the tail's free third swaying on the sky's clock, drawn within 0.9, held under
+   reduced motion and Pause. `__cat()` reports `visible`, `yaw`, `pitch`, `shut`, `tail` and `settled`.
+   `capture-sky-frames.mjs`'s rest wait reads `__cat().settled` beside the owl's.
+4. **The browser check**, a new case in `check-street-grass.mjs`: at stop 3 on the automatic walk the cat is drawn and
+   its head turned toward Vincent, with `walk=0` it looks straight, at stop 0 it is not drawn, and under reduced motion
+   its head and tail hold.
+5. **The look passes** (the Lead, at most four) against the gate's list above.
+6. **The gate** (the Lead): tsc, lint, `test:sky`, the street and grass hashes unchanged, the six browser checks and the
+   new case. Gemini runs the sweep and the perf rounds, and the Lead reads their logs.
