@@ -37,12 +37,13 @@ export const CAT = {
   muzzle: { centre: [0, 0.05, 0.13], radii: [0.07, 0.05, 0.05], pitch: Math.PI / 2 },
   ear: { base: [0.085, 0.17, 0.02], tip: [0.115, 0.34, 0.0], r: [0.05, 0.004] },
   eye: { centre: [0.055, 0.12, 0.145], r: 0.022 },
-  /** the tail round the right side to the front paws, lying on the stones; its last part (from `free`) sways */
+  /** the tail round the left side to the front paws, lying on the stones; its last part (from `free`) sways. The left
+   * (−x) faces back along the lane, toward the camera at stops 2 and 3 (look pass 1: on the right it never showed) */
   tail: {
-    root: [0.1, 0.045, -0.3],
-    bend: [0.26, 0.04, -0.05],
-    free: [0.18, 0.035, 0.18],
-    tip: [-0.02, 0.09, 0.27],
+    root: [-0.1, 0.045, -0.3],
+    bend: [-0.26, 0.04, -0.05],
+    free: [-0.18, 0.035, 0.18],
+    tip: [0.02, 0.09, 0.27],
     r: [0.045, 0.04, 0.035, 0.02],
     /** the sway about the vertical at `free`, on the sky's clock */
     sway: 0.45,

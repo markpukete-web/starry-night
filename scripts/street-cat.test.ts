@@ -91,6 +91,18 @@ test("the cat sits on W3's top stones at its t, facing the lane", () => {
   assert.ok(CAT.lateral + (cz - depth) * CAT.size < -0.152, 'over the far row')
 })
 
+test('the tail curls round the side toward the camera at stops 2 and 3', () => {
+  // from both stops the camera is behind the cat's left (its −x); the curl's widest point must face it
+  const { position, yaw } = catPlace()
+  const [x, , z] = CAT.tail.bend.map((c) => c * CAT.size)
+  const bend = [position[0] + x * Math.cos(yaw) + z * Math.sin(yaw), position[2] - x * Math.sin(yaw) + z * Math.cos(yaw)]
+  for (const stop of [2, 3]) {
+    const eye = walkPose(STATION_T[stop], false).position
+    const away = (p: number[]) => Math.hypot(p[0] - eye[0], p[1] - eye[2])
+    assert.ok(away(bend) < away([position[0], position[2]]), `stop ${stop}: the tail's bend ${away(bend)}`)
+  }
+})
+
 test('the cat is drawn from stop 2 on and never at the walk’s worst triangle point', () => {
   const { position } = catPlace()
   const away = (t: number) => {
