@@ -1,7 +1,8 @@
 # A cat on the wall at stop 3
 
-**Status:** revision 0, the Lead's draft for Mark, 2026-10-30. Nothing is built. Two reads come before Mark sees it: a
-builder's read as a planner and Codex's read of the facts against the code. The probes behind every number are in
+**Status:** revision 1, 2026-10-30. Nothing is built. Revision 0 had a builder's read as a planner
+(`C/review/builder-check-r0.md`) and Codex's read of its facts against the code (`C/review/codex-design-r0.md`). The
+dispositions are `C/review/lead-design-r0.md`. Mark handed the open calls to the Lead ("Make calls for me if needed"). The probes behind every number are in
 `/Users/markma/Projects/starry-night/scratch/street-cat-2026-10-30/` (`C/` below).
 
 ## Why
@@ -58,8 +59,9 @@ follows him. Nothing is spooky and nothing glows.
 
 1. **The wall.** W3 is the left wall (`STREET_WALLS[2]`, side −1), `t` 0.54 to 0.84. Its lane face is at lateral 0.135,
    it is 0.03 thick and its box is 0.055 high (`STREET_WALL`, `streetLayout.ts:470`). The stones of its top rows lie at
-   y 0.057: `STREET_WALL.height` plus `STROKE_LIFT` 0.002 (`streetGeometry.ts:1543`). The middle of the top is at
-   lateral −0.15.
+   y 0.057: `STREET_WALL.height` plus `STROKE_LIFT` 0.002 (`streetGeometry.ts:1543`), with no relief. They lie in two
+   rows, centred at lateral −0.1425 and −0.1575, each dab about 0.011 wide. Between them, at the middle (−0.15), a ray
+   meets only the top's underpaint at 0.055 (Codex's probe).
 2. **Vincent at a stop.** He stands 0.4 ahead of the walk's point on the lane (`VINCENT_RIG.ahead`), and the camera
    stands 0.18 behind it (`STREET.behind`), so he is 0.58 ahead of the camera. On the automatic walk he dwells 4 s at each
    station, turns his body π/2 (`PAUSE.body`) and raises the lantern in his left hand. The turn faces him to the lane's
@@ -70,6 +72,10 @@ follows him. Nothing is spooky and nothing glows.
    it is 20 px, at x 104 to 111 (`C/probe-occluders.log`). At 0.0125 it is 29 and 17 px (`C/probe-vincent.log`).
    Vincent's screen box (his rig's half-width 0.025, the lantern's reach 0.04 on his facing side, the ground to 0.095)
    is at x 828 to 996 on the desktop and 211 to 307 on the phone. The cat clears it by 177 px and about 95 px.
+   `vincentPlace` puts him at lateral +0.03 (`VINCENT_RIG.lateral`, on W2's side), so the cat at −0.15 is 0.18 across.
+   On a desktop with a mouse the walk is in the wheel mode: no dwell, no turn, and the camera may stop anywhere. For
+   every walk `t` from 0.40 to 0.86 where the cat is drawn and in frame, its screen box and his walking box are at
+   least 234 px apart on the desktop and 133 px on the phone (`C/probe-walking.log`).
 4. **What stands between.** The lamp at `t` 0.79, lateral −0.11 (`STREET_LAMPS`) is between the camera and the wall:
    a post 0.004 square and 0.13 high, a lantern 0.012 × 0.016 on top (`LANE_CRAFT.lamp`). At `t` 0.81 the cat clears the
    post by 101 px on the desktop and 58 on the phone, and the lantern by 129 and 73. The lamp's halo sprite (0.134 world
@@ -82,22 +88,31 @@ follows him. Nothing is spooky and nothing glows.
    the desktop, 12,817 under the ceiling, and from `t` 0.45 on about 1.29 million. The walk's worst point is 1,433,111
    at `t` 0.26. A cat drawn within 0.9 of the camera is drawn from about `t` 0.41 on, and never at `t` 0.26.
 7. **The owl as the precedent.** `owl.ts` and `StreetOwl.tsx`: ellipsoids clad in the painting's strokes through
-   `vincent.ts` (`solid`, `clad`, `underpaintColour`), 544 triangles, two groups (the body and the turning head), five
-   meshes. The head's turn is `owlLook` (within `reach` 0.6 and ±70° of the body's facing, aimed at `targetY` 0.07,
+   `vincent.ts` (`solid`, `clad`, `underpaintColour`), 544 triangles, two groups (the body and the turning head), six
+   meshes on five geometries (each eye its own mesh, Codex). The head's turn is `owlLook` (within `reach` 0.6 and ±70° of the body's facing, aimed at `targetY` 0.07,
    Vincent's head) eased by `easeLook` (τ 0.6 s, snapped within 1e-4 rad since `47ae236`, with `__owl().settled`). The
    blink is `owlBlink`, the frogs' table with its own phase. It is drawn within a distance of the camera, and holds its
    pose under reduced motion. `vincent.ts` also has `tube` and `sphere`, for a tail and the ears.
 8. **Scale.** Vincent is 0.085 for 1.7 m, so 0.05 world a metre. A sitting cat is about 25 to 30 cm to its ear tips (the
    Lead's estimate, not a measured source): 0.0125 to 0.015. The frog (0.0108, about 22 cm) and the owl (0.024 against a
    true 0.018) were both sized up so the phone finds them.
-9. **The colours** (`C/probe-coat.log`, mean Lab in the scan): `roofSienna` [705, 1046, 726, 1066] L 24.7, a +9.5, b
+9. **Vincent's bearing from the cat** (`C/probe-walking.log`, from the cat's facing toward the lane): −109° at walk `t`
+   0.40 (0.47 away), −70° at 0.52 (0.32), −2° at 0.64 (0.18, passing in front), then +36° to +50° from 0.70 on as the lane
+   curves away. He leaves the 0.6 reach at about walk `t` 0.87.
+10. **The colours** (`C/probe-coat.log`, mean Lab in the scan): `roofSienna` [705, 1046, 726, 1066] L 24.7, a +9.5, b
    +4.4, a red-brown at hue 25°. `wallB`, the wall's stones, L 32.8, a −0.1, b −9.1, a blue-grey. `thatch`, the owl's
-   back, L 27.4, an olive grey. `churchLit` L 49.0, a pale blue-white.
+   back, L 27.4, an olive grey. `churchLit` L 49.0, a pale blue-white. `roofSienna` is also Vincent's hair
+   (`vincent.ts:30`).
+11. **The light on a figure.** `StreetOwl.tsx` draws with Vincent's materials (`vincentStrokeBody`, `vincentMoon`, the
+    street's fog): the figures' moon, not `STREET_LIGHT` or `CHURCH_LIGHT`. The lamps are no point light. The lantern's
+    lift on a figure reaches 0.03 (`LANTERN_LIFT.r`). The colour gate does not class the figures
+    (`VINCENT_CLASS.none`), so the owl's paint is held by a unit test.
 
 ## Decisions
 
 - (a) **The place.** On W3's top at `t` 0.81, lateral −0.15, the feet at y 0.057 plus a contact gap the builder sets
-  (the frogs' and the owl's pattern). Its body faces the lane, toward where Vincent stops: from stop 3's camera it shows
+  (the frogs' and the owl's pattern). The haunches span both top rows of stones, so it sits on stone, and the plan's
+  first task checks the stones under its footprint in the real build. Its body faces the lane, toward where Vincent stops: from stop 3's camera it shows
   three-quarters to side-on, its face toward him. The plan's first task measures the spot in the real build and may move
   it within `t` 0.80 to 0.83.
 - (b) **The form.** An upright sit: the haunches as one ellipsoid, the chest rising from them, a round head with two
@@ -105,13 +120,18 @@ follows him. Nothing is spooky and nothing glows.
   under the chest. The outline must carry the ears and the tail. At most 1,500 triangles. The proportions are left to the
   builder and the look pass, within the size.
 - (c) **The size.** `CAT.size` 0.015, about 30 cm, with the true scale 0.0125 noted beside it, as the owl's was: 35 px
-  on the desktop and 20 on the phone at stop 3. It is a tunable, and Mark's call (Open 1).
-- (d) **The paint.** The coat from `roofSienna`, the chest, the muzzle and the inside of the ears from `churchLit`, the
-  eyes in the owl's ink, the underpaint from `roofSienna`'s darkest 40%. A red-brown cat stands apart from the blue-grey
-  stones by its hue, and from the owl's olive back. Mark may prefer another source (Open 2).
-- (e) **The head.** It turns toward Vincent by the owl's rule: within 0.6 of the neck and ±70° of the body's facing, aimed
-  at his head (`targetY` 0.07), eased over τ 0.6 s and snapped within 1e-4 rad. At stop 3 he is 0.18 away and inside the
-  cone. As he walks in from stop 2 he enters the reach at about 0.6, so the head follows him in. The code is the owl's,
+  on the desktop and 20 on the phone at stop 3. It is a tunable. A look pass may take it up to 0.018 (1.44 × true, the
+  owl went 1.33 ×). Past that is Mark's call.
+- (d) **The paint and the light.** The coat from `roofSienna`, the chest, the muzzle and the inside of the ears from
+  `churchLit`, the eyes in the owl's ink, the underpaint from `roofSienna`'s darkest 40%. A red-brown cat stands apart
+  from the blue-grey stones by its hue, and from the owl's olive back. It shares Vincent's hair colour, which ties the
+  two together. It draws with the owl's materials (fact 11): no lamp or lantern lift, the halo's glow over it. A unit test
+  holds the paint: the chest's strokes nearer `churchLit`, the coat's nearer `roofSienna`.
+- (e) **The head.** It turns toward Vincent by the owl's rule with a wider cone: within 0.6 of the neck and ±100°
+  (1.75 rad) of the body's facing, aimed at his head (`targetY` 0.07), eased over τ 0.6 s and snapped within 1e-4 rad.
+  The owl's ±70° would pick him up only 0.32 away on his approach (fact 9). At ±100° the head finds him at about walk
+  `t` 0.43, 0.44 away, so from stop 2 the cat is seen watching him. It follows him past and out to the 0.6 reach. A look
+  pass judges whether 100° reads natural. The code is the owl's,
   shared: the look and the easing take their constants as an argument, and the owl keeps its own unchanged, with its tests
   unchanged. The cat reports `__cat()` with `settled`, and the capture tool waits for it beside the owl's.
 - (f) **The blink and the tail.** It blinks on the frogs' clock with its own phase, as the owl does. The tail's free
@@ -120,12 +140,12 @@ follows him. Nothing is spooky and nothing glows.
 - (g) **The still states.** Under reduced motion and Pause the head holds its pose, the eyes stay open and the tail stays
   still. With no Vincent (`vincent=0`, `walk=0`, the flat panel) the head looks straight ahead.
 - (h) **Drawn** within 0.9 of the camera (fact 6): at stops 2 and 3, and nowhere before `t` 0.41. No URL flag. The draw
-  calls it adds (the owl's five meshes and the tail's) are counted at stop 3, which draws 173 today.
+  calls it adds are counted from its component at stop 3, which draws 173 today, the owl's six meshes included.
 
 ## What the gate shows
 
 - Stop 3 with Vincent arrived, turned and the lantern raised, on both viewports, with 1:1 crops of the cat beside the
-  full frames.
+  full frames. Stop 3 again in the wheel mode, Vincent facing along the lane.
 - The approach: frames from stop 2 to stop 3 on the automatic walk, the head following him.
 - A short frame sequence of the tail's sway and a blink.
 - Stop 3 under reduced motion.
@@ -151,8 +171,10 @@ those two merge.
 - The contact gap on the stones, and whether the tail sways in its own group or in the shader.
 - The exact `t` within 0.80 to 0.83, from the plan's first task.
 
-## Open for Mark
+## Mark's word and the Lead's calls
 
-1. **The size.** 0.015 (the Lead's call, 20 px on the phone at stop 3) or the true 0.0125 (17 px). It is a tunable
-   either way.
-2. **The coat.** `roofSienna`, a red-brown (the Lead's call), or another rectangle of the scan.
+Mark, 2026-10-30, while the reads ran: "Make calls for me if needed". So the two calls left open in revision 0 are the
+Lead's, and he sees them at the preview:
+
+1. **The size:** 0.015 (20 px on the phone at stop 3), the true 0.0125 noted, a tunable up to 0.018 in a look pass.
+2. **The coat:** `roofSienna`, the red-brown.
