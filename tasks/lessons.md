@@ -15,6 +15,10 @@ The full history, 2026-06-13 to 2026-10-30, is in `tasks/archive/2026-10-30-less
 - Edit a record section only up to its own next heading. List the headings and read the hunks before each commit. `2026-10-24 · Replace a section`
 - When a branch goes, fix every instruction that names it in the same change. `2026-07-28 · Retiring the staging branch`
 
+- When a Tunable and the code disagree, ask Mark which is the truth before changing either. The orbit limits and the
+  pixel-ratio cap differed from 2026-07-06 to 2026-10-30, and every gate in between ran on the code's values. The
+  trim's subagent found it. Mark chose the code (2026-10-30, after the archive).
+
 ## Mark's taste and the gates
 
 - Mechanical closure only earns entry to the visual gate. Never present visual work without looking at it beside the source. `2026-07-22 · Do not present authored`

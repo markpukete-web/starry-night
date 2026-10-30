@@ -113,10 +113,14 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   601,128 ribbon triangles and 737,970 scene triangles with the star-body layer. One count for every device, so a
   resize never rebuilds. Phone unmeasured.
 - Palette tolerance: ΔE < 10 per region to start with. Tighten as quality improves.
-- devicePixelRatio cap: 2 desktop / 1.5 mobile
-- Camera orbit limits: polar 0.2–1.62 rad (≈11°–93°), distance 3–5.5, azimuth free, no pan (3D diorama). The max polar
-  of 1.62 (2026-06-21, Mark's live review) lets the home view sit eye-level head-on, to match the painting. It is
-  still a hard limit: no free-fly, no pan.
+- devicePixelRatio cap: 1.5 on every device (`DioramaExperience.tsx`, the Canvas's `dpr={[1, 1.5]}`). Corrected
+  2026-10-30 to the code, which has shipped it since 2026-07-06 (Mark: "Tunables follow code"). The Tunables had said 2
+  on desktop. Whether desktop can afford 2 is a question for the performance review.
+- Camera orbit limits (`src/scene/dioramaContract.ts` `DIORAMA_ORBIT`): polar 0.58–1.62 rad (≈33°–93°), distance
+  3.25–5.6, azimuth −15° to +45° (−15° toward the rear cypress, whose back is blank source edge), no pan (3D diorama).
+  The max polar of 1.62 (2026-06-21, Mark's live review) lets the home view sit eye-level head-on, to match the
+  painting. They are hard limits: no free-fly, no pan. Corrected 2026-10-30 to the code, which has shipped them since
+  2026-07-06 (Mark: "Tunables follow code"). The Tunables had said polar 0.2–1.62, distance 3–5.5 and azimuth free.
 - Portrait lens (2026-10-25, `src/scene/dioramaContract.ts` `PORTRAIT_FIT`, the record `tasks/2026-10-25-phone-framing.md`):
   candidate C's pose. It holds the horizontal field of 360 × 800 (vertical fov 88 at aspect 0.45) up to aspect 0.65,
   and the vertical fov narrows to keep it (72.0° at Mark's 440 × 735, 86.5° at 390 × 844). Below 0.45 the fov is 88.

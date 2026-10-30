@@ -1,5 +1,30 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-10-30 (16:20): #38–#40 merged and live; the docs trim done; the performance review next
+
+**Done.** Mark passed #38 (the church square), #39 (the owl and the moths) and #40 (the cat): "All passed, merge them
+to main". Merged in that order, `main` at `0a9e1c9`, the production deploy green, the cat live at stop 3.
+
+**The docs trim**, on the local branch `docs/trim-2026-10-30` (worktree `.claude/worktrees/agent-a090dedbe967f460c`),
+not pushed (docs only, it rides up on the next code push, so branch the next slice from it). A subagent trimmed the
+Tunables (6,388 to 5,531 words) and moved `tasks/lessons.md` to `tasks/archive/2026-10-30-lessons.md`, with a new file
+of 385 rules in 16 themes (51,000 to 8,400 words). Its proofs: no number in the new Tunables is missing from the old,
+every lesson's pointer finds its archive text. The Lead put back the azimuth-clamp lesson, which it had dropped
+wrongly. Its report: `scratch/docs-trim-2026-10-30/report.md` ("Unsure" lists its judgement calls).
+
+**Mark's call (16:15): "Tunables follow code".** The orbit limits and the pixel-ratio cap in the Tunables had not
+matched the code since 2026-07-06. They now state the code's values: distance 3.25–5.6, polar 0.58–1.62, azimuth −15°
+to +45°, the pixel ratio capped at 1.5 on every device.
+
+**Next: the performance review** (Mark: "Go ahead with the performance review after the trim"). Not started. Scope:
+the whole piece, the diorama and stops 0 to 4 of the street, on frame time, triangles, draw calls, memory and load
+time. Tools: `capture-diorama.mjs --perf` (the cat's `C/t6/perf.sh`), the triangle sweep (`tri-read.mjs`), the
+phone-memory probes (`scratch/phone-memory-2026-10-28/tools/`). One question for it: whether desktop can afford a
+pixel ratio of 2. It ends with a ranked list of findings, and each fix it proposes is a slice for Mark's word.
+
+**Open, Mark's word:** a deeper Tunables cut, keeping each entry's decision, Mark's word and its pointer and leaving
+the numbers to the code (about 1,500 words). The subagent's third drop reason for lessons ("history or status").
+
 ## Pickup — 2026-10-30 (15:20): the cat gated, its PR stacked on #39
 
 `feat/street-cat` (the light slice's design, build and record in `docs/superpowers/specs/2026-10-30-street-cat-design.md`)
