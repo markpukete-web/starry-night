@@ -248,6 +248,13 @@ const refRoofStriped = meanLab(rectLabs(workPainting, STREET_SOURCES.roofStriped
 const refRoofBlue = meanLab(rectLabs(workPainting, STREET_SOURCES.roofBlue))
 const refRoofSienna = meanLab(rectLabs(workPainting, STREET_SOURCES.roofSienna))
 const refThatch = meanLab(rectLabs(workPainting, STREET_SOURCES.thatch))
+const refChurchLit = meanLab(rectLabs(workPainting, STREET_SOURCES.churchLit))
+const refChurchShade = meanLab(rectLabs(workPainting, STREET_SOURCES.churchShade))
+const refSpire = meanLab(rectLabs(workPainting, STREET_SOURCES.spire))
+const refBelfry = meanLab(rectLabs(workPainting, STREET_SOURCES.belfry))
+// the church's walls take class 10 in the default view, their own reference: the two tones' texels pooled, so the
+// houses' walls reference is not asked to match them (church plan, slice 1)
+const refChurch = meanLab([...rectLabs(workPainting, STREET_SOURCES.churchLit), ...rectLabs(workPainting, STREET_SOURCES.churchShade)])
 
 // Vincent references, both from palette.json, never from VINCENT_SOURCES (Codex T1: a target read from the builder's own
 // patch moves with it). refSmock is the village's ultramarine swatch, #2a3f6f: the plan's mean of the village's two
@@ -269,6 +276,10 @@ const SOURCES: Record<string, { idR: number; idG: number; idB: number; ref: Lab 
   roofBlue: { idR: 0, idG: 255, idB: 255, ref: refRoofBlue },
   roofSienna: { idR: 255, idG: 0, idB: 255, ref: refRoofSienna },
   thatch: { idR: 255, idG: 188, idB: 0, ref: refThatch },
+  churchLit: { idR: 255, idG: 188, idB: 188, ref: refChurchLit },
+  churchShade: { idR: 188, idG: 255, idB: 255, ref: refChurchShade },
+  spire: { idR: 255, idG: 188, idB: 255, ref: refSpire },
+  belfry: { idR: 188, idG: 188, idB: 255, ref: refBelfry },
 }
 
 // Palette regional means
@@ -299,6 +310,7 @@ const CLASSES: Record<string, ClassDef> = {
   smock: { idR: 188, idG: 0, idB: 255, minArea: 800, ref: refSmock, diag: diagSmockSource, diagName: 'source' },
   hat: { idR: 188, idG: 255, idB: 0, minArea: 80, ref: refHat, diag: null },
   grass: { idR: 0, idG: 188, idB: 255, minArea: 2000, ref: refHills, diag: null },
+  church: { idR: 255, idG: 188, idB: 188, minArea: 500, ref: refChurch, diag: null },
 }
 
 if (sources) {
@@ -310,6 +322,10 @@ if (sources) {
     roofBlue: [],
     roofSienna: [],
     thatch: [],
+    churchLit: [],
+    churchShade: [],
+    spire: [],
+    belfry: [],
   }
 
   const colourCounts = new Map<string, number>()
@@ -329,6 +345,10 @@ if (sources) {
     else if (r === 0 && g === 255 && b === 255) maskIndices.roofBlue.push(i)
     else if (r === 255 && g === 0 && b === 255) maskIndices.roofSienna.push(i)
     else if (r === 255 && g >= 180 && g <= 196 && b === 0) maskIndices.thatch.push(i)
+    else if (r === 255 && g >= 180 && g <= 196 && b >= 180 && b <= 196) maskIndices.churchLit.push(i)
+    else if (r >= 180 && r <= 196 && g === 255 && b === 255) maskIndices.churchShade.push(i)
+    else if (r === 255 && g >= 180 && g <= 196 && b === 255) maskIndices.spire.push(i)
+    else if (r >= 180 && r <= 196 && g >= 180 && g <= 196 && b === 255) maskIndices.belfry.push(i)
   }
 
   const fullRgba = new Uint8Array(fullPng.rgba)
@@ -361,6 +381,10 @@ if (sources) {
     '255,255,255',
     '188,0,255',
     '188,255,0',
+    '255,188,188',
+    '188,255,255',
+    '255,188,255',
+    '188,188,255',
   ])
   for (const [key, area] of colourCounts.entries()) {
     if (area >= 2000 && !knownSourcesIds.has(key)) {
@@ -416,6 +440,7 @@ if (sources) {
     smock: [],
     hat: [],
     grass: [],
+    church: [],
   }
 
   const colourCounts = new Map<string, number>()
@@ -438,6 +463,7 @@ if (sources) {
     else if (r >= 180 && r <= 196 && g === 0 && b === 255) maskIndices.smock.push(i)
     else if (r >= 180 && r <= 196 && g === 255 && b === 0) maskIndices.hat.push(i)
     else if (r === 0 && g >= 180 && g <= 196 && b === 255) maskIndices.grass.push(i)
+    else if (r === 255 && g >= 180 && g <= 196 && b >= 180 && b <= 196) maskIndices.church.push(i)
   }
 
   // Full image copy in case of control
@@ -471,6 +497,7 @@ if (sources) {
     '188,0,255',
     '188,255,0',
     '0,188,255',
+    '255,188,188',
     '21,28,27', // BrushCypress underpaint (0x151c1b), drawn in own colours in ID frame by design (Street.tsx:162, Fable C3)
   ])
   for (const [key, area] of colourCounts.entries()) {

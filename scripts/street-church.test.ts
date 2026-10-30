@@ -3,12 +3,12 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
-import { Frustum, Matrix4, PerspectiveCamera, Vector3 } from 'three'
+import { Frustum, Matrix4, PerspectiveCamera, Ray, Triangle, Vector3 } from 'three'
 import { islandHeightAt } from '../src/scene/islandShape.ts'
 import type { BakedMass } from '../src/scene/landDomes.ts'
 import { buildStreet } from '../src/scene/streetGeometry.ts'
 import { CHURCH_LIGHT } from '../src/scene/streetLight.ts'
-import { CHURCH, churchFront, laneDistance, STREET, STREET_CHURCH, STREET_HOUSES, STREET_SQUARE, stationPose, vincentPlace, walkPose, type StationPose } from '../src/scene/streetLayout.ts'
+import { CHURCH, churchFront, laneDistance, STREET, STREET_CHURCH, STREET_HOUSES, STREET_SQUARE, STREET_TREES, stationPose, vincentPlace, walkPose, type StationPose } from '../src/scene/streetLayout.ts'
 import type { ImageData2D } from '../src/scene/useImageData.ts'
 import { VILLAGE_CHURCH } from '../src/scene/villageKnot.ts'
 import { decodePNG } from './lib/png.ts'
@@ -251,4 +251,189 @@ test('the long side has three windows', () => {
     assert.ok(spans[i][0] > 0 && spans[i][1] < 1, `window ${i} is inside the wall`)
     if (i > 0) assert.ok(spans[i - 1][1] < spans[i][0], `windows ${i - 1} and ${i} overlap`)
   }
+})
+
+// Slice 1, Task 1 (tasks/2026-10-29-church-square-plan.md): the church's own sources, by name
+test("the church's walls are painted by name: the right wall lit, the rest shade", () => {
+  const nave = churchFaces.filter((f) => f.owner === 'church' && !f.name.endsWith('roof'))
+  const byName = (n: string) => nave.find((f) => f.name === n)!
+  assert.equal(byName('right').source, 'churchLit')
+  for (const n of ['front gable', 'back', 'left', 'back gable']) assert.equal(byName(n).source, 'churchShade', n)
+  for (const f of nave.filter((f) => f.name.startsWith('front ') && f.name !== 'front gable')) assert.equal(f.source, 'churchShade', f.name)
+})
+
+test('the belfry takes belfry and the spire takes spire', () => {
+  assert.ok(churchFaces.some((f) => f.owner === 'belfry') && churchFaces.some((f) => f.owner === 'spire'))
+  for (const f of churchFaces.filter((f) => f.owner === 'belfry')) assert.equal(f.source, 'belfry')
+  for (const f of churchFaces.filter((f) => f.owner === 'spire')) assert.equal(f.source, 'spire')
+})
+
+test('no house uses a church source', () => {
+  /* guard: passes before the code too */
+  for (const f of build.report.faces.filter((f) => f.owner.startsWith('house-')))
+    assert.ok(!['churchLit', 'churchShade', 'spire', 'belfry'].includes(f.source), `${f.owner} ${f.name}`)
+})
+
+test('the tones do not depend on the light flag', () => {
+  /* guard: passes before the code too */
+  const unlit = buildStreet(plainPainting(), flow, masses, { lit: false })!
+  const srcOf = (b: typeof unlit) => b.report.faces.filter((f) => ['church', 'belfry', 'spire'].includes(f.owner)).map((f) => f.source)
+  assert.deepEqual(srcOf(unlit), srcOf(build))
+})
+
+// Task 3: the two flanking trees stand against the nave (design decision (f)), and the wind cannot cover the openings.
+// rectDistance is the flat distance from a point to a yawed rectangle (`scratch/.../probe-design-r0.mjs`).
+function rectDistance(x: number, z: number, h: { x: number; z: number; yaw: number; w: number; d: number }): number {
+  const dx = x - h.x
+  const dz = z - h.z
+  const u = dx * Math.cos(h.yaw) + dz * Math.sin(h.yaw)
+  const v = -dx * Math.sin(h.yaw) + dz * Math.cos(h.yaw)
+  return Math.hypot(Math.max(0, Math.abs(u) - h.w / 2), Math.max(0, Math.abs(v) - h.d / 2))
+}
+const treeOf = (id: string) => {
+  const t = STREET_TREES.find((x) => x.id === id)
+  assert.ok(t, `${id} is a street tree`)
+  return t
+}
+const treeBuffers = [build.trees.solid, build.trees.strokes]
+/** the largest flat distance of a built vertex from its nearest tree's foot, for that tree */
+function reachOf(id: string): number {
+  let reach = 0
+  for (const a of treeBuffers) {
+    for (let i = 0; i < a.positions.length; i += 3) {
+      const d = STREET_TREES.map((t) => Math.hypot(a.positions[i] - t.x, a.positions[i + 2] - t.z))
+      const k = d.indexOf(Math.min(...d))
+      if (STREET_TREES[k].id === id) reach = Math.max(reach, d[k])
+    }
+  }
+  return reach
+}
+
+test('the two flanking trees stand close against the nave and clear of it', () => {
+  const gaps = ['orchard-lower', 'olive-right'].map((id) => ({ id, gap: rectDistance(treeOf(id).x, treeOf(id).z, nave) - reachOf(id) }))
+  for (const { id, gap } of gaps) console.log(`[margin] ${id}'s crown is ${gap.toFixed(4)} from the nave (0.025 to 0.05)`)
+  for (const { id, gap } of gaps) assert.ok(gap >= 0.025 && gap <= 0.05, `${id}'s crown is ${gap.toFixed(4)} from the nave`)
+})
+
+// Codex F3: a finite set of poses is not a bound on a swaying crown, a distance is. The shader moves a vertex by at most
+// 0.06 y² along x and 0.6 of that along z (`streetLife.ts` `swayInjection`): at most 0.06 y² × √(1 + 0.36) in all.
+const SWAY = Math.sqrt(1 + 0.36)
+const sway = (y: number) => 0.06 * Math.max(y, 0) ** 2 * SWAY
+const lerp3 = (a: Vector3, b: Vector3, u: number) => a.clone().lerp(b, u)
+
+/** the least distance between segments p1q1 and p2q2 (Ericson, Real-Time Collision Detection 5.1.9) */
+function segmentSegmentDistance(p1: Vector3, q1: Vector3, p2: Vector3, q2: Vector3): number {
+  const d1 = q1.clone().sub(p1)
+  const d2 = q2.clone().sub(p2)
+  const r = p1.clone().sub(p2)
+  const a = d1.dot(d1)
+  const e = d2.dot(d2)
+  const f = d2.dot(r)
+  let s: number
+  let t: number
+  if (a <= 1e-18 && e <= 1e-18) return p1.distanceTo(p2)
+  if (a <= 1e-18) {
+    s = 0
+    t = Math.min(1, Math.max(0, f / e))
+  } else {
+    const c = d1.dot(r)
+    if (e <= 1e-18) {
+      t = 0
+      s = Math.min(1, Math.max(0, -c / a))
+    } else {
+      const b = d1.dot(d2)
+      const denom = a * e - b * b
+      s = denom > 1e-18 ? Math.min(1, Math.max(0, (b * f - c * e) / denom)) : 0
+      t = (b * s + f) / e
+      if (t < 0) {
+        t = 0
+        s = Math.min(1, Math.max(0, -c / a))
+      } else if (t > 1) {
+        t = 1
+        s = Math.min(1, Math.max(0, (b - c) / a))
+      }
+    }
+  }
+  return p1.clone().addScaledVector(d1, s).distanceTo(p2.clone().addScaledVector(d2, t))
+}
+
+/** 0 when the segment ep crosses the triangle, else the least of its distances to the three edges and the endpoints' to the face */
+function segmentTriangleDistance(e: Vector3, p: Vector3, a: Vector3, b: Vector3, c: Vector3): number {
+  const dir = p.clone().sub(e)
+  const len = dir.length()
+  const hit = new Ray(e, dir.clone().normalize()).intersectTriangle(a, b, c, false, new Vector3())
+  if (hit && hit.distanceTo(e) <= len) return 0
+  const edges = Math.min(segmentSegmentDistance(e, p, a, b), segmentSegmentDistance(e, p, b, c), segmentSegmentDistance(e, p, c, a))
+  const tri = new Triangle(a, b, c)
+  // a zero-area triangle (the tree's builder emits some) has no face: three's closest point on it is NaN, and its edges say it all
+  if (tri.getArea() < 1e-12) return edges
+  const out = new Vector3()
+  return Math.min(edges, tri.closestPointToPoint(e, out).distanceTo(e), tri.closestPointToPoint(p, out).distanceTo(p))
+}
+
+test('no crown reaches a line of sight to the door, a window or the gable peak from stops 3 and 4, in the wind', () => {
+  const started = Date.now()
+  // the eyes: stops 3 and 4, landscape and portrait (the portrait eyes coincide, so they are listed once)
+  const eyes: Vector3[] = []
+  for (const portrait of [false, true]) {
+    for (const i of [3, 4] as const) {
+      const e = new Vector3(...stationPose(i, portrait).position)
+      if (!eyes.some((x) => x.distanceTo(e) < 1e-9)) eyes.push(e)
+    }
+  }
+  // the targets: each quad sampled 5 × 5 (corners included), the peak once
+  const targets: Vector3[] = []
+  const quad = (q: Vector3[]) => {
+    for (let i = 0; i <= 4; i++) for (let j = 0; j <= 4; j++) targets.push(lerp3(lerp3(q[0], q[1], j / 4), lerp3(q[3], q[2], j / 4), i / 4))
+  }
+  const door = build.report.church.door
+  assert.ok(door && build.report.church.windows, 'the church reports its door and windows')
+  quad(door.panel)
+  for (const w of build.report.church.windows) quad(w)
+  targets.push(churchFront().setY(nave.eave + nave.pitch))
+  // the crown's triangles, each with its sway bound and its box grown by it
+  type Tri = { a: Vector3; b: Vector3; c: Vector3; dT: number; lo: Vector3; hi: Vector3 }
+  const triangles: Tri[] = []
+  for (const arr of treeBuffers) {
+    const v = (k: number) => new Vector3(arr.positions[3 * k], arr.positions[3 * k + 1], arr.positions[3 * k + 2])
+    for (let i = 0; i < arr.indices.length; i += 3) {
+      const a = v(arr.indices[i])
+      const b = v(arr.indices[i + 1])
+      const c = v(arr.indices[i + 2])
+      const dT = Math.max(sway(a.y), sway(b.y), sway(c.y))
+      triangles.push({
+        a,
+        b,
+        c,
+        dT,
+        lo: new Vector3(Math.min(a.x, b.x, c.x) - dT, Math.min(a.y, b.y, c.y) - dT, Math.min(a.z, b.z, c.z) - dT),
+        hi: new Vector3(Math.max(a.x, b.x, c.x) + dT, Math.max(a.y, b.y, c.y) + dT, Math.max(a.z, b.z, c.z) + dT),
+      })
+    }
+  }
+  let tested = 0
+  let margin = Infinity
+  let worst = ''
+  for (const e of eyes) {
+    for (const p of targets) {
+      const lx = Math.min(e.x, p.x)
+      const hx = Math.max(e.x, p.x)
+      const ly = Math.min(e.y, p.y)
+      const hy = Math.max(e.y, p.y)
+      const lz = Math.min(e.z, p.z)
+      const hz = Math.max(e.z, p.z)
+      for (const T of triangles) {
+        if (T.hi.x < lx || T.lo.x > hx || T.hi.y < ly || T.lo.y > hy || T.hi.z < lz || T.lo.z > hz) continue
+        tested++
+        const distance = segmentTriangleDistance(e, p, T.a, T.b, T.c)
+        const here = () => `eye ${e.toArray().map((x) => x.toFixed(3))} target ${p.toArray().map((x) => x.toFixed(3))} triangle ${[T.a, T.b, T.c].map((q) => `(${q.toArray().map((x) => x.toFixed(4))})`).join(' ')} distance ${distance.toFixed(5)} dT ${T.dT.toFixed(5)}`
+        if (!(distance > T.dT)) assert.fail(`a crown triangle within ${T.dT.toFixed(4)} of a line of sight: ${here()}`)
+        if (distance - T.dT < margin) {
+          margin = distance - T.dT
+          worst = here()
+        }
+      }
+    }
+  }
+  console.log(`[margin] ${eyes.length} eyes, ${targets.length} targets, ${triangles.length} triangles, ${tested} boxed pairs; the least distance - dT is ${margin.toFixed(5)} (${worst || 'no pair near a line'}); ${((Date.now() - started) / 1000).toFixed(1)} s`)
 })

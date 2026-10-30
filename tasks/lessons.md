@@ -3518,3 +3518,41 @@ must be byte-identical before the stimulus's difference means anything.
 - **A browser check needs its server.** The walk check run bare timed out on `__streetReady` before case 1. It reads
   `DIORAMA_CAPTURE_URL` and needs vite on that port, as `tools/gate-final.sh` starts it. Run the checks from a runner
   that starts the server.
+- **A size on screen is a projection, not a guess from a distance.** The church design said the owl would be 29 px
+  at stop 4 from a guessed 0.6 away. The perch is 0.91 from the camera, and the real camera gives 19 px on the
+  desktop and 11 on the phone (Codex's probe, 2026-10-29). The same for the moths: the lamp I named at stop 3 is
+  beside the camera, out of frame. Before a design claims a size, project the real point through the real camera.
+- **A light's reach is a number. Check the distance before saying it lights a thing.** The design said Vincent's
+  lantern lights the church door at stop 4. The glass is 0.265 from the door and the reach is 0.08, so the lift there
+  is 0.00002 of its value at the glass. The square lamp's pool (0.16) is 0.36 from the wall bed. Both were one
+  subtraction away (Codex F3, 2026-10-29).
+- **A reviewer's long read can be the probe you did not write.** Codex took 35 minutes on the church design and
+  came back with an executable probe (`review/probe-design-r0.mjs`) that found the two faults above plus three more.
+  Check the pane and the review folder before calling a long read a stall: a growing probe log is work.
+- **Read the clock before writing a time.** The church slice's pickups said 18:35 at 17:32, 19:05 at 18:30, and two
+  scratch headers said 19:10 and 18:55 for files written at 17:41 and 18:24. Each was a time carried forward from a
+  plan, not read. Mark reads every time as Brisbane fact. Run `date` before any time goes in a file, and get the past
+  ones from the git log or the file's own clock (2026-10-29).
+- **A synthetic fixture's bound is not the real ceiling.** The church's recipes at full cover failed the street test's
+  641,310 while the real street was 631,507. The fixture overstates the street by 42,605 (`lived: false`, every house
+  on `KEPT_PAINT`), so its bound was tighter than the design's by 3,300. Raise it to its own base plus the design's
+  allowance, say why in the test's comment and the ledger, and let the gate's sweep measure the real ceiling.
+- **A lightness miss can sit under the strokes.** The church read 12 L darker than its source with the right pigments.
+  The cause was the underpaint quad: `wallShade`'s ground term takes 0.5 at its two foot vertices, so it is darker
+  than the strokes everywhere, and the stroke body's rim and dry brush open the strokes over it. The design's four
+  levers reached 42 of 50 in three passes. The one-line exemption reached 48. Before tuning a recipe for lightness,
+  measure the underpaint's baked vertex colours against the strokes' (`church-vertex-l.mjs`).
+- **A builder that stops on a false assertion is doing its job.** Argon stopped Task 4 when the witness assertion
+  (all 12 ring points standable) was false for three points, and reported the failing k. The plan was wrong, not the
+  build. Fix the plan (Codex answer 7: find the witnesses with the ring at the post's radius) and send a continuation.
+- **The shell's cwd does not survive a response's parallel calls.** Three parallel Bash calls, one ending in a crop
+  folder, left the other two reading `scripts/perf-street-grass.mjs` as missing from the repo root. Use absolute
+  paths in every command that runs beside another.
+- **A guard that reads a copy of the argument proves nothing about what is drawn.** The heads' depth test read
+  `headCentres`, filled from the point passed to `stoneDab`. Codex's control shifted what the dab drew and left the
+  report alone: the heads sat behind their blades and the test stayed green (branch review r1, 2026-10-29). Bind a
+  report to the emitted buffer (the vertex after the call), and run a mutant on the drawing, not only on the input.
+- **A lamp's halo is a sprite in screen space.** At stop 3 the church's front read L 45 against its source's 27, and
+  neither the paint nor the fog explained it (the fog is `skyHorizon`, L 39, and the reading was neutral, not blue).
+  The front's columns by screen x read 54, 55, 41, 26: the `t` 0.65 lamp stands between the camera and the church,
+  and its halo lifts what it covers. Before blaming a colour, bin the pixels by position and look for the sprite.

@@ -1,6 +1,137 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-10-29 (14:45): Vincent's wander, passed by Mark; the PR is open, Fable reviews
+## Pickup — 2026-10-29 (22:10): slice 1 passed by Mark, slice 2 (the owl and the moths) starting
+
+**Mark's pass:** "Gate passed." on the preview at 22:10, the shipped state. P7 stands. The mirrored tones stand. The
+ring stays. Probe B's white front is open to his word (`litWalls` in `church()`). PR #38 is his to merge. The pass is
+recorded in the Tunables entry and in `tasks/2026-10-29-church-square.md`.
+
+**Then:** slice 2 on `feat/church-owl` off `dec4671`, stacked on #38 until Mark merges it, then `git merge origin/main`.
+The plan `tasks/2026-10-29-church-owl-plan.md` from the design's slice 2 section. Codex's correctness read and a
+builder's buildability read come before any build. Its PR opens once #38 is in `main`.
+
+## Pickup — 2026-10-29 (19:40): slice 1 gated and reviewed, PR #38 open for Mark's preview pass
+
+**Done by 19:40:** the gate on `1e3da3d` (the green step, the six browser checks, the sweep 1,433,053 against
+1,444,930, the colour gate, the ID frames, perf p95 at most 18.6 ms, 321 draw calls; `C/t6/`). Codex's branch review,
+three rounds: r0 REVISE (the heads lifted behind their blades, fixed `e29bc36`), r1 REVISE (the depth guard read the
+dab's argument, fixed `f1a3cf8`), r2 BUILD. The record `tasks/2026-10-29-church-square.md`, the Tunables entry, seven
+lessons (`489b9dd`). Pushed; **PR #38** open (`https://github.com/markpukete-web/starry-night/pull/38`), the Codex
+bot's review requested at 19:38. The Vercel preview is ready:
+`https://starry-night-git-feat-church-square-markpukete-webs-projects.vercel.app`. Mark sent the crops and a push
+notification. The look server on 5199 stopped.
+
+**For Mark at the preview:** P7 (the church without a foot shadow; one line in `streetLight.ts`, reversible) and
+probe B (the painting's own sides, `litWalls` in `church()`). The crops: `C/for-mark/`.
+
+**The Codex bot's review** passed `489b9dd` at 19:39 (the timeline's receipt: "Didn't find any major issues") and
+`2c8db76` at 19:42, with no inline comment and no review object. The commits after `2c8db76` are docs only.
+
+**Then:** Mark's pass, his merge. Slice 2 (the barn owl on the ridge, the moths at the lit windows)
+after his word: the design's slice 2 section, a plan to Codex's read first.
+
+## Pickup — 2026-10-29 (18:55): Tasks 1, 3 and 4 merged and gated, the look passes done, Task 6's gate and Codex's branch review running
+
+**Done by 18:55:** Task 4 (Argon, `1056cd9`) merged `1e3da3d` (18:46) after the Lead's gate (the diff read, the suite
+run, 482 pass, tsc and lint clean; the flag-off pin re-pinned to `46f2bc6ba04296ab`). Look passes 1 to 4
+(`C/t5/looks.md`, `b322690`): the design's levers reached 42.3 of 49.7, and pass 4 exempts the church's two tones from
+`wallShade`'s ground term (departure P7, revision 4 `de5d5f0`), reading 48.1 / 24.2 against 49.7 / 26.8. Probes B (the
+painting's own sides) and C (P7) captured for Mark. The ring of flowers read at `t` 0.84 (`C/t5/p5`): a quiet tuft with
+pale heads in the lamp's pool, no retune. The record drafted (`tasks/2026-10-29-church-square.md`, the gate and the
+review to fill). Five lessons appended.
+
+**Running at 18:55:** the gate `C/t6/gate.sh 1e3da3d` (tsc, lint, the suite, the hashes, the six browser checks on
+port 5213, the sweep with 0.26 and 0.9, the build; `C/t6/summary.txt`), then `C/t6/colour.sh` (5214) and
+`C/t6/perf.sh` (5215), chained one after another. Codex `w4:p4` on the branch review (`C/briefs/codex-branch-r0.md`,
+report `C/review/codex-branch-r0.md`), sent 18:52.
+
+**Then:** the ID-frame look at stops 3 and 4 (Step 4), the gate's numbers into the record and the Tunables entry,
+Codex's findings fixed in one batch, push `feat/church-square`, the PR with P7 and probe B at the top for Mark's
+decision, a push notification to Mark. Slice 2 (the owl, the moths) after his word.
+
+## Pickup — 2026-10-29 (18:35): revision 3, Tasks 1 and 3 merged, Argon on Task 4, Mark at dinner ("Take the lead")
+
+**Revision 3 (`086b6d9`)** folds Codex's confirmation read of revision 2 (`review/codex-plan-r2.md`: five of six
+closed, F2 open because `wallSource: 'churchLit'` reached the door's strokes). The church keeps `wallSource` plaster,
+the tones in a separate field, the guard on the openings' strokes (`cls` 255 in the nave's box: 2,287 vertices, hash
+`51a2c84e0b745f72` at the base).
+
+**Task 2's ledger is written** (`t2/ledger.md`): the recipes at full cover put the street at 631,507 triangles (the
+church 1,393 ribbons, about 50 triangles each). The Lead's decision: the four covers halved (1.75 / 1.75 / 3 / 1.75),
+street 600,275, church 781 ribbons. The synthetic fixture's bound in `street-build.test.ts` becomes 644,605 (its base
+639,524 plus the design's allowance 5,081), said in the test and the ledger. Look pass 1 judges the thinner paint.
+
+**Done by 18:35:** Task 1 (`8934878`, merged `60de3ab`) and Task 3 (`d730252`, merged `89e6908`), both gated by the
+Lead (the diffs read, the suite run again, 480 pass). Look pass 1 measured (`t5/looks.md`: the moonlit wall L 37.1
+against 49.7; the underpaint's shade is the cause, outside the design's levers). **Running:** the Task 1 Sonnet builder's fix round was (`briefs/builder-t1-r1.md`: the cover, the fixture,
+the guard, the squash into the Step 8 commit; its WIP `61b5b43` on `feat/church-square-t1`). Argon (`w4:p5`) on Task 4
+from revision 2 (`briefs/builder-t4-r1.md`, report `t4/report-2.md`). A Sonnet builder on Task 3 from revision 3
+(`briefs/builder-t3-r0.md`, branch `feat/church-square-t3`, report `t3/report.md`). Codex is idle; its next job is
+the branch review (Task 6 Step 7). Mark, before 18:30: "Take the lead I am having dinner". (The pickup first said 19:05: the clock was not read.)
+
+**Then:** gate each branch (the diff, the raw logs, the suite run by the Lead), merge Task 1, Task 4, Task 3 into
+`feat/church-square`, re-pin once, look pass 1 (capture stops 3 and 4, both viewports, `C/look0/capture.mjs`), the
+look passes, Task 6's gate, Codex's branch review, push and the PR for Mark's preview pass.
+
+## Pickup — 2026-10-29 (18:15): slice 1's plan at revision 2, Task 0 done, Argon on Task 4, Task 1 to a Sonnet builder
+
+The times in the two pickups below this one were written wrong (the Lead carried them forward instead of reading the
+clock): the git log holds the truth. The design's calls were committed 17:16, revision 0 at 17:30, revision 1 at 17:56.
+
+**Revision 2** folds Codex's correctness read of revision 0 (`review/codex-plan-r0.md`, REVISE, ten findings, landed
+17:58). Revision 1 (`c9b7f05`) had closed five (F1, F4, F6, F7, F8). Revision 2 closes F2 (the openings keep the plaster
+face), F3 (a distance test against the sway's bound), F5 (the flowers' test asserts the geometry), F9 (the tones by
+name, no light rule), F10 (1,100 triangles reserved for the flowers) and Codex's answers 6 and 7. Task 0 is done
+(`scratch/church-animals-2026-10-29/t0/`).
+
+**Running at 18:15:** Argon (`w4:p5`, Gemini 4 Argon, Mark's switch before 17:50) builds Task 4 on
+`feat/church-square-t4` from revision 1 (brief `briefs/builder-t4-r0.md`, report `t4/report.md`, a Monitor armed).
+Its fix round (`briefs/builder-t4-r1.md`: F5, answers 6 and 7, the palette check) goes out when its report lands.
+Task 1 goes to a Sonnet `builder` subagent from revision 2 (brief `briefs/builder-t1-r0.md`). Codex gets a bounded
+confirmation read of revision 2 (`briefs/codex-plan-r2.md`). Mark's call of about 17:50: "Start Task 4 on Argon now".
+Then: Task 2's ledger, Task 3, the look passes, the gate.
+
+## Pickup — 2026-10-29 (17:32, written as 18:35): the design approved, the slice 1 plan written, its two reads running
+
+**Mark approved the design at 17:20** ("Go ahead with your recommendations and I like the tunable owl idea"): the two
+tones mirrored, the ring of flowers in the lamp's pool only, the barn owl at 0.024 with `OWL.size` tunable. The calls
+are recorded in the design (`967af52`).
+
+**The slice 1 plan, revision 0:** `tasks/2026-10-29-church-square-plan.md` (`78e8634`, this branch, local). Seven
+tasks: 0 the facts (the Lead picks the four source rectangles and measures the strokes at 1:1, a builder writes the
+sources probe and the tree search), 1 the sources, classes and tones (builder), 2 the ledger (Lead), 3 the trees
+(builder), 4 the flowers (builder, into the street's strokes bucket, no new mesh), 5 the look passes (Lead, four at
+most), 6 the gate. Five departures from the design's text are in its table P1 to P5, open to the reads and to Mark.
+
+**Running at 18:35:** Codex's correctness read of the plan on `w4:p4` (brief
+`scratch/church-animals-2026-10-29/briefs/codex-plan-r0.md`, report `review/codex-plan-r0.md`, a Monitor armed) and a
+Sonnet buildability read (report `review/builder-plan-r0.md`). Next: fold both into revision 1, then Task 0.
+
+## Pickup — 2026-10-29 (17:05): #37 merged; the church and its square designed (revision 1), Mark's approval next
+
+**On `main` (`e96c7c0`):** Vincent's wander, PR #37, merged on Mark's word ("Merge #37"), production deploys from
+it. The Codex bot passed `487e053` with no findings. Fable's round 0 (REVISE: F1 P2, a tap where he stood at stop 4
+did not bring him home, and two P3s) was fixed in `f864770` and answered in the thread. The record is
+`tasks/2026-10-29-vincent-wander.md`.
+
+**Cleaned on Mark's word:** thirteen worktrees and fourteen merged local branches removed, and the merged branches
+deleted on GitHub. GitHub holds `main`, `spike/vincent-form` and `spike/vincent-wander` (the Tunables cite the wander
+spike's `74d8856`). Local: `main`, `feat/church-square`, `docs/pickup-2026-10-28-night` and the two spikes. The two
+worktrees' uncommitted leftovers are in `scratch/worktree-leftovers-2026-10-29/`.
+
+**Next (Mark: "Animals besides the frogs", then "the church is a bit dull", "we can just build it if it's well
+planned"):** the design `docs/superpowers/specs/2026-10-29-church-square-design.md`, revision 1, on this branch
+(`feat/church-square` off `555b6c0`, local, not pushed). The builder check (`scratch/church-animals-2026-10-29/review/
+builder-check-r0.md`, seven questions) and Codex's read (`codex-design-r0.md`, REVISE: three P2, two P3, all facts
+audited) are folded. Three calls are Mark's, under "Open for Mark": the church's two tones, the flowers (the ring in
+the lamp's pool is the recommendation), and the owl's species and size. Then: Mark approves the design, the slice 1
+plan (the church's paint, the spire, the trees, the flowers) with its two reads, the build, then slice 2 (the owl and
+the moths). Stop 4's captures as it stands are in `scratch/church-animals-2026-10-29/look0/`.
+
+**Panes at 16:54:** Codex `w4:p4` idle, 70% of its 5-hour window left. Fable `w4:p6` done. Gemini `w4:p5` idle, its
+week 70% used. Nothing is running. No PR is open.
+
+## Pickup — 2026-10-29 (14:45): Vincent's wander, passed by Mark; the PR is open, Fable reviews (superseded by the pickup above)
 
 Branch `feat/vincent-wander`, PR #37 (https://github.com/markpukete-web/starry-night/pull/37). The record is `tasks/2026-10-29-vincent-wander.md`. The slice fixes the spike's four faults and adds the walk
 home after the dwell (Mark, 11:45). Task 4's runs (Gemini) and the Lead's gate on `a21767e` are green. Codex's branch

@@ -8,16 +8,18 @@ import { existsSync, readFileSync } from 'node:fs'
 import test from 'node:test'
 import { PerspectiveCamera, Raycaster, Vector2, Vector3 } from 'three'
 
+import palette from '../public/reference/palette.json' with { type: 'json' }
 import { FROG, frogPlace, FROGS } from '../src/scene/frog.ts'
 import { bladeVertex, bladeWidth, GRASS_BLADE } from '../src/scene/grassBlade.ts'
 import type { BakedMass } from '../src/scene/landDomes.ts'
-import { buildStreet, LIVED_CRAFT, type StreetBuild, WALL_PAINT } from '../src/scene/streetGeometry.ts'
+import { buildFlatPanel, buildStreet, LIVED_CRAFT, type StreetBuild, WALL_PAINT } from '../src/scene/streetGeometry.ts'
 import { grassChunks, grassDrawCount, grassRect, PLANT, plantChunks, plantHit } from '../src/scene/streetGrass.ts'
 import {
   doorOf,
   doorPathLegs,
   doorStepFoot,
   doorStepFrame,
+  FLOWERS,
   houseFrame,
   laneAt,
   laneParam,
@@ -27,8 +29,10 @@ import {
   pathLegShapes,
   pathTangent,
   STATION_T,
+  stationPose,
   stepClearings,
   STREET,
+  STREET_CHURCH,
   STREET_HOUSES,
   STREET_OBJECTS,
   STREET_PATHS,
@@ -37,7 +41,7 @@ import {
   walkPose,
   wallClearings,
 } from '../src/scene/streetLayout.ts'
-import { faceConfig, OUTLINE_FRACTION, type StreetFace } from '../src/scene/streetStrokes.ts'
+import { faceConfig, OUTLINE_FRACTION, sourceUnderpaint, srgbToLab, type StreetFace } from '../src/scene/streetStrokes.ts'
 import type { ImageData2D } from '../src/scene/useImageData.ts'
 import { decodePNG } from './lib/png.ts'
 
@@ -466,10 +470,10 @@ test('the default street fits its budget', { skip }, () => {
 
 test("K2's street without the lived-in parts", { skip }, () => {
   assert.ok(realPainting)
-  const build = buildStreet(realPainting, flow, masses, { grass: true, lived: false })!
+  const build = buildStreet(realPainting, flow, masses, { grass: true, lived: false, flowers: false })!
   assert.deepEqual(build.report.lived, { paths: [], objects: [] })
   const hash = computeBuildHash(build)
-  assert.equal(hash, '5f3ea9c0e97f6e46', 'B1 hash matches')
+  assert.equal(hash, '918dd24d40740805', 'B1 hash matches')
 })
 
 test('the three objects stand by their doors', { skip }, () => {
@@ -859,19 +863,95 @@ test("the plaster houses' ribbon count holds", { skip }, () => {
     `plaster house ribbons ${houseRibbons} in [392, 480]`,
   )
 
-  const churchPlasterRibbons = build.report.faces
-    .filter((f) => f.source === 'plaster' && ['church', 'belfry', 'spire'].includes(f.owner))
+  // slice 1 task 1: the church's walls take their own four sources, not the plaster; the plaster is the houses' alone
+  const churchOwn = ['churchLit', 'churchShade', 'spire', 'belfry']
+  const churchOwnRibbons = build.report.faces
+    .filter((f) => churchOwn.includes(f.source) && ['church', 'belfry', 'spire'].includes(f.owner))
     .reduce((sum, f) => sum + f.ribbons, 0)
-  assert.equal(churchPlasterRibbons, 729, 'church plaster ribbons 729 exactly')
+  assert.ok(churchOwnRibbons > 0 && churchOwnRibbons <= 1600, `church own-source ribbons ${churchOwnRibbons} in (0, 1600]`)
+  const churchRibbons = build.report.faces.filter((f) => ['church', 'belfry', 'spire'].includes(f.owner)).reduce((sum, f) => sum + f.ribbons, 0)
+  assert.ok(churchRibbons <= 1600, `the church's ribbons ${churchRibbons} <= 1600`)
+  assert.equal(build.report.faces.filter((f) => f.source === 'plaster' && ['church', 'belfry', 'spire'].includes(f.owner) && f.ribbons > 0).length, 0, 'no church face is clad from the plaster')
+  assert.ok(build.counts.triangles <= 602000, `the default street ${build.counts.triangles} triangles <= 602,000`)
+  console.log(`church ribbons ${churchRibbons}, own-source ribbons ${churchOwnRibbons}, street triangles ${build.counts.triangles}`)
+})
+
+test("the church's openings keep the plaster face (the design's non-goal, Codex F2)", { skip }, () => {
+  assert.ok(realPainting)
+  const b = buildStreet(realPainting, flow, masses, { grass: true })!
+  const { nave } = STREET_CHURCH
+  const pos = b.strokes.arrays.positions
+  const col = b.strokes.arrays.colors
+  const colours: number[][] = []
+  for (let i = 0; i < b.strokes.cls.length; i++) {
+    if (b.strokes.cls[i] !== 255) continue
+    const dx = pos[i * 3] - nave.x
+    const dz = pos[i * 3 + 2] - nave.z
+    const u = dx * Math.cos(nave.yaw) + dz * Math.sin(nave.yaw)
+    const v = -dx * Math.sin(nave.yaw) + dz * Math.cos(nave.yaw)
+    if (Math.abs(u) <= nave.w / 2 + 0.005 && Math.abs(v) <= nave.d / 2 + 0.005) colours.push([col[i * 3], col[i * 3 + 1], col[i * 3 + 2]])
+  }
+  const hash = createHash('sha256').update(JSON.stringify(colours)).digest('hex').slice(0, 16)
+  // computed at the base commit 4ec0008: the strokes with cls 255 inside the nave's box, the door's panel and the side
+  // windows. The reveals and the step are underpaint, and the belfry's opening is outside the box (Codex branch r0).
+  assert.equal(colours.length, 2287, 'the church opening vertices')
+  assert.equal(hash, '51a2c84e0b745f72', 'their colours are the base commit\'s')
 })
 
 test("K2's walls without the lived-in parts", { skip }, () => {
   assert.ok(realPainting)
-  const build = buildStreet(realPainting, flow, masses, { grass: true, lived: false })!
+  const build = buildStreet(realPainting, flow, masses, { grass: true, lived: false, flowers: false })!
   assert.ok(
     build.report.faces.every((f) => f.lengthScale === 1),
     'every face reports lengthScale 1',
   )
   const hash = computeBuildHash(build)
-  assert.equal(hash, '5f3ea9c0e97f6e46', 'B1 hash matches')
+  assert.equal(hash, '918dd24d40740805', 'B1 hash matches')
+})
+
+const deltaE = (a: readonly number[], b: readonly number[]) =>
+  Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2])
+
+test("a ring of flowers stands in the square lamp's pool, pale heads at the tips, and none without the lane", { skip }, () => {
+  assert.ok(realPainting)
+  const painting = realPainting
+  const OPTIONS = { grass: true } as const
+  const build = buildStreet(painting, flow, masses, OPTIONS)!
+  const f = build.report.lane.flowers!
+  const [lx, lz] = [build.report.lane.lamps[6].foot.x, build.report.lane.lamps[6].foot.z]
+  assert.deepEqual(f.centre, [lx, lz])
+  for (const [x, z] of f.roots) {
+    const r = Math.hypot(x - lx, z - lz)
+    assert.ok(r >= FLOWERS.radius - GRASS_BLADE.spread && r <= FLOWERS.radius + GRASS_BLADE.spread, `a root at ${r}`)
+  }
+  assert.equal(f.roots.length, f.blades)
+  assert.equal(f.headColours.length, f.heads)
+  assert.equal(f.headCentres.length, f.heads)
+  assert.equal(f.headTips.length, f.heads)
+  const eye = stationPose(4, false).position                                                     // Codex branch r0 F1: every head is lifted toward stop 4's eye,
+  const toEye = (p: [number, number, number]) => Math.hypot(p[0] - eye[0], p[1] - eye[1], p[2] - eye[2])   // never behind its blade (the lift's dot with the eye's direction is 0.71 to 0.97)
+  for (let i = 0; i < f.heads; i++) {
+    const nearer = toEye(f.headTips[i]) - toEye(f.headCentres[i])
+    assert.ok(nearer > 0.5 * FLOWERS.headLift, `head ${i} is nearer the eye than its blade by ${nearer}`)
+  }
+  assert.ok(f.blades >= 30 && f.blades <= 54 && f.heads >= 12 && f.heads <= 24)
+  assert.equal(f.triangles, 16 * f.blades + 8 * f.heads)
+  assert.ok(f.triangles <= 1100)
+  const window = srgbToLab(...(sourceUnderpaint(painting, 'windowLit', 1).map((c) => c * 255) as [number, number, number]))
+  for (const c of f.headColours) assert.ok(deltaE(srgbToLab(...c), window) > FLOWERS.headGap)   // deltaE: hypot of the three differences
+  for (const c of palette.regions.stars.colours.slice(0, 3)) {                                   // the helper's units, against the palette's own Lab (F4)
+    const rgb = [1, 3, 5].map((i) => parseInt(c.hex.slice(i, i + 2), 16)) as [number, number, number]
+    assert.ok(deltaE(srgbToLab(...rgb), c.lab) < 1, c.hex)
+  }
+  assert.equal(buildStreet(painting, flow, masses, { ...OPTIONS, lane: false })!.report.lane.flowers, null)
+  assert.equal(buildFlatPanel(painting, flow, masses)!.report.lane.flowers, null)
+  const without = buildStreet(painting, flow, masses, { ...OPTIONS, flowers: false })!
+  assert.equal(without.counts.triangles, build.counts.triangles - f.triangles)
+  const [sa, wa] = [build.strokes.arrays, without.strokes.arrays]                               // F5: the geometry is there
+  assert.equal(sa.indices.length - wa.indices.length, 3 * f.triangles)
+  assert.equal(sa.positions.length - wa.positions.length, 3 * (15 * f.blades + 9 * f.heads))
+  assert.deepEqual(sa.positions.slice(0, wa.positions.length), wa.positions)                    // the flowers are the bucket's tail
+  const ys = sa.positions.filter((_, i) => i >= wa.positions.length && i % 3 === 1)
+  assert.ok(Math.min(...ys) >= FLOWERS.rootY - 1e-9 && Math.max(...ys) <= FLOWERS.rootY + 0.03)
+  assert.equal(computeBuildHash(without), '46f2bc6ba04296ab')                                   // answer 6: the flag off is the base, byte for byte
 })

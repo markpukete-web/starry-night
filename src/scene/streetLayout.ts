@@ -516,6 +516,17 @@ export const STREET_LAMPS = [
   { t: 1.0, lateral: 0.2 },
 ] as const
 
+export const FLOWERS = {
+  radius: 0.03,
+  clumps: 6,
+  scale: 0.5,
+  heads: [2, 4],
+  headWidth: 0.0035,
+  headGap: 5,
+  rootY: 0.005,
+  headLift: 0.0004,
+} as const
+
 export type OrientedBox = {
   ox: number
   oz: number
@@ -663,11 +674,14 @@ export const STREET_CHURCH = {
 
 // Three trees (Step 5): olive-church (440, 610), orchard-lower (720, 240), olive-right (270, 240), each moved the fewest
 // whole map pixels that keep its built crown 0.025 clear of every house, over the layout test's floor of 0.02 (Codex
-// T2: pass 7's crowns reach 1.39–1.41 R, and olive-right's reached into L5)
+// T2: pass 7's crowns reach 1.39–1.41 R, and olive-right's reached into L5). Church slice 1, Task 3: the two flanking
+// trees stand close against the nave, as the painting's do, at (666, 181) and (308, 184): the fewest pixels moved that
+// leave a crown 0.049 and 0.048 from the nave and no crown triangle, swaying, within reach of a line of sight to the
+// door, the windows or the peak (`scratch/church-animals-2026-10-29/t0/tree-search.log`, `scripts/street-church.test.ts`)
 const TREE_SPECS = [
   { id: 'olive-church', mapX: 451, mapY: 607 },
-  { id: 'orchard-lower', mapX: 721, mapY: 236 },
-  { id: 'olive-right', mapX: 266, mapY: 226 },
+  { id: 'orchard-lower', mapX: 666, mapY: 181 },
+  { id: 'olive-right', mapX: 308, mapY: 184 },
 ] as const
 
 export const STREET_TREES: readonly LandMass[] = TREE_SPECS.map((spec) => {

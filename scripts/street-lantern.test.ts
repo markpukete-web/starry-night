@@ -26,8 +26,8 @@ const grass = (lit: boolean) => buildGrassMaterial(new DataTexture(new Uint8Arra
 test('the lantern is not in the unlit programs', () => {
   // the base's programs at ed464c9, built as Street.tsx built them (lead-v1-unlit-programs.log)
   const pins = [
-    { name: 'ground', m: (ids: boolean, lit: boolean) => groundMaterial(fog(), ids, lit), unlit: '8c785ab6d6495140', ids: '94d1b777fcef5990', key: 'street-ground' },
-    { name: 'grass base', m: (ids: boolean, lit: boolean) => grassBaseMaterial(grassBaseBody(PAINT), fog(), ids, lit), unlit: 'd1fe6b0ed3fc628c', ids: 'bf524cfd151ff427', key: 'street-grass-base' },
+    { name: 'ground', m: (ids: boolean, lit: boolean) => groundMaterial(fog(), ids, lit), unlit: '8c785ab6d6495140', ids: 'be1256a240b985d4', key: 'street-ground' },
+    { name: 'grass base', m: (ids: boolean, lit: boolean) => grassBaseMaterial(grassBaseBody(PAINT), fog(), ids, lit), unlit: 'd1fe6b0ed3fc628c', ids: '1701ac6fc25613c2', key: 'street-grass-base' },
   ]
   for (const p of pins) {
     const unlit = compiled(p.m(false, false))
