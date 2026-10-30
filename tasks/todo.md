@@ -1,5 +1,15 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-10-30 (21:56): the lazy-load of the retired modes on a PR; the tidy done
+
+**PR #42 merged** (`dc442bc`): the lighter view. **The tidy is done** on Mark's "Go ahead and remove them yourself":
+the eight old worktrees removed, the merged branches deleted locally and on `origin`. Left: `main`,
+`spike/vincent-form` and `spike/vincent-wander`, which hold unmerged commits. The 21:34 pickup below is superseded.
+
+**The lazy-load of the retired modes** (Mark: "go with the lazy-load of the retired modes", branch
+`perf/lazy-retired-modes`, `dfbdf47`): the numbers are under finding 7 in `tasks/2026-10-30-perf-review.md`. About
+95 kB raw and 23 kB gzipped off the diorama's start, nearly all of it the canopy's postprocessing.
+
 ## Pickup — 2026-10-30 (21:34): the lighter view is PR #42; the tidy waits on Mark's permission
 
 **PR #41 merged** (`7b7d38d`): the unlocked perf capture, the small favicon, the review and the Tunables cut.
