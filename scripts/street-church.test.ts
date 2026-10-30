@@ -6,6 +6,7 @@ import test from 'node:test'
 import { Frustum, Matrix4, PerspectiveCamera, Ray, Triangle, Vector3 } from 'three'
 import { islandHeightAt } from '../src/scene/islandShape.ts'
 import type { BakedMass } from '../src/scene/landDomes.ts'
+import { OWL, owlPerch } from '../src/scene/owl.ts'
 import { buildStreet } from '../src/scene/streetGeometry.ts'
 import { CHURCH_LIGHT } from '../src/scene/streetLight.ts'
 import { CHURCH, churchFront, laneDistance, STREET, STREET_CHURCH, STREET_HOUSES, STREET_SQUARE, STREET_TREES, stationPose, vincentPlace, walkPose, type StationPose } from '../src/scene/streetLayout.ts'
@@ -391,6 +392,8 @@ test('no crown reaches a line of sight to the door, a window or the gable peak f
   quad(door.panel)
   for (const w of build.report.church.windows) quad(w)
   targets.push(churchFront().setY(nave.eave + nave.pitch))
+  const perch = owlPerch().position
+  targets.push(new Vector3(perch[0], perch[1] + OWL.neck[1] * OWL.size + OWL.head.centre[1] * OWL.size, perch[2]))
   // the crown's triangles, each with its sway bound and its box grown by it
   type Tri = { a: Vector3; b: Vector3; c: Vector3; dT: number; lo: Vector3; hi: Vector3 }
   const triangles: Tri[] = []

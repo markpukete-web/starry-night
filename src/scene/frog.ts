@@ -81,7 +81,7 @@ const v3 = (a: Vec3) => new Vector3(a[0], a[1], a[2])
 const m = (a: Vec3): Vec3 => [a[0] * FROG.size, a[1] * FROG.size, a[2] * FROG.size]
 
 /** An ellipsoid round its own length (z): `a` round it from the right side over the top, `s` from the tail to the nose. */
-function ellipsoid(centre: Vec3, radii: Vec3, pitch = 0): Surface {
+export function ellipsoid(centre: Vec3, radii: Vec3, pitch = 0): Surface {
   const [rx, ry, rz] = radii
   const c = v3(centre)
   const [cp, sp] = [Math.cos(-pitch), Math.sin(-pitch)]

@@ -1,14 +1,71 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-10-30 (13:50): slice 2 is PR #39, its preview with the moths' pass 5 sent to Mark
+
+`b2e7eeb` on `feat/church-owl` is PR #39, base `feat/church-square` (#38), marked ready so Codex reviews. Look pass 5
+(the moths, past the cap on Mark's word) had the Consultant's bounded read: BUILD, one P2 fixed (the record). On Mark's
+pass of the preview: read #39's Codex review and answer every thread, merge #38, retarget #39 to `main`, merge.
+
+## Pickup — 2026-10-30 (12:53): slice 2 gated and reviewed, pushed for Mark's preview
+
+**Done:** the owl's look pass 4 (`a3634c4`, the perch 0.04 behind the peak: the ridge's flat ink hid the body, not the
+rake), the slice's fourth and last. Task 4's gate on `a3634c4`, green (`C/owl/t4/`): the suite 494, the six browser
+checks, the sweep 1,433,111, perf p95 at most 18.5 ms, 322 draw calls at stop 0, the colour gate at stops 3 and 4 as
+slice 1 left it, the turn and the blink shown. The Consultant's branch review (Fable `w4:p6`): BUILD, fourteen P3s,
+four fixed in `5c9685e`, the rest declined with reasons (`C/owl/review/lead-branch-r0.md`). The record
+`tasks/2026-10-29-church-owl.md`, the Tunables entry, two lessons. `feat/church-owl` pushed for the Vercel preview.
+
+**Next, in order (Mark, 2026-10-30: "once passed, push and merge to main"):** Mark's pass on the preview. Then merge
+PR #38 (slice 1; Codex's bot passed it on 2026-10-29), merge `origin/main` into `feat/church-owl`, open slice 2's PR
+as a draft and mark it ready so Codex fires, read the review through the timeline API, answer every thread, merge.
+
+**For Mark at the preview:** the owl on the phone at stop 4 is about 3 × 6 px beside the cross. The look cap is spent.
+The levers left are his: `OWL.size` past his call 3, or the ridge's ink thinner where the owl stands (slice 1's paint).
+A window's moths dim on the lamp halo's radius (the review's Q5).
+
+**Done in `47ae236` (Codex, PR #39 P2):** the owl's head snaps to its target within 1e-4 rad (the walk's pattern), with a
+settled flag in `__owl()` that `capture-sky-frames.mjs` waits for beside `__vincentForm().settled`. Stop 4's colour
+capture needs no custom wait now (the record). Argon's worktree `scratchpad/owl-t1-wt` and the Sonnet builder's
+`.claude/worktrees/agent-ab31cbfa08292c331` can be removed.
+
 ## Pickup — 2026-10-29 (22:10): slice 1 passed by Mark, slice 2 (the owl and the moths) starting
 
 **Mark's pass:** "Gate passed." on the preview at 22:10, the shipped state. P7 stands. The mirrored tones stand. The
 ring stays. Probe B's white front is open to his word (`litWalls` in `church()`). PR #38 is his to merge. The pass is
 recorded in the Tunables entry and in `tasks/2026-10-29-church-square.md`.
 
-**Then:** slice 2 on `feat/church-owl` off `dec4671`, stacked on #38 until Mark merges it, then `git merge origin/main`.
-The plan `tasks/2026-10-29-church-owl-plan.md` from the design's slice 2 section. Codex's correctness read and a
-builder's buildability read come before any build. Its PR opens once #38 is in `main`.
+**Slice 2 (23:07):** on `feat/church-owl` off `32e692b`, stacked on #38 until Mark merges it, then `git merge origin/main`.
+The plan `tasks/2026-10-29-church-owl-plan.md` at revision 1 (`0f91f4d`): Codex's correctness read (REVISE, F1 to
+F10) and the Sonnet builder's buildability read (A1 to B5) folded, the dispositions in `C/owl/review/lead-plan-r0.md`.
+The builds dispatched at 23:07, in parallel: Gemini 4 Argon (`w4:p5`) on Task 1, the owl, in `owl-t1-wt` on
+`feat/church-owl-t1`, and the Sonnet builder on Task 2, the moths, on `feat/church-owl-t2` (Mark, 23:00: Argon on
+the bigger task, on its own budget). Briefs `C/owl/briefs/builder-t1-r0.md`, `builder-t2-r0.md`, reports to
+`C/owl/t1/report.md`, `C/owl/t2/report.md`. Then the Lead's gate on each, the merge, the look passes (Task 3), the
+gate (Task 4, `C/owl/t4/gate.sh` ready), Codex's branch review, and the PR once #38 is in `main`.
+
+**Slice 2 (23:55, Mark's close: "record where we at, I am calling it for a night"):** both tasks are merged on
+`feat/church-owl`, local only, nothing pushed. The owl: Argon's build under revision 2 (`5d1e42c`: 544 triangles,
+8 owl tests, the suite 494, case 20's seven pages, the sightline margin 0.12247), Codex's bounded read of revision 2
+BUILD (`C/owl/review/codex-plan-r2.md`, Test 2's `mean(front)` 0.8286 against 0.8, `lead-plan-r2.md`), the Lead's
+gate green (`C/owl/t1/lead-gate.md`: two mutants caught, tsc, lint, 494), merged `91da265`. The owl's look pass 1,
+a first read only (`C/owl/t3/notes.md`, `owl1/`): at stop 4 the gable's rake hides the body, so a 10 px head with a
+pale face peeks over it on the desktop and a 4 px nub on the phone; at stop 3 the whole bird shows side-on, 8 px.
+**Next session, first:** the owl's pass 2 with `OWL.back` smaller (0.03 to 0.04) or the perch at the peak, then
+`OWL.size` if the phone still loses it (the sightline test and Test 4 re-run); then Task 4's gate
+(`C/owl/t4/gate.sh 91da265` or the pass-2 head, under the browser lock), the record `tasks/2026-10-29-church-owl.md`,
+the Tunables entry, Codex's branch review (`w4:p4`), the PR once Mark merges #38 (open at 23:32). The capture script
+`C/owl/t3/capture-moths.mjs <out> 5218 <station> [&walkT=0.9]` takes three frames on the moths' clock.
+
+**Slice 2 (23:35):** Task 2, the moths, built by the Sonnet builder, gated (tsc, lint, 486 tests, two mutants
+caught) and merged, `e1cf321`. Look pass 1 at stop 3 (`C/owl/t3/notes.md`): in the lantern's own amber the moths
+read as sparks, so the paint is mixed 0.6 toward white (`MOTHS.pale`, `49e6d0a`, a departure from the design's (m)
+for Mark's eye on the preview). Pass 2: pale flecks, they draw no eye. Task 1, the owl: Argon stopped at Step 3
+(`C/owl/t1/report-stop.md`), two blockers in the plan's values, both the Lead's (under `pitch` π/2 the radii are
+[across, depth, height], and Test 2's counts). Plan revision 2 (`373c214`) takes Argon's probed values. Argon
+re-dispatched at 23:27 (`builder-t1-r1.md`, its branch merges `feat/church-owl` first), Codex on a bounded
+confirmation read of revision 2 at 23:33 (`codex-plan-r2.md`, BUILD or STOP). Then the owl's gate (Test 2's
+`mean(front)` margin recorded: the probe's 0.83 against 0.8), the merge, the owl's look passes at stops 3 and 4,
+the gate, Codex's branch review, the PR once #38 is in `main`.
 
 ## Pickup — 2026-10-29 (19:40): slice 1 gated and reviewed, PR #38 open for Mark's preview pass
 

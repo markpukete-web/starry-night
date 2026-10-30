@@ -3556,3 +3556,18 @@ must be byte-identical before the stimulus's difference means anything.
   neither the paint nor the fog explained it (the fog is `skyHorizon`, L 39, and the reading was neutral, not blue).
   The front's columns by screen x read 54, 55, 41, 26: the `t` 0.65 lamp stands between the camera and the church,
   and its halo lifts what it covers. Before blaming a colour, bin the pixels by position and look for the sprite.
+- **When a review changes an axis convention, re-derive every value under it.** Slice 2's plan revision 1 took
+  Codex's F2 (the ellipsoid's polar axis is z, so stand it up with `pitch` π/2) and kept revision 0's radii order
+  under it. Under that pitch `radii[2]` is the height and `radii[1]` the depth, so the owl came out 0.19 tall and
+  0.40 deep, and Test 1 failed by 24×. Argon stopped at Step 3 and probed the fix (2026-10-29, 23:19). A fix to a
+  frame or an axis is not one edit: list the constants that were written in the old frame and recompute each.
+- **Probe what hides a thing before naming it from a screenshot.** Look pass 3 read the owl's hidden body as the
+  gable's rake, and named a perch move as the lever. A ray probe from stop 4's camera against every street triangle
+  (`C/owl/t3/occlusion.ts`, 2026-10-30) found the ridge's own ink: a flat ribbon 0.034 wide that the owl stands on.
+  The perch move still helped, but only from 51% to 61% of the outline, because the ink runs the whole ridge. A probe
+  costs a minute and says which lever can work and how far.
+- **A real-time easing breaks the capture tool's pinned-clock check.** The owl's head eases on the frame's delta,
+  exponentially, so it never stops exactly. At stop 4 `capture-sky-frames.mjs` failed "two reads differ" until the
+  capture waited for two equal reads of `__owl().yaw` (about 20 s). Within 2e-5 rad of the target still failed on the
+  desktop (2026-10-30). Anything that moves on real time needs a snap to its target or a settled flag the tool waits
+  for, as Vincent's `__vincentForm().settled` is. Codex raised it on PR #39 (P2): the owl now has both (`47ae236`).
