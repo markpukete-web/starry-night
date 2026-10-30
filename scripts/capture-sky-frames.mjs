@@ -223,10 +223,10 @@ async function main() {
     }
     // Vincent's turn and his lantern's swing run on the walk's real time, as the walk does, not on the pinned clock: wait
     // for them to rest, here after the eval because a portal entry first shows him there (V1). The owl's head turns
-    // toward him on real time too (Codex, PR #39 P2). A figure that never rests, walking on, is left to the self-check below
+    // toward him on real time too (Codex, PR #39 P2), and the cat's. A figure that never rests, walking on, is left to the self-check below
     const restStart = Date.now()
     while (Date.now() - restStart < 10000) {
-      const probe = await page.send('Runtime.evaluate', { expression: '(!window.__vincentForm || window.__vincentForm().settled) && (!window.__owl || window.__owl().settled)', returnByValue: true })
+      const probe = await page.send('Runtime.evaluate', { expression: '(!window.__vincentForm || window.__vincentForm().settled) && (!window.__owl || window.__owl().settled) && (!window.__cat || window.__cat().settled)', returnByValue: true })
       if (probe.result?.value === true) break
       await sleep(100)
     }
