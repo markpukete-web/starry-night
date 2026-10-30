@@ -94,10 +94,14 @@ The largest downloads on a cold visit: `painting-filled.webp` 2.47 MB (lossless)
    a tracked `--unlocked` option on `capture-diorama.mjs` (lesson: a lost gate tool comes back as a tracked option),
    and gates that report the unlocked median beside the locked one. Delete the `desktop-nopost` case at the same time:
    it has read the same as `final` since bloom left the diorama, and it is a third of every perf round's time.
-3. **The street's frame rate on a phone has never been measured.** Mark's iPhone read 60 fps on the diorama
-   (2026-10-25). No record holds a phone reading at the street's stops. The Mac cannot stand in: its phone-viewport
-   numbers are this Mac's GPU on a small buffer. Proposed: Mark opens the five links below on his iPhone with
-   `?perf=1`. No code.
+3. **The street misses the phone bar on Mark's iPhone.** Read by Mark on the links below, 2026-10-30 evening: the
+   painting "very stable once loaded remains 60", the street's stops "25-32". The locked bar is 30 fps on a mid-tier
+   phone, and a mid-tier phone is slower than his. The painting's 60 is probably Safari's frame cap, so its headroom is
+   unknown. The cause in the street is not known. The two scenes draw about the same triangles (1.28 to 1.44 million),
+   and on this Mac the street's frame costs half the diorama's. The street has 88 to 322 draw calls against the
+   diorama's 31. The fix depends on what the phone pays for: pixels (a lower ratio, finding 1) or draw calls (fewer
+   meshes, the grass chunks and the lamps first). The portal already asks a phone before its first entry and
+   recommends a computer. Whether that warning is enough is Mark's call. Proposed: the phone split below. No code.
 4. **Pixel ratio 2 for the street only.** The street stays at 9.0 ms or less at a ratio of 2. A cap per scene (2 in the
    street, 1.5 on the diorama) would make the street's grass, frogs and lamps sharper on a retina screen. Whether the
    sharper street is worth it is a visual call: the slice would show Mark 1:1 crops at both caps before anything ships.
@@ -130,3 +134,12 @@ Open each on the phone, wait 10 seconds, and read the frame rate at the top cent
 - Stop 2: https://starrynight.markma.dev/?street=1&station=2&walkMode=input&perf=1&arrival=0
 - Stop 3: https://starrynight.markma.dev/?street=1&station=3&walkMode=input&perf=1&arrival=0
 - Stop 4: https://starrynight.markma.dev/?street=1&station=4&walkMode=input&perf=1&arrival=0
+
+The phone split (finding 3), each against stop 0's plain reading. Stop 0 has the most draw calls. A switch that lifts
+the frame rate names the cost:
+
+- No grass: https://starrynight.markma.dev/?street=1&station=0&walkMode=input&perf=1&arrival=0&grass=0
+- Unlit: https://starrynight.markma.dev/?street=1&station=0&walkMode=input&perf=1&arrival=0&light=0
+- No Vincent: https://starrynight.markma.dev/?street=1&station=0&walkMode=input&perf=1&arrival=0&vincent=0
+
+No switch lowers the pixel ratio. That test needs a `?dpr=` switch on a preview deploy.
