@@ -203,3 +203,38 @@ fail before its code. Gemini runs the batches (the capture sets, the sweep, the 
 5. **The look passes** (the Lead, at most four) against the gate's list above.
 6. **The gate** (the Lead): tsc, lint, `test:sky`, the street and grass hashes unchanged, the six browser checks and the
    new case. Gemini runs the sweep and the perf rounds, and the Lead reads their logs.
+
+## The record (2026-10-30)
+
+The evidence is in `scratch/street-cat-2026-10-30/` (`C` below).
+
+**The build.** `3b0afd1`: the shared look, the cat, its component and its capture wait. `6afb21b`: the tail moved and
+case 22. `2d04623`: #39's case 21 fix merged in.
+
+**Look pass 1** (`C/look/p1`). The cat reads as a small sitting cat with its ears up, on both viewports and from stop 2.
+Its tail did not show: from stops 2 and 3 the camera is behind the cat's left, and the tail lay on its right
+(`C/probe-tail-side.ts`). The captures also froze the tail and the blink, because the capture helper pins the sky's
+clock at 0.5 s.
+
+**Look pass 2** (`C/look/p2`, `C/look/p2m`). The tail on the cat's left, a unit test holding its bend nearer the camera
+than the body at both stops. The tail's tip flicks out past the front paws as it sways. With the clock unpinned the tail
+swung from −0.74 to 0.16 rad and the eyes shut in 5 of 80 samples. The head follows Vincent from stop 2 (−1.29 rad at
+walk `t` 0.53) to stop 3's dwell (0.222 rad, settled) and on (0.877 rad at walk `t` 0.83), and goes straight as he
+leaves its reach. The anti-goals hold: a ginger cat, a small head, the ears and the tail read, it hides nothing at stop
+3 (it is at x 641 to 652 on the desktop, Vincent at x 935). The Lead's flag for Mark: on the phone the cat is about
+20 px tall, and its tall ears and red coat may read as a fox. Under reduced motion (`C/t6/reduced-s3`) it sits still
+with its head straight. Two passes of four.
+
+**The gate** (the Lead, the runs by Gemini, `C/t6/`), on `6afb21b`: tsc, lint, `test:sky` 504 of 504, the build hash
+`69db1abe1f64b82b` and the grass hash `33504d291c27e9ac` as the owl's head left them, the walk, portal, rotation,
+cypress and reduced-motion checks green. The triangle sweep's worst point 1,433,111 at walk `t` 0.26, unchanged; where
+the cat is drawn the sweep rises by exactly its 952. Perf, five rounds at dpr 1.5: p50 16.7 ms and p95 at most 17.6 ms
+at stops 0, 2 and 3 on both viewports; draw calls 322 at stop 0 (unchanged), 211 at stop 2, 181 at stop 3 (the owl's
+173 plus the cat's 8 meshes). Four mutants, each failing case 22 as it must (`C/t6/mutants/summary.txt`): reduced
+motion ignored, the cat drawn at any distance, the owl's cone, the tail held.
+
+**A defect in slice 2, found here.** The gate's grass check failed at case 21, the moths: a lamp moth 0.0397 from its
+glass against the check's 0.0389. Look pass 5 (`5668c5c`) added a jitter to the moths' flight and widened the unit
+test's bound for it, but not case 21's. The moth was inside its true reach, 0.0506. Fixed on #39 in `e823396`, merged
+here in `2d04623`; the full grass check then passed 22 of 22 (`C/t6/grass-rerun.log`).
+

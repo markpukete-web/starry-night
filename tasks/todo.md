@@ -1,5 +1,13 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-10-30 (15:20): the cat gated, its PR stacked on #39
+
+`feat/street-cat` (the light slice's design, build and record in `docs/superpowers/specs/2026-10-30-street-cat-design.md`)
+is gated green on `6afb21b`, with #39's case 21 fix (`e823396`) merged in at `2d04623`. Two look passes of four. Next:
+push, open its PR on `feat/church-owl` as a draft and mark it ready so Codex reviews, send Mark the preview. On Mark's
+pass of #39: merge #38, retarget #39 to `main`, merge, then retarget the cat's PR to `main`. After that, the docs-only
+pass (the Tunables trim and the lessons archive), then the performance review.
+
 ## Pickup — 2026-10-30 (13:50): slice 2 is PR #39, its preview with the moths' pass 5 sent to Mark
 
 `b2e7eeb` on `feat/church-owl` is PR #39, base `feat/church-square` (#38), marked ready so Codex reviews. Look pass 5

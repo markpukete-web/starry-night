@@ -3571,3 +3571,14 @@ must be byte-identical before the stimulus's difference means anything.
   capture waited for two equal reads of `__owl().yaw` (about 20 s). Within 2e-5 rad of the target still failed on the
   desktop (2026-10-30). Anything that moves on real time needs a snap to its target or a settled flag the tool waits
   for, as Vincent's `__vincentForm().settled` is. Codex raised it on PR #39 (P2): the owl now has both (`47ae236`).
+- **The capture helper pins the sky's clock, so its frames never show a sway or a blink.** `cdp-session.mjs` sets
+  `window.__skyTime = 0.5`, and every clock that reads `lifeTime` stops there. The cat's first look pass logged its
+  tail at 0.1555 rad in all 50 frames (2026-10-30). Check motion on a page with the pin deleted
+  (`C/look/motion.mjs`: the tail swung −0.74 to 0.16 rad and the eyes shut in 5 of 80 samples).
+- **Probe which side of a figure faces the camera before placing a one-sided part.** The cat faces the lane, and from
+  stops 2 and 3 the camera is behind its left. Its tail, on its right, lay behind the body and never showed. A probe of
+  the facing against the camera's bearing (`C/probe-tail-side.ts`) took a minute. A unit test now holds the tail's bend
+  nearer the camera than the body's centre at both stops.
+- **A browser check that reads a settled flag must wait for it, not sleep.** Headless Chrome draws few frames of the
+  street, and the ease's step is capped at 0.1 s. After 2.5 s the cat's head was at 0.2200 of its 0.2220 target, so
+  case 22 failed on the wait, not on the cat. It now polls `__cat().settled` for at most 10 s.
