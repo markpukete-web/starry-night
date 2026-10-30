@@ -1,5 +1,11 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-10-30 (13:50): slice 2 is PR #39, its preview with the moths' pass 5 sent to Mark
+
+`b2e7eeb` on `feat/church-owl` is PR #39, base `feat/church-square` (#38), marked ready so Codex reviews. Look pass 5
+(the moths, past the cap on Mark's word) had the Consultant's bounded read: BUILD, one P2 fixed (the record). On Mark's
+pass of the preview: read #39's Codex review and answer every thread, merge #38, retarget #39 to `main`, merge.
+
 ## Pickup — 2026-10-30 (12:53): slice 2 gated and reviewed, pushed for Mark's preview
 
 **Done:** the owl's look pass 4 (`a3634c4`, the perch 0.04 behind the peak: the ridge's flat ink hid the body, not the
