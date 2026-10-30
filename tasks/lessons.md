@@ -224,7 +224,8 @@ The full history, 2026-06-13 to 2026-10-30, is in `tasks/archive/2026-10-30-less
 - A Web Worker moves the wait. Ask where "show the old state" also applies. `2026-10-11 · A worker removes`
 - A byte-identical bundle hash proves a dependency bump inert. `2026-09-24 · A byte-identical bundle hash`
 - Vsync hides headroom: under the 60 Hz lock every case reads 16.7 ms, and a regression shows only once it costs a
-  frame. Run perf with `CHROME_FLAGS="--disable-gpu-vsync --disable-frame-rate-limit"` and read the medians. 2026-10-30
+  frame. A gate runs `capture-diorama.mjs --perf` twice, locked for the 60 fps bar and `--unlocked` for the medians,
+  and reports both. `--unlocked` turns vsync off. 2026-10-30
 - The capture tool's `--dpr` cannot exceed the app's cap (`dpr={[1, 1.5]}`): at `--dpr 2` the buffer stayed 2400 × 1350.
   A question about a higher cap needs a throwaway copy with the cap changed. Read the drawing buffer before a number. 2026-10-30
 - With vsync off, headless Chrome matched a visible window within 0.2 ms (11.5 against 11.3, 4.2 against 4.1). The
