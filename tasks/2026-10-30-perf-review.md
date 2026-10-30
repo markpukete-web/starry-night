@@ -94,6 +94,9 @@ The largest downloads on a cold visit: `painting-filled.webp` 2.47 MB (lossless)
    a tracked `--unlocked` option on `capture-diorama.mjs` (lesson: a lost gate tool comes back as a tracked option),
    and gates that report the unlocked median beside the locked one. Delete the `desktop-nopost` case at the same time:
    it has read the same as `final` since bloom left the diorama, and it is a third of every perf round's time.
+   Done on Mark's go (2026-10-30 evening, `14d3228`): `--unlocked`, the nopost case deleted, the lesson names the
+   option. On the production build, `desktop-final` p50 read 16.7 ms locked and 11.3 ms unlocked
+   (`gate-unlocked/`).
 3. **The street misses the phone bar on Mark's iPhone.** Read by Mark on the links below, 2026-10-30 evening: the
    painting "very stable once loaded remains 60", the street's stops "25-32". The locked bar is 30 fps on a mid-tier
    phone, and a mid-tier phone is slower than his. The painting's 60 is probably Safari's frame cap, so its headroom is
@@ -108,6 +111,9 @@ The largest downloads on a cold visit: `painting-filled.webp` 2.47 MB (lossless)
    It should wait for finding 1, so a weaker GPU can still step down.
 5. **The favicon is a 512 × 512 PNG of 0.44 MB**, fetched on every cold visit, 4% of the painting page's download.
    Icons at 32, 180 and 192 px would be a few kilobytes. Proposed: a small slice, no visual risk to the scene.
+   Done on Mark's go (`7df401f`): a 32 px tab icon of 2.9 KB and a 180 px touch icon of 57.9 KB, the same painted
+   icon downscaled. No page uses a 192 px icon, so none was made. The fix was offered in July and not taken
+   (`tasks/todo.md:2146`).
 6. **The paint ships lossless: `painting-filled.webp` is 2.47 MB**, the largest file. A lossy version is Mark's call
    from a crop A/B (lesson 2026-07-21, "Lossy compression of the paint is Mark's call"). Listed, not proposed.
 7. **The retired modes ship in the main script.** `App.tsx` still imports `ReliefExperience`, `CanopyExperience`,
