@@ -230,6 +230,8 @@ The full history, 2026-06-13 to 2026-10-30, is in `tasks/archive/2026-10-30-less
   A question about a higher cap needs a throwaway copy with the cap changed. Read the drawing buffer before a number. 2026-10-30
 - With vsync off, headless Chrome matched a visible window within 0.2 ms (11.5 against 11.3, 4.2 against 4.1). The
   2026-10-16 rule that frame rate needs a headed window holds for the locked case, not for an unlocked comparison. 2026-10-30
+- Read a frame rate only once the scene has settled. The street's start-up dip ran past 10 seconds on Mark's iPhone and
+  read 25 to 32 fps, and the settled reading was 60. The lighter view waits 8 seconds after ready for this reason. 2026-10-30
 
 ## Rendering and shaders
 
