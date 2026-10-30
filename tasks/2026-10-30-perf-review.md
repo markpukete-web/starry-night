@@ -155,3 +155,7 @@ were probably taken inside that dip. Second, a frame over 16.7 ms waits for the 
 fps. A reading of 25 to 32 means most frames missed one refresh. So the plain street may be a little over the phone's
 budget, and removing any one part brings it under. One plain reading of stop 0 in a fresh tab, after the number stops
 moving, separates the two.
+
+Mark's fresh-tab reading of plain stop 0, after the number stopped moving: "60". So the 25 to 32 were the start-up
+dip, and the street holds 60 once settled on his iPhone. Stop 0 is the only stop read this way. Finding 3 is now
+the dip itself, which runs past 10 seconds under 30 fps, and the first-try load failures, whose cause is not known.
