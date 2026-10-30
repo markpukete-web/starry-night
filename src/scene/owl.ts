@@ -51,6 +51,8 @@ export const OWL = {
 } as const
 
 type Vec3 = readonly [number, number, number]
+/** A head's look: the owl's, and the cat's with its own cone (`cat.ts`) */
+export type Look = { reach: number; yaw: number; pitch: number; tau: number; targetY: number; snap: number }
 /** owl lengths to world units */
 const m = (a: Vec3): [number, number, number] => [a[0] * OWL.size, a[1] * OWL.size, a[2] * OWL.size]
 const mirror = (a: Vec3): Vec3 => [-a[0], a[1], a[2]]
@@ -114,25 +116,26 @@ export function owlLook(
   neck: [number, number, number],
   bodyYaw: number,
   target: [number, number] | null,
+  look: Look = OWL.look,
 ): { yaw: number; pitch: number } {
   if (!target) return { yaw: 0, pitch: 0 }
   const dx = target[0] - neck[0]
   const dz = target[1] - neck[2]
   const horizontal = Math.hypot(dx, dz)
-  if (horizontal > OWL.look.reach) return { yaw: 0, pitch: 0 }
+  if (horizontal > look.reach) return { yaw: 0, pitch: 0 }
   const bearing = Math.atan2(dx, dz)
   let yaw = Math.atan2(Math.sin(bearing - bodyYaw), Math.cos(bearing - bodyYaw))
   if (yaw <= -Math.PI) yaw += Math.PI * 2
-  if (Math.abs(yaw) > OWL.look.yaw) return { yaw: 0, pitch: 0 }
-  const rawPitch = Math.atan2(OWL.look.targetY - neck[1], horizontal)
-  const pitch = Math.max(-OWL.look.pitch, Math.min(OWL.look.pitch, rawPitch))
+  if (Math.abs(yaw) > look.yaw) return { yaw: 0, pitch: 0 }
+  const rawPitch = Math.atan2(look.targetY - neck[1], horizontal)
+  const pitch = Math.max(-look.pitch, Math.min(look.pitch, rawPitch))
   return { yaw: yaw || 0, pitch: pitch || 0 }
 }
 
-export function easeLook(current: number, wanted: number, dt: number): number {
+export function easeLook(current: number, wanted: number, dt: number, look: Look = OWL.look): number {
   const clamped = Math.max(0, Math.min(0.1, dt))
-  const next = current + (wanted - current) * (1 - Math.exp(-clamped / OWL.look.tau))
-  return Math.abs(wanted - next) < OWL.look.snap ? wanted : next
+  const next = current + (wanted - current) * (1 - Math.exp(-clamped / look.tau))
+  return Math.abs(wanted - next) < look.snap ? wanted : next
 }
 
 export function owlBlink(t: number): number {

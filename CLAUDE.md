@@ -434,6 +434,16 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   wobble 0.006, the wings 0.12 to 0.2 s a beat, the rest point 0.0105 off the glass, dimmed to 0.15 at the halo's edge. The sweep's worst point 1,433,111 (desktop, `t` 0.26), p95 at most
   18.5 ms at stops 0, 3 and 4 at dpr 1.5, 322 draw calls at stop 0. Five look passes, the fifth past the cap on Mark's
   word. The Consultant's branch review BUILD, its P3s fixed or declined. Untuned by Mark.
+- The cat, a light slice (2026-10-30, `src/scene/cat.ts` `CAT`, `StreetCat.tsx`; the design, its build and its record
+  `docs/superpowers/specs/2026-10-30-street-cat-design.md`): sitting on wall W3's top stones at `t` 0.81, lateral −0.15,
+  facing the lane, 0.015 feet to ear tips (the true 0.0125; the Lead's call on Mark's "Make calls for me"), 952
+  triangles, the coat `roofSienna` (Vincent's hair) and the bib and muzzle `churchLit`. Drawn within 0.9 of the camera
+  (stops 2 and 3, from walk `t` 0.403). The owl's look with a cone of 1.75 rad (the owl's 1.2217), so from stop 2 it
+  watches Vincent come; eased over τ 0.6 s, snapped within 1e-4, held under reduced motion. The frogs' blink 2.9 s
+  ahead. The tail's free part sways 0.45 rad over 3.1 s, on the cat's left, which faces the camera at stops 2 and 3
+  (look pass 1: on its right the tail never showed). At stop 3 952 triangles and 8 draw calls more (181); the sweep's
+  worst point unchanged at 1,433,111; 60 fps at stops 0, 2 and 3 (p95 at most 17.6 ms). Two look passes of four.
+  Untuned by Mark.
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)

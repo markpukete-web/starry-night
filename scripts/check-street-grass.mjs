@@ -27,6 +27,9 @@
  *     and stays straight at stop 3 or with walk=0, open and straight under reduced motion, absent on flat=1, and holds its pose mid-turn.
  * 21. The moths (church-owl plan, Task 2): 29 at stop 3, a lamp's within its loop's reach of its glass, a window's lit only
  *     within 0.6 of the camera, at their anchors under reduced motion, absent with light=0.
+ * 22. The cat (the cat's design, task 4): drawn at stop 3 with its head turned toward Vincent and its tail swaying,
+ *     straight with walk=0, hidden at stop 0, open, straight and still under reduced motion, absent on flat=1, and holds
+ *     its pose mid-turn when reduced motion turns on.
  */
 
 import { spawn } from 'node:child_process'
@@ -1476,6 +1479,87 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
       await page.waitForStreetReady()
       if ((await page.evaluate(() => typeof window.__moths)) !== 'undefined') throw new Error('Case 21 failed: moths with light=0')
       console.log(`PASS: case 21 - the moths: 29 (21 lamp, 8 window) at stop 3, ${near21} window moths lit and ${far21} dark beyond 0.6, at their anchors under reduced motion, absent with light=0`)
+    }
+
+    // -------------------------------------------------------------
+    // Case 22: The cat (the cat's design, task 4)
+    // (a) station=3: __cat() visible, settled (waited for, at most 10 s), yaw 0.15 to 0.6 (Vincent ahead at the dwell's
+    //     place), and the tail moved over 0.5 s. (b) station=3&walk=0: |yaw| < 0.05. (c) station=0: not visible.
+    //     (d) station=3 under reduced motion from the start: yaw, shut and tail 0. (e) flat=1: no __cat. (f) station=2, reduced motion turned
+    //     on once |yaw| >= 0.6: yaw holds within 1e-6 over 1 s and the tail rests at 0.
+    // -------------------------------------------------------------
+    if (shouldRun(22)) {
+      const cat22 = () => page.evaluate(() => window.__cat?.() ?? null)
+      await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: '' }] })
+
+      await page.send('Page.navigate', { url: `${origin}/?street=1&station=3&walkMode=input&arrival=0` })
+      await page.waitForStreetReady()
+      // the headless renderer draws few frames and the ease's step is capped at 0.1 s, so wait for the head to settle
+      let a22 = null
+      const s22 = Date.now()
+      while (Date.now() - s22 < 10000) {
+        a22 = await cat22()
+        if (a22?.settled) break
+        await sleep(100)
+      }
+      await sleep(500)
+      const a22b = await cat22()
+      if (!a22 || !a22.visible || !a22.settled || a22.yaw < 0.15 || a22.yaw > 0.6) {
+        throw new Error(`Case 22(a) failed: expected a visible, settled cat with yaw 0.15 to 0.6 at stop 3, got ${JSON.stringify(a22)}`)
+      }
+      if (!a22b || a22b.tail === a22.tail) throw new Error(`Case 22(a) failed: the tail held at ${a22.tail} over 0.5 s`)
+
+      await page.send('Page.navigate', { url: `${origin}/?street=1&station=3&walk=0&walkMode=input&arrival=0` })
+      await page.waitForStreetReady()
+      await sleep(500)
+      const b22 = await cat22()
+      if (!b22 || !b22.visible || Math.abs(b22.yaw) >= 0.05) {
+        throw new Error(`Case 22(b) failed: expected |yaw| < 0.05 at stop 3 with walk=0, got ${JSON.stringify(b22)}`)
+      }
+
+      await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&walkMode=input&arrival=0` })
+      await page.waitForStreetReady()
+      await sleep(300)
+      const c22 = await cat22()
+      if (!c22 || c22.visible) throw new Error(`Case 22(c) failed: expected a hidden cat at stop 0, got ${JSON.stringify(c22)}`)
+
+      await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] })
+      await page.send('Page.navigate', { url: `${origin}/?street=1&station=3&walkMode=input&arrival=0` })
+      await page.waitForStreetReady()
+      await sleep(2500)
+      const d22 = await cat22()
+      if (!d22 || d22.yaw !== 0 || d22.shut !== 0 || d22.tail !== 0) {
+        throw new Error(`Case 22(d) failed: expected yaw, shut and tail 0 under reduced motion, got ${JSON.stringify(d22)}`)
+      }
+      await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: '' }] })
+
+      await page.send('Page.navigate', { url: `${origin}/?street=1&flat=1&walkMode=input&arrival=0` })
+      await page.waitForStreetReady()
+      await sleep(300)
+      if ((await page.evaluate(() => typeof window.__cat)) !== 'undefined') throw new Error('Case 22(e) failed: window.__cat defined on flat=1')
+
+      // stop 2: Vincent about 98° off the cat's facing, so its head turns through the cone's width (about 1.72 rad)
+      await page.send('Page.navigate', { url: `${origin}/?street=1&station=2&walkMode=input&arrival=0` })
+      await page.waitForStreetReady()
+      let fTurn = null
+      const t22 = Date.now()
+      while (Date.now() - t22 < 6000) {
+        fTurn = await cat22()
+        if (fTurn && Math.abs(fTurn.yaw) >= 0.6) break
+        await sleep(25)
+      }
+      if (!fTurn || Math.abs(fTurn.yaw) < 0.6) throw new Error(`Case 22(f) precondition failed: |yaw| did not reach 0.6 within 6 s (${JSON.stringify(fTurn)})`)
+      await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] })
+      await sleep(300)
+      const f0 = await cat22()
+      await sleep(1000)
+      const f1 = await cat22()
+      await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: '' }] })
+      if (!f0 || !f1 || Math.abs(f0.yaw) < 0.6 || Math.abs(f1.yaw - f0.yaw) > 1e-6 || f1.tail !== 0) {
+        throw new Error(`Case 22(f) failed: pose did not hold mid-turn (${f0?.yaw} -> ${f1?.yaw}, tail ${f1?.tail})`)
+      }
+
+      console.log(`PASS: case 22 - the cat: turned at stop 3 (yaw=${a22.yaw.toFixed(3)}), its tail ${a22.tail.toFixed(3)} -> ${a22b.tail.toFixed(3)}, straight with walk=0 (${b22.yaw.toFixed(3)}), hidden at stop 0, still and open under reduced motion, absent on flat=1, held mid-turn (${f0.yaw.toFixed(4)} -> ${f1.yaw.toFixed(4)})`)
     }
 
     await page.close()

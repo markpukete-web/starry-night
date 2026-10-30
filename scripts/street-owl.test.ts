@@ -213,6 +213,16 @@ test('the easing reaches 95% in three taus and holds at dt 0', () => {
   assert.equal(easeLook(0.3, 1, 0), 0.3)
 })
 
+test("the look takes its constants: a wider cone turns where the owl's stays straight (the cat's design, (e))", () => {
+  const neck: [number, number, number] = [0, 0.07, 0]
+  const off = (98 * Math.PI) / 180
+  const target: [number, number] = [0.44 * Math.sin(off), 0.44 * Math.cos(off)]
+  assert.deepEqual(owlLook(neck, 0, target), { yaw: 0, pitch: 0 }, "outside the owl's 70°")
+  const wide = owlLook(neck, 0, target, { ...OWL.look, yaw: 1.75 })
+  assert.ok(Math.abs(wide.yaw - off) < 1e-9, `${wide.yaw}`)
+  assert.ok(easeLook(0, 1, 0.1, { ...OWL.look, tau: 0.3 }) > easeLook(0, 1, 0.1), 'the easing reads its own tau')
+})
+
 test('the head settles exactly on its target within the snap (Codex, PR #39 P2)', () => {
   let a = 0
   let frames = 0
