@@ -1,5 +1,18 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-10-30 (17:54): the performance review started; the deeper Tunables cut queued next
+
+**The performance review** runs on `perf/review-2026-10-30`, branched from `docs/trim-2026-10-30` (`e9b9d2d`). Its
+work is in `scratch/perf-review-2026-10-30/`, and its record will be `tasks/2026-10-30-perf-review.md`, with ranked
+findings. It fixes nothing: each fix it proposes is a slice for Mark's word. Mark, 17:58: "Take the lead".
+
+**Queued next, Mark's word (17:52): "Go with your recommendations for tunables. Queue it for next".** The deeper cut of
+the Tunables, after the performance review. Each entry keeps its decision, Mark's word with its date, the record and a
+pointer to the constant that holds its values. The numbers that only copy the code go. The limits that work is checked
+against stay as numbers: the pixel-ratio cap, the orbit limits, the triangle ceiling, the stroke budgets, the palette
+tolerance and the retune cap. `scratch/docs-trim-2026-10-30/pointer-check.py` confirms each pointer finds its file and
+constant. About 1,500 words, from 5,600. Docs only, so it goes up with the next code push.
+
 ## Pickup — 2026-10-30 (16:20): #38–#40 merged and live; the docs trim done; the performance review next
 
 **Done.** Mark passed #38 (the church square), #39 (the owl and the moths) and #40 (the cat): "All passed, merge them
