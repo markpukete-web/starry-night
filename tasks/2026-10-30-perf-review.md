@@ -143,3 +143,14 @@ the frame rate names the cost:
 - No Vincent: https://starrynight.markma.dev/?street=1&station=0&walkMode=input&perf=1&arrival=0&vincent=0
 
 No switch lowers the pixel ratio. That test needs a `?dpr=` switch on a preview deploy.
+
+Mark's split, 2026-10-30 evening: no grass "once stable: 60", unlit 60, no Vincent "28 at start then 60". Every link
+failed to open at first try and showed after a refresh. No Vincent took three refreshes. What the failure looked like,
+and whether the earlier links' tabs were still open, is not yet known. Mark: "We can try our best to get the phone
+working but I don't want to lower our quality". So a lower pixel ratio on the phone (finding 1) is out.
+
+The reading: every switch reaches 60, so no one part is the cost. Safari shows about 60 or about 30 fps and little
+between, because a frame that misses one display refresh waits for the next. A frame just over 16.7 ms reads as about
+30. So the plain street is probably only a little over the phone's budget, and removing any one part brings it under.
+The other reading is that the first stop readings were taken before the scene settled. One plain reading of stop 0
+after a wait, in a fresh tab, separates the two.
