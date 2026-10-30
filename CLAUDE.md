@@ -109,7 +109,7 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
 
 Each entry keeps its decision, Mark's word and its record. The values live in the code each entry names: read them
 there, not here. Only the limits that work is checked against stay as numbers. Cut to this form on Mark's word ("Go
-with your recommendations for tunables"). The values as written before the cut are in git at `bfbcb3b`.
+with your recommendations for tunables"). The values as written before the cut are in `tasks/archive/2026-10-30-tunables.md`.
 
 - Instanced stroke budget: start 8,000 desktop / 3,000 mobile
 - Diorama sky ribbon budget (2026-10-11, the record `tasks/2026-10-11-sky-choice.md`, `PaintingFlowSky3D.tsx` `MOVING`
