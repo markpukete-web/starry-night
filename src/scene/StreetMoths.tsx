@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import { BufferAttribute, Color, DoubleSide, InstancedBufferAttribute, InstancedBufferGeometry, ShaderMaterial, SRGBColorSpace, Vector2, Vector3 } from 'three'
 import { MOTHS, mothBright, mothPositions, mothSpecs, type MothSpec } from './moths.ts'
 import type { BrushArraysWithCls } from './streetGeometry.ts'
+import { PALETTE } from './palette.ts'
 import { FOG } from './streetFog.ts'
 import { lifeTime, litWindows } from './streetLife.ts'
 import { sourceUnderpaint } from './streetStrokes.ts'
@@ -17,41 +18,61 @@ type MothWindow = Window & {
   }
 }
 
-// the quad billboards in view space; the wing's width beats between 0.3 and 1 of the full width (Codex F7)
+// the quad billboards in view space; the wing's width beats between 0.3 and 1 of the full width (Codex F7). The glass's
+// direction in view space goes to the fragment: its xy across the screen, its z toward the camera
 const VERTEX = `
   uniform float uTime;
   uniform vec2 uSize;
   attribute vec3 aAt;
+  attribute vec3 aGlass;
   attribute float aBright;
   attribute float aFlap;
   attribute float aFlapPhase;
   varying vec2 vUv;
   varying float vBright;
   varying float vDepth;
+  varying vec3 vToGlass;
+  varying float vWing;
   void main() {
     vec4 mv = modelViewMatrix * vec4(aAt, 1.0);
+    vToGlass = normalize((modelViewMatrix * vec4(aGlass, 1.0)).xyz - mv.xyz);
     float wing = 0.3 + 0.7 * abs(cos(6.2832 * uTime / aFlap + aFlapPhase));
     mv.xy += vec2(position.x * uSize.x * wing, position.y * uSize.y);
     vUv = uv;
     vBright = aBright;
     vDepth = -mv.z;
+    vWing = wing;
     gl_Position = projectionMatrix * mv;
   }`
 
-// a soft oval in the lantern's lit mean mixed toward white (`MOTHS.pale`), dimmed away from the glass, in the street's
-// linear fog (Codex Q3). Every colour
+// Look pass 5 (Mark: the soft pale ovals read as the fireflies): a moth, not a light. Hard-edged forewings and hindwings
+// either side of a dark body. The wings' half toward the glass is lit (the lantern's lit mean mixed toward white,
+// `MOTHS.pale`), the far half in the thatch's darkest paint, so with the glass behind it the moth is a silhouette. The
+// wings catch the light as they open. Dimmed away from the glass, in the street's linear fog (Codex Q3). Every colour
 // is sRGB and written raw, as the project's own shaders do
 const FRAGMENT = `
-  uniform vec3 uColour;
+  uniform vec3 uLit;
+  uniform vec3 uShade;
+  uniform vec3 uBody;
   uniform vec3 uFog;
   varying vec2 vUv;
   varying float vBright;
   varying float vDepth;
+  varying vec3 vToGlass;
+  varying float vWing;
   void main() {
     if (vBright <= 0.0) discard;
-    float alpha = 1.0 - smoothstep(0.7, 1.0, length((vUv - 0.5) * 2.0));
-    vec3 c = mix(uColour * vBright, uFog, smoothstep(${FOG.near.toFixed(3)}, ${FOG.far.toFixed(3)}, vDepth));
-    gl_FragColor = vec4(c, alpha);
+    vec2 q = (vUv - 0.5) * 2.0;
+    float ax = abs(q.x);
+    float fore = length(vec2((ax - 0.5) / 0.5, (q.y - 0.2 - 0.3 * ax) / 0.55));
+    float hind = length(vec2((ax - 0.3) / 0.32, (q.y + 0.38) / 0.42));
+    float body = length(vec2(q.x / 0.14, q.y / 0.85));
+    if (min(min(fore, hind), body) > 1.0) discard;
+    float side = dot(normalize(q + vec2(0.0, 1e-4)), normalize(vToGlass.xy + vec2(1e-4, 0.0))) * length(vToGlass.xy);
+    float lit = clamp(0.15 + 0.6 * vToGlass.z + 0.9 * side, 0.0, 1.0) * (0.7 + 0.3 * vWing);
+    vec3 c = body <= 1.0 ? uBody : mix(uShade, uLit, lit);
+    c = mix(c * vBright, uFog, smoothstep(${FOG.near.toFixed(3)}, ${FOG.far.toFixed(3)}, vDepth));
+    gl_FragColor = vec4(c, 1.0);
   }`
 
 type MothParts = { at: InstancedBufferAttribute; bright: InstancedBufferAttribute; uTime: { value: number }; positions: Float32Array }
@@ -105,13 +126,18 @@ export default function StreetMoths({
     geometry.setAttribute('aBright', bright)
     geometry.setAttribute('aFlap', new InstancedBufferAttribute(Float32Array.from(specs, (s) => s.flap), 1))
     geometry.setAttribute('aFlapPhase', new InstancedBufferAttribute(Float32Array.from(specs, (s) => s.flapPhase), 1))
+    geometry.setAttribute('aGlass', new InstancedBufferAttribute(Float32Array.from(specs.flatMap((s) => s.glass)), 3))
     const fog = new Color(FOG.colour).getRGB(new Color(), SRGBColorSpace)
+    const body = new Color(PALETTE.ground).getRGB(new Color(), SRGBColorSpace)
     const uTime = { value: 0 }
     const material = new ShaderMaterial({
       uniforms: {
         uTime,
         // sRGB 0 to 1, unconverted: the shader writes raw. Mixed toward white by `MOTHS.pale` (look pass 1)
-        uColour: { value: new Vector3(...sourceUnderpaint(painting, 'windowLit', 1).map((c) => c + (1 - c) * MOTHS.pale)) },
+        uLit: { value: new Vector3(...sourceUnderpaint(painting, 'windowLit', 1).map((c) => c + (1 - c) * MOTHS.pale)) },
+        // the wings' shade: the thatch's darkest 40%, the owl's back's paint (look pass 5)
+        uShade: { value: new Vector3(...sourceUnderpaint(painting, 'thatch', 0.4)) },
+        uBody: { value: new Vector3(body.r, body.g, body.b) },
         uFog: { value: new Vector3(fog.r, fog.g, fog.b) },
         uSize: { value: new Vector2(...MOTHS.size) },
       },

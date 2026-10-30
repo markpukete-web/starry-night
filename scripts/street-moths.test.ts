@@ -52,13 +52,38 @@ test("each moth rests on its glass's frame and loops within its radius", () => {
   specs.forEach((s, i) => assert.ok(distance([out[3 * i], out[3 * i + 1], out[3 * i + 2]], s.anchor) < 1e-6, 'at rest at time 0'))
   for (let t = 0.05; t <= 5; t += 0.05) {
     mothPositions(specs, t, out)
-    specs.forEach((s, i) => assert.ok(distance([out[3 * i], out[3 * i + 1], out[3 * i + 2]], s.glass) <= s.radius + (s.window ? MOTHS.restWindow : MOTHS.rest) + MOTHS.wobble + 1e-6))
+    specs.forEach((s, i) => assert.ok(distance([out[3 * i], out[3 * i + 1], out[3 * i + 2]], s.glass) <= s.radius + (s.window ? MOTHS.restWindow : MOTHS.rest) + MOTHS.wobble + 1.5 * Math.sqrt(3) * MOTHS.jitter + 1e-6))
   }
   specs.forEach((s, i) => {
     const t0 = (1 - s.phase / (2 * Math.PI)) * s.period // θ = 2π: a lap's crossing of the rest point
     mothPositions(specs, t0, out)
     assert.ok(distance([out[3 * i], out[3 * i + 1], out[3 * i + 2]], s.anchor) < 1e-6, 'at its rest point once a lap (Codex F1)')
   })
+})
+
+test('a moth never comes nearer its glass than its rest point, and its path doubles back (look pass 5)', () => {
+  const specs = mothSpecs(lamps, windows)
+  const at = (t: number) => {
+    const out = new Float32Array(specs.length * 3)
+    mothPositions(specs, t, out)
+    return out
+  }
+  for (let t = 1 / 60; t <= 5; t += 1 / 60) {
+    const out = at(t)
+    specs.forEach((s, i) => assert.ok(distance([out[3 * i], out[3 * i + 1], out[3 * i + 2]], s.glass) >= (s.window ? MOTHS.restWindow : MOTHS.rest) - 1e-9, 'never nearer the glass than the rest point'))
+  }
+  // over 0.1 s a smooth loop turns at most 30° (the shortest lap is 1.2 s); the lurch and the jitter turn it back past
+  // 90°, 21 to 36 times in 5 s on these specs
+  const turns = specs.map(() => 0)
+  for (let k = 1; k + 2 <= 50; k++) {
+    const [a, b, c] = [at(k / 10), at((k + 1) / 10), at((k + 2) / 10)]
+    specs.forEach((_, i) => {
+      let dot = 0
+      for (let x = 0; x < 3; x++) dot += (b[3 * i + x] - a[3 * i + x]) * (c[3 * i + x] - b[3 * i + x])
+      if (dot < 0) turns[i]++
+    })
+  }
+  turns.forEach((n, i) => assert.ok(n >= 10, `moth ${i}: ${n} turns back in 5 s`))
 })
 
 test("a moth at the glass is bright and one at the halo's edge is faint", () => {
