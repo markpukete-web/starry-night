@@ -9,6 +9,9 @@ import { join } from 'node:path'
 const DEFAULT_URL = 'http://127.0.0.1:5179/'
 const outDir = process.argv[2] || 'output/playwright/diorama-recovery-2026-07-07'
 const perfOnly = process.argv.includes('--perf')
+// --unlocked: vsync off, so a frame reads its real cost. Under the 60 Hz lock every case reads 16.7 ms and a
+// regression shows only once it costs a whole frame (the performance review, tasks/2026-10-30-perf-review.md).
+const unlocked = process.argv.includes('--unlocked')
 const dprIndex = process.argv.indexOf('--dpr')
 const dpr = dprIndex >= 0 ? Number(process.argv[dprIndex + 1]) : 1
 const appUrl = process.env.DIORAMA_CAPTURE_URL || DEFAULT_URL
@@ -91,6 +94,7 @@ function startChrome(port) {
     // Extra launch flags, e.g. CHROME_FLAGS=--no-sandbox: Chrome refuses to run as root without it, which is
     // the case in a cloud session. Empty by default, so a Mac run launches exactly as before.
     ...(process.env.CHROME_FLAGS ?? '').split(/\s+/).filter(Boolean),
+    ...(unlocked ? ['--disable-gpu-vsync', '--disable-frame-rate-limit'] : []),
     '--hide-scrollbars',
     '--mute-audio',
     '--disable-background-networking',
@@ -301,7 +305,6 @@ async function main() {
       const metrics = []
       for (const [name, url, viewport] of [
         ['desktop-final', `${base}&debug=final&perf=1`, desktop],
-        ['desktop-nopost', `${base}&debug=nopost&perf=1`, desktop],
         ['mobile-viewport-final', `${base}&debug=final&perf=1`, mobile],
       ]) {
         const { page } = await newPage(port, url, viewport, errors)
@@ -315,6 +318,7 @@ async function main() {
       const summary = {
         browser: chromePath,
         dpr,
+        unlocked,
         drawingBuffer: metrics[0]?.metrics?.drawingBuffer ?? null,
         note: 'mobile-viewport-final is viewport emulation on desktop hardware, not the locked real-device gate',
         metrics,

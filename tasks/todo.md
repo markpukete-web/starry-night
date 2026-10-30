@@ -1,5 +1,87 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-10-30 (21:05): findings 2 and 5 built, the PR open for Codex
+
+**Mark's iPhone** (recorded in `tasks/2026-10-30-perf-review.md`, finding 3): the painting holds 60. The street's
+first readings of 25 to 32 were the start-up dip. Plain stop 0 in a fresh tab holds 60 once settled. Every switch of
+the split read 60. Still open: the first-try load failures (cause not known) and the dip itself, which runs past 10
+seconds under 30 fps. Mark: "We can try our best to get the phone working but I don't want to lower our quality".
+
+**Built on Mark's go** ("Yes go ahead and tackle next"): finding 2, `capture-diorama.mjs --unlocked` and the nopost
+perf case deleted (`14d3228`), and finding 5, a 32 px tab icon and a 180 px touch icon in place of the 512 px favicon
+(`7df401f`). The branch `perf/review-2026-10-30` goes up as one PR: the two code commits are the review's scope, and
+the docs commits ride up with them.
+
+**Proposed, not queued: a fallback for a weak GPU.** Mark asked whether a weak GPU can be warned and given a fallback
+that lowers quality. Proposed shape: measure frames only after the scene settles (the start-up dip would flag every
+phone), and when the median stays over budget, offer a lighter view in a small notice rather than change it silently.
+The lever: the pixel ratio 1.5 to 1 (7.6 ms against 12.4 ms on this Mac, the motion unchanged, the image softer). The
+painted-light sky is about 4 times cheaper, but it changes the piece's heart. Waits for Mark's word.
+
+## Pickup — 2026-10-30 (19:28): the deeper Tunables cut done; nothing running
+
+**The deeper Tunables cut is done** on `perf/review-2026-10-30` (docs and two comments only, not pushed). The section
+went from 5,630 to 2,463 words, one entry per old entry in the same order. Each keeps its decision, Mark's word, its
+record and a pointer to the constant. Only the limits stay as numbers. The checks: `number-check.py` PASS (no number
+invented or moved between entries), `code-pointer-check.py` PASS (235 pointers, no misses,
+`scratch/tunables-cut-2026-10-30/code-pointer-check-output.txt`). The sections outside the Tunables are byte for byte
+unchanged. The estimate was about 1,500 words: the rest is Mark's quotes, the URL switches and each decision's reason.
+`arrival.ts:12` and `portal.ts:6` no longer say their values are logged in the Tunables.
+
+**Waiting on Mark:** his iPhone's `?perf=1` readings (the links in `tasks/2026-10-30-perf-review.md`), which findings
+become slices, and whether the two check scripts should be tracked in `scripts/` (they are in the ignored `scratch/`).
+
+## Pickup — 2026-10-30 (18:49): the performance review done; the deeper Tunables cut next
+
+**The performance review is done**, on the local branch `perf/review-2026-10-30` (branched from
+`docs/trim-2026-10-30`, `e9b9d2d`, not pushed: docs only). The record `tasks/2026-10-30-perf-review.md` has the numbers
+and seven ranked findings, each a proposed slice for Mark's word. The answer: desktop cannot afford a pixel ratio of 2
+on the diorama (17.2 ms median on an M5 Pro), the street can. The moving-strokes sky is about 80% of the diorama's
+frame. The raw files and scripts are in `scratch/perf-review-2026-10-30/`. Gemini ran batches 2 and 3.
+
+**Waiting on Mark:** his iPhone's `?perf=1` readings at the painting and the street's five stops (the links are at the
+end of the record), and his word on which findings become slices.
+
+**Next: the deeper Tunables cut**, below.
+
+## Pickup — 2026-10-30 (17:54): the performance review started; the deeper Tunables cut queued next
+
+**The performance review** runs on `perf/review-2026-10-30`, branched from `docs/trim-2026-10-30` (`e9b9d2d`). Its
+work is in `scratch/perf-review-2026-10-30/`, and its record will be `tasks/2026-10-30-perf-review.md`, with ranked
+findings. It fixes nothing: each fix it proposes is a slice for Mark's word. Mark, 17:58: "Take the lead".
+
+**Queued next, Mark's word (17:52): "Go with your recommendations for tunables. Queue it for next".** The deeper cut of
+the Tunables, after the performance review. Each entry keeps its decision, Mark's word with its date, the record and a
+pointer to the constant that holds its values. The numbers that only copy the code go. The limits that work is checked
+against stay as numbers: the pixel-ratio cap, the orbit limits, the triangle ceiling, the stroke budgets, the palette
+tolerance and the retune cap. `scratch/docs-trim-2026-10-30/pointer-check.py` confirms each pointer finds its file and
+constant. About 1,500 words, from 5,600. Docs only, so it goes up with the next code push.
+
+## Pickup — 2026-10-30 (16:20): #38–#40 merged and live; the docs trim done; the performance review next
+
+**Done.** Mark passed #38 (the church square), #39 (the owl and the moths) and #40 (the cat): "All passed, merge them
+to main". Merged in that order, `main` at `0a9e1c9`, the production deploy green, the cat live at stop 3.
+
+**The docs trim**, on the local branch `docs/trim-2026-10-30` (worktree `.claude/worktrees/agent-a090dedbe967f460c`),
+not pushed (docs only, it rides up on the next code push, so branch the next slice from it). A subagent trimmed the
+Tunables (6,388 to 5,531 words) and moved `tasks/lessons.md` to `tasks/archive/2026-10-30-lessons.md`, with a new file
+of 385 rules in 16 themes (51,000 to 8,400 words). Its proofs: no number in the new Tunables is missing from the old,
+every lesson's pointer finds its archive text. The Lead put back the azimuth-clamp lesson, which it had dropped
+wrongly. Its report: `scratch/docs-trim-2026-10-30/report.md` ("Unsure" lists its judgement calls).
+
+**Mark's call (16:15): "Tunables follow code".** The orbit limits and the pixel-ratio cap in the Tunables had not
+matched the code since 2026-07-06. They now state the code's values: distance 3.25–5.6, polar 0.58–1.62, azimuth −15°
+to +45°, the pixel ratio capped at 1.5 on every device.
+
+**Next: the performance review** (Mark: "Go ahead with the performance review after the trim"). Not started. Scope:
+the whole piece, the diorama and stops 0 to 4 of the street, on frame time, triangles, draw calls, memory and load
+time. Tools: `capture-diorama.mjs --perf` (the cat's `C/t6/perf.sh`), the triangle sweep (`tri-read.mjs`), the
+phone-memory probes (`scratch/phone-memory-2026-10-28/tools/`). One question for it: whether desktop can afford a
+pixel ratio of 2. It ends with a ranked list of findings, and each fix it proposes is a slice for Mark's word.
+
+**Open, Mark's word:** a deeper Tunables cut, keeping each entry's decision, Mark's word and its pointer and leaving
+the numbers to the code (about 1,500 words). The subagent's third drop reason for lessons ("history or status").
+
 ## Pickup — 2026-10-30 (15:20): the cat gated, its PR stacked on #39
 
 `feat/street-cat` (the light slice's design, build and record in `docs/superpowers/specs/2026-10-30-street-cat-design.md`)

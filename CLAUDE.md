@@ -107,343 +107,175 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
 
 ## Tunables (Claude may adjust; log every change in tasks/lessons.md)
 
+Each entry keeps its decision, Mark's word and its record. The values live in the code each entry names: read them
+there, not here. Only the limits that work is checked against stay as numbers. Cut to this form on Mark's word ("Go
+with your recommendations for tunables"). The values as written before the cut are in `tasks/archive/2026-10-30-tunables.md`.
+
 - Instanced stroke budget: start 8,000 desktop / 3,000 mobile
-- Diorama sky ribbon budget (2026-10-11): painted light 3,200 requested ribbons (2,000 × 1.6 for the side
-  strips), 194,850 scene triangles, 120 fps on an M5 Pro. Moving strokes 25,600 requested (×8), minPoints 5,
-  601,128 ribbon triangles and 737,970 scene triangles with the star-body layer, 103 fps on an M5 Pro (was
-  678,296 and 120 fps before the afternoon refinement). One count for every device, so a resize never
-  rebuilds. Phone unmeasured.
-- Palette tolerance: ΔE < 10 per region to begin; tighten as quality improves
-- devicePixelRatio cap: 2 desktop / 1.5 mobile
-- Camera orbit limits: polar 0.2–1.62 rad (≈11°–93°), distance 3–5.5; azimuth free; no pan (3D diorama).
-  Max polar raised 1.5→1.62 on 2026-06-21 so the home view sits eye-level head-on to match the painting
-  (Mark live review); still a hard limit, no free-fly/pan.
-- Portrait lens (2026-10-25, `src/scene/dioramaContract.ts` `PORTRAIT_FIT`, the record `tasks/2026-10-25-phone-framing.md`):
-  candidate C's pose with the horizontal field of 360 × 800 (vertical fov 88 at aspect 0.45) held up to aspect 0.65,
-  the vertical fov narrowing to keep it (72.0° at Mark's 440 × 735, 86.5° at 390 × 844); 88 below 0.45; the lens at
-  0.65 above it (a tablet). Set on the diorama only. Mark: "take the lead, get it fix"; passed on his phone, 2026-10-25
-  ("It reads right on the phone").
-- Make-it-alive A, behind `?alive=1` until Mark's gate (2026-10-13, `src/scene/skyAlive.ts`): gust periods
-  9.7 / 5.9 / 16.3 s, amplitudes 0.46 / 0.28 / 0.16 (sum 0.90; tempo 0.1×–1.9× in the band, mean 1; pass 1 raised
-  them from 0.36 / 0.22 / 0.12), travel 3 s per canvas width left to right, brightness lift 0.15 (was 0.06),
-  light-sky shimmer share 1 (was 0.5), calm floor 0.15, band luminance 0.38–0.52 (the ribbons' 35th–90th
-  percentiles); star halos 4.5–9 s (±30% opacity, ±12% scale; were ±14/5%), moon 13 s (±18%, was ±8%). The
-  shipped knobs are `sky-tuning.json`'s alive keys, Mark's pick of 2026-10-13: gust 0.95 (amplitude sum), lift
-  0.3, shimmer 1, breath 2 (halos ±60/24%, moon ±36%). Tuner `?tune=1` (`src/AliveTuner.tsx`), URL knobs
-  `?gust=&lift=&shimmer=&breath=` still honoured; every knob clamped so the clock never runs backwards.
-- Make-it-alive A, second pass, behind the same flag (2026-10-13, `src/scene/cypressFlicker.ts`, `villageGlow.ts`):
-  cypress flicker periods 1.9 / 3.1 s, amplitudes 0.6 / 0.4, 1.3 / 0.8 cycles over the tree (climbs 0.40 tree
-  heights per second), envelope τ 1.5 s, depth 0.6 (±60% at the knob's maximum), floor 0.12, tip band 0.55–0.9 of
-  the vertex's own lobe, tongue band |lateral| 0.40–0.75 (the strokes' 75th–95th percentiles), back strokes half
-  the tongue, the underpaint solid half the knob. Window glimmer slow 2.3–4.1 s, fast 0.9–1.6 s (hashed per
-  window), shares 0.7 / 0.3, depth 0.6. Knobs `flicker` and `glimmer` 0–1; shipped at 1 / 1, Mark's pick of
-  2026-10-13 ("I like the Both at full one"; `sky-tuning.json` aliveFlicker / aliveGlimmer, `?tune=1` still dials).
-- B, touch, behind `?touch=1` (implies `alive`; 2026-10-13, `src/scene/touchSurge.ts`): the lift's pulse speed 0.25
-  canvas widths/s, σ 0.06 along × 0.025 across, bloom σ 0.08 × 0.04 along the stroke, rise 0.08 s, decay τ 1.6 s,
-  ceiling 0.5 (A's), × 1.8 on the painted-light sky only (its glazes showed the lift at two thirds of the moving
-  sky's; 2026-10-16, Mark: "in painted light, the cursor light is weaker"), 12 live surges in 16 slots with a 0.25 s fade on eviction; the kick 0.4 s fed into the gust
-  clock's argument, so its push follows the local wind, 0.023–0.78 s of flow on a full-weight ribbon, 0.4 s on
-  average (set 2026-10-16 in `bec5480`, replacing 0.4 s added on top, which could run strokes backwards), rise 0.4 s,
-  decay 3 s, σ 0.05 from the ribbon's centreline segment, closed to zero by 10 s, max 4, never evicted live; every
-  falloff cut at 3σ; hover amp 0.5 at ≥ 60 ms and ≥ 0.02 u, tap ≤ 300 ms and ≤ 8 px; star radius 0.04, moon 0.06;
-  flare ×2.2 colour, ×1.5 scale, 0.12 s rise, 1.4 s fall. Knob `surge` 0–1.5, shipped 1 (`sky-tuning.json`
+- Diorama sky ribbon budget (2026-10-11, the record `tasks/2026-10-11-sky-choice.md`, `PaintingFlowSky3D.tsx` `MOVING`
+  and the `count` knob): painted light 3,200 requested ribbons, moving strokes 25,600. One count for every device, so a
+  resize never rebuilds.
+- Palette tolerance: ΔE < 10 per region to start with. Tighten as quality improves.
+- devicePixelRatio cap: 1.5 on every device (`DioramaExperience.tsx`, the Canvas's `dpr={[1, 1.5]}`). Corrected
+  2026-10-30 to the code, which has shipped it since 2026-07-06 (Mark: "Tunables follow code"). The performance review
+  (2026-10-30, `tasks/2026-10-30-perf-review.md`) found that desktop cannot afford 2 on the diorama, so the cap stays
+  1.5. The street could afford 2.
+- Camera orbit limits (`src/scene/dioramaContract.ts` `DIORAMA_ORBIT`): polar 0.58–1.62 rad (≈33°–93°), distance
+  3.25–5.6, azimuth −15° to +45°, no pan (3D diorama). The −15° side stops short of the rear cypress, whose back is blank
+  source edge. The max polar of 1.62 (2026-06-21, Mark's live review) lets the home view sit eye-level head-on, to match
+  the painting. They are hard limits: no free-fly, no pan. Corrected 2026-10-30 to the code, which has shipped them
+  since 2026-07-06 (Mark: "Tunables follow code").
+- Portrait lens (2026-10-25, `src/scene/dioramaContract.ts` `PORTRAIT_FIT`, `portraitFov`, the record
+  `tasks/2026-10-25-phone-framing.md`): candidate C's pose. A portrait screen keeps the horizontal field of a 360 × 800
+  phone, and the vertical field follows the aspect, up to a tablet's. Set on the diorama only. Mark: "take the lead, get
+  it fix". Passed on his phone, 2026-10-25 ("It reads right on the phone").
+- Make-it-alive A (2026-10-13, `src/scene/skyAlive.ts` `GUST`, `HALO_BREATH`, `ALIVE_KNOBS`, the record
+  `tasks/2026-10-13-alive-a.md`), on by default (see the flags below). Gusts warp the sky's clock. The shipped knobs are `sky-tuning.json`'s alive keys, Mark's pick of
+  2026-10-13. Every knob is clamped so the clock never runs backwards. Tuner `?tune=1` (`src/AliveTuner.tsx`). The URL
+  knobs `?gust=&lift=&shimmer=&breath=` are still honoured.
+- Make-it-alive A, second pass, on with A (2026-10-13, `src/scene/cypressFlicker.ts` `CYPRESS_FLICKER`, `villageGlow.ts`
+  `WINDOW_GLOW`, the record `tasks/2026-10-13-alive-a2.md`): the cypress flickers upward like a flame, and the village
+  windows glimmer. Knobs `flicker` and `glimmer`, shipped at full, Mark's pick of 2026-10-13 ("I like the Both at full
+  one", `sky-tuning.json` aliveFlicker / aliveGlimmer). `?tune=1` still dials them.
+- B, touch (2026-10-13, `src/scene/touchSurge.ts` `TOUCH_SURGE`, the record `tasks/2026-10-13-touch-b.md`), on by
+  default, and it implies `alive`. The lift is stronger on the painted-light sky (2026-10-16, Mark: "in painted light, the cursor light is
+  weaker"). The kick is fed into the gust clock's argument, so its push follows the local wind (set 2026-10-16 in
+  `bec5480`). Added on top of the clock instead, it could run strokes backwards. Knob `surge` (`sky-tuning.json`
   `touchSurge`), untuned by Mark.
-- C, arrival, behind `?arrival=1` (implies nothing; 2026-10-20, `src/scene/arrival.ts`): hold 4 s (the scan on a dark
-  ground, Vincent's line from letter 777 beneath), the line fades over the last 1 s of the hold, the dissolve 1.5 s
-  from the hold (the ground over its first half, `groundShare` 0.5, then the scan, which grows to 1.12), the sky's
-  clock eased 0 → 1 over 3 s and the camera pushed from distance 5.55 to the home over 4 s, both from 0.75 s into
-  the dissolve (`lead`); done at 8.75 s. Skip (tap, click, Enter, Space, Escape) runs the clock at 8×, so the whole
-  arrival ends within 1.1 s; a frame counts at most 0.1 s (`maxDt`); the opening waits for the sky, the cypress and
-  the scan, at most 15 s (`readyTimeout`); the chrome fades in over 600 ms (`reveal`). Reduced motion: no layer, no
-  push, the line as a static caption until the first pointer or key. Untuned by Mark.
-- The loading curtain (2026-10-25, `index.html` `#boot`, `src/bootCurtain.ts`; the record
-  `tasks/2026-10-25-loading-curtain.md`): C's first frame is in the page, with the cue "Painting the night sky…" under the
-  citation at 0.6 of the line's opacity, faded over 0.5 s (`CUE_FADE`) once the wait ends. The hold counts from the
-  painting: the time it was shown while waiting, at most 1 s per frame (`seenDt`), capped so 1.5 s of the hold is left
-  once the scene is ready (`afterReady`). A skip no longer ends the wait: it runs the clock at 8× from the moment the
-  scene is ready. `readyTimeout` stays 15 s, and slow 4G is out of scope (Mark, 2026-10-25). A page that fails (an
-  uncaught error, a failed load, an unhandled rejection) hides the cue. Passed by Mark on his phone, 2026-10-25 ("it works well
-  in terms with landing").
-- Default sky: moving strokes (Mark, 2026-10-20, after C's gate); `?sky=light` opens on painted light. Reduced motion
+- C, arrival (2026-10-20, `src/scene/arrival.ts` `ARRIVAL`, the record `tasks/2026-10-20-arrival-c.md`), on by default.
+  Its flag implies no other. The scan holds with Vincent's line from letter 777, then dissolves into the scene. Skip (tap, click, Enter,
+  Space, Escape) runs the clock at 8×. Reduced motion: no layer, no push, the line as a static caption until the first
+  pointer or key. Untuned by Mark.
+- The loading curtain (2026-10-25, `index.html` `#boot`, `src/bootCurtain.ts`, `arrival.ts` `ARRIVAL_CUE`, `CUE_FADE`,
+  the record `tasks/2026-10-25-loading-curtain.md`): C's first frame is in the page, with the cue "Painting the night
+  sky…" under the citation. The hold counts from when the painting showed, not from when the scene was ready. A skip
+  does not end the wait. The wait is capped (`ARRIVAL.readyTimeout`), and slow 4G is out of scope (Mark, 2026-10-25). A
+  page that fails (an uncaught error, a failed load, an unhandled rejection) hides the cue. Passed by Mark on his
+  phone, 2026-10-25 ("it works well in terms with landing").
+- Default sky: moving strokes (Mark, 2026-10-20, after C's gate). `?sky=light` opens on painted light. Reduced motion
   still forces the painted-light still.
 - Flags on for every visitor (Mark, 2026-10-20, "go for your recommendation"): A (`alive`), B (`touch`) and C
-  (`arrival`) are the default. `?alive=0` turns A and B off, `?touch=0` B alone, `?arrival=0` the opening; `=1` still
+  (`arrival`) are the default. `?alive=0` turns A and B off, `?touch=0` B alone, `?arrival=0` the opening. `=1` still
   works for links. The opening plays once per session on a plain visit (`sessionStorage`), always with `?arrival=1`.
   `?perf=1` shows the frame rate on screen. The guard and capture scripts opt out of the opening (`arrival=0`).
-- E1, the cypress (2026-10-21, `tasks/2026-10-21-cypress-e1-plan.md`, the record `tasks/2026-10-21-cypress-e1.md`): the
-  table and field baked from the 3840 px scan (`scripts/derive-cypress.ts`: the seed at 1600, the whole-tree component
-  flooded raw inside the seed's box then closed by 1 px, tensor σ 6, low-pass σ 5, the blend to vertical gated on
-  anisotropy 0.05–0.15). Ribbons (`src/scene/cypressStrokes.ts`, after four retunes): 450 front, back share 0.25,
-  lengths 0.07–0.30 of the crop's height log-uniform (× 1.5 above 0.6, seeds there weighted 1.8×), step 0.0019,
-  half-widths 0.03–0.06 crop widths capped at 0.45 of the seed's run (the painting's strokes are 30–60 px bands of
-  453; at the 8–14 px lane width the tree read as fur), overshoot 4 steps, taper 0.45, relief spread 0.035, one
-  pigment per ribbon: the mean of the tree texels across its width at the middle sample. The lift: the compiled rings'
-  interpolation, the overshoot to 0.6 laterals, the edges clamped there, the ribbons 0.004 toward the camera. The
-  underpaint `#151c1b`. The flicker's tongue band 0.72–0.93 (the ribbons' 75th and 95th percentiles of mean |lateral|;
-  was 0.4–0.75). Each strip is lifted in five columns across its width (code review F1). The stroke body
-  (`cypressStrokeShader.ts`) is the moving sky's, static, opaque with alphaTest 0.5 (order-independent edges, code
-  review F2), one bristle lane 4.5 cycles across at mix(0.86, 1.08), rake 0.35, rim mix(0.8, 1), sheen 0.06, the dry
-  brush over the tip's last quarter. Gate numbers after the review's fixes: IoU 0.817 (main 0.787), ΔE 1.0 / 1.2 /
-  3.0, the expected area 96% covered, local contrast 0.93 (the painting 6.45; the bar 4–7.5 is open to Mark's eye),
-  build 70 ms.
-- E2, the land (2026-10-21, `src/scene/landStrokes.ts`, `landDomes.ts`, `landMapping.ts`, `landMasses.ts`): the ground
-  2,000 ribbons in the band's field (960 × 319 at a quarter of the 3840 scan, tensor σ 1.5, low-pass σ 1.5 on the
-  masses' curls and σ 3.5 elsewhere), lengths 0.1–0.3 of the band's height, step 4 px, half-widths 0.003–0.006 of the
-  width laid out in world at 4.75 per u (the hills' × 1.7), taper 0.7, three columns, lift 0.02 along the normal,
-  coverage about 2.7× on the apron and 6.5× on the hills, the top's solid hills × 0.3 (linear). The map: u 0.56 ↔
-  x −0.036, 4.75 world per u (the right coast under the painting's right edge), the apron v 1.0–0.78 over z 1.35–0.25,
-  the hills from 0.78 to the crest at that u over z 0.25 to −1.35; the cypress column filled from the band past the
-  tree. The masses: ten authored boxes, domes capped at 0.3 high (a house's eave), rx 0.75 of the spacing, rz half the
-  smaller radius, lift 0.012 along the facing axis, contact 0.005, strips `clamp(pixels / 40, 24, 180)` per mass
-  (0.4 of them on the back), half-widths 0.04–0.08 of the box, overshoot 3, taper 0.5. Untuned by Mark.
-- D1, touch the land (2026-10-21, `src/scene/landTouch.ts`, rides B's flag; `?touch=0` turns both off): radius 0.55 world
-  units, push 0.14 on the cypress and 0.035 on the trees and bushes (a full-weight vertex where the lateral field peaks,
-  at 0.447 of the radius), dip 0.35 of the push, rise 0.12 s, swing τ 0.9 s and period 1.3 s, closed between 4 and 5 s
-  after the release, 4 live touches, hover amplitude 0.6, a mouse or a pen on the land masks the sky's surge behind it; the bend
-  weight is the vertex's local height over 2.7 on the cypress and its height over the terrain over the mass's height on
-  the trees; the ground does not bend. Knob `bend` 0–1.5, shipped 1 (`sky-tuning.json` `touchBend`), untuned by Mark.
-  A finger touches no land, only a mouse or a pen (2026-10-25, Mark's choice, `useTouchInput.ts` `landActive`): on his
-  iPhone 17 Pro Max the land's cast under a moving finger held 18–50 fps, and with the finger kept off the land, 60.
+- E1, the cypress (2026-10-21, `scripts/derive-cypress.ts`, `src/scene/cypressStrokes.ts` `CYPRESS_RIBBON_CONFIG`,
+  `cypressStrokeShader.ts` `STROKE_BODY_DEFAULTS`, the record `tasks/2026-10-21-cypress-e1.md`): the table and field
+  baked from the 3840 px scan. Broad ribbons, because at narrow lane widths the tree read as fur. The stroke body is the
+  moving sky's, static, opaque with an alpha test, so its edges do not depend on draw order (code review F2). The land
+  keeps E1's body text. The local-contrast bar 4–7.5 is open to Mark's eye.
+- E2, the land (2026-10-21, `src/scene/landStrokes.ts` `LAND_RIBBON_CONFIG`, `landMapping.ts` `LAND_MAP`,
+  `landMasses.ts` `LAND_MASSES`, `landDomes.ts` `DOME_HEIGHT_CAP`, the record `tasks/2026-10-21-land-e2.md`): ribbons in
+  the band's own field, and ten authored masses as domes. Untuned by Mark.
+- D1, touch the land (2026-10-21, `src/scene/landTouch.ts` `LAND_TOUCH`, the record `tasks/2026-10-20-touch-land-d1.md`),
+  rides B's flag, and `?touch=0` turns both off. The ground does not bend. A mouse or a pen on the land masks the sky's surge behind it. Knob `bend`
+  (`sky-tuning.json` `touchBend`), untuned by Mark. A finger touches no land, only a mouse or a pen (2026-10-25, Mark's
+  choice, `useTouchInput.ts` `landActive`, the record `tasks/2026-10-25-finger-no-bend.md`): on his iPhone 17 Pro Max
+  the land's cast under a moving finger held 18–50 fps, and with the finger kept off the land, 60.
 - E3, the cypress's medium (2026-10-22, `src/scene/cypressStrokes.ts` `sampleColours`, `cypressStrokeShader.ts`
-  `CYPRESS_STROKE_BODY`): the colour along the stroke, one source pigment per kept step (the texel under each sample,
-  sky samples filled from the nearest accepted, a box of ±3 samples in linear RGB; `perSampleColours`, off for the
-  land); the cypress's stroke body lane mix 0.78–1.14 sharpened by smoothstep 0.3–0.7, rake 0.5, a coarse lane at
-  2.2 cycles across (on the 0–1 coordinate) and a third, saturation 1.1 (E1's 1.3 compensated the one-colour mean's
-  desaturation); the land's body keeps E1's text, pinned by hash. Gate at pass 5: spread 17.3 (the painting 18.5),
-  light 13.9% (10.6%), warm 5.4% (5.9%), green 32.2% (30.3%), ΔE 3.0 / 1.5 / 2.0, IoU 0.840, 60 fps; the paired
-  contrast 3.4 (the painting 11.1, the bar 5–10 not met: its bristle marks and canvas weave). The retune cap is
-  reached (passes 1, 2, 3 and 5; 4 was F8's coordinate fix): any further change to the medium is Mark's call.
-  Untuned by Mark.
-- E4, the cypress's paint (2026-10-22, `src/scene/cypressStrokeShader.ts` `CYPRESS_STROKE_BODY`, built by the worker
-  on Gemini 4 Argon as Mark's experiment, the Lead gating; the record `tasks/2026-10-22-cypress-e4.md`): the still look
-  read as jelly (Mark: smooth, glossy, rounded), so the cypress's body is dry, broken and ridged. The factory's new
-  fields, each defaulting to E1's text byte for byte for the land: tube flat 0.95 (E1 the rounded term), rim 1.0 (E1
-  shaded), sheen 0 (E1 0.06, the line omitted), lanes 5.0 cycles across (E1 4.5), lane edge [0.42, 0.58] (E3 [0.3, 0.7])
-  drifting by 0.15 × a slow noise along the stroke, fray 0.16 at 40 cycles along, gaps on the outer 30% of the shaped
-  radius where the lane noise is under 0.3 (0.25% of the column's pixels: a dial that does nothing visible), the dry
-  brush from 0.55 of the stroke (E1 0.75), the lit term side × 0.15 − 0.5 × the lane slope (E1 side − 0.12 × slope),
-  rake 0.8 clamped [0.4, 1.6] (E3 0.5, unclamped). The colour along the stroke smoothed over ±1 sample (E3 ±3). Gate at
-  pass 2: ΔE 1.41 / 0.49 / 0.91, spread 18.1, light 11.6%, L p50 15.0 (E3 15.4), IoU 0.844, the registered trunk
-  window's 3 × 3 std 7.33 (the painting 9.05, E3 5.04), 60 fps (p95 17.4 ms). Two passes of the four used. Passed by
-  Mark on production, 2026-10-23 ("It passed").
-- The village street, S1 and S1b, behind `?street=1&station=0` to `4` (2026-10-24, `src/scene/streetLayout.ts`,
-  `streetGeometry.ts`, `streetStrokes.ts`, `streetLight.ts`, `streetLife.ts`; the record `tasks/2026-10-23-street-s1b.md`):
-  the map `layout-v1.svg` read at 0.0024 per pixel, the lane its Bézier, 2.396 long; stations at `t` 0, 0.23, 0.44, 0.66,
-  0.9; stop 0 aimed 9° left of the church (portrait 17°), the cypress 0.9 from stop 0's camera 26° left of its heading,
-  height 0.9, stride 4; stop 4's target centring the door's foot and the gable's peak (0.203). The budget 641,310 for the
-  street (1,444,930 − 660,388 − 143,232), `DETAIL` lane 0.6, house 0.46; the street 631,290 triangles. `COTTAGE`
-  thickness 0.02, overhang 0.02, rake 0.03; `ROOF_EDGE` 0.012; the thatch [972, 1186, 1020, 1226]; the bases at the
-  source's mean, the ground's at its darkest 40%; the hills at radii 4.9 and 5.6, 0.8 of their height; `STREET_LIGHT`
-  ambient 0.4, key 0.9 (the spike's). The path 0.12 wide, `PATH_LIFT` 0.5 toward `hillsCrest` on its strokes and its
-  base, the base inset 0.024 from each edge (across on the lane, all four sides of the square), the segments' overlap
-  0.02 in `t` (look pass 3 of 4, a pale lane like Simon Lee's). The colour gate keeps the fog on (Mark: "keep the fog for
+  `CYPRESS_STROKE_BODY`, the record `tasks/2026-10-22-cypress-e3.md`): the colour follows the stroke, one source pigment
+  per kept step, because one colour per ribbon averaged the bands it crossed. `perSampleColours` is off for the land.
+  The paired-contrast bar 5–10 is not met: the painting's 11.1 is its bristle marks and canvas weave. The retune cap is
+  reached: any further change to the medium is Mark's call. Untuned by Mark.
+- E4, the cypress's paint (2026-10-22, `src/scene/cypressStrokeShader.ts` `CYPRESS_STROKE_BODY`, Mark's experiment, the
+  record `tasks/2026-10-22-cypress-e4.md`): the still look read as jelly (Mark: smooth, glossy, rounded), so the
+  cypress's body is dry, broken and ridged. The factory's fields default to E1's text byte for byte, so the land is
+  unchanged. Passed by Mark on production, 2026-10-23 ("It passed").
+- The village street, S1 and S1b, opened with `?street=1&station=0` to `4` (2026-10-24, `src/scene/streetLayout.ts`
+  `MAP`, `STREET`, `streetGeometry.ts` `COTTAGE`, `ROOF_EDGE`, `streetStrokes.ts` `PATH_LIFT`, `streetLight.ts`
+  `STREET_LIGHT`, `streetLife.ts`, the record `tasks/2026-10-23-street-s1b.md`): the map
+  `layout-v1.svg` (untracked, in the village redesign's scratch folder) sets the lane and the five stations. The scene's
+  ceiling is 1,444,930 triangles at the walk's worst sampled point. It sets the street's budget, 641,310
+  (`STREET_TRIANGLE_BUDGET`). A pale lane like Simon Lee's. The colour gate keeps the fog on (Mark: "keep the fog for
   now"). `?light=0` builds the street unlit for the gate. Passed by Mark, 2026-10-24 ("It does read like a village").
-- The street's slice 2, Vincent and the walk, on with `?street=1` (2026-10-24, `src/scene/streetWalk.ts`, `StreetWalk.tsx`,
-  `vincent.ts`, `streetLayout.ts` `VINCENT_RIG`; the record `tasks/2026-10-24-street-s2.md`): the walk runs `t` 0–0.9
-  along the lane. The wheel 0.001 world units per pixel, eased over τ 0.25 s; the arrow keys 0.15 per second; the
-  automatic walk 0.08 per second, the default where the pointer is coarse and nothing hovers, a tap on him stopping and
-  starting it; every speed capped at 0.5 per second, a snap within 1e-4; the lane's two kinks rounded over 0.02 of `t`
-  (`WALK_ROUND`). The gait from the distance walked: a step every 0.04, a rise of 0.0015 and a roll of ±0.03 rad a step,
-  the left arm ±0.25 rad, all scaled down below 0.05 per second; no legs. Vincent 0.4 ahead of the camera on the lane,
-  0.03 left of its centre, easing to 0.07 over stops 3–4 (the church door), 0.085 tall, his tap target at least 48 px,
-  2,084 triangles. The smock from the blue hill behind the church `[1176, 840, 1208, 872]`, 4.3 from `village`'s
-  ultramarine `#2a3f6f` and gated against it (look pass 4, Codex T1); the hat the thatch, gated against `villageWarm`.
-  The trees, pass 7 (`streetTrees.ts` `STREET_TREE`): the fork at 0.08 + 0.35 R, four limbs each splitting into two
-  twigs, nine clumps of 0.28 R as domes 1.15 × 0.8, 115 curls a clump of 0.3–0.55 R, 108,096 triangles; the three moved
-  0.010–0.035 to clear the houses by 0.025 (Codex T2). At stop 0 on the phone the scene is 1,435,696 of 1,444,930
-  triangles. `?walk=0` and `?vincent=0` turn each off, `?walkT=` opens at a point on the lane, `?walkMode=input` or
-  `auto` forces a mode. Passed by Mark, 2026-10-24 ("Good, passed").
+- The street's slice 2, Vincent and the walk, on with `?street=1` (2026-10-24, `src/scene/streetWalk.ts` `WALK`,
+  `StreetWalk.tsx`, `vincent.ts`, `streetLayout.ts` `VINCENT_RIG`, `streetTrees.ts` `STREET_TREE`, the record
+  `tasks/2026-10-24-street-s2.md`): the wheel, the arrow keys or the automatic walk move him along the lane. The
+  automatic walk is the default where the pointer is coarse and nothing hovers. A tap on him stops and starts it.
+  The smock paints from the blue hill behind the church, gated against
+  `village`'s ultramarine (Codex T1). The trees clear the houses (Codex T2). `?walk=0` and `?vincent=0` turn each off,
+  `?walkT=` opens at a point on the lane, `?walkMode=input` or `auto` forces a mode. Passed by Mark, 2026-10-24 ("Good,
+  passed").
 - The street's slice 3, the grass and the hand, on with `?street=1` (2026-10-25, `src/scene/grassBlade.ts`
   `GRASS_BLADE`, `streetGrass.ts` `GRASS`, `grassShader.ts`, `grassTrail.ts` `TRAIL`, `streetGeometry.ts`
-  `GROUND_BASE_SHARE`; the record `tasks/2026-10-24-street-s3.md`, look pass 3 of 4). Clumps of 5–9 blades on the verge,
-  density 0.2, the walk's worst sampled point 35,838 triangles of the grass's 38,515. A blade 0.036 tall (× 0.75–1.25),
-  half-width 0.0024–0.0034, three segments, a bend of 1.0–2.0 rad from root to tip, the tip at most 1.8 rad from the
-  vertical, fan 0.5, spread 0.012, turn 0.5, shade 0.6 at the root to 1.05 at the tip. The chunk box's top 0.065. The
-  dark base under it is the ground's, the field's darkest 40%. The wind 0.0035 at the tip, toward +x, its heading
-  wobbling by 0.3 rad, its gusts travelling across the verge. The hand's push 0.03 at the tip, the trail's texel 0.005,
-  radius 0.045, Vincent's feet 0.03, with D1's rise, swing and window. `?grass=0` builds none. Untuned by Mark.
-- The grass's paint and the moon on it, S3b (2026-10-25, `src/scene/grassBlade.ts` `GRASS_BLADE` and `GRASS_LIGHT`,
-  `streetGrass.ts` `GRASS`, `grassShader.ts`; the record `tasks/2026-10-25-street-s3b.md`, look pass 4 of 4). Four
-  segments, no joint turning more than 0.38 rad. A clump leans 0.35 toward its side, `clumpSide`'s value noise at 5 per
-  world unit, its blades fanned 0.3 either way from that, 15% curling against it; turn 0.3. Density 0.165, the chunks 0.025
-  long in `t`, the walk's worst refined point 35,696 triangles of the grass's 38,515 (92.7%). The paint comes from each
-  blade's own seed, apart from the layout. The moon: the top colour one of the lightest 2% of the bushes' lit texels,
-  mixed up to all the way where the arch faces `STREET_MOON` (the facing eased over 0.55–0.75), rising from 0.2 to 0.5
-  along the blade and full to the tip, over the outer quarter of the blade's width at full strength and the next quarter fading. `?light=0` draws the grass
-  unlit, slice 3's program byte for byte. Read live by Mark, 2026-10-25: the far arch tops "okay", the stripes "fine",
-  the direction right, the bare base between the clumps "It bother me a bit".
-- S3b pass 5, past the cap on Mark's word (2026-10-25, "Yes, go ahead with the extra pass"; `src/scene/grassBase.ts`
-  `GRASS_BASE`, `grassTrail.ts` `TRAIL.hoverAmp`, `frog.ts` `FROG`). The base under the grass lays one comma dab per
-  0.01 cell in its own mesh: half-size 0.009 × 0.003, bent 0.8, the tail 0.55 of the head, the angle from a field at 6
-  per world unit, the value ± 0.15, the paint the bushes' darkest 80% split by hue in their own shares. The hand: a
-  hover pushes at 0.6 of a press (`LAND_TOUCH.hoverAmp`), a press closes the cursor (`grabbing`), and a lift lets the
-  press's texels settle to the hover's push. The frog at `t` 0.022, lateral −0.076 (a gap ringed by 13 blades), 1,944
-  triangles; a blink shrinks each eye to 0.3 and sinks it 0.6 of its radius, 0.06 s down, 0.06 s shut, 0.1 s up, the
-  gaps 2.5–6 s, one double in five, the first at 1.7 s. Untuned by Mark.
-- The church in the round, slice 3c (2026-10-25, `src/scene/streetLayout.ts` `CHURCH`, `streetLight.ts` `CHURCH_LIGHT`,
-  `streetGeometry.ts` `church()`; the record `tasks/2026-10-25-street-church.md`): the church turns 0.45 rad on the
-  square and stands 0.02 further back, so stop 4 sees its gable 37.8° and its moonlit side 65.7° off their normals.
-  Stop 4 aims at the turned front's centre (`churchFront()`), stop 0 at the church's place before the setback. The
-  church's walls, gables, belfry and spire take `CHURCH_LIGHT`: ambient 0.8 (look pass 1, was 0.7), key 0.9, capped at
-  1, the gable 0.8 and the moonlit side 0.986. Its roofs keep `STREET_LIGHT`. The brush 0.16 on every church face. The
-  eight faces no sampled pose of the walk sees are clad at 0.25. The door 0.02 behind the wall (`CHURCH.recess`), its
-  panel at tint 0.3 × 0.6 (`REVEAL_SHADE`), a step 0.012 high and 0.03 deep, three windows down the moonlit side,
-  centred at 0.55 of the wall's height, each 0.08 of its run wide and 0.3 of its height tall. The church 875 ribbons,
-  the walk's worst point 1,442,727 triangles. Untuned by Mark.
-- The portal, slice 4, on for every visitor since 2026-10-28 (`?portal=0` turns it off; was behind `?portal=1`) (2026-10-25, `src/scene/portal.ts`, `usePortalPointer.ts`, `portalContext.ts`,
-  the driver in `DioramaExperience.tsx`; the record `tasks/2026-10-25-street-portal.md`): the flight 2.4 s, one
-  smoothstep on position and target from the visitor's orbit pose to v2 (position [0.9, 0.35, 1.5], target
-  [0.4, 0.1, 0.2]), the default camera's lens written every frame. The flight's last frame is copied to a 2D layer
-  that drifts toward the centre, 4 s to scale 1.045 on `cubic-bezier(0.2, 0.4, 0.5, 1)`, from 2.2% a second, the
-  flight's last-frame push-in (look pass 2). The layer fades off the street 1.0 s after 2 settle frames, and off the
-  diorama 0.8 s on the way back. The diorama is unmounted while the street is mounted (2026-10-28, both held at once
-  crashed Mark's iPhone), so the way back holds the layer until the cypress and the land report ready and 2 frames
-  draw, at most 15 s, then fades. A phone or a tablet (no hover, a coarse pointer) asks before its first entry: "A
-  computer is recommended for the village scene. On a phone it may load slowly or not open.", with "Enter anyway" and
-  "Stay with the painting"; once entered, the visit goes straight in (Mark, 2026-10-28; passed on the combined preview `253d8f7`, "Love it! Gate passed!"). The street gets 15 s to be ready (the arrival's `readyTimeout`). The hover casts once
-  per move against the village with the land and the island in front: the hand, and the hint "Enter the village" 16 px
-  right and 18 px below the pointer. A tap on a house enters, and the sky's surge is masked there. Escape and the
-  dock's "Back to the painting" return. Reduced motion cuts both ways. Untuned by Mark. On for every visitor
-  (2026-10-28, Mark: "promote the portal to main"; the record `tasks/2026-10-28-portal-on-plan.md`): the placard and the
-  dock share one fixed stack, `.visitor-bottom`, so the placard clears the dock however many rows it wraps to. The
-  gap 10 px over 640 px wide, 16 px on a phone. The stack's left 8 px, so four pills (639 px) still fit one row at
-  667 px. The desktop dock wraps where five pills do not fit.
-- The frogs, five, one by each stop (2026-10-25, `src/scene/frog.ts` `FROG`, `FROGS`; the record
-  `tasks/2026-10-25-street-frogs.md`), replacing S3b's one: 1,212 triangles each, `FROG.size` 0.0108 (about 22 cm
-  beside Vincent; look pass 1, was 0.0086), one blink clock for all five as S3b's. Stops 0 to 3 in a grass gap at `t`
-  0.035, 0.283, 0.466, 0.677, laterals −0.086, 0.086, −0.098, −0.098, turned 0.35, 0.3, 0.4, 0.3 rad from side-on,
-  sizes 1.0, 0.94, 1.06, 0.97. Stop 4 on the square's edge at `t` 0.975, lateral −0.08, `y` 0.0065, 0.35 rad, size 1.02.
-  Each is drawn within its `draw` of the camera: 0.5 in the grass, 1.1 on the square (look pass 3), so one is drawn
-  before `t` 0.45 and a second only at 0.8 or more. The walk's worst point 1,444,499 triangles (desktop, `t` 0.295).
+  `GROUND_BASE_SHARE`, the record `tasks/2026-10-24-street-s3.md`): the hand and Vincent's feet push the blades
+  through a trail map, with D1's rise, swing and window. The grass's budget is 38,515 triangles at the walk's worst sampled point (`GRASS`). `?grass=0` builds none. Untuned by
+  Mark.
+- The grass's paint and the moon on it, S3b (2026-10-25, `src/scene/grassBlade.ts` `GRASS_BLADE`, `GRASS_LIGHT`,
+  `clumpSide`, `streetGrass.ts` `GRASS`, `grassShader.ts`, the record `tasks/2026-10-25-street-s3b.md`): a clump leans
+  toward its side, and each blade takes its paint from its own seed. The moon lights the arch where it faces
+  `STREET_MOON`, toward the tip and the outer edge. `?light=0` draws the grass unlit, slice 3's program byte for byte.
+  Read live by Mark, 2026-10-25: the far arch tops "okay", the stripes "fine", the direction right, the bare base
+  between the clumps "It bother me a bit".
+- S3b pass 5, past the cap on Mark's word (2026-10-25, "Yes, go ahead with the extra pass", `src/scene/grassBase.ts`
+  `GRASS_BASE`, `grassTrail.ts` `TRAIL`, `frog.ts` `frogBlink`, the record `tasks/2026-10-25-street-s3b.md`): the base
+  under the grass lays comma dabs in the bushes' darkest paint, split by hue. A hover pushes at a share of a press
+  (`LAND_TOUCH.hoverAmp`), a press closes the cursor (`grabbing`), and a lift lets the press settle to the hover's push.
+  The frogs blink. Untuned by Mark.
+- The church in the round, slice 3c (2026-10-25, `src/scene/streetLayout.ts` `CHURCH`, `churchFront`, `streetLight.ts`
+  `CHURCH_LIGHT`, `streetGeometry.ts` `church`, the record `tasks/2026-10-25-street-church.md`): the church turns on the
+  square and stands back, so stop 4 sees its gable and its moonlit side. Stop 4 aims at the turned front's centre, stop
+  0 at the church's place before the setback. The faces that no sampled pose of the walk sees are clad cheaper.
   Untuned by Mark.
-- The village craft, K1, the houses (2026-10-26, `src/scene/streetGeometry.ts` `WALL_PAINT`, `CRAFT`,
-  `streetLayout.ts` `STEP`; the record `tasks/2026-10-25-village-craft-k1.md`): the walls' paint `base` 0 (the
-  source's mean; 1 lifted the dark houses by L 11 to 16), `light` 0.5, `cover` 0.8 (a fifth fewer strokes; the church
-  and the flat panel keep `KEPT_PAINT`, cover 1). The six painting houses' doors set 0.02 into the wall. Every door
-  framed by a band 0.3 of the door's width, at 0.001 off the front, under the strokes (A2); a cottage's band stops at
-  the door's top, under the thatch (A1). The band is the plaster's mean, × 0.7 on a plaster wall. A step 0.012 high,
-  0.03 deep. 22
-  shutter leaves at 0.006 off the front, louvres at 0.25, 0.5 and 0.75, ink at five samples an edge. The painting
-  houses' eaves 0.03 (rakes 0.015) with an underside. 574,041 street triangles (base 603,641); the walk's worst point
-  1,414,747 (desktop, `t` 0.295). Passed by Mark on the preview, 2026-10-26 ("K1 passed"), untuned.
+- The portal, slice 4 (2026-10-25, `src/scene/portal.ts` `PORTAL`, `usePortalPointer.ts`, `portalContext.ts`, the
+  driver in `DioramaExperience.tsx`, the records `tasks/2026-10-25-street-portal.md` and
+  `tasks/2026-10-28-portal-on-plan.md`), on for every visitor since 2026-10-28 (Mark: "promote the portal to main").
+  `?portal=0` turns it off. The diorama is unmounted while the street is mounted (2026-10-28: both held
+  at once crashed Mark's iPhone). So the way back holds the layer until the cypress and the land report ready. A phone
+  or a tablet (no hover, a coarse pointer) asks before its first entry: "A computer is recommended for the village
+  scene. On a phone it may load slowly or not open.", with "Enter anyway" and "Stay with the painting". Once entered,
+  the visit goes straight in (Mark, 2026-10-28). Reduced motion cuts both ways. The placard and the dock share one fixed
+  stack, `.visitor-bottom`, so the placard clears the dock however many rows it wraps to. The phone's question passed
+  on the combined preview `253d8f7` ("Love it! Gate passed!"). The rest of the portal is untuned by Mark.
+- The frogs, five, one by each stop (2026-10-25, `src/scene/frog.ts` `FROG`, `FROGS`, the record
+  `tasks/2026-10-25-street-frogs.md`): in a grass gap at stops 0 to 3, on the square's edge at stop 4, with one blink
+  clock for all five. Each is drawn only near the camera, so at most one is drawn in the grass at a time. That holds
+  the scene's ceiling (`scripts/street-frog.test.ts`). Untuned by Mark.
+- The village craft, K1, the houses (2026-10-26, `src/scene/streetGeometry.ts` `WALL_PAINT`, `CRAFT`, `KEPT_PAINT`,
+  `streetLayout.ts` `STEP`, the record `tasks/2026-10-25-village-craft-k1.md`): the walls paint at the source's mean
+  with fewer strokes. The church and the flat panel keep `KEPT_PAINT`. A door's frame is paint under the strokes, and ink goes over them.
+  Passed by Mark on the preview, 2026-10-26 ("K1 passed"), untuned.
 - The village craft, K2, the lane's walls, rail and lamps (2026-10-26, `src/scene/streetLayout.ts` `STREET_WALL`,
-  `STREET_WALLS`, `STREET_RAIL`, `STREET_LAMPS`, `streetGeometry.ts` `LANE_CRAFT`, `streetLife.ts` `LAMP_LIGHT`,
-  `haloScaleOf`; the record `tasks/2026-10-26-village-craft-k2.md`): three dry-stone walls on the open verges (W1 left
-  `t` 0.06 to 0.22, W2 right 0.14 to 0.41 in 14 segments since K3 (0.47 before), W3 left 0.54 to 0.84), the lane face at lateral 0.135, 0.03 thick, 0.055
-  high, segments of at most 0.02 in `t`, the grass cleared 0.012 round each segment's rectangle with a 0.002 end overlap
-  (1,373 blades fewer, the rest K1's byte for byte). A wall's stones are draped dabs (`stoneDab`, 3 × 3, 8 triangles) on
-  wallB's darkest 40% (pass 5, 2026-10-27, past the cap on Mark's word, Mark's pick S4 of four probed recipes; passes 1
-  to 4 read as concrete because the stroke body draws a flame and the dab took all of it): a stone takes the stroke's
-  full-bodied middle (along 0.3 to 0.7, flipped on odd seeds), its ends 0.92 of its middle, its wobble 0.12 widths; four
-  courses and two top rows, each planned to fill its run flush to both heads (stones drawn 0.6 to 1.0 of the height,
-  scaled to the run, clamped to wallB's measured 0.6 to 2.0, the last stone fitted to the head), the joint 0.92, 0.2 of
-  the height wide, a stone per course on each head (0.6 high across the 0.03 cap), the texels from wallB's lightest 55%,
-  the report's length the emitted one. The rail round L2's front garden: 7
-  posts 0.005 square and 0.05 high, rails at 0.02 and 0.042, open at the door, the thatch's mean, no ink. Seven lamps
-  (`t` 0.10, 0.24, 0.38, 0.55, 0.65, 0.79, 1.0, alternate sides at lateral ±0.11, the last on the square), a post
-  0.004 square and 0.13 high in ink, a lantern 0.012 × 0.016 in the lit window's mean (class 2), an ink cap wound
-  outward, a halo sprite scaled each frame from the sprite's world position (`haloScaleOf`: at most 0.5 of the view's
-  short side, 0.7 of the plan's 0.192), a pool at y 0.007 over the square's stroke top. 576,295 street triangles (pass 5; 576,375 at pass 4)
-  (K1 574,041, the bar 578,041); the sweep's worst sampled point 1,412,657 at pass 5 (1,412,737 at pass 4; desktop, `t` 0.40; 0.05 steps, 0.01 over 0.25 to
-  0.40; 1,411,299 at K1's 0.295; the ceiling 1,444,930); 60 fps at stops 0 and 3 at dpr 1.5 (p50 16.7 ms, p95 at most 17.6 at pass 5, 18.1 at pass 4), 309 draw calls at stop 0 (K1 288).
-  Five look passes, the fifth past the cap on Mark's word: 1 the build, 2 wallB and the halo, 3 four recipes probed in place at stop 3, 4 the full
-  capture, 5 the stone wall from four recipes probed in place at stop 0. Mark chose S4 from them and passed the wall on the preview (2026-10-27 21:06, "Passed").
+  `STREET_WALLS`, `STREET_RAIL`, `STREET_LAMPS`, `streetGeometry.ts` `LANE_CRAFT`, `streetStrokes.ts` `stoneDab`,
+  `streetLife.ts` `LAMP_LIGHT`, `haloScaleOf`, the record `tasks/2026-10-26-village-craft-k2.md`): three dry-stone walls
+  on the open verges, a rail round L2's front garden, and seven lamps with halos and pools. The stone wall is Mark's pick S4 of four
+  recipes probed in place, in pass 5, past the cap on Mark's word. He passed it on the preview (2026-10-27 21:06,
+  "Passed").
 - The village lived in, K3 (2026-10-28, `src/scene/streetLayout.ts` `LIVED_PATH`, `STREET_PATHS`, `STREET_OBJECTS`,
-  `streetGeometry.ts` `doorPaths`, `signsOfLife`, `streetGrass.ts` `PLANT`, `plantHit`, `WALL_PAINT.plasterLength`; the
-  record `tasks/2026-10-27-village-lived-in.md`): a trodden path from every front door but L5 to the lane, nine paths in
-  14 legs, each the door's width plus 0.02 (L2's 0), the first leg 0.08 (L2 0.11, R5 0.056), clipped to the step's
-  front, a mitre at a bend and the lane's edge at lateral 0.06, the lane's paint at cover 0.25, the base inset 0.3 of
-  the width across and at the free end. A bench by L2 (a plank 0.10 × 0.03 × 0.012, its top at 0.037), a pot 0.022 by
-  R4 with a clump of the grass's blades at scale 0.7, a pail by L4 (0.016 across, 0.018 high, the handle to 0.026),
-  each clearing the grass round it; the hand bends the plant through a cylinder of its blades' rest reach. The four
-  plaster houses' strokes 0.7 of the measured row, the cover scaled to hold the count; the church keeps its row. W2
-  ends at `t` 0.41. `lived: false` builds K2's street byte for byte. 596,919 street triangles (K2 576,295); the sweep's
-  worst point 1,429,031 (desktop, `t` 0.26); 60 fps at stops 0 and 3 at dpr 1.5 (p95 at most 18.5 ms), 308 draw calls
-  at stop 0. The build 653 ms against K2's 589 (+10.9%, over the plan's 10%, accepted with Mark's pass). Two look passes of four.
-  Passed by Mark on the preview, 2026-10-28 ("gate passed"), untuned.
+  `streetGeometry.ts` `doorPaths`, `signsOfLife`, `streetGrass.ts` `PLANT`, `plantHit`, `WALL_PAINT`, the record
+  `tasks/2026-10-27-village-lived-in.md`): a trodden path from every front door but L5 to the lane, a bench, a pot with
+  a plant, and a pail. Each clears the grass round it. `lived: false` builds K2's street byte for byte. Passed by Mark
+  on the preview, 2026-10-28 ("gate passed"), untuned.
 - Vincent's form, V1 (2026-10-28, `src/scene/vincent.ts` `FORM`, `streetWalk.ts` `WALK`, `PAUSE`, `streetLantern.ts`
-  `LANTERN_GROUND`, `streetMode.ts` `lanternShown`; the record `tasks/2026-10-28-vincent-form.md`): the Tarascon form
-  with legs and the lantern, no cane, 2,840 triangles. The gait a bob of 0.003, a roll of 0.015, each arm 0.12 with the
-  opposite leg 0.35, pitch 0.06. On the automatic walk a 4 s dwell at each station: a 0.5 s rest, the turn in over
-  0.6 s, out over 0.3 s from 0.45 s before the dwell ends, the body π/2 and the head π/4, the left arm raised 0.75 with
-  the lantern lagging 0.15. He strides only while turned under 0.2. A scroll or a key carries him past a stop. The lantern's lift
-  on the ground, the grass's base and the grass is the lamps' glow × 1.5 over a reach of 0.08, before the fog. Its halo
-  0.18 of a lamp's, its pool 0.1 × 0.16 placed 0.046 ahead. With `walk=0`, `flat=1`, `vincent=0`, `light=0` or `ids=1`
-  there is no lantern. The street's build unchanged (596,919 triangles, the same hash), the sweep's worst point
-  1,429,793 (desktop, `t` 0.26), 60 fps at stops 0 and 3 at dpr 1.5 (p50 16.7 ms, p95 at most 18.5), 321 draw calls
-  at stop 0 (K3 308). Two look passes of four. The hat (2026-10-28, Mark's "Go for your recommendations") paints from
-  the crescent's lower-right edge `[1490, 280, 1514, 304]` (L 63 at hue 90), gated against that patch's mean, ΔE 5.4 to
-  6.5. Passed by Mark on the combined preview `253d8f7`, 2026-10-28 ("Love it! Gate passed!").
-- Vincent's wander, on for every visitor (2026-10-29, `src/scene/streetWander.ts` `WANDER`, `StreetWalk.tsx`; the record
-  `tasks/2026-10-29-vincent-wander.md`; `?wander=0` turns it off): a tap on open ground sends him there at the
-  spike's wander speed (0.19 world units a second, 2.4 times the lane's automatic walk), and a tap on the lane brings him back the way he came (`route`,
-  8 entries at most). So does a tap within 0.06 of where he stood once his slot is off the lane's strip, from `t` 0.825
-  (Fable F1). He stands on the verge, the door paths and the square, off the lane (|offset| ≤ 0.06), a house, a
-  step, a wall, an object, the cypress, the church (0.02), a lamp post (0.015), a frog (0.02) and a trunk (0.03). A leg
-  is sampled every 0.01 and may not cross the garden rail. A tap is refused unless every 0.02 of its leg is in frame
-  (the half-field less 4°) and not hidden from the follow camera (three ground lines 0.025 apart, the houses grown 0.03,
-  the church 0.02), and refused where a house or the church hides the ground from the live camera (a tap on the
-  wall, Codex F1). A press any of whose samples, coalesced ones too, strays past 8 px is a drag and sends him nowhere
-  (Codex F2). The camera stays on the walk's rail at his lane coordinate, its aim turned toward him by at most
-  20°, eased over τ 0.4 s. At his tap he rests 0.5 s and raises the lantern (V1's turn, the body straight). On the
-  automatic walk he goes home 3.55 s after he arrives (Mark: "Yes, walk him back after the dwell"). With the walk
-  stopped, he stays. The mark is his lantern's halo at 0.023 over the ground, the raised glass's height (look pass 2).
-  The street's build unchanged (596,919 triangles, the same hash), the walk's worst point 1,429,793 (V1's), 60 fps at
-  stops 0 and 3 at dpr 1.5 (p50 16.7 ms, p95 at most 18.6, `main` 18.7). Two look passes of four. Passed by
-  Mark on the preview, 2026-10-29 ("Passed"), untuned.
+  `LANTERN_GROUND`, `streetMode.ts` `lanternShown`, the record `tasks/2026-10-28-vincent-form.md`): the Tarascon form
+  with legs and the lantern, no cane. On the automatic walk he dwells at each station, turns in and raises the lantern.
+  The lantern lights the ground and the grass before the fog. The hat (2026-10-28, Mark's "Go
+  for your recommendations") paints from the crescent's lower-right edge. Passed by Mark on the combined preview
+  `253d8f7`, 2026-10-28 ("Love it! Gate passed!").
+- Vincent's wander, on for every visitor (2026-10-29, `src/scene/streetWander.ts` `WANDER`, `StreetWalk.tsx`, the record
+  `tasks/2026-10-29-vincent-wander.md`). `?wander=0` turns it off. A tap on open ground sends him there. A tap on the
+  lane brings him back the way he came. A tap is refused unless his whole leg stays in frame and in sight (Codex F1),
+  and a press that strays is a drag (Codex F2). On the automatic walk he goes home after the dwell (Mark: "Yes, walk
+  him back after the dwell"). With the walk stopped, he stays. Passed by Mark on the preview, 2026-10-29 ("Passed"),
+  untuned.
 - The church and its square, slice 1 (2026-10-29, `src/scene/streetStrokes.ts` `STREET_SOURCES`, `SOURCE_STROKES`,
-  `streetGeometry.ts` `church()`, `flowers()`, `streetLight.ts` `CHURCH_LIGHT`, `wallShade`, `streetLayout.ts`
-  `TREE_SPECS`, `FLOWERS`, `streetWander.ts` `WANDER.ring`; the design
+  `streetGeometry.ts` `church`, `flowers`, `streetLight.ts` `CHURCH_LIGHT`, `wallShade`, `streetLayout.ts`
+  `TREE_SPECS`, `FLOWERS`, `streetWander.ts` `WANDER`, the design
   `docs/superpowers/specs/2026-10-29-church-square-design.md`, the record `tasks/2026-10-29-church-square.md`): the
-  church paints from its own four sources in the 1600 × 1267 work scan, `churchLit` [886, 1050, 906, 1072] (L p50
-  49.7), `churchShade` [936, 1056, 954, 1094] (26.8), `spire` [904, 860, 914, 990] (48.9), `belfry` [898, 1000, 922,
-  1012] (14.4). The tones by wall name (Mark's call 1, mirrored: the right wall `churchLit`, the front, its gable, the
-  back and the left `churchShade`), `wallSource` plaster for the openings, the step and the reveals. The recipes:
-  churchLit width [0.11, 0.13] length [0.33, 0.8] cover 2.5, churchShade [0.095, 0.11] [0.42, 0.85] cover 2.2, spire
-  [0.05, 0.09] [0.7, 1.9] along the shaft cover 2.5, belfry [0.08, 0.13] [0.28, 0.47] across cover 1.25 (the measured
-  covers 3.5 / 3.5 / 6 / 3.5 put the street at 631,507 triangles; halved by the ledger, then moved between the four
-  in look pass 3). `CHURCH_LIGHT` ambient 0.81 (the moonlit side at 0.996 of `max` 1), key 0.9. The two tones exempt
-  from `wallShade`'s corner term (look pass 2) and its ground term (pass 4, departure P7, Mark's call: the painting's
-  church has no foot shadow, and with it the moonlit wall read L 42 against 50). At stop 4: churchLit 48.1, churchShade
-  24.2, spire 48.6, belfry 14.7. At stop 3 the front's left half sits under the `t` 0.65 lamp's halo and reads 54; its
-  columns outside the halo read 26. The four sources take ID classes 10 to 13 (`ids=2`), one church class in `ids=1`.
-  The trees `orchard-lower` at map (666, 181) and `olive-right` at (308, 184), 0.049 and 0.048 from the nave, the sway
-  bounded against every line of sight from stops 3 and 4 (least margin 0.122). `FLOWERS` radius 0.03, 6 clumps, scale
-  0.5, heads 2 to 4 a clump 0.0035 wide, 5 Lab from the lit window's underpaint, roots at y 0.005, lifted 0.0004 toward
-  stop 4's eye: 45 blades, 19 heads, 872 triangles, appended last with class and source 255; `WANDER.ring` 0.06.
-  The street 600,179 triangles (the base 596,919, the design's bound 602,000), the church 763 ribbons (the cap 1,600),
-  the sweep's worst point 1,433,053 (desktop, `t` 0.26; the ceiling 1,444,930), 60 fps at stops 0 and 3 at dpr 1.5
-  (p50 16.7 ms, p95 at most 18.6), 321 draw calls at stop 0. Four look passes of four, two probes for Mark (B the
-  painting's own sides, C no foot shadow). Codex's branch review, three rounds: F1 (the heads lifted behind their
-  blades) fixed, then the depth guard bound to the emitted vertex, then BUILD. Passed by Mark on the preview,
-  2026-10-29 22:10 ("Gate passed."): P7 and the mirrored tones as shipped, the ring kept, probe B open to his word.
+  church paints from its own four sources in the scan. The tones go by wall name (Mark's call 1, mirrored). The two
+  tones are exempt from `wallShade`'s corner term and its ground term (departure P7, Mark's call: the painting's church
+  has no foot shadow). The street's bound 602,000 triangles and the church's cap
+  1,600 ribbons (`scripts/street-lived.test.ts`), under the ceiling 1,444,930. Passed by Mark on the preview,
+  2026-10-29 22:10 ("Gate passed."): P7 and the mirrored tones as shipped, the ring kept, probe B (the painting's own
+  sides) open to his word.
 - The church and its square, slice 2, the barn owl and the moths (2026-10-30, `src/scene/owl.ts` `OWL`,
-  `StreetOwl.tsx`, `moths.ts` `MOTHS`, `StreetMoths.tsx`; the plan `tasks/2026-10-29-church-owl-plan.md`, the record
-  `tasks/2026-10-29-church-owl.md`): the owl 0.024 feet to crown (Mark's call 3; the true scale 0.018), 544 triangles,
-  the body and the head clad in `churchLit` on the chest and the face and `thatch` on the back, the eyes the ground's.
-  The perch on the ridge's ink 0.04 behind the front gable's peak (look pass 4, was 0.08: the ridge's flat ink, 0.034
-  wide, hides the lower half from stop 4; 60 to 62% of the outline shows from 0.03 to 0.05), drawn within 1.5 of the
-  camera (stops 3 at 1.383 and 4 at 0.877). The head turns to Vincent within 0.6 and 70° of the body's facing, the
-  pitch capped at 0.7 rad, eased over τ 0.6 s and snapped within 1e-4 rad, held under reduced motion; the frogs' blink 1.3 s ahead. The moths 29
-  (7 lamps × 3, 4 lit windows × 2, a window's drawn within 0.6), a quad 0.006 × 0.0045 in one instanced mesh, 58
-  triangles, drawn as a moth (look pass 5, past the cap on Mark's word: soft pale ovals on smooth loops read as the
-  fireflies): forewings and hindwings either side of a dark body (`PALETTE.ground`), the wings' half toward the glass
-  lit in the lantern's lit mean mixed 0.6 toward white (`MOTHS.pale`, look pass 1: amber read as sparks), the far half
-  in the thatch's darkest 40%. A loop of radius 0.02 to 0.05 and period 1.2 to 2.5 s, its angle lurching by 0.5 sin 3θ
-  (`MOTHS.lurch`), a jitter of 0.0045 at 5.3 Hz and half at 8.7 Hz (`MOTHS.jitter`), both zero at the rest point,
-  wobble 0.006, the wings 0.12 to 0.2 s a beat, the rest point 0.0105 off the glass, dimmed to 0.15 at the halo's edge. The sweep's worst point 1,433,111 (desktop, `t` 0.26), p95 at most
-  18.5 ms at stops 0, 3 and 4 at dpr 1.5, 322 draw calls at stop 0. Five look passes, the fifth past the cap on Mark's
-  word. The Consultant's branch review BUILD, its P3s fixed or declined. Untuned by Mark.
-- The cat, a light slice (2026-10-30, `src/scene/cat.ts` `CAT`, `StreetCat.tsx`; the design, its build and its record
-  `docs/superpowers/specs/2026-10-30-street-cat-design.md`): sitting on wall W3's top stones at `t` 0.81, lateral −0.15,
-  facing the lane, 0.015 feet to ear tips (the true 0.0125; the Lead's call on Mark's "Make calls for me"), 952
-  triangles, the coat `roofSienna` (Vincent's hair) and the bib and muzzle `churchLit`. Drawn within 0.9 of the camera
-  (stops 2 and 3, from walk `t` 0.403). The owl's look with a cone of 1.75 rad (the owl's 1.2217), so from stop 2 it
-  watches Vincent come; eased over τ 0.6 s, snapped within 1e-4, held under reduced motion. The frogs' blink 2.9 s
-  ahead. The tail's free part sways 0.45 rad over 3.1 s, on the cat's left, which faces the camera at stops 2 and 3
-  (look pass 1: on its right the tail never showed). At stop 3 952 triangles and 8 draw calls more (181); the sweep's
-  worst point unchanged at 1,433,111; 60 fps at stops 0, 2 and 3 (p95 at most 17.6 ms). Two look passes of four.
-  Untuned by Mark.
+  `StreetOwl.tsx`, `moths.ts` `MOTHS`, `StreetMoths.tsx`, the plan `tasks/2026-10-29-church-owl-plan.md`, the record
+  `tasks/2026-10-29-church-owl.md`): a barn owl on the church's ridge, larger than true scale (Mark's call 3), its lower
+  half hidden from stop 4 by the ridge's ink. Moths at the lamps and the lit windows, drawn as moths (look pass 5, past the cap on Mark's word: soft pale
+  ovals on smooth loops read as fireflies). Untuned by Mark.
+- The cat, a light slice (2026-10-30, `src/scene/cat.ts` `CAT`, `StreetCat.tsx`, the design, its build and its record
+  `docs/superpowers/specs/2026-10-30-street-cat-design.md`): sitting on wall W3's top stones by stops 2 and 3, facing
+  the lane, a little larger than true (the Lead's call on Mark's "Make calls for me"). It watches
+  Vincent from stop 2. Untuned by Mark.
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)
