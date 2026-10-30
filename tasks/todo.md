@@ -23,9 +23,9 @@ as a draft and mark it ready so Codex fires, read the review through the timelin
 The levers left are his: `OWL.size` past his call 3, or the ridge's ink thinner where the owl stands (slice 1's paint).
 A window's moths dim on the lamp halo's radius (the review's Q5).
 
-**Proposed, not started:** the owl's head snaps to its target within 1e-4 rad (the walk's pattern), with a settled
-flag in `__owl()` that `capture-sky-frames.mjs` waits for beside `__vincentForm().settled`. Today a colour capture at
-stop 4 needs a custom wait (the record's Step 3). Argon's worktree `scratchpad/owl-t1-wt` and the Sonnet builder's
+**Done in `47ae236` (Codex, PR #39 P2):** the owl's head snaps to its target within 1e-4 rad (the walk's pattern), with a
+settled flag in `__owl()` that `capture-sky-frames.mjs` waits for beside `__vincentForm().settled`. Stop 4's colour
+capture needs no custom wait now (the record). Argon's worktree `scratchpad/owl-t1-wt` and the Sonnet builder's
 `.claude/worktrees/agent-ab31cbfa08292c331` can be removed.
 
 ## Pickup — 2026-10-29 (22:10): slice 1 passed by Mark, slice 2 (the owl and the moths) starting

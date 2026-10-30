@@ -3570,4 +3570,4 @@ must be byte-identical before the stimulus's difference means anything.
   exponentially, so it never stops exactly. At stop 4 `capture-sky-frames.mjs` failed "two reads differ" until the
   capture waited for two equal reads of `__owl().yaw` (about 20 s). Within 2e-5 rad of the target still failed on the
   desktop (2026-10-30). Anything that moves on real time needs a snap to its target or a settled flag the tool waits
-  for, as Vincent's `__vincentForm().settled` is.
+  for, as Vincent's `__vincentForm().settled` is. Codex raised it on PR #39 (P2): the owl now has both (`47ae236`).

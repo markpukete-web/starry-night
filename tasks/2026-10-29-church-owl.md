@@ -112,6 +112,16 @@ by the Lead: the tolerance 1e-6, as the upper bound uses. The wide mutant (`jitt
 argument in `moths.ts` now names the projection on `u` (1.5√2 × 0.0045 = 0.0095), not 1.5√3. No re-read: the fix is
 P2.
 
+## Codex on PR #39
+
+Codex reviewed `b2e7eeb` at 13:40: one P2 (thread 4420226672), the owl's head easing on real time never settles, so a
+pinned capture at stop 4 fails the self-check without a custom wait. It was this record's proposed follow-up. Fixed by
+the Lead in `47ae236`: `OWL.look.snap` 1e-4 rad in `easeLook`, `__owl().settled`, and the capture helper's rest wait
+reads it beside Vincent's. The proof (`C/owl/t6/`): a new test that the head lands on its target exactly (5.5 s at 60
+fps), red with the snap removed (`mutant-snap.log`). `test:sky` 496 of 496. Stop 4's colour capture with the plain
+wait `window.__streetReady`, desktop and mobile: both pass the pinned-clock check, and every class's numbers equal Task
+4's to the decimal (`capture-s4.log`, `colour/`). No re-request: the fix is P2.
+
 ## The branch review
 
 Fable, the Consultant (`w4:p6`), read `32e692b..a3634c4` (`C/owl/review/consultant-branch-r0.md`): BUILD, no P0 or

@@ -424,7 +424,7 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   The perch on the ridge's ink 0.04 behind the front gable's peak (look pass 4, was 0.08: the ridge's flat ink, 0.034
   wide, hides the lower half from stop 4; 60 to 62% of the outline shows from 0.03 to 0.05), drawn within 1.5 of the
   camera (stops 3 at 1.383 and 4 at 0.877). The head turns to Vincent within 0.6 and 70° of the body's facing, the
-  pitch capped at 0.7 rad, eased over τ 0.6 s, held under reduced motion; the frogs' blink 1.3 s ahead. The moths 29
+  pitch capped at 0.7 rad, eased over τ 0.6 s and snapped within 1e-4 rad, held under reduced motion; the frogs' blink 1.3 s ahead. The moths 29
   (7 lamps × 3, 4 lit windows × 2, a window's drawn within 0.6), a quad 0.006 × 0.0045 in one instanced mesh, 58
   triangles, drawn as a moth (look pass 5, past the cap on Mark's word: soft pale ovals on smooth loops read as the
   fireflies): forewings and hindwings either side of a dark body (`PALETTE.ground`), the wings' half toward the glass
