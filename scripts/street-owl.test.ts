@@ -213,6 +213,15 @@ test('the easing reaches 95% in three taus and holds at dt 0', () => {
   assert.equal(easeLook(0.3, 1, 0), 0.3)
 })
 
+test('the head settles exactly on its target within the snap (Codex, PR #39 P2)', () => {
+  let a = 0
+  let frames = 0
+  while (a !== 1 && frames < 600) { a = easeLook(a, 1, 1 / 60); frames++ }
+  assert.equal(a, 1, 'at the target exactly')
+  assert.ok(frames > 300 && frames < 400, `${frames} frames`) // ln(1e4) × 0.6 = 5.5 s
+  assert.equal(easeLook(1 - 0.5 * OWL.look.snap, 1, 0), 1, 'within the snap at dt 0')
+})
+
 test("the owl blinks on the frogs' table with its own phase, open at 0 and under reduced motion", () => {
   assert.equal(owlBlink(0), 0)
   assert.equal(owlBlink(lifeTime(5, 99, true)), 0)

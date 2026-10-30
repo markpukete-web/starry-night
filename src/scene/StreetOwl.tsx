@@ -20,6 +20,8 @@ type OwlWindow = Window & {
     pitch: number
     shut: number
     target: [number, number] | null
+    /** the head is at its target, or held under reduced motion */
+    settled: boolean
   }
 }
 
@@ -64,7 +66,7 @@ export default function StreetOwl({ painting, flags, reduced }: { painting: Imag
   const eyeRefs = useRef<(Group | null)[]>([])
   const shutRef = useRef(0)
   const visibleRef = useRef(false)
-  const lookRef = useRef({ yaw: 0, pitch: 0 })
+  const lookRef = useRef({ yaw: 0, pitch: 0, settled: true })
   const atRef = useRef(new Vector3())
 
   useFrame((state, delta) => {
@@ -86,6 +88,7 @@ export default function StreetOwl({ painting, flags, reduced }: { painting: Imag
       const wanted = owlLook(neckStreet, yaw, vincentGround)
       lookRef.current.yaw = easeLook(lookRef.current.yaw, wanted.yaw, delta)
       lookRef.current.pitch = easeLook(lookRef.current.pitch, wanted.pitch, delta)
+      lookRef.current.settled = lookRef.current.yaw === wanted.yaw && lookRef.current.pitch === wanted.pitch
       const head = headRef.current
       if (head) {
         head.rotation.order = 'YXZ'
@@ -102,6 +105,7 @@ export default function StreetOwl({ painting, flags, reduced }: { painting: Imag
       pitch: lookRef.current.pitch,
       shut: shutRef.current,
       target: vincentGround ? [vincentGround[0], vincentGround[1]] : null,
+      settled: lookRef.current.settled,
     })
     return () => {
       delete w.__owl

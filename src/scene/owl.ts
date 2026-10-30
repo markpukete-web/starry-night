@@ -42,8 +42,10 @@ export const OWL = {
   /** the paint's bands in `a` (round) and `s` (feet to crown): the chest pale, the back and wings the thatch's */
   chest: { around: [0.62, 0.88] as [number, number], along: [0.05, 0.95] as [number, number] },
   wing: { around: [0.05, 0.45] as [number, number], along: [0.05, 0.95] as [number, number] },
-  /** the head toward Vincent: within `reach` of the perch and within `yaw` of the body's facing, eased over `tau` */
-  look: { reach: 0.6, yaw: 1.2217, pitch: 0.7, tau: 0.6, targetY: 0.07 },
+  /** the head toward Vincent: within `reach` of the perch and within `yaw` of the body's facing, eased over `tau`, and
+   * snapped to the target within `snap` rad so it settles, as the walk does (Codex, PR #39 P2: the capture tool's
+   * pinned-clock check failed on a head still easing by 2e-5 rad) */
+  look: { reach: 0.6, yaw: 1.2217, pitch: 0.7, tau: 0.6, targetY: 0.07, snap: 1e-4 },
   /** the frogs' blink table, this many seconds ahead of them (`frogBlink(phase)` is 0: the eyes open at time 0) */
   blink: { phase: 1.3 },
 } as const
@@ -129,7 +131,8 @@ export function owlLook(
 
 export function easeLook(current: number, wanted: number, dt: number): number {
   const clamped = Math.max(0, Math.min(0.1, dt))
-  return current + (wanted - current) * (1 - Math.exp(-clamped / OWL.look.tau))
+  const next = current + (wanted - current) * (1 - Math.exp(-clamped / OWL.look.tau))
+  return Math.abs(wanted - next) < OWL.look.snap ? wanted : next
 }
 
 export function owlBlink(t: number): number {
