@@ -115,7 +115,8 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
 - Palette tolerance: ΔE < 10 per region to start with. Tighten as quality improves.
 - devicePixelRatio cap: 1.5 on every device (`DioramaExperience.tsx`, the Canvas's `dpr={[1, 1.5]}`). Corrected
   2026-10-30 to the code, which has shipped it since 2026-07-06 (Mark: "Tunables follow code"). The Tunables had said 2
-  on desktop. Whether desktop can afford 2 is a question for the performance review.
+  on desktop. The performance review (2026-10-30, `tasks/2026-10-30-perf-review.md`) found that desktop cannot afford
+  2 on the diorama: its median frame is 17.2 ms on an M5 Pro, so the cap stays 1.5. The street could afford 2.
 - Camera orbit limits (`src/scene/dioramaContract.ts` `DIORAMA_ORBIT`): polar 0.58–1.62 rad (≈33°–93°), distance
   3.25–5.6, azimuth −15° to +45° (−15° toward the rear cypress, whose back is blank source edge), no pan (3D diorama).
   The max polar of 1.62 (2026-06-21, Mark's live review) lets the home view sit eye-level head-on, to match the

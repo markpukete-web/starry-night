@@ -1,5 +1,18 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-10-30 (18:49): the performance review done; the deeper Tunables cut next
+
+**The performance review is done**, on the local branch `perf/review-2026-10-30` (branched from
+`docs/trim-2026-10-30`, `e9b9d2d`, not pushed: docs only). The record `tasks/2026-10-30-perf-review.md` has the numbers
+and seven ranked findings, each a proposed slice for Mark's word. The answer: desktop cannot afford a pixel ratio of 2
+on the diorama (17.2 ms median on an M5 Pro), the street can. The moving-strokes sky is about 80% of the diorama's
+frame. The raw files and scripts are in `scratch/perf-review-2026-10-30/`. Gemini ran batches 2 and 3.
+
+**Waiting on Mark:** his iPhone's `?perf=1` readings at the painting and the street's five stops (the links are at the
+end of the record), and his word on which findings become slices.
+
+**Next: the deeper Tunables cut**, below.
+
 ## Pickup — 2026-10-30 (17:54): the performance review started; the deeper Tunables cut queued next
 
 **The performance review** runs on `perf/review-2026-10-30`, branched from `docs/trim-2026-10-30` (`e9b9d2d`). Its

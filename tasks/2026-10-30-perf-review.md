@@ -14,7 +14,8 @@ cost less than the sky.
 
 ## Method
 
-- The production build (`npm run build` on `9ca71ba`, the code of `main` at `0a9e1c9`), served by `vite preview` on
+- The production build (`npm run build` at `e9b9d2d`, whose source is `main` at `0a9e1c9`: the commits between are docs
+  only), served by `vite preview` on
   `127.0.0.1:5230`. The pixel-ratio question used a throwaway copy with one change, `dpr={[1, 2]}` at
   `DioramaExperience.tsx:837`, built and served on 5231. That copy was a detached worktree and was never committed.
 - `scripts/capture-diorama.mjs --perf --dpr 2`, a retina device at 1600 × 900, so the shipped cap draws 2400 × 1350 and
@@ -28,8 +29,10 @@ cost less than the sky.
 - One run in a visible window (`tools/headed-chrome.sh` as `CHROME_PATH`) to check headless: the diorama's median
   11.3 ms visible against 11.5 ms headless, stop 0 4.1 ms against 4.2 ms. The headless numbers stand for this Mac.
 - Memory and download (`tools/mem-load.mjs`, the 28 October phone-memory probe plus a byte tally), a cold profile per
-  run, phone (390 × 844, dpr 3, touch) and desktop, through the portal and straight into the street. Gemini ran this
-  batch and the next (`rest.sh`, `split.sh`).
+  run, through the portal and straight into the street. "Phone" there means a phone viewport in Chrome on this Mac
+  (390 × 844, dpr 3, touch), not a phone: a phone's memory and frame costs do not show on the Mac (lesson 2026-10-25).
+  The ready times come from a local server with no network. Slow 4G is out of scope (Mark, 2026-10-25). Gemini ran
+  this batch and the next (`rest.sh`, `split.sh`).
 
 ## The numbers
 
@@ -59,14 +62,14 @@ The moving strokes take about 9 of the diorama's 11.3 ms at the shipped cap. At 
 The animation costs nothing measurable. The cypress, the land and the village together take about 2.2 ms. The split
 cannot say whether the strokes' cost is their overlapping transparent fill or their fragment shader: a probe would.
 
-Memory and download (`rest/mem-*.log`):
+Memory and download (`rest/mem-*.log`), Chrome on this Mac, a local server:
 
 | Run | Ready after | Downloaded | Renderer after GC | GPU process |
 |---|---|---|---|---|
-| Phone, the painting | 1.4 s | 9.93 MB, 20 files | 599 MB | 307 MB |
-| Phone, then the portal into the street | 4.7 s (the 2.4 s flight included) | 0.06 MB more | 512 MB | 314 MB |
+| Phone viewport, the painting | 1.4 s | 9.93 MB, 20 files | 599 MB | 307 MB |
+| Phone viewport, then the portal into the street | 4.7 s (the 2.4 s flight included) | 0.06 MB more | 512 MB | 314 MB |
 | Desktop, then the portal into the street | 4.3 s | 0.06 MB more | 507 MB | 317 MB |
-| Phone, straight into the street | 1.8 s | 9.87 MB | 579 MB | 293 MB |
+| Phone viewport, straight into the street | 1.8 s | 9.87 MB | 579 MB | 293 MB |
 
 The renderer after GC through the portal was 517 MB at the 28 October fix's stage 2
 (`tasks/2026-10-28-phone-memory.md`). The owl, the moths and the cat added nothing measurable. The sky's build worker
@@ -87,7 +90,7 @@ The largest downloads on a cold visit: `painting-filled.webp` 2.47 MB (lossless)
    that a step never shows as a visible jump. The other lever is a cheaper moving sky, since it is 80% of the frame.
    That changes the piece's heart, so it is Mark's call and would start with a probe of fill against shader cost.
 2. **The perf gate cannot see a regression until it costs a frame.** Every gate since the street read p50 16.7 and
-   p95 17.5 under vsync. A change that doubled the diorama's cost from 11.5 to 16 ms would have passed. Proposed slice:
+   p95 17.5 under vsync. A change that raised the diorama's frame from 11.5 to 16 ms would have passed. Proposed slice:
    a tracked `--unlocked` option on `capture-diorama.mjs` (lesson: a lost gate tool comes back as a tracked option),
    and gates that report the unlocked median beside the locked one. Delete the `desktop-nopost` case at the same time:
    it has read the same as `final` since bloom left the diorama, and it is a third of every perf round's time.
@@ -107,6 +110,11 @@ The largest downloads on a cold visit: `painting-filled.webp` 2.47 MB (lossless)
    `LivingPainting` and `StreamlineSky`, the earlier spikes reached by `?mode=`. They are in the 1.39 MB main script. How
    much a lazy import or a removal saves is unmeasured. `signed-flow.png` (1.64 MB) ships in the deploy for them but the
    shipped scene never fetches it. Removing modes is Mark's call.
+
+Not measured: the walk between stops, the portal's flight, the opening, and pointer work (the sky's surge, the land's
+bend, the hover's cast). The matrix held the camera still with no pointer. The phone's one known cost is under a moving
+finger (18–50 fps on the land, 2026-10-25). Also not measured: what a 120 Hz display shows. At 11.5 ms the diorama
+cannot hold 120 fps, so there it alternates between 8.3 and 16.7 ms frames.
 
 Not findings: memory holds since 28 October. The street's draw calls (88 to 322) do not limit it on this Mac. If the
 phone reading in finding 3 shows the street under 60 fps, the grass chunks and the lamps' separate meshes are the first
