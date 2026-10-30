@@ -1,5 +1,23 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-10-30 (21:05): findings 2 and 5 built, the PR open for Codex
+
+**Mark's iPhone** (recorded in `tasks/2026-10-30-perf-review.md`, finding 3): the painting holds 60. The street's
+first readings of 25 to 32 were the start-up dip. Plain stop 0 in a fresh tab holds 60 once settled. Every switch of
+the split read 60. Still open: the first-try load failures (cause not known) and the dip itself, which runs past 10
+seconds under 30 fps. Mark: "We can try our best to get the phone working but I don't want to lower our quality".
+
+**Built on Mark's go** ("Yes go ahead and tackle next"): finding 2, `capture-diorama.mjs --unlocked` and the nopost
+perf case deleted (`14d3228`), and finding 5, a 32 px tab icon and a 180 px touch icon in place of the 512 px favicon
+(`7df401f`). The branch `perf/review-2026-10-30` goes up as one PR: the two code commits are the review's scope, and
+the docs commits ride up with them.
+
+**Proposed, not queued: a fallback for a weak GPU.** Mark asked whether a weak GPU can be warned and given a fallback
+that lowers quality. Proposed shape: measure frames only after the scene settles (the start-up dip would flag every
+phone), and when the median stays over budget, offer a lighter view in a small notice rather than change it silently.
+The lever: the pixel ratio 1.5 to 1 (7.6 ms against 12.4 ms on this Mac, the motion unchanged, the image softer). The
+painted-light sky is about 4 times cheaper, but it changes the piece's heart. Waits for Mark's word.
+
 ## Pickup — 2026-10-30 (19:28): the deeper Tunables cut done; nothing running
 
 **The deeper Tunables cut is done** on `perf/review-2026-10-30` (docs and two comments only, not pushed). The section
