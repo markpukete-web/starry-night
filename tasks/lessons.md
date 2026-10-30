@@ -14,6 +14,10 @@ The full history, 2026-06-13 to 2026-10-30, is in `tasks/archive/2026-10-30-less
 - When a fix changes what the visitor feels or pays, write the trade where the setting lives. `2026-10-16 · A fix that changes how`
 - Edit a record section only up to its own next heading. List the headings and read the hunks before each commit. `2026-10-24 · Replace a section`
 - When a branch goes, fix every instruction that names it in the same change. `2026-07-28 · Retiring the staging branch`
+- The Tunables keep each entry's decision, Mark's word, its record and a pointer to the constant. Read the values in
+  the code. Only the limits that work is checked against stay as numbers. After an edit to the section, run
+  `scratch/docs-trim-2026-10-30/number-check.py` and `scratch/tunables-cut-2026-10-30/code-pointer-check.py`. Both are
+  local only, because `scratch/` is ignored. Mark's word on the cut, 2026-10-30. 2026-10-30
 
 - When a Tunable and the code disagree, ask Mark which is the truth before changing either. The orbit limits and the
   pixel-ratio cap differed from 2026-07-06 to 2026-10-30, and every gate in between ran on the code's values. The

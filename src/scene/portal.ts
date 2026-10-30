@@ -3,7 +3,7 @@ import { boundedDt, smoothstep } from './arrival.ts'
 /**
  * The portal, slice 4 (tasks/2026-10-25-street-portal-plan.md): the places the page can be in, the moves between them,
  * and the flight from the diorama down toward the village. Pure, so `scripts/portal.test.ts` runs it under node; the
- * driver in DioramaExperience.tsx applies it. Logged in CLAUDE.md's Tunables.
+ * driver in DioramaExperience.tsx applies it. CLAUDE.md's Tunables point here for the values.
  *
  * Plain `.ts` imports only.
  */

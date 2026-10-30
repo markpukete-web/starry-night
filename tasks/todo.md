@@ -1,5 +1,18 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-10-30 (19:28): the deeper Tunables cut done; nothing running
+
+**The deeper Tunables cut is done** on `perf/review-2026-10-30` (docs and two comments only, not pushed). The section
+went from 5,630 to 2,463 words, one entry per old entry in the same order. Each keeps its decision, Mark's word, its
+record and a pointer to the constant. Only the limits stay as numbers. The checks: `number-check.py` PASS (no number
+invented or moved between entries), `code-pointer-check.py` PASS (235 pointers, no misses,
+`scratch/tunables-cut-2026-10-30/code-pointer-check-output.txt`). The sections outside the Tunables are byte for byte
+unchanged. The estimate was about 1,500 words: the rest is Mark's quotes, the URL switches and each decision's reason.
+`arrival.ts:12` and `portal.ts:6` no longer say their values are logged in the Tunables.
+
+**Waiting on Mark:** his iPhone's `?perf=1` readings (the links in `tasks/2026-10-30-perf-review.md`), which findings
+become slices, and whether the two check scripts should be tracked in `scripts/` (they are in the ignored `scratch/`).
+
 ## Pickup — 2026-10-30 (18:49): the performance review done; the deeper Tunables cut next
 
 **The performance review is done**, on the local branch `perf/review-2026-10-30` (branched from

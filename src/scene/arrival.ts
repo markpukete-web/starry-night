@@ -9,7 +9,7 @@ import { DIORAMA_ORBIT } from './dioramaContract.ts'
  * Plain `.ts` imports only.
  */
 
-/** The timeline's constants, in seconds unless said. Logged in CLAUDE.md's Tunables. */
+/** The timeline's constants, in seconds unless said. CLAUDE.md's Tunables point here for the values. */
 export const ARRIVAL = {
   /** the painting and the line, still */
   hold: 4,
