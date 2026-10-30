@@ -19,10 +19,12 @@ export const OWL = {
    * phone finds it; a barn owl's true scale is 0.018 (36 cm). A look pass may bring it back toward 0.018. */
   size: 0.024,
   trueSize: 0.018,
-  /** drawn within this of the camera: stops 3 (1.415) and 4 (0.907), not stop 2 (1.752) */
+  /** drawn within this of the camera: stops 3 (1.383) and 4 (0.877), not stop 2 (1.715) */
   draw: 1.5,
-  /** the perch: this far back from the front gable's peak along the ridge, standing on the ridge's ink */
-  back: 0.08,
+  /** the perch: this far back from the front gable's peak along the ridge, standing on the ridge's ink. Look pass 4
+   * (was 0.08): the ridge's ink lies flat, 0.034 wide, and from stop 4's camera it hides the owl's lower half; 0.04
+   * shows 61% of the owl's outline against 51%, the most of any perch along the ridge (`C/owl/t3/occlusion.log`) */
+  back: 0.04,
   lift: 0.0002,
   /** the rest in owl lengths (size 1 = feet to crown), +z the way the body faces: an upright barn owl. Every
    * ellipsoid takes `pitch` π/2, so `ellipsoid`'s polar axis (z, `frog.ts:84-96`) stands up: `s` runs feet to

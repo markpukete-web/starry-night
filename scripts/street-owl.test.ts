@@ -199,7 +199,7 @@ test('the head turns toward a target within reach and inside the cone, never wit
   assert.ok(Math.abs(look.pitch - Math.max(-OWL.look.pitch, Math.atan2(OWL.look.targetY - neck[1], 0.3))) < 1e-6)
   const s4 = vincentPlace(STATION_T[4]).position
   const l4 = owlLook(neck, yaw, [s4[0], s4[2]])
-  assert.ok(Math.abs(Math.abs(l4.yaw) - 0.867) < 0.05, `stop 4 yaw ${l4.yaw}`) // Task 0: 49.7°
+  assert.ok(Math.abs(Math.abs(l4.yaw) - 0.976) < 0.05, `stop 4 yaw ${l4.yaw}`) // 55.9° at look pass 4's perch (Task 0's 49.7° at back 0.08)
   assert.equal(l4.pitch, -OWL.look.pitch) // 50.8° down, capped
   const s3 = vincentPlace(STATION_T[3]).position
   assert.deepEqual(owlLook(neck, yaw, [s3[0], s3[2]]), { yaw: 0, pitch: 0 }) // 0.818 away
