@@ -104,6 +104,14 @@ reduced motion at stop 4 PASS. Perf, three rounds at stops 3 and 4 at dpr 1.5: p
 triangles and the draw calls as before (173 at stop 3, 89 at stop 4 on the desktop). The pass changes no geometry, so
 the build, the sweep and the colour gate (no moths under `light=0`) stand from the first gate.
 
+The Consultant's bounded read of `5668c5c` (`C/owl/review/consultant-pass5-r1.md`, 13:28): BUILD. The bound holds: a
+proof on the component along `u`, and a sweep of 256 adversarial specs at 1/6000 s found nothing nearer than the
+rest point. No shader finding at P2 or above. One P2, F1: the new test's lower bound allowed 1e-9, under Float32's
+rounding at a rest crossing (up to 8e-8 on other grids or fixtures), so an unrelated change could turn it red. Fixed
+by the Lead: the tolerance 1e-6, as the upper bound uses. The wide mutant (`jitter` 0.03) is still red. The comment's
+argument in `moths.ts` now names the projection on `u` (1.5√2 × 0.0045 = 0.0095), not 1.5√3. No re-read: the fix is
+P2.
+
 ## The branch review
 
 Fable, the Consultant (`w4:p6`), read `32e692b..a3634c4` (`C/owl/review/consultant-branch-r0.md`): BUILD, no P0 or

@@ -68,9 +68,10 @@ test('a moth never comes nearer its glass than its rest point, and its path doub
     mothPositions(specs, t, out)
     return out
   }
+  // 1e-6: at a rest crossing the Float32 read rounds up to 8e-8 inside `rest` (the Consultant's F1, pass 5's review)
   for (let t = 1 / 60; t <= 5; t += 1 / 60) {
     const out = at(t)
-    specs.forEach((s, i) => assert.ok(distance([out[3 * i], out[3 * i + 1], out[3 * i + 2]], s.glass) >= (s.window ? MOTHS.restWindow : MOTHS.rest) - 1e-9, 'never nearer the glass than the rest point'))
+    specs.forEach((s, i) => assert.ok(distance([out[3 * i], out[3 * i + 1], out[3 * i + 2]], s.glass) >= (s.window ? MOTHS.restWindow : MOTHS.rest) - 1e-6, 'never nearer the glass than the rest point'))
   }
   // over 0.1 s a smooth loop turns at most 30° (the shortest lap is 1.2 s); the lurch and the jitter turn it back past
   // 90°, 21 to 36 times in 5 s on these specs

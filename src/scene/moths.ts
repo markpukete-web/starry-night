@@ -25,8 +25,9 @@ export const MOTHS = {
    * sin(3θ), so a moth runs at −0.5 to 2.5 of its mean speed, stalls, darts and doubles back three times a lap */
   lurch: 0.5,
   /** and shakes: two sines a world axis, `jitter` at `jitterHz[0]` and half that at `jitterHz[1]`, scaled by sin²(θ/2)
-   * so they are zero at the rest point. Never more than 1.5√3 × 0.0045 = 0.0117 off the loop, under the least radius
-   * 0.02, so the moth never comes nearer the glass than its rest point */
+   * so they are zero at the rest point. Toward the glass along `u` they pull at most 1.5√2 × 0.0045 = 0.0095 ×
+   * sin²(θ/2), under the loop's least radius 0.02 × the same, so the moth never comes nearer the glass than its rest
+   * point */
   jitter: 0.0045,
   jitterHz: [5.3, 8.7] as [number, number],
   /** the wings' beat, seconds a cycle (5 to 8 a second) */
