@@ -28,7 +28,7 @@ read of revision 2: BUILD (`codex-plan-r2.md`).
   (the chest band on the back, the reach test inverted). Test 2's `mean(front)` 0.8286 against the bar 0.8, measured
   by Argon and by Codex independently. Merged `91da265` (23:50).
 
-## Task 3: the look passes (four, the slice's cap)
+## Task 3: the look passes (the slice's cap of four, and a fifth on Mark's word)
 
 The plan's cap is four look passes for the slice (`tasks/2026-10-29-church-owl-plan.md:83`). The notes are
 `C/owl/t3/notes.md`.
@@ -47,9 +47,23 @@ The plan's cap is four look passes for the slice (`tasks/2026-10-29-church-owl-p
    about 6 × 10 px, 25 px right of the cross. On the phone it is about 3 × 6 px, a nub with a lighter top beside the
    cross. At stop 3 the whole bird shows as before. The stop 4 head-turn pin in `street-owl.test.ts` follows the perch:
    55.9° (was 49.7°), inside the 70° cone.
+5. The moths, past the cap on Mark's word (`p5/`, `5668c5c`). Mark on the preview, 2026-10-30: "I can see the
+   motion, but it looks the same as the fireflies", then "go ahead". Both were soft, round, self-lit blobs, and the
+   smooth loops read as the fireflies' drift. Now a moth is hard-edged: forewings and hindwings either side of a dark
+   body (`PALETTE.ground`). The wings' half toward the glass is lit in pass 1's pale cream, the far half in the
+   thatch's darkest 40%, so with the lamp behind it a moth is a silhouette. The loop's angle lurches
+   (`MOTHS.lurch` 0.5 × sin 3θ: −0.5 to 2.5 of the mean speed, three turn-backs a lap) and a jitter shakes it
+   (`MOTHS.jitter` 0.0045 at 5.3 Hz, half that at 8.7 Hz), both zero at the rest point. The jitter stays under the
+   least radius, so a moth never comes nearer its glass than the rest point. In the captures they read as small
+   brown-gold winged shapes with a dark side, 8 to 10 px at 1:1 on the desktop. Over 1/30 s frames they jump 10 to
+   20 px, stall, double back and beat. A new test holds the rest point as the nearest and counts 21 to 36 turn-backs
+   in 5 s against none for a smooth loop.
 
 ## Departures from the design and the plan
 
+- The moths' shape, light and motion (look pass 5, Mark's word): the design's (m) has a camera-facing quad in the
+  lantern's lit mean on a loop with a small vertical wobble. The quad stays, drawn as a moth. The two-tone wings and the
+  lurch and jitter are new.
 - `MOTHS.pale` 0.6: the design's (m) paints the moths in the lantern's lit mean. Look pass 1.
 - `OWL.back` 0.04: the design's (j) puts the perch 0.08 back from the peak, and `OWL.back` is not in Task 3's list of
   levers. Look pass 4.
@@ -81,6 +95,14 @@ Run by the Lead on `a3634c4`, 2026-10-30, 12:16 to 12:48 (`C/owl/t4/`).
   capped at −0.7. The blink at stop 4: open at 1.0 s (two dark eyes in the pale face), shut at 0.48 s (the face plain).
   The capture helper pins the sky's clock at 0.5 s, inside the owl's first blink (0.46 to 0.52), so its turn frames show
   the eyes shut. Captures only.
+
+Look pass 5's gate, run by the Lead on `5668c5c`, 13:08 to 13:15 (`C/owl/t5/`, `gate5.sh`): two mutants one at a time,
+each its own artefact with the checkout and the green run. Smooth loops (`lurch` 0, `jitter` 0): red, "moth 0: 0 turns
+back in 5 s". A jitter of 0.03: red, "never nearer the glass than the rest point". Both green after the checkout. tsc and
+lint clean, `test:sky` 495 of 495, the grass check 21 PASS (case 21: 29 moths, at their anchors under reduced motion),
+reduced motion at stop 4 PASS. Perf, three rounds at stops 3 and 4 at dpr 1.5: p50 16.7 ms, p95 at most 18.5; the
+triangles and the draw calls as before (173 at stop 3, 89 at stop 4 on the desktop). The pass changes no geometry, so
+the build, the sweep and the colour gate (no moths under `light=0`) stand from the first gate.
 
 ## The branch review
 

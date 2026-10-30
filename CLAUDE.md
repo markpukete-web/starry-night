@@ -426,11 +426,14 @@ The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
   camera (stops 3 at 1.383 and 4 at 0.877). The head turns to Vincent within 0.6 and 70° of the body's facing, the
   pitch capped at 0.7 rad, eased over τ 0.6 s, held under reduced motion; the frogs' blink 1.3 s ahead. The moths 29
   (7 lamps × 3, 4 lit windows × 2, a window's drawn within 0.6), a quad 0.006 × 0.0045 in one instanced mesh, 58
-  triangles, the lantern's lit mean mixed 0.6 toward white (`MOTHS.pale`, look pass 1: amber read as sparks), a loop of
-  radius 0.02 to 0.05 and period 1.2 to 2.5 s, wobble 0.006, the wings 0.12 to 0.2 s a beat, the rest point 0.0105 off
-  the glass, dimmed to 0.15 at the halo's edge. The sweep's worst point 1,433,111 (desktop, `t` 0.26), p95 at most
-  18.5 ms at stops 0, 3 and 4 at dpr 1.5, 322 draw calls at stop 0. Four look passes of four. The Consultant's branch
-  review BUILD, its P3s fixed or declined. Untuned by Mark.
+  triangles, drawn as a moth (look pass 5, past the cap on Mark's word: soft pale ovals on smooth loops read as the
+  fireflies): forewings and hindwings either side of a dark body (`PALETTE.ground`), the wings' half toward the glass
+  lit in the lantern's lit mean mixed 0.6 toward white (`MOTHS.pale`, look pass 1: amber read as sparks), the far half
+  in the thatch's darkest 40%. A loop of radius 0.02 to 0.05 and period 1.2 to 2.5 s, its angle lurching by 0.5 sin 3θ
+  (`MOTHS.lurch`), a jitter of 0.0045 at 5.3 Hz and half at 8.7 Hz (`MOTHS.jitter`), both zero at the rest point,
+  wobble 0.006, the wings 0.12 to 0.2 s a beat, the rest point 0.0105 off the glass, dimmed to 0.15 at the halo's edge. The sweep's worst point 1,433,111 (desktop, `t` 0.26), p95 at most
+  18.5 ms at stops 0, 3 and 4 at dpr 1.5, 322 draw calls at stop 0. Five look passes, the fifth past the cap on Mark's
+  word. The Consultant's branch review BUILD, its P3s fixed or declined. Untuned by Mark.
 - Retune cap per slice: 4 passes
 
 ## Working discipline (carried from markma.dev v3 — proven there)
