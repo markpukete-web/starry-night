@@ -1,5 +1,27 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-10-30 (12:53): slice 2 gated and reviewed, pushed for Mark's preview
+
+**Done:** the owl's look pass 4 (`a3634c4`, the perch 0.04 behind the peak: the ridge's flat ink hid the body, not the
+rake), the slice's fourth and last. Task 4's gate on `a3634c4`, green (`C/owl/t4/`): the suite 494, the six browser
+checks, the sweep 1,433,111, perf p95 at most 18.5 ms, 322 draw calls at stop 0, the colour gate at stops 3 and 4 as
+slice 1 left it, the turn and the blink shown. The Consultant's branch review (Fable `w4:p6`): BUILD, fourteen P3s,
+four fixed in `5c9685e`, the rest declined with reasons (`C/owl/review/lead-branch-r0.md`). The record
+`tasks/2026-10-29-church-owl.md`, the Tunables entry, two lessons. `feat/church-owl` pushed for the Vercel preview.
+
+**Next, in order (Mark, 2026-10-30: "once passed, push and merge to main"):** Mark's pass on the preview. Then merge
+PR #38 (slice 1; Codex's bot passed it on 2026-10-29), merge `origin/main` into `feat/church-owl`, open slice 2's PR
+as a draft and mark it ready so Codex fires, read the review through the timeline API, answer every thread, merge.
+
+**For Mark at the preview:** the owl on the phone at stop 4 is about 3 × 6 px beside the cross. The look cap is spent.
+The levers left are his: `OWL.size` past his call 3, or the ridge's ink thinner where the owl stands (slice 1's paint).
+A window's moths dim on the lamp halo's radius (the review's Q5).
+
+**Proposed, not started:** the owl's head snaps to its target within 1e-4 rad (the walk's pattern), with a settled
+flag in `__owl()` that `capture-sky-frames.mjs` waits for beside `__vincentForm().settled`. Today a colour capture at
+stop 4 needs a custom wait (the record's Step 3). Argon's worktree `scratchpad/owl-t1-wt` and the Sonnet builder's
+`.claude/worktrees/agent-ab31cbfa08292c331` can be removed.
+
 ## Pickup — 2026-10-29 (22:10): slice 1 passed by Mark, slice 2 (the owl and the moths) starting
 
 **Mark's pass:** "Gate passed." on the preview at 22:10, the shipped state. P7 stands. The mirrored tones stand. The

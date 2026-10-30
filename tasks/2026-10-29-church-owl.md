@@ -1,0 +1,103 @@
+# The church and its square, slice 2 (the barn owl on the ridge, the moths at the lights): the record, 2026-10-29 to 30
+
+The design is the slice 2 section of `docs/superpowers/specs/2026-10-29-church-square-design.md`, decisions (i) to
+(n), with Mark's call 3 (the owl at 0.024, its size a tunable). The plan is `tasks/2026-10-29-church-owl-plan.md`,
+revision 2. Mark passed slice 1 on the preview at 22:10 on 2026-10-29. The evidence is in
+`/Users/markma/Projects/starry-night/scratch/church-animals-2026-10-29/owl/` (`C/owl` below). Every time here is
+Brisbane.
+
+## The plan's reviews
+
+Revision 0 (22:50, `b0bf5e1`) drew REVISE from Codex (`C/owl/review/codex-plan-r0.md`, F1 to F10, Q1 to Q3) and NOT
+BUILDABLE from a Sonnet builder's buildability read (`builder-plan-r0.md`, A1 to A6, B1 to B5). The two that mattered
+most: `ellipsoid`'s polar axis is z, so revision 0's paint bands put the chest on the back (F2, A2), and the look
+compared the neck in world space with Vincent's position in the street's frame (F3, A4). Revision 1 (23:10,
+`0f91f4d`) folded both, the dispositions in `lead-plan-r0.md`. Argon stopped Task 1 at Step 3 on two blockers in
+revision 1's values, both the Lead's (`C/owl/t1/report-stop.md`): under `pitch` π/2 the radii are [across, depth,
+height], and Test 2's counts could not pass. Revision 2 (23:30, `373c214`) took Argon's probed values. Codex's bounded
+read of revision 2: BUILD (`codex-plan-r2.md`).
+
+## Tasks 1 and 2: the builds
+
+- Task 2, the moths: a Sonnet `builder` subagent on `feat/church-owl-t2` (`62934dc`, `8bbab18`), 29 moths (7 lamps ×
+  3, 4 lit windows × 2), 58 triangles, one instanced mesh. The Lead's gate (`C/owl/t2/lead-gate.log`): tsc and lint
+  clean, the suite 486 of 486, two mutants caught (the wobble with the phase, Codex F1; the rest point 0.008, Codex
+  F6). Merged `e1cf321` (23:15).
+- Task 1, the owl: Gemini 4 Argon (`w4:p5`) on `feat/church-owl-t1` (`a3c57c6`, `e2d7d6a`, `5d1e42c`), 544
+  triangles. The Lead's gate (`C/owl/t1/lead-gate.md`): tsc and lint clean, the suite 494 of 494, two mutants caught
+  (the chest band on the back, the reach test inverted). Test 2's `mean(front)` 0.8286 against the bar 0.8, measured
+  by Argon and by Codex independently. Merged `91da265` (23:50).
+
+## Task 3: the look passes (four, the slice's cap)
+
+The plan's cap is four look passes for the slice (`tasks/2026-10-29-church-owl-plan.md:83`). The notes are
+`C/owl/t3/notes.md`.
+
+1. The moths (`p1/`, `p1b/`, on `e1cf321`): in the lantern's own amber they read as sparks off the glass, the design's
+   anti-goal. The lever: `MOTHS.pale` 0.6, the paint mixed toward white (`49e6d0a`).
+2. The moths (`p2/`): pale flecks fluttering, a moth at 8 m. They draw no eye off the church. They stand.
+3. The owl (`owl1/`, on `91da265`), a first read: at stop 4 only a 10 px head showed over the ridge on the desktop, a
+   4 px nub on the phone. At stop 3 the whole bird showed side-on, 8 px.
+4. The owl (`owl4/`, `a3634c4`): pass 3 named the gable's rake as what hid the body. That was wrong. A ray probe
+   (`C/owl/t3/occlusion.ts`, `occlusion.log`) found the ridge's own ink: one flat ribbon 0.034 wide at y 0.430
+   (`OUTLINE_FRACTION` 0.14 × the eave 0.24, normal `UP`, `streetGeometry.ts:687`), which the owl stands on. From stop
+   4's camera at y 0.09 it hides the owl's lower half wherever the perch is. Of a 9 × 21 grid over the owl's outline,
+   51% is in view at 0.08, 61% at 0.04, 62% at 0.035, 35% to 46% at 0.01 to 0.02 (the rakes' ink meets at the peak).
+   The lever: `OWL.back` 0.08 → 0.04. Now the head and the pale chest show over the ridge at stop 4 on the desktop,
+   about 6 × 10 px, 25 px right of the cross. On the phone it is about 3 × 6 px, a nub with a lighter top beside the
+   cross. At stop 3 the whole bird shows as before. The stop 4 head-turn pin in `street-owl.test.ts` follows the perch:
+   55.9° (was 49.7°), inside the 70° cone.
+
+## Departures from the design and the plan
+
+- `MOTHS.pale` 0.6: the design's (m) paints the moths in the lantern's lit mean. Look pass 1.
+- `OWL.back` 0.04: the design's (j) puts the perch 0.08 back from the peak, and `OWL.back` is not in Task 3's list of
+  levers. Look pass 4.
+- The ridge's ink stays as slice 1 left it. Its width is slice 1's passed paint.
+
+## Task 4: the gate
+
+Run by the Lead on `a3634c4`, 2026-10-30, 12:16 to 12:48 (`C/owl/t4/`).
+
+- Step 1 (`gate.sh`, `summary.txt`): tsc and lint clean, `test:sky` 494 of 494, `vite build` clean. The build hash
+  `69db1abe1f64b82b` (600,179 triangles) is PR #38's head's, computed on `32e692b` in a throwaway worktree. Slice 1's
+  gate read `def9abf04acfe8dd` before its post-gate fix `e29bc36`. The grass hash `33504d291c27e9ac` holds.
+- Step 2: the six browser checks, one at a time. Grass 21 PASS, with case 20 (the owl: yaw 0.968 at stop 4, straight
+  at stop 3 and with `walk=0`, culled at stop 0, held under reduced motion) and case 21 (29 moths). Walk 13, portal 20,
+  rotation, cypress hang (the street ready in 2,692 ms), reduced motion at stop 4 with `walkT=0.9`: all PASS.
+- Step 3 (`colour.log`, `colour-s4*.log`): stops 3 and 4, both viewports, `light=0`. The church class ΔE 3.04 on the
+  desktop and 3.03 on the phone at stop 4, slice 1's numbers. The failures are slice 1's to the decimal: the smock's
+  area 789 px against 800 at stop 3 on the phone, the walls' ΔE 10.79 at stop 4 on the desktop, the walls, the roofs
+  and the windows at stop 4 on the phone. Stop 4 first failed the capture tool's pinned-clock check: the owl's head
+  eases on real time and, being exponential, never stops exactly. The capture waits until two reads of
+  `__owl().yaw` are equal (about 20 s; within 2e-5 rad of the target still failed on the desktop). A follow-up is in
+  `tasks/todo.md`: a snap within 1e-4 rad, as the walk has, and the capture tool waiting for it.
+- Step 4: the sweep's worst point 1,433,111 (desktop, `t` 0.26; slice 1 1,433,053, the moths' 58 more; the ceiling
+  1,444,930). Perf (`perf/summary.txt`), five rounds at stops 0, 3 and 4 at dpr 1.5, desktop final, desktop no-post
+  and the phone's viewport: p50 16.7 ms everywhere, p95 at most 18.5 (the bar 18.6). Draw calls 322 at stop 0 (slice
+  1 321, the moths' one), 173 at stop 3, 89 at stop 4 on the desktop.
+- Step 5 (`shows/`, `shows.log`): the turn, Vincent on the automatic walk from `t` 0.67: the head's yaw 0.29, 0.54,
+  0.63, 0.68, 0.75, 0.83, 0.93, 0.96, 0.977 rad at 0.5 s steps as he walks into reach and stops at stop 4, the pitch
+  capped at −0.7. The blink at stop 4: open at 1.0 s (two dark eyes in the pale face), shut at 0.48 s (the face plain).
+  The capture helper pins the sky's clock at 0.5 s, inside the owl's first blink (0.46 to 0.52), so its turn frames show
+  the eyes shut. Captures only.
+
+## The branch review
+
+Fable, the Consultant (`w4:p6`), read `32e692b..a3634c4` (`C/owl/review/consultant-branch-r0.md`): BUILD, no P0 or
+P1, fourteen P3s. The dispositions are `C/owl/review/lead-branch-r0.md`. Fixed in `5c9685e`: the stale numbers after the
+perch moved (Q1), the perch's comment (Q2), the moths' shader header (Q3), case 20(g)'s settle 200 → 300 ms (T5).
+Checked by the Lead on `5c9685e`: tsc and lint clean, the owl's and the moths' tests 12 of 12, the grass check 21 PASS
+(case 20(g) held 0.6382 → 0.6382). No second review round: every fix is P3. Declined with reasons: the moths' jump
+when the clock leaves zero (the project's `lifeTime` pattern), the per-frame allocations (the frogs' and the fireflies'
+pattern; perf above), the test's neck without its z offset, a test of the ink's occlusion (T2: the probe is in
+scratch and the gap is named here), a pin on the moths' paint, the eye's sink axis, the moths' fog in sRGB. For Mark's
+eye: a window's moths dim on the lamp halo's radius (Q5).
+
+The numbers that moved with the perch: the camera to the perch 0.877 at stop 4, 1.383 at stop 3, 1.715 at stop 2. The
+perch (−0.311, 0.430, −2.487). Vincent at stop 3 0.786 from the neck, outside the 0.6 reach.
+
+## For Mark at the preview
+
+The phone's read of the owl at stop 4: about 3 × 6 px beside the cross. The look cap is spent. The levers left are
+Mark's: `OWL.size` past his call 3 (0.024), or the ridge's ink thinner where the owl stands (slice 1's paint).
