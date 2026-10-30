@@ -1,10 +1,6 @@
 import { Canvas } from '@react-three/fiber'
 import { Stats } from '@react-three/drei'
-import { Leva } from 'leva'
-import { Suspense, useEffect, useState } from 'react'
-import { LivingPainting } from './scene/LivingPainting'
-import { StreamlineSky } from './scene/StreamlineSky'
-import { CanopyExperience } from './scene/CanopyExperience'
+import { Suspense, lazy, useEffect, useState } from 'react'
 import { DioramaExperience } from './scene/DioramaExperience'
 import type { SkyStyle } from './scene/PaintingFlowSky3D'
 import { ALIVE_DEFAULTS, ALIVE_KNOBS, clampAliveKnob, hasAliveKnobs, readAliveTuning, type AliveTuning } from './scene/skyAlive'
@@ -13,9 +9,16 @@ import { AliveTuner } from './AliveTuner'
 import { arrivedThisSession } from './scene/arrival'
 import { dropBootCurtainUnlessKept } from './bootCurtain'
 import { isStreetMode } from './scene/streetEntry'
-import { ReliefExperience } from './scene/ReliefExperience'
 import { VisitorChrome } from './VisitorChrome'
 import type { LighterState } from './scene/lighterView'
+
+// The retired modes load only when their `?mode=` link opens them, so the diorama's script carries none of them, nor
+// leva or the postprocessing they bring (the performance review's finding 7, tasks/2026-10-30-perf-review.md)
+const Leva = lazy(() => import('leva').then((m) => ({ default: m.Leva })))
+const LivingPainting = lazy(() => import('./scene/LivingPainting').then((m) => ({ default: m.LivingPainting })))
+const StreamlineSky = lazy(() => import('./scene/StreamlineSky').then((m) => ({ default: m.StreamlineSky })))
+const CanopyExperience = lazy(() => import('./scene/CanopyExperience').then((m) => ({ default: m.CanopyExperience })))
+const ReliefExperience = lazy(() => import('./scene/ReliefExperience').then((m) => ({ default: m.ReliefExperience })))
 
 const TUNER_STORAGE_KEY = 'starry-night:alive-tuning'
 
@@ -120,11 +123,19 @@ export default function App() {
   )
 
   if (mode === 'canopy') {
-    return <CanopyExperience clean={clean} reduced={motionPaused} />
+    return (
+      <Suspense fallback={null}>
+        <CanopyExperience clean={clean} reduced={motionPaused} />
+      </Suspense>
+    )
   }
 
   if (mode === 'relief') {
-    return <ReliefExperience clean={clean} reduced={motionPaused} />
+    return (
+      <Suspense fallback={null}>
+        <ReliefExperience clean={clean} reduced={motionPaused} />
+      </Suspense>
+    )
   }
 
   if (mode === 'diorama') {
@@ -150,7 +161,9 @@ export default function App() {
   return (
     <main className="visitor-shell">
       {/* dev-only tuning panel — hidden while comparing so it doesn't cover the painting */}
-      <Leva hidden={!import.meta.env.DEV || showOriginal} theme={{ sizes: { rootWidth: '360px', controlWidth: '150px' } }} />
+      <Suspense fallback={null}>
+        <Leva hidden={!import.meta.env.DEV || showOriginal} theme={{ sizes: { rootWidth: '360px', controlWidth: '150px' } }} />
+      </Suspense>
       <Canvas frameloop="always" dpr={[1, 1.5]} gl={{ preserveDrawingBuffer: true }}>
         <Suspense fallback={null}>
           <LivingPainting paused={motionPaused} />

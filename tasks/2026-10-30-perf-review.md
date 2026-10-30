@@ -120,6 +120,12 @@ The largest downloads on a cold visit: `painting-filled.webp` 2.47 MB (lossless)
    `LivingPainting` and `StreamlineSky`, the earlier spikes reached by `?mode=`. They are in the 1.39 MB main script. How
    much a lazy import or a removal saves is unmeasured. `signed-flow.png` (1.64 MB) ships in the deploy for them but the
    shipped scene never fetches it. Removing modes is Mark's call.
+   Done on Mark's word ("go with the lazy-load of the retired modes", `perf/lazy-retired-modes`): `App.tsx` imports the
+   four modes lazily. The diorama's start scripts went from 1,388.9 kB (390.2 kB gzipped) to 1,293.3 kB (366.8 kB) in two
+   chunks, the main script and react-three-fiber, which the page preloads together. Nearly all the saving is the canopy
+   mode's postprocessing (its chunk is 80.1 kB). `leva` was never in the shipped script: production aliases it to a stub.
+   The diorama's frame is byte-identical to production's, and it fetches no retired chunk. Canopy, relief and the flat
+   route each open and draw. `signed-flow.png` stays in the deploy: removing it is part of removing the modes.
 
 Not measured: the walk between stops, the portal's flight, the opening, and pointer work (the sky's surge, the land's
 bend, the hover's cast). The matrix held the camera still with no pointer. The phone's one known cost is under a moving
