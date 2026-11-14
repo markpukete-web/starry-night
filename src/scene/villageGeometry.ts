@@ -1,10 +1,10 @@
 import { BufferAttribute, BufferGeometry, Color, Vector3 } from 'three'
-import { makeBrushArrays, pushBrushRibbon, type BrushArrays } from './brushForms'
-import { islandHeightAt } from './islandShape'
-import { PALETTE } from './palette'
-import atlas from './village-atlas.json'
-import { MARK_STEPS, markVertexCount, packGlow, type LitRange } from './villageGlow'
-import { VILLAGE_PATCHES, type VillagePatchName } from './villagePatches'
+import { makeBrushArrays, pushBrushRibbon, type BrushArrays } from './brushForms.ts'
+import { islandHeightAt } from './islandShape.ts'
+import { PALETTE } from './palette.ts'
+import atlas from './village-atlas.json' with { type: 'json' }
+import { MARK_STEPS, markVertexCount, packGlow, type LitRange } from './villageGlow.ts'
+import { VILLAGE_PATCHES, type VillagePatchName } from './villagePatches.ts'
 
 import { VILLAGE_NEIGHBOURS, VILLAGE_CONTEXT, VILLAGE_CHURCH, type Building, type Pigment } from './villageKnot.ts'
 
@@ -24,6 +24,7 @@ const OCHRE = new Color(PALETTE.windowOchre)
 const SIENNA = new Color(PALETTE.roofSienna)
 const ROOF = new Color(PALETTE.roof)
 
+/** With no vertex normals: every village material is basic with no environment map, so three's program reads none (audit 2026-11-14, item 12) */
 function geometry(a: BrushArrays | SkinArrays, glow?: Float32Array): BufferGeometry {
   const g = new BufferGeometry()
   g.setAttribute('position', new BufferAttribute(new Float32Array(a.positions), 3))
@@ -31,7 +32,6 @@ function geometry(a: BrushArrays | SkinArrays, glow?: Float32Array): BufferGeome
   if ('uv' in a) g.setAttribute('uv', new BufferAttribute(new Float32Array(a.uv), 2))
   if (glow) g.setAttribute('aGlow', new BufferAttribute(glow, 3))
   g.setIndex(a.indices)
-  g.computeVertexNormals()
   g.computeBoundingSphere()
   return g
 }

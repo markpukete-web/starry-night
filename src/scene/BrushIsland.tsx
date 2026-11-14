@@ -4,21 +4,22 @@ import { BufferAttribute, BufferGeometry, DoubleSide, MeshBasicMaterial } from '
 import { concatInjections, injectAlive } from './aliveMaterial'
 import { bendInjection, LAND_TOUCH, landUniformValues, type LandStore } from './landTouch'
 import { strokeGlsl } from './cypressStrokeShader'
+import { foregroundReady } from './foregroundLoad'
 import { buildIsland } from './islandGeometry'
 import { buildLandTrees, type BakedMass } from './landDomes'
 import { buildLandStrokes } from './landStrokes'
 import { strokeGeometry } from './strokeGeometry'
-import { useImageData } from './useImageData'
+import { useImageData, type ImageData2D } from './useImageData'
 
 type LandWindow = Window & { __landBuildMs?: number }
 
+/** With no vertex normals: every island material is basic with no environment map, so three's program reads none (audit 2026-11-14, item 12); the same for its `strokeGeometry` calls. */
 function plainGeometry(arrays: { positions: number[]; colors: number[]; indices: number[] }, bend?: number[]): BufferGeometry {
   const geometry = new BufferGeometry()
   geometry.setAttribute('position', new BufferAttribute(new Float32Array(arrays.positions), 3))
   geometry.setAttribute('color', new BufferAttribute(new Float32Array(arrays.colors), 3))
   if (bend) geometry.setAttribute('aBend', new BufferAttribute(new Float32Array(bend), 1))
   geometry.setIndex(arrays.indices)
-  geometry.computeVertexNormals()
   geometry.computeBoundingSphere()
   return geometry
 }
@@ -33,30 +34,43 @@ function plainGeometry(arrays: { positions: number[]; colors: number[]; indices:
  * masses, so they are their own meshes, built once those have loaded.
  */
 export function BrushIsland({
+  painting: paintingData,
+  paintingFailed,
   ready: readyRef,
   touch,
 }: {
+  /** The painting's pixels from the diorama's one load (audit 2026-11-14, item 13): null until it arrives. */
+  painting: ImageData2D | null
+  /** The diorama's load of the painting failed: the ground and the trees are not built, and the island is ready. */
+  paintingFailed: boolean
   /** C (arrival): true once the ground has its strokes, or a load failed. */
   ready?: RefObject<boolean>
   /** D1 (touch the land): the store the input hook writes, and the bend knob. Absent, the trees are E2's, bit for bit. */
   touch?: { store: RefObject<LandStore>; clock: RefObject<number>; bendGain: number }
-} = {}) {
+}) {
   const bend = touch !== undefined
   const geometries = useMemo(() => {
     const built = buildIsland()
     return { solid: plainGeometry(built.solid), strokes: plainGeometry(built.strokes) }
   }, [])
 
+  // each failure is logged by name, as the cypress logs its own (audit item 7); the island still reports ready
   const [failed, setFailed] = useState(false)
-  const paintingData = useImageData('/reference/painting.jpg', () => setFailed(true))
-  const flowData = useImageData('/reference/land-flow.png', () => setFailed(true))
+  const flowData = useImageData('/reference/land-flow.png', () => {
+    console.error('[land] /reference/land-flow.png failed to load; the ground and the trees are not drawn')
+    setFailed(true)
+  })
   const [baked, setBaked] = useState<BakedMass[] | null>(null)
   useEffect(() => {
     let alive = true
     fetch('/reference/land-masses.json')
       .then((response) => (response.ok ? (response.json() as Promise<BakedMass[]>) : Promise.reject(new Error(String(response.status)))))
       .then((json) => { if (alive) setBaked(json) })
-      .catch(() => { if (alive) setFailed(true) })
+      .catch((error) => {
+        if (!alive) return
+        console.error('[land] /reference/land-masses.json failed to load; the ground and the trees are not drawn', error)
+        setFailed(true)
+      })
     return () => { alive = false }
   }, [])
   const land = useMemo(() => {
@@ -66,8 +80,8 @@ export function BrushIsland({
     const started = performance.now()
     const ground = buildLandStrokes(flowData, paintingData)
     const trees = buildLandTrees(flowData, paintingData, baked)
-    const groundGeometry = strokeGeometry(ground.arrays, ground.stroke, ground.seed)
-    const treeStrokes = strokeGeometry(trees.strokes, trees.stroke, trees.seed, bend ? trees.bend : undefined)
+    const groundGeometry = strokeGeometry(ground.arrays, ground.stroke, ground.seed, undefined, undefined, false)
+    const treeStrokes = strokeGeometry(trees.strokes, trees.stroke, trees.seed, bend ? trees.bend : undefined, undefined, false)
     const treeSolid = plainGeometry(trees.solid, bend ? trees.solidBend : undefined)
     groundGeometry.userData = { ribbons: ground.ribbons, triangles: ground.arrays.indices.length / 3 }
     treeStrokes.userData = { counts: trees.counts, triangles: trees.strokes.indices.length / 3 }
@@ -128,12 +142,12 @@ export function BrushIsland({
   })
 
   useEffect(() => {
-    if (readyRef) readyRef.current = land !== null || failed
+    if (readyRef) readyRef.current = foregroundReady(land !== null, failed || paintingFailed)
     // the portal's way back mounts the land again: an unmount clears the seam, so no frame reads the last mount's
     return () => {
       if (readyRef) readyRef.current = false
     }
-  }, [readyRef, land, failed])
+  }, [readyRef, land, failed, paintingFailed])
 
   useEffect(() => () => geometries.solid.dispose(), [geometries])
   useEffect(() => () => geometries.strokes.dispose(), [geometries])

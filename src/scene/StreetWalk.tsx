@@ -27,7 +27,7 @@ import {
 import { SQUARE_TOP } from './frog.ts'
 import { lanternShown, walkOn, type StreetFlags } from './streetMode.ts'
 import { strokeGeometry } from './strokeGeometry.ts'
-import { classifyGesture, strayed, type PointerSample } from './touchSurge.ts'
+import { classifyGesture, startsGesture, strayed, type PointerSample } from './touchSurge.ts'
 import type { ImageData2D } from './useImageData.ts'
 import {
   buildVincent,
@@ -45,6 +45,8 @@ import {
   gait,
   initialPause,
   initialWalk,
+  keyDown,
+  keyUp,
   lag,
   limbs,
   setStreetGesture,
@@ -57,6 +59,7 @@ import {
   turnPose,
   vincentFigureBounds,
   wheelPixels,
+  type HeldKeys,
   type WalkInput,
   type WalkState,
 } from './streetWalk.ts'
@@ -156,7 +159,7 @@ export default function StreetWalk({
   const walkStateRef = useRef<WalkState>(initialWalk(initialT, isPhone))
   const prevPortraitRef = useRef(portrait)
   const queuedWheelPxRef = useRef(0)
-  const heldKeysRef = useRef({ forward: false, back: false })
+  const heldKeysRef = useRef<HeldKeys>({ forward: false, back: false })
   const activeGestureRef = useRef<{
     pointerId: number
     down: PointerSample
@@ -536,20 +539,12 @@ export default function StreetWalk({
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (isInteractive(e.target)) return
-      if (e.code === 'ArrowUp' || e.code === 'KeyW') {
-        heldKeysRef.current.forward = true
-      } else if (e.code === 'ArrowDown' || e.code === 'KeyS') {
-        heldKeysRef.current.back = true
-      }
+      heldKeysRef.current = keyDown(heldKeysRef.current, e)
     }
 
     // a release is never filtered: a key held over the scene and released over an input must still stop (Codex K2)
     const onKeyUp = (e: KeyboardEvent) => {
-      if (e.code === 'ArrowUp' || e.code === 'KeyW') {
-        heldKeysRef.current.forward = false
-      } else if (e.code === 'ArrowDown' || e.code === 'KeyS') {
-        heldKeysRef.current.back = false
-      }
+      heldKeysRef.current = keyUp(heldKeysRef.current, e)
     }
 
     const onBlurOrHidden = () => {
@@ -566,6 +561,7 @@ export default function StreetWalk({
     }
 
     const onPointerDown = (e: PointerEvent) => {
+      if (!startsGesture(e)) return
       if (!e.isPrimary || (activeGestureRef.current && activeGestureRef.current.pointerId !== e.pointerId)) {
         activeGestureRef.current = null
         setStreetGesture(null)

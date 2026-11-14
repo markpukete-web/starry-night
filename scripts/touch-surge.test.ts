@@ -19,6 +19,7 @@ import {
   pushSurge,
   segmentDistance,
   SKY_ASPECT,
+  startsGesture,
   surgeTerms,
   TOUCH_SURGE,
   touchGlsl,
@@ -248,4 +249,11 @@ test('T28 the lift\'s forced-end fade is defined in float32 for a live surge: ed
   }
   for (let t = 9.5; t <= 10.5; t += 0.001) assert.ok(Math.abs(endWindow(t, 10) - (1 - smooth(10 - T.fadeOut, 10, t))) < 1e-12, `the same fade at t ${t}`)
   assert.equal(endWindow(1e5, NO_END), 1, 'a live surge is not faded')
+})
+
+test('T29 a press starts a gesture from a finger, a pen or a mouse\'s main button, never a right or middle click (the audit, item 5)', () => {
+  // one table, so a red run names every press it gets wrong
+  const presses = { 'left click': ['mouse', 0], pen: ['pen', 0], finger: ['touch', 0], 'middle click': ['mouse', 1], 'right click': ['mouse', 2] } as const
+  const starts = Object.fromEntries(Object.entries(presses).map(([name, [pointerType, button]]) => [name, startsGesture({ pointerType, button })]))
+  assert.deepEqual(starts, { 'left click': true, pen: true, finger: true, 'middle click': false, 'right click': false })
 })
