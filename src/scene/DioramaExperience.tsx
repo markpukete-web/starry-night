@@ -538,6 +538,15 @@ function Scene({
   useLayoutEffect(() => {
     if (place === 'diorama') writeLens(camera, lens)
   }, [camera, lens, place])
+  // A11 (2026-11-15): a rotation sends the diorama home through the camera's props. The way back from the street
+  // restores the controls' saved pose, so a rotation moves that pose home too, and the way back reads as a fresh load
+  const controlsRef = portal?.controlsRef
+  useLayoutEffect(() => {
+    const controls = controlsRef?.current
+    if (!controls) return
+    controls.position0.fromArray(defaultCamera.position)
+    controls.target0.fromArray(defaultCamera.target)
+  }, [defaultCamera, controlsRef])
   const skyHome = isPortrait ? DIORAMA_CAMERAS.mobile : DIORAMA_CAMERAS.design
 
 
