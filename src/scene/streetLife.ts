@@ -133,8 +133,8 @@ export function hillsGeometry(): BufferGeometry {
     // look pass 1: out from 5.2 and 4.3 and down to 0.8 of their height. With the lane now 2.4 long the near range stood
     // 1.7 behind the church and read as a wall at stop 4. The sky follows the camera at radius 6, so 5.8 from a camera is
     // the limit: the far range's front is 5.77 from stop 0's
-    { radius: 5.6, base: 0.44, amp: 0.3, seed: 0.4, air: 0.45 },
-    { radius: 4.9, base: 0.24, amp: 0.21, seed: 2.1, air: 0.2 },
+    { radius: 5.6, base: 0.44, amp: 0.3, seed: 0.4 },
+    { radius: 4.9, base: 0.24, amp: 0.21, seed: 2.1 },
   ]
   for (const r of ranges) {
     const start = positions.length / 3

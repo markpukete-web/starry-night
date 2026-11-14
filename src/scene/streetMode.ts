@@ -1,11 +1,9 @@
 export type StreetFlags = {
-  street: boolean
   station: 0 | 1 | 2 | 3 | 4
   flat: boolean
   ids: 0 | 1 | 2
   fail: 'painting' | 'flow' | 'masses' | null
   anchor: 'A' | 'B'
-  turn: 'lock' | 'world'
   /** S1b task 4: false under `light=0`, the palette gate's unlit captures */
   light: boolean
   walk: boolean
@@ -20,7 +18,6 @@ export type StreetFlags = {
 
 export function readStreetFlags(search: string): StreetFlags {
   const params = new URLSearchParams(search)
-  const street = params.get('street') === '1'
   const rawStation = parseInt(params.get('station') ?? '0', 10)
   const station = (isNaN(rawStation) ? 0 : Math.max(0, Math.min(4, rawStation))) as 0 | 1 | 2 | 3 | 4
   const flat = params.get('flat') === '1'
@@ -30,7 +27,6 @@ export function readStreetFlags(search: string): StreetFlags {
   const fail = rawFail === 'painting' || rawFail === 'flow' || rawFail === 'masses' ? rawFail : null
   // G5 (2026-10-23): the sky follows the camera (B) and holds the painting's arc in the world; A and lock stay as dev params
   const anchor = params.get('skyAnchor') === 'A' ? 'A' : 'B'
-  const turn = params.get('skyTurn') === 'lock' ? 'lock' : 'world'
   const light = params.get('light') !== '0'
 
   const walk = params.get('walk') !== '0'
@@ -44,13 +40,11 @@ export function readStreetFlags(search: string): StreetFlags {
   const wander = params.get('wander') !== '0'
 
   return {
-    street,
     station,
     flat,
     ids,
     fail,
     anchor,
-    turn,
     light,
     walk,
     walkT,

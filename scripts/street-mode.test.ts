@@ -53,25 +53,18 @@ test('the lantern shows only where the walk places it', () => {
 })
 
 test('flags', () => {
-  // absent gives street: false
   const def = readStreetFlags('')
-  assert.equal(def.street, false)
   assert.equal(def.station, 0)
   assert.equal(def.flat, false)
   assert.equal(def.ids, 0)
   assert.equal(def.fail, null)
   assert.equal(def.anchor, 'B')
-  assert.equal(def.turn, 'world')
   // S1b task 4: the street is lit unless `light=0` (the palette gate's captures)
   assert.equal(def.light, true)
   assert.equal(readStreetFlags('?street=1&light=0').light, false)
 
-  // street=0 gives street: false
-  assert.equal(readStreetFlags('?street=0').street, false)
-
   // street=1&station=9 gives station 4
   const s9 = readStreetFlags('?street=1&station=9')
-  assert.equal(s9.street, true)
   assert.equal(s9.station, 4)
 
   // station clamping
@@ -89,9 +82,8 @@ test('flags', () => {
   assert.equal(readStreetFlags('?street=1&flat=1').grass, false)
   assert.equal(readStreetFlags('?street=1&flat=1&grass=1').grass, true)
 
-  // anchors and turns
+  // anchors
   assert.equal(readStreetFlags('?street=1&skyAnchor=A').anchor, 'A')
-  assert.equal(readStreetFlags('?street=1&skyTurn=lock').turn, 'lock')
 })
 
 test('readiness', () => {

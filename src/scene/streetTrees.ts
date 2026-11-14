@@ -130,7 +130,7 @@ function bezier(p0: Vector3, p1: Vector3, p2: Vector3, p3: Vector3, n: number): 
 }
 
 /** The street's trees as the land's trees' buffers, so the street's meshes and the ID pass take them unchanged. */
-export function buildStreetTrees(painting: ImageData2D, masses: readonly LandMass[], seed = 0x7ee5): LandTrees {
+export function buildStreetTrees(painting: ImageData2D, masses: readonly LandMass[], seed = 0x7ee5): Omit<LandTrees, 'bend' | 'solidBend'> {
   const solid = makeBrushArrays()
   const strokes = makeBrushArrays()
   const stroke: number[] = []
@@ -275,6 +275,6 @@ export function buildStreetTrees(painting: ImageData2D, masses: readonly LandMas
     }
   })
 
-  // the street does not bend its trees (touch is off in street mode): the weights are zero
-  return { solid, strokes, stroke, seed: seeds, counts, bend: new Array(strokes.positions.length / 3).fill(0), solidBend: new Array(solid.positions.length / 3).fill(0) }
+  // the street does not bend its trees (touch is off in street mode), so it builds no bend weights
+  return { solid, strokes, stroke, seed: seeds, counts }
 }
