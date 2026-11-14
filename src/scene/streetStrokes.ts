@@ -177,8 +177,9 @@ function distanceToPolygon(x: number, y: number, polygon: [number, number][]): n
 type FaceCrop = { crop: ImageData2D; rows: RibbonRows; pigment?: ImageData2D }
 
 /**
- * Audit item 14 (2026-11-14): one street build called `faceCrop` 218 times for 129 distinct inputs and
- * `rectUnderpaint` 230 times for 14, about 250 ms of a 740 ms build. Neither reads a random stream, so a build keeps
+ * Audit item 14 (2026-11-14): one street build called `faceCrop` 218 times for 153 distinct inputs under the key
+ * below, and `rectUnderpaint` about 230 times for 14. With the cache the default street's build fell from about 610 ms
+ * to about 425 ms on this Mac, its output byte for byte the same. Neither reads a random stream, so a build keeps
  * their results for its own painting and flow. The cache ends with the build, so no crop is held for the street's life
  * (the phone's memory, `Street.tsx`), and a call with another painting or flow computes as before. Every caller only
  * reads what it is given (`traceFace`, `clad` and the other colour reads), so the entries are shared, not copied.
@@ -196,7 +197,8 @@ export function withBuildCache<T>(painting: ImageData2D | null, flow: ImageData2
 }
 
 /** `cropFace`, from the build's cache when one is open for this flow and painting. The key holds every input the crop
- * reads, the shape too: without it a gable took its wall's crop (127 keys for 129 inputs). */
+ * reads, the shape among them. No two faces of today's street differ in shape alone, so only the unit test tells a key
+ * without the shape from this one. */
 export function faceCrop(flow: ImageData2D, face: StreetFace, minRows = 64, painting?: ImageData2D): FaceCrop {
   const cache = buildCache && buildCache.flow === flow && (!painting || buildCache.painting === painting) ? buildCache.crops : null
   if (!cache) return cropFace(flow, face, minRows, painting)
