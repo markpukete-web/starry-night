@@ -103,7 +103,6 @@ wrong; Mark decides what feels right.
 Vite + React + TypeScript + three.js + React Three Fiber + drei. npm. Same proven stack as
 markma.dev v3 — capability transfers both ways. Approved additions: `leva` (dev-only tuning
 panel), `@react-three/postprocessing` (bloom, optional). Any other dependency: stop and ask.
-The current `App.tsx` scene is a scaffold smoke-test placeholder, not design.
 
 ## Tunables (Claude may adjust; log every change in tasks/lessons.md)
 
@@ -111,7 +110,6 @@ Each entry keeps its decision, Mark's word and its record. The values live in th
 there, not here. Only the limits that work is checked against stay as numbers. Cut to this form on Mark's word ("Go
 with your recommendations for tunables"). The values as written before the cut are in `tasks/archive/2026-10-30-tunables.md`.
 
-- Instanced stroke budget: start 8,000 desktop / 3,000 mobile
 - Diorama sky ribbon budget (2026-10-11, the record `tasks/2026-10-11-sky-choice.md`, `PaintingFlowSky3D.tsx` `MOVING`
   and the `count` knob): painted light 3,200 requested ribbons, moving strokes 25,600. One count for every device, so a
   resize never rebuilds.

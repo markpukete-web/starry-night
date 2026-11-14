@@ -22,6 +22,9 @@ The full history, 2026-06-13 to 2026-10-30, is in `tasks/archive/2026-10-30-less
 - When a Tunable and the code disagree, ask Mark which is the truth before changing either. The orbit limits and the
   pixel-ratio cap differed from 2026-07-06 to 2026-10-30, and every gate in between ran on the code's values. The
   trim's subagent found it. Mark chose the code (2026-10-30, after the archive).
+- A Tunable that no code reads is removed, on Mark's word. "Instanced stroke budget: start 8,000 desktop / 3,000
+  mobile" went on 2026-11-14 (audit item 23): the only number near it was the retired mode's `count` knob
+  (`src/scene/StreamlineSky.tsx:188`). The Stack's line that called `App.tsx` a scaffold went with it. 2026-11-14
 
 ## Mark's taste and the gates
 
