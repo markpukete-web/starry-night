@@ -1,12 +1,11 @@
 #!/usr/bin/env node
-import { spawn } from 'node:child_process'
-import { existsSync, mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { mkdirSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { chromePath, debugPort, openPage, PORTS, startChrome, startViteIfNeeded } from './lib/chrome.mjs'
 
 // A dedicated capture port: 5173 is routinely occupied by ANOTHER Vite app on this machine (the
 // markma.dev portfolio), and a bare 200-OK check happily captures the wrong app's canvas.
-const DEFAULT_URL = 'http://127.0.0.1:5179/'
+const DEFAULT_URL = `http://127.0.0.1:${PORTS['capture-diorama'].app}/`
 const outDir = process.argv[2] || 'output/playwright/diorama-recovery-2026-07-07'
 const perfOnly = process.argv.includes('--perf')
 // --unlocked: vsync off, so a frame reads its real cost. Under the 60 Hz lock every case reads 16.7 ms and a
@@ -16,191 +15,40 @@ const dprIndex = process.argv.indexOf('--dpr')
 const dpr = dprIndex >= 0 ? Number(process.argv[dprIndex + 1]) : 1
 const appUrl = process.env.DIORAMA_CAPTURE_URL || DEFAULT_URL
 const appPort = new URL(appUrl).port || '80'
-const chromePath =
-  process.env.CHROME_PATH ||
-  [
-    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-    '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser',
-  ].find((path) => existsSync(path))
-
-if (!chromePath) {
-  console.error('No Chrome-compatible browser found. Set CHROME_PATH to a browser executable.')
-  process.exit(1)
-}
+const browser = chromePath()
 
 mkdirSync(outDir, { recursive: true })
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 const SETTLE_MS = Number(process.env.CAPTURE_SETTLE_MS ?? 0) || 0
 
-async function urlOk(url) {
-  try {
-    const response = await fetch(url)
-    if (!response.ok) return false
-    // make sure it is THIS app, not whatever other dev server squats on the port
-    const html = await response.text()
-    return html.includes('The Starry Night')
-  } catch {
-    return false
-  }
-}
-
-async function waitForUrl(url, timeoutMs = 15000) {
-  const start = Date.now()
-  while (Date.now() - start < timeoutMs) {
-    if (await urlOk(url)) return true
-    await sleep(250)
-  }
-  return false
-}
-
-async function startViteIfNeeded() {
-  if (await urlOk(appUrl)) return null
-  const child = spawn('npm', ['run', 'dev', '--', '--host', '127.0.0.1', '--port', appPort, '--strictPort'], {
-    stdio: ['ignore', 'pipe', 'pipe'],
-  })
-  let log = ''
-  child.stdout.on('data', (chunk) => {
-    log += chunk.toString()
-  })
-  child.stderr.on('data', (chunk) => {
-    log += chunk.toString()
-  })
-  if (!(await waitForUrl(appUrl))) {
-    child.kill()
-    throw new Error(`Vite did not become ready at ${appUrl}\n${log}`)
-  }
-  return child
-}
-
-async function waitForChrome(port, timeoutMs = 15000) {
-  const versionUrl = `http://127.0.0.1:${port}/json/version`
-  const start = Date.now()
-  while (Date.now() - start < timeoutMs) {
-    try {
-      const response = await fetch(versionUrl)
-      if (response.ok) return await response.json()
-    } catch {
-      await sleep(150)
-    }
-  }
-  throw new Error('Chrome DevTools endpoint did not become ready')
-}
-
-function startChrome(port) {
-  const userDataDir = mkdtempSync(join(tmpdir(), 'starry-diorama-chrome-'))
-  const child = spawn(chromePath, [
-    '--headless=new',
-    // Extra launch flags, e.g. CHROME_FLAGS=--no-sandbox: Chrome refuses to run as root without it, which is
-    // the case in a cloud session. Empty by default, so a Mac run launches exactly as before.
-    ...(process.env.CHROME_FLAGS ?? '').split(/\s+/).filter(Boolean),
-    ...(unlocked ? ['--disable-gpu-vsync', '--disable-frame-rate-limit'] : []),
-    '--hide-scrollbars',
-    '--mute-audio',
-    '--disable-background-networking',
-    '--disable-sync',
-    '--disable-extensions',
-    '--no-first-run',
-    '--no-default-browser-check',
-    `--user-data-dir=${userDataDir}`,
-    `--remote-debugging-port=${port}`,
-    'about:blank',
-  ], {
-    stdio: ['ignore', 'ignore', 'pipe'],
-  })
-  let stderr = ''
-  child.stderr.on('data', (chunk) => {
-    stderr += chunk.toString()
-  })
-  return {
-    child,
-    userDataDir,
-    cleanup() {
-      child.kill()
-      // Chrome may still be flushing its profile as it dies — retry the removal
-      rmSync(userDataDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 300 })
-    },
-    stderr: () => stderr,
-  }
-}
-
-class CdpPage {
-  constructor(wsUrl, errors) {
-    this.wsUrl = wsUrl
-    this.errors = errors
-    this.seq = 0
-    this.pending = new Map()
-  }
-
-  async connect() {
-    this.ws = new WebSocket(this.wsUrl)
-    this.ws.addEventListener('message', (event) => this.onMessage(event))
-    await new Promise((resolve, reject) => {
-      this.ws.addEventListener('open', resolve, { once: true })
-      this.ws.addEventListener('error', reject, { once: true })
-    })
-    await this.send('Page.enable')
-    await this.send('Runtime.enable')
-    await this.send('Log.enable')
-  }
-
-  onMessage(event) {
-    const message = JSON.parse(event.data)
-    if (message.id && this.pending.has(message.id)) {
-      const { resolve, reject } = this.pending.get(message.id)
-      this.pending.delete(message.id)
-      if (message.error) reject(new Error(message.error.message))
-      else resolve(message.result)
-      return
-    }
-    if (message.method === 'Runtime.exceptionThrown') {
-      this.errors.push(`exception: ${message.params.exceptionDetails?.text || 'runtime exception'}`)
-    }
-    if (message.method === 'Log.entryAdded' && message.params.entry?.level === 'error') {
-      this.errors.push(`log: ${message.params.entry.text}`)
-    }
-  }
-
-  send(method, params = {}) {
-    const id = ++this.seq
-    this.ws.send(JSON.stringify({ id, method, params }))
-    return new Promise((resolve, reject) => this.pending.set(id, { resolve, reject }))
-  }
-
-  async close() {
-    this.ws.close()
-  }
-}
-
 async function newPage(port, url, viewport, errors, deviceDpr = dpr) {
-  const response = await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: 'PUT' })
-  if (!response.ok) throw new Error(`Failed to create Chrome target: ${response.status}`)
-  const target = await response.json()
-  const page = new CdpPage(target.webSocketDebuggerUrl, errors)
-  await page.connect()
-  await page.send('Emulation.setDeviceMetricsOverride', {
-    width: viewport.width,
-    height: viewport.height,
-    deviceScaleFactor: deviceDpr,
-    mobile: Boolean(viewport.mobile),
-  })
-  await page.send('Page.navigate', { url })
-  // wait for the WebGL canvas to actually exist — a fixed sleep races Vite's cold-start
-  // dependency optimise/reload and returns undefined from toDataURL
-  const start = Date.now()
-  for (;;) {
-    await sleep(600)
-    const probe = await page.send('Runtime.evaluate', {
-      expression: `Boolean(document.querySelector('canvas'))`,
-      returnByValue: true,
+  const page = await openPage(port, { domains: ['Page', 'Runtime', 'Log'] })
+  try {
+    page.on('Log.entryAdded', (params) => {
+      if (params.entry?.level === 'error') {
+        errors.push(`log: ${params.entry.text}`)
+      }
     })
-    if (probe.result.value === true) break
-    if (Date.now() - start > 20000) throw new Error(`no canvas at ${url} after 20s`)
+    await page.send('Emulation.setDeviceMetricsOverride', {
+      width: viewport.width,
+      height: viewport.height,
+      deviceScaleFactor: deviceDpr,
+      mobile: Boolean(viewport.mobile),
+    })
+    await page.send('Page.navigate', { url })
+    // wait for the WebGL canvas to actually exist — a fixed sleep races Vite's cold-start
+    // dependency optimise/reload and returns undefined from toDataURL
+    await page.waitFor("document.querySelector('canvas')", 20000, `canvas at ${url}`, 600)
+    // CAPTURE_SETTLE_MS adds to every post-load wait: software WebGL in a cloud session takes ~10 s to decode the
+    // painting and build the cypress, and a capture before that shows no cypress. Unset on a Mac.
+    await sleep(1800 + SETTLE_MS)
+    return page
+  } catch (err) {
+    errors.push(...page.errors)
+    await page.close()
+    throw err
   }
-  // CAPTURE_SETTLE_MS adds to every post-load wait: software WebGL in a cloud session takes ~10 s to decode the
-  // painting and build the cypress, and a capture before that shows no cypress. Unset on a Mac.
-  await sleep(1800 + SETTLE_MS)
-  return { page, targetId: target.id }
 }
 
 async function canvasDataUrl(page) {
@@ -281,9 +129,13 @@ async function dragCanvas(page, dx, dy = 0) {
 }
 
 async function main() {
-  const vite = await startViteIfNeeded()
-  const port = 9223 + Math.floor(Math.random() * 500)
-  const chrome = startChrome(port)
+  const vite = await startViteIfNeeded(appUrl, appPort)
+  const port = debugPort('capture-diorama')
+  const chrome = await startChrome({
+    port,
+    prefix: 'starry-diorama-chrome-',
+    flags: unlocked ? ['--disable-gpu-vsync', '--disable-frame-rate-limit'] : [],
+  })
   const errors = []
   const captures = []
   // Built with URL, not by appending `?mode=…`: a base with a query of its own got a second `?` and its values
@@ -300,23 +152,26 @@ async function main() {
   const mobile = { width: 390, height: 844, mobile: true }
 
   try {
-    await waitForChrome(port)
     if (perfOnly) {
       const metrics = []
       for (const [name, url, viewport] of [
         ['desktop-final', `${base}&debug=final&perf=1`, desktop],
         ['mobile-viewport-final', `${base}&debug=final&perf=1`, mobile],
       ]) {
-        const { page } = await newPage(port, url, viewport, errors)
-        // DIORAMA_CAPTURE_EVAL: an expression awaited before the wait, so the 600 frames read come after it (the portal's
-        // street, entered through the village, tasks/2026-10-25-street-portal.md Task 8)
-        if (process.env.DIORAMA_CAPTURE_EVAL) await page.send('Runtime.evaluate', { expression: process.env.DIORAMA_CAPTURE_EVAL, awaitPromise: true })
-        await sleep(10000)
-        metrics.push({ name, url, viewport, metrics: await readPerf(page) })
-        await page.close()
+        const page = await newPage(port, url, viewport, errors)
+        try {
+          // DIORAMA_CAPTURE_EVAL: an expression awaited before the wait, so the 600 frames read come after it (the portal's
+          // street, entered through the village, tasks/2026-10-25-street-portal.md Task 8)
+          if (process.env.DIORAMA_CAPTURE_EVAL) await page.send('Runtime.evaluate', { expression: process.env.DIORAMA_CAPTURE_EVAL, awaitPromise: true })
+          await sleep(10000)
+          metrics.push({ name, url, viewport, metrics: await readPerf(page) })
+        } finally {
+          errors.push(...page.errors)
+          await page.close()
+        }
       }
       const summary = {
-        browser: chromePath,
+        browser,
         dpr,
         unlocked,
         drawingBuffer: metrics[0]?.metrics?.drawingBuffer ?? null,
@@ -337,9 +192,13 @@ async function main() {
       ['mobile-centre', base, mobile],
     ]
     for (const [name, url, viewport] of cases) {
-      const { page } = await newPage(port, url, viewport, errors)
-      captures.push(await capture(page, name))
-      await page.close()
+      const page = await newPage(port, url, viewport, errors)
+      try {
+        captures.push(await capture(page, name))
+      } finally {
+        errors.push(...page.errors)
+        await page.close()
+      }
     }
 
     for (const [name, dx, dy] of [
@@ -347,15 +206,19 @@ async function main() {
       ['desktop-drag-right-boundary', 620, 0],
       ['desktop-lookdown', 260, -320], // the angle that exposed the projected-relief funnel
     ]) {
-      const { page } = await newPage(port, base, desktop, errors)
-      await dragCanvas(page, dx, dy)
-      captures.push(await capture(page, name))
-      await page.close()
+      const page = await newPage(port, base, desktop, errors)
+      try {
+        await dragCanvas(page, dx, dy)
+        captures.push(await capture(page, name))
+      } finally {
+        errors.push(...page.errors)
+        await page.close()
+      }
     }
 
     const summary = {
       url: base,
-      browser: chromePath,
+      browser,
       viewport: { desktop, mobile },
       captures,
       errors,
@@ -367,7 +230,7 @@ async function main() {
       process.exitCode = 1
     }
   } finally {
-    chrome.cleanup()
+    await chrome.close()
     if (vite) vite.kill()
   }
 }
