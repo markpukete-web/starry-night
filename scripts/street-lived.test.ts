@@ -44,6 +44,7 @@ import {
 import { faceConfig, OUTLINE_FRACTION, sourceUnderpaint, srgbToLab, type StreetFace } from '../src/scene/streetStrokes.ts'
 import type { ImageData2D } from '../src/scene/useImageData.ts'
 import { decodePNG } from './lib/png.ts'
+import { roundedJson } from './lib/rounded-json.ts'
 
 const root = new URL('../', import.meta.url)
 const flowPng = decodePNG(readFileSync(new URL('public/reference/land-flow.png', root)))
@@ -60,9 +61,9 @@ const realPainting: ImageData2D | null = paintingPng
 function computeBuildHash(b: StreetBuild): string {
   const h = createHash('sha256')
   const add = (a: { positions: number[]; colors: number[]; indices: number[]; cls?: number[]; src?: number[] }) =>
-    h.update(JSON.stringify([a.positions, a.colors, a.indices, a.cls ?? [], a.src ?? []]))
+    h.update(roundedJson([a.positions, a.colors, a.indices, a.cls ?? [], a.src ?? []]))
   for (const a of [b.underpaint, b.strokes.arrays, b.ground.arrays, b.outlines.arrays, b.windows, b.grassBase, b.trees.solid, b.trees.strokes]) add(a)
-  for (const s of [b.strokes, b.ground, b.outlines]) h.update(JSON.stringify([s.stroke, s.seed, s.cls, s.src]))
+  for (const s of [b.strokes, b.ground, b.outlines]) h.update(roundedJson([s.stroke, s.seed, s.cls, s.src]))
   return h.digest('hex').slice(0, 16)
 }
 
@@ -473,7 +474,8 @@ test("K2's street without the lived-in parts", { skip }, () => {
   const build = buildStreet(realPainting, flow, masses, { grass: true, lived: false, flowers: false })!
   assert.deepEqual(build.report.lived, { paths: [], objects: [] })
   const hash = computeBuildHash(build)
-  assert.equal(hash, '918dd24d40740805', 'B1 hash matches')
+  // rounded to 1e-6 by `roundedJson` at audit item 1 (2026-11-14), so CI's Linux agrees: the same build's full-precision hash on this Mac was 918dd24d40740805
+  assert.equal(hash, '900397b3001c0a90', 'B1 hash matches')
 })
 
 test('the three objects stand by their doors', { skip }, () => {
@@ -891,11 +893,12 @@ test("the church's openings keep the plaster face (the design's non-goal, Codex 
     const v = -dx * Math.sin(nave.yaw) + dz * Math.cos(nave.yaw)
     if (Math.abs(u) <= nave.w / 2 + 0.005 && Math.abs(v) <= nave.d / 2 + 0.005) colours.push([col[i * 3], col[i * 3 + 1], col[i * 3 + 2]])
   }
-  const hash = createHash('sha256').update(JSON.stringify(colours)).digest('hex').slice(0, 16)
+  const hash = createHash('sha256').update(roundedJson(colours)).digest('hex').slice(0, 16)
   // computed at the base commit 4ec0008: the strokes with cls 255 inside the nave's box, the door's panel and the side
   // windows. The reveals and the step are underpaint, and the belfry's opening is outside the box (Codex branch r0).
+  // rounded to 1e-6 by `roundedJson` at audit item 1 (2026-11-14), so CI's Linux agrees: the same build's full-precision hash on this Mac was 51a2c84e0b745f72
   assert.equal(colours.length, 2287, 'the church opening vertices')
-  assert.equal(hash, '51a2c84e0b745f72', 'their colours are the base commit\'s')
+  assert.equal(hash, 'b4f58d232d2eea63', 'their colours are the base commit\'s')
 })
 
 test("K2's walls without the lived-in parts", { skip }, () => {
@@ -906,7 +909,8 @@ test("K2's walls without the lived-in parts", { skip }, () => {
     'every face reports lengthScale 1',
   )
   const hash = computeBuildHash(build)
-  assert.equal(hash, '918dd24d40740805', 'B1 hash matches')
+  // rounded to 1e-6 by `roundedJson` at audit item 1 (2026-11-14), so CI's Linux agrees: the same build's full-precision hash on this Mac was 918dd24d40740805
+  assert.equal(hash, '900397b3001c0a90', 'B1 hash matches')
 })
 
 const deltaE = (a: readonly number[], b: readonly number[]) =>
@@ -953,5 +957,6 @@ test("a ring of flowers stands in the square lamp's pool, pale heads at the tips
   assert.deepEqual(sa.positions.slice(0, wa.positions.length), wa.positions)                    // the flowers are the bucket's tail
   const ys = sa.positions.filter((_, i) => i >= wa.positions.length && i % 3 === 1)
   assert.ok(Math.min(...ys) >= FLOWERS.rootY - 1e-9 && Math.max(...ys) <= FLOWERS.rootY + 0.03)
-  assert.equal(computeBuildHash(without), '46f2bc6ba04296ab')                                   // answer 6: the flag off is the base, byte for byte
+  // rounded to 1e-6 by `roundedJson` at audit item 1 (2026-11-14), so CI's Linux agrees: the same build's full-precision hash on this Mac was 46f2bc6ba04296ab
+  assert.equal(computeBuildHash(without), '2bdd027ea64538e0')                                   // answer 6: the flag off is the base, byte for byte
 })

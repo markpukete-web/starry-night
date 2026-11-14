@@ -17,6 +17,7 @@ import { laneParam, pathTangent, STATION_T, vincentBoxCorners, walkPose } from '
 import { LIFT_LEVELS, LIFT_STEP, STROKE_LIFT } from '../src/scene/streetStrokes.ts'
 import { buildVincent } from '../src/scene/vincent.ts'
 import { decodePNG } from './lib/png.ts'
+import { roundedJson } from './lib/rounded-json.ts'
 
 const workPainting = new URL('../reference/derived/_work-painting.png', import.meta.url)
 const skip = !existsSync(workPainting) && 'needs reference/derived/_work-painting.png (not in CI)'
@@ -107,12 +108,13 @@ test('Vincent keeps his strokes: the lift parameter defaults to his 0.0004', { s
   const v = buildVincent(painting())
   const h = createHash('sha256')
   for (const part of [v.body, v.armLeft]) {
-    h.update(JSON.stringify(part.strokes.arrays.positions))
-    h.update(JSON.stringify(part.underpaint.positions))
+    h.update(roundedJson(part.strokes.arrays.positions))
+    h.update(roundedJson(part.underpaint.positions))
   }
   // read at cc56207, before `stroke` and `clad` took a lift, as 79338a361cd6b11c; read again at V1 task 1, whose
-  // Tarascon form changes `body` and `armLeft` by design (the head and the right arm leave the body, the easel joins it)
-  assert.equal(h.digest('hex').slice(0, 16), '3ac8284c958086e0')
+  // Tarascon form changes `body` and `armLeft` by design (the head and the right arm leave the body, the easel joins it).
+  // rounded to 1e-6 by `roundedJson` at audit item 1 (2026-11-14), so CI's Linux agrees: the same build's full-precision hash on this Mac was 3ac8284c958086e0
+  assert.equal(h.digest('hex').slice(0, 16), 'bd0fdbf13bb2ba0d')
 })
 
 /** A frog's frame to the street's: its group's uniform scale, then its yaw, then its place. */
