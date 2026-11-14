@@ -13,6 +13,8 @@
  *    citation is; no button is left; the ready seams are true; the console holds the page's own message; every page
  *    error is R3F's report of the blocked load. A screenshot of each failed state is saved for the Lead.
  * 4. The control: nothing blocked, the same visits and sizes, and no fallback, no failed class and no page error.
+ * 5. The diorama decodes `painting.jpg` once (slice B1, item 13). 6. With `painting.jpg` blocked the opening does not
+ *    wait 15 s for the cypress (slice B1, item 7), against the same visit unblocked.
  * Each case prints PASS or throws; the run exits 1 on the first failure. The Chrome launcher and the CDP page are
  * copied from `check-portal.mjs`, which exports neither. The screenshots go to the folder named, by default
  * `output/failure-paths`.
@@ -385,6 +387,78 @@ async function caseControl(port, name, query, viewport) {
   }
 }
 
+/** Is this Vite's dev server? There StrictMode runs each effect twice, so the diorama decodes the painting twice. */
+const IS_DEV = `Boolean(document.querySelector('script[src*="@vite/client"]'))`
+
+/**
+ * Case 5 (the audit's item 13): the diorama decodes `painting.jpg` once for the island and the cypress. Each decode is
+ * one `drawImage` of that image (`useImageData.ts` `readPixels`, the only draw of an image in `src`), so the count is 1 on
+ * a production build and 2 under the dev server's StrictMode. Before the fix it was 2 and 4.
+ */
+async function caseOneDecode(port) {
+  const page = await visitPage(port, false)
+  try {
+    await page.send('Page.addScriptToEvaluateOnNewDocument', {
+      source: `window.__paintingDraws = 0
+        const draw = CanvasRenderingContext2D.prototype.drawImage
+        CanvasRenderingContext2D.prototype.drawImage = function (image, ...rest) {
+          if (image instanceof HTMLImageElement && /\\/reference\\/painting\\.jpg$/.test(new URL(image.src).pathname)) window.__paintingDraws++
+          return draw.call(this, image, ...rest)
+        }`,
+    })
+    await open(page, '?arrival=0', DESKTOP)
+    await page.waitFor('window.__skyReady && window.__portal && window.__portal().diorama', 60000, 'the sky, the cypress and the land')
+    await sleep(1000)
+    const { draws, dev } = await page.evaluate(`({ draws: window.__paintingDraws, dev: ${IS_DEV} })`)
+    const expected = dev ? 2 : 1
+    if (draws !== expected) throw new Error(`case 5: painting.jpg was decoded ${draws} times, expected ${expected} (${dev ? 'dev server, StrictMode' : 'production build'})`)
+    if (page.errors.length) throw new Error(`case 5: page errors\n  ${page.errors.join('\n  ')}`)
+    console.log(`PASS 5: the diorama decoded painting.jpg ${draws} time${draws === 1 ? '' : 's'} (${dev ? 'dev server, StrictMode doubles it' : 'production build'})`)
+  } finally {
+    await page.close()
+  }
+}
+
+/** How long a plain visit takes from its navigation to the curtain's removal, with the cypress's and the land's seams read then. */
+async function openingMs(port, blockPainting) {
+  const page = await visitPage(port, false)
+  try {
+    if (blockPainting) {
+      await page.send('Network.setBlockedURLs', { urls: ['*/reference/painting.jpg*'] })
+      await page.send('Network.setCacheDisabled', { cacheDisabled: true })
+    }
+    const start = Date.now()
+    await open(page, '?arrival=1', DESKTOP)
+    await page.waitFor(`window.__bootAtLoad === true && !document.getElementById('boot')`, 60000, `the curtain's removal (${blockPainting ? 'painting blocked' : 'nothing blocked'})`)
+    const ms = Date.now() - start
+    const state = await page.evaluate(`({ diorama: Boolean(window.__portal && window.__portal().diorama), fallback: Boolean(document.querySelector('.page-failed')), canvases: document.querySelectorAll('canvas').length })`)
+    return { ms, ...state, consoleErrors: page.consoleErrors.slice(), errors: page.errors.slice() }
+  } finally {
+    await page.close()
+  }
+}
+
+/**
+ * Case 6 (the audit's item 7): with `painting.jpg` blocked, the cypress and the land report ready, so the opening does
+ * not wait out `ARRIVAL.readyTimeout` (15 s). The control is the same visit with nothing blocked, on this machine. The
+ * page keeps its scene (no fallback: the sky reads other files), and the diorama logs the failure once.
+ */
+async function casePaintingFails(port) {
+  const control = await openingMs(port, false)
+  const blocked = await openingMs(port, true)
+  const dioramaLogs = blocked.consoleErrors.filter((text) => text.includes('[diorama] /reference/painting.jpg failed to load')).length
+  const cypressLogs = blocked.consoleErrors.filter((text) => text.includes('[cypress] /reference/painting.jpg failed to load')).length
+  const summary = JSON.stringify({ controlMs: control.ms, blockedMs: blocked.ms, diorama: blocked.diorama, fallback: blocked.fallback, canvases: blocked.canvases, dioramaLogs, cypressLogs, errors: blocked.errors })
+  if (!control.diorama) throw new Error(`case 6: the control's cypress and land were not ready at the curtain's removal ${JSON.stringify(control)}`)
+  if (!blocked.diorama) throw new Error(`case 6: with the painting blocked the cypress or the land never reported ready ${summary}`)
+  if (blocked.ms > control.ms + 6000) throw new Error(`case 6: with the painting blocked the opening took ${blocked.ms} ms against ${control.ms} ms: it waited ${summary}`)
+  if (blocked.fallback || blocked.canvases < 1) throw new Error(`case 6: a failed painting must leave the scene up ${summary}`)
+  // one log per failure, or two under the dev server's StrictMode, and never the cypress's own: the diorama owns the load
+  if (dioramaLogs < 1 || dioramaLogs > 2 || cypressLogs !== 0) throw new Error(`case 6: the failure's log ${summary}`)
+  if (blocked.errors.length) throw new Error(`case 6: page errors ${summary}`)
+  console.log(`PASS 6: with painting.jpg blocked the opening took ${blocked.ms} ms against ${control.ms} ms unblocked, the cypress and the land ready, the scene up, ${dioramaLogs} log from the diorama`)
+}
+
 async function main() {
   mkdirSync(outDir, { recursive: true })
   const chromesBefore = countHeadlessChromes()
@@ -403,6 +477,8 @@ async function main() {
         await caseControl(port, name, query, viewport)
       }
     }
+    await caseOneDecode(port)
+    await casePaintingFails(port)
   } finally {
     chrome.cleanup()
   }
