@@ -61,7 +61,7 @@ test('drapeOnDomes emits a continuous strip through row-back\'s crossings (the r
   // a ribbon along s at t 0.5, every sample one source column apart, the seed in the middle
   const domes = domesOf(rowBack)
   const samples = Array.from({ length: 201 }, (_, k) => ({ px: k / 200, py: 0.5, inside: true }))
-  const ribbon: CypressRibbon = { samples, seedSample: samples[100], colour: [0.2, 0.3, 0.3], halfWidth: 0.01, relief: 1, seed: 1 }
+  const ribbon: CypressRibbon = { samples, seedSample: samples[100], colour: [0.2, 0.3, 0.3], colours: [], halfWidth: 0.01, relief: 1, seed: 1 }
   const columns = ribbonColumns(ribbon, 200, 60, 1, STRIP_COLUMNS)
   const strip = drapeOnDomes(ribbon, columns, domes, rowBack, true)
   assert.ok(strip && strip.steps.length >= 150, `${strip?.steps.length ?? 0} steps kept`)

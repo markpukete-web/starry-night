@@ -14,7 +14,7 @@ test('the grass fogs at the blade\'s own depth', () => {
     vertexShader: ShaderLib.basic.vertexShader,
     fragmentShader: ShaderLib.basic.fragmentShader,
     uniforms: {},
-  }
+  } as unknown as WebGLProgramParametersWithUniforms
 
   mat.onBeforeCompile(shader, {} as never)
 
@@ -52,7 +52,7 @@ test('the unlit grass compiles to main\'s program, and the moon gets a cache key
   const rect: [number, number, number, number] = [0, 0, 1, 1]
   const compiled = (ids: boolean, lit: boolean) => {
     const mat = buildGrassMaterial(texture, rect, ids, lit)
-    const shader: WebGLProgramParametersWithUniforms = { vertexShader: ShaderLib.basic.vertexShader, fragmentShader: ShaderLib.basic.fragmentShader, uniforms: {} }
+    const shader: WebGLProgramParametersWithUniforms = { vertexShader: ShaderLib.basic.vertexShader, fragmentShader: ShaderLib.basic.fragmentShader, uniforms: {} } as unknown as WebGLProgramParametersWithUniforms
     mat.onBeforeCompile(shader, {} as never)
     return { hash: createHash('sha256').update(`${shader.vertexShader}\n//--\n${shader.fragmentShader}`).digest('hex').slice(0, 16), key: mat.customProgramCacheKey() }
   }
@@ -66,7 +66,7 @@ test('the unlit grass compiles to main\'s program, and the moon gets a cache key
 
 test("the moon reads the blade's own arguments: both calls take one argument text (Codex R7)", () => {
   const mat = buildGrassMaterial(new DataTexture(new Uint8Array(2), 1, 1, RGFormat), [0, 0, 1, 1], false, true)
-  const shader: WebGLProgramParametersWithUniforms = { vertexShader: ShaderLib.basic.vertexShader, fragmentShader: ShaderLib.basic.fragmentShader, uniforms: {} }
+  const shader: WebGLProgramParametersWithUniforms = { vertexShader: ShaderLib.basic.vertexShader, fragmentShader: ShaderLib.basic.fragmentShader, uniforms: {} } as unknown as WebGLProgramParametersWithUniforms
   mat.onBeforeCompile(shader, {} as never)
   const calls = (name: string) => Array.from(shader.vertexShader.matchAll(new RegExp(`\\b${name}\\(([^;]*?)\\)( \\*|;)`, 'g'))).map((m) => m[1])
   assert.deepEqual(calls('grassBladeVertex'), [GRASS_BLADE_ARGS])
@@ -76,7 +76,7 @@ test("the moon reads the blade's own arguments: both calls take one argument tex
 
 test("the moon's fragment lights the arch's outer edge, before the stroke body (Codex B3, B4)", () => {
   const mat = buildGrassMaterial(new DataTexture(new Uint8Array(2), 1, 1, RGFormat), [0, 0, 1, 1], false, true)
-  const shader: WebGLProgramParametersWithUniforms = { vertexShader: ShaderLib.basic.vertexShader, fragmentShader: ShaderLib.basic.fragmentShader, uniforms: {} }
+  const shader: WebGLProgramParametersWithUniforms = { vertexShader: ShaderLib.basic.vertexShader, fragmentShader: ShaderLib.basic.fragmentShader, uniforms: {} } as unknown as WebGLProgramParametersWithUniforms
   mat.onBeforeCompile(shader, {} as never)
   const fs = shader.fragmentShader
   const mixAt = fs.indexOf('diffuseColor.rgb = mix(diffuseColor.rgb, vTopColour')

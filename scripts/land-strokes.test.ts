@@ -29,7 +29,7 @@ test('terrainAt: null beyond the coast, a unit up-facing normal and the island\'
 function ribbonAlong(us: number[], v: number, seedIndex: number, halfWidth = 0.002): CypressRibbon {
   const py = (v - LAND_MAP.bandV0) / (1 - LAND_MAP.bandV0)
   const samples = us.map((px) => ({ px, py, inside: true }))
-  return { samples, seedSample: samples[seedIndex], colour: [0.2, 0.3, 0.2], halfWidth, relief: 1, seed: 1 }
+  return { samples, seedSample: samples[seedIndex], colour: [0.2, 0.3, 0.2], colours: [], halfWidth, relief: 1, seed: 1 }
 }
 
 test('drapeOnTerrain: a column beyond the coast ends the run above the seed, restarts it below, and a seed beyond it means no run', () => {
