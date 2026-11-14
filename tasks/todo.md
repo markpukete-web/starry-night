@@ -1,8 +1,8 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-11-14 (16:20): three PRs open (#45, #46, #47), Codex reading two; item 1 is its own slice
+## Pickup — 2026-11-14 (16:08): three PRs open (#45, #46, #47), Codex reading two; item 1 is its own slice
 
-Mark, 16:10: "Good, go for your recommendations and well record where we at". The record is
+Mark, about 16:00: "Good, go for your recommendations and well record where we at". The record is
 `tasks/2026-11-14-audit.md`, "The slices" and "Head 2 in CI".
 
 **Open PRs.** #46 and #47 are stacked on #45, so each diff shows its own slice:
@@ -10,10 +10,10 @@ Mark, 16:10: "Good, go for your recommendations and well record where we at". Th
 - **#45** `chore/audit-2026-11-14`: the audit's gate fixes, the dead dome-sky stack removed, the record. CI green,
   Codex's review clean on `5919748`. Every later commit is prose. The merge is Mark's.
 - **#46** `fix/audit-failure-paths-diorama` (`6c62079`): items 5, 6, 7, 11b, 11c, 12, 13. Gated: 502 of 502, 11
-  frames identical, four browser checks. Codex's review started 16:15.
+  frames identical, four browser checks. Codex's review started about 16:05.
 - **#47** `perf/audit-street-build` (`01e20ce`): items 3, 14, 15. It is head 2 without item 1's two CI commits, and
   differs from the gated `e059a22` only in `ci.yml`. Its CI run by dispatch is green (run 43564578666: 494 tests,
-  426 pass, 68 skipped, as `main` skips today). Codex's review started 16:15.
+  426 pass, 68 skipped, as `main` skips today). Codex's review started about 16:05.
 
 **Next session, in order:**
 
