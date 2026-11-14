@@ -415,8 +415,9 @@ if (sources) {
     const mean: Lab = { l: sumL / area, a: sumA / area, b: sumB / area }
     const dE = deltaE76(mean, def.ref)
 
-    if (dE >= 10) {
-      failures.push(`${name}: ΔE76 ${dE.toFixed(2)} >= 10`)
+    // NaN passes `dE >= 10`, so a ΔE that is not finite fails here: a work painting of another size gives NaN targets
+    if (!(dE < 10)) {
+      failures.push(`${name}: ΔE76 ${dE.toFixed(2)} is not under 10`)
       console.log(`  ${name.padEnd(12)}: FAIL ΔE76 ${dE.toFixed(2)} (area ${area} px, mean Lab [${mean.l.toFixed(1)}, ${mean.a.toFixed(1)}, ${mean.b.toFixed(1)}])`)
     } else {
       console.log(`  ${name.padEnd(12)}: PASS ΔE76 ${dE.toFixed(2)} < 10 (area ${area} px, mean Lab [${mean.l.toFixed(1)}, ${mean.a.toFixed(1)}, ${mean.b.toFixed(1)}])`)
@@ -536,8 +537,9 @@ if (sources) {
     const diagDE = def.diag ? deltaE76(mean, def.diag) : null
     const diagStr = diagDE !== null ? ` (diag to ${def.diagName ?? 'palette'}: ${diagDE.toFixed(2)})` : ''
 
-    if (dE >= 10) {
-      failures.push(`${name}: ΔE76 ${dE.toFixed(2)} >= 10`)
+    // NaN passes `dE >= 10`, as above
+    if (!(dE < 10)) {
+      failures.push(`${name}: ΔE76 ${dE.toFixed(2)} is not under 10`)
       console.log(`  ${name.padEnd(8)}: FAIL ΔE76 ${dE.toFixed(2)} (area ${area} px, mean Lab [${mean.l.toFixed(1)}, ${mean.a.toFixed(1)}, ${mean.b.toFixed(1)}])${diagStr}`)
     } else {
       console.log(`  ${name.padEnd(8)}: PASS ΔE76 ${dE.toFixed(2)} < 10 (area ${area} px, mean Lab [${mean.l.toFixed(1)}, ${mean.a.toFixed(1)}, ${mean.b.toFixed(1)}])${diagStr}`)
