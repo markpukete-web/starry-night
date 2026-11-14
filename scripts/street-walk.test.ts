@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import test from 'node:test'
-import { STATION_T, STREET, WALK_T } from '../src/scene/streetLayout.ts'
+import { mulberry32 } from '../src/scene/brush.ts'
+import { STATION_T, STREET, vincentPlace, WALK_T } from '../src/scene/streetLayout.ts'
+import * as walk from '../src/scene/streetWalk.ts'
 import {
   admitGesture,
   autoOn,
@@ -27,6 +30,7 @@ import {
   type WalkInput,
   type WalkState,
 } from '../src/scene/streetWalk.ts'
+import { roundedJson } from './lib/rounded-json.ts'
 
 test('the wheel walks forward and eases', () => {
   const L = STREET.pathLength
@@ -187,9 +191,6 @@ test('a tap toggles, and under still steps to the next stop', () => {
   assert.equal(s044.t, 0.66, 'from 0.44 gives 0.66')
   assert.equal(s044.auto, false, 'auto is false')
 
-  const s09 = toggleWalk(initialWalk(0.9, false), true)
-  assert.equal(s09.t, 0.9, 'from 0.9 stays 0.9')
-  assert.equal(s09.auto, false, 'auto is false')
 })
 
 test('wheel units', () => {
@@ -275,7 +276,7 @@ test('the turn comes in after the rest and leaves before the dwell ends', () => 
 
 test('input ends a dwell', () => {
   for (const over of [{ wheelPx: 100 }, { keys: 1 as const }]) {
-    const r = frame(initialWalk(STATION_T[1], true), { dwell: 2, rest: 0, turn: 0, last: STATION_T[1] }, over)
+    const r = frame(initialWalk(STATION_T[1], true), { dwell: 2, rest: 0, turn: 0, last: STATION_T[1], about: 0 }, over)
     assert.equal(r.p.dwell, 0, `${JSON.stringify(over)} ends the dwell`)
     assert.ok(r.s.t > STATION_T[1], `${JSON.stringify(over)}: that frame's walk step stands`)
   }
@@ -304,7 +305,7 @@ test('a scroll across a station makes no stop', () => {
 })
 
 test('a dwell ended by a step back does not start again', () => {
-  let r = frame(initialWalk(STATION_T[1], true), { dwell: 2, rest: 0, turn: 0, last: STATION_T[1] }, { keys: -1 })
+  let r = frame(initialWalk(STATION_T[1], true), { dwell: 2, rest: 0, turn: 0, last: STATION_T[1], about: 0 }, { keys: -1 })
   assert.equal(r.p.dwell, 0, 'the step back ends the dwell')
   for (let k = 0; k < 20; k++) {
     r = frame(r.s, r.p)
@@ -314,7 +315,7 @@ test('a dwell ended by a step back does not start again', () => {
 })
 
 test('a walk back past the station re-arms it', () => {
-  let r = { s: initialWalk(0.215, true), p: { dwell: 0, rest: 0, turn: 0, last: STATION_T[1] } as Pause }
+  let r = { s: initialWalk(0.215, true), p: { dwell: 0, rest: 0, turn: 0, last: STATION_T[1], about: 0 } as Pause }
   for (let k = 0; k < 50 && r.p.dwell === 0; k++) r = frame(r.s, r.p)
   assert.equal(r.p.dwell, PAUSE.dwell, 'the crossing of 0.23 starts a 4 s dwell')
   assert.equal(r.p.last, STATION_T[1])
@@ -322,7 +323,7 @@ test('a walk back past the station re-arms it', () => {
 
 test('a stop on blur keeps the dwell', () => {
   const s = stopWalk(initialWalk(STATION_T[1], true))
-  const r = frame(s, { dwell: 2, rest: 0, turn: 0, last: STATION_T[1] })
+  const r = frame(s, { dwell: 2, rest: 0, turn: 0, last: STATION_T[1], about: 0 })
   assert.equal(r.s.auto, true)
   assert.equal(r.s.t, STATION_T[1])
   assert.ok(near(r.p.dwell, 1.99), `dwell is 1.99 (got ${r.p.dwell})`)
@@ -466,4 +467,268 @@ test('the held keys: Cmd+Arrow holds nothing, and a Meta release clears both, si
       shiftUp: both,
     },
   )
+})
+
+// The walk's end and the walk back (tasks/2026-11-14-walk-end-plan.md, tests 1 to 7, 9 and 10). Each walk steps at dt
+// 1/60 through `stepWalk` then `stepPause`, the frame loop's order. `walk.` reads the names the base commit lacks, so
+// this file still loads there (F6)
+const DT = 1 / 60
+const PHONE: WalkInput = { dt: DT, wheelPx: 0, keys: 0, autoMode: true, paused: false, still: false }
+const ease = (x: number) => x * x * (3 - 2 * x)
+const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a))
+const aboutOf = (p: Pause): number => p.about ?? 0
+/** his turn: the figure's yaw relative to the lane, with no slot yaw in it (Argon's A4, V4-1) */
+const hisTurn = (p: Pause) => Math.PI * ease(aboutOf(p)) + turnPose(p.turn, aboutOf(p)).body
+/** test 7's bar: the steepest step of the dwell's turn-out in the forward walk Mark passed, from the constants */
+const BAR = (PAUSE.body * 1.5 * DT) / PAUSE.turnOut + 1e-9
+
+type Frame = { prevT: number; t: number; turn: number; about: number; dwell: number; his: number; head: number; distance: number; speed: number }
+
+function step(s: WalkState, p: Pause, over: Partial<WalkInput> = {}): { s: WalkState; p: Pause } {
+  const i = { ...PHONE, ...over }
+  const r = stepPause(s, stepWalk(s, i), p, i, false)
+  return { s: r.next, p: r.pause }
+}
+
+function record(prevT: number, s: WalkState, p: Pause): Frame {
+  const about = aboutOf(p)
+  return { prevT, t: s.t, turn: p.turn, about, dwell: p.dwell, his: hisTurn(p), head: turnPose(p.turn, about).head, distance: s.distance, speed: s.speed }
+}
+
+/** the automatic walk stepped until it turns off, or the cap */
+function walkOn(s: WalkState, p: Pause, cap = 20000): { s: WalkState; p: Pause; frames: Frame[]; ended: boolean } {
+  const frames: Frame[] = []
+  while (s.auto && frames.length < cap) {
+    const prevT = s.t
+    ;({ s, p } = step(s, p))
+    frames.push(record(prevT, s, p))
+  }
+  return { s, p, frames, ended: !s.auto }
+}
+
+const forwardWalk = () => walkOn(initialWalk(0, true), initialPause())
+
+/** test 2's walk: from the end of test 1 with the lantern raised, a tap on him, then the automatic walk */
+function walkBack() {
+  const f = forwardWalk()
+  const p = { ...f.p, turn: 1 }
+  const tapped = toggleWalk(f.s, false, true)
+  return { start: p, tapped, ...walkOn(tapped, p) }
+}
+
+function roundTrip() {
+  const b = walkBack()
+  const tapped = toggleWalk(b.s, false, true)
+  return { start: b.p, tapped, ...walkOn(tapped, b.p) }
+}
+
+/** the runs of frames with a dwell: the station and the run's length in frames */
+function dwells(frames: Frame[]): { station: number; frames: number }[] {
+  const out: { station: number; frames: number }[] = []
+  let k = 0
+  while (k < frames.length) {
+    if (frames[k].dwell > 0) {
+      const station = frames[k].t
+      let n = 0
+      while (k < frames.length && frames[k].dwell > 0) {
+        assert.equal(frames[k].t, station, `the dwell at ${station} holds t`)
+        n++
+        k++
+      }
+      out.push({ station, frames: n })
+    } else k++
+  }
+  return out
+}
+
+test('the walk end, 1: the forward walk is unchanged, t and turn', () => {
+  const f = forwardWalk()
+  assert.ok(f.ended, 'the forward walk ends')
+  const pairs = f.frames.map((x) => [x.t, x.turn])
+  // read on the base: 1429a57 (main 8ebb527's walk code, the plan only on top), 2,337 frames. The `t` alone hashes to
+  // a7dd47de8e3b1696 there, as Argon read it on 1dc440d
+  assert.equal(pairs.length, 2337, 'frames')
+  assert.equal(createHash('sha256').update(roundedJson(pairs)).digest('hex').slice(0, 16), 'f4152ecffdc095cd', 'the [t, turn] hash')
+})
+
+test('the walk end, 2: a tap at stop 4 turns him, and the automatic walk takes him back to stop 0 with its dwells', () => {
+  const b = walkBack()
+  assert.equal(b.tapped.dir, -1, 'the tap gives dir -1')
+  assert.equal(b.tapped.auto, true, 'the tap turns the automatic walk on')
+  assert.ok(b.ended, `the automatic walk turned off within the cap (t ${b.s.t})`)
+  assert.equal(typeof walk.facesMotion, 'function', 'facesMotion exists')
+  const first = b.frames.findIndex((f) => f.t !== f.prevT)
+  assert.ok(first >= 0, 'he moved')
+  const f0 = b.frames[first]
+  assert.ok(f0.about === 1 && f0.turn < PAUSE.turnGate, `t first changes on frame ${first} with about ${f0.about} and turn ${f0.turn}`)
+  let his = hisTurn(b.start)
+  for (let k = 0; k <= first; k++) {
+    // 1e-12 is float rounding: with turn 1 and about rising his turn is π/2, but not to the last bit
+    assert.ok(b.frames[k].his >= his - 1e-12, `his turn fell on frame ${k}: ${his} to ${b.frames[k].his}`)
+    his = b.frames[k].his
+  }
+  const d = dwells(b.frames)
+  assert.deepEqual(d.map((x) => x.station), [STATION_T[3], STATION_T[2], STATION_T[1]], 'dwells at 0.66, 0.44, 0.23, none at 0.9 or 0')
+  for (const x of d) assert.ok(Math.abs(x.frames * DT - PAUSE.dwell) <= DT + 1e-9, `the dwell at ${x.station} lasts ${x.frames} frames`)
+  const falling = b.frames.filter((f) => f.t < f.prevT)
+  let striding = 0
+  for (const f of falling) {
+    const faces = walk.facesMotion(f.prevT, f.t, f.about)
+    assert.ok(f.turn < PAUSE.turnGate && faces, `at t ${f.t}: turn ${f.turn}, facesMotion ${faces}`)
+    if (gait(f.distance, f.speed, faces, f.turn).leg !== 0) striding++
+  }
+  assert.ok(striding > falling.length / 2, `he strides on ${striding} of ${falling.length} frames`)
+  assert.equal(b.s.t, WALK_T.min, 'the walk ends at t 0')
+  assert.equal(b.s.auto, false, 'with the automatic walk off')
+})
+
+test('the walk end, 3: a tap at stop 0 turns him again, and the walk forward repeats the dwells', () => {
+  const r = roundTrip()
+  assert.equal(r.tapped.dir, 1, 'the tap gives dir 1')
+  assert.equal(r.tapped.auto, true, 'the tap turns the automatic walk on')
+  assert.ok(r.ended, 'the automatic walk turned off within the cap')
+  assert.deepEqual(dwells(r.frames), dwells(forwardWalk().frames), "test 1's dwells")
+  assert.equal(r.s.t, WALK_T.max, 'the walk ends at t 0.9')
+})
+
+test('the walk end, 4: a tap mid-lane toggles the walk and keeps dir', () => {
+  for (const dir of [1, -1] as const) {
+    const on = { ...initialWalk(0.3, true), dir }
+    const off = toggleWalk(on, false, true)
+    assert.deepEqual([off.auto, off.dir], [false, dir], `dir ${dir}: a tap stops him`)
+    const again = toggleWalk(off, false, true)
+    assert.deepEqual([again.auto, again.dir], [true, dir], `dir ${dir}: a second tap starts him`)
+  }
+})
+
+test('the walk end, 5: in the still state taps from 0.9 visit every station down, then flip and go up', () => {
+  for (const autoMode of [false, true]) {
+    let s = initialWalk(0.9, autoMode)
+    const visits: number[] = []
+    for (let k = 0; k < 6; k++) {
+      s = toggleWalk(s, true, autoMode)
+      assert.equal(s.auto, false, 'auto is false')
+      visits.push(s.t)
+    }
+    assert.deepEqual(visits, [0.66, 0.44, 0.23, 0, 0.23, 0.44], `autoMode ${autoMode}`)
+  }
+})
+
+test('the walk end, 6: at a dwell he faces the same way in the world going up and coming back', () => {
+  const station = STATION_T[2]
+  const up = forwardWalk().frames.find((f) => f.t === station && f.turn === 1)
+  const back = walkBack().frames.find((f) => f.t === station && f.turn === 1)
+  assert.ok(up && back, 'a frame at 0.44 turned in full each way')
+  const slot = vincentPlace(station).yaw
+  assert.ok(Math.abs(wrap(slot + up.his - (slot + back.his))) <= 1e-9, `up ${up.his}, back ${back.his}`)
+})
+
+test("the walk end, 7: no snap, his turn steps by at most the passed walk's steepest step", () => {
+  for (const r of [walkBack(), roundTrip()]) {
+    let his = hisTurn(r.start)
+    r.frames.forEach((f, k) => {
+      assert.ok(Math.abs(f.his - his) <= BAR, `frame ${k}: his turn stepped ${Math.abs(f.his - his)}`)
+      his = f.his
+    })
+  }
+  // the sweep: a half-turn at each end from five turns, through `stepPause` with the automatic walk on
+  const ends = [
+    { t: WALK_T.max, dir: 1, about: 0, sign: 1 },
+    { t: WALK_T.min, dir: -1, about: 1, sign: -1 },
+  ] as const
+  for (const end of ends) {
+    for (const turn of [0, 0.25, 0.5, 0.75, 1]) {
+      const what = `the half-turn at t ${end.t} from turn ${turn}`
+      let s = toggleWalk({ ...initialWalk(end.t, true), dir: end.dir, auto: false }, false, true)
+      let p: Pause = { ...initialPause(), turn, rest: 1, about: end.about }
+      let his = hisTurn(p)
+      let head = turnPose(p.turn, aboutOf(p)).head
+      for (let k = 0; k < 200; k++) {
+        const prevT = s.t
+        ;({ s, p } = step(s, p))
+        const f = record(prevT, s, p)
+        assert.ok(end.sign * (f.his - his) >= -1e-12, `${what}, frame ${k}: his turn went back, ${his} to ${f.his}`)
+        assert.ok(Math.abs(f.his - his) <= BAR, `${what}, frame ${k}: his turn stepped ${Math.abs(f.his - his)}`)
+        assert.ok(Math.abs(f.head - head) <= BAR, `${what}, frame ${k}: his head stepped ${Math.abs(f.head - head)}`)
+        his = f.his
+        head = f.head
+        if (f.t !== prevT) {
+          assert.ok(f.turn < PAUSE.turnGate, `${what}: turn ${f.turn} on the first frame he moves`)
+          break
+        }
+      }
+    }
+  }
+})
+
+test('the walk end, 9a: turned at a stand, a back key slides him back turned (V1)', () => {
+  let r = { s: { ...initialWalk(0.3, true), auto: false }, p: { ...initialPause(), turn: 1, rest: 1 } }
+  for (let k = 0; k < 30; k++) r = step(r.s, r.p, { keys: -1 })
+  assert.ok(r.s.t < 0.3, 'precondition: he moved back')
+  assert.equal(r.p.turn, 1, 'turn is still 1')
+})
+
+test('the walk end, 9b: after the walk back a forward key turns him to face up the lane', () => {
+  const b = walkBack()
+  let r = { s: b.s, p: b.p }
+  assert.ok(r.s.t === WALK_T.min && aboutOf(r.p) === 1, `precondition: at 0 facing down (t ${r.s.t}, about ${aboutOf(r.p)})`)
+  const frames: Frame[] = []
+  for (let k = 0; k < 60; k++) {
+    const prevT = r.s.t
+    r = step(r.s, r.p, { keys: 1 })
+    if (k === 0) assert.equal(r.s.dir, 1, 'dir is 1 from the first frame')
+    frames.push(record(prevT, r.s, r.p))
+  }
+  const zero = frames.findIndex((f) => f.about === 0)
+  assert.ok(zero >= 0 && (zero + 1) * DT <= PAUSE.about + DT + 1e-9, `about reaches 0 on frame ${zero}`)
+  assert.ok(r.s.t > WALK_T.min, 't rises')
+  for (const f of frames.slice(zero + 1)) assert.ok(walk.facesMotion(f.prevT, f.t, f.about), `facesMotion at t ${f.t}`)
+})
+
+test('the walk end, 9c: on the desktop a tap at 0.9 does not turn him', () => {
+  let r = { s: toggleWalk(initialWalk(WALK_T.max, false), false, false), p: initialPause() }
+  assert.equal(r.s.dir, 1, 'dir is 1')
+  for (let k = 0; k < 60; k++) {
+    r = step(r.s, r.p, { autoMode: false })
+    assert.equal(aboutOf(r.p), 0, `about is 0 on frame ${k}`)
+  }
+})
+
+test('the walk end, 10: the property test, 500 seeded sequences of 600 frames in each mode', () => {
+  const SEQUENCES = 500
+  const FRAMES = 600
+  for (const autoMode of [true, false]) {
+    for (let seed = 1; seed <= SEQUENCES; seed++) {
+      const rand = mulberry32(autoMode ? seed : 100000 + seed)
+      const station = STATION_T[Math.floor(rand() * STATION_T.length)]
+      const dir = autoMode && rand() < 0.5 ? -1 : 1
+      let s: WalkState = { ...initialWalk(station, autoMode), dir }
+      let p: Pause = { ...initialPause(), about: dir === -1 ? 1 : 0 }
+      let idle = 0
+      for (let k = 0; k < FRAMES; k++) {
+        const fail = (what: string) =>
+          assert.fail(`seed ${seed}, autoMode ${autoMode}, frame ${k}: ${what} (t ${s.t}, dir ${s.dir}, about ${aboutOf(p)}, turn ${p.turn})`)
+        let keys: -1 | 0 | 1 = 0
+        let wheelPx = 0
+        if (idle > 0) idle--
+        else {
+          const act = Math.floor(rand() * 6)
+          if (act === 1) s = toggleWalk(s, false, autoMode)
+          else if (act === 2) keys = 1
+          else if (act === 3) keys = -1
+          else if (act === 4) wheelPx = rand() < 0.5 ? 120 : -120
+          else if (act === 5) idle = 1 + Math.floor(rand() * 60)
+        }
+        const before = hisTurn(p)
+        const prevT = s.t
+        ;({ s, p } = step(s, p, { keys, wheelPx, autoMode }))
+        if (!autoMode && s.dir !== 1) fail('dir is not 1 with autoMode false')
+        if (keys > 0 && s.dir !== 1) fail('dir is not 1 after a forward key')
+        const end = s.dir === -1 ? 1 : 0
+        const against = Math.abs(s.t - prevT) > 1e-7 && !walk.facesMotion(prevT, s.t, aboutOf(p))
+        if (against && !((s.dir === 1 && s.t < prevT) || aboutOf(p) !== end)) fail(`he moved ${prevT} to ${s.t} against his facing`)
+        if (Math.abs(hisTurn(p) - before) > BAR) fail(`his turn stepped ${Math.abs(hisTurn(p) - before)}`)
+      }
+    }
+  }
 })
