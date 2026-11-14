@@ -9,6 +9,8 @@ import {
   hitBox,
   initialPause,
   initialWalk,
+  keyDown,
+  keyUp,
   lag,
   limbs,
   PAUSE,
@@ -20,6 +22,7 @@ import {
   turnPose,
   wheelPixels,
   vincentGround,
+  type HeldKeys,
   type Pause,
   type WalkInput,
   type WalkState,
@@ -433,4 +436,34 @@ test('autoOn: true exactly when the automatic walk moves him, for all sixteen in
       }
     }
   }
+})
+
+test('the held keys: Cmd+Arrow holds nothing, and a Meta release clears both, since macOS sends no keyup for a key released while Cmd is down (the audit, item 11c)', () => {
+  const none: HeldKeys = { forward: false, back: false }
+  const both: HeldKeys = { forward: true, back: true }
+  const press = (code: string, metaKey = false) => ({ code, metaKey })
+  const release = (code: string, key: string) => ({ code, key })
+  // one table, so a red run names every case it gets wrong
+  assert.deepEqual(
+    {
+      arrowUp: keyDown(none, press('ArrowUp')),
+      keyS: keyDown(none, press('KeyS')),
+      cmdArrowUp: keyDown(none, press('ArrowUp', true)),
+      cmdArrowDown: keyDown(none, press('ArrowDown', true)),
+      metaLeftUp: keyUp(both, release('MetaLeft', 'Meta')),
+      metaRightUp: keyUp(both, release('MetaRight', 'Meta')),
+      arrowUpUp: keyUp(both, release('ArrowUp', 'ArrowUp')),
+      shiftUp: keyUp(both, release('ShiftLeft', 'Shift')),
+    },
+    {
+      arrowUp: { forward: true, back: false },
+      keyS: { forward: false, back: true },
+      cmdArrowUp: none,
+      cmdArrowDown: none,
+      metaLeftUp: none,
+      metaRightUp: none,
+      arrowUpUp: { forward: false, back: true },
+      shiftUp: both,
+    },
+  )
 })
