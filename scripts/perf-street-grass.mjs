@@ -1,8 +1,7 @@
 #!/usr/bin/env node
-import { spawn } from 'node:child_process'
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { mkdirSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
+import { debugPort, openPage, PORTS, startChrome } from './lib/chrome.mjs'
 import { pathPoint, pathTangent, STATION_T } from '../src/scene/streetLayout.ts'
 import { GRASS_BLADE } from '../src/scene/grassBlade.ts'
 
@@ -22,135 +21,23 @@ const opt = (name, fallback) => {
 const stationOpt = opt('station', null)
 const viewportOpt = opt('viewport', null)
 
-const appUrl = process.env.DIORAMA_CAPTURE_URL || 'http://127.0.0.1:5191/'
+const appUrl = process.env.DIORAMA_CAPTURE_URL || `http://127.0.0.1:${PORTS['perf-street-grass'].app}/`
 const origin = new URL(appUrl).origin
-
-const chromePath =
-  process.env.CHROME_PATH ||
-  [
-    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-    '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser',
-  ].find((path) => existsSync(path))
-
-if (!chromePath) {
-  console.error('No Chrome-compatible browser found. Set CHROME_PATH.')
-  process.exit(1)
-}
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
-function startChrome(port) {
-  const userDataDir = mkdtempSync(join(tmpdir(), 'starry-perf-grass-'))
-  const child = spawn(
-    chromePath,
-    [
-      '--headless=new',
-      ...(process.env.CHROME_FLAGS ?? '').split(/\s+/).filter(Boolean),
-      '--hide-scrollbars',
-      '--mute-audio',
-      '--disable-background-networking',
-      '--disable-sync',
-      '--disable-extensions',
-      '--no-first-run',
-      '--no-default-browser-check',
-      `--user-data-dir=${userDataDir}`,
-      `--remote-debugging-port=${port}`,
-      'about:blank',
-    ],
-    { stdio: ['ignore', 'ignore', 'ignore'] },
-  )
-  return {
-    child,
-    userDataDir,
-    cleanup() {
-      child.kill()
-      rmSync(userDataDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 300 })
-    },
+async function evaluate(page, fnOrExpr, arg) {
+  let expression
+  if (typeof fnOrExpr === 'function') {
+    expression = arg !== undefined ? `(${fnOrExpr.toString()})(${JSON.stringify(arg)})` : `(${fnOrExpr.toString()})()`
+  } else {
+    expression = fnOrExpr
   }
+  return page.evaluate(expression)
 }
 
-async function waitForChrome(port, timeoutMs = 20000) {
-  const start = Date.now()
-  while (Date.now() - start < timeoutMs) {
-    try {
-      const response = await fetch(`http://127.0.0.1:${port}/json/version`)
-      if (response.ok) return
-    } catch {
-      /* wait */
-    }
-    await sleep(150)
-  }
-  throw new Error('Chrome DevTools endpoint did not become ready')
-}
-
-class CdpPage {
-  constructor(wsUrl) {
-    this.wsUrl = wsUrl
-    this.seq = 0
-    this.pending = new Map()
-    this.errors = []
-  }
-
-  async connect() {
-    this.ws = new WebSocket(this.wsUrl)
-    this.ws.addEventListener('message', (event) => this.onMessage(event))
-    await new Promise((resolve, reject) => {
-      this.ws.addEventListener('open', resolve, { once: true })
-      this.ws.addEventListener('error', reject, { once: true })
-    })
-    await this.send('Page.enable')
-    await this.send('Runtime.enable')
-  }
-
-  onMessage(event) {
-    const message = JSON.parse(event.data)
-    if (message.id && this.pending.has(message.id)) {
-      const { resolve, reject } = this.pending.get(message.id)
-      this.pending.delete(message.id)
-      if (message.error) reject(new Error(message.error.message))
-      else resolve(message.result)
-      return
-    }
-    if (message.method === 'Runtime.exceptionThrown') {
-      this.errors.push(message.params.exceptionDetails?.text || 'runtime exception')
-    }
-  }
-
-  send(method, params = {}) {
-    const id = ++this.seq
-    this.ws.send(JSON.stringify({ id, method, params }))
-    return new Promise((resolve, reject) => this.pending.set(id, { resolve, reject }))
-  }
-
-  async evaluate(fnOrExpr, arg) {
-    let expression
-    if (typeof fnOrExpr === 'function') {
-      expression = arg !== undefined ? `(${fnOrExpr.toString()})(${JSON.stringify(arg)})` : `(${fnOrExpr.toString()})()`
-    } else {
-      expression = fnOrExpr
-    }
-    const res = await this.send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true })
-    if (res.exceptionDetails) {
-      throw new Error(`Evaluation failed: ${res.exceptionDetails.text}`)
-    }
-    return res.result?.value
-  }
-
-  async waitForStreetReady(timeoutMs = 25000) {
-    const start = Date.now()
-    for (;;) {
-      await sleep(150)
-      const ready = await this.evaluate('Boolean(window.__streetReady)')
-      if (ready) return
-      if (Date.now() - start > timeoutMs) {
-        throw new Error('Timeout waiting for __streetReady')
-      }
-    }
-  }
-
-  async close() {
-    this.ws.close()
-  }
+function waitForStreetReady(page, timeoutMs = 25000) {
+  return page.waitFor('window.__streetReady', timeoutMs, '__streetReady', 150)
 }
 
 function getSweep3DEnds(station) {
@@ -175,16 +62,12 @@ const VIEWPORTS = {
 
 async function runSweep(station, viewportName) {
   const vp = VIEWPORTS[viewportName]
-  const port = 9600 + Math.floor(Math.random() * 300)
-  const chrome = startChrome(port)
+  const port = debugPort('perf-street-grass')
+  const chrome = await startChrome({ port, prefix: 'starry-perf-grass-' })
 
   try {
-    await waitForChrome(port)
-    const response = await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: 'PUT' })
-    if (!response.ok) throw new Error(`Failed to create Chrome target: ${response.status}`)
-    const target = await response.json()
-    const page = new CdpPage(target.webSocketDebuggerUrl)
-    await page.connect()
+    const page = await openPage(port)
+    try {
 
     await page.send('Emulation.setDeviceMetricsOverride', {
       width: vp.width,
@@ -196,13 +79,13 @@ async function runSweep(station, viewportName) {
     const url = `${origin}/?street=1&station=${station}&perf=1&arrival=0&walkMode=input`
     console.log(`Opening ${url} (${viewportName})...`)
     await page.send('Page.navigate', { url })
-    await page.waitForStreetReady()
+    await waitForStreetReady(page)
     await sleep(1000)
 
     const ends = getSweep3DEnds(station)
 
     // Start in-page sweep
-    await page.evaluate(({ pt0, pt1 }) => {
+    await evaluate(page, ({ pt0, pt1 }) => {
       const p0 = window.__walkProject(window.__streetWalk?.t ?? 0, pt0)
       const p1 = window.__walkProject(window.__streetWalk?.t ?? 0, pt1)
       window.__stopGrassSweep = false
@@ -223,7 +106,7 @@ async function runSweep(station, viewportName) {
     }, ends)
 
     // Clear __perf.t
-    await page.evaluate(() => {
+    await evaluate(page, () => {
       if (window.__perf) {
         window.__perf.t = []
       }
@@ -233,7 +116,7 @@ async function runSweep(station, viewportName) {
     await sleep(8000)
 
     // Read perf stats
-    const stats = await page.evaluate(() => {
+    const stats = await evaluate(page, () => {
       const perf = window.__perf
       if (!perf || perf.t.length < 30) return null
       const intervals = perf.t.slice(1).map((val, idx) => val - perf.t[idx]).sort((a, b) => a - b)
@@ -248,7 +131,7 @@ async function runSweep(station, viewportName) {
     })
 
     // Stop sweep
-    await page.evaluate(() => {
+    await evaluate(page, () => {
       window.__stopGrassSweep = true
       if (typeof window.__grassHand === 'function') {
         window.__grassHand(null)
@@ -274,10 +157,12 @@ async function runSweep(station, viewportName) {
     writeFileSync(outFile, JSON.stringify(result, null, 2))
     console.log(`Saved ${outFile}:`, result)
 
-    await page.close()
-    return result
+      return result
+    } finally {
+      await page.close()
+    }
   } finally {
-    chrome.cleanup()
+    await chrome.close()
   }
 }
 
