@@ -52,6 +52,8 @@ type Props = {
   onToggleOriginal: () => void
   /** The visitor's sky choice. */
   sky?: SkyStyle
+  /** The moving sky failed, so the sky draws painted light whatever the choice. */
+  skyFailed?: boolean
   /** Given only on the diorama route, which has the two skies. */
   onToggleSky?: () => void
   /** The lighter view's offer (src/scene/lighterView.ts), given while it waits for the visitor's answer. */
@@ -70,6 +72,7 @@ export function VisitorChrome({
   showOriginal,
   onToggleOriginal,
   sky = 'light',
+  skyFailed = false,
   onToggleSky,
   lighterOffer,
 }: Props) {
@@ -164,14 +167,15 @@ export function VisitorChrome({
             />
           )}
           {/* Under system reduced motion the sky is the painted still, so the choice is disabled, like the
-              pause button: removing it dropped keyboard focus to the page (review F8). The choice is kept. */}
+              pause button: removing it dropped keyboard focus to the page (review F8). The choice is kept.
+              A failed moving sky disables the choice the same way. */}
           {onToggleSky && (
             <VisitorButton
-              active={!reduced && sky === 'moving'}
-              disabled={reduced}
+              active={!reduced && !skyFailed && sky === 'moving'}
+              disabled={reduced || skyFailed}
               icon="≋"
-              label={reduced ? 'Sky choice paused by system setting' : sky === 'moving' ? 'Switch sky to painted light' : 'Switch sky to moving strokes'}
-              text={reduced || sky === 'light' ? 'Sky: painted light' : 'Sky: moving strokes'}
+              label={reduced ? 'Sky choice paused by system setting' : skyFailed ? 'Sky is painted light: moving strokes could not load' : sky === 'moving' ? 'Switch sky to painted light' : 'Switch sky to moving strokes'}
+              text={reduced || skyFailed || sky === 'light' ? 'Sky: painted light' : 'Sky: moving strokes'}
               onClick={onToggleSky}
             />
           )}

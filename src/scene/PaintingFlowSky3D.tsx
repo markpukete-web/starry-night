@@ -187,6 +187,8 @@ type Props = {
   ready?: RefObject<boolean>
   /** Street sky anchor: follow tracks camera translation, worldFixed locks rotation to world identity */
   anchor?: SkyAnchor
+  /** Called with the moving sky's failed state: false at mount, true once its worker, build or a source image fails. */
+  onMovingFailed?: (failed: boolean) => void
 }
 
 // The ALIVE define (make-it-alive A, the flag on) compiles the gust clock in; without it the shaders are main's:
@@ -831,7 +833,7 @@ function SourceOrbs({
 
 
 
-export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky = 'light', still = false, alive = false, tuning = ALIVE_DEFAULTS, clock: sharedClock, touch = false, touchStore, arrivalStep, ready: readyRef, anchor }: Props) {
+export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky = 'light', still = false, alive = false, tuning = ALIVE_DEFAULTS, clock: sharedClock, touch = false, touchStore, arrivalStep, ready: readyRef, anchor, onMovingFailed }: Props) {
   const skyRoot = useRef<Group>(null)
   // the sky clock as this frame wrote it, for the halos' breath (A2) and the foreground (A3): pinned, advanced,
   // or 0 while paused. The scene's ref when given, else this one.
@@ -854,6 +856,9 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
   // default since 2026-10-20) shows what the painted-light route would show, not an empty sky (Codex, PR #12 and
   // PR #13 P2s). Declared here because the loaders below report into it.
   const [movingFailed, setMovingFailed] = useState(false)
+  useEffect(() => {
+    onMovingFailed?.(movingFailed)
+  }, [movingFailed, onMovingFailed])
   const sourceFailed = () => setMovingFailed(true)
   const flowData = useImageData('/reference/signed-flow-filled.png', sourceFailed)
   const maskData = useImageData('/reference/sky-mask.png', sourceFailed)

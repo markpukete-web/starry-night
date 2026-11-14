@@ -92,6 +92,8 @@ type Props = {
   lighter?: boolean
   /** Given while the lighter view is watched for: called when the settled diorama stays under the bar. */
   onSlow?: () => void
+  /** Called with the moving sky's failed state: false at mount, true once its worker, build or a source image fails. */
+  onSkyFailed?: (failed: boolean) => void
   /** Visitor chrome (attribution, original placard, control dock) — rendered over the canvas. */
   children?: ReactNode
 }
@@ -491,6 +493,7 @@ function Scene({
   portal,
   hintRef,
   slow,
+  onSkyFailed,
   ...refs
 }: ArrivalRefs & {
   reduced: boolean
@@ -507,6 +510,8 @@ function Scene({
   hintRef: RefObject<HTMLDivElement | null>
   /** the lighter view's watch: the bar's fps for this device, and the call when the diorama stays under it */
   slow?: { lower: number; onSlow: () => void }
+  /** Called with the moving sky's failed state: false at mount, true once its worker, build or a source image fails. */
+  onSkyFailed?: (failed: boolean) => void
 }) {
   const streetMode = useMemo(() => isStreetMode(typeof window !== 'undefined' ? window.location.search : ''), [])
   const idsPass = useMemo(() => streetIdsPass(typeof window !== 'undefined' ? window.location.search : ''), [])
@@ -635,6 +640,7 @@ function Scene({
             /* a stable module constant, so the sky's home quaternion memo holds across renders */
             home={streetMode ? skyHome : defaultCamera}
             anchor={showStreet ? streetAnchor : undefined}
+            onMovingFailed={onSkyFailed}
           />
         )}
       </Suspense>
@@ -670,7 +676,7 @@ type PortalWindow = Window & {
   __portalFlight?: number
 }
 
-export function DioramaExperience({ clean = false, reduced = false, sky = 'light', still = false, alive = false, aliveTuning, touch = false, arrival = false, portal = false, lighter = false, onSlow, children }: Props) {
+export function DioramaExperience({ clean = false, reduced = false, sky = 'light', still = false, alive = false, aliveTuning, touch = false, arrival = false, portal = false, lighter = false, onSlow, onSkyFailed, children }: Props) {
   const streetMode = useMemo(() => isStreetMode(typeof window !== 'undefined' ? window.location.search : ''), [])
   const effectiveArrival = !streetMode && arrival
   const [arrived, setArrived] = useState(false)
@@ -880,6 +886,7 @@ export function DioramaExperience({ clean = false, reduced = false, sky = 'light
           touch={touch}
           arrival={arrival}
           arriving={arriving}
+          onSkyFailed={onSkyFailed}
           onArrived={() => {
             setArrived(true)
             rememberArrived()

@@ -25,7 +25,8 @@
  *    throttled 4×.
  * 9. Reduced motion builds it, and the sky is ready.
  * 10. The moving sky's worker fails (each request for it failed through the CDP `Fetch` domain), so the light sky is
- *    built and the sky is ready. The console holds the worker's failure, and a screenshot is saved for the Lead.
+ *    built and the sky is ready. The console holds the worker's failure, the sky button reads "Sky: painted light" and
+ *    is disabled, and a screenshot is saved for the Lead.
  * Cases 7 to 10 run against the production build (`vite preview`) as well as the dev server.
  * `CASES=3,5` runs those cases alone.
  * Each case prints PASS or throws; the run exits 1 on the first failure. The Chrome launcher and the CDP page are
@@ -687,10 +688,33 @@ async function caseWorkerFails(port) {
     }
     if (!page.consoleErrors.some((text) => text.includes('[sky] moving-stroke worker failed')))
       throw new Error(`case 10: the console lacks "[sky] moving-stroke worker failed" (${paused} worker requests paused): ${JSON.stringify(page.consoleErrors)}`)
+    const deadline = Date.now() + 5000
+    let button = null
+    for (;;) {
+      button = await page.evaluate(`(() => {
+        const btn = document.querySelector('button.visitor-control[aria-label="Sky is painted light: moving strokes could not load"]')
+        if (!btn) return null
+        return {
+          text: btn.querySelector('.visitor-control-label')?.textContent ?? null,
+          disabled: btn.disabled,
+          ariaPressed: btn.getAttribute('aria-pressed'),
+        }
+      })()`)
+      if (button || Date.now() >= deadline) break
+      await sleep(100)
+    }
+    if (!button)
+      throw new Error('case 10: no button.visitor-control with aria-label "Sky is painted light: moving strokes could not load"')
+    if (button.text !== 'Sky: painted light')
+      throw new Error(`case 10: sky button .visitor-control-label text was ${JSON.stringify(button.text)}, expected "Sky: painted light"`)
+    if (button.disabled !== true)
+      throw new Error(`case 10: sky button disabled was ${JSON.stringify(button.disabled)}, expected true`)
+    if (button.ariaPressed !== 'false')
+      throw new Error(`case 10: sky button aria-pressed was ${JSON.stringify(button.ariaPressed)}, expected "false"`)
     const shot = await page.send('Page.captureScreenshot', { format: 'png' })
     const file = join(outDir, 'worker-failed-1600x900.png')
     writeFileSync(file, Buffer.from(shot.data, 'base64'))
-    console.log(`PASS 10: with the worker failed (${paused} request${paused === 1 ? '' : 's'} paused) the light sky is built and the sky is ready; ${file}`)
+    console.log(`PASS 10: with the worker failed (${paused} request${paused === 1 ? '' : 's'} paused) the light sky is built, the sky is ready, and the button reads "${button.text}"; ${file}`)
   } finally {
     page.ws.removeEventListener('message', onPaused)
     await page.close()
