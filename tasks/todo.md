@@ -1,5 +1,24 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-11-14 (11:13): the audit is read and recorded; paused on Mark's word, its list not yet presented
+
+**Mark asked for a whole-project audit** ("find everything that's broken, inconsistent, inefficient, or no longer
+needed. Fix what you're sure about and list the rest"). He paused it at 11:13 because his usage window was near
+its limit. The record is `tasks/2026-11-14-audit.md`: 30 ranked items, a draft.
+
+**On the local branch `chore/audit-2026-11-14`, not pushed** (base `c81a3a8`): `ec08b11` (two colour gates that
+could pass with nothing measured, stale CI and README facts), `51d5d9e` (the dome-sky stack that nothing imported,
+removed with its 15 test cases, so `test:sky` runs 489) and `1ef61ea` (nine comments). After them: lint, `tsc -b`,
+489 of 489 and the build are green, and the built bundle is byte-identical to `c81a3a8`'s.
+
+**Next session, in order:** read the record's "Not done yet". Check the subagents' findings at their lines.
+Present the ranked list to Mark. Build nothing in `src` without his word. The recommended first slice is items
+5 to 7 (a right click counts as a tap, no error boundary round the canvas, no failure path for the cypress's
+painting). The branch holds code and a workflow comment, so it needs a PR and a Codex review before `main`.
+
+**Also true now:** the 21:56 pickup below says #43 is on a PR. It merged (`c81a3a8`), and its Codex review found
+nothing. PR #44 (Dependabot, an action bump) is open and waits on Mark.
+
 ## Pickup — 2026-10-30 (21:56): the lazy-load of the retired modes on a PR; the tidy done
 
 **PR #42 merged** (`dc442bc`): the lighter view. **The tidy is done** on Mark's "Go ahead and remove them yourself":

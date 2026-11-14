@@ -167,6 +167,12 @@ The full history, 2026-06-13 to 2026-10-30, is in `tasks/archive/2026-10-30-less
 - A diagnostic imports the code it diagnoses and removes one factor at a time. `2026-07-21 · Diagnostics must import`
 - A gate off the real path is decoration. Share one integrator with the runtime, and write down what the gate omits. `2026-07-21 · A gate that does not exercise`
 - `process.exit` inside `try` skips `finally` and leaves Chrome running. Throw instead. `2026-10-24 · process.exit inside try`
+- `tsc -b` reads `src` and `vite.config.ts` only, and lint reads no `.mjs` file. A one-off `tsc` over `scripts/`
+  found 14 type errors and two unused imports that no gate had read. 2026-11-14
+- A green CI run is not 504 of 504. CI has no `reference/derived/`, so 68 cases skip there, the street's triangle
+  budgets among them. Read the skip count in the run's log. 2026-11-14
+- A removal is inert only when every built file's sha256 matches the baseline's. Deleting six unimported files
+  matched. Deleting two unused exports from `brush.ts` moved the worker's bytes, so it was left out. 2026-11-14
 
 ## Browser checks and capture tools
 
@@ -436,6 +442,10 @@ The full history, 2026-06-13 to 2026-10-30, is in `tasks/archive/2026-10-30-less
 - Answer a review with every route to the fault. Removing data can meet a finding. `2026-10-25 · Answer a review`, `2026-10-21 · A reviewer's "same field"`
 - Read `codex-review-state` before naming a reviewed commit. `2026-10-16 · Codex also reviews`
 - Read the PR timeline again after a merge. `2026-10-16 · A review can land`
+- A subagent cannot write a report file: the harness refuses it. Ask for the report as its final text, and save
+  the Lead's notes of it at once. 2026-11-14
+- Run a browser check only when no subagent is working. `check-portal.mjs` failed its pinned-clock case under a
+  reader's load and passed every case on the quiet machine. 2026-11-14
 
 ## Git, PRs, deploy and the shell
 
