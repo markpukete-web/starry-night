@@ -43,8 +43,8 @@ type StreetWindow = Window & {
  * (`streetMassesUrl`).
  *
  * Through the portal (tasks/2026-10-25-street-portal-plan.md): `onReady` reports once per mount, `ok` false when an asset
- * failed, since `__streetReady` stays set after an unmount; `hold` keeps Vincent at his station while the layer covers
- * the street (plan review F4).
+ * failed; `hold` keeps Vincent at his station while the layer covers the street (plan review F4). `__streetReady` and
+ * `__streetCounts` are reset when the street unmounts (B7).
  */
 export default function Street({
   reduced = false,
@@ -94,6 +94,14 @@ export default function Street({
     if (built) w.__streetCounts = { ...built.counts, builds: (w.__streetCounts?.builds ?? 0) + 1 }
     else delete w.__streetCounts
   }, [readiness.ready, built])
+  // B7 (audit item 25): both seams are reset on unmount only, so a check after the way back never reads this mount's. A
+  // layout effect, so its cleanup runs before `StreetBoundary.componentDidCatch` sets `__streetReady` for a build that
+  // throws. `__streetReady` is written, not deleted: after a page failure `failPage` holds it true through a setter
+  useLayoutEffect(() => () => {
+    const w = window as StreetWindow
+    w.__streetReady = false
+    delete w.__streetCounts
+  }, [])
   const reportedRef = useRef(false)
   useEffect(() => {
     if (!readiness.ready || reportedRef.current) return
