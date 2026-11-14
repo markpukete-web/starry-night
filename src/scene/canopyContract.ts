@@ -22,14 +22,3 @@ export const CANOPY_CAPTURE = {
   mobileHeight: 844,
   seed: 0x5712a3,
 }
-
-export const CANOPY_VISUAL_CONTRACT = {
-  subject: 'source-space Van Gogh streamlines projected onto a curved front canopy',
-  rejects: [
-    'visible rectangular sky card',
-    'old faceted diorama dominates the frame',
-    'dev UI visible in review capture',
-    'title or FPS overlaps the canvas',
-    'canopy only works because Bloom hides the structure',
-  ],
-} as const

@@ -105,7 +105,7 @@ function queryValue(name: string) {
 
 function readDebugMode(): DioramaDebugMode {
   const debug = queryValue('debug')
-  return debug === 'nopost' || debug === 'stage' || debug === 'flow' ? debug : 'final'
+  return debug === 'stage' || debug === 'flow' ? debug : 'final'
 }
 
 function readViewMode(): DioramaViewMode {
@@ -615,7 +615,6 @@ function Scene({
             crashed Mark's iPhone (2026-10-28). The way back mounts it again under the layer, which waits for its seams */}
         {!streetMode && debug !== 'flow' && dioramaMounted(place) && (
           <Diorama
-            debug={debug === 'stage' ? 'stage' : 'final'}
             clock={skyClock}
             alive={alive}
             tuning={aliveTuning}

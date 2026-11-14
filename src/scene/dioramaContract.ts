@@ -1,4 +1,4 @@
-export type DioramaDebugMode = 'final' | 'nopost' | 'stage' | 'flow'
+export type DioramaDebugMode = 'final' | 'stage' | 'flow'
 export type DioramaViewMode = 'design' | 'orbit'
 
 export type OrbitPose = {
@@ -72,8 +72,6 @@ export const DIORAMA_CAMERAS = {
   },
 }
 
-export const DIORAMA_CAMERA = DIORAMA_CAMERAS.design
-
 /**
  * The portrait home's lens by the canvas's aspect (2026-10-25, Mark: "The island is not well positioned for phone").
  * Candidate C was measured from 360 × 800 to 430 × 932, aspects 0.45 to 0.46, at a vertical fov of 88. Safari's bars
@@ -110,19 +108,6 @@ export const DIORAMA_CAPTURE = {
   mobileHeight: 844,
   seed: 0x5a77e1,
 }
-
-export const DIORAMA_VISUAL_CONTRACT = {
-  subject: 'Starry Night as a physical front-arc orbitable floating diorama',
-  rejects: [
-    'flat or curved painting surface reads as the whole product',
-    'placeholder geometry dominates the stage',
-    'sky flow does not trace the source painting',
-    'Bloom supplies the only readable form',
-    'clean capture contains dev UI or title overlays',
-    'camera exposes the unpainted rear of the cypress/source projection',
-    'orbit controls allow panning or losing the authored composition',
-  ],
-} as const
 
 export const DIORAMA_RECOVERY_CONTRACT = {
   preserveSourceSpaceRibbons: true,
