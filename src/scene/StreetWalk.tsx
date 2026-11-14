@@ -41,6 +41,7 @@ import {
 import {
   admitGesture,
   autoOn,
+  facesMotion,
   flicker,
   gait,
   initialPause,
@@ -48,6 +49,7 @@ import {
   keyDown,
   keyUp,
   lag,
+  laneFacing,
   limbs,
   setStreetGesture,
   setVincentGround,
@@ -98,8 +100,8 @@ type StreetWalkWindow = Window & {
     set(t: number): void
   }
   __vincentBox?: () => { x0: number; y0: number; x1: number; y1: number }
-  /** the rendered figure's own transform, for the checks (Codex K3, K4): his world position, roll and both arms' swing */
-  __vincentPose?: () => { world: [number, number, number]; roll: number; arm: number; armRight: number } | null
+  /** the rendered figure's own transform, for the checks (Codex K3, K4): his world position, roll, both arms' swing and his body's world yaw */
+  __vincentPose?: () => { world: [number, number, number]; roll: number; arm: number; armRight: number; yaw: number } | null
   __walkProject?: (t: number, point: [number, number, number]) => [number, number]
   /**
    * the wander's state for the checks (2026-10-29): `x`, `z` his ground position (his lane slot on the lane), `tx`, `tz`
@@ -399,8 +401,10 @@ export default function StreetWalk({
     const t = walkStateRef.current.t
     let here: Here
     if (w.mode === 'lane') {
+      // his unturned facing, and the pause's `about`, so `wanderTo` adds the lantern's turn mirrored, once (D6)
       const slot = vincentPlace(t)
-      here = { x: slot.position[0], z: slot.position[2], yaw: slot.yaw, t }
+      const { about } = pauseRef.current
+      here = { x: slot.position[0], z: slot.position[2], yaw: laneFacing(slot.yaw, about), t, about }
     } else {
       here = { x: w.x, z: w.z, yaw: w.yaw, t: w.t0 }
     }
@@ -486,7 +490,9 @@ export default function StreetWalk({
         if (!body || !arm || !armRight) return null
         body.updateWorldMatrix(true, false)
         const p = new Vector3().setFromMatrixPosition(body.matrixWorld)
-        return { world: [p.x, p.y, p.z], roll: body.rotation.z, arm: arm.rotation.x, armRight: armRight.rotation.x }
+        // his body's forward axis in the world: its bearing is the yaw, whatever the pitch and the roll
+        const ahead = new Vector3(0, 0, 1).transformDirection(body.matrixWorld)
+        return { world: [p.x, p.y, p.z], roll: body.rotation.z, arm: arm.rotation.x, armRight: armRight.rotation.x, yaw: Math.atan2(ahead.x, ahead.z) }
       }
       w.__vincentForm = () => ({
         t: walkStateRef.current.t,
@@ -500,6 +506,7 @@ export default function StreetWalk({
         lantern: lanternUniform.value.w,
         settled:
           (pauseRef.current.turn === 0 || pauseRef.current.turn === 1) &&
+          (pauseRef.current.about === 0 || pauseRef.current.about === 1) &&
           Math.abs(swingRef.current - hangRef.current) < 1e-6 &&
           !busyRef.current,
       })
@@ -607,7 +614,7 @@ export default function StreetWalk({
       const up: PointerSample = { x: e.clientX, y: e.clientY, ms: performance.now() }
       const res = classifyGesture(gesture.down, up)
       if (res === 'tap' && gesture.vincent && flags.vincent) {
-        walkStateRef.current = toggleWalk(walkStateRef.current, still)
+        walkStateRef.current = toggleWalk(walkStateRef.current, still, isPhone)
         // a wheel turned before the tap must not move him after it (Codex K1)
         queuedWheelPxRef.current = 0
       } else if (res === 'tap' && !gesture.vincent && !gesture.dragged && wanderOn && !reduced && !still) {
@@ -640,7 +647,7 @@ export default function StreetWalk({
       window.removeEventListener('pointercancel', onPointerCancel)
       gl.domElement.style.touchAction = prevTouchAction
     }
-  }, [walkOnActive, flags.vincent, wanderOn, gl.domElement, getVincentBox, groundHit, sendTo, viewNow, reduced, still])
+  }, [walkOnActive, flags.vincent, wanderOn, gl.domElement, getVincentBox, groundHit, sendTo, viewNow, reduced, still, isPhone])
   /* eslint-enable react-hooks/immutability */
 
   // Frame loop: priority -1 (before sky reads camera)
@@ -684,9 +691,9 @@ export default function StreetWalk({
       w = stepped
       wanderRef.current = w
       if (w.mode === 'lane') {
-        // home: the walk takes him at the trip's `t0`, the pause as a lantern lowered, its `last` kept (h)
+        // home: the walk takes him at the trip's `t0`, the pause as a lantern lowered, its `last` and `about` kept (h, D6)
         nextState = { ...prevState, t: w.t0, target: w.t0, speed: 0 }
-        pauseRef.current = { dwell: 0, rest: 0, turn: 0, last: pauseRef.current.last }
+        pauseRef.current = { ...pauseRef.current, dwell: 0, rest: 0, turn: 0 }
       } else {
         const t = followT(w, w.x, w.z)
         nextState = { ...prevState, t, target: t, speed: 0 }
@@ -746,14 +753,16 @@ export default function StreetWalk({
 
     // Vincent sway & placement
     if (flags.vincent && vincentGroupRef.current && armGroupRef.current) {
-      const { position: vPos, yaw } = offLane
-        ? { position: [w.x, streetGroundAt(w.x, w.z), w.z] as [number, number, number], yaw: w.yaw }
-        : vincentPlace(nextState.t)
-      const { turn } = pauseRef.current
+      const { turn, about } = pauseRef.current
+      // on the lane he faces up it or down it by `about` (D6), and strides only walking the way he faces (D7)
+      const slot = offLane ? null : vincentPlace(nextState.t)
+      const { position: vPos, yaw } = slot
+        ? { position: slot.position, yaw: laneFacing(slot.yaw, about) }
+        : { position: [w.x, streetGroundAt(w.x, w.z), w.z] as [number, number, number], yaw: w.yaw }
       const g = offLane
         ? gait(w.walked, dt > 0 ? moved / dt : 0, moved > 0, turn)
-        : gait(nextState.distance, nextState.speed, nextState.t - prevState.t > 1e-7, turn)
-      const turned = offLane ? offLanePose(turn) : turnPose(turn)
+        : gait(nextState.distance, nextState.speed, facesMotion(prevState.t, nextState.t, about), turn)
+      const turned = offLane ? offLanePose(turn, about) : turnPose(turn, about)
       setVincentGround([vPos[0], vPos[2]])
       const l = limbs(g, turned)
       const body = vincentGroupRef.current

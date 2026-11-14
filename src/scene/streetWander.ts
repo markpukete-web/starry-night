@@ -174,8 +174,11 @@ export function clearLeg(ax: number, az: number, bx: number, bz: number): boolea
 
 // --- the trip ---
 
-/** his current place: his lane slot and the walk's `t` and yaw when on the lane, else his wander position */
-export type Here = { x: number; z: number; yaw: number; t: number }
+/**
+ * his current place: his lane slot, the walk's `t` and his unturned facing when on the lane, else his wander position.
+ * `about` is the pause's facing (D6), 0 when left out
+ */
+export type Here = { x: number; z: number; yaw: number; t: number; about?: number }
 
 export type WanderState = {
   mode: 'lane' | 'going' | 'returning'
@@ -186,7 +189,7 @@ export type WanderState = {
   tz: number
   /** the points home: `route[0]` is his lane slot when he left, the last entry is where the leg he is on began (c) */
   route: [number, number][]
-  /** his lane slot's own yaw at `t0`, unturned: the yaw he comes home to (h) */
+  /** his facing on the lane at `t0`, unturned: the yaw he comes home to (h, D6) */
   syaw: number
   /** the walk's `t` when he left the lane, and the lane coordinate of `route[0]` (b) */
   t0: number
@@ -203,7 +206,7 @@ export function initialWander(): WanderState {
   return { mode: 'lane', x: 0, z: 0, yaw: 0, tx: 0, tz: 0, route: [], syaw: 0, t0: 0, lane0: 0, walked: 0, arrived: 0, turn: 0 }
 }
 
-/** the trip a tap from the lane starts: `route` [here], `t0` the walk's `t`, `syaw` his slot's yaw */
+/** the trip a tap from the lane starts: `route` [here], `t0` the walk's `t`, `syaw` his unturned facing */
 export function tripFrom(here: Here): WanderState {
   return {
     ...initialWander(),
@@ -344,8 +347,9 @@ export function wanderTo(s: WanderState, here: Here, x: number, z: number, view:
   if (home) return s.mode === 'going' ? { ...s, mode: 'returning', arrived: 0 } : null
   if (!standable(x, z)) return null
   const fromLane = s.mode === 'lane'
-  // from the lane, the trip begins at his slot, in the yaw he is drawn in (a lantern raised turns his body)
-  const base = fromLane ? { ...tripFrom(here), yaw: here.yaw + turnPose(s.turn).body, turn: s.turn } : s
+  // from the lane, the trip begins at his slot, in the yaw he is drawn in (a lantern raised turns his body, mirrored
+  // when he faces down the lane, D6)
+  const base = fromLane ? { ...tripFrom(here), yaw: here.yaw + turnPose(s.turn, here.about ?? 0).body, turn: s.turn } : s
   if (!fromLane && base.route.length >= WANDER.hops) return null
   if (!clearLeg(base.x, base.z, x, z)) return null
   if (view && !legSeen(base, base.x, base.z, x, z, view)) return null
@@ -366,20 +370,25 @@ function turnToward(yaw: number, heading: number, maxStep: number): number {
   return yaw + Math.max(-maxStep, Math.min(maxStep, d))
 }
 
-/** the figure off the lane: the lane's turn pose with the body kept straight, as there is no house front to turn to (g) */
-export function offLanePose(turn: number): ReturnType<typeof turnPose> {
-  return { ...turnPose(turn), body: 0 }
+/**
+ * the figure off the lane: the lane's turn pose with the body kept straight, as there is no house front to turn to (g).
+ * `about` is the pause's, kept while he is off the lane, so his head does not snap as he leaves a dwell (D6)
+ */
+export function offLanePose(turn: number, about = 0): ReturnType<typeof turnPose> {
+  return { ...turnPose(turn, about), body: 0 }
 }
 
 /**
  * One frame. Going, he walks to his tap. Returning, he walks the route back, a leg at a time, to `route[0]`, lowers the
  * lantern and turns to his slot's yaw, and then the lane has him. Once he has rested `PAUSE.rest` at a tap he raises the
  * lantern. He does not move while the lantern is up (`turn` at or over `PAUSE.turnGate`). A frozen step (reduced motion,
- * the still state) returns `s`. With the automatic walk on (`autoOn`), he goes home `PAUSE.endTurn` before a station's
- * dwell would end, so the lantern is down by then (p).
+ * the still state) returns `s`, unless he is on his way home: then he is home at once, as a wheel or a key under
+ * reduced motion sends him home (D8). With the automatic walk on (`autoOn`), he goes home `PAUSE.endTurn` before a
+ * station's dwell would end, so the lantern is down by then (p).
  */
 export function stepWander(s: WanderState, dt: number, frozen: boolean, autoOn = false): WanderState {
-  if (frozen || s.mode === 'lane') return s
+  if (s.mode === 'lane') return s
+  if (frozen) return s.mode === 'returning' ? { ...s, mode: 'lane', x: s.route[0][0], z: s.route[0][1], yaw: s.syaw, turn: 0, arrived: 0 } : s
   const returning = s.mode === 'returning'
   const [tx, tz] = returning ? s.route[s.route.length - 1] : [s.tx, s.tz]
   const dist = Math.hypot(tx - s.x, tz - s.z)

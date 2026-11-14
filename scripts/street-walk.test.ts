@@ -146,7 +146,7 @@ test('a stop cancels the queue', () => {
   for (let k = 0; k < 60; k++) {
     sTap = stepWalk(sTap, { dt: 1 / 60, wheelPx: 0, keys: 0, autoMode: true, paused: false, still: false })
   }
-  sTap = toggleWalk(sTap, false)
+  sTap = toggleWalk(sTap, false, true)
   assert.equal(sTap.auto, false, 'auto is false after toggleWalk')
   const tapStopT = sTap.t
   for (let k = 0; k < 30; k++) {
@@ -161,7 +161,7 @@ test('a stop cancels the queue', () => {
     sQueued = stepWalk(sQueued, { dt: 1 / 60, wheelPx: 300, keys: 0, autoMode: true, paused: false, still: false })
   }
   assert.ok(sQueued.target - sQueued.t > 0.01 / L, 'precondition: a queue behind the automatic walk')
-  sQueued = toggleWalk(sQueued, false)
+  sQueued = toggleWalk(sQueued, false, true)
   assert.equal(sQueued.target, sQueued.t, 'the tap cancels the queue')
   const queuedStopT = sQueued.t
   for (let k = 0; k < 30; k++) {
@@ -178,16 +178,16 @@ test('still has no easing', () => {
 
 test('a tap toggles, and under still steps to the next stop', () => {
   let s = initialWalk(0.2, false)
-  s = toggleWalk(s, false)
+  s = toggleWalk(s, false, false)
   assert.equal(s.auto, true, 'toggleWalk flips auto to true')
-  s = toggleWalk(s, false)
+  s = toggleWalk(s, false, false)
   assert.equal(s.auto, false, 'toggleWalk flips auto to false')
 
-  const s03 = toggleWalk(initialWalk(0.3, false), true)
+  const s03 = toggleWalk(initialWalk(0.3, false), true, false)
   assert.equal(s03.t, 0.44, 'from 0.3 gives 0.44')
   assert.equal(s03.auto, false, 'auto is false')
 
-  const s044 = toggleWalk(initialWalk(0.44, false), true)
+  const s044 = toggleWalk(initialWalk(0.44, false), true, false)
   assert.equal(s044.t, 0.66, 'from 0.44 gives 0.66')
   assert.equal(s044.auto, false, 'auto is false')
 

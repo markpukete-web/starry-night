@@ -22,6 +22,8 @@ export type WalkState = {
   t: number
   target: number
   auto: boolean
+  /** the automatic walk's direction: 1 up the lane, -1 down it (the walk's end, D1) */
+  dir: 1 | -1
   distance: number
   speed: number
 }
@@ -35,28 +37,36 @@ export type WalkInput = {
   still: boolean
 }
 
+/** a walk that opens at its end is not running (D1) */
 export function initialWalk(t: number, autoMode: boolean): WalkState {
   const clamped = Math.min(WALK_T.max, Math.max(WALK_T.min, t))
   return {
     t: clamped,
     target: clamped,
-    auto: autoMode,
+    auto: autoMode && clamped < WALK_T.max,
+    dir: 1,
     distance: 0,
     speed: 0,
   }
 }
 
+/**
+ * One frame of the walk. The automatic walk moves `t` in `dir` and turns off at the end it walks toward (D2). A key or
+ * a wheel that moves him up the lane sets `dir` to 1, so he faces up it. One that moves him down leaves `dir` alone,
+ * so with `dir` 1 he still slides back turned, as V1 passed.
+ */
 export function stepWalk(s: WalkState, i: WalkInput): WalkState {
   const L = STREET.pathLength
+  const wheelT = (i.wheelPx * WALK.wheel) / L
+  const dir = i.keys > 0 || wheelT > 0 ? 1 : s.dir
   const velWorld =
     i.keys * WALK.keys +
-    (s.auto && i.autoMode && !i.paused && !i.still ? WALK.auto : 0)
+    (s.auto && i.autoMode && !i.paused && !i.still ? dir * WALK.auto : 0)
   const velT = (velWorld * i.dt) / L
 
   let nextT = s.t + velT
   let nextTarget = s.target + velT
 
-  const wheelT = (i.wheelPx * WALK.wheel) / L
   nextTarget += wheelT
 
   nextTarget = Math.min(WALK_T.max, Math.max(WALK_T.min, nextTarget))
@@ -81,7 +91,7 @@ export function stepWalk(s: WalkState, i: WalkInput): WalkState {
   nextT = Math.min(WALK_T.max, Math.max(WALK_T.min, nextT))
 
   let nextAuto = s.auto
-  if (nextT >= WALK_T.max) {
+  if (dir === 1 ? nextT >= WALK_T.max : nextT <= WALK_T.min) {
     nextAuto = false
   }
 
@@ -94,6 +104,7 @@ export function stepWalk(s: WalkState, i: WalkInput): WalkState {
     t: nextT,
     target: nextTarget,
     auto: nextAuto,
+    dir,
     distance: nextDistance,
     speed: nextSpeed,
   }
@@ -115,16 +126,34 @@ export function nextStop(t: number): number {
   return WALK_T.max
 }
 
-export function toggleWalk(s: WalkState, still: boolean): WalkState {
+function prevStop(t: number): number {
+  for (let k = STATION_T.length - 1; k >= 0; k--) {
+    if (STATION_T[k] < t - 1e-6) return STATION_T[k]
+  }
+  return WALK_T.min
+}
+
+/**
+ * A tap on him (D3). With `autoMode`, outside the still state, at the end `dir` points to with the walk stopped, it
+ * turns him: `dir` flips and the automatic walk starts back. Anywhere else, and always without `autoMode`, it toggles
+ * the automatic walk and keeps `dir`. In the still state it goes to the next station in `dir`, flipping `dir` first at
+ * its end. The pause's `last` is left alone: `stepPause`'s re-arm clears it (D4).
+ */
+export function toggleWalk(s: WalkState, still: boolean, autoMode: boolean): WalkState {
+  const atEnd = s.dir === 1 ? s.t >= WALK_T.max : s.t <= WALK_T.min
+  const flipped = s.dir === 1 ? -1 : 1
   if (still) {
-    const nextT = nextStop(s.t)
+    const dir = atEnd ? flipped : s.dir
+    const nextT = dir === 1 ? nextStop(s.t) : prevStop(s.t)
     return {
       ...s,
       t: nextT,
       target: nextT,
       auto: false,
+      dir,
     }
   }
+  if (autoMode && atEnd && !s.auto) return { ...s, auto: true, dir: flipped }
   const nextAuto = !s.auto
   return {
     ...s,
@@ -145,9 +174,10 @@ export function wheelPixels(
 
 /**
  * The painter's pause (V1, Mark 2026-10-28: "go with 90/45 and 4 s"). The automatic walk dwells `dwell` seconds at each
- * station it crosses from below, apart from the last. In every mode he turns once he has not walked forward for `rest`
- * seconds, eased in over `turnIn` and out over `turnOut`, and out again `endTurn` before a dwell ends, so he faces the
- * lane before the camera moves. He strides only walking forward and turned under `turnGate`.
+ * station it crosses from below, apart from the last. On the walk back it dwells at each it crosses from above, apart
+ * from stop 0 (D4). In every mode he turns once he has not walked the way he faces for `rest` seconds, eased in over
+ * `turnIn` and out over `turnOut`, and out again `endTurn` before a dwell ends, so he faces the lane before the camera
+ * moves. He strides only walking the way he faces and turned under `turnGate`. `about` is the half-turn's time (D5).
  */
 export const PAUSE = {
   dwell: 4,
@@ -161,13 +191,17 @@ export const PAUSE = {
   raise: 0.75,
   lag: 0.15,
   rearm: 0.01,
+  about: 0.8,
 } as const
 
-/** `last` is the station `t` of the last dwell, -1 at the start: crossing it starts no dwell (Decision (h)). */
-export type Pause = { dwell: number; rest: number; turn: number; last: number }
+/**
+ * `last` is the station `t` of the last dwell, -1 at the start: crossing it starts no dwell (Decision (h)). `about` is
+ * his facing, 0 up the lane and 1 down it (D5).
+ */
+export type Pause = { dwell: number; rest: number; turn: number; last: number; about: number }
 
 export function initialPause(): Pause {
-  return { dwell: 0, rest: 0, turn: 0, last: -1 }
+  return { dwell: 0, rest: 0, turn: 0, last: -1, about: 0 }
 }
 
 /** the automatic walk runs: switched on, in its mode, neither paused nor still (`stepPause`'s test, and the wander's walk home, (p)) */
@@ -179,6 +213,7 @@ export function autoOn(s: WalkState, i: WalkInput): boolean {
  * The dwell and the rest on top of `stepWalk`'s result: the automatic walk's own step undone while a dwell runs, its
  * crossing of a station clamped onto it. The camera still reads only `t`. On the lane only this function ends a dwell: input ends
  * it, and so does the automatic walk turning off. Off the lane, `StreetWalk`'s frame loop zeroes it. A blur keeps it, as it keeps the walk.
+ * It also turns him to face `dir` (D5): `about` eases over `PAUSE.about`, and the automatic walk's own step waits for it.
  */
 export function stepPause(
   prev: WalkState,
@@ -189,11 +224,18 @@ export function stepPause(
 ): { next: WalkState; pause: Pause } {
   const L = STREET.pathLength
   const running = autoOn(prev, i)
+  const dir = next.dir
+  // the half-turn: every frame that starts with `about` short of its end for `dir`. Reduced motion and the still state
+  // set it at once
+  const end = dir === 1 ? 0 : 1
+  const halfTurn = !immediate && p.about !== end
+  const about = immediate ? end : Math.min(1, Math.max(0, p.about + (dir === 1 ? -i.dt : i.dt) / PAUSE.about))
   let { t, target } = next
   let dwell = p.dwell
   let last = p.last
   if (i.wheelPx !== 0 || i.keys !== 0) dwell = 0
-  if (t < last - PAUSE.rearm) last = -1
+  // a level test in the walk's direction: after a turn at either end it clears `last` on the first frame (D4)
+  if (dir === 1 ? t < last - PAUSE.rearm : t > last + PAUSE.rearm) last = -1
   if (running && dwell > 0) {
     dwell -= i.dt
     if (dwell < 1e-9) dwell = 0
@@ -206,13 +248,21 @@ export function stepPause(
     // only the automatic walk's own step makes a stop: a frame with input, or a scroll still easing in, carries him
     // past (Codex B2). On the automatic walk `target` equals `t` until a wheel moves it
     const automatic = i.wheelPx === 0 && i.keys === 0 && prev.target === prev.t
-    for (const st of STATION_T) {
-      if (automatic && st < WALK_T.max && st !== last && prev.t < st && t >= st) {
-        t = st
-        target = st
-        dwell = PAUSE.dwell
-        last = st
-        break
+    if (automatic && halfTurn) {
+      // he turns before he walks: the automatic walk's own step undone, as a dwell undoes it (D5)
+      t = prev.t
+      target = prev.target
+    } else {
+      // the walk back dwells at each station it crosses from above, apart from stop 0, where it ends (D4)
+      for (const st of STATION_T) {
+        const crossed = dir === 1 ? st < WALK_T.max && prev.t < st && t >= st : st > WALK_T.min && prev.t > st && t <= st
+        if (automatic && st !== last && crossed) {
+          t = st
+          target = st
+          dwell = PAUSE.dwell
+          last = st
+          break
+        }
       }
     }
   } else {
@@ -220,12 +270,21 @@ export function stepPause(
   }
   const deltaWorld = Math.abs(t - prev.t) * L
   const corrected = { ...next, t, target, distance: prev.distance + deltaWorld, speed: i.dt > 0 ? deltaWorld / i.dt : 0 }
-  const rest = t - prev.t > 1e-7 ? 0 : p.rest + i.dt
+  // the rest counts while he does not walk the way he faces, so a back key still slides him back turned (V1, D5)
+  const rest = facesMotion(prev.t, t, about) || about !== p.about ? 0 : p.rest + i.dt
   const want = rest > PAUSE.rest && !(dwell > 0 && dwell < PAUSE.endTurn) ? 1 : 0
   const rate = want > p.turn ? i.dt / PAUSE.turnIn : want < p.turn ? -i.dt / PAUSE.turnOut : 0
+  // in the half-turn the lantern waits for `about`'s midpoint, then lowers to 0 as `about` ends (D5, N3)
+  const past = dir === 1 ? about < 0.5 : about > 0.5
+  const halfTurnTurn = past ? Math.max(0, p.turn - i.dt / (PAUSE.about / 2)) : p.turn
   // reduced motion and the still state: a standing figure, turned at once
-  const turn = immediate ? 1 : Math.min(1, Math.max(0, p.turn + rate))
-  return { next: corrected, pause: { dwell, rest, turn, last } }
+  const turn = immediate ? 1 : halfTurn ? halfTurnTurn : Math.min(1, Math.max(0, p.turn + rate))
+  return { next: corrected, pause: { dwell, rest, turn, last, about } }
+}
+
+/** he moves the way he faces: up the lane facing up it, or down it facing down it (D7) */
+export function facesMotion(prevT: number, t: number, about: number): boolean {
+  return about < 0.5 ? t - prevT > 1e-7 : prevT - t > 1e-7
 }
 
 export function gait(
@@ -248,12 +307,22 @@ export function gait(
   }
 }
 
-/** The turn's ease: the body first, the head after it past a quarter of the turn, both smoothstepped. */
-export function turnPose(turn: number): { body: number; head: number; raise: number } {
-  const ease = (x: number) => x * x * (3 - 2 * x)
+const ease = (x: number) => x * x * (3 - 2 * x)
+
+/** his facing on the lane: his slot's yaw, turned by π as `about` goes from 0 to 1 (D6) */
+export function laneFacing(slotYaw: number, about: number): number {
+  return slotYaw + Math.PI * ease(about)
+}
+
+/**
+ * The turn's ease: the body first, the head after it past a quarter of the turn, both smoothstepped. Facing down the
+ * lane both are mirrored, continuously in `about`, so at a dwell he turns to the same side of the lane both ways (D6).
+ */
+export function turnPose(turn: number, about = 0): { body: number; head: number; raise: number } {
+  const mirror = 1 - 2 * ease(about)
   return {
-    body: PAUSE.body * ease(turn),
-    head: PAUSE.head * ease(Math.min(1, Math.max(0, (turn - 0.25) / 0.75))),
+    body: PAUSE.body * ease(turn) * mirror,
+    head: PAUSE.head * ease(Math.min(1, Math.max(0, (turn - 0.25) / 0.75))) * mirror,
     raise: PAUSE.raise * ease(turn),
   }
 }
