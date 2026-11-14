@@ -27,7 +27,7 @@ import {
 import { SQUARE_TOP } from './frog.ts'
 import { lanternShown, walkOn, type StreetFlags } from './streetMode.ts'
 import { strokeGeometry } from './strokeGeometry.ts'
-import { classifyGesture, strayed, type PointerSample } from './touchSurge.ts'
+import { classifyGesture, startsGesture, strayed, type PointerSample } from './touchSurge.ts'
 import type { ImageData2D } from './useImageData.ts'
 import {
   buildVincent,
@@ -566,6 +566,7 @@ export default function StreetWalk({
     }
 
     const onPointerDown = (e: PointerEvent) => {
+      if (!startsGesture(e)) return
       if (!e.isPrimary || (activeGestureRef.current && activeGestureRef.current.pointerId !== e.pointerId)) {
         activeGestureRef.current = null
         setStreetGesture(null)

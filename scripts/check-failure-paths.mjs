@@ -1,0 +1,295 @@
+#!/usr/bin/env node
+/**
+ * The input and page-failure checks (the audit of 2026-11-14, items 5 and 6), against a running dev server:
+ *   DIORAMA_CAPTURE_URL=http://127.0.0.1:5197/ node scripts/check-failure-paths.mjs [screenshot folder]
+ * 1. In the street at stop 1 with a mouse: a right click and a middle click on open ground leave Vincent where he is,
+ *    and a left click at the same point sends him (the control). A right click on him leaves the walk as it was, and a
+ *    left click on him starts it (the control).
+ * 2. On the diorama: a right click on the sky adds no kick to the touch store, and a left click there adds one (the
+ *    control).
+ * Each case prints PASS or throws; the run exits 1 on the first failure. The Chrome launcher and the CDP page are
+ * copied from `check-portal.mjs`, which exports neither.
+ */
+import { execSync, spawn } from 'node:child_process'
+import { existsSync, mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { PerspectiveCamera, Vector3 } from 'three'
+import { vincentPlace } from '../src/scene/streetLayout.ts'
+import { WALK } from '../src/scene/streetWalk.ts'
+import { hidden, initialWander, standable, wanderTo } from '../src/scene/streetWander.ts'
+
+const appUrl = process.env.DIORAMA_CAPTURE_URL || 'http://127.0.0.1:5197/'
+const origin = new URL(appUrl).origin
+const DESKTOP = { width: 1600, height: 900, deviceScaleFactor: 1, mobile: false }
+
+const chromePath =
+  process.env.CHROME_PATH ||
+  ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser'].find((path) =>
+    existsSync(path),
+  )
+if (!chromePath) {
+  console.error('No Chrome-compatible browser found. Set CHROME_PATH.')
+  process.exit(1)
+}
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+const countHeadlessChromes = () => {
+  try {
+    return parseInt(execSync("pgrep -fl 'Chrome.*headless' 2>/dev/null | wc -l", { encoding: 'utf8' }).trim(), 10) || 0
+  } catch {
+    return 0
+  }
+}
+
+function startChrome(port) {
+  const userDataDir = mkdtempSync(join(tmpdir(), 'starry-failure-'))
+  const child = spawn(
+    chromePath,
+    [
+      '--headless=new',
+      ...(process.env.CHROME_FLAGS ?? '').split(/\s+/).filter(Boolean),
+      '--hide-scrollbars',
+      '--mute-audio',
+      '--disable-background-networking',
+      '--disable-sync',
+      '--disable-extensions',
+      '--no-first-run',
+      '--no-default-browser-check',
+      `--user-data-dir=${userDataDir}`,
+      `--remote-debugging-port=${port}`,
+      'about:blank',
+    ],
+    { stdio: ['ignore', 'ignore', 'ignore'] },
+  )
+  return {
+    cleanup() {
+      child.kill()
+      rmSync(userDataDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 300 })
+    },
+  }
+}
+
+async function waitForChrome(port) {
+  const start = Date.now()
+  while (Date.now() - start < 20000) {
+    try {
+      if ((await fetch(`http://127.0.0.1:${port}/json/version`)).ok) return
+    } catch {
+      /* wait */
+    }
+    await sleep(150)
+  }
+  throw new Error('Chrome DevTools endpoint did not become ready')
+}
+
+class CdpPage {
+  constructor(wsUrl) {
+    this.wsUrl = wsUrl
+    this.seq = 0
+    this.pending = new Map()
+    this.errors = []
+    // every console.error's text, for the failed page's own message
+    this.consoleErrors = []
+  }
+  async connect() {
+    this.ws = new WebSocket(this.wsUrl)
+    this.ws.addEventListener('message', (event) => {
+      const message = JSON.parse(event.data)
+      if (message.id && this.pending.has(message.id)) {
+        const { resolve, reject } = this.pending.get(message.id)
+        this.pending.delete(message.id)
+        if (message.error) reject(new Error(message.error.message))
+        else resolve(message.result)
+      } else if (message.method === 'Runtime.exceptionThrown') {
+        this.errors.push(message.params.exceptionDetails?.exception?.description || message.params.exceptionDetails?.text || 'runtime exception')
+      } else if (message.method === 'Runtime.consoleAPICalled' && message.params.type === 'error') {
+        this.consoleErrors.push(message.params.args.map((a) => a.value ?? a.description ?? '').join(' '))
+      }
+    })
+    await new Promise((resolve, reject) => {
+      this.ws.addEventListener('open', resolve, { once: true })
+      this.ws.addEventListener('error', reject, { once: true })
+    })
+    await this.send('Page.enable')
+    await this.send('Runtime.enable')
+    await this.send('Network.enable')
+  }
+  send(method, params = {}) {
+    const id = ++this.seq
+    this.ws.send(JSON.stringify({ id, method, params }))
+    return new Promise((resolve, reject) => this.pending.set(id, { resolve, reject }))
+  }
+  async evaluate(expression) {
+    const res = await this.send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true })
+    if (res.exceptionDetails) throw new Error(`Evaluation failed: ${res.exceptionDetails.exception?.description ?? res.exceptionDetails.text}`)
+    return res.result?.value
+  }
+  async waitFor(expression, timeoutMs = 30000, what = expression) {
+    const start = Date.now()
+    for (;;) {
+      if (await this.evaluate(`Boolean(${expression})`)) return
+      if (Date.now() - start > timeoutMs) throw new Error(`timed out after ${timeoutMs} ms waiting for ${what}`)
+      await sleep(100)
+    }
+  }
+  /** a press and a release of one mouse button at a point, 50 ms apart: a tap's timing */
+  async click(x, y, button = 'left') {
+    const buttons = { left: 1, right: 2, middle: 4 }[button]
+    await this.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, button: 'none', buttons: 0 })
+    await this.send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button, buttons, clickCount: 1 })
+    await sleep(50)
+    await this.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button, buttons: 0, clickCount: 1 })
+  }
+}
+
+async function newPage(port) {
+  const target = await (await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: 'PUT' })).json()
+  const page = new CdpPage(target.webSocketDebuggerUrl)
+  await page.connect()
+  return page
+}
+
+async function open(page, query, viewport) {
+  await page.send('Emulation.setDeviceMetricsOverride', viewport)
+  await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'no-preference' }] })
+  const url = new URL(origin)
+  for (const [key, value] of new URLSearchParams(query)) url.searchParams.set(key, value)
+  await page.send('Page.navigate', { url: url.href })
+  await sleep(500)
+  const loaded = await page.evaluate('location.search')
+  if (loaded !== url.search) throw new Error(`loaded ${loaded}, not ${url.search}`)
+}
+
+// --- the street's point choice, as check-street-walk.mjs makes it ---
+
+/** the camera the page draws, from `__streetCamera()` */
+function liveCamera(cam, size) {
+  const persp = new PerspectiveCamera(cam.fov, size.width / size.height, cam.near, cam.far)
+  persp.position.fromArray(cam.position)
+  persp.quaternion.fromArray(cam.quaternion)
+  persp.updateMatrixWorld()
+  persp.updateProjectionMatrix()
+  return persp
+}
+
+/** a street point in client pixels */
+function toClient(persp, size, [x, y, z]) {
+  const v = new Vector3(x, y, z).project(persp)
+  return [size.left + ((v.x + 1) / 2) * size.width, size.top + ((1 - v.y) / 2) * size.height]
+}
+
+/** his tap box as the page reads it: at least `WALK.hitMin` square about its centre */
+function tapBox(b) {
+  const cx = (b.x0 + b.x1) / 2
+  const cy = (b.y0 + b.y1) / 2
+  const hw = Math.max((b.x1 - b.x0) / 2, WALK.hitMin / 2)
+  const hh = Math.max((b.y1 - b.y0) / 2, WALK.hitMin / 2)
+  return { x0: cx - hw, x1: cx + hw, y0: cy - hh, y1: cy + hh }
+}
+
+const insideBox = (b, x, y) => x >= b.x0 && x <= b.x1 && y >= b.y0 && y <= b.y1
+const insideCanvas = (size, x, y, margin) => x >= size.left + margin && x <= size.left + size.width - margin && y >= size.top + margin && y <= size.top + size.height - margin
+
+/** a ground point 0.12 to 0.3 from his slot that `wanderTo` accepts with the page's view, on the canvas, off his box */
+async function openGround(page, t, view) {
+  const size = await page.evaluate(`(() => { const r = document.querySelector('canvas').getBoundingClientRect(); return { left: r.left, top: r.top, width: r.width, height: r.height } })()`)
+  const persp = liveCamera(await page.evaluate('window.__streetCamera()'), size)
+  const box = tapBox(await page.evaluate('window.__vincentBox()'))
+  const slot = vincentPlace(t)
+  const here = { x: slot.position[0], z: slot.position[2], yaw: slot.yaw, t }
+  for (let dx = -0.3; dx <= 0.3; dx += 0.01) {
+    for (let dz = -0.3; dz <= 0.3; dz += 0.01) {
+      const x = here.x + dx
+      const z = here.z + dz
+      const d = Math.hypot(dx, dz)
+      if (d < 0.12 || d > 0.3 || !standable(x, z) || hidden(persp.position.x, persp.position.z, x, z)) continue
+      if (!wanderTo(initialWander(), here, x, z, view)) continue
+      const [px, py] = toClient(persp, size, [x, 0, z])
+      if (!insideCanvas(size, px, py, 40) || insideBox(box, px, py)) continue
+      if (!(await page.evaluate(`document.elementFromPoint(${px}, ${py}) === document.querySelector('canvas')`))) continue
+      return { x, z, px, py, box }
+    }
+  }
+  throw new Error('no open ground the wander accepts on the canvas within 0.3 of his slot')
+}
+
+// --- the cases ---
+
+async function caseStreetButtons(page) {
+  const query = '?street=1&station=1&arrival=0&walkMode=input'
+  await open(page, query, DESKTOP)
+  await page.waitFor('window.__streetReady && window.__wander && window.__vincentBox && window.__streetCamera && window.__streetWalk', 30000, 'the street and its seams')
+  const before = await page.evaluate('window.__wander()')
+  if (before.mode !== 'lane') throw new Error(`case 1: he starts ${before.mode}, not on the lane`)
+  const P = await openGround(page, await page.evaluate('window.__streetWalk.t'), before.view)
+  for (const button of ['right', 'middle']) {
+    await page.click(P.px, P.py, button)
+    await sleep(400)
+    const after = await page.evaluate('window.__wander()')
+    if (after.mode !== 'lane' || after.x !== before.x || after.z !== before.z)
+      throw new Error(`case 1: a ${button} click on open ground at [${P.px.toFixed(0)}, ${P.py.toFixed(0)}] moved him: ${JSON.stringify(after)}`)
+  }
+  await page.click(P.px, P.py, 'left')
+  await page.waitFor(`window.__wander().mode === 'going'`, 3000, 'the left click to send him (the control)')
+  await page.waitFor(`Math.hypot(window.__wander().x - ${before.x}, window.__wander().z - ${before.z}) > 0.01`, 4000, 'him 0.01 off his slot')
+
+  // on him: a fresh load, since the control sent him off
+  await open(page, query, DESKTOP)
+  await page.waitFor('window.__streetReady && window.__vincentBox && window.__streetWalk', 30000, 'the street again')
+  const box = tapBox(await page.evaluate('window.__vincentBox()'))
+  const cx = (box.x0 + box.x1) / 2
+  const cy = (box.y0 + box.y1) / 2
+  if (!(await page.evaluate(`document.elementFromPoint(${cx}, ${cy}) === document.querySelector('canvas')`))) throw new Error('case 1: his box centre is not on the canvas')
+  const auto = await page.evaluate('window.__streetWalk.auto')
+  await page.click(cx, cy, 'right')
+  await sleep(400)
+  if ((await page.evaluate('window.__streetWalk.auto')) !== auto) throw new Error('case 1: a right click on him toggled the walk')
+  await page.click(cx, cy, 'left')
+  await page.waitFor(`window.__streetWalk.auto === ${!auto}`, 2000, 'the left click on him to toggle the walk (the control)')
+  console.log(`PASS 1: in the street, a right and a middle click at [${P.px.toFixed(0)}, ${P.py.toFixed(0)}] left him on the lane and a left click sent him; a right click on him left the walk and a left click toggled it`)
+}
+
+async function caseDioramaButtons(page) {
+  await open(page, '?arrival=0&portal=0', DESKTOP)
+  await page.waitFor('window.__skyReady && window.__touchState', 30000, 'the sky and the touch seam')
+  const x = DESKTOP.width * 0.75
+  const y = DESKTOP.height * 0.15
+  if (!(await page.evaluate(`document.elementFromPoint(${x}, ${y}) === document.querySelector('canvas')`))) throw new Error('case 2: the sky point is not on the canvas')
+  const kicks = () => page.evaluate('window.__touchState().kicks.length')
+  const k0 = await kicks()
+  await page.click(x, y, 'right')
+  await sleep(300)
+  const k1 = await kicks()
+  if (k1 !== k0) throw new Error(`case 2: a right click on the sky added a kick (${k0} to ${k1})`)
+  await page.click(x, y, 'left')
+  await sleep(300)
+  const k2 = await kicks()
+  if (k2 !== k1 + 1) throw new Error(`case 2: a left click on the sky added ${k2 - k1} kicks, not 1 (the control)`)
+  console.log(`PASS 2: on the diorama, a right click on the sky added no kick and a left click added one (${k1} to ${k2})`)
+}
+
+async function main() {
+  const chromesBefore = countHeadlessChromes()
+  const port = 9300 + Math.floor(Math.random() * 300)
+  const chrome = startChrome(port)
+  try {
+    await waitForChrome(port)
+    const page = await newPage(port)
+    await caseStreetButtons(page)
+    await caseDioramaButtons(page)
+    if (page.errors.length) throw new Error(`page errors in cases 1 and 2:\n  ${page.errors.join('\n  ')}`)
+    page.ws.close()
+  } finally {
+    chrome.cleanup()
+  }
+  await sleep(500)
+  const chromesAfter = countHeadlessChromes()
+  if (chromesAfter > chromesBefore) throw new Error(`headless Chromes left open: ${chromesBefore} before, ${chromesAfter} after`)
+  console.log('ALL PASS')
+}
+
+main().catch((error) => {
+  console.error(`FAIL: ${error.message}`)
+  process.exit(1)
+})
