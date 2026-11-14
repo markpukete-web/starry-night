@@ -1,6 +1,6 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-11-14 (20:10): #44 to #47 merged; item 1's cause found and fixed on `ci/no-skipped-tests`
+## Pickup — 2026-11-14 (20:08, corrected 20:15): #44 to #47 merged; item 1's cause found and fixed on `ci/no-skipped-tests`
 
 The record is `tasks/2026-11-14-audit.md`, "The merges and item 1". Mark, 19:50: "Merge all three now" and "CI
 diagnostic run".
@@ -12,17 +12,20 @@ alerts and security updates are on. Item 23's two `CLAUDE.md` lines are removed.
 
 **Next session, in order:**
 
-1. Item 1's PR (branch `ci/no-skipped-tests`): read its CI (it must say 507 tests, 0 skipped) and Codex's
-   review, answer every thread, then the merge is Mark's. After it merges, delete the throwaway branch
+1. Item 1 is PR #50 (branch `ci/no-skipped-tests`). Its CI passes on Linux with 507 tests and 0 skipped, and Codex
+   found nothing on `ecfeb5a`. The merge is Mark's. One local commit of record corrections is not pushed: it rides
+   up on the next code push, or onto the next branch if #50 merges first. After it merges, delete the throwaway branch
    `diag/hash-precision` (on `origin`, no PR) and its worktree `../starry-night-wt/diag`.
-2. The leftovers wait on Mark. The auto-mode classifier refused the Lead's removal at 20:06: the stash, `t4/`,
+2. The leftovers wait on Mark. The auto-mode classifier refused the Lead's removal, just before 20:07: the stash, `t4/`,
    the worktrees `../starry-night-wt/{head1,head2,head2b,ci-gate,mutants-head2,main-check}` and
    `.claude/worktrees/agent-*`. Every one was read first: all clean, each branch in `main` or inside
    `origin/perf/audit-street-build-ci`.
 3. The two spike branches are not as the 16:24 plan assumed. Local `spike/vincent-form` holds 2 commits that
    `origin` lacks, and `spike/vincent-wander` holds 1, so deleting them locally loses work. Proposed: push each
    (a fast-forward), then delete the local copy. Mark's call.
-4. The calls still open from 16:24: the reload line and the `npm audit fix` slice (Hydrogen), item 16 and items 9
+4. Dependabot's #48 and #49 (20:05) have no word from Mark. Compare them with `npm audit` before any brief to
+   Hydrogen. #49 moves vite, so it needs the 11-frame proof before a merge.
+5. The calls still open from 16:24: the reload line and the `npm audit fix` slice (Hydrogen), item 16 and items 9
    with 10 (Opus builders), item 18's `vercel.json` (Lead, with the next code PR). Test Hydrogen's sandbox before
    its first brief, and invoke `agent-workflow` before any brief.
 
@@ -72,13 +75,13 @@ and #47 are merged, so the frame baseline does not move.
   `spike/vincent-wander` holds `tasks/2026-10-28-vincent-wander-spike.md`, which is not on `main`. Keep `scratch/`
   (10 GB) and `output/` (3.2 GB): the records cite more than 45 of their folders, the street's map `layout-v1.svg`
   is in `scratch/village-redesign-2026-10-23/`, and the disk had 427 GB free. Lead, after the merges.
-- [x] **Item 23, `CLAUDE.md`** (done 20:10 on `ci/no-skipped-tests`, except the bar's line, which is Mark's). Delete the Stack sentence that calls `App.tsx` a scaffold placeholder. Delete the
+- [x] **Item 23, `CLAUDE.md`** (done 20:03 on `ci/no-skipped-tests`, except the bar's line, which is Mark's). Delete the Stack sentence that calls `App.tsx` a scaffold placeholder. Delete the
   Tunable "Instanced stroke budget 8,000 / 3,000" (the only code near it is the retired mode's knob at
   `src/scene/StreamlineSky.tsx:188`), and log it in `lessons.md`. The bar's prior-art path is Mark's to edit:
   proposed text is "the Techartist time-dial diorama, for the preset-switch interaction shape, which is Phase 2
   material at the earliest", with the path dropped, because the file is not on this Mac. `.claude/skills/`: no
   change until a first skill exists. Lead, docs only.
-- [ ] **Item 2, Dependabot** (the settings are on, read back 20:03; the `npm audit fix` slice is open). Turn on the alerts and the security updates (a repository setting: the Lead tries
+- [ ] **Item 2, Dependabot** (the settings are on, read back between 20:04 and 20:05. Dependabot then opened #48 and #49, which overlap the `npm audit fix` slice, still open). Turn on the alerts and the security updates (a repository setting: the Lead tries
   the API, and if the token lacks the scope, Mark switches it). Then one slice: `npm audit fix` without `--force`,
   the suite, the build and the 11-frame proof. It moves vite 8.0.16 to 8.3.8. None of the 12 advisories reaches
   the built site (vite's five are the dev server and `launch-editor`). Leave typescript-eslint: npm's offered fix
