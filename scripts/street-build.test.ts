@@ -37,7 +37,7 @@ const build = buildStreet(villagePainting(), flow, masses, { paint: KEPT_PAINT, 
 test('the street builds all or nothing', () => {
   assert.equal(buildStreet(null, flow, masses), null)
   assert.equal(buildStreet(villagePainting(), null, masses), null)
-  assert.equal(buildStreet(villagePainting(), flow, null), null)
+  // the street reads no masses (audit item 15): `street-mode.test.ts` pins that a build without them is the build with them
   assert.ok(build, 'built with every input')
 })
 

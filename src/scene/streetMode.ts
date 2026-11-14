@@ -75,12 +75,22 @@ export function lanternShown(flags: StreetFlags): boolean {
 
 export type AssetStatus = 'pending' | 'ok' | 'failed'
 
+/**
+ * The baked masses' URL, or null where nothing reads them. Only the flat panel's tree does (`buildFlatPanel`): the
+ * street's trees are its own, so it fetches none and waits for none (audit item 15, 188 kB). `streetFail=masses`
+ * fails the flat panel's fetch only. The fetch and the wait both read this one rule.
+ */
+export function streetMassesUrl(flags: Pick<StreetFlags, 'flat' | 'fail'>): string | null {
+  if (!flags.flat) return null
+  return flags.fail === 'masses' ? '/reference/missing.png' : '/reference/land-masses.json'
+}
+
 export function streetReadiness(s: {
   painting: AssetStatus
   flow: AssetStatus
   masses: AssetStatus
-}): { ready: boolean; render: boolean } {
-  const statuses = [s.painting, s.flow, s.masses]
+}, flags: Pick<StreetFlags, 'flat' | 'fail'>): { ready: boolean; render: boolean } {
+  const statuses = streetMassesUrl(flags) ? [s.painting, s.flow, s.masses] : [s.painting, s.flow]
   if (statuses.some((st) => st === 'failed')) {
     return { ready: true, render: false }
   }
