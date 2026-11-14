@@ -27,6 +27,11 @@
  * 10. The moving sky's worker fails (each request for it failed through the CDP `Fetch` domain), so the light sky is
  *    built and the sky is ready. The console holds the worker's failure, the sky button reads "Sky: painted light" and
  *    is disabled, and a screenshot is saved for the Lead.
+ * The street's failures each log one `[street]` line that names what failed (B6 and C-09, H6), each in its own tab:
+ * 11. `?streetFail=painting`, 12. `?streetFail=flow`, 13. the flat panel's `?streetFail=masses`, 14. the flat panel's
+ *    `land-masses.json` answered with `null`, so the build returns nothing, 15. `painting.jpg` answered with a red PNG,
+ *    so `grassBlade.ts` throws and the street's boundary catches it, 16. the street's chunk blocked. Each settles the
+ *    street with nothing drawn and the sky up. 17. The control: nothing failed, a street drawn and no `[street]` line.
  * Cases 7 to 10 run against the production build (`vite preview`) as well as the dev server.
  * `CASES=3,5` runs those cases alone.
  * Each case prints PASS or throws; the run exits 1 on the first failure. The Chrome launcher and the CDP page are
@@ -38,6 +43,7 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PerspectiveCamera, Vector3 } from 'three'
+import { encodePNG } from './lib/png.ts'
 import { ARRIVAL_CUE, FAILED_LINE, RETRY_LABEL, VINCENTS_CITE } from '../src/scene/arrival.ts'
 import { vincentPlace } from '../src/scene/streetLayout.ts'
 import { WALK } from '../src/scene/streetWalk.ts'
@@ -721,6 +727,93 @@ async function caseWorkerFails(port) {
   }
 }
 
+// --- the street's failures log by name (B6 and C-09, audit item 25, H6) ---
+
+/** the console.error lines with the street's prefix */
+const streetLines = (page) => page.consoleErrors.filter((text) => text.startsWith('[street]'))
+
+/**
+ * A red 160 × 127 PNG, the painting's aspect: every texel is red (`r > 1.05 g` and `r > b`), so the grass finds no usable
+ * texel and `grassBlade.ts` throws. A black one trips `frog.ts` first: black is usable grass paint, and not olive or green.
+ */
+const RED_PNG = encodePNG(160, 127, new Uint8Array(160 * 127 * 4).map((_, i) => [200, 30, 30, 255][i % 4])).toString('base64')
+
+/**
+ * One street visit with one failure. `fulfil` answers each request matching its pattern through the CDP `Fetch` domain,
+ * `blocked` blocks URLs with the cache off. The street must settle (`__streetReady` true), the sky stay with no fallback,
+ * and the console hold exactly one `[street]` line (two under the dev server's StrictMode) that matches `line`.
+ */
+async function caseStreetFails(port, n, what, query, line, { fulfil, blocked } = {}) {
+  const page = await newPage(port)
+  let answered = 0
+  const onPaused = (event) => {
+    const msg = JSON.parse(event.data)
+    if (msg.method !== 'Fetch.requestPaused') return
+    answered++
+    page.send('Fetch.fulfillRequest', { requestId: msg.params.requestId, responseCode: 200, responseHeaders: [{ name: 'Content-Type', value: fulfil.type }], body: fulfil.body }).catch(() => {})
+  }
+  page.ws.addEventListener('message', onPaused)
+  try {
+    if (fulfil) await page.send('Fetch.enable', { patterns: [{ urlPattern: fulfil.pattern }] })
+    if (blocked) {
+      await page.send('Network.setBlockedURLs', { urls: blocked })
+      await page.send('Network.setCacheDisabled', { cacheDisabled: true })
+    }
+    await open(page, query, DESKTOP, { reduced: false })
+    await page.waitFor('window.__streetReady === true', 30000, `case ${n}: the street to settle (${what})`)
+    await sleep(500)
+    const state = await page.evaluate(`({ ready: window.__streetReady, counts: window.__streetCounts ?? null, fallback: Boolean(document.querySelector('.page-failed')), canvases: document.querySelectorAll('canvas').length, dev: ${IS_DEV} })`)
+    const lines = streetLines(page)
+    const summary = JSON.stringify({ ...state, answered, lines, consoleErrors: page.consoleErrors })
+    if (fulfil && answered === 0) throw new Error(`case ${n}: no request matched ${fulfil.pattern} ${summary}`)
+    if (state.fallback || state.canvases < 1) throw new Error(`case ${n}: ${what} must leave the sky up with no fallback ${summary}`)
+    if (state.ready !== true) throw new Error(`case ${n}: ${what}: __streetReady fell back to ${state.ready} after it settled ${summary}`)
+    if (state.counts !== null) throw new Error(`case ${n}: ${what} drew a street ${summary}`)
+    if (lines.length < 1 || lines.length > (state.dev ? 2 : 1) || !lines.every((text) => line.test(text)))
+      throw new Error(`case ${n}: ${what}: the console holds ${lines.length} [street] lines, not one matching ${line} ${summary}`)
+    console.log(`PASS ${n}: ${what} logs ${JSON.stringify(lines[0].slice(0, 160))}, the street settled with nothing drawn and the sky up`)
+  } finally {
+    page.ws.removeEventListener('message', onPaused)
+    await page.close()
+  }
+}
+
+const STREET_QUERY = '?street=1&arrival=0&walkMode=input'
+
+/** Cases 11 to 16: each failure path of the street, one visit each. */
+async function caseStreetFailures(port) {
+  if (wanted(11)) await caseStreetFails(port, 11, 'a failed painting', `${STREET_QUERY}&streetFail=painting`, /^\[street\] the painting \(\/reference\/missing\.png\) failed to load/)
+  if (wanted(12)) await caseStreetFails(port, 12, "a failed land's flow", `${STREET_QUERY}&streetFail=flow`, /^\[street\] the land's flow \(\/reference\/missing\.png\) failed to load/)
+  if (wanted(13)) await caseStreetFails(port, 13, "the flat panel's failed masses", `${STREET_QUERY}&flat=1&streetFail=masses`, /^\[street\] the baked masses \(\/reference\/missing\.png\) failed to load/)
+  // `land-masses.json` answered with `null`: the fetch succeeds, and `buildFlatPanel` returns no build
+  if (wanted(14))
+    await caseStreetFails(port, 14, 'a build that returns nothing', `${STREET_QUERY}&flat=1`, /^\[street\] the build returned no street/, {
+      fulfil: { pattern: '*/reference/land-masses.json*', type: 'application/json', body: Buffer.from('null').toString('base64') },
+    })
+  // the street's boundary catches the throw and sets `__streetReady` after the street's own unmount reset (B7)
+  if (wanted(15))
+    await caseStreetFails(port, 15, 'a build that throws', STREET_QUERY, /^\[street\] .*grassBlade: /, {
+      fulfil: { pattern: '*/reference/painting.jpg*', type: 'image/png', body: RED_PNG },
+    })
+  if (wanted(16))
+    await caseStreetFails(port, 16, "a failed street's chunk", STREET_QUERY, /^\[street\] .*Street/, { blocked: ['*/src/scene/Street.tsx*', '*/assets/Street-*.js'] })
+}
+
+/** Case 17, the control: the street with nothing failed draws and logs no `[street]` line. */
+async function caseStreetControl(port) {
+  const page = await newPage(port)
+  try {
+    await open(page, STREET_QUERY, DESKTOP, { reduced: false })
+    await page.waitFor('window.__streetReady === true && window.__streetCounts', 30000, 'case 17: the street')
+    await sleep(500)
+    const counts = await page.evaluate('window.__streetCounts')
+    if (!(counts.triangles > 0) || streetLines(page).length) throw new Error(`case 17: ${JSON.stringify({ counts, lines: streetLines(page) })}`)
+    console.log(`PASS 17: the street with nothing failed drew ${counts.triangles} triangles and logged no [street] line`)
+  } finally {
+    await page.close()
+  }
+}
+
 /** `CASES=3,5` runs those cases alone, so each can be seen to fail on a build without its fix. Absent, every case runs. */
 const only = (process.env.CASES ?? '').split(',').filter(Boolean).map(Number)
 const wanted = (n) => only.length === 0 || only.includes(n)
@@ -749,6 +842,8 @@ async function main() {
     if (wanted(8)) await caseSwitchBuilds(port)
     if (wanted(9)) await caseReducedBuilds(port)
     if (wanted(10)) await caseWorkerFails(port)
+    await caseStreetFailures(port)
+    if (wanted(17)) await caseStreetControl(port)
   } finally {
     chrome.cleanup()
   }
