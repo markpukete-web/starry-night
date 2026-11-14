@@ -22,6 +22,9 @@ The full history, 2026-06-13 to 2026-10-30, is in `tasks/archive/2026-10-30-less
 - When a Tunable and the code disagree, ask Mark which is the truth before changing either. The orbit limits and the
   pixel-ratio cap differed from 2026-07-06 to 2026-10-30, and every gate in between ran on the code's values. The
   trim's subagent found it. Mark chose the code (2026-10-30, after the archive).
+- A Tunable that no code reads is removed, on Mark's word. "Instanced stroke budget: start 8,000 desktop / 3,000
+  mobile" went on 2026-11-14 (audit item 23): the only number near it was the retired mode's `count` knob
+  (`src/scene/StreamlineSky.tsx:188`). The Stack's line that called `App.tsx` a scaffold went with it. 2026-11-14
 
 ## Mark's taste and the gates
 
@@ -79,6 +82,8 @@ The full history, 2026-06-13 to 2026-10-30, is in `tasks/archive/2026-10-30-less
 
 ## Measurement and evidence
 
+- Ask for the run that sizes the fix, not only the one that names the cause. One CI run on two Node versions,
+  with a dump of every hashed value, named the machine type and measured the gap (at most 7.2e-14). 2026-11-14
 - Heatmaps and motion means show where motion is, never how it looks. A motion diff cannot tell spin from flicker. `2026-06-23 · The heatmap mean`
 - Run a same-input control in this pass before reading a capture diff. `2026-07-27 · Establish the jitter`
 - Capture RMSE cannot measure a change in load timing. Compare decoded `ImageData` instead. `2026-07-21 · Capture RMSE cannot measure`
@@ -184,6 +189,10 @@ The full history, 2026-06-13 to 2026-10-30, is in `tasks/archive/2026-10-30-less
 - A test that has never run in CI is not known to pass there. With the painting present, 5 of the 68 skipped
   cases failed on Linux x64 and Node 24: each pins a hash of full-precision floats recorded on this Mac. Run a
   new CI step by `workflow_dispatch` on the branch before calling its slice done. 2026-11-14
+- A hash of floats pinned on this Mac goes through `roundedJson` (`scripts/lib/rounded-json.ts`). macOS arm64 and
+  Linux x64 differ in the last bits of some built floats, and the Node version does not matter: Node 24 and 26
+  agree on Linux. Size a rounding by both machines' values, as the expected count of values on a rounding edge,
+  not by the first precision where two hashes agree. 2026-11-14
 - A `WeakMap` has no `size`. The read gives `undefined` with no error under type stripping: only a type check
   of `scripts/` sees it. 2026-11-14
 
@@ -491,4 +500,6 @@ The full history, 2026-06-13 to 2026-10-30, is in `tasks/archive/2026-10-30-less
 - Rule out a dead server before blaming a proxy. `2026-10-13 · Rule out the dead server`
 - `.git/info/exclude` can ignore a path that `.gitignore` allows. Read `git check-ignore -v` for the rule's file. 2026-11-14
 - Ask before a large binary enters git. Mark chose a release asset pinned by its sha256 over 4.2 MB in history. 2026-11-14
+- Before a recommendation, read that each command behind it returned what it was for. Five of nine rested on a failed search (an unquoted `--include=*.ts` in zsh), an empty asset name or a guessed folder. 2026-11-14
+- Before a recommendation to delete a folder, list every path in it that `tasks/`, `docs/` and `CLAUDE.md` cite. The records cite more than 45 folders of `scratch/`. 2026-11-14
 - Write `-(x ** 2)`, not `-x ** 2`. `2026-10-13 · -x ** 2`
