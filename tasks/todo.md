@@ -1,5 +1,23 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-11-15 (09:10): H4 gated, PR #56 waits on Codex
+
+The record is `tasks/2026-11-14-audit.md`, "H4, the dead code and the words". Mark has the walk end's preview link
+(#55, stop 4) as of 08:50, and his word on it is open.
+
+**Done:** H4 (items 19, 21, 22, 24 and 27) passed the Lead's gate on `129522f`: 519 of 519, the 11 frames
+byte-identical. PR #56 (`chore/h4-dead-code`) carries it and last night's record commit `60db3fa`.
+
+**Next, in order:**
+
+1. Read #56's timeline for Codex's review. Answer every thread. Merge once it is clean (Mark, 2026-11-14 20:58).
+   Then delete the branch, the worktrees `../starry-night-wt/h4` and `../starry-night-wt/h4-words`, and the local
+   branch `docs/h4-words`.
+2. H5 (item 26, the browser checks, launcher survey first) and H6 (C-08, B6, C-09, B7, A6), from
+   `tasks/2026-11-14-audit-remainder-plan.md`.
+3. Item 28, the archive of this file.
+4. For Mark: the walk end's look, the Opus slices (B5, A10) and his calls (A11, B8, item 30).
+
 ## Pickup — 2026-11-14 (23:10, corrected 23:14): the walk end merged as #55, H4 next, Mark wrapped up
 
 The record is `tasks/2026-11-14-audit.md`, "The evening slices". Mark, 20:39 to 20:58: merge each slice once the

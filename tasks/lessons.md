@@ -193,6 +193,8 @@ The full history, 2026-06-13 to 2026-10-30, is in `tasks/archive/2026-10-30-less
   Linux x64 differ in the last bits of some built floats, and the Node version does not matter: Node 24 and 26
   agree on Linux. Size a rounding by both machines' values, as the expected count of values on a rounding edge,
   not by the first precision where two hashes agree. 2026-11-14
+- A test-only option is a seam when its test measures shipped behaviour. `traceFace`'s `fixedHalfWidth` lets the
+  width case measure the shipped half-width mapping. Removing the option as dead would remove that check. 2026-11-15
 - A `WeakMap` has no `size`. The read gives `undefined` with no error under type stripping: only a type check
   of `scripts/` sees it. 2026-11-14
 
@@ -507,6 +509,9 @@ The full history, 2026-06-13 to 2026-10-30, is in `tasks/archive/2026-10-30-less
 - Use absolute paths in parallel shell calls. `2026-10-29 · The shell's cwd`
 - Rule out a dead server before blaming a proxy. `2026-10-13 · Rule out the dead server`
 - `.git/info/exclude` can ignore a path that `.gitignore` allows. Read `git check-ignore -v` for the rule's file. 2026-11-14
+- Before deleting a script a record calls superseded, read it beside its successor. `slim-flow-field.ts` owns the
+  flow field's 2× downsample, and `slim-reference.ts` only re-encodes. The audit and H4's scope both called it
+  superseded. 2026-11-15
 - Ask before a large binary enters git. Mark chose a release asset pinned by its sha256 over 4.2 MB in history. 2026-11-14
 - Before a recommendation, read that each command behind it returned what it was for. Five of nine rested on a failed search (an unquoted `--include=*.ts` in zsh), an empty asset name or a guessed folder. 2026-11-14
 - Before a recommendation to delete a folder, list every path in it that `tasks/`, `docs/` and `CLAUDE.md` cite. The records cite more than 45 folders of `scratch/`. 2026-11-14
