@@ -86,17 +86,17 @@ blocker.
 
 ## Deploying
 
-The Vercel project is connected to this repo with `main` as its production branch, so **pushing `main`
+The Vercel project is connected to this repo with `main` as its production branch, so **a merge to `main`
 is the deploy** — there is no separate publish step, and there is no staging branch in front of it.
 
-`main` is the only long-lived branch (`record/2d-streamline-flow` is a frozen bookmark on the 2D era).
-So for anything beyond a typo, branch, verify there, then fast-forward:
+`main` is the only long-lived branch, and the "Protect main" ruleset refuses a direct push: a change reaches
+it through a pull request with the CI check green. So branch, verify there, then open the pull request:
 
 ```bash
 git switch -c <change>            # work here, push freely — a branch push only makes a preview
 npm run lint && npm run test:sky && npm run build
 npm run check:reduced && npm run check:viewport
-git switch main && git merge --ff-only <change> && git push origin main   # this deploys
+git push -u origin <change> && gh pr create      # merging the pull request deploys
 ```
 
 Preview deployments sit behind Vercel authentication; production does not. If a deploy goes wrong, the

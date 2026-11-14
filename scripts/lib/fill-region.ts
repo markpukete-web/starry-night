@@ -29,7 +29,7 @@
  * generous guard the pipeline would erase the moon's outline.
  *
  * Pure functions, no IO — the driver (scripts/extend-reference.ts) owns files; tests can feed
- * synthetic images (same discipline as scripts/painting-regions.test.ts).
+ * synthetic images.
  */
 
 import type { DecodedPNG } from './png.ts';

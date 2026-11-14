@@ -29,8 +29,8 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-// Swirl centres are the single source of truth shared with the runtime dab-orbit (src/scene/dabEngine.ts)
-// so the mask discs baked here and the orbit centres there cannot drift apart (Mark req).
+// Swirl centres are the single source of truth shared with the runtime's sky strokes (src/scene/streamlineGeometry.ts)
+// so the mask discs baked here and the halo centres the strokes seed round there cannot drift apart (Mark req).
 import { SWIRLS, HALO_SWIRLS, MOON_UV, MOON_R } from '../src/scene/skySwirls.ts';
 import { decodePNG, encodePNG } from './lib/png.ts';
 
@@ -437,8 +437,8 @@ if (!paletteOnly) {
 // Sky mask: bright = sky (the living painting churns here), dark foreground (cypress/village/hills) stays
 // still. Eroded inward so advected sky never samples across a silhouette, and the moon disc is forced
 // static so the painted crescent does not smear (Codex plan-review). MOON_UV/MOON_R + HALO_SWIRLS are
-// imported from skySwirls.ts — the SAME centres the runtime dab-orbit uses, so the masked halos are exactly
-// the orbited ones (no drift between bake and render).
+// imported from skySwirls.ts — the SAME centres the runtime's sky strokes use, so the masked halos are exactly
+// the ones the strokes seed round (no drift between bake and render).
 const maskRaw = new Float64Array(W * H);
 for (let i = 0; i < W * H; i++) {
   const l = lumB[i];
@@ -457,7 +457,7 @@ for (let i = 0; i < W * H; i++) {
 // Light erosion — just a small calm buffer at the cypress edge (the chroma test already holds the tree
 // static, so we don't need the wide erosion that was freezing most of the sky).
 const maskBlur = gaussianBlur(maskRaw, W, H, 3.0);
-// Force the star/moon HALOS into the mask (HALO_SWIRLS, defined above) so dabs seed across them and the
+// Force the star/moon HALOS into the mask (HALO_SWIRLS, defined above) so strokes seed across them and the
 // baked tangential flow spins them (Mark: 'let the halos spin', incl. around the moon). The * moon guard
 // still zeroes the crescent itself, so only the bright RINGS around it churn — the crescent stays crisp.
 const maskF = new Float64Array(W * H);

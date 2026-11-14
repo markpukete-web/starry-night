@@ -394,6 +394,7 @@ if (sources) {
     }
   }
 
+  let measured = 0
   for (const [name, def] of Object.entries(SOURCES)) {
     const indices = maskIndices[name]
     const area = indices.length
@@ -401,6 +402,7 @@ if (sources) {
       console.log(`  ${name.padEnd(12)}: not in view (${area} px)`)
       continue
     }
+    measured++
 
     let sumL = 0, sumA = 0, sumB = 0
     for (const idx of indices) {
@@ -413,19 +415,23 @@ if (sources) {
     const mean: Lab = { l: sumL / area, a: sumA / area, b: sumB / area }
     const dE = deltaE76(mean, def.ref)
 
-    if (dE >= 10) {
-      failures.push(`${name}: ΔE76 ${dE.toFixed(2)} >= 10`)
+    // NaN passes `dE >= 10`, so a ΔE that is not finite fails here: a work painting of another size gives NaN targets
+    if (!(dE < 10)) {
+      failures.push(`${name}: ΔE76 ${dE.toFixed(2)} is not under 10`)
       console.log(`  ${name.padEnd(12)}: FAIL ΔE76 ${dE.toFixed(2)} (area ${area} px, mean Lab [${mean.l.toFixed(1)}, ${mean.a.toFixed(1)}, ${mean.b.toFixed(1)}])`)
     } else {
       console.log(`  ${name.padEnd(12)}: PASS ΔE76 ${dE.toFixed(2)} < 10 (area ${area} px, mean Lab [${mean.l.toFixed(1)}, ${mean.a.toFixed(1)}, ${mean.b.toFixed(1)}])`)
     }
   }
 
+  // a PASS must prove its event happened: with no source in view (a wrong station, an ID pass that drew nothing)
+  // nothing was measured
+  if (measured === 0) failures.push('no source covers 2000 px or more, so nothing was measured')
   if (failures.length > 0) {
     console.log(`FAIL: ${failures.length} failure(s):\n  - ${failures.join('\n  - ')}`)
     process.exit(1)
   } else {
-    console.log('PASS: all in-view sources meet ΔE76 < 10')
+    console.log(`PASS: all ${measured} in-view sources meet ΔE76 < 10`)
   }
 } else {
   // Find pixel indices for each class
@@ -531,8 +537,9 @@ if (sources) {
     const diagDE = def.diag ? deltaE76(mean, def.diag) : null
     const diagStr = diagDE !== null ? ` (diag to ${def.diagName ?? 'palette'}: ${diagDE.toFixed(2)})` : ''
 
-    if (dE >= 10) {
-      failures.push(`${name}: ΔE76 ${dE.toFixed(2)} >= 10`)
+    // NaN passes `dE >= 10`, as above
+    if (!(dE < 10)) {
+      failures.push(`${name}: ΔE76 ${dE.toFixed(2)} is not under 10`)
       console.log(`  ${name.padEnd(8)}: FAIL ΔE76 ${dE.toFixed(2)} (area ${area} px, mean Lab [${mean.l.toFixed(1)}, ${mean.a.toFixed(1)}, ${mean.b.toFixed(1)}])${diagStr}`)
     } else {
       console.log(`  ${name.padEnd(8)}: PASS ΔE76 ${dE.toFixed(2)} < 10 (area ${area} px, mean Lab [${mean.l.toFixed(1)}, ${mean.a.toFixed(1)}, ${mean.b.toFixed(1)}])${diagStr}`)

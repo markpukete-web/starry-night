@@ -1,8 +1,8 @@
 import { smooth, vnoise } from './brushForms.ts'
 
 /**
- * The floating island's plan-view shape and top-surface height. Shared by `BrushIsland` (which
- * builds the solid + cladding) and `villageGeometry` / `BrushCypress` (which seat forms on the top).
+ * The floating island's plan-view shape and top-surface height. Shared by `islandGeometry` (which
+ * builds the solid + cladding) and `villageGeometry`, the land and the street (which seat forms on the top).
  * Kept in its own module so the component files export only components (fast-refresh rule).
  */
 

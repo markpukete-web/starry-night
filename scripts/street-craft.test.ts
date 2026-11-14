@@ -475,7 +475,7 @@ test('no blade and no frog on a step', { skip }, () => {
     const [fx, , fz] = frogPlace(spec).position
     for (let s = 0; s < stepFeet.length; s++) {
       const d = distToFoot(fx, fz, stepFeet[s])
-      assert.ok(d >= GRASS.house - 1e-9, `frog ${spec.name} too close to step ${s}: ${d} < ${GRASS.house}`)
+      assert.ok(d >= GRASS.house - 1e-9, `the frog at stop ${spec.stop} too close to step ${s}: ${d} < ${GRASS.house}`)
     }
   }
 })

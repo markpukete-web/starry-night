@@ -177,8 +177,8 @@ export function autoOn(s: WalkState, i: WalkInput): boolean {
 
 /**
  * The dwell and the rest on top of `stepWalk`'s result: the automatic walk's own step undone while a dwell runs, its
- * crossing of a station clamped onto it. The camera still reads only `t`. Only this function ends a dwell: input ends
- * it, and so does the automatic walk turning off. A blur keeps it, as it keeps the walk.
+ * crossing of a station clamped onto it. The camera still reads only `t`. On the lane only this function ends a dwell: input ends
+ * it, and so does the automatic walk turning off. Off the lane, `StreetWalk`'s frame loop zeroes it. A blur keeps it, as it keeps the walk.
  */
 export function stepPause(
   prev: WalkState,
@@ -316,7 +316,7 @@ export function setStreetGesture(g: StreetGesture | null): void {
 
 /**
  * His ground position (x, z) in the street's frame, written by the walk's frame loop every frame: his lane slot or, off the
- * lane, where the wander has him. Null with no walk running. The grass bends under it (the wander, Task 2).
+ * lane, where the wander has him. Null with no walk running, and under `?vincent=0`. The grass bends under it (the wander, Task 2).
  */
 export let vincentGround: [number, number] | null = null
 

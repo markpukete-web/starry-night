@@ -1,5 +1,104 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-11-14 (16:08): three PRs open (#45, #46, #47), Codex reading two; item 1 is its own slice
+
+Mark, about 16:00: "Good, go for your recommendations and well record where we at". The record is
+`tasks/2026-11-14-audit.md`, "The slices" and "Head 2 in CI".
+
+**Open PRs.** #46 and #47 are stacked on #45, so each diff shows its own slice:
+
+- **#45** `chore/audit-2026-11-14`: the audit's gate fixes, the dead dome-sky stack removed, the record. CI green,
+  Codex's review clean on `5919748`. Every later commit is prose. The merge is Mark's.
+- **#46** `fix/audit-failure-paths-diorama` (`6c62079`): items 5, 6, 7, 11b, 11c, 12, 13. Gated: 502 of 502, 11
+  frames identical, four browser checks. Codex's review: no findings.
+- **#47** `perf/audit-street-build` (`01e20ce`): items 3, 14, 15. It is head 2 without item 1's two CI commits, and
+  differs from the gated `e059a22` only in `ci.yml`. Its CI run by dispatch is green (run 43564578666: 494 tests,
+  426 pass, 68 skipped, as `main` skips today). Codex's review: no findings.
+
+**Next session, in order:**
+
+1. Codex's reviews of #46 (`6c62079`) and #47 (`01e20ce`) both completed with no findings (read 16:10). Read each
+   timeline again before a merge, in case a later entry landed.
+2. Merge order, on Mark's word: #45, then #46 and #47 (GitHub retargets them to `main`). The second to merge
+   takes both `test:sky` lists by hand. Capture the union's 11 frames once then (`capture-set.sh`). A trial merge
+   passed 507 of 507 and the three static checks.
+3. Item 1, its own slice. The work so far is on `perf/audit-street-build-ci` (kept, not a PR): CI fetches the
+   painting from the release `test-fixtures-1`, checks its sha256 and fails on a skip. With the painting present 5
+   of the 68 cases fail on Linux x64 / Node 24.22.2: each pins a hash of full-precision floats recorded on this Mac
+   (arm64, Node 26.12). First find the cause: run those test files under Node 24 on this Mac. The harness refused
+   `npx -p node@24`, so Mark runs it or allows it. Then choose the fix. Two candidates: round the floats before
+   hashing and pin again, or make CI and this Mac run the same Node.
+4. Mark's open calls: whether the failed page needs a way to reload. Items 2 (Dependabot), 9 (stop 4's tap), 16
+   (the light sky built on every load), 18 (the cache header), 20, 23 and 29. PR #44.
+5. Mechanical items Hydrogen can build once Mark says go: 20, 21, 22, 24, 27, 28. Items 21 and 22 need the frame
+   proof.
+6. After the merges, remove the leftovers below.
+
+**Leftovers:** worktrees `../starry-night-wt/{head1,head2,head2b,ci-gate,mutants-head2}` and
+`.claude/worktrees/agent-*`. Branches `chore/ci-gate`, `fix/input-and-page-failure`, `perf/diorama-builders`,
+`perf/street-build` (local), and `perf/audit-street-build-ci` (local and on `origin`, item 1's start).
+
+**Usage:** at 15:55 Claude's 5-hour window was 83% used (Quota Finch). Three Opus builders cost about 200,000 to
+260,000 tokens each. Hydrogen's shell is sandboxed: a browser run needs `BypassSandbox: true` and absolute folders.
+
+## Pickup — 2026-11-14 (15:50): four audit slices built and gated on two heads; the pushes and PRs wait on Mark
+
+**PR #45** (`chore/audit-2026-11-14`): open, CI green, Codex's review clean on `5919748`. The merge is Mark's.
+
+**Two heads, gated, local** (record `tasks/2026-11-14-audit.md`, "The slices"). Both are from `5919748`:
+
+- `fix/audit-failure-paths-diorama` (`6c62079`, worktree `../starry-night-wt/head1`): items 5, 6, 7, 11b, 11c, 12,
+  13. A right click is no tap. A scene that throws leaves the painting and Vincent's line. The diorama builds no
+  unread normals and decodes the painting once. 502 of 502, 11 frames identical, four browser checks.
+- `perf/audit-street-build-ci` (`e059a22`, worktree `../starry-night-wt/head2`): items 1, 3, 14, 15. The street's
+  build cache. CI fetches the tests' painting from the release `test-fixtures-1`, fails on a skip, and type-checks
+  `scripts/*.ts`. 494 of 494, 11 frames identical, two browser checks, two mutants red.
+
+**Next:** push both heads for Vercel previews and give Mark the links. Open no slice PR until he has looked. Each
+PR gets Codex's review. The second PR to merge resolves `package.json`'s `test:sky` line by hand.
+
+**Open, all Mark's:** merging #45. Whether the failed page needs a way to reload. Items 2, 9, 16, 18, 20, 23, 29
+and PR #44. Whether Hydrogen builds the mechanical items 20, 21, 22, 24, 27 and 28.
+
+**Leftovers to remove once the PRs merge:** the worktrees under `../starry-night-wt/` (`head1`, `head2`, `ci-gate`, `mutants-head2`) and `.claude/worktrees/`, and
+the branches `chore/ci-gate`, `fix/input-and-page-failure`, `perf/diorama-builders`, `perf/street-build`.
+
+## Pickup — 2026-11-14 (14:10): the audit's list is tested and presented; Mark's decisions are open
+
+**Round 2 is done** (record `tasks/2026-11-14-audit.md`, "Round 2"). Hydrogen ran the 17 probes again and the
+numbers match. Argon tested items 6 to 16 and read the Lead's commits. The Lead checked Argon's quotes by script:
+45 of 208 quoted lines were not in the files, so Argon's verdict counts for items 6 to 13 only, and the Lead read
+14 to 16 itself. Argon's three findings in the Lead's commits are fixed.
+
+**On the local branch `chore/audit-2026-11-14`, not pushed** (base `c81a3a8`): the morning's three commits, the
+NaN guard in `check-street-colour.ts`, and seven comments. Lint, `tsc -b`, 489 of 489 and the build are green.
+Every built file's sha256 matches `c81a3a8`'s.
+
+**Open, all Mark's:** push the branch and open its PR (it needs a Codex review before `main`). The first slice:
+the Lead recommends items 5, 6 and 7. Items 2 (Dependabot), 9 (stop 4's tap), 18 (the cache header), 20 (the
+unused 634 kB file), 23 (`CLAUDE.md`) and 29 (local leftovers). PR #44 still waits on him.
+
+**Next session:** read Mark's answers. Build nothing in `src` without his word. The 11:13 pickup below is superseded.
+
+## Pickup — 2026-11-14 (11:13): the audit is read and recorded; paused on Mark's word, its list not yet presented
+
+**Mark asked for a whole-project audit** ("find everything that's broken, inconsistent, inefficient, or no longer
+needed. Fix what you're sure about and list the rest"). He paused it at 11:13 because his usage window was near
+its limit. The record is `tasks/2026-11-14-audit.md`: 30 ranked items, a draft.
+
+**On the local branch `chore/audit-2026-11-14`, not pushed** (base `c81a3a8`): `ec08b11` (two colour gates that
+could pass with nothing measured, stale CI and README facts), `51d5d9e` (the dome-sky stack that nothing imported,
+removed with its 15 test cases, so `test:sky` runs 489) and `1ef61ea` (nine comments). After them: lint, `tsc -b`,
+489 of 489 and the build are green, and the built bundle is byte-identical to `c81a3a8`'s.
+
+**Next session, in order:** read the record's "Not done yet". Check the subagents' findings at their lines.
+Present the ranked list to Mark. Build nothing in `src` without his word. The recommended first slice is items
+5 to 7 (a right click counts as a tap, no error boundary round the canvas, no failure path for the cypress's
+painting). The branch holds code and a workflow comment, so it needs a PR and a Codex review before `main`.
+
+**Also true now:** the 21:56 pickup below says #43 is on a PR. It merged (`c81a3a8`), and its Codex review found
+nothing. PR #44 (Dependabot, an action bump) is open and waits on Mark.
+
 ## Pickup — 2026-10-30 (21:56): the lazy-load of the retired modes on a PR; the tidy done
 
 **PR #42 merged** (`dc442bc`): the lighter view. **The tidy is done** on Mark's "Go ahead and remove them yourself":

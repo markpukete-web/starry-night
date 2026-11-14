@@ -167,6 +167,25 @@ The full history, 2026-06-13 to 2026-10-30, is in `tasks/archive/2026-10-30-less
 - A diagnostic imports the code it diagnoses and removes one factor at a time. `2026-07-21 · Diagnostics must import`
 - A gate off the real path is decoration. Share one integrator with the runtime, and write down what the gate omits. `2026-07-21 · A gate that does not exercise`
 - `process.exit` inside `try` skips `finally` and leaves Chrome running. Throw instead. `2026-10-24 · process.exit inside try`
+- `tsc -b` reads `src` and `vite.config.ts` only, and lint reads no `.mjs` file. A one-off `tsc` over `scripts/`
+  found 14 type errors and two unused imports that no gate had read. 2026-11-14
+- A green CI run is not 504 of 504. CI has no `reference/derived/`, so 68 cases skip there, the street's triangle
+  budgets among them. Read the skip count in the run's log. 2026-11-14
+- A removal is inert only when every built file's sha256 matches the baseline's. Deleting six unimported files
+  matched. Deleting two unused exports from `brush.ts` moved the worker's bytes, so it was left out. 2026-11-14
+- Before ranking a gap as a hole, run `git log -S` on its pattern. The CI skip of 68 tests was chosen in `6219035`
+  (PR #22). The finding is what the choice costs now: the street's triangle budget goes unchecked in CI. 2026-11-14
+- A gate fix gets a second reader. The Lead's own fix for "passes with nothing measured" left `NaN >= 10` passing
+  in the same script, and the lesson about NaN was already in this file. 2026-11-14
+- A check for "no request" records the page's own `fetch` calls. `index.html` preloads `land-masses.json`, so a
+  network-level count would fail with the fix and without it. 2026-11-14
+- Give a browser check a case filter, and run each new case against the build without its fix. Five cases failed
+  there and the control passed, which also turned four "read, not run" findings into confirmed ones. 2026-11-14
+- A test that has never run in CI is not known to pass there. With the painting present, 5 of the 68 skipped
+  cases failed on Linux x64 and Node 24: each pins a hash of full-precision floats recorded on this Mac. Run a
+  new CI step by `workflow_dispatch` on the branch before calling its slice done. 2026-11-14
+- A `WeakMap` has no `size`. The read gives `undefined` with no error under type stripping: only a type check
+  of `scripts/` sees it. 2026-11-14
 
 ## Browser checks and capture tools
 
@@ -436,6 +455,25 @@ The full history, 2026-06-13 to 2026-10-30, is in `tasks/archive/2026-10-30-less
 - Answer a review with every route to the fault. Removing data can meet a finding. `2026-10-25 · Answer a review`, `2026-10-21 · A reviewer's "same field"`
 - Read `codex-review-state` before naming a reviewed commit. `2026-10-16 · Codex also reviews`
 - Read the PR timeline again after a merge. `2026-10-16 · A review can land`
+- A subagent cannot write a report file: the harness refuses it. Ask for the report as its final text, and save
+  the Lead's notes of it at once. 2026-11-14
+- Run a browser check only when no subagent is working. `check-portal.mjs` failed its pinned-clock case under a
+  reader's load and passed every case on the quiet machine. 2026-11-14
+- Compare every line a reviewer quotes with the file, by script, before its verdict counts. Argon's read of eleven
+  claims quoted 208 lines as verbatim, and 45 were not in the files. It had written plausible code for three
+  claims. The Lead read those three itself. 2026-11-14
+- Run `ls` on every path in a brief before sending it. The reviewer's brief named `src/DioramaExperience.tsx`,
+  and the file is `src/scene/DioramaExperience.tsx`. 2026-11-14
+- Ask a reviewer for one runnable command with each finding, and paste its output. Argon's second report did, and
+  all eight findings held. Two would have shipped a defect that every unit test passed. 2026-11-14
+- A worker's shell can become sandboxed in the middle of a session: no `127.0.0.1`, no writes outside the main
+  folder. A brief for a browser run asks for the command to run outside the sandbox, and passes absolute folders. 2026-11-14
+- A script that changes directory takes absolute paths, and a batch stops at its first failed step. The capture
+  set ran 22 captures that could not start, 20 s each, before anyone read the log. 2026-11-14
+- A number in a plan becomes a number in a comment. Take a comment's counts from the built code's own run: the
+  plan said 129 distinct crops, and the key as built gives 153. 2026-11-14
+- Join the slices before the last gate, and run every new CI step on the joined head. One slice's new test failed
+  the other slice's new type check, and neither branch alone could show it. 2026-11-14
 
 ## Git, PRs, deploy and the shell
 
@@ -451,4 +489,6 @@ The full history, 2026-06-13 to 2026-10-30, is in `tasks/archive/2026-10-30-less
 - Kill jobs by name or pid file, never by wrapper, and wipe the output folder before a re-run. `2026-10-13 · A killed wrapper`
 - Use absolute paths in parallel shell calls. `2026-10-29 · The shell's cwd`
 - Rule out a dead server before blaming a proxy. `2026-10-13 · Rule out the dead server`
+- `.git/info/exclude` can ignore a path that `.gitignore` allows. Read `git check-ignore -v` for the rule's file. 2026-11-14
+- Ask before a large binary enters git. Mark chose a release asset pinned by its sha256 over 4.2 MB in history. 2026-11-14
 - Write `-(x ** 2)`, not `-x ** 2`. `2026-10-13 · -x ** 2`
