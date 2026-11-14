@@ -394,6 +394,7 @@ if (sources) {
     }
   }
 
+  let measured = 0
   for (const [name, def] of Object.entries(SOURCES)) {
     const indices = maskIndices[name]
     const area = indices.length
@@ -401,6 +402,7 @@ if (sources) {
       console.log(`  ${name.padEnd(12)}: not in view (${area} px)`)
       continue
     }
+    measured++
 
     let sumL = 0, sumA = 0, sumB = 0
     for (const idx of indices) {
@@ -421,11 +423,14 @@ if (sources) {
     }
   }
 
+  // a PASS must prove its event happened: with no source in view (a wrong station, an ID pass that drew nothing)
+  // nothing was measured
+  if (measured === 0) failures.push('no source covers 2000 px or more, so nothing was measured')
   if (failures.length > 0) {
     console.log(`FAIL: ${failures.length} failure(s):\n  - ${failures.join('\n  - ')}`)
     process.exit(1)
   } else {
-    console.log('PASS: all in-view sources meet ΔE76 < 10')
+    console.log(`PASS: all ${measured} in-view sources meet ΔE76 < 10`)
   }
 } else {
   // Find pixel indices for each class

@@ -287,7 +287,7 @@ async function main() {
   const errors = []
   const captures = []
   // Built with URL, not by appending `?mode=…`: a base with a query of its own got a second `?` and its values
-  // read wrong (Codex, PR #14 P2). DIORAMA_CAPTURE_EXTRA carries debug params (e.g. '&hide=wash') for
+  // read wrong (Codex, PR #14 P2). DIORAMA_CAPTURE_EXTRA carries debug params (e.g. '&debug=stage') for
   // layer-bisection probes, merged as pairs. The opening is on by default (2026-10-20) and these captures want the
   // steady state, so `arrival=0` unless the base or EXTRA asked for an arrival value of its own.
   const baseUrl = new URL(appUrl)

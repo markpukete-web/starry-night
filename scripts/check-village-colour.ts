@@ -8,8 +8,8 @@
  * are village-dominated but include background; the gate catches family-level drift, and the
  * visual compare (compare-village.mjs) catches everything else.
  *
- * Source: reference/derived/_work-painting.png (1600×1267; rebake via `npm run derive-reference`
- * if missing). Live: a capture directory's desktop-centre.png (1600×900 deterministic pose).
+ * Source: reference/derived/_work-painting.png (1600×1267; `npm run extend-reference` writes it, after
+ * `npm run derive-reference`). Live: a capture directory's desktop-centre.png (1600×900 deterministic pose).
  */
 
 import { readFileSync } from 'node:fs'
@@ -18,13 +18,28 @@ import { resolve } from 'node:path'
 import { decodePNG } from './lib/png.ts'
 
 const ROOT = resolve(import.meta.dirname, '..')
-const capturePath = resolve(ROOT, process.argv[2] ?? '', 'desktop-centre.png')
+if (!process.argv[2]) {
+  console.error('usage: node scripts/check-village-colour.ts <capture directory holding desktop-centre.png>')
+  process.exit(2)
+}
+const capturePath = resolve(ROOT, process.argv[2], 'desktop-centre.png')
 const source = decodePNG(readFileSync(resolve(ROOT, 'reference/derived/_work-painting.png')))
 const capture = decodePNG(readFileSync(capturePath))
 
 // The matched houses-band rects from tasks/2026-07-22-village-look.md.
 const SRC_BAND = { x: 560, y: 1005, w: 500, h: 80 }
 const LIVE_BAND = { x: 580, y: 600, w: 500, h: 70 }
+
+// The bands are pixel rects, so each image must be the size they were measured on. A capture at another size (for
+// example `--dpr 2`, 3200 × 1800) puts the band on other pixels, or outside the image, where the mean is NaN.
+const expectSize = (name: string, img: { width: number; height: number }, width: number, height: number) => {
+  if (img.width !== width || img.height !== height) {
+    console.log(`FAIL: ${name} is ${img.width} × ${img.height}, and the bands need ${width} × ${height}`)
+    process.exit(1)
+  }
+}
+expectSize('the work painting', source, 1600, 1267)
+expectSize('the capture', capture, 1600, 900)
 
 type Lab = { l: number; a: number; b: number }
 
@@ -82,7 +97,13 @@ const live = summary(bandLabs(capture, LIVE_BAND))
 const dE = Math.hypot(src.mean.l - live.mean.l, src.mean.a - live.mean.a, src.mean.b - live.mean.b)
 console.log(JSON.stringify({ deltaEMean: +dE.toFixed(2), source: src, live }))
 console.log('comparison=regional Lab distribution over matched houses bands (not registered per-pixel)')
-if (dE >= 10) {
+// NaN passes a threshold, so a non-finite ΔE fails first
+if (!Number.isFinite(dE)) {
+  console.log('FAIL: band-mean ΔE76 is not finite, so nothing was measured')
+  process.exitCode = 1
+} else if (dE >= 10) {
   console.log(`FAIL: band-mean ΔE76 ${dE.toFixed(2)} >= 10 (locked palette tolerance)`)
   process.exitCode = 1
+} else {
+  console.log(`PASS: band-mean ΔE76 ${dE.toFixed(2)} < 10`)
 }

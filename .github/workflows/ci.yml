@@ -1,6 +1,6 @@
 name: CI
 
-# This repo had no automated checks: `lint` and the 98-case `test:sky` suite ran only when someone
+# This repo had no automated checks: `lint` and the `test:sky` suite ran only when someone
 # chose to run them, and the only thing looking at a pull request was Vercel's build. This runs the
 # commands already defined in package.json so the result is a fact on the PR rather than a claim.
 
@@ -60,7 +60,9 @@ jobs:
 
       - run: npm run lint
 
-      # The geometry/colour contracts for the painting — 98 cases at the time of writing.
+      # The geometry/colour contracts for the painting. On 2026-10-30 (run 41052705281) this step ran 504 cases
+      # and skipped 68 of them: those read `reference/derived/_work-painting.png`, which is not tracked, so here
+      # they skip. They include the street's triangle budgets, so a green run does not prove those.
       - run: npm run test:sky
 
       - run: npm run build

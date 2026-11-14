@@ -3,7 +3,7 @@
 // Emulates prefers-reduced-motion: reduce, captures two frames apart in time — they must be
 // byte-identical. A control page without the emulation must differ.
 import { spawn } from 'node:child_process'
-import { existsSync, mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
