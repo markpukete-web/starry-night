@@ -600,7 +600,9 @@ async function switchGap(port, throttle) {
     await page.evaluate(`(() => {
       window.__gapMax = 0
       let last = performance.now()
-      const tick = (now) => {
+      // the callback's own clock: the frame's timestamp can read a late frame as on time
+      const tick = () => {
+        const now = performance.now()
         window.__gapMax = Math.max(window.__gapMax, now - last)
         last = now
         requestAnimationFrame(tick)
