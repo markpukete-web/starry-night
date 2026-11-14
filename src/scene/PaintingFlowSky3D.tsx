@@ -164,7 +164,7 @@ type Props = {
   sky?: SkyStyle
   /** System reduced motion: always the painted-light still, whatever the choice. */
   still?: boolean
-  /** Make-it-alive A (`?alive=1`): the gust clock in both skies, halos breathing. Off = today's sky, bit for bit. */
+  /** Make-it-alive A (on by default, `?alive=0` off): the gust clock in both skies, halos breathing. Off = today's sky, bit for bit. */
   alive?: boolean
   /** The live knobs (skyAlive.ts `readAliveTuning`); applied through uniforms, no rebuild. */
   tuning?: AliveTuning
@@ -173,12 +173,12 @@ type Props = {
    * same pinned, advanced or paused time the halos do (second pass, A3). Without it the sky keeps its own ref.
    */
   clock?: RefObject<number>
-  /** B (`?touch=1`, implies alive): surges of light along the ribbons from the pointer, kicks and flares (touchSurge.ts). */
+  /** B (on by default, `?touch=0` off, implies alive): surges of light along the ribbons from the pointer, kicks and flares (touchSurge.ts). */
   touch?: boolean
   /** The store the scene's input hook writes; read into the uniforms each frame. */
   touchStore?: RefObject<TouchStore>
   /**
-   * C (`?arrival=1`, tasks/2026-10-20-arrival-c-plan.md): the seconds to advance the clock this frame while the
+   * C (the arrival, tasks/2026-10-20-arrival-c-plan.md): the seconds to advance the clock this frame while the
    * arrival runs (its rate times a bounded delta); null once the arrival is done, absent with the flag off: either
    * way the clock takes the frame's `dt`.
    */
@@ -1049,7 +1049,7 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
 
   // Geometry is ready before the mode flips; the layout effect below switches wash and gradient in the same frame.
   const mode: SkyStyle = wanted === 'moving' && movingGeometry ? 'moving' : 'light'
-  // Opened on ?sky=moving: until the worker's strokes land, draw no strokes rather than flash the light sky's for
+  // Opened on the moving sky (the default): until the worker's strokes land, draw no strokes rather than flash the light sky's for
   // about 0.3 s (Fable, plan-worker P2). After a click the light strokes stay until the swap, so nothing blanks.
   const [openedOnMoving] = useState(() => wanted === 'moving')
   const awaitingMoving = openedOnMoving && wanted === 'moving' && !movingGeometry && !movingFailed

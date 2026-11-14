@@ -3,7 +3,7 @@ import { ALIVE_KNOB_MAX, ALIVE_KNOBS, aliveSavePayload, type AliveTuning } from 
 import { saveDefaults } from './scene/tuning'
 
 /**
- * Mark's tuner for make-it-alive A (`?tune=1`): sliders for the four knobs, live on the sky through uniforms,
+ * Mark's tuner for make-it-alive A (`?tune=1`): sliders for its eight knobs (A's four, the second pass's flicker and glimmer, B's surge and D1's bend), live on the sky through uniforms,
  * the way the dev leva panel worked for the 2D sky (Mark, 2026-10-13: "you need to build the tool so that I can
  * tune myself"). Plain React, so it exists on every build, the Vercel preview and a phone included; leva is
  * aliased out of production. On the dev server "set as default" writes the values to sky-tuning.json (the

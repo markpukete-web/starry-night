@@ -14,9 +14,11 @@ export const STAR_UVS: [number, number][] = [
   [0.52, 0.2], [0.59, 0.095], [0.66, 0.27], [0.72, 0.175],
 ]
 
-// MUST stay equal to App's HOME_POSITION/HOME_TARGET — the swirl basis (FRONT_AZ) is derived from this
-// camera bearing so the painting's composition (whorl, moon, Venus, stars) centres on where the camera
-// looks. Moved nearly head-on (small azimuth) to match the flat painting's composition (Mark, 2026-06-21).
+// The swirl basis (FRONT_AZ, then FWD, RIGHT and TRUEUP) comes from this camera's bearing, so the painting's
+// composition (whorl, moon, Venus, stars) centres on where the camera looks. It is the June home camera, moved
+// nearly head-on to match the flat painting (Mark, 2026-06-21). The diorama's design camera
+// (`DIORAMA_CAMERAS.design`, dioramaContract.ts) has moved since, to a bearing 0.8° from this one. Every gate since
+// passed on this basis, so a change here moves the whole sky.
 const CAM_POS = new Vector3(0.6, 1.05, 5.05)
 const CAM_TARGET = new Vector3(0, 1.05, 0)
 export const FRONT_AZ = Math.atan2(CAM_TARGET.x - CAM_POS.x, CAM_TARGET.z - CAM_POS.z)

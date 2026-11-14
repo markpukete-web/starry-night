@@ -3,7 +3,7 @@ import { BACK_ROW, FRONT_ROW, LEFT_ROW, RIGHT_ROW, stationBox } from './villageS
 /**
  * The painting's foliage masses, authored (E2, tasks/2026-10-21-land-e2-plan.md E2.1): a box in painting pixels
  * (1600 × 1267) the mass's paint and curls are read from, and a placement in world. The four rows keep the F2
- * placements (villageGeometry's `ROWS`: the base's centre `x0 + xw / 2`, its width `xw`, its `z0`) and take their
+ * placements (villageGeometry's `ROWS` before E2 removed them: the base's centre `x0 + xw / 2`, its width `xw`, its `z0`) and take their
  * boxes from their stations (confirmation read F15); the rest were
  * traced by eye from the 1:1 crops of the 3840 scan and placed inside the coast (every base probed with a
  * positive margin at both ends, 2026-10-21). Discovery by colour alone merged the hills, fields, roofs and walls

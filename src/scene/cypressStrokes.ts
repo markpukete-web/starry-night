@@ -98,15 +98,6 @@ export function paintingUV(rows: { uv: [number, number, number, number] }, px: n
   return [rows.uv[0] + px * (rows.uv[2] - rows.uv[0]), rows.uv[1] + py * (rows.uv[3] - rows.uv[1])]
 }
 
-/**
- * Streamlines in the cypress's own field, grown both ways from a seed inside the mask. Deterministic in `seed`.
- * The field is signed up (`signedUpDirection` in the bake), so one walk climbs and the other descends; a ribbon
- * is its seed with up to half its length each way, so no ribbon is clipped to a stub by the mask's top. One
- * colour per ribbon (the July 2026 review's "one pigment per ribbon" kept): the texel under the middle sample, or
- * under the seed when the middle has overshot into sky. (Retune 1 took the brightest tree texel within one texel
- * instead, and the render came out 8–14 L lighter than the painting in every third, retune 2, 2026-10-21; the
- * texel's own pigment mix already matches the painting's, green 50%, grey 38%, brown 9%.)
- */
 export type RibbonRows = RowTable & { uv: [number, number, number, number]; satellites?: { y: number; x0: number; x1: number }[] }
 
 /**
@@ -212,6 +203,16 @@ export function sampleColours(painting: ImageData2D, rows: { uv: [number, number
   })
 }
 
+/**
+ * Streamlines in the cypress's own field, grown both ways from a seed inside the mask. Deterministic in `seed`.
+ * The field is signed up (`signedUpDirection` in the bake), so one walk climbs and the other descends. A ribbon
+ * is its seed with up to half its length each way, so no ribbon is clipped to a stub by the mask's top. Its
+ * `colour` is its band's pigment (`bandPigment`, retune 3) at the middle sample, or at the seed when the middle
+ * has overshot into sky. With `perSampleColours` (E3, the cypress) the colour also follows the stroke, one pigment
+ * per kept step (`sampleColours`), because one colour per ribbon averaged the bands it crossed. The land reads
+ * `colour` only. (Retune 1 took the brightest tree texel within one texel, and the render came out 8–14 L
+ * lighter than the painting in every third, retune 2, 2026-10-21.)
+ */
 export function traceCypressRibbons(
   flow: ImageData2D,
   painting: ImageData2D,

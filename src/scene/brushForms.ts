@@ -3,8 +3,8 @@ import { Color, Vector3 } from 'three'
 /**
  * Shared kit for authored Van-Gogh-brushstroke forms. Every foreground form is a real closed 3D
  * volume CLAD in oriented brush quads: coherent directional impasto strokes (not smooth mesh, which
- * reads as a toy), coloured from the derived palette, lit by the moon so the form models in the
- * night. The stroke DIRECTION is the whole game — coherent flow reads as brushwork; incoherent reads
+ * reads as a toy), coloured from the derived palette, shaded toward the moon (`moonShade`, baked into the colours, as no
+ * material is lit) so the form models in the night. The stroke DIRECTION is the whole game — coherent flow reads as brushwork; incoherent reads
  * as fur. See docs/superpowers/plans/2026-07-09-authored-brushstroke-forms.md.
  */
 
