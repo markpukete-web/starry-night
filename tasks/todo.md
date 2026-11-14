@@ -10,14 +10,15 @@ Mark, about 16:00: "Good, go for your recommendations and well record where we a
 - **#45** `chore/audit-2026-11-14`: the audit's gate fixes, the dead dome-sky stack removed, the record. CI green,
   Codex's review clean on `5919748`. Every later commit is prose. The merge is Mark's.
 - **#46** `fix/audit-failure-paths-diorama` (`6c62079`): items 5, 6, 7, 11b, 11c, 12, 13. Gated: 502 of 502, 11
-  frames identical, four browser checks. Codex's review started about 16:05.
+  frames identical, four browser checks. Codex's review: no findings.
 - **#47** `perf/audit-street-build` (`01e20ce`): items 3, 14, 15. It is head 2 without item 1's two CI commits, and
   differs from the gated `e059a22` only in `ci.yml`. Its CI run by dispatch is green (run 43564578666: 494 tests,
-  426 pass, 68 skipped, as `main` skips today). Codex's review started about 16:05.
+  426 pass, 68 skipped, as `main` skips today). Codex's review: no findings.
 
 **Next session, in order:**
 
-1. Read Codex's reviews on #46 and #47: the timeline first, then the inline comments. Answer every thread.
+1. Codex's reviews of #46 (`6c62079`) and #47 (`01e20ce`) both completed with no findings (read 16:10). Read each
+   timeline again before a merge, in case a later entry landed.
 2. Merge order, on Mark's word: #45, then #46 and #47 (GitHub retargets them to `main`). The second to merge
    takes both `test:sky` lists by hand. Capture the union's 11 frames once then (`capture-set.sh`). A trial merge
    passed 507 of 507 and the three static checks.
