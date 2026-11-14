@@ -1,6 +1,6 @@
 // Single source of truth for the painting's swirl centres, shared by the offline flow/mask BAKE
 // (scripts/derive-reference.ts) and the runtime's sky strokes (streamlineGeometry.ts), so the mask
-// discs and the orbit centres are guaranteed to agree — no drift between bake and render (Mark req).
+// discs and the halo centres the strokes seed round are guaranteed to agree — no drift between bake and render (Mark req).
 //
 // Each entry is [u, v, sign, radius] in the painting's image-UV (x right, y DOWN — matches the derived
 // assets and getImageData). Signs are validated by the living-painting capture (flip if a swirl turns the
@@ -28,5 +28,5 @@ export const MOON_R = 0.07
 
 // Swirls whose HALOS churn AND orbit (stars, the double-comma rolls, the moon halo). Excludes the
 // dominant central whorl (r 0.2, already animating from its own size) and any swirl on the cypress column
-// (u<0.2 & v>0.3) so we never paint churn onto the tree. Used by the mask discs (bake) AND the dab orbit.
+// (u<0.2 & v>0.3) so we never paint churn onto the tree. Used by the mask discs (bake) AND the sky strokes' seeding round each halo.
 export const HALO_SWIRLS: Swirl[] = SWIRLS.filter(([u, v, , r]) => r <= 0.12 && !(u < 0.2 && v > 0.3))

@@ -1,6 +1,6 @@
 /**
  * Script-level tests for the exemplar inpainting core (S2 of the offline inpaint pipeline).
- * Synthetic images, same discipline as painting-regions.test.ts: the invariants the plan
+ * Synthetic images: the invariants the plan
  * names — determinism, no bright-core donation, original paint never touched — plus a
  * structure check that striped texture actually continues across the hole.
  */
