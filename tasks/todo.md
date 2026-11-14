@@ -1,5 +1,22 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-11-14 (14:10): the audit's list is tested and presented; Mark's decisions are open
+
+**Round 2 is done** (record `tasks/2026-11-14-audit.md`, "Round 2"). Hydrogen ran the 17 probes again and the
+numbers match. Argon tested items 6 to 16 and read the Lead's commits. The Lead checked Argon's quotes by script:
+45 of 208 quoted lines were not in the files, so Argon's verdict counts for items 6 to 13 only, and the Lead read
+14 to 16 itself. Argon's three findings in the Lead's commits are fixed.
+
+**On the local branch `chore/audit-2026-11-14`, not pushed** (base `c81a3a8`): the morning's three commits, the
+NaN guard in `check-street-colour.ts`, and seven comments. Lint, `tsc -b`, 489 of 489 and the build are green.
+Every built file's sha256 matches `c81a3a8`'s.
+
+**Open, all Mark's:** push the branch and open its PR (it needs a Codex review before `main`). The first slice:
+the Lead recommends items 5, 6 and 7. Items 2 (Dependabot), 9 (stop 4's tap), 18 (the cache header), 20 (the
+unused 634 kB file), 23 (`CLAUDE.md`) and 29 (local leftovers). PR #44 still waits on him.
+
+**Next session:** read Mark's answers. Build nothing in `src` without his word. The 11:13 pickup below is superseded.
+
 ## Pickup — 2026-11-14 (11:13): the audit is read and recorded; paused on Mark's word, its list not yet presented
 
 **Mark asked for a whole-project audit** ("find everything that's broken, inconsistent, inefficient, or no longer

@@ -173,6 +173,10 @@ The full history, 2026-06-13 to 2026-10-30, is in `tasks/archive/2026-10-30-less
   budgets among them. Read the skip count in the run's log. 2026-11-14
 - A removal is inert only when every built file's sha256 matches the baseline's. Deleting six unimported files
   matched. Deleting two unused exports from `brush.ts` moved the worker's bytes, so it was left out. 2026-11-14
+- Before ranking a gap as a hole, run `git log -S` on its pattern. The CI skip of 68 tests was chosen in `6219035`
+  (PR #22). The finding is what the choice costs now: the street's triangle budget goes unchecked in CI. 2026-11-14
+- A gate fix gets a second reader. The Lead's own fix for "passes with nothing measured" left `NaN >= 10` passing
+  in the same script, and the lesson about NaN was already in this file. 2026-11-14
 
 ## Browser checks and capture tools
 
@@ -446,6 +450,11 @@ The full history, 2026-06-13 to 2026-10-30, is in `tasks/archive/2026-10-30-less
   the Lead's notes of it at once. 2026-11-14
 - Run a browser check only when no subagent is working. `check-portal.mjs` failed its pinned-clock case under a
   reader's load and passed every case on the quiet machine. 2026-11-14
+- Compare every line a reviewer quotes with the file, by script, before its verdict counts. Argon's read of eleven
+  claims quoted 208 lines as verbatim, and 45 were not in the files. It had written plausible code for three
+  claims. The Lead read those three itself. 2026-11-14
+- Run `ls` on every path in a brief before sending it. The reviewer's brief named `src/DioramaExperience.tsx`,
+  and the file is `src/scene/DioramaExperience.tsx`. 2026-11-14
 
 ## Git, PRs, deploy and the shell
 
