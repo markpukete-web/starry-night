@@ -41,7 +41,10 @@ const outDir = process.argv[2] || 'output/failure-paths'
 const BLOCKED = '*/reference/sky-mask.png*'
 /** the page's own message, from `failPage` in `src/bootCurtain.ts` */
 const OWN_MESSAGE = 'failed to draw its scene'
-/** `REDUCED=1` runs every case under `prefers-reduced-motion: reduce`: the failed page must show there too. */
+/**
+ * `REDUCED=1` runs the cases under `prefers-reduced-motion: reduce`: the failed page must show there too. Run it with
+ * `CASES=3,4`: reduced motion stops the walk, so case 1 cannot pass under it.
+ */
 const REDUCED = Boolean(process.env.REDUCED)
 
 const chromePath =
