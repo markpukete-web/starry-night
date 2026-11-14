@@ -11,6 +11,7 @@ import {
   pushFlare,
   pushKick,
   pushSurge,
+  startsGesture,
   TOUCH_SURGE,
   type HoverMark,
   type PointerSample,
@@ -187,7 +188,8 @@ export function useTouchInput({
       push(point[0], point[1], TOUCH_SURGE.hoverAmp * knobRef.current, clock.current, false)
     }
     const onDown = (event: PointerEvent) => {
-      if (!event.isPrimary || down) return
+      // a right or middle click neither holds the land nor taps the sky on its release
+      if (!event.isPrimary || down || !startsGesture(event)) return
       activeId = event.pointerId
       down = { x: event.clientX, y: event.clientY, ms: event.timeStamp }
       p.x = event.clientX

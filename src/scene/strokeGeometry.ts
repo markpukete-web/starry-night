@@ -4,7 +4,8 @@ import { BufferAttribute, BufferGeometry } from 'three'
  * A brush-arrays build as a geometry with E1's stroke attributes, and D1's bend weight when given. Moved out of
  * `BrushIsland.tsx` for the street (S1 task 3), unchanged but for the length check: the stroke body reads `aStroke`
  * (along, across) and `aSeed` per vertex, and a build that lost them drew no ribbon (street plan review F1). The street
- * passes `normals` false: its basic materials read no vertex normal (the phone's memory, 2026-10-28, Codex P3).
+ * and the diorama's island pass `normals` false: their basic materials read no vertex normal (the phone's memory, 2026-10-28,
+ * Codex P3, and audit 2026-11-14 item 12).
  */
 export function strokeGeometry(arrays: { positions: number[]; colors: number[]; indices: number[] }, stroke: number[], seed: number[], bend?: number[], cls?: number[] | number, normals = true): BufferGeometry {
   const vertices = arrays.positions.length / 3

@@ -265,6 +265,14 @@ export function classifyGesture(down: PointerSample, up: PointerSample, T = TOUC
   return quick && still ? 'tap' : 'drag'
 }
 
+/**
+ * A press that may start a gesture: a finger, a pen, or a mouse's main button. A right or middle click is no tap (on
+ * Windows a right click sent Vincent walking, the audit's item 5); `StreetGrass.tsx` and `usePortalPointer.ts` refuse it too.
+ */
+export function startsGesture(press: { pointerType: string; button: number }): boolean {
+  return press.pointerType !== 'mouse' || press.button === 0
+}
+
 /** A press strayed: some sample of a move is further than `tapPx` from the press (a move may carry several, coalesced). */
 export function strayed(down: PointerSample, samples: readonly { x: number; y: number }[], T = TOUCH_SURGE): boolean {
   return samples.some((p) => Math.hypot(p.x - down.x, p.y - down.y) > T.tapPx)

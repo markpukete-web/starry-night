@@ -324,6 +324,26 @@ export function setVincentGround(p: [number, number] | null): void {
   vincentGround = p
 }
 
+export type HeldKeys = { forward: boolean; back: boolean }
+
+/**
+ * The walk's held keys. macOS sends no keyup for a key released while Cmd is down (the audit's item 11c, from the
+ * platform's known behaviour, not a run here), so a Cmd chord holds nothing, and Cmd's own release lets go of both.
+ */
+export function keyDown(held: HeldKeys, e: { code: string; metaKey: boolean }): HeldKeys {
+  if (e.metaKey) return held
+  if (e.code === 'ArrowUp' || e.code === 'KeyW') return { ...held, forward: true }
+  if (e.code === 'ArrowDown' || e.code === 'KeyS') return { ...held, back: true }
+  return held
+}
+
+export function keyUp(held: HeldKeys, e: { code: string; key: string }): HeldKeys {
+  if (e.key === 'Meta') return { forward: false, back: false }
+  if (e.code === 'ArrowUp' || e.code === 'KeyW') return { ...held, forward: false }
+  if (e.code === 'ArrowDown' || e.code === 'KeyS') return { ...held, back: false }
+  return held
+}
+
 export function admitGesture(
   box: { x0: number; y0: number; x1: number; y1: number } | null,
   x: number,
