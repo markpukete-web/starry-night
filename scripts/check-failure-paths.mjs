@@ -15,6 +15,7 @@
  * 4. The control: nothing blocked, the same visits and sizes, and no fallback, no failed class and no page error.
  * 5. The diorama decodes `painting.jpg` once (slice B1, item 13). 6. With `painting.jpg` blocked the opening does not
  *    wait 15 s for the cypress (slice B1, item 7), against the same visit unblocked.
+ * `CASES=3,5` runs those cases alone.
  * Each case prints PASS or throws; the run exits 1 on the first failure. The Chrome launcher and the CDP page are
  * copied from `check-portal.mjs`, which exports neither. The screenshots go to the folder named, by default
  * `output/failure-paths`.
@@ -459,6 +460,10 @@ async function casePaintingFails(port) {
   console.log(`PASS 6: with painting.jpg blocked the opening took ${blocked.ms} ms against ${control.ms} ms unblocked, the cypress and the land ready, the scene up, ${dioramaLogs} log from the diorama`)
 }
 
+/** `CASES=3,5` runs those cases alone, so each can be seen to fail on a build without its fix. Absent, every case runs. */
+const only = (process.env.CASES ?? '').split(',').filter(Boolean).map(Number)
+const wanted = (n) => only.length === 0 || only.includes(n)
+
 async function main() {
   mkdirSync(outDir, { recursive: true })
   const chromesBefore = countHeadlessChromes()
@@ -467,25 +472,25 @@ async function main() {
   try {
     await waitForChrome(port)
     const page = await newPage(port)
-    await caseStreetButtons(page)
-    await caseDioramaButtons(page)
+    if (wanted(1)) await caseStreetButtons(page)
+    if (wanted(2)) await caseDioramaButtons(page)
     if (page.errors.length) throw new Error(`page errors in cases 1 and 2:\n  ${page.errors.join('\n  ')}`)
     await page.close()
     for (const viewport of [DESKTOP, PHONE]) {
       for (const [name, query] of VISITS) {
-        await caseFailed(port, name, query, viewport)
-        await caseControl(port, name, query, viewport)
+        if (wanted(3)) await caseFailed(port, name, query, viewport)
+        if (wanted(4)) await caseControl(port, name, query, viewport)
       }
     }
-    await caseOneDecode(port)
-    await casePaintingFails(port)
+    if (wanted(5)) await caseOneDecode(port)
+    if (wanted(6)) await casePaintingFails(port)
   } finally {
     chrome.cleanup()
   }
   await sleep(500)
   const chromesAfter = countHeadlessChromes()
   if (chromesAfter > chromesBefore) throw new Error(`headless Chromes left open: ${chromesBefore} before, ${chromesAfter} after`)
-  console.log('ALL PASS')
+  console.log(only.length ? `PASS: cases ${only.join(', ')} only` : 'ALL PASS')
 }
 
 main().catch((error) => {
