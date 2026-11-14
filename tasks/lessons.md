@@ -181,6 +181,9 @@ The full history, 2026-06-13 to 2026-10-30, is in `tasks/archive/2026-10-30-less
   network-level count would fail with the fix and without it. 2026-11-14
 - Give a browser check a case filter, and run each new case against the build without its fix. Five cases failed
   there and the control passed, which also turned four "read, not run" findings into confirmed ones. 2026-11-14
+- A test that has never run in CI is not known to pass there. With the painting present, 5 of the 68 skipped
+  cases failed on Linux x64 and Node 24: each pins a hash of full-precision floats recorded on this Mac. Run a
+  new CI step by `workflow_dispatch` on the branch before calling its slice done. 2026-11-14
 - A `WeakMap` has no `size`. The read gives `undefined` with no error under type stripping: only a type check
   of `scripts/` sees it. 2026-11-14
 
