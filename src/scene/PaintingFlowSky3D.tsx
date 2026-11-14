@@ -799,7 +799,6 @@ function SourceOrbs({
           />
         </sprite>
       </group>
-      <pointLight position={moonPosition} intensity={debug === 'flow' ? 12 : 18} distance={24} color="#f0d98a" />
       {stars.map((star, index) => (
         <group key={index} position={star.position}>
           <sprite
