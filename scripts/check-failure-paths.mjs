@@ -10,8 +10,11 @@
  * 3. `/reference/sky-mask.png` blocked (CDP `Network.setBlockedURLs`, the cache off), on a plain visit and with
  *    `?arrival=0`, at 1600 × 900 and 390 × 844: `#root` holds the fallback; one painting is visible, loaded, with its
  *    alt text; the loading curtain is gone (on the plain visit it was up at load); the cue is not visible and the
- *    citation is; no button is left; the ready seams are true; the console holds the page's own message; every page
- *    error is R3F's report of the blocked load. A screenshot of each failed state is saved for the Lead.
+ *    citation is; one retry button (`RETRY_LABEL`) sits in a 12 px `.arrival-retry` paragraph (`FAILED_LINE + ' ' +
+ *    RETRY_LABEL`) below the citation, its drawn centre hits the button, and on the 1600 × 900 plain visit clicking
+ *    it reloads the page into the failed state again; the ready seams are true; the console holds the page's own
+ *    message; every page error is R3F's report of the blocked load. A screenshot of each failed state is saved for the
+ *    Lead.
  * 4. The control: nothing blocked, the same visits and sizes, and no fallback, no failed class and no page error.
  * 5. The diorama decodes `painting.jpg` once (slice B1, item 13). 6. With `painting.jpg` blocked the opening does not
  *    wait 15 s for the cypress (slice B1, item 7), against the same visit unblocked.
@@ -25,7 +28,7 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PerspectiveCamera, Vector3 } from 'three'
-import { ARRIVAL_CUE, VINCENTS_CITE } from '../src/scene/arrival.ts'
+import { ARRIVAL_CUE, FAILED_LINE, RETRY_LABEL, VINCENTS_CITE } from '../src/scene/arrival.ts'
 import { vincentPlace } from '../src/scene/streetLayout.ts'
 import { WALK } from '../src/scene/streetWalk.ts'
 import { hidden, initialWander, standable, wanderTo } from '../src/scene/streetWander.ts'
@@ -38,7 +41,10 @@ const outDir = process.argv[2] || 'output/failure-paths'
 const BLOCKED = '*/reference/sky-mask.png*'
 /** the page's own message, from `failPage` in `src/bootCurtain.ts` */
 const OWN_MESSAGE = 'failed to draw its scene'
-/** `REDUCED=1` runs every case under `prefers-reduced-motion: reduce`: the failed page must show there too. */
+/**
+ * `REDUCED=1` runs the cases under `prefers-reduced-motion: reduce`: the failed page must show there too. Run it with
+ * `CASES=3,4`: reduced motion stops the walk, so case 1 cannot pass under it.
+ */
 const REDUCED = Boolean(process.env.REDUCED)
 
 const chromePath =
@@ -333,6 +339,15 @@ async function caseFailed(port, name, query, viewport) {
       const visible = ${VISIBLE}
       const paintings = [...document.querySelectorAll('img')].filter((img) => /painting\\.jpg/.test(img.src) && visible(img))
       const withText = (text) => [...document.querySelectorAll('p')].filter((p) => p.textContent === text && visible(p))
+      const cite = withText(${JSON.stringify(VINCENTS_CITE)})[0] ?? null
+      const buttons = [...document.querySelectorAll('button')]
+      const button = buttons[0] ?? null
+      const retry = button?.closest('p.arrival-retry') ?? document.querySelector('p.arrival-retry')
+      const br = button && visible(button) ? button.getBoundingClientRect() : null
+      const rr = retry && visible(retry) ? retry.getBoundingClientRect() : null
+      const cr = cite ? cite.getBoundingClientRect() : null
+      const bx = br ? br.left + br.width / 2 : null
+      const by = br ? br.top + br.height / 2 : null
       return {
         root: document.getElementById('root').childElementCount,
         paintings: paintings.map((img) => ({ width: img.naturalWidth, alt: img.alt })),
@@ -340,7 +355,16 @@ async function caseFailed(port, name, query, viewport) {
         boot: Boolean(document.getElementById('boot')),
         cues: withText(${JSON.stringify(ARRIVAL_CUE)}).length,
         cites: withText(${JSON.stringify(VINCENTS_CITE)}).length,
-        buttons: document.querySelectorAll('button').length,
+        buttons: buttons.length,
+        buttonText: button?.textContent ?? null,
+        buttonVisible: button ? visible(button) : false,
+        retryText: retry?.textContent ?? null,
+        retryVisible: retry ? visible(retry) : false,
+        retryFontSize: retry ? getComputedStyle(retry).fontSize : null,
+        retryTop: rr?.top ?? null,
+        citeBottom: cr?.bottom ?? null,
+        buttonCentre: bx !== null && by !== null ? { x: bx, y: by } : null,
+        elementAtCentreIsButton: bx !== null && by !== null ? document.elementFromPoint(bx, by) === button : false,
         canvases: document.querySelectorAll('canvas').length,
         failedClass: document.documentElement.classList.contains('arrival-failed'),
         seams: [window.__skyReady, window.__streetReady],
@@ -358,7 +382,13 @@ async function caseFailed(port, name, query, viewport) {
     if (state.boot) fail('the loading curtain is still up')
     if (state.cues !== 0) fail('the cue is visible')
     if (state.cites !== 1) fail(`${state.cites} citations are visible, not 1`)
-    if (state.buttons !== 0) fail(`${state.buttons} buttons are left on a dead scene`)
+    if (state.buttons !== 1) fail(`${state.buttons} buttons on the failed page, expected 1`)
+    if (!state.buttonVisible || state.buttonText !== RETRY_LABEL) fail(`retry button text is ${JSON.stringify(state.buttonText)}, expected ${JSON.stringify(RETRY_LABEL)}`)
+    if (!state.retryVisible || state.retryText !== `${FAILED_LINE} ${RETRY_LABEL}`) fail(`retry paragraph text is ${JSON.stringify(state.retryText)}`)
+    if (state.retryFontSize !== '12px') fail(`retry fontSize is ${state.retryFontSize}, expected 12px`)
+    if (!(state.retryTop !== null && state.citeBottom !== null && state.retryTop > state.citeBottom))
+      fail(`retry top (${state.retryTop}) is not below citation bottom (${state.citeBottom})`)
+    if (!state.buttonCentre || !state.elementAtCentreIsButton) fail('elementFromPoint at the button centre is not the button')
     if (state.canvases !== 0) fail(`${state.canvases} canvases are left`)
     if (!state.failedClass) fail('no arrival-failed class')
     if (state.seams[0] !== true || state.seams[1] !== true) fail('a ready seam is not true')
@@ -369,7 +399,49 @@ async function caseFailed(port, name, query, viewport) {
     const shot = await page.send('Page.captureScreenshot', { format: 'png' })
     const file = join(outDir, `failed-${name}-${viewport.width}x${viewport.height}.png`)
     writeFileSync(file, Buffer.from(shot.data, 'base64'))
-    console.log(`PASS 3 (${name}, ${size}): the painting, its alt and the citation, no curtain, cue, button or canvas, seams true; ${page.errors.length} reported load error; ${file}`)
+    let reloadNote = ''
+    if (name === 'plain' && viewport.width === DESKTOP.width && viewport.height === DESKTOP.height) {
+      const prevErrors = page.errors.length
+      const prevConsoleErrors = page.consoleErrors.length
+      await page.evaluate('window.__beforeReload = true')
+      const loaded = new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+          page.ws.removeEventListener('message', onMsg)
+          reject(new Error(`case 3 (${name}, ${size}): timed out waiting for reload after clicking retry`))
+        }, 10000)
+        function onMsg(event) {
+          const msg = JSON.parse(event.data)
+          if (msg.method === 'Page.loadEventFired') {
+            clearTimeout(timer)
+            page.ws.removeEventListener('message', onMsg)
+            resolve()
+          }
+        }
+        page.ws.addEventListener('message', onMsg)
+      })
+      await page.click(state.buttonCentre.x, state.buttonCentre.y, 'left')
+      await loaded
+      await page.waitFor(
+        `!window.__beforeReload && performance.getEntriesByType('navigation')[0]?.type === 'reload' && document.querySelector('#root .page-failed')`,
+        30000,
+        'the reloaded fallback',
+      )
+      await page.waitFor(`[...document.querySelectorAll('img')].every((img) => img.complete)`, 10000, 'the reloaded painting to load')
+      const reloaded = await page.evaluate(`({
+        navType: performance.getEntriesByType('navigation')[0]?.type ?? null,
+        failedClass: document.documentElement.classList.contains('arrival-failed'),
+        buttons: document.querySelectorAll('button').length,
+        boot: Boolean(document.getElementById('boot')),
+      })`)
+      if (reloaded.navType !== 'reload') fail(`after retry click, navigation type is ${reloaded.navType}, not 'reload'`)
+      if (!reloaded.failedClass || reloaded.boot || reloaded.buttons !== 1) fail(`after reload, failed state is incomplete: ${JSON.stringify(reloaded)}`)
+      if (!page.consoleErrors.slice(prevConsoleErrors).some((text) => text.includes(OWN_MESSAGE)))
+        fail(`after reload, console lacks "${OWN_MESSAGE}"`)
+      if (page.errors.slice(prevErrors).some((e) => !/sky-mask\.png/.test(e)))
+        fail(`after reload, unexpected page errors: ${JSON.stringify(page.errors.slice(prevErrors))}`)
+      reloadNote = '; clicked retry -> reloaded into failed state'
+    }
+    console.log(`PASS 3 (${name}, ${size}): the painting, its alt, citation and retry button, no curtain, cue or canvas, seams true; ${page.errors.length} reported load error${reloadNote}; ${file}`)
   } finally {
     await page.close()
   }
@@ -382,8 +454,8 @@ async function caseControl(port, name, query, viewport) {
     await open(page, query, viewport)
     await page.waitFor('window.__skyReady', 30000, `the sky (${name}, ${size})`)
     await sleep(1000)
-    const state = await page.evaluate(`({ fallback: Boolean(document.querySelector('.page-failed')), failedClass: document.documentElement.classList.contains('arrival-failed'), canvases: document.querySelectorAll('canvas').length })`)
-    if (state.fallback || state.failedClass || state.canvases < 1 || page.errors.length || page.consoleErrors.some((text) => text.includes(OWN_MESSAGE)))
+    const state = await page.evaluate(`({ fallback: Boolean(document.querySelector('.page-failed')), retry: Boolean(document.querySelector('.arrival-retry')), failedClass: document.documentElement.classList.contains('arrival-failed'), canvases: document.querySelectorAll('canvas').length })`)
+    if (state.fallback || state.retry || state.failedClass || state.canvases < 1 || page.errors.length || page.consoleErrors.some((text) => text.includes(OWN_MESSAGE)))
       throw new Error(`case 4 (${name}, ${size}): with nothing blocked ${JSON.stringify({ ...state, errors: page.errors })}`)
     console.log(`PASS 4 (${name}, ${size}): with nothing blocked, the scene and no fallback`)
   } finally {

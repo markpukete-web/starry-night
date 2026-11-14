@@ -64,6 +64,9 @@ export const ARRIVAL = {
 export const VINCENTS_LINE =
   '“This morning, long before sunrise, I looked out at the countryside from my window, with nothing but the morning star, which seemed very large.”'
 export const VINCENTS_CITE = 'Vincent to Theo, Saint-Rémy, June 1889 · letter 777'
+/** the fallback's line and button label when the scene fails to load */
+export const FAILED_LINE = 'The scene did not load.'
+export const RETRY_LABEL = 'Try again.'
 /** the loading cue under the citation, shown while the opening waits for the scene */
 export const ARRIVAL_CUE = 'Painting the night sky…'
 /** clock seconds over which the cue fades once the opening stops waiting */
