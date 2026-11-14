@@ -391,6 +391,10 @@ The full history, 2026-06-13 to 2026-10-30, is in `tasks/archive/2026-10-30-less
 - Release a ref on the next frame when another subscriber reads it later in the frame. `2026-10-20 · A ref handed back`
 - Two guards that decide one thing drift apart. One function decides both. `2026-10-28 · Two guards`
 - A station's stop comes from the automatic walk alone. `2026-10-28 · A station's stop`
+- Compare a figure's yaw relative to the lane, or wrapped. `vincentPlace(t).yaw` crosses ±π at t ≈ 0.1513, and the
+  lane's curve adds its own turn. A world-yaw step test failed there at 0.1328 rad against a bar of 0.1309. 2026-11-14
+- Sweep a proposed motion rule against its bar before adopting it. The midpoint rule gave 0.1359 rad a frame against
+  0.1309. A fall over `PAUSE.about/2` gave 0.1156 and kept the yaw monotone. 2026-11-14
 
 ## React, R3F and the page
 
@@ -483,6 +487,10 @@ The full history, 2026-06-13 to 2026-10-30, is in `tasks/archive/2026-10-30-less
   plan said 129 distinct crops, and the key as built gives 153. 2026-11-14
 - Join the slices before the last gate, and run every new CI step on the joined head. One slice's new test failed
   the other slice's new type check, and neither branch alone could show it. 2026-11-14
+- Check a builder's claim about a state against the code before it goes in a record. B9 said a desktop tap under
+  Pause motion flips `dir`. The tap reads `still`, the system's reduced motion, not Pause motion's `reduced`. 2026-11-14
+- A state table with a property test ended the walk-end plan's repeated P1s. Three versions drew P1s from cases that
+  prose missed. The fourth listed every input against every state, and its reread found no P1. 2026-11-14
 
 ## Git, PRs, deploy and the shell
 
@@ -503,3 +511,5 @@ The full history, 2026-06-13 to 2026-10-30, is in `tasks/archive/2026-10-30-less
 - Before a recommendation, read that each command behind it returned what it was for. Five of nine rested on a failed search (an unquoted `--include=*.ts` in zsh), an empty asset name or a guessed folder. 2026-11-14
 - Before a recommendation to delete a folder, list every path in it that `tasks/`, `docs/` and `CLAUDE.md` cite. The records cite more than 45 folders of `scratch/`. 2026-11-14
 - Write `-(x ** 2)`, not `-x ** 2`. `2026-10-13 · -x ** 2`
+- A red mutant run can be red for another reason. Read the failure line before counting it. An unquoted `$T` with
+  two test paths reached node as one argument ("Could not find"), so the Lead's first mutant run was void. 2026-11-14

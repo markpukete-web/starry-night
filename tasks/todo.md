@@ -1,6 +1,6 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-11-14 (23:10): the walk end gated and in its PR, H4 next, Mark wrapped up
+## Pickup — 2026-11-14 (23:10, corrected 23:14): the walk end merged as #55, H4 next, Mark wrapped up
 
 The record is `tasks/2026-11-14-audit.md`, "The evening slices". Mark, 20:39 to 20:58: merge each slice once the
 Lead gates it, the walk-end slice and H3's edits included, and tidy the worktrees. About 21:35: fix the sky button
@@ -8,17 +8,19 @@ label, and merge it once gated. 22:31: Codex (GPT-6.1-Sol, high) is the reviewer
 Hydrogen (`w4:p5`) is the worker. 22:55: item 19 joins H4, and the audit's other items are planned.
 
 **Done tonight:** #53 (item 16, `c6ab14a`) and #54 (the sky button label, `8ebb527`) merged and deployed, CI green.
-The walk end (items 9 and 10) passed the Lead's gate at 23:08 and went to its PR from `fix/walk-end`. The Lead merges
-it once Codex's review is clean. The pickup memory says whether it merged.
+The walk end (items 9 and 10) passed the Lead's gate at 23:08. Codex reviewed `5370728` at 23:09 with no findings
+(a thumbs-up, no threads). #55 was squash-merged at 23:09 as `ddea76d`. CI passed and production deployed at 23:10.
+The Lead deleted the branch `fix/walk-end` and its worktree. Origin holds `main`, `spike/vincent-form` and
+`spike/vincent-wander`. This record is a local docs commit on `main`, not pushed. It rides on H4's push.
 
 **Next session, in order:**
 
-1. **The walk-end PR.** If it is merged: send Mark its preview link to judge the turn at stop 4 and the head's turn
-   back (up to 55° in 0.4 s, accepted in plan D5). Delete `fix/walk-end` on origin and the worktree
-   `.claude/worktrees/agent-a748ccb1424168288` (run `git worktree unlock` first if the harness locked it). Pull
-   `main`. If it is open: read its timeline, answer each Codex thread, and fix before the merge.
+1. **Mark's look at the walk end.** Send him the preview link
+   https://starry-night-dh44tvyi5-markpukete-webs-projects.vercel.app/?street=1&walkMode=auto&walkT=0.9 and ask him
+   to tap Vincent at stop 4. He judges the turn and the head's turn back (up to 55° in 0.4 s, accepted in plan D5).
 2. **H4, items 19, 21, 22, 24 and 27.** The scope is `scratch/briefs-2026-11-14-evening/h4-scope.md` (local), item 19
-   added at 22:55. Hydrogen builds in its own worktree from `main`, the Lead gates and merges. Mark kept the
+   added at 22:55. Hydrogen builds in its own worktree from local `main`, which carries this record. The Lead gates
+   and merges. Mark kept the
    `trueSize` constants and the flat panel (21:14).
 3. **H5 and H6**, from `tasks/2026-11-14-audit-remainder-plan.md`. H5 (the browser checks, item 26) starts after H4
    merges, with the launcher survey first. H6 (C-08, B6, C-09, B7 and A6) can run beside H5.
@@ -26,7 +28,7 @@ it once Codex's review is clean. The pickup memory says whether it merged.
 5. **For Mark:** the Opus slices (B5, A10) and his calls (A11, B8, item 30), in the same plan.
 
 - [x] The sky button's label while a failed worker shows painted light (#54, 21:51).
-- [x] Items 9 and 10, the walk's end (gated 23:08, its PR open).
+- [x] Items 9 and 10, the walk's end (gated 23:08, #55 merged 23:09 as `ddea76d`).
 
 ## Pickup — 2026-11-14 (20:08, corrected 20:15): #44 to #47 merged; item 1's cause found and fixed on `ci/no-skipped-tests`
 
