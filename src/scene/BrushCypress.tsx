@@ -9,7 +9,7 @@ import { buildCypressLobePlan, sampleCypressLobe, type CypressLobeRows } from '.
 import { CYPRESS_RIBBON_CONFIG, ribbonColumns, strideSamples, traceCypressRibbons } from './cypressStrokes'
 import { cypressViewBearing } from './cypressMapping'
 import { DIORAMA_CAMERAS } from './dioramaContract'
-import { ownPaintingUrl } from './foregroundLoad'
+import { foregroundReady, ownPaintingUrl, PAINTING_URL } from './foregroundLoad'
 import { useImageData, type ImageData2D } from './useImageData'
 import { concatInjections, injectAlive } from './aliveMaterial'
 import { flickerGlsl, flickerUniformValues, flickerWeight, lobeHeight, pushFlicker, ribbonFlicker } from './cypressFlicker'
@@ -66,6 +66,7 @@ export function BrushCypress({
   viewFrom = DIORAMA_CAMERAS.design.position,
   stride = 1,
   painting,
+  paintingFailed = false,
 }: {
   /** The one sky clock (second pass, A3): pinned, advanced, or 0 while paused. */
   clock?: RefObject<number>
@@ -85,9 +86,17 @@ export function BrushCypress({
    * own, and `null` means that load has not arrived. Absent, the tree loads its own (`ownPaintingUrl`).
    */
   painting?: ImageData2D | null
+  /** The caller's load of the painting failed: the tree is not drawn, and it reports ready. The caller logs it. */
+  paintingFailed?: boolean
 } = {}) {
   const bend = touch !== undefined
-  const loaded = useImageData(ownPaintingUrl(painting))
+  // the painting's failure path: the tree has nothing to draw, so it reports ready and the arrival goes on (audit item 7)
+  const [ownPaintingFailed, setOwnPaintingFailed] = useState(false)
+  const onPaintingError = useCallback(() => {
+    console.error(`[cypress] ${PAINTING_URL} failed to load; the tree is not drawn`)
+    setOwnPaintingFailed(true)
+  }, [])
+  const loaded = useImageData(ownPaintingUrl(painting), onPaintingError)
   const paintingData = painting ?? loaded
   // the flow field's failure path (Codex F11): the tree still draws its underpaint, and the arrival goes on
   const [flowFailed, setFlowFailed] = useState(false)
@@ -300,11 +309,11 @@ export function BrushCypress({
   // C: the arrival waits for the tree; its CPU images do not suspend, so the sky's own seam cannot cover it
   // and the portal's way back, which mounts the tree again: an unmount clears the seam, so no frame reads the last mount's
   useLayoutEffect(() => {
-    if (readyRef) readyRef.current = geometries !== null
+    if (readyRef) readyRef.current = foregroundReady(geometries !== null, paintingFailed || ownPaintingFailed)
     return () => {
       if (readyRef) readyRef.current = false
     }
-  }, [readyRef, geometries])
+  }, [readyRef, geometries, paintingFailed, ownPaintingFailed])
   useEffect(() => () => geometries?.solid.dispose(), [geometries])
   useEffect(() => () => geometries?.strokes.dispose(), [geometries])
   useEffect(() => () => solidMaterial.dispose(), [solidMaterial])

@@ -11,3 +11,13 @@ export const PAINTING_URL = '/reference/painting.jpg'
 export function ownPaintingUrl(painting: ImageData2D | null | undefined): string | null {
   return painting === undefined ? PAINTING_URL : null
 }
+
+/**
+ * A foreground piece's ready seam, the same rule for the island and the cypress. The arrival and the way back from the
+ * street wait on both pieces, and a load that failed never arrives. So a piece is ready once it is built, or once a
+ * load it waits on has failed. Without the second half the opening held for `ARRIVAL.readyTimeout`, 15 s (audit
+ * 2026-11-14, item 7).
+ */
+export function foregroundReady(built: boolean, failed: boolean): boolean {
+  return built || failed
+}

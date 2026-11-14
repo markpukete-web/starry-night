@@ -5,7 +5,7 @@ import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
 
-import { ownPaintingUrl, PAINTING_URL } from '../src/scene/foregroundLoad.ts'
+import { foregroundReady, ownPaintingUrl, PAINTING_URL } from '../src/scene/foregroundLoad.ts'
 import { buildVillage } from '../src/scene/villageGeometry.ts'
 import type { ImageData2D } from '../src/scene/useImageData.ts'
 
@@ -75,4 +75,14 @@ test('the diorama decodes the painting once and hands it to the island and the c
   assert.equal(diorama.split('painting={painting}').length - 1, 2, 'and gives it to both pieces')
   assert.ok(!island.includes('painting.jpg') && !island.includes('PAINTING_URL'), 'the island loads no painting of its own')
   assert.ok(cypress.includes('useImageData(ownPaintingUrl(painting)'), 'the cypress asks the rule above before it loads')
+})
+
+test('a foreground piece is ready once built, or once a load it waits on has failed', () => {
+  // the arrival and the way back from the street wait on both pieces: a failed load never arrives, so without this
+  // the opening held for ARRIVAL.readyTimeout, 15 s (audit 2026-11-14, item 7)
+  assert.equal(foregroundReady(false, true), true, 'the painting failed: ready at once')
+  assert.equal(foregroundReady(true, false), true, 'built')
+  assert.equal(foregroundReady(false, false), false, 'still loading')
+  const read = (name: string) => readFileSync(new URL(`../src/scene/${name}`, import.meta.url), 'utf8')
+  for (const piece of ['BrushIsland.tsx', 'BrushCypress.tsx']) assert.ok(read(piece).includes('readyRef.current = foregroundReady('), `${piece} reports ready through the rule`)
 })

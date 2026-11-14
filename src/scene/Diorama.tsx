@@ -50,7 +50,7 @@ export function Diorama({
       {/* the village: church, houses and foliage rows painted from the source, at the hills' foot */}
       <Village clock={clock} alive={alive} tuning={tuning} />
       {/* cypress, front-left — the dark flame, the vertical counterweight to the sky */}
-      <BrushCypress painting={painting} clock={clock} alive={alive} tuning={tuning} ready={cypressReady} touch={touch} />
+      <BrushCypress painting={painting} paintingFailed={paintingFailed} clock={clock} alive={alive} tuning={tuning} ready={cypressReady} touch={touch} />
     </group>
   )
 }

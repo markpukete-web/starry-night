@@ -4,6 +4,7 @@ import { BufferAttribute, BufferGeometry, DoubleSide, MeshBasicMaterial } from '
 import { concatInjections, injectAlive } from './aliveMaterial'
 import { bendInjection, LAND_TOUCH, landUniformValues, type LandStore } from './landTouch'
 import { strokeGlsl } from './cypressStrokeShader'
+import { foregroundReady } from './foregroundLoad'
 import { buildIsland } from './islandGeometry'
 import { buildLandTrees, type BakedMass } from './landDomes'
 import { buildLandStrokes } from './landStrokes'
@@ -53,15 +54,23 @@ export function BrushIsland({
     return { solid: plainGeometry(built.solid), strokes: plainGeometry(built.strokes) }
   }, [])
 
+  // each failure is logged by name, as the cypress logs its own (audit item 7); the island still reports ready
   const [failed, setFailed] = useState(false)
-  const flowData = useImageData('/reference/land-flow.png', () => setFailed(true))
+  const flowData = useImageData('/reference/land-flow.png', () => {
+    console.error('[land] /reference/land-flow.png failed to load; the ground and the trees are not drawn')
+    setFailed(true)
+  })
   const [baked, setBaked] = useState<BakedMass[] | null>(null)
   useEffect(() => {
     let alive = true
     fetch('/reference/land-masses.json')
       .then((response) => (response.ok ? (response.json() as Promise<BakedMass[]>) : Promise.reject(new Error(String(response.status)))))
       .then((json) => { if (alive) setBaked(json) })
-      .catch(() => { if (alive) setFailed(true) })
+      .catch((error) => {
+        if (!alive) return
+        console.error('[land] /reference/land-masses.json failed to load; the ground and the trees are not drawn', error)
+        setFailed(true)
+      })
     return () => { alive = false }
   }, [])
   const land = useMemo(() => {
@@ -133,7 +142,7 @@ export function BrushIsland({
   })
 
   useEffect(() => {
-    if (readyRef) readyRef.current = land !== null || failed || paintingFailed
+    if (readyRef) readyRef.current = foregroundReady(land !== null, failed || paintingFailed)
     // the portal's way back mounts the land again: an unmount clears the seam, so no frame reads the last mount's
     return () => {
       if (readyRef) readyRef.current = false
