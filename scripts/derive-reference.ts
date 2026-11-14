@@ -29,7 +29,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-// Swirl centres are the single source of truth shared with the runtime dab-orbit (src/scene/dabEngine.ts)
+// Swirl centres are the single source of truth shared with the runtime's sky strokes (src/scene/streamlineGeometry.ts)
 // so the mask discs baked here and the orbit centres there cannot drift apart (Mark req).
 import { SWIRLS, HALO_SWIRLS, MOON_UV, MOON_R } from '../src/scene/skySwirls.ts';
 import { decodePNG, encodePNG } from './lib/png.ts';
@@ -437,7 +437,7 @@ if (!paletteOnly) {
 // Sky mask: bright = sky (the living painting churns here), dark foreground (cypress/village/hills) stays
 // still. Eroded inward so advected sky never samples across a silhouette, and the moon disc is forced
 // static so the painted crescent does not smear (Codex plan-review). MOON_UV/MOON_R + HALO_SWIRLS are
-// imported from skySwirls.ts — the SAME centres the runtime dab-orbit uses, so the masked halos are exactly
+// imported from skySwirls.ts — the SAME centres the runtime's sky strokes use, so the masked halos are exactly
 // the orbited ones (no drift between bake and render).
 const maskRaw = new Float64Array(W * H);
 for (let i = 0; i < W * H; i++) {

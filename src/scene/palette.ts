@@ -3,7 +3,7 @@
 // taken from palette.json — median-cut per region from the scan — instead of being hand-picked.
 //
 // Two deliberate exceptions, both faithful:
-//   • The sky STROKES sample painting.jpg directly (see SkyDome) — the palette's own source, so they
+//   • The sky STROKES sample the painting directly (see streamlineGeometry) — the palette's own source, so they
 //     carry the painting's true local colour rather than its 5-colour reduction (zero drift).
 //   • Emissive LIGHT (moon, stars, lit windows) is light, not surface, so it stays warm and bright;
 //     Van Gogh's own moon and windows are luminous points, not paint-coloured.

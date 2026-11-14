@@ -165,7 +165,7 @@ export default function StreetWalk({
     dragged: boolean
   } | null>(null)
 
-  // the wander (2026-10-29): module state while he is off the lane. On the lane its `turn` is kept equal to the pause's
+  // the wander (2026-10-29): this ref holds his state while he is off the lane. On the lane its `turn` is kept equal to the pause's
   const wanderOn = flags.wander && flags.vincent
   const wanderRef = useRef<WanderState>(initialWander())
   const aimRef = useRef(0)
@@ -181,7 +181,8 @@ export default function StreetWalk({
   const lanternGroupRef = useRef<Group>(null)
   const haloRef = useRef<Sprite>(null)
   const poolRef = useRef<Mesh>(null)
-  // the pause (V1): only `stepPause` ends a dwell, so no handler below touches this (Decision (h))
+  // the pause (V1): `stepPause` ends a dwell on the lane, and the frame loop's off-lane branch zeroes it (the
+  // wander, 2026-10-29). No handler below touches this (Decision (h))
   const pauseRef = useRef(initialPause())
   const swingRef = useRef(0)
   const hangRef = useRef(0)

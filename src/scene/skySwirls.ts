@@ -1,5 +1,5 @@
 // Single source of truth for the painting's swirl centres, shared by the offline flow/mask BAKE
-// (scripts/derive-reference.ts) and the runtime dab-orbit (dabEngine.buildDabField2D), so the mask
+// (scripts/derive-reference.ts) and the runtime's sky strokes (streamlineGeometry.ts), so the mask
 // discs and the orbit centres are guaranteed to agree — no drift between bake and render (Mark req).
 //
 // Each entry is [u, v, sign, radius] in the painting's image-UV (x right, y DOWN — matches the derived
