@@ -880,8 +880,8 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
   if (wanted === 'moving' && !movingEver) setMovingEver(true)
   // The light sky's latch, set the same way (audit item 16). Its ribbons are built the first time it is wanted or the
   // moving sky fails, and then kept. So the load no longer pays for the light sky, and the first switch to painted
-  // light builds it then. On an M5 Pro that first switch's longest frame gap was 17 to 50 ms over three runs (median
-  // 33 ms), and 183 to 200 ms with the CPU throttled 4× (`check-failure-paths.mjs` case 8, 2026-11-14).
+  // light builds it then. On an M5 Pro that first switch's longest frame gap was 56 to 68 ms over three runs (median
+  // 58 ms), and 196 to 226 ms with the CPU throttled 4× (`check-failure-paths.mjs` case 8, 2026-11-14).
   const [lightEver, setLightEver] = useState(false)
   if ((wanted === 'light' || movingFailed) && !lightEver) setLightEver(true)
 
