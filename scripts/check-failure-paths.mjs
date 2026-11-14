@@ -7,14 +7,22 @@
  *    left click on him starts it (the control).
  * 2. On the diorama: a right click on the sky adds no kick to the touch store, and a left click there adds one (the
  *    control).
+ * 3. `/reference/sky-mask.png` blocked (CDP `Network.setBlockedURLs`, the cache off), on a plain visit and with
+ *    `?arrival=0`, at 1600 × 900 and 390 × 844: `#root` holds the fallback; one painting is visible, loaded, with its
+ *    alt text; the loading curtain is gone (on the plain visit it was up at load); the cue is not visible and the
+ *    citation is; no button is left; the ready seams are true; the console holds the page's own message; every page
+ *    error is R3F's report of the blocked load. A screenshot of each failed state is saved for the Lead.
+ * 4. The control: nothing blocked, the same visits and sizes, and no fallback, no failed class and no page error.
  * Each case prints PASS or throws; the run exits 1 on the first failure. The Chrome launcher and the CDP page are
- * copied from `check-portal.mjs`, which exports neither.
+ * copied from `check-portal.mjs`, which exports neither. The screenshots go to the folder named, by default
+ * `output/failure-paths`.
  */
 import { execSync, spawn } from 'node:child_process'
-import { existsSync, mkdtempSync, rmSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PerspectiveCamera, Vector3 } from 'three'
+import { ARRIVAL_CUE, VINCENTS_CITE } from '../src/scene/arrival.ts'
 import { vincentPlace } from '../src/scene/streetLayout.ts'
 import { WALK } from '../src/scene/streetWalk.ts'
 import { hidden, initialWander, standable, wanderTo } from '../src/scene/streetWander.ts'
@@ -22,6 +30,11 @@ import { hidden, initialWander, standable, wanderTo } from '../src/scene/streetW
 const appUrl = process.env.DIORAMA_CAPTURE_URL || 'http://127.0.0.1:5197/'
 const origin = new URL(appUrl).origin
 const DESKTOP = { width: 1600, height: 900, deviceScaleFactor: 1, mobile: false }
+const PHONE = { width: 390, height: 844, deviceScaleFactor: 1, mobile: true }
+const outDir = process.argv[2] || 'output/failure-paths'
+const BLOCKED = '*/reference/sky-mask.png*'
+/** the page's own message, from `failPage` in `src/bootCurtain.ts` */
+const OWN_MESSAGE = 'failed to draw its scene'
 
 const chromePath =
   process.env.CHROME_PATH ||
@@ -147,6 +160,11 @@ async function newPage(port) {
   const target = await (await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: 'PUT' })).json()
   const page = new CdpPage(target.webSocketDebuggerUrl)
   await page.connect()
+  // one live tab at a time: a tab left open keeps its scene drawing under the next case
+  page.close = async () => {
+    page.ws.close()
+    await fetch(`http://127.0.0.1:${port}/json/close/${target.id}`)
+  }
   return page
 }
 
@@ -269,7 +287,106 @@ async function caseDioramaButtons(page) {
   console.log(`PASS 2: on the diorama, a right click on the sky added no kick and a left click added one (${k1} to ${k2})`)
 }
 
+// in the page: whether an element is drawn, its own style and its ancestors' opacity included
+const VISIBLE = `((el) => {
+  for (let e = el; e && e.nodeType === 1; e = e.parentElement) {
+    const s = getComputedStyle(e)
+    if (s.display === 'none' || s.visibility === 'hidden' || Number(s.opacity) === 0) return false
+  }
+  const r = el.getBoundingClientRect()
+  return r.width > 0 && r.height > 0 && r.bottom > 0 && r.right > 0 && r.top < innerHeight && r.left < innerWidth
+})`
+
+/**
+ * A fresh tab for one visit: no `starry-night:arrived` in its session, so a plain visit plays the opening, and a note of
+ * whether `#boot` stood once the document had parsed (the bundle's render commits after that).
+ */
+async function visitPage(port, blocked) {
+  const page = await newPage(port)
+  await page.send('Page.addScriptToEvaluateOnNewDocument', {
+    source: `try { sessionStorage.removeItem('starry-night:arrived') } catch (e) {}
+      document.addEventListener('DOMContentLoaded', () => { window.__bootAtLoad = Boolean(document.getElementById('boot')) })`,
+  })
+  await page.send('Network.setBlockedURLs', { urls: blocked ? [BLOCKED] : [] })
+  await page.send('Network.setCacheDisabled', { cacheDisabled: blocked })
+  return page
+}
+
+const VISITS = [
+  ['plain', ''],
+  ['arrival0', '?arrival=0'],
+]
+
+async function caseFailed(port, name, query, viewport) {
+  const size = `${viewport.width} × ${viewport.height}`
+  const page = await visitPage(port, true)
+  try {
+    await open(page, query, viewport)
+    await page.waitFor(`document.querySelector('#root .page-failed')`, 30000, `the fallback (${name}, ${size})`)
+    await page.waitFor(`[...document.querySelectorAll('img')].every((img) => img.complete)`, 10000, 'the painting to load')
+    const state = await page.evaluate(`(() => {
+      const visible = ${VISIBLE}
+      const paintings = [...document.querySelectorAll('img')].filter((img) => /painting\\.jpg/.test(img.src) && visible(img))
+      const withText = (text) => [...document.querySelectorAll('p')].filter((p) => p.textContent === text && visible(p))
+      return {
+        root: document.getElementById('root').childElementCount,
+        paintings: paintings.map((img) => ({ width: img.naturalWidth, alt: img.alt })),
+        bootAtLoad: window.__bootAtLoad,
+        boot: Boolean(document.getElementById('boot')),
+        cues: withText(${JSON.stringify(ARRIVAL_CUE)}).length,
+        cites: withText(${JSON.stringify(VINCENTS_CITE)}).length,
+        buttons: document.querySelectorAll('button').length,
+        canvases: document.querySelectorAll('canvas').length,
+        failedClass: document.documentElement.classList.contains('arrival-failed'),
+        seams: [window.__skyReady, window.__streetReady],
+      }
+    })()`)
+    const fail = (what) => {
+      throw new Error(`case 3 (${name}, ${size}): ${what}; state ${JSON.stringify(state)}`)
+    }
+    if (state.root < 1) fail('#root is empty')
+    if (state.paintings.length !== 1) fail(`${state.paintings.length} paintings are visible, not 1`)
+    if (!(state.paintings[0].width > 0)) fail('the painting did not load')
+    if (state.paintings[0].alt !== 'The Starry Night, Vincent van Gogh, 1889') fail('the painting lost its alt text')
+    if (name === 'plain' && state.bootAtLoad !== true) fail('the loading curtain was not up at load, so the plain visit tested nothing')
+    if (state.boot) fail('the loading curtain is still up')
+    if (state.cues !== 0) fail('the cue is visible')
+    if (state.cites !== 1) fail(`${state.cites} citations are visible, not 1`)
+    if (state.buttons !== 0) fail(`${state.buttons} buttons are left on a dead scene`)
+    if (state.canvases !== 0) fail(`${state.canvases} canvases are left`)
+    if (!state.failedClass) fail('no arrival-failed class')
+    if (state.seams[0] !== true || state.seams[1] !== true) fail('a ready seam is not true')
+    if (!page.consoleErrors.some((text) => text.includes(OWN_MESSAGE))) fail(`the console lacks "${OWN_MESSAGE}": ${JSON.stringify(page.consoleErrors)}`)
+    // R3F's root reports the error its boundary caught through reportError, so the blocked load shows as a page error:
+    // that one is expected, and any other fails the case
+    if (!page.errors.length || page.errors.some((e) => !/sky-mask\.png/.test(e))) fail(`page errors ${JSON.stringify(page.errors)}`)
+    const shot = await page.send('Page.captureScreenshot', { format: 'png' })
+    const file = join(outDir, `failed-${name}-${viewport.width}x${viewport.height}.png`)
+    writeFileSync(file, Buffer.from(shot.data, 'base64'))
+    console.log(`PASS 3 (${name}, ${size}): the painting, its alt and the citation, no curtain, cue, button or canvas, seams true; ${page.errors.length} reported load error; ${file}`)
+  } finally {
+    await page.close()
+  }
+}
+
+async function caseControl(port, name, query, viewport) {
+  const size = `${viewport.width} × ${viewport.height}`
+  const page = await visitPage(port, false)
+  try {
+    await open(page, query, viewport)
+    await page.waitFor('window.__skyReady', 30000, `the sky (${name}, ${size})`)
+    await sleep(1000)
+    const state = await page.evaluate(`({ fallback: Boolean(document.querySelector('.page-failed')), failedClass: document.documentElement.classList.contains('arrival-failed'), canvases: document.querySelectorAll('canvas').length })`)
+    if (state.fallback || state.failedClass || state.canvases < 1 || page.errors.length || page.consoleErrors.some((text) => text.includes(OWN_MESSAGE)))
+      throw new Error(`case 4 (${name}, ${size}): with nothing blocked ${JSON.stringify({ ...state, errors: page.errors })}`)
+    console.log(`PASS 4 (${name}, ${size}): with nothing blocked, the scene and no fallback`)
+  } finally {
+    await page.close()
+  }
+}
+
 async function main() {
+  mkdirSync(outDir, { recursive: true })
   const chromesBefore = countHeadlessChromes()
   const port = 9300 + Math.floor(Math.random() * 300)
   const chrome = startChrome(port)
@@ -279,7 +396,13 @@ async function main() {
     await caseStreetButtons(page)
     await caseDioramaButtons(page)
     if (page.errors.length) throw new Error(`page errors in cases 1 and 2:\n  ${page.errors.join('\n  ')}`)
-    page.ws.close()
+    await page.close()
+    for (const viewport of [DESKTOP, PHONE]) {
+      for (const [name, query] of VISITS) {
+        await caseFailed(port, name, query, viewport)
+        await caseControl(port, name, query, viewport)
+      }
+    }
   } finally {
     chrome.cleanup()
   }
