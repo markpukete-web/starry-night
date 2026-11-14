@@ -84,9 +84,11 @@ test("one build runs each helper's body once per distinct input", async (t) => {
     return at + 1 // zero-based: the line after the header, the function's first statement
   }
   const g = globalThis as unknown as { __b2: Record<string, string[]>; __b2id: (o: object | undefined) => number }
+  // a WeakMap has no `size`: a counter numbers each object once (the first version read `ids.size`, so every id was NaN)
   const ids = new WeakMap<object, number>()
+  let nextId = 0
   g.__b2 = { cropCalls: [], cropRuns: [], underCalls: [], underRuns: [] }
-  g.__b2id = (o) => (o ? (ids.get(o) ?? (ids.set(o, ids.size + 1), ids.size)) : 0)
+  g.__b2id = (o) => (o ? (ids.get(o) ?? (ids.set(o, ++nextId), nextId)) : 0)
   const record = (list: string, expr: string) => `(globalThis.__b2.${list}.push(JSON.stringify(${expr})), false)`
   const cropKey = '[__b2id(flow), face.u.length(), face.v.length(), face.source, face.mirror, face.shape, minRows, __b2id(painting)]'
   const underKey = '[__b2id(painting), String(rect), share, lightest]'
