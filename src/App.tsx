@@ -60,6 +60,7 @@ export default function App() {
   const [sky, setSky] = useState<SkyStyle>(() =>
     typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('sky') === 'light' ? 'light' : 'moving',
   )
+  const [skyFailed, setSkyFailed] = useState(false)
   const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
   const mode = params.get('mode') ?? 'diorama'
   const clean = params.get('clean') === '1'
@@ -114,6 +115,7 @@ export default function App() {
         showOriginal={showOriginal}
         onToggleOriginal={() => setShowOriginal((shown) => !shown)}
         sky={sky}
+        skyFailed={skyFailed}
         // only the 3D diorama has the two skies; the flat 2D route never shows the choice
         onToggleSky={mode === 'diorama' ? () => setSky((current) => (current === 'moving' ? 'light' : 'moving')) : undefined}
         lighterOffer={mode === 'diorama' && lighter === 'offered' ? { accept: () => setLighter('lighter'), keep: () => setLighter('full') } : undefined}
@@ -152,6 +154,7 @@ export default function App() {
         portal={portal}
         lighter={lighter === 'lighter'}
         onSlow={lighter === 'watching' ? () => setLighter((current) => (current === 'watching' ? 'offered' : current)) : undefined}
+        onSkyFailed={setSkyFailed}
       >
         {chrome}
       </DioramaExperience>
