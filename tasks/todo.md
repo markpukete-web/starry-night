@@ -1,20 +1,29 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-11-15 (09:10): H4 gated, PR #56 waits on Codex
+## Pickup — 2026-11-15 (09:25): H4 merged as #56, H5's survey and H6's build running
 
 The record is `tasks/2026-11-14-audit.md`, "H4, the dead code and the words". Mark has the walk end's preview link
 (#55, stop 4) as of 08:50, and his word on it is open.
 
 **Done:** H4 (items 19, 21, 22, 24 and 27) passed the Lead's gate on `129522f`: 519 of 519, the 11 frames
-byte-identical. PR #56 (`chore/h4-dead-code`) carries it and last night's record commit `60db3fa`.
+byte-identical. Codex reviewed `7cb1fa4` at 09:08 with no findings (a thumbs-up, no threads). Mark, 09:08: "When it's
+done, merge to main". #56 merged at 09:11 as `3aeec19` (a merge commit, so each item keeps its commit). Main's CI
+passed (run 43651988731), and production serves `index-CKKbWBaG.js`, the gate build's own file. The branch and both
+worktrees are deleted.
+
+**Running (Mark, 09:10: "then start H5 and H6", "spawn opus 5.5 high if needed"):**
+
+- H5, step 1: Hydrogen (`w4:p5`) surveys the twelve Chrome launchers, read-only, at `7cb1fa4`. Brief
+  `scratch/briefs-2026-11-15/h5-launcher-survey.md`, report `scratch/briefs-2026-11-15/h5/report.md`. The Lead
+  decides which differences are real, then writes step 2's brief.
+- H6: an Opus 5.5 `builder` subagent (effort high, its own worktree, branch `fix/h6-street-faults` from `3aeec19`)
+  builds C-08, B6 with C-09, B7 and A6. Brief `scratch/briefs-2026-11-15/h6-street-faults.md`. Its report is its
+  final message. Its frame base is `slices/h4-gate`.
 
 **Next, in order:**
 
-1. Read #56's timeline for Codex's review. Answer every thread. Merge once it is clean (Mark, 2026-11-14 20:58).
-   Then delete the branch, the worktrees `../starry-night-wt/h4` and `../starry-night-wt/h4-words`, and the local
-   branch `docs/h4-words`.
-2. H5 (item 26, the browser checks, launcher survey first) and H6 (C-08, B6, C-09, B7, A6), from
-   `tasks/2026-11-14-audit-remainder-plan.md`.
+1. Gate H6 when its builder reports. Its PR carries this record.
+2. H5 step 2, the shared launcher module, briefed from the survey.
 3. Item 28, the archive of this file.
 4. For Mark: the walk end's look, the Opus slices (B5, A10) and his calls (A11, B8, item 30).
 
