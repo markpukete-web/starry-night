@@ -1,5 +1,22 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-11-14 (21:30): #50, #51 and #52 merged, item 16 in its PR, items 9 and 10 building
+
+The record is `tasks/2026-11-14-audit.md`, "The evening slices". Mark, 20:39 to 20:58: merge each slice once the
+Lead gates it, the walk-end slice and H3's edits included, and tidy the worktrees.
+
+**Next, in order:**
+
+1. Item 16 is the PR of `perf/light-sky-first-use`. Merge it after its CI and Codex's review.
+2. Items 9 and 10: an Opus builder on `fix/walk-end`, from `tasks/2026-11-14-walk-end-plan.md` (second version,
+   Argon's A2 fixed, its re-read A3 running). Hydrogen runs the gate batch, the Lead gates and merges, and the PR's
+   preview link goes to Mark.
+3. H4, items 21, 22, 24 and 27: the scope is `scratch/briefs-2026-11-14-evening/h4-scope.md` (local). It starts
+   after items 9 and 10 merge, because both touch the walk files and `PaintingFlowSky3D.tsx`. Hydrogen builds, the
+   Lead gates and merges. Mark kept the `trueSize` constants and the flat panel (21:14).
+4. Item 28, the archive of this file, after H4.
+5. For Mark: the sky button's label while a failed worker shows painted light (it predates item 16).
+
 ## Pickup — 2026-11-14 (20:08, corrected 20:15): #44 to #47 merged; item 1's cause found and fixed on `ci/no-skipped-tests`
 
 The record is `tasks/2026-11-14-audit.md`, "The merges and item 1". Mark, 19:50: "Merge all three now" and "CI
@@ -67,10 +84,10 @@ and #47 are merged, so the frame baseline does not move.
 
 - [x] **PR #44** (done 20:00, `231a3dc`, Codex clean on `d3eca3e`) (setup-node 7.0.0 to 7.1.0): post one `@codex review`, read it, then merge. The new SHA `949feb2`
   is the tag `v7.1.0` in `actions/setup-node`. CI green. Its timeline held no Codex entry. Lead.
-- [ ] **The failed page gains a way to reload.** One quiet line under the citation in the caption's style: "The
+- [x] **The failed page gains a way to reload.** (done 20:53, #52) One quiet line under the citation in the caption's style: "The
   scene did not load. Try again." A follow-up slice, never a change to #46. Hydrogen builds, with a new case in
   `scripts/check-failure-paths.mjs`. The Lead looks at the captures at 1600 × 900 and 390 × 844. Mark's eye last.
-- [ ] **Item 29, leftovers.** Delete the empty `t4/`. Drop `stash@{0}` (two lines that mount `FrogStudio` in
+- [x] **Item 29, leftovers.** (done after 20:20, on Mark's word) Delete the empty `t4/`. Drop `stash@{0}` (two lines that mount `FrogStudio` in
   `Street.tsx`). Delete the local `spike/vincent-form` and `spike/vincent-wander`, and keep both on `origin`:
   `spike/vincent-wander` holds `tasks/2026-10-28-vincent-wander-spike.md`, which is not on `main`. Keep `scratch/`
   (10 GB) and `output/` (3.2 GB): the records cite more than 45 of their folders, the street's map `layout-v1.svg`
@@ -81,12 +98,12 @@ and #47 are merged, so the frame baseline does not move.
   proposed text is "the Techartist time-dial diorama, for the preset-switch interaction shape, which is Phase 2
   material at the earliest", with the path dropped, because the file is not on this Mac. `.claude/skills/`: no
   change until a first skill exists. Lead, docs only.
-- [ ] **Item 2, Dependabot** (the settings are on, read back between 20:04 and 20:05. Dependabot then opened #48 and #49, which overlap the `npm audit fix` slice, still open). Turn on the alerts and the security updates (a repository setting: the Lead tries
+- [x] **Item 2, Dependabot** (done 20:40 in #51, and Dependabot closed #48 and #49) (the settings are on, read back between 20:04 and 20:05. Dependabot then opened #48 and #49, which overlap the `npm audit fix` slice, still open). Turn on the alerts and the security updates (a repository setting: the Lead tries
   the API, and if the token lacks the scope, Mark switches it). Then one slice: `npm audit fix` without `--force`,
   the suite, the build and the 11-frame proof. It moves vite 8.0.16 to 8.3.8. None of the 12 advisories reaches
   the built site (vite's five are the dev server and `launch-editor`). Leave typescript-eslint: npm's offered fix
   is 8.36.0, older than the installed range. Hydrogen builds and runs the proof. The Lead reads the lockfile diff.
-- [ ] **Item 16, the light sky.** Build its geometry on first use and keep the worker-failure path
+- [x] **Item 16, the light sky.** (built and gated 21:29, `perf/light-sky-first-use`) Build its geometry on first use and keep the worker-failure path
   (`PaintingFlowSky3D.tsx:963-986`, `:1041`, `:1239`). The 11 pinned frames do not cover the switch to painted
   light, reduced motion or the failure path, so the plan adds cases for all three. An Opus builder. Argon reads
   the plan. Hydrogen runs the gate batch.
@@ -95,7 +112,7 @@ and #47 are merged, so the frame baseline does not move.
   direction. Item 10 (the wheel swallowed while paused off the lane, `StreetWalk.tsx:663,684`) rides in the same
   slice. It changes a walk Mark passed at a gate, so it needs his eye on a preview. An Opus builder. Argon reads
   the plan. Hydrogen runs the gate batch.
-- [ ] **Item 18, the cache header.** A `vercel.json` rule that marks `/assets/` immutable. `/reference/` stays
+- [x] **Item 18, the cache header.** (done 20:53 in #52, header read 20:57) A `vercel.json` rule that marks `/assets/` immutable. `/reference/` stays
   out: its files are not hashed. It rides with the next code PR. After the deploy, read the header once. Who sets
   today's `max-age=14400` is not proven: production answers through Cloudflare, and the direct Vercel address
   redirects to a login. If the header still says 14,400, the setting is Cloudflare's. Lead (ten lines, deploy).

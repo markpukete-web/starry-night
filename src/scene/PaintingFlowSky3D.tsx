@@ -878,6 +878,12 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
   // built the first time it is wanted and then kept, so switching back and forth costs nothing.
   const [movingEver, setMovingEver] = useState(false)
   if (wanted === 'moving' && !movingEver) setMovingEver(true)
+  // The light sky's latch, set the same way (audit item 16). Its ribbons are built the first time it is wanted or the
+  // moving sky fails, and then kept. So the load no longer pays for the light sky, and the first switch to painted
+  // light builds it then. On an M5 Pro that first switch's longest frame gap was 56 to 68 ms over three runs (median
+  // 58 ms), and 196 to 226 ms with the CPU throttled 4× (`check-failure-paths.mjs` case 8, 2026-11-14).
+  const [lightEver, setLightEver] = useState(false)
+  if ((wanted === 'light' || movingFailed) && !lightEver) setLightEver(true)
 
   useEffect(() => {
     for (const tex of [painting, mask, extendLeft, extendRight]) {
@@ -961,7 +967,7 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
   )
 
   const geometry = useMemo(() => {
-    if (!images) return null
+    if (!images || !lightEver) return null
     const sources = composite(images)
     const { compositePainting, compositeFlow, uPad } = sources
     const ribbons = buildSourceStreamlineRibbons({
@@ -983,7 +989,7 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
       trailMaxV: 0.7,
     })
     return arraysToGeometry(ribbonsToArrays(ribbons, { gust: alive, touch }))
-  }, [alive, images, isFlowDebug, touch])
+  }, [alive, images, isFlowDebug, lightEver, touch])
 
   // The moving sky's own, denser strokes: built on first use, one count for every orientation, so a resize never
   // rebuilds it (review F7). Same seed and streamline field as the light sky. Built in a worker: in the render it
@@ -1246,9 +1252,15 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
     const w = window as Window & { __skyReady?: boolean }
     w.__skyReady = ready
   }, [readyRef, ribbons.geometry, awaitingMoving])
+  // The checks read whether the light sky's ribbons exist as `__skyLightBuilt` (audit item 16).
+  useLayoutEffect(() => {
+    ;(window as Window & { __skyLightBuilt?: boolean }).__skyLightBuilt = geometry !== null
+  }, [geometry])
   // the seam is the mounted sky's: a sky that unmounts is not ready (Codex B6)
   useLayoutEffect(() => () => {
-    ;(window as Window & { __skyReady?: boolean }).__skyReady = false
+    const w = window as Window & { __skyReady?: boolean; __skyLightBuilt?: boolean }
+    w.__skyReady = false
+    w.__skyLightBuilt = false
   }, [])
 
   return (
