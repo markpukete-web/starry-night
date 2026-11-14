@@ -622,3 +622,35 @@ test('Vincent cannot stand in the ring of flowers, and can stand past it', () =>
   const toCentre = Math.atan2(STREET_SQUARE.z - foot.z, STREET_SQUARE.x - foot.x)
   assert.ok(standable(foot.x + 0.08 * Math.cos(toCentre), foot.z + 0.08 * Math.sin(toCentre)))
 })
+
+// The walk's end (tasks/2026-11-14-walk-end-plan.md, test 7's part 2 and test 8). Absolute values, not the code's own
+// functions
+test('the walk end, 7 part 2: a trip from a dwell facing down the lane starts on the cottage side and comes home facing down it', () => {
+  const t = 0.23
+  const slot = vincentPlace(t)
+  const here = { ...hereAt(t), yaw: slot.yaw + Math.PI, about: 1 }
+  const [tx, tz] = vergeNear(here)
+  const first = wanderTo({ ...initialWander(), turn: 1 }, here, tx, tz, null)!
+  assert.ok(Math.abs(wrap(first.yaw - (slot.yaw + PAUSE.body))) <= 1e-9, `the trip's first yaw ${first.yaw}, expected ${slot.yaw + PAUSE.body}`)
+  assert.ok(Math.abs(offLanePose(1, 1).head - -PAUSE.head) <= 1e-9, `off the lane his head is ${offLanePose(1, 1).head}, expected ${-PAUSE.head}`)
+  const out = run(first, arrived)
+  const lane = laneAt(t, 0)
+  const s = run(wanderTo(out, here, lane.x, lane.z, null)!, home)
+  assert.ok(Math.abs(wrap(s.yaw - (slot.yaw + Math.PI))) <= 1e-9, `home at yaw ${s.yaw}, expected ${slot.yaw + Math.PI}`)
+})
+
+test('the walk end, 8: a frozen step on the way home puts him home at once, a frozen trip out stands still', () => {
+  const slot = hereAt(0.23)
+  const [tx, tz] = vergeNear(slot)
+  const out = run(wanderTo({ ...initialWander(), turn: 1 }, slot, tx, tz, null)!, arrived)
+  const lane = laneAt(0.23, 0)
+  const back = wanderTo(out, slot, lane.x, lane.z, null)!
+  assert.equal(back.mode, 'returning', 'precondition: on his way home')
+  assert.ok(Math.hypot(back.x - slot.x, back.z - slot.z) > 0.05, 'precondition: away from his slot')
+  const frozen = stepWander(back, 1 / 60, true)
+  assert.deepEqual(
+    { mode: frozen.mode, x: frozen.x, z: frozen.z, yaw: frozen.yaw, turn: frozen.turn, arrived: frozen.arrived },
+    { mode: 'lane', x: back.route[0][0], z: back.route[0][1], yaw: back.syaw, turn: 0, arrived: 0 },
+  )
+  assert.equal(stepWander(out, 1 / 60, true), out, 'a frozen trip out returns its input')
+})
