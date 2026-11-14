@@ -1,5 +1,27 @@
 # The Starry Night — plan of record
 
+## Pickup — 2026-11-14 (15:50): four audit slices built and gated on two heads; the pushes and PRs wait on Mark
+
+**PR #45** (`chore/audit-2026-11-14`): open, CI green, Codex's review clean on `5919748`. The merge is Mark's.
+
+**Two heads, gated, local** (record `tasks/2026-11-14-audit.md`, "The slices"). Both are from `5919748`:
+
+- `fix/audit-failure-paths-diorama` (`6c62079`, worktree `../starry-night-wt/head1`): items 5, 6, 7, 11b, 11c, 12,
+  13. A right click is no tap. A scene that throws leaves the painting and Vincent's line. The diorama builds no
+  unread normals and decodes the painting once. 502 of 502, 11 frames identical, four browser checks.
+- `perf/audit-street-build-ci` (`e059a22`, worktree `../starry-night-wt/head2`): items 1, 3, 14, 15. The street's
+  build cache. CI fetches the tests' painting from the release `test-fixtures-1`, fails on a skip, and type-checks
+  `scripts/*.ts`. 494 of 494, 11 frames identical, two browser checks, two mutants red.
+
+**Next:** push both heads for Vercel previews and give Mark the links. Open no slice PR until he has looked. Each
+PR gets Codex's review. The second PR to merge resolves `package.json`'s `test:sky` line by hand.
+
+**Open, all Mark's:** merging #45. Whether the failed page needs a way to reload. Items 2, 9, 16, 18, 20, 23, 29
+and PR #44. Whether Hydrogen builds the mechanical items 20, 21, 22, 24, 27 and 28.
+
+**Leftovers to remove once the PRs merge:** the worktrees under `../starry-night-wt/` (`head1`, `head2`, `ci-gate`, `mutants-head2`) and `.claude/worktrees/`, and
+the branches `chore/ci-gate`, `fix/input-and-page-failure`, `perf/diorama-builders`, `perf/street-build`.
+
 ## Pickup — 2026-11-14 (14:10): the audit's list is tested and presented; Mark's decisions are open
 
 **Round 2 is done** (record `tasks/2026-11-14-audit.md`, "Round 2"). Hydrogen ran the 17 probes again and the
