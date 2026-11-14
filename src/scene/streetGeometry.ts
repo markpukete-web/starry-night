@@ -55,7 +55,7 @@ export type StreetBuild = {
   windows: BrushArraysWithCls
   /** the dark base under the grass, its own mesh so its dabs (`grassBase.ts`) touch no other program; empty without grass */
   grassBase: BrushArraysWithCls
-  trees: LandTrees
+  trees: Omit<LandTrees, 'bend' | 'solidBend'>
   counts: StreetCounts
   /** the gates' read of the build: ribbons per face, inked edges per volume, the windows, the church's measures */
   report: {

@@ -24,7 +24,6 @@ import type { ImageData2D } from './useImageData.ts'
 
 export const GRASS = {
   t: [-0.06, 0.97] as const,
-  lat: [0.052, 0.765] as const,
   /** the chunks' lateral bands and their length along the lane. S3b halved the length: a chunk draws all its blades
    * when any of it is in view, and at the walk's worst point 46% of them were not (splitting the outer band did not help) */
   bands: [0.052, 0.2, 0.4, 0.765] as const,

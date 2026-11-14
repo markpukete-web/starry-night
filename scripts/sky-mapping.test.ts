@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { MOON_UV, STAR_UVS, VENUS_UV, buildVortices, frontUV, uvToFrontDir } from '../src/scene/skyMapping.ts'
+import { MOON_UV, STAR_UVS, VENUS_UV, frontUV, uvToFrontDir } from '../src/scene/skyMapping.ts'
 
 const close = (a: number, b: number, eps = 0.002) => Math.abs(a - b) <= eps
 
@@ -16,14 +16,4 @@ test('front mapping round-trips the painting anchors', () => {
 test('front mapping rejects the back of the dome', () => {
   const front = uvToFrontDir(0.5, 0.5)
   assert.equal(frontUV(front.clone().multiplyScalar(-1)).onArc, false)
-})
-
-test('buildVortices is deterministic and exposes cores, stars and a moon', () => {
-  const a = buildVortices()
-  const b = buildVortices()
-  assert.equal(a.length, b.length)
-  assert.equal(a[0].dir.equals(b[0].dir), true)
-  assert.equal(a.some((v) => v.core), true)
-  assert.equal(a.some((v) => v.star), true)
-  assert.equal(a.filter((v) => v.moon).length, 1)
 })

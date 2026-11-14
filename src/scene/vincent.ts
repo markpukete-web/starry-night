@@ -22,11 +22,10 @@ import type { ImageData2D } from './useImageData.ts'
 /** His paint, in the painting's pixels (1600 × 1267). The smock is the blue hill behind the church, inside the palette's
  * `village` rectangle, 4.3 from its ultramarine swatch `#2a3f6f` (look pass 4, Codex T1: pass 3's patch at the right
  * edge was 18.8 from it, past the bar of 10). Its chroma is 35, where the first source, the hills' grey-blue, was 23
- * (Mark: "vincent's cloth is similar to the ground"). `hat` is S2's, the cottages' thatch; the Tarascon hat is the
- * crescent's ochre edge, `FORM.tarascon.hat`. */
+ * (Mark: "vincent's cloth is similar to the ground"). The hat paints from the crescent's ochre edge,
+ * `FORM.tarascon.hat`. */
 export const VINCENT_SOURCES = {
   smock: [1176, 840, 1208, 872],
-  hat: STREET_SOURCES.thatch,
   hair: STREET_SOURCES.roofSienna,
   canvas: STREET_SOURCES.plaster,
 } as const

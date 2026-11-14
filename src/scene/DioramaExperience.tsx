@@ -78,15 +78,15 @@ type Props = {
   sky?: SkyStyle
   /** System reduced motion: forces the painted-light still whatever the choice. */
   still?: boolean
-  /** Make-it-alive A behind `?alive=1`: the gust clock and breathing halos. */
+  /** Make-it-alive A, on by default (`?alive=0` turns it off): the gust clock and breathing halos. */
   alive?: boolean
   /** The live knobs for A (`?gust=&lift=&shimmer=&breath=`). */
   aliveTuning?: AliveTuning
-  /** B behind `?touch=1` (implies alive): surges of light from the pointer, kicks and flares. */
+  /** B, on by default (`?touch=0` turns it off, and it implies alive): surges of light from the pointer, kicks and flares. */
   touch?: boolean
-  /** C behind `?arrival=1` (implies nothing): the painting, Vincent's line, the dissolve, the push (arrival.ts). */
+  /** C, once per session by default (`?arrival=0` turns it off, `=1` always plays it): the painting, Vincent's line, the dissolve, the push (arrival.ts). */
   arrival?: boolean
-  /** The portal behind `?portal=1` (slice 4): the village enters the street, and the street returns. */
+  /** The portal, on by default (`?portal=0` turns it off, slice 4): the village enters the street, and the street returns. */
   portal?: boolean
   /** The lighter view (lighterView.ts): the visitor chose the lower pixel ratio. */
   lighter?: boolean
@@ -105,7 +105,7 @@ function queryValue(name: string) {
 
 function readDebugMode(): DioramaDebugMode {
   const debug = queryValue('debug')
-  return debug === 'nopost' || debug === 'stage' || debug === 'flow' ? debug : 'final'
+  return debug === 'stage' || debug === 'flow' ? debug : 'final'
 }
 
 function readViewMode(): DioramaViewMode {
@@ -339,7 +339,7 @@ type PortalDrive = {
   held: boolean
 }
 
-/** What the scene needs from the portal, given while `?portal=1` is on, even after a failed chunk turns it off. */
+/** What the scene needs from the portal, given while the portal is on, even after a failed chunk turns it off. */
 type ScenePortal = {
   /** the pointer, the hint and the sky's mask: off for the page's life after a failed chunk (plan review F7) */
   on: boolean
@@ -615,7 +615,6 @@ function Scene({
             crashed Mark's iPhone (2026-10-28). The way back mounts it again under the layer, which waits for its seams */}
         {!streetMode && debug !== 'flow' && dioramaMounted(place) && (
           <Diorama
-            debug={debug === 'stage' ? 'stage' : 'final'}
             clock={skyClock}
             alive={alive}
             tuning={aliveTuning}

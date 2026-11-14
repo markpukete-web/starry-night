@@ -333,7 +333,6 @@ async function main() {
       ['desktop-centre', base, desktop],
       ['desktop-flow', `${base}&debug=flow`, desktop],
       ['desktop-stage', `${base}&debug=stage`, desktop],
-      ['desktop-nopost', `${base}&debug=nopost`, desktop],
       ['desktop-orbit-preset', `${base}&view=orbit`, desktop],
       ['mobile-centre', base, mobile],
     ]

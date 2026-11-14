@@ -15,7 +15,6 @@ import type { LandStore } from './landTouch'
  * them. The projected-relief foreground and the grey prop diorama before it are both gone.
  */
 export function Diorama({
-  debug = 'final',
   clock,
   alive = false,
   tuning,
@@ -23,7 +22,6 @@ export function Diorama({
   landReady,
   touch,
 }: {
-  debug?: 'final' | 'stage'
   /** The one sky clock (make-it-alive A, second pass): the cypress flicker and the window glimmer read it. */
   clock?: RefObject<number>
   /** The flag: off, the foreground is today's, bit for bit. */
@@ -37,7 +35,6 @@ export function Diorama({
   /** D1 (touch the land): the land-touch store, the sky clock it is stamped with, and the bend knob; absent, the foreground is E2's. */
   touch?: { store: RefObject<LandStore>; clock: RefObject<number>; bendGain: number }
 }) {
-  void debug // stage and final show the same forms; stage differs only by omitting the sky stack
   // one decode of the painting for the island and the cypress: each decoding its own kept two 8 MB copies (audit item 13)
   const [paintingFailed, setPaintingFailed] = useState(false)
   const painting = useImageData(PAINTING_URL, () => {

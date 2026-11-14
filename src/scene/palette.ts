@@ -2,14 +2,15 @@
 // sampled from palette.json; no drift beyond tolerance"). Every painted SURFACE colour below is
 // taken from palette.json — median-cut per region from the scan — instead of being hand-picked.
 //
-// Two deliberate exceptions, both faithful:
+// Three deliberate exceptions, all faithful:
 //   • The sky STROKES sample the painting directly (see streamlineGeometry) — the palette's own source, so they
 //     carry the painting's true local colour rather than its 5-colour reduction (zero drift).
 //   • Emissive LIGHT (moon, stars, lit windows) is light, not surface, so it stays warm and bright;
 //     Van Gogh's own moon and windows are luminous points, not paint-coloured.
-//   • A few foreground surfaces apply a DOCUMENTED scalar/lerp lift to their swatch (at the use site
-//     in Diorama.tsx) so the dark forms read in the night lighting — provenance kept (swatch × logged
-//     factor, fit to preserve the prior hand-tuned look), per the 2026-06-15 palette-provenance pass.
+//   • A few surfaces apply a DOCUMENTED scalar/lerp lift to their swatch where they use it (the island's top
+//     in islandGeometry.ts, the light sky's gradient in PaintingFlowSky3D.tsx, among others) so the dark forms
+//     read in the night lighting — provenance kept (swatch × logged factor, fit to preserve the prior
+//     hand-tuned look), per the 2026-06-15 palette-provenance pass.
 import palette from '../../public/reference/palette.json' with { type: 'json' }
 
 type Swatch = { hex: string; srgb: number[]; lab: number[]; weight: number }

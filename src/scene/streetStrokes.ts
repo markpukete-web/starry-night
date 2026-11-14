@@ -348,8 +348,7 @@ export type FaceStrokes = { arrays: BrushArrays; stroke: number[]; seed: number[
  */
 export const PATH_LIFT = { toward: PALETTE.hillsCrest, share: 0.5 }
 
-function acceptFor(face: StreetFace, painting: ImageData2D): TexelAccept {
-  void painting
+function acceptFor(face: StreetFace): TexelAccept {
   if (face.kind === 'ground' || face.kind === 'path') return GROUND_TEXEL
   return EVERY_TEXEL
 }
@@ -422,7 +421,7 @@ export function traceFace(face: StreetFace, flow: ImageData2D, painting: ImageDa
     config.maxHalfWidth = options.fixedHalfWidth
   }
   if (options.taper !== undefined) config.taper = options.taper
-  const ribbons = traceCypressRibbons(crop, pigment ?? painting, rows, config.frontCount, face.seed, config, acceptFor(face, painting))
+  const ribbons = traceCypressRibbons(crop, pigment ?? painting, rows, config.frontCount, face.seed, config, acceptFor(face))
   const polygon = options.clip ?? facePolygon(face, width, height)
   // half an outline's width past the edge, under the ink; the ground and the path draw no outline (Fable R8)
   const allowance = (face.kind === 'ground' || face.kind === 'path' ? 0 : 0.5 * OUTLINE_FRACTION * face.refHeight) + 1e-12
@@ -570,7 +569,7 @@ export function stoneDab(
  */
 export function streetMassConfig(crop: ImageData2D, pixels: number): CypressRibbonConfig {
   return {
-    ...massConfig(crop, Math.min(600, massCount(pixels) * 3)),
+    ...massConfig(crop, massCount(pixels) * 3),
     minHalfWidth: 0.02,
     maxHalfWidth: 0.03,
     minLength: 0.25,

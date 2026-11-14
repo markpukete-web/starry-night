@@ -158,9 +158,6 @@ export default function Street({
   useEffect(() => () => { if (meshes) for (const g of Object.values(meshes)) g?.dispose() }, [meshes])
 
   if (!meshes) return null
-  const devStrideStr = import.meta.env.DEV && typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('cypressStride') : null
-  const devStride = devStrideStr ? parseInt(devStrideStr, 10) : null
-  const cypressStride = devStride && !Number.isNaN(devStride) ? devStride : STREET_CYPRESS_STRIDE
 
   return (
     <group name="street" position={offset}>
@@ -180,7 +177,7 @@ export default function Street({
           at={STREET_CYPRESS_AT}
           scale={0.9 / 2.7}
           viewFrom={STOP0_CAMERA}
-          stride={cypressStride}
+          stride={STREET_CYPRESS_STRIDE}
           alive={false}
           painting={paintingData ?? undefined}
         />

@@ -191,8 +191,6 @@ button {
   transform: none;
 }
 
-/* Small original-painting reference in the corner — visible AT THE SAME TIME as the living painting
-   so you can compare the two side by side without losing either. */
 /* a phone's first entry asks (2026-10-28): the reference placard's panel, the dock's ink and pills */
 .visitor-ask {
   max-width: 420px;
@@ -216,6 +214,8 @@ button {
   gap: 8px;
 }
 
+/* Small original-painting reference in the corner — visible AT THE SAME TIME as the living painting
+   so you can compare the two side by side without losing either. */
 .visitor-reference {
   align-self: flex-start;
   margin-left: 8px;
@@ -298,8 +298,7 @@ button {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .visitor-control,
-  .visitor-control::after {
+  .visitor-control {
     transition: none;
   }
 }
@@ -344,7 +343,7 @@ button {
   }
 }
 
-/* Mark's tuner for make-it-alive A (`?tune=1`): the dock's glass, sliders for the four knobs. */
+/* Mark's tuner for make-it-alive A (`?tune=1`): the dock's glass, sliders for its eight knobs. */
 .alive-tuner {
   position: fixed;
   top: 16px;

@@ -1,12 +1,6 @@
 import { Vector3 } from 'three'
-import { mulberry32 } from './brush.ts'
 
 export const DOME_R = 6
-export const POINTS = 13
-export const STEP = 0.05 // radians per integration step on the sphere
-export const HORIZON = -0.22 // strokes live above roughly the horizon
-
-export type Vortex = { dir: Vector3; strength: number; sign: number; radius: number; star: boolean; moon: boolean; scale: number; core: boolean }
 
 export function dirAzEl(az: number, el: number): Vector3 {
   const ce = Math.cos(el)
@@ -20,24 +14,11 @@ export const STAR_UVS: [number, number][] = [
   [0.52, 0.2], [0.59, 0.095], [0.66, 0.27], [0.72, 0.175],
 ]
 
-// The central whorl fill — the two interlocking rolls and the S-bridge between them, weighted so dabs
-// LAND in the swirl centre. The centre flow stalls (circulation + inflow both vanish at a vortex eye),
-// so without this seeding the eye reads as a dark hole once the luminous glow is removed (P2). The
-// painting fills its swirl hearts with flowing strokes, not light — these anchors reproduce that.
-const WHORL_FILL: [number, number][] = [
-  [0.43, 0.4], [0.43, 0.4], [0.43, 0.4], // main roll centre — weighted heavily to fill the eye
-  [0.47, 0.385], [0.5, 0.375], // the S-bridge sweeping between the two interlocked rolls
-  [0.52, 0.37], [0.52, 0.37], // counter-roll centre (moved in with the vortex)
-]
-
-// The painting's high-density points — the swirl eyes, Venus, and the star halos — where Van Gogh's
-// impasto piles thickest. Front dabs densify around these so brush-mark density matches the painting
-// (flow bias steers a dab's direction; this steers where dabs LAND).
-export const ANCHOR_UVS: [number, number][] = [...WHORL_FILL, VENUS_UV, ...STAR_UVS]
-
-// MUST stay equal to App's HOME_POSITION/HOME_TARGET — the swirl basis (FRONT_AZ) is derived from this
-// camera bearing so the painting's composition (whorl, moon, Venus, stars) centres on where the camera
-// looks. Moved nearly head-on (small azimuth) to match the flat painting's composition (Mark, 2026-06-21).
+// The swirl basis (FRONT_AZ, then FWD, RIGHT and TRUEUP) comes from this camera's bearing, so the painting's
+// composition (whorl, moon, Venus, stars) centres on where the camera looks. It is the June home camera, moved
+// nearly head-on to match the flat painting (Mark, 2026-06-21). The diorama's design camera
+// (`DIORAMA_CAMERAS.design`, dioramaContract.ts) has moved since, to a bearing 0.8° from this one. Every gate since
+// passed on this basis, so a change here moves the whole sky.
 const CAM_POS = new Vector3(0.6, 1.05, 5.05)
 const CAM_TARGET = new Vector3(0, 1.05, 0)
 export const FRONT_AZ = Math.atan2(CAM_TARGET.x - CAM_POS.x, CAM_TARGET.z - CAM_POS.z)
@@ -45,7 +26,6 @@ const FRONT_EL = 0.2
 export const FWD = dirAzEl(FRONT_AZ, FRONT_EL)
 export const RIGHT = new Vector3().crossVectors(FWD, new Vector3(0, 1, 0)).normalize()
 export const TRUEUP = new Vector3().crossVectors(RIGHT, FWD).normalize()
-export const BACK_AZ = FRONT_AZ - Math.PI
 export const SPAN_H = 2.15
 export const SPAN_V = SPAN_H / 1.26
 
@@ -72,34 +52,4 @@ export function frontUV(p: Vector3): { u: number; v: number; h: number; w: numbe
 export function smoothstep(e0: number, e1: number, x: number): number {
   const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0)))
   return t * t * (3 - 2 * t)
-}
-
-export function buildVortices(): Vortex[] {
-  const rng = mulberry32(0x5747a1)
-  const V: Vortex[] = []
-  const add = (dir: Vector3, strength: number, sign: number, radius: number, star = false, moon = false, scale = 0.15, core = false) =>
-    V.push({ dir, strength, sign, radius, star, moon, scale, core })
-
-  // The central whorl = a BROAD, GENTLE double-comma, not a tight strong vortex. A strong tight roll
-  // converges strokes into a hard puckered eye with a black pinhole at the singularity (flow→0 there);
-  // a gentler/broader roll spreads the circulation so strokes fill the centre instead of ringing a hole.
-  add(uvToFrontDir(0.43, 0.4), 1.55, 1, 0.62, false, false, 0.15, true)
-  add(uvToFrontDir(0.52, 0.37), 1.25, -1, 0.52, false, false, 0.15, true)
-  add(uvToFrontDir(VENUS_UV[0], VENUS_UV[1]), 1.0, -1, 0.32, true, false, 0.24)
-  STAR_UVS.forEach((uv, i) =>
-    add(uvToFrontDir(uv[0], uv[1]), 0.6 + 0.2 * rng(), i % 2 === 0 ? 1 : -1, 0.18 + 0.07 * rng(), true, false, 0.13 + 0.04 * rng()),
-  )
-  add(uvToFrontDir(MOON_UV[0], MOON_UV[1]), 1.1, 1, 0.4, false, true)
-
-  add(dirAzEl(BACK_AZ + 0.5, 0.34), 2.0, -1, 0.55, false, false, 0.15, true)
-  add(dirAzEl(BACK_AZ + 0.78, 0.3), 1.5, 1, 0.42)
-  add(dirAzEl(BACK_AZ - 0.7, 0.22), 1.7, 1, 0.46, false, false, 0.15, true)
-  add(dirAzEl(BACK_AZ - 0.98, 0.18), 1.3, -1, 0.4)
-  for (let i = 0; i < 10; i++) {
-    add(dirAzEl(BACK_AZ + (rng() - 0.5) * 3.6, -0.05 + rng() * 1.3), 0.6 + 0.3 * rng(), rng() < 0.5 ? -1 : 1, 0.18 + 0.08 * rng(), true, false, 0.12 + 0.04 * rng())
-  }
-  for (let i = 0; i < 16; i++) {
-    add(dirAzEl(BACK_AZ + (rng() - 0.5) * 4.0, -0.1 + rng() * 1.5), 0.5 + 0.4 * rng(), rng() < 0.5 ? -1 : 1, 0.28 + 0.16 * rng())
-  }
-  return V
 }

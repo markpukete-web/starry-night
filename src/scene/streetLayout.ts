@@ -38,14 +38,12 @@ export const STREET = {
   pathLength: measuredLength,
   eye: 0.09,
   behind: 0.18,
-  lookAhead: 0.6,
   lookHeight: 0.06,
   near: 0.004,
   far: 48,
   fov: { landscape: 50, portrait: 75 },
   originA: [0, 0, 5.0] as const,
   wallRef: 0.2,
-  frontSetback: 0.2,
   forward: STREET_FORWARD,
 } as const
 

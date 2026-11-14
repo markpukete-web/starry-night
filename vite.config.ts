@@ -3,9 +3,10 @@ import react from '@vitejs/plugin-react'
 import * as fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-// The only fields the tuning endpoint will persist (allowlist — anything else is dropped).
-// These are the current scene's leva controls: the 'living painting' base (churnSpeed, flowAmount)
-// and the 'streamline sky' churn. They map 1:1 to src/scene/sky-tuning.json (see src/scene/tuning.ts).
+// The only fields the tuning endpoint will persist (an allowlist: anything else is dropped). They map 1:1 to
+// src/scene/sky-tuning.json (see src/scene/tuning.ts). Two panels write them. The dev leva panel, which only the
+// retired `?mode=painting` routes mount, writes the first fourteen: the living painting's base (churnSpeed,
+// flowAmount) and the streamline sky's churn. The alive tuner (`?tune=1`) writes the last eight.
 const TUNING_FIELDS = new Set([
   'churnSpeed', 'flowAmount',
   'count', 'speed', 'opacity', 'strokeWidth', 'points', 'stepSize',
@@ -59,7 +60,7 @@ function skyTuningWriter(): Plugin {
             }
             const file = fileURLToPath(new URL('./src/scene/sky-tuning.json', import.meta.url))
             // Merge into the file rather than replace it: two panels save here (the 2D leva panel its fourteen
-            // keys, the alive tuner its four), and either save used to wipe the other's defaults (Codex, PR #8).
+            // keys, the alive tuner its eight), and either save used to wipe the other's defaults (Codex, PR #8).
             let existing: Record<string, unknown> = {}
             try {
               const current: unknown = JSON.parse(fs.readFileSync(file, 'utf8'))

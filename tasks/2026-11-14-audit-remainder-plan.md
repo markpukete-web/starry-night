@@ -8,7 +8,7 @@ are in `scratch/audit-2026-11-14/lead-notes.md` (local, ignored). Line numbers b
 
 The order is fixed by the files the slices share:
 
-1. The walk end (items 9 and 10), in its PR now.
+1. The walk end (items 9 and 10): merged as #55 (`ddea76d`) at 23:09.
 2. H4 (items 19, 21, 22, 24 and 27). Item 19 was added at 22:55 (`scratch/briefs-2026-11-14-evening/h4-scope.md`).
 3. H5, the browser checks (item 26). H4 edits `capture-diorama.mjs`, and H5 edits every check's launcher, so H5 starts
    after H4 merges.
