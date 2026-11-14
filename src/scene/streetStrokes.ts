@@ -178,8 +178,8 @@ type FaceCrop = { crop: ImageData2D; rows: RibbonRows; pigment?: ImageData2D }
 
 /**
  * Audit item 14 (2026-11-14): one street build called `faceCrop` 218 times for 153 distinct inputs under the key
- * below, and `rectUnderpaint` about 230 times for 14. With the cache the default street's build fell from about 610 ms
- * to about 425 ms on this Mac, its output byte for byte the same. Neither reads a random stream, so a build keeps
+ * below, and `rectUnderpaint` about 230 times for 14. With the cache the default street's build fell from about 590 ms
+ * to about 400 ms on this Mac, its output byte for byte the same. Neither reads a random stream, so a build keeps
  * their results for its own painting and flow. The cache ends with the build, so no crop is held for the street's life
  * (the phone's memory, `Street.tsx`), and a call with another painting or flow computes as before. Every caller only
  * reads what it is given (`traceFace`, `clad` and the other colour reads), so the entries are shared, not copied.
