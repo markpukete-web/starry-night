@@ -10,7 +10,7 @@ import { buildStreetTrees } from './streetTrees.ts'
 import { PALETTE } from './palette.ts'
 import { CHURCH_LIGHT, leanOf, lightOf, shadeNew, STREET_LIGHT, type StreetLight } from './streetLight.ts'
 import { CHURCH, DETAIL, doorOf, doorPathLegs, doorStepFrame, FLOWERS, houseFrame, LIVED_PATH, objectPlaces, pathLegShapes, stationPose, STEP, STREET, STREET_CHURCH, STREET_HOUSES, STREET_LAMPS, STREET_RAIL, STREET_SQUARE, STREET_TREES, detailOf, laneDistance, pathPoint, pathTangent, streetGroundAt, type StreetHouse, laneAt, railChains, STREET_WALLS, STREET_WALL } from './streetLayout.ts'
-import { outlineFace, OUTLINE_LIFT, PATH_LIFT, sourceUnderpaint, srgbToLab, streetMassConfig, STREET_MOON_LIFT, traceFace, type FaceStrokes, type StreetFace, type StreetSourceName, stoneDab, STREET_SOURCES, STROKE_LIFT } from './streetStrokes.ts'
+import { outlineFace, OUTLINE_LIFT, PATH_LIFT, sourceUnderpaint, srgbToLab, streetMassConfig, STREET_MOON_LIFT, traceFace, type FaceStrokes, type StreetFace, type StreetSourceName, stoneDab, STREET_SOURCES, STROKE_LIFT, withBuildCache } from './streetStrokes.ts'
 import type { ImageData2D } from './useImageData.ts'
 import { VILLAGE_CHURCH, type Pigment } from './villageKnot.ts'
 
@@ -2137,7 +2137,12 @@ function flowers(ctx: Context): void {
   }
 }
 
-export function buildStreet(painting: ImageData2D | null, flow: ImageData2D | null, masses: BakedMass[] | null, { lit = true, grass = false, paint = WALL_PAINT, lane = true, lived = true, flowers: withFlowers = true }: { lit?: boolean; grass?: boolean; paint?: WallPaint; lane?: boolean; lived?: boolean; flowers?: boolean } = {}): StreetBuild | null {
+/** The street, its repeated crops and underpaints computed once for the build (`withBuildCache`, audit item 14). */
+export function buildStreet(...args: Parameters<typeof streetBuild>): StreetBuild | null {
+  return withBuildCache(args[0], args[1], () => streetBuild(...args))
+}
+
+function streetBuild(painting: ImageData2D | null, flow: ImageData2D | null, masses: BakedMass[] | null, { lit = true, grass = false, paint = WALL_PAINT, lane = true, lived = true, flowers: withFlowers = true }: { lit?: boolean; grass?: boolean; paint?: WallPaint; lane?: boolean; lived?: boolean; flowers?: boolean } = {}): StreetBuild | null {
   if (!painting || !flow || !masses) return null
   const ctx: Context = {
     flow,
