@@ -1,6 +1,8 @@
-import type { RefObject } from 'react'
+import { useState, type RefObject } from 'react'
 import { BrushCypress } from './BrushCypress'
 import { BrushIsland } from './BrushIsland'
+import { PAINTING_URL } from './foregroundLoad'
+import { useImageData } from './useImageData'
 import { Village } from './Village'
 import type { AliveTuning } from './skyAlive'
 import type { LandStore } from './landTouch'
@@ -36,13 +38,19 @@ export function Diorama({
   touch?: { store: RefObject<LandStore>; clock: RefObject<number>; bendGain: number }
 }) {
   void debug // stage and final show the same forms; stage differs only by omitting the sky stack
+  // one decode of the painting for the island and the cypress: each decoding its own kept two 8 MB copies (audit item 13)
+  const [paintingFailed, setPaintingFailed] = useState(false)
+  const painting = useImageData(PAINTING_URL, () => {
+    console.error(`[diorama] ${PAINTING_URL} failed to load; the island's ground and trees and the cypress are not drawn`)
+    setPaintingFailed(true)
+  })
   return (
     <group>
-      <BrushIsland ready={landReady} touch={touch} />
+      <BrushIsland painting={painting} paintingFailed={paintingFailed} ready={landReady} touch={touch} />
       {/* the village: church, houses and foliage rows painted from the source, at the hills' foot */}
       <Village clock={clock} alive={alive} tuning={tuning} />
       {/* cypress, front-left — the dark flame, the vertical counterweight to the sky */}
-      <BrushCypress clock={clock} alive={alive} tuning={tuning} ready={cypressReady} touch={touch} />
+      <BrushCypress painting={painting} clock={clock} alive={alive} tuning={tuning} ready={cypressReady} touch={touch} />
     </group>
   )
 }

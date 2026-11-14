@@ -8,7 +8,7 @@ import { buildIsland } from './islandGeometry'
 import { buildLandTrees, type BakedMass } from './landDomes'
 import { buildLandStrokes } from './landStrokes'
 import { strokeGeometry } from './strokeGeometry'
-import { useImageData } from './useImageData'
+import { useImageData, type ImageData2D } from './useImageData'
 
 type LandWindow = Window & { __landBuildMs?: number }
 
@@ -33,14 +33,20 @@ function plainGeometry(arrays: { positions: number[]; colors: number[]; indices:
  * masses, so they are their own meshes, built once those have loaded.
  */
 export function BrushIsland({
+  painting: paintingData,
+  paintingFailed,
   ready: readyRef,
   touch,
 }: {
+  /** The painting's pixels from the diorama's one load (audit 2026-11-14, item 13): null until it arrives. */
+  painting: ImageData2D | null
+  /** The diorama's load of the painting failed: the ground and the trees are not built, and the island is ready. */
+  paintingFailed: boolean
   /** C (arrival): true once the ground has its strokes, or a load failed. */
   ready?: RefObject<boolean>
   /** D1 (touch the land): the store the input hook writes, and the bend knob. Absent, the trees are E2's, bit for bit. */
   touch?: { store: RefObject<LandStore>; clock: RefObject<number>; bendGain: number }
-} = {}) {
+}) {
   const bend = touch !== undefined
   const geometries = useMemo(() => {
     const built = buildIsland()
@@ -48,7 +54,6 @@ export function BrushIsland({
   }, [])
 
   const [failed, setFailed] = useState(false)
-  const paintingData = useImageData('/reference/painting.jpg', () => setFailed(true))
   const flowData = useImageData('/reference/land-flow.png', () => setFailed(true))
   const [baked, setBaked] = useState<BakedMass[] | null>(null)
   useEffect(() => {
@@ -128,12 +133,12 @@ export function BrushIsland({
   })
 
   useEffect(() => {
-    if (readyRef) readyRef.current = land !== null || failed
+    if (readyRef) readyRef.current = land !== null || failed || paintingFailed
     // the portal's way back mounts the land again: an unmount clears the seam, so no frame reads the last mount's
     return () => {
       if (readyRef) readyRef.current = false
     }
-  }, [readyRef, land, failed])
+  }, [readyRef, land, failed, paintingFailed])
 
   useEffect(() => () => geometries.solid.dispose(), [geometries])
   useEffect(() => () => geometries.strokes.dispose(), [geometries])

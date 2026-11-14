@@ -2,9 +2,12 @@
 
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
+import { readFileSync } from 'node:fs'
 import test from 'node:test'
 
+import { ownPaintingUrl, PAINTING_URL } from '../src/scene/foregroundLoad.ts'
 import { buildVillage } from '../src/scene/villageGeometry.ts'
+import type { ImageData2D } from '../src/scene/useImageData.ts'
 
 const sha = (array: ArrayLike<number> & { buffer: ArrayBufferLike; byteOffset: number; byteLength: number }) =>
   createHash('sha256').update(Buffer.from(array.buffer, array.byteOffset, array.byteLength)).digest('hex')
@@ -55,3 +58,21 @@ for (const glow of [false, true]) {
     }
   })
 }
+
+test('the cypress loads its own painting only when no caller holds one', () => {
+  const pixels: ImageData2D = { data: new Uint8ClampedArray(4), width: 1, height: 1 }
+  assert.equal(ownPaintingUrl(undefined), PAINTING_URL, 'no caller: the tree loads its own')
+  // the diorama owns the load and it has not arrived (or failed): a second load here would keep 8 MB for good
+  assert.equal(ownPaintingUrl(null), null, 'the caller owns the load, still pending: the tree loads nothing')
+  assert.equal(ownPaintingUrl(pixels), null, 'the caller handed the pixels over')
+})
+
+test('the diorama decodes the painting once and hands it to the island and the cypress', () => {
+  // a source check: the pieces are .tsx, which node cannot run
+  const read = (name: string) => readFileSync(new URL(`../src/scene/${name}`, import.meta.url), 'utf8')
+  const diorama = read('Diorama.tsx'), island = read('BrushIsland.tsx'), cypress = read('BrushCypress.tsx')
+  assert.equal(diorama.split('useImageData(PAINTING_URL').length - 1, 1, 'the diorama loads the painting once')
+  assert.equal(diorama.split('painting={painting}').length - 1, 2, 'and gives it to both pieces')
+  assert.ok(!island.includes('painting.jpg') && !island.includes('PAINTING_URL'), 'the island loads no painting of its own')
+  assert.ok(cypress.includes('useImageData(ownPaintingUrl(painting)'), 'the cypress asks the rule above before it loads')
+})

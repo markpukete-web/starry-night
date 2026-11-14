@@ -9,6 +9,7 @@ import { buildCypressLobePlan, sampleCypressLobe, type CypressLobeRows } from '.
 import { CYPRESS_RIBBON_CONFIG, ribbonColumns, strideSamples, traceCypressRibbons } from './cypressStrokes'
 import { cypressViewBearing } from './cypressMapping'
 import { DIORAMA_CAMERAS } from './dioramaContract'
+import { ownPaintingUrl } from './foregroundLoad'
 import { useImageData, type ImageData2D } from './useImageData'
 import { concatInjections, injectAlive } from './aliveMaterial'
 import { flickerGlsl, flickerUniformValues, flickerWeight, lobeHeight, pushFlicker, ribbonFlicker } from './cypressFlicker'
@@ -79,11 +80,14 @@ export function BrushCypress({
   scale?: number
   viewFrom?: readonly [number, number, number]
   stride?: number
-  /** The painting's pixels when the caller holds them already (the street): the tree then decodes no copy of its own. */
-  painting?: ImageData2D
+  /**
+   * The painting's pixels when the caller owns the load (the street, the diorama): the tree then decodes no copy of its
+   * own, and `null` means that load has not arrived. Absent, the tree loads its own (`ownPaintingUrl`).
+   */
+  painting?: ImageData2D | null
 } = {}) {
   const bend = touch !== undefined
-  const loaded = useImageData(painting ? null : '/reference/painting.jpg')
+  const loaded = useImageData(ownPaintingUrl(painting))
   const paintingData = painting ?? loaded
   // the flow field's failure path (Codex F11): the tree still draws its underpaint, and the arrival goes on
   const [flowFailed, setFlowFailed] = useState(false)
