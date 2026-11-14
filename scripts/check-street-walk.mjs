@@ -2,6 +2,7 @@
 /**
  * Task 4, Step 5: Walk checks for street mode.
  * Asserts the five cases from tasks/2026-10-24-street-s2-plan.md:
+ * 0. The masses (audit item 15): the default street fetches no land-masses.json and draws, `?flat=1` fetches it and draws.
  * 1. Wheel walks forward and moves camera.
  * 2. Keys walk at speed and blur stops queued motion.
  * 3. Phone auto-walk, tap toggling, pause holds, multi-touch and drag rejected.
@@ -336,6 +337,31 @@ async function main() {
     const target = await response.json()
     const page = new CdpPage(target.webSocketDebuggerUrl)
     await page.connect()
+
+    // -------------------------------------------------------------
+    // Case 0: the masses (audit item 15, slice B2). ?street=1&flat=1 still fetches land-masses.json and still draws,
+    // the control that the fetch log records; then ?street=1&station=0&arrival=0 fetches no land-masses.json and still
+    // draws. "Draws" is __streetCounts with triangles and ribbons above 0: the page sets it only when the build returned
+    // a street, and a null build deletes it while __streetReady still goes true. The page's fetch calls are recorded,
+    // not the network: index.html preloads the file for every visitor, so a request shows whatever the street does.
+    // -------------------------------------------------------------
+    await page.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false })
+    const { identifier: fetchLog } = await page.send('Page.addScriptToEvaluateOnNewDocument', {
+      source: 'window.__fetched = []; { const f = window.fetch; window.fetch = function (input, init) { window.__fetched.push(String(input instanceof Request ? input.url : input)); return f.call(this, input, init) } }',
+    })
+    for (const [query, fetches] of [['?street=1&flat=1&arrival=0', true], ['?street=1&station=0&arrival=0', false]]) {
+      await page.send('Page.navigate', { url: `${origin}/${query}` })
+      await page.waitForStreetReady()
+      const c0 = await page.evaluate(() => ({ fetched: window.__fetched, counts: window.__streetCounts }))
+      if (!Array.isArray(c0.fetched)) throw new Error(`Case 0 precondition failed: no fetch log on ${query}`)
+      const masses = c0.fetched.filter((u) => u.includes('land-masses.json')).length
+      if (fetches !== masses > 0) {
+        throw new Error(`Case 0 failed: ${query} fetched land-masses.json ${masses} times, expected ${fetches ? 'at least once' : 'never'} (fetches: ${c0.fetched.join(', ') || 'none'})`)
+      }
+      if (!(c0.counts?.triangles > 0 && c0.counts?.ribbons > 0)) throw new Error(`Case 0 failed: ${query} drew no street (__streetCounts ${JSON.stringify(c0.counts)})`)
+      console.log(`PASS: ${query} fetched land-masses.json ${masses} times and drew ${c0.counts.triangles} triangles, ${c0.counts.ribbons} ribbons`)
+    }
+    await page.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: fetchLog })
 
     // -------------------------------------------------------------
     // Case 1: Wheel

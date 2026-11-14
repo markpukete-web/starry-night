@@ -2142,8 +2142,10 @@ export function buildStreet(...args: Parameters<typeof streetBuild>): StreetBuil
   return withBuildCache(args[0], args[1], () => streetBuild(...args))
 }
 
-function streetBuild(painting: ImageData2D | null, flow: ImageData2D | null, masses: BakedMass[] | null, { lit = true, grass = false, paint = WALL_PAINT, lane = true, lived = true, flowers: withFlowers = true }: { lit?: boolean; grass?: boolean; paint?: WallPaint; lane?: boolean; lived?: boolean; flowers?: boolean } = {}): StreetBuild | null {
-  if (!painting || !flow || !masses) return null
+function streetBuild(painting: ImageData2D | null, flow: ImageData2D | null, _masses: BakedMass[] | null, { lit = true, grass = false, paint = WALL_PAINT, lane = true, lived = true, flowers: withFlowers = true }: { lit?: boolean; grass?: boolean; paint?: WallPaint; lane?: boolean; lived?: boolean; flowers?: boolean } = {}): StreetBuild | null {
+  // the masses are not read: the street's trees are its own (`buildStreetTrees`), and the default street fetches none
+  // (audit item 15). The argument stays for its callers
+  if (!painting || !flow) return null
   const ctx: Context = {
     flow,
     painting,
