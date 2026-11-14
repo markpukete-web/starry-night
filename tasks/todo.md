@@ -1,6 +1,6 @@
 # The Starry Night — plan of record
 
-## Pickup — 2026-11-14 (16:08): three PRs open (#45, #46, #47), Codex reading two; item 1 is its own slice
+## Pickup — 2026-11-14 (16:24): three PRs open (#45, #46, #47), Codex clean on all; Mark's nine calls decided
 
 Mark, about 16:00: "Good, go for your recommendations and well record where we at". The record is
 `tasks/2026-11-14-audit.md`, "The slices" and "Head 2 in CI".
@@ -28,11 +28,59 @@ Mark, about 16:00: "Good, go for your recommendations and well record where we a
    (arm64, Node 26.12). First find the cause: run those test files under Node 24 on this Mac. The harness refused
    `npx -p node@24`, so Mark runs it or allows it. Then choose the fix. Two candidates: round the floats before
    hashing and pin again, or make CI and this Mac run the same Node.
-4. Mark's open calls: whether the failed page needs a way to reload. Items 2 (Dependabot), 9 (stop 4's tap), 16
-   (the light sky built on every load), 18 (the cache header), 20, 23 and 29. PR #44.
-5. Mechanical items Hydrogen can build once Mark says go: 20, 21, 22, 24, 27, 28. Items 21 and 22 need the frame
-   proof.
-6. After the merges, remove the leftovers below.
+4. Mark's nine calls are decided (16:24, "I will go with your recommendations"). The plan and who builds each is
+   the section "Mark's calls, decided" below. Nothing in it is started.
+5. After the merges, remove the leftovers below.
+
+**Mark's calls, decided (2026-11-14, 16:24).** Each line is the Lead's recommendation, which Mark took whole. The
+facts behind each were read on 2026-11-14 at about 16:20. Anything that changes built files waits until #45, #46
+and #47 are merged, so the frame baseline does not move.
+
+- [ ] **PR #44** (setup-node 7.0.0 to 7.1.0): post one `@codex review`, read it, then merge. The new SHA `949feb2`
+  is the tag `v7.1.0` in `actions/setup-node`. CI green. Its timeline held no Codex entry. Lead.
+- [ ] **The failed page gains a way to reload.** One quiet line under the citation in the caption's style: "The
+  scene did not load. Try again." A follow-up slice, never a change to #46. Hydrogen builds, with a new case in
+  `scripts/check-failure-paths.mjs`. The Lead looks at the captures at 1600 × 900 and 390 × 844. Mark's eye last.
+- [ ] **Item 29, leftovers.** Delete the empty `t4/`. Drop `stash@{0}` (two lines that mount `FrogStudio` in
+  `Street.tsx`). Delete the local `spike/vincent-form` and `spike/vincent-wander`, and keep both on `origin`:
+  `spike/vincent-wander` holds `tasks/2026-10-28-vincent-wander-spike.md`, which is not on `main`. Keep `scratch/`
+  (10 GB) and `output/` (3.2 GB): the records cite more than 45 of their folders, the street's map `layout-v1.svg`
+  is in `scratch/village-redesign-2026-10-23/`, and the disk had 427 GB free. Lead, after the merges.
+- [ ] **Item 23, `CLAUDE.md`.** Delete the Stack sentence that calls `App.tsx` a scaffold placeholder. Delete the
+  Tunable "Instanced stroke budget 8,000 / 3,000" (the only code near it is the retired mode's knob at
+  `src/scene/StreamlineSky.tsx:188`), and log it in `lessons.md`. The bar's prior-art path is Mark's to edit:
+  proposed text is "the Techartist time-dial diorama, for the preset-switch interaction shape, which is Phase 2
+  material at the earliest", with the path dropped, because the file is not on this Mac. `.claude/skills/`: no
+  change until a first skill exists. Lead, docs only.
+- [ ] **Item 2, Dependabot.** Turn on the alerts and the security updates (a repository setting: the Lead tries
+  the API, and if the token lacks the scope, Mark switches it). Then one slice: `npm audit fix` without `--force`,
+  the suite, the build and the 11-frame proof. It moves vite 8.0.16 to 8.3.8. None of the 12 advisories reaches
+  the built site (vite's five are the dev server and `launch-editor`). Leave typescript-eslint: npm's offered fix
+  is 8.36.0, older than the installed range. Hydrogen builds and runs the proof. The Lead reads the lockfile diff.
+- [ ] **Item 16, the light sky.** Build its geometry on first use and keep the worker-failure path
+  (`PaintingFlowSky3D.tsx:963-986`, `:1041`, `:1239`). The 11 pinned frames do not cover the switch to painted
+  light, reduced motion or the failure path, so the plan adds cases for all three. An Opus builder. Argon reads
+  the plan. Hydrogen runs the gate batch.
+- [ ] **Items 9 and 10, the walk's end.** A tap on Vincent at stop 4 turns him, and the automatic walk returns to
+  stop 0 with its dwells. `streetWalk.ts` forces `auto` off at `WALK_T.max` on every step, so `auto` gains a
+  direction. Item 10 (the wheel swallowed while paused off the lane, `StreetWalk.tsx:663,684`) rides in the same
+  slice. It changes a walk Mark passed at a gate, so it needs his eye on a preview. An Opus builder. Argon reads
+  the plan. Hydrogen runs the gate batch.
+- [ ] **Item 18, the cache header.** A `vercel.json` rule that marks `/assets/` immutable. `/reference/` stays
+  out: its files are not hashed. It rides with the next code PR. After the deploy, read the header once. Who sets
+  today's `max-age=14400` is not proven: production answers through Cloudflare, and the direct Vercel address
+  redirects to a login. If the header still says 14,400, the setting is Cloudflare's. Lead (ten lines, deploy).
+- [x] **Item 20, `flow-field.png`.** Leave it. No runtime code fetches it, so a visitor downloads none of it. The
+  saving would be deploy size only. Decide it with the retired modes.
+
+**Hydrogen's other mechanical items**, on the same word: 21, 22, 24, 27 and 28. Items 21 and 22 need the frame
+proof. Not checked since the morning: read each at its line before the brief.
+
+**Who does what.** Hydrogen builds the mechanical slices in its own worktree and runs every gate batch: the suite,
+the capture set, red runs and mutants. Opus builders take the two slices that change behaviour (items 16, 9 and
+10). Argon reads each plan before a build and gives a runnable command with each finding. The Lead plans, reads
+every diff, looks at every capture and gates. Before the first brief, test whether Hydrogen's shell is still
+sandboxed: if it is, each browser run and each write outside the main folder needs Mark's approval in its pane.
 
 **Leftovers:** worktrees `../starry-night-wt/{head1,head2,head2b,ci-gate,mutants-head2}` and
 `.claude/worktrees/agent-*`. Branches `chore/ci-gate`, `fix/input-and-page-failure`, `perf/diorama-builders`,
