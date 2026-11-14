@@ -63,6 +63,16 @@ jobs:
       # `tsc -b` reads `src` and `vite.config.ts` only. This reads `scripts/*.ts`, the tests among them (the audit, 2026-11-14).
       - run: npm run typecheck:scripts
 
+      # The tests' painting (4.2 MB) is not in git. It is one file on the release `test-fixtures-1`, pinned here by
+      # its sha256, so a changed file fails the run. Without it 68 cases skip (Mark's choice of route, 2026-11-14).
+      - name: fetch the tests' painting
+        shell: bash
+        run: |
+          mkdir -p reference/derived
+          curl -fsSL --retry 3 -o reference/derived/_work-painting.png \
+            https://github.com/markpukete-web/starry-night/releases/download/test-fixtures-1/_work-painting.png
+          echo "1be26c9ffb75aa0d95d2a1b4e2d06d13b0a582eff94bae753caa1d4e1130535c  reference/derived/_work-painting.png" | sha256sum -c -
+
       # The geometry/colour contracts for the painting. A skipped case fails the run: on 2026-10-30 this step
       # skipped 68 of 504 cases, the street's triangle budget among them, and stayed green (the audit, 2026-11-14).
       - name: test (a skipped case fails the run)
