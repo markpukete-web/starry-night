@@ -38,6 +38,8 @@ const outDir = process.argv[2] || 'output/failure-paths'
 const BLOCKED = '*/reference/sky-mask.png*'
 /** the page's own message, from `failPage` in `src/bootCurtain.ts` */
 const OWN_MESSAGE = 'failed to draw its scene'
+/** `REDUCED=1` runs every case under `prefers-reduced-motion: reduce`: the failed page must show there too. */
+const REDUCED = Boolean(process.env.REDUCED)
 
 const chromePath =
   process.env.CHROME_PATH ||
@@ -173,7 +175,7 @@ async function newPage(port) {
 
 async function open(page, query, viewport) {
   await page.send('Emulation.setDeviceMetricsOverride', viewport)
-  await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'no-preference' }] })
+  await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: REDUCED ? 'reduce' : 'no-preference' }] })
   const url = new URL(origin)
   for (const [key, value] of new URLSearchParams(query)) url.searchParams.set(key, value)
   await page.send('Page.navigate', { url: url.href })
@@ -351,7 +353,8 @@ async function caseFailed(port, name, query, viewport) {
     if (state.paintings.length !== 1) fail(`${state.paintings.length} paintings are visible, not 1`)
     if (!(state.paintings[0].width > 0)) fail('the painting did not load')
     if (state.paintings[0].alt !== 'The Starry Night, Vincent van Gogh, 1889') fail('the painting lost its alt text')
-    if (name === 'plain' && state.bootAtLoad !== true) fail('the loading curtain was not up at load, so the plain visit tested nothing')
+    // under reduced motion `index.html` removes the curtain before the document has parsed
+    if (name === 'plain' && !REDUCED && state.bootAtLoad !== true) fail('the loading curtain was not up at load, so the plain visit tested nothing')
     if (state.boot) fail('the loading curtain is still up')
     if (state.cues !== 0) fail('the cue is visible')
     if (state.cites !== 1) fail(`${state.cites} citations are visible, not 1`)
