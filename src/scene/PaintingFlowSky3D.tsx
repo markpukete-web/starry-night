@@ -187,7 +187,7 @@ type Props = {
   ready?: RefObject<boolean>
   /** Street sky anchor: follow tracks camera translation, worldFixed locks rotation to world identity */
   anchor?: SkyAnchor
-  /** Reported when the moving sky's worker, build or source image fails. */
+  /** Called with the moving sky's failed state: false at mount, true once its worker, build or a source image fails. */
   onMovingFailed?: (failed: boolean) => void
 }
 

@@ -92,7 +92,7 @@ type Props = {
   lighter?: boolean
   /** Given while the lighter view is watched for: called when the settled diorama stays under the bar. */
   onSlow?: () => void
-  /** Reported when the moving sky's worker, build or source image fails. */
+  /** Called with the moving sky's failed state: false at mount, true once its worker, build or a source image fails. */
   onSkyFailed?: (failed: boolean) => void
   /** Visitor chrome (attribution, original placard, control dock) — rendered over the canvas. */
   children?: ReactNode
@@ -510,7 +510,7 @@ function Scene({
   hintRef: RefObject<HTMLDivElement | null>
   /** the lighter view's watch: the bar's fps for this device, and the call when the diorama stays under it */
   slow?: { lower: number; onSlow: () => void }
-  /** Reported when the moving sky's worker, build or source image fails. */
+  /** Called with the moving sky's failed state: false at mount, true once its worker, build or a source image fails. */
   onSkyFailed?: (failed: boolean) => void
 }) {
   const streetMode = useMemo(() => isStreetMode(typeof window !== 'undefined' ? window.location.search : ''), [])
