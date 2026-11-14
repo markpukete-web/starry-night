@@ -32,6 +32,7 @@
  *    `land-masses.json` answered with `null`, so the build returns nothing, 15. `painting.jpg` answered with a red PNG,
  *    so `grassBlade.ts` throws and the street's boundary catches it, 16. the street's chunk blocked. Each settles the
  *    street with nothing drawn and the sky up. 17. The control: nothing failed, a street drawn and no `[street]` line.
+ * 18. `?clean=1&slow=1` has the lighter view's card in the page and hidden; `?slow=1` shows it (A6, H6).
  * Cases 7 to 10 run against the production build (`vite preview`) as well as the dev server.
  * `CASES=3,5` runs those cases alone.
  * Each case prints PASS or throws; the run exits 1 on the first failure. The Chrome launcher and the CDP page are
@@ -814,6 +815,26 @@ async function caseStreetControl(port) {
   }
 }
 
+/** Case 18 (A6, audit item 26, H6): `?clean=1` hides the lighter view's card, which `?slow=1` shows (the control). */
+async function caseCleanCard(port) {
+  const read = async (query) => {
+    const page = await newPage(port)
+    try {
+      await open(page, query, DESKTOP, { reduced: false })
+      await page.waitFor(`document.querySelector('.visitor-ask')`, 30000, `case 18: the card in the page (${query})`)
+      return await page.evaluate(`({ shell: document.querySelector('.visitor-shell')?.className ?? null, cards: document.querySelectorAll('.visitor-ask').length, visible: [...document.querySelectorAll('.visitor-ask')].filter(${VISIBLE}).length })`)
+    } finally {
+      await page.close()
+    }
+  }
+  const control = await read('?arrival=0&slow=1')
+  if (control.cards !== 1 || control.visible !== 1) throw new Error(`case 18: the control ?slow=1 shows ${control.visible} of ${control.cards} cards, not 1 ${JSON.stringify(control)}`)
+  const clean = await read('?arrival=0&clean=1&slow=1')
+  if (!/is-clean-capture/.test(clean.shell ?? '')) throw new Error(`case 18: clean=1 did not load the clean shell ${JSON.stringify(clean)}`)
+  if (clean.cards !== 1 || clean.visible !== 0) throw new Error(`case 18: with clean=1, ${clean.visible} of ${clean.cards} cards are visible, not 0 of 1 ${JSON.stringify(clean)}`)
+  console.log('PASS 18: ?slow=1 shows the lighter view\'s card, and ?clean=1&slow=1 has it in the page and hidden')
+}
+
 /** `CASES=3,5` runs those cases alone, so each can be seen to fail on a build without its fix. Absent, every case runs. */
 const only = (process.env.CASES ?? '').split(',').filter(Boolean).map(Number)
 const wanted = (n) => only.length === 0 || only.includes(n)
@@ -844,6 +865,7 @@ async function main() {
     if (wanted(10)) await caseWorkerFails(port)
     await caseStreetFailures(port)
     if (wanted(17)) await caseStreetControl(port)
+    if (wanted(18)) await caseCleanCard(port)
   } finally {
     chrome.cleanup()
   }
