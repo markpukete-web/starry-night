@@ -4,13 +4,14 @@
  */
 
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import { existsSync, readFileSync } from 'node:fs'
 import test from 'node:test'
 import { Frustum, Matrix4, PerspectiveCamera, Vector3 } from 'three'
 
 import { bladeReach, bladeVertex, GRASS_BLADE } from '../src/scene/grassBlade.ts'
 import type { BakedMass } from '../src/scene/landDomes.ts'
-import { buildFlatPanel, buildStreet } from '../src/scene/streetGeometry.ts'
+import { buildFlatPanel, buildStreet, type Strokes } from '../src/scene/streetGeometry.ts'
 import {
   GRASS,
   grassChunks,
@@ -31,6 +32,7 @@ import {
 } from '../src/scene/streetLayout.ts'
 import type { ImageData2D } from '../src/scene/useImageData.ts'
 import { decodePNG } from './lib/png.ts'
+import { roundedJson } from './lib/rounded-json.ts'
 
 // every test here samples the painting, which is derived and not in CI (as street-vincent's paint test): CI skips them,
 // and the Lead's gate runs them where the painting is
@@ -51,6 +53,18 @@ const flow: ImageData2D = {
 const masses = JSON.parse(
   readFileSync(new URL('../public/reference/land-masses.json', import.meta.url), 'utf8'),
 ) as BakedMass[]
+
+/** A vertex of the ground as a string: its position, colour, stroke, seed, class and source, the six per-vertex arrays. */
+const groundVertex = (g: Strokes, v: number): string =>
+  JSON.stringify([g.arrays.positions.slice(v * 3, v * 3 + 3), g.arrays.colors.slice(v * 3, v * 3 + 3), g.stroke.slice(v * 2, v * 2 + 2), g.seed[v], g.cls[v], g.src[v]])
+
+/** The ground's triangles in draw order, each read through its indices to its three corners' attributes. */
+const groundTriangles = (g: Strokes): string[] => {
+  const out: string[] = []
+  const idx = g.arrays.indices
+  for (let t = 0; t < idx.length; t += 3) out.push(`${groundVertex(g, idx[t])}|${groundVertex(g, idx[t + 1])}|${groundVertex(g, idx[t + 2])}`)
+  return out
+}
 
 const insideHouse = (x: number, z: number, m: number) =>
   STREET_HOUSES.some((h) => {
@@ -326,18 +340,21 @@ test('with grass the ground is clipped to the footprint and nothing else', { ski
   const pos = bNoGrass.ground.arrays.positions
   const idx0 = bNoGrass.ground.arrays.indices
   const cls0 = bNoGrass.ground.cls
-  const idxG = bGrass.ground.arrays.indices
+  // matched by their corners' attributes, not their index values: with grass the unread vertices are dropped and the
+  // indices remapped (C-08)
+  const tri0 = groundTriangles(bNoGrass.ground)
+  const triG = groundTriangles(bGrass.ground)
 
   const droppedTris: number[] = []
   let gIdx = 0
-  for (let i = 0; i < idx0.length; i += 3) {
-    if (gIdx < idxG.length && idx0[i] === idxG[gIdx] && idx0[i + 1] === idxG[gIdx + 1] && idx0[i + 2] === idxG[gIdx + 2]) {
-      gIdx += 3
+  for (let t = 0; t < tri0.length; t++) {
+    if (gIdx < triG.length && tri0[t] === triG[gIdx]) {
+      gIdx++
     } else {
-      droppedTris.push(i)
+      droppedTris.push(t * 3)
     }
   }
-  assert.equal(gIdx, idxG.length, 'kept triangles are in the exact same order')
+  assert.equal(gIdx, triG.length, 'kept triangles are in the exact same order')
 
   for (const tri of droppedTris) {
     const v0 = idx0[tri]
@@ -425,6 +442,54 @@ test('with grass the ground is clipped to the footprint and nothing else', { ski
         assert.ok(hit, `grid point (side=${side}, t=${t.toFixed(3)}, lat=${lat.toFixed(3)}) meets a base triangle`)
       }
     }
+  }
+})
+
+// C-08 (audit item 17, H6): the grass filter dropped ground triangles and left their vertices in the buffers. Measured on
+// the base `3aeec19` with grass on: 177,615 vertices, 197,353 triangles, 24,412 vertices no triangle reads, all of them
+// before the first door path's leg (`scratch/h6/base-ground-probe.log`)
+const BASE_GROUND = { vertices: 177_615, triangles: 197_353, unread: 24_412 }
+
+test('with grass no ground vertex is unread (C-08)', { skip }, () => {
+  const g = buildStreet(painting, flow, masses, { grass: true })!.ground
+  const n = g.arrays.positions.length / 3
+  const read = new Uint8Array(n)
+  for (const i of g.arrays.indices) {
+    assert.ok(Number.isInteger(i) && i >= 0 && i < n, `index ${i} is a vertex of the ground's ${n}`)
+    read[i] = 1
+  }
+  const unread = read.length - read.reduce((s, r) => s + r, 0)
+  assert.equal(unread, 0, `${unread} of the ground's ${n} vertices are read by no triangle`)
+  for (const [name, a, k] of [['colors', g.arrays.colors, 3], ['stroke', g.stroke, 2], ['seed', g.seed, 1], ['cls', g.cls, 1], ['src', g.src, 1]] as const)
+    assert.equal(a.length, n * k, `${name} holds ${k} per vertex`)
+})
+
+test("with grass the ground keeps the base's triangles and drops exactly its unread vertices (C-08)", { skip }, () => {
+  const g = buildStreet(painting, flow, masses, { grass: true })!.ground
+  assert.equal(g.arrays.indices.length / 3, BASE_GROUND.triangles, 'the triangle count is the base\'s')
+  assert.equal(g.arrays.positions.length / 3, BASE_GROUND.vertices - BASE_GROUND.unread, 'the vertex count is the base\'s less its unread vertices')
+  // the triangles read through the indices to their corners' six attributes: the list hashed on the base
+  const h = createHash('sha256')
+  const idx = g.arrays.indices
+  for (let t = 0; t < idx.length; t += 3) {
+    const tri = []
+    for (const v of [idx[t], idx[t + 1], idx[t + 2]]) tri.push(g.arrays.positions.slice(v * 3, v * 3 + 3), g.arrays.colors.slice(v * 3, v * 3 + 3), g.stroke.slice(v * 2, v * 2 + 2), g.seed[v], g.cls[v], g.src[v])
+    h.update(roundedJson(tri))
+  }
+  assert.equal(h.digest('hex').slice(0, 16), '23ef1d6f1f18bd95', 'the triangles through the indices are the base\'s')
+})
+
+test("with grass the ground's kept vertices keep their old order (C-08)", { skip }, () => {
+  // the ground without grass is the grass build's ground before the filter: the same vertices, every one read
+  const all = buildStreet(painting, flow, masses, { grass: false })!.ground
+  const kept = buildStreet(painting, flow, masses, { grass: true })!.ground
+  const n = all.arrays.positions.length / 3
+  let v = 0
+  for (let k = 0; k < kept.arrays.positions.length / 3; k++) {
+    const want = groundVertex(kept, k)
+    while (v < n && groundVertex(all, v) !== want) v++
+    assert.ok(v < n, `kept vertex ${k} is not in the ground's old order`)
+    v++
   }
 })
 

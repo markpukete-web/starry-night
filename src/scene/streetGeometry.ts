@@ -2137,6 +2137,28 @@ function flowers(ctx: Context): void {
   }
 }
 
+/**
+ * Drops the vertices no triangle reads, the rest in their old order, and remaps the indices (audit item 17, C-08): the
+ * grass filter left 24,412 of the ground's vertices unread, uploaded for nothing. Every per-vertex array moves with the
+ * positions. It runs before anything records a range into the ground (the door paths' legs), so no range moves.
+ */
+function keepReadVertices(s: Strokes): void {
+  const n = s.arrays.positions.length / 3
+  const read = new Uint8Array(n)
+  for (const i of s.arrays.indices) read[i] = 1
+  const to = new Int32Array(n)
+  const perVertex: [number[], number][] = [[s.arrays.positions, 3], [s.arrays.colors, 3], [s.stroke, 2], [s.seed, 1], [s.cls, 1], [s.src, 1]]
+  let kept = 0
+  for (let v = 0; v < n; v++) {
+    if (!read[v]) continue
+    to[v] = kept
+    for (const [a, k] of perVertex) for (let j = 0; j < k; j++) a[kept * k + j] = a[v * k + j]
+    kept++
+  }
+  for (const [a, k] of perVertex) a.length = kept * k
+  s.arrays.indices = s.arrays.indices.map((i) => to[i])
+}
+
 /** The street, its repeated crops and underpaints computed once for the build (`withBuildCache`, audit item 14). */
 export function buildStreet(...args: Parameters<typeof streetBuild>): StreetBuild | null {
   return withBuildCache(args[0], args[1], () => streetBuild(...args))
@@ -2191,6 +2213,7 @@ function streetBuild(painting: ImageData2D | null, flow: ImageData2D | null, _ma
       }
     }
     ctx.ground.arrays.indices = newIdx
+    keepReadVertices(ctx.ground)
     grassBaseStrip(ctx)
   }
   STREET_HOUSES.forEach((h, index) => {
