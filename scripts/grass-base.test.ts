@@ -44,7 +44,7 @@ test('the dabs land after the vertex colour and under the ID view', () => {
     vertexShader: ShaderLib.basic.vertexShader,
     fragmentShader: ShaderLib.basic.fragmentShader,
     uniforms: {},
-  }
+  } as unknown as WebGLProgramParametersWithUniforms
   m.onBeforeCompile(shader, {} as never)
   const fs = shader.fragmentShader
   const dab = fs.indexOf('diffuseColor.rgb = dab')

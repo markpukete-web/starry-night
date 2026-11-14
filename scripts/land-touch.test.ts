@@ -168,7 +168,7 @@ test('L6 the injection: the bend transform lands after <begin_vertex> once with 
   const out = injectAliveSource(vertex, fragment, concatInjections('bend-test', { uniforms: {}, vertexHead: '', vertexBody: '', fragmentHead: '', fragmentBody: '' }, island))
   assert.equal(out.vertexShader.split('#include <begin_vertex>').length, 2)
   assert.ok(out.vertexShader.includes('#include <begin_vertex>\n') && out.vertexShader.includes('transformed += landBend(transformed, aBend);'))
-  assert.throws(() => injectAliveSource('void main() {\n#include <common>\n#include <color_vertex>\n}', fragment, island), /exactly one/)
+  assert.throws(() => injectAliveSource('void main() {\n#include <common>\n#include <color_vertex>\n}', fragment, { key: 'bend-test', ...island }), /exactly one/)
   assert.ok(island.uniforms.uLand && island.uniforms.uLandCount && island.uniforms.uLandParams, 'its own uniform objects')
   assert.notEqual(island.uniforms.uLand, cypress.uniforms.uLand, 'one set per injection')
 })

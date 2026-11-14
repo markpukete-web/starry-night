@@ -15,7 +15,7 @@ import {
   STREET_CYPRESS_STRIDE,
   walkPose,
 } from './streetLayout.ts'
-import { readStreetFlags, streetReadiness, type AssetStatus } from './streetMode.ts'
+import { readStreetFlags, streetMassesUrl, streetReadiness, type AssetStatus } from './streetMode.ts'
 import { strokeGeometry } from './strokeGeometry.ts'
 import StreetLife from './streetLife.tsx'
 import { swayInjection } from './streetLife.ts'
@@ -36,10 +36,11 @@ type StreetWindow = Window & {
 }
 
 /**
- * The street (S1, tasks/2026-10-23-street-s1-plan.md): built once from the painting, the land flow and the baked
- * masses, all or nothing (`streetReadiness`), drawn in place of the diorama's foreground under the same sky. It places
- * the camera at its station itself, so the layout stays in this lazy chunk. `?flat=1` draws the flat panel instead
- * (G4b: four faces laid flat in the production materials, no fog), facing the camera.
+ * The street (S1, tasks/2026-10-23-street-s1-plan.md): built once from the painting and the land flow, all or nothing
+ * (`streetReadiness`), drawn in place of the diorama's foreground under the same sky. It places the camera at its
+ * station itself, so the layout stays in this lazy chunk. `?flat=1` draws the flat panel instead (G4b: four faces laid
+ * flat in the production materials, no fog), facing the camera, and it alone waits for the baked masses too
+ * (`streetMassesUrl`).
  *
  * Through the portal (tasks/2026-10-25-street-portal-plan.md): `onReady` reports once per mount, `ok` false when an asset
  * failed, since `__streetReady` stays set after an unmount; `hold` keeps Vincent at his station while the layer covers
@@ -60,13 +61,14 @@ export default function Street({
   const [massesState, setMassesState] = useState<{ status: AssetStatus; data: BakedMass[] | null }>({ status: 'pending', data: null })
   const paintingUrl = flags.fail === 'painting' ? '/reference/missing.png' : '/reference/painting.jpg'
   const flowUrl = flags.fail === 'flow' ? '/reference/missing.png' : '/reference/land-flow.png'
-  const massesUrl = flags.fail === 'masses' ? '/reference/missing.png' : '/reference/land-masses.json'
+  const massesUrl = streetMassesUrl(flags)
   const paintingData = useImageData(paintingUrl, () => setPaintingFailed(true))
   const flowData = useImageData(flowUrl, () => setFlowFailed(true))
   const paintingStatus: AssetStatus = paintingFailed ? 'failed' : paintingData ? 'ok' : 'pending'
   const flowStatus: AssetStatus = flowFailed ? 'failed' : flowData ? 'ok' : 'pending'
 
   useEffect(() => {
+    if (!massesUrl) return
     let alive = true
     fetch(massesUrl)
       .then((res) => (res.ok ? (res.json() as Promise<BakedMass[]>) : Promise.reject(new Error(String(res.status)))))
@@ -75,7 +77,7 @@ export default function Street({
     return () => { alive = false }
   }, [massesUrl])
 
-  const readiness = useMemo(() => streetReadiness({ painting: paintingStatus, flow: flowStatus, masses: massesState.status }), [paintingStatus, flowStatus, massesState.status])
+  const readiness = useMemo(() => streetReadiness({ painting: paintingStatus, flow: flowStatus, masses: massesState.status }, flags), [paintingStatus, flowStatus, massesState.status, flags])
 
   // the build and its meshes in one memo, which keeps only what the street reads after it: the build's plain arrays
   // go out of scope when it returns (the phone's memory, 2026-10-28: they held 54 MB for the street's life)

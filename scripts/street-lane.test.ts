@@ -757,7 +757,7 @@ test("no lantern fills a stop's frame", { skip }, () => {
 
   for (const lamp of lamps) {
     const p = lamp.lantern
-    for (let stop = 0; stop < 5; stop++) {
+    for (const stop of [0, 1, 2, 3, 4] as const) {
       for (const [, aspect, portrait] of aspects) {
         const pose = stationPose(stop, portrait)
         const cam = new PerspectiveCamera(pose.fov, aspect, pose.near, pose.far)
@@ -795,7 +795,7 @@ test('no halo fills the screen on the walk', { skip }, () => {
     const lantern = lamp.lantern
     for (const [, aspect, portrait] of aspects) {
       const poses: ReturnType<typeof walkPose>[] = []
-      for (let s = 0; s < 5; s++) poses.push(stationPose(s, portrait))
+      for (const s of [0, 1, 2, 3, 4] as const) poses.push(stationPose(s, portrait))
       for (let k = 0; k <= 900; k++) poses.push(walkPose(k / 1000, portrait))
 
       for (const pose of poses) {
@@ -1089,7 +1089,7 @@ test("the halo's scale survives a translated parent", { skip }, () => {
   sprite.position.copy(lamp4.lantern)
   group.add(sprite)
 
-  const pose = walkPose(0.613)
+  const pose = walkPose(0.613, false)
   const [cx, cy, cz] = pose.position
   const [tx, ty, tz] = pose.target
 

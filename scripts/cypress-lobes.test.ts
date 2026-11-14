@@ -406,6 +406,7 @@ test('at a frond-to-main surface crossing the view offset does not jump and the 
       samples: [-2, -1, 0, 1, 2].map((k) => ({ px: a + k * epsilon, py: 1 - h, inside: true })),
       seedSample: null as unknown as CypressRibbon['seedSample'],
       colour: [0, 0, 0],
+      colours: [],
       halfWidth: 0.004,
       relief: 1,
       seed: 1,

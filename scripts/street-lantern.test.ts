@@ -14,7 +14,7 @@ import { lanternUniform } from '../src/scene/vincent.ts'
 const PAINT = [{ colour: [0.1, 0.12, 0.08], share: 0.5 }, { colour: [0.15, 0.1, 0.05], share: 0.3 }, { colour: [0.2, 0.2, 0.1], share: 0.2 }] as Parameters<typeof grassBaseBody>[0]
 
 function compiled(m: MeshBasicMaterial): { hash: string; key: string; vertex: string; fragment: string; uniforms: Record<string, unknown> } {
-  const shader: WebGLProgramParametersWithUniforms = { vertexShader: ShaderLib.basic.vertexShader, fragmentShader: ShaderLib.basic.fragmentShader, uniforms: {} }
+  const shader: WebGLProgramParametersWithUniforms = { vertexShader: ShaderLib.basic.vertexShader, fragmentShader: ShaderLib.basic.fragmentShader, uniforms: {} } as unknown as WebGLProgramParametersWithUniforms
   m.onBeforeCompile(shader, {} as never)
   const hash = createHash('sha256').update(`${shader.vertexShader}\n//--\n${shader.fragmentShader}`).digest('hex').slice(0, 16)
   return { hash, key: m.customProgramCacheKey(), vertex: shader.vertexShader, fragment: shader.fragmentShader, uniforms: shader.uniforms }

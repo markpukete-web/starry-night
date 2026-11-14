@@ -174,6 +174,40 @@ function distanceToPolygon(x: number, y: number, polygon: [number, number][]): n
   return best
 }
 
+type FaceCrop = { crop: ImageData2D; rows: RibbonRows; pigment?: ImageData2D }
+
+/**
+ * Audit item 14 (2026-11-14): one street build called `faceCrop` 218 times for 153 distinct inputs under the key
+ * below, and `rectUnderpaint` about 230 times for 14. With the cache the default street's build fell from about 590 ms
+ * to about 400 ms on this Mac, its output byte for byte the same. Neither reads a random stream, so a build keeps
+ * their results for its own painting and flow. The cache ends with the build, so no crop is held for the street's life
+ * (the phone's memory, `Street.tsx`), and a call with another painting or flow computes as before. Every caller only
+ * reads what it is given (`traceFace`, `clad` and the other colour reads), so the entries are shared, not copied.
+ */
+let buildCache: { painting: ImageData2D; flow: ImageData2D; crops: Map<string, FaceCrop>; underpaints: Map<string, [number, number, number]> } | null = null
+
+export function withBuildCache<T>(painting: ImageData2D | null, flow: ImageData2D | null, build: () => T): T {
+  if (!painting || !flow) return build()
+  buildCache = { painting, flow, crops: new Map(), underpaints: new Map() }
+  try {
+    return build()
+  } finally {
+    buildCache = null
+  }
+}
+
+/** `cropFace`, from the build's cache when one is open for this flow and painting. The key holds every input the crop
+ * reads, the shape among them. No two faces of today's street differ in shape alone, so only the unit test tells a key
+ * without the shape from this one. */
+export function faceCrop(flow: ImageData2D, face: StreetFace, minRows = 64, painting?: ImageData2D): FaceCrop {
+  const cache = buildCache && buildCache.flow === flow && (!painting || buildCache.painting === painting) ? buildCache.crops : null
+  if (!cache) return cropFace(flow, face, minRows, painting)
+  const key = `${face.u.length()}|${face.v.length()}|${face.source}|${face.mirror}|${face.shape}|${minRows}|${painting ? 1 : 0}`
+  let crop = cache.get(key)
+  if (!crop) cache.set(key, (crop = cropFace(flow, face, minRows, painting)))
+  return crop
+}
+
 /**
  * The land flow over the face's source rectangle, resampled so a crop pixel is square on the face: `rows` at least
  * `minRows` (and twice the source's flow rows), `cols` from the face's aspect. A source direction is carried through
@@ -182,7 +216,7 @@ function distanceToPolygon(x: number, y: number, polygon: [number, number][]): n
  * the field a clean strip checked by eye), and the land flow's own support is off over the cypress column, where the
  * field lies (flat panel pass 0: the field face came out two-thirds bare).
  */
-export function faceCrop(flow: ImageData2D, face: StreetFace, minRows = 64, painting?: ImageData2D): { crop: ImageData2D; rows: RibbonRows; pigment?: ImageData2D } {
+function cropFace(flow: ImageData2D, face: StreetFace, minRows: number, painting?: ImageData2D): FaceCrop {
   const width = face.u.length()
   const height = face.v.length()
   const [x0, y0, x1, y1] = STREET_SOURCES[face.source]
@@ -341,8 +375,17 @@ export function sourceUnderpaint(painting: ImageData2D, source: StreetSourceName
 }
 
 /** `sourceUnderpaint` for any rectangle of the painting (1600 × 1267 px): Vincent's sources are not traced faces, so
- * they are not `STREET_SOURCES` keys (S2 plan review F1). */
+ * they are not `STREET_SOURCES` keys (S2 plan review F1). From the build's cache when one is open for this painting. */
 export function rectUnderpaint(painting: ImageData2D, rect: readonly [number, number, number, number], share = 0.1, lightest = false): [number, number, number] {
+  const cache = buildCache?.painting === painting ? buildCache.underpaints : null
+  if (!cache) return underpaintOf(painting, rect, share, lightest)
+  const key = `${rect}|${share}|${lightest}`
+  let rgb = cache.get(key)
+  if (!rgb) cache.set(key, (rgb = underpaintOf(painting, rect, share, lightest)))
+  return rgb
+}
+
+function underpaintOf(painting: ImageData2D, rect: readonly [number, number, number, number], share: number, lightest: boolean): [number, number, number] {
   const [x0, y0, x1, y1] = rect
   const sx = painting.width / 1600
   const sy = painting.height / 1267

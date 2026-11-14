@@ -6,7 +6,7 @@ import { islandHeightAt } from '../src/scene/islandShape.ts'
 import { buildLandTrees, type BakedMass } from '../src/scene/landDomes.ts'
 import { LAND_MASSES } from '../src/scene/landMasses.ts'
 import { buildStreet } from '../src/scene/streetGeometry.ts'
-import { lanternShown, readStreetFlags, streetReadiness, touchEnabled, walkOn } from '../src/scene/streetMode.ts'
+import { lanternShown, readStreetFlags, streetMassesUrl, streetReadiness, touchEnabled, walkOn } from '../src/scene/streetMode.ts'
 import { decodePNG } from './lib/png.ts'
 
 test('walk flags', () => {
@@ -95,18 +95,37 @@ test('flags', () => {
 })
 
 test('readiness', () => {
+  // the flat panel waits for all three, all or nothing
+  const flat = readStreetFlags('?street=1&flat=1')
   // all pending
-  assert.deepEqual(streetReadiness({ painting: 'pending', flow: 'pending', masses: 'pending' }), { ready: false, render: false })
+  assert.deepEqual(streetReadiness({ painting: 'pending', flow: 'pending', masses: 'pending' }, flat), { ready: false, render: false })
   // one pending, others ok
-  assert.deepEqual(streetReadiness({ painting: 'pending', flow: 'ok', masses: 'ok' }), { ready: false, render: false })
+  assert.deepEqual(streetReadiness({ painting: 'pending', flow: 'ok', masses: 'ok' }, flat), { ready: false, render: false })
+  assert.deepEqual(streetReadiness({ painting: 'ok', flow: 'ok', masses: 'pending' }, flat), { ready: false, render: false })
   // each one failed
-  assert.deepEqual(streetReadiness({ painting: 'failed', flow: 'ok', masses: 'ok' }), { ready: true, render: false })
-  assert.deepEqual(streetReadiness({ painting: 'ok', flow: 'failed', masses: 'ok' }), { ready: true, render: false })
-  assert.deepEqual(streetReadiness({ painting: 'ok', flow: 'ok', masses: 'failed' }), { ready: true, render: false })
+  assert.deepEqual(streetReadiness({ painting: 'failed', flow: 'ok', masses: 'ok' }, flat), { ready: true, render: false })
+  assert.deepEqual(streetReadiness({ painting: 'ok', flow: 'failed', masses: 'ok' }, flat), { ready: true, render: false })
+  assert.deepEqual(streetReadiness({ painting: 'ok', flow: 'ok', masses: 'failed' }, flat), { ready: true, render: false })
   // multiple failed
-  assert.deepEqual(streetReadiness({ painting: 'failed', flow: 'failed', masses: 'failed' }), { ready: true, render: false })
+  assert.deepEqual(streetReadiness({ painting: 'failed', flow: 'failed', masses: 'failed' }, flat), { ready: true, render: false })
   // all ok
-  assert.deepEqual(streetReadiness({ painting: 'ok', flow: 'ok', masses: 'ok' }), { ready: true, render: true })
+  assert.deepEqual(streetReadiness({ painting: 'ok', flow: 'ok', masses: 'ok' }, flat), { ready: true, render: true })
+})
+
+test('the default street neither fetches nor waits for the masses, and the flat panel does both (audit item 15)', () => {
+  const street = readStreetFlags('?street=1')
+  // the street never fetches them, so their status stays pending and is not read
+  assert.deepEqual(streetReadiness({ painting: 'ok', flow: 'ok', masses: 'pending' }, street), { ready: true, render: true })
+  assert.deepEqual(streetReadiness({ painting: 'pending', flow: 'ok', masses: 'pending' }, street), { ready: false, render: false })
+  assert.deepEqual(streetReadiness({ painting: 'ok', flow: 'failed', masses: 'pending' }, street), { ready: true, render: false })
+  assert.equal(streetMassesUrl(street), null)
+  // `streetFail=masses` fails the flat panel's fetch, and the default street has none to fail
+  const failMasses = readStreetFlags('?street=1&streetFail=masses')
+  assert.equal(failMasses.fail, 'masses')
+  assert.equal(streetMassesUrl(failMasses), null)
+  assert.deepEqual(streetReadiness({ painting: 'ok', flow: 'ok', masses: 'pending' }, failMasses), { ready: true, render: true })
+  assert.equal(streetMassesUrl(readStreetFlags('?street=1&flat=1')), '/reference/land-masses.json')
+  assert.equal(streetMassesUrl(readStreetFlags('?street=1&flat=1&streetFail=masses')), '/reference/missing.png')
 })
 
 test('touch is off in the street', () => {
@@ -205,6 +224,25 @@ test('the street builds all or nothing', () => {
 
   assert.equal(buildStreet(null, flow, baked), null)
   assert.equal(buildStreet(painting, null, baked), null)
-  assert.equal(buildStreet(painting, flow, null), null)
-  assert.notEqual(buildStreet(painting, flow, baked), null)
+  // the street reads no masses (audit item 15): built without them, it is the build with them
+  const withMasses = buildStreet(painting, flow, baked)
+  const without = buildStreet(painting, flow, null)
+  assert.ok(withMasses && without)
+  assert.equal(buildHash(without), buildHash(withMasses))
 })
+
+/** sha256 over every value of a build at its key path, its number arrays as float64 bytes */
+function buildHash(build: object): string {
+  const hasher = createHash('sha256')
+  const walk = (value: unknown, path: string): void => {
+    if (Array.isArray(value) && value.every((v) => typeof v === 'number')) {
+      hasher.update(`${path}[${value.length}]`).update(new Uint8Array(Float64Array.from(value).buffer))
+    } else if (value && typeof value === 'object') {
+      for (const key of Object.keys(value).sort()) walk((value as Record<string, unknown>)[key], `${path}.${key}`)
+    } else {
+      hasher.update(`${path}=${JSON.stringify(value)}`)
+    }
+  }
+  walk(build, '')
+  return hasher.digest('hex')
+}

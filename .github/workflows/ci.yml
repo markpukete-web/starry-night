@@ -60,6 +60,9 @@ jobs:
 
       - run: npm run lint
 
+      # `tsc -b` reads `src` and `vite.config.ts` only. This reads `scripts/*.ts`, the tests among them (the audit, 2026-11-14).
+      - run: npm run typecheck:scripts
+
       # The geometry/colour contracts for the painting. On 2026-10-30 (run 41052705281) this step ran 504 cases
       # and skipped 68 of them: those read `reference/derived/_work-painting.png`, which is not tracked, so here
       # they skip. They include the street's triangle budgets, so a green run does not prove those.
