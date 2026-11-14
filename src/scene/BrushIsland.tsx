@@ -12,13 +12,13 @@ import { useImageData } from './useImageData'
 
 type LandWindow = Window & { __landBuildMs?: number }
 
+/** With no vertex normals: every island material is basic with no environment map, so three's program reads none (audit 2026-11-14, item 12); the same for its `strokeGeometry` calls. */
 function plainGeometry(arrays: { positions: number[]; colors: number[]; indices: number[] }, bend?: number[]): BufferGeometry {
   const geometry = new BufferGeometry()
   geometry.setAttribute('position', new BufferAttribute(new Float32Array(arrays.positions), 3))
   geometry.setAttribute('color', new BufferAttribute(new Float32Array(arrays.colors), 3))
   if (bend) geometry.setAttribute('aBend', new BufferAttribute(new Float32Array(bend), 1))
   geometry.setIndex(arrays.indices)
-  geometry.computeVertexNormals()
   geometry.computeBoundingSphere()
   return geometry
 }
@@ -66,8 +66,8 @@ export function BrushIsland({
     const started = performance.now()
     const ground = buildLandStrokes(flowData, paintingData)
     const trees = buildLandTrees(flowData, paintingData, baked)
-    const groundGeometry = strokeGeometry(ground.arrays, ground.stroke, ground.seed)
-    const treeStrokes = strokeGeometry(trees.strokes, trees.stroke, trees.seed, bend ? trees.bend : undefined)
+    const groundGeometry = strokeGeometry(ground.arrays, ground.stroke, ground.seed, undefined, undefined, false)
+    const treeStrokes = strokeGeometry(trees.strokes, trees.stroke, trees.seed, bend ? trees.bend : undefined, undefined, false)
     const treeSolid = plainGeometry(trees.solid, bend ? trees.solidBend : undefined)
     groundGeometry.userData = { ribbons: ground.ribbons, triangles: ground.arrays.indices.length / 3 }
     treeStrokes.userData = { counts: trees.counts, triangles: trees.strokes.indices.length / 3 }

@@ -133,7 +133,7 @@ export function BrushCypress({
       solid.setAttribute('aFlicker', new BufferAttribute(new Float32Array(solidFlicker), 2))
     }
     solid.setIndex(compiled.indices)
-    solid.computeVertexNormals()
+    // no vertex normals on the solid or the strokes: both of the tree's materials are basic with no environment map, so three's program reads none (audit 2026-11-14, item 12)
     solid.computeBoundingSphere()
 
     // the ribbons: traced in the crop, draped on the compiled lobes
@@ -195,7 +195,6 @@ export function BrushCypress({
       strokes.setAttribute('aFlicker', new BufferAttribute(new Float32Array(strokeFlicker), 2))
     }
     strokes.setIndex(arrays.indices)
-    strokes.computeVertexNormals()
     strokes.computeBoundingSphere()
     strokes.userData = {
       lobes: plan.lobes.length,
