@@ -18,6 +18,15 @@
  * 4. The control: nothing blocked, the same visits and sizes, and no fallback, no failed class and no page error.
  * 5. The diorama decodes `painting.jpg` once (slice B1, item 13). 6. With `painting.jpg` blocked the opening does not
  *    wait 15 s for the cypress (slice B1, item 7), against the same visit unblocked.
+ * The light sky's ribbons are built on first use (item 16), read through `__skyLightBuilt`, each case in its own tab:
+ * 7. The default route (`?arrival=0`, 1600 × 900) builds no light sky, at ready and 2 s later.
+ * 8. A click at the drawn centre of "Switch sky to painted light" builds it, and the button then reads "Sky: painted
+ *    light". The longest frame gap after the click is printed with no threshold, then again in a fresh tab with the CPU
+ *    throttled 4×.
+ * 9. Reduced motion builds it, and the sky is ready.
+ * 10. The moving sky's worker fails (each request for it failed through the CDP `Fetch` domain), so the light sky is
+ *    built and the sky is ready. The console holds the worker's failure, and a screenshot is saved for the Lead.
+ * Cases 7 to 10 run against the production build (`vite preview`) as well as the dev server.
  * `CASES=3,5` runs those cases alone.
  * Each case prints PASS or throws; the run exits 1 on the first failure. The Chrome launcher and the CDP page are
  * copied from `check-portal.mjs`, which exports neither. The screenshots go to the folder named, by default
@@ -179,9 +188,10 @@ async function newPage(port) {
   return page
 }
 
-async function open(page, query, viewport) {
+/** `reduced`, when given, overrides `REDUCED` for this visit */
+async function open(page, query, viewport, { reduced = REDUCED } = {}) {
   await page.send('Emulation.setDeviceMetricsOverride', viewport)
-  await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: REDUCED ? 'reduce' : 'no-preference' }] })
+  await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: reduced ? 'reduce' : 'no-preference' }] })
   const url = new URL(origin)
   for (const [key, value] of new URLSearchParams(query)) url.searchParams.set(key, value)
   await page.send('Page.navigate', { url: url.href })
@@ -535,6 +545,156 @@ async function casePaintingFails(port) {
   console.log(`PASS 6: with painting.jpg blocked the opening took ${blocked.ms} ms against ${control.ms} ms unblocked, the cypress and the land ready, the scene up, ${dioramaLogs} log from the diorama`)
 }
 
+// --- the light sky is built on first use (the audit's item 16) ---
+
+/** the two sky seams, read at once */
+const SKY_SEAMS = `({ ready: window.__skyReady, lightBuilt: window.__skyLightBuilt })`
+
+/** Poll the sky seams until both are true, or fail with the case's own message and both values. */
+async function waitSkyLight(page, n, what, timeoutMs = 30000) {
+  const start = Date.now()
+  for (;;) {
+    const seams = await page.evaluate(SKY_SEAMS)
+    if (seams.ready === true && seams.lightBuilt === true) return seams
+    if (Date.now() - start > timeoutMs)
+      throw new Error(`case ${n}: ${what}: after ${timeoutMs} ms __skyReady is ${seams.ready} and __skyLightBuilt is ${seams.lightBuilt}`)
+    await sleep(100)
+  }
+}
+
+/** Poll `__skyReady` alone, with the case's own message. */
+async function waitSkyReady(page, n, timeoutMs) {
+  const start = Date.now()
+  while ((await page.evaluate('window.__skyReady')) !== true) {
+    if (Date.now() - start > timeoutMs) throw new Error(`case ${n}: the sky was not ready after ${timeoutMs} ms`)
+    await sleep(100)
+  }
+}
+
+/** Case 7: the default route opens on the moving sky and builds no light sky, at once and 2 s later. */
+async function caseNoLightSky(port) {
+  const page = await newPage(port)
+  try {
+    await open(page, '?arrival=0', DESKTOP, { reduced: false })
+    await waitSkyReady(page, 7, 30000)
+    const first = await page.evaluate('window.__skyLightBuilt')
+    await sleep(2000)
+    const later = await page.evaluate('window.__skyLightBuilt')
+    if (first !== false || later !== false) throw new Error(`case 7: the default route built the light sky: __skyLightBuilt was ${first} at ready and ${later} 2 s later`)
+    console.log('PASS 7: the default route built no light sky, at ready and 2 s later')
+  } finally {
+    await page.close()
+  }
+}
+
+/**
+ * One switch to painted light in a fresh tab. A loop in the page records the longest gap between animation frames. It
+ * is reset just before the click, so the gap read is the switch's alone, and the longest gap before it is kept apart.
+ */
+async function switchGap(port, throttle) {
+  const page = await newPage(port)
+  try {
+    if (throttle) await page.send('Emulation.setCPUThrottlingRate', { rate: throttle })
+    await open(page, '?arrival=0', DESKTOP, { reduced: false })
+    await waitSkyReady(page, 8, throttle ? 120000 : 30000)
+    await page.evaluate(`(() => {
+      window.__gapMax = 0
+      let last = performance.now()
+      const tick = (now) => {
+        window.__gapMax = Math.max(window.__gapMax, now - last)
+        last = now
+        requestAnimationFrame(tick)
+      }
+      requestAnimationFrame(tick)
+    })()`)
+    await sleep(1000)
+    const target = await page.evaluate(`(() => {
+      const btn = document.querySelector('button[aria-label="Switch sky to painted light"]')
+      if (!btn) return null
+      const r = btn.getBoundingClientRect()
+      const cx = r.left + r.width / 2
+      const cy = r.top + r.height / 2
+      window.__skyButton = btn
+      return { cx, cy, hit: btn.contains(document.elementFromPoint(cx, cy)) }
+    })()`)
+    if (!target) throw new Error('case 8: no button with the aria-label "Switch sky to painted light"')
+    if (!target.hit) throw new Error(`case 8: the button's drawn centre [${target.cx}, ${target.cy}] is not inside it`)
+    const before = await page.evaluate('(() => { const max = window.__gapMax; window.__gapMax = 0; return max })()')
+    await page.click(target.cx, target.cy)
+    const start = Date.now()
+    let state
+    for (;;) {
+      state = await page.evaluate(`(() => {
+        const btn = window.__skyButton
+        return { lightBuilt: window.__skyLightBuilt, label: btn?.querySelector('.visitor-control-label')?.textContent ?? null, aria: btn?.getAttribute('aria-label') ?? null }
+      })()`)
+      if (state.lightBuilt === true && state.label === 'Sky: painted light' && state.aria === 'Switch sky to moving strokes') break
+      if (Date.now() - start > (throttle ? 30000 : 10000)) throw new Error(`case 8: after the click ${JSON.stringify(state)}`)
+      await sleep(100)
+    }
+    // the build runs inside the click's task, so the gap closes only on a later frame
+    const gap = await page.evaluate('new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve(window.__gapMax))))')
+    return { gap, before }
+  } finally {
+    await page.close()
+  }
+}
+
+/** Case 8: a click on the sky button builds the light sky. The longest frame gap is printed with no threshold. */
+async function caseSwitchBuilds(port) {
+  const { gap, before } = await switchGap(port, 0)
+  console.log(`PASS 8: the switch built the light sky and the button reads "Sky: painted light"; longest frame gap ${gap.toFixed(1)} ms after the click (${before.toFixed(1)} ms before it)`)
+  const slow = await switchGap(port, 4)
+  console.log(`PASS 8 (CPU throttled 4×): longest frame gap ${slow.gap.toFixed(1)} ms after the click (${slow.before.toFixed(1)} ms before it)`)
+}
+
+/** Case 9: reduced motion shows the painted-light sky, so it builds it. */
+async function caseReducedBuilds(port) {
+  const page = await newPage(port)
+  try {
+    await open(page, '?arrival=0', DESKTOP, { reduced: true })
+    await waitSkyLight(page, 9, 'reduced motion did not build the light sky')
+    console.log('PASS 9: under reduced motion the light sky is built and the sky is ready')
+  } finally {
+    await page.close()
+  }
+}
+
+/**
+ * Case 10: the moving sky's worker fails to load, so the light sky is built and draws. `Network.setBlockedURLs` does not
+ * stop a dedicated worker's script, so each request for it is paused by the `Fetch` domain and failed. With the moving
+ * sky failed the ribbons drawn are the light sky's, and `__skyReady` is true only when they exist.
+ */
+async function caseWorkerFails(port) {
+  const page = await newPage(port)
+  let paused = 0
+  const onPaused = (event) => {
+    const msg = JSON.parse(event.data)
+    if (msg.method !== 'Fetch.requestPaused') return
+    paused++
+    page.send('Fetch.failRequest', { requestId: msg.params.requestId, errorReason: 'BlockedByClient' }).catch(() => {})
+  }
+  page.ws.addEventListener('message', onPaused)
+  try {
+    await page.send('Fetch.enable', { patterns: [{ urlPattern: '*movingSky.worker*' }] })
+    await open(page, '?arrival=0', DESKTOP, { reduced: false })
+    try {
+      await waitSkyLight(page, 10, 'a failed worker did not build the light sky')
+    } catch (error) {
+      throw new Error(`${error.message}; ${paused} worker request${paused === 1 ? '' : 's'} paused`)
+    }
+    if (!page.consoleErrors.some((text) => text.includes('[sky] moving-stroke worker failed')))
+      throw new Error(`case 10: the console lacks "[sky] moving-stroke worker failed" (${paused} worker requests paused): ${JSON.stringify(page.consoleErrors)}`)
+    const shot = await page.send('Page.captureScreenshot', { format: 'png' })
+    const file = join(outDir, 'worker-failed-1600x900.png')
+    writeFileSync(file, Buffer.from(shot.data, 'base64'))
+    console.log(`PASS 10: with the worker failed (${paused} request${paused === 1 ? '' : 's'} paused) the light sky is built and the sky is ready; ${file}`)
+  } finally {
+    page.ws.removeEventListener('message', onPaused)
+    await page.close()
+  }
+}
+
 /** `CASES=3,5` runs those cases alone, so each can be seen to fail on a build without its fix. Absent, every case runs. */
 const only = (process.env.CASES ?? '').split(',').filter(Boolean).map(Number)
 const wanted = (n) => only.length === 0 || only.includes(n)
@@ -559,6 +719,10 @@ async function main() {
     }
     if (wanted(5)) await caseOneDecode(port)
     if (wanted(6)) await casePaintingFails(port)
+    if (wanted(7)) await caseNoLightSky(port)
+    if (wanted(8)) await caseSwitchBuilds(port)
+    if (wanted(9)) await caseReducedBuilds(port)
+    if (wanted(10)) await caseWorkerFails(port)
   } finally {
     chrome.cleanup()
   }

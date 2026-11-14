@@ -1246,9 +1246,15 @@ export function PaintingFlowSky3D({ paused = false, debug = 'final', home, sky =
     const w = window as Window & { __skyReady?: boolean }
     w.__skyReady = ready
   }, [readyRef, ribbons.geometry, awaitingMoving])
+  // The checks read whether the light sky's ribbons exist as `__skyLightBuilt` (audit item 16).
+  useLayoutEffect(() => {
+    ;(window as Window & { __skyLightBuilt?: boolean }).__skyLightBuilt = geometry !== null
+  }, [geometry])
   // the seam is the mounted sky's: a sky that unmounts is not ready (Codex B6)
   useLayoutEffect(() => () => {
-    ;(window as Window & { __skyReady?: boolean }).__skyReady = false
+    const w = window as Window & { __skyReady?: boolean; __skyLightBuilt?: boolean }
+    w.__skyReady = false
+    w.__skyLightBuilt = false
   }, [])
 
   return (
