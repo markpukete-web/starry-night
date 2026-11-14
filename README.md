@@ -18,7 +18,7 @@ npm run dev
 Node 24 LTS. The build scripts are executed straight by Node (`node scripts/foo.ts`), so they need a
 Node new enough to strip TypeScript natively; Vercel builds on 24.x.
 
-### Routes and debug switches
+### Routes and switches
 
 `mode` defaults to `diorama`, which is what a visitor gets.
 
@@ -28,9 +28,17 @@ Node new enough to strip TypeScript natively; Vercel builds on 24.x.
 | `?mode=painting` | the flat 2D route — any value that is not `diorama`/`canopy`/`relief` lands here |
 | `?mode=canopy` · `?mode=relief` | earlier experiments, kept for comparison |
 | `&clean=1` | hides all visitor chrome — how captures stay comparable |
-| `&debug=nopost` · `&debug=flow` · `&debug=stage` | no post pass · sky only · foreground only |
+| `&debug=flow` · `&debug=stage` | sky only · foreground only |
 | `&view=orbit` | the orbit-preset camera instead of the home pose |
 | `&perf=1` | frame-timing probe on `window.__perf`, pipeline otherwise untouched |
+| `&sky=light` | opens on the painted-light sky instead of the moving strokes |
+| `&alive=0` | turns off the sky's gusts and breathing halos, and the pointer's surge of light with them |
+| `&touch=0` | turns off the pointer's surge of light alone |
+| `&arrival=0` · `&arrival=1` | skips the opening · always plays it (a plain visit plays it once per session) |
+| `&portal=0` | turns off the portal into the village street |
+| `&slow=1` | shows the lighter view's card at once |
+| `&tune=1` | opens the tuner for the sky's alive knobs |
+| `?street=1` | opens the village street directly. Its own switches (`station`, `walk`, `walkT`, `walkMode`, `vincent`, `grass`, `wander`, `light`) are listed with their slices in `CLAUDE.md`'s Tunables |
 
 ### Verifying
 
@@ -38,7 +46,7 @@ Node new enough to strip TypeScript natively; Vercel builds on 24.x.
 npm run lint && npm run test:sky && npm run build
 npm run check:reduced     # prefers-reduced-motion yields a still frame; the control churns
 npm run check:viewport    # camera AND visitor chrome survive a live device rotation
-npm run capture:diorama -- output/playwright/<name>   # nine deterministic views
+npm run capture:diorama -- output/playwright/<name>   # eight deterministic views
 ```
 
 `check:viewport` and `check:reduced` drive a real headless browser, because the failures they guard
@@ -83,6 +91,15 @@ accepted **unverified** — it was waived by the owner rather than measured, sin
 device frame rates; desktop sits at mean 8.33 ms / p95 ~9.1 ms. The custom domain is currently served
 through Cloudflare proxying; the earlier DNS-only (grey-cloud) plan is configuration history, not a release
 blocker.
+
+Since the release the diorama has come alive. Gusts warp the sky's clock, the cypress flickers upward and the
+village windows glimmer. A pointer pushes light along the strokes, and a visit opens on the painting with
+Vincent's line from letter 777 before it dissolves into the scene. The cypress and the land are painted with
+ribbons traced in their own flow fields.
+
+The village is also a place to walk. A click on the village, or the dock's "Enter the village", flies the camera
+into its street. There Vincent walks the lane past the cottages to the church and its square, and the grass parts
+under the hand and his feet. A phone asks before its first entry, because the street is heavy for a phone.
 
 ## Deploying
 
