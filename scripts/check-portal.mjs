@@ -20,7 +20,8 @@
  *    touch and does not enter. A drag over a house does not enter, nor one that goes out and comes back (Codex F2).
  * 8. Escape, the dock and the seam during the flight change nothing.
  * 9. The street through the portal at stop 0 against `?street=1` at stop 0, clocks pinned: byte-identical.
- * 10. A rotation in the street: enter, resize to the other aspect, leave; the pose is the saved one within 1e-6.
+ * 10. A rotation in the street: enter, resize to the other aspect, leave. The pose, the rotation and the lens are a
+ *    fresh load's at the new aspect, the pose within 1e-6 (A11, 2026-11-15).
  * 11. Three round trips leave the renderer's geometries and textures where the first left them.
  * 12. On the phone, a finger pressed and dragged over a tree adds sky surges, no land touch and no land cast, and a
  *    finger's tap on a tree adds a kick and no land touch or cast. A mouse over a tree casts and adds one (the control).
