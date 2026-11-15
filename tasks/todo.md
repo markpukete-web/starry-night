@@ -112,8 +112,8 @@ The Lead's recommendations (2026-11-15):
 
 1. Add the URL. The note exists at `https://github.com/markpukete-web/markma.dev`, at the same path (3,820 bytes). The
    repo is private, so the link works only for Mark's account. The bar is his section, so he makes the edit. Mark
-   took it ("go with your recommendations"). The edit, at `CLAUDE.md:23-24`: after "(markma.dev repo," insert
-   "https://github.com/markpukete-web/markma.dev,".
+   took it ("go with your recommendations"), then asked the Lead to make it ("can you do it for me?"). Done at
+   `CLAUDE.md:24`, on his word. That is the only edit to the bar.
 2. Keep the clause. `.gitignore` now ignores `.claude/*` and keeps `!.claude/skills/`, so a skill there is tracked and
    the worktrees and local settings stay ignored (`git check-ignore`, checked). A bare `!.claude/skills/` under
    `.claude/` would not work: git cannot re-include a path whose parent folder is excluded. No edit to CLAUDE.md is
