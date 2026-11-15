@@ -5,7 +5,7 @@ The open work, with one pickup at the top. The history up to 2026-11-15 is in `t
 2026-11-15 points into that archive, at the same line. Its unchecked boxes sit inside superseded pickups. This file
 names only what is still open.
 
-## Pickup — 2026-11-15 (13:40): H6, A11 with B8 and A19, H5 and A10 merged. The audit's remainder is done but Mark's items
+## Pickup — 2026-11-15 (13:45): the audit's remainder is merged. Only Mark's items are open
 
 Mark, about 09:30, from his phone: "Take the lead and keep tackling the rest of the items without me. Work that needs
 my eye: Can make your best judgement and I will go with your recommendations. When in doubt, discuss with our
@@ -13,11 +13,11 @@ Consultant Fable in next tab." Then: "Also item 29, delete any local leftovers t
 "Merge each slice to main once it passes your gate". The consultant is the Claude (Fable) pane `w4:p6`, in tab
 `w4:t2`.
 
-**Running:** the follow-up to the Chrome leak count, below.
+**Running:** nothing.
 
 The machine queue: one browser run at a time. The Story_Bridge session (tab w5) runs Playwright checks on this machine
-too (`tools/flash-check.mjs`). A wait sees them, and a Chrome count reads them: its Playwright "Google Chrome for
-Testing" matches `countHeadlessChromes` (`scripts/lib/chrome.mjs:143`). The
+too (`tools/flash-check.mjs`). A wait sees them. Since #61 the checks' Chrome leak count does not: it counts only the
+`starry-` profiles that `startChrome` makes. The
 machine check since 10:50 (`tasks/lessons.md`): `pgrep -fl 'vite preview|starry-night[^ ]*/node_modules/.bin/vite|--headless|remote-debugging-port=[1-9]|bin/tsc|bin/eslint|node --test'`.
 
 The 11 frames' reference since #58: `scratch/a11-gate/frames/r1.sha`. B8 changed the seven street frames at the
@@ -35,6 +35,9 @@ or drag in the sky, the portal and the street) merged as `68a1c2b` at 13:35, PR 
 `tasks/2026-11-15-a10-tap-rule.md`, the Lead's gate `scratch/a10-gate/gate.out`. Codex reviewed `ae2c7be`, the head,
 with no findings, and CI passed all four checks. The walk check passed all 22 cases in three runs. Each run's last line
 failed on the leak count, and the third run listed the two it counted: the Story_Bridge session's Playwright Chrome.
+The leak count's fix merged as `39bcae2` at 13:44, PR #61: `countHeadlessChromes` matches the `starry-` profile
+folders only, and `startChrome` refuses another prefix. Its gate is `scratch/leak-gate/gate.out`: the walk check
+exited 0 with the Playwright Chrome running during it. Codex reviewed `7a03564`, the head, with no findings.
 
 **Mark's calls, decided on his word by the Lead's recommendation (09:30):**
 
@@ -76,10 +79,7 @@ the reference studies (`village-study`, `simon-lee-study`, `simon-village`, `vil
 `ref`), `output/walk-end` and the small loose files. `scratch/` went from 11 GB to 1.2 GB, `output/` from 3.2 GB to
 9.8 MB. The stash and `t4/` were already gone. The two spike branches exist only on GitHub, so they stay.
 
-**Next, in order:**
-
-1. The leak count counts only this project's Chromes: `countHeadlessChromes` matches the profile folders that
-   `startChrome` makes, not every `Chrome.*headless` process. A small PR, gated with a planted leak.
+**Next:** nothing that does not need Mark.
 
 **For Mark when he is back:**
 
