@@ -31,7 +31,7 @@ each mutant fails on its own assert. Codex reviewed `210ad15`, the head, with no
 module, D16) merged as `4239df6` at 12:00, PR #59. The Lead's gate is `scratch/h5-gate/gate.out`. Codex's one finding
 (P2, a failed browser start left the script's own Vite server running) is fixed in `980a614`, proved red then green,
 and answered in its thread. The worker's logs moved to `scratch/briefs-2026-11-15/h5b/logs/`. A10 (one rule for tap
-or drag in the sky, the portal and the street) merged as `68a1c2b` at 13:36, PR #60. The record is
+or drag in the sky, the portal and the street) merged as `68a1c2b` at 13:35, PR #60. The record is
 `tasks/2026-11-15-a10-tap-rule.md`, the Lead's gate `scratch/a10-gate/gate.out`. Codex reviewed `ae2c7be`, the head,
 with no findings, and CI passed all four checks. The walk check passed all 22 cases in three runs. Each run's last line
 failed on the leak count, and the third run listed the two it counted: the Story_Bridge session's Playwright Chrome.
