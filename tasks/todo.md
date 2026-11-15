@@ -5,24 +5,35 @@ The open work, with one pickup at the top. The history up to 2026-11-15 is in `t
 2026-11-15 points into that archive, at the same line. Its unchecked boxes sit inside superseded pickups. This file
 names only what is still open.
 
-## Pickup — 2026-11-15 (10:00): Mark hands over the audit's remainder, and H6, H5 step 2 and A11 with B8 run
+## Pickup — 2026-11-15 (10:30): H6 merged, H5 Phase A proves, A10 builds
 
 Mark, about 09:30, from his phone: "Take the lead and keep tackling the rest of the items without me. Work that needs
 my eye: Can make your best judgement and I will go with your recommendations. When in doubt, discuss with our
-Consultant Fable in next tab." Then: "Also item 29, delete any local leftovers that are no longer needed". The
-consultant is the Claude (Fable) pane `w4:p6`, in tab `w4:t2`.
+Consultant Fable in next tab." Then: "Also item 29, delete any local leftovers that are no longer needed". At 09:54:
+"Merge each slice to main once it passes your gate". The consultant is the Claude (Fable) pane `w4:p6`, in tab
+`w4:t2`.
 
 **Running:**
 
-- H6 (C-08, B6 with C-09, B7, A6): the Opus `builder` subagent, branch `fix/h6-street-faults` from `3aeec19`, brief
-  `scratch/briefs-2026-11-15/h6-street-faults.md`. It has two commits (`6eb9f9d` C-08, `00f8da8` B7).
 - H5 step 2, Phase A: Hydrogen (`w4:p5`), worktree `/Users/markma/Projects/starry-night-h5`, branch
-  `refactor/h5-chrome-module` from `3aeec19`. Brief `scratch/briefs-2026-11-15/h5-step2-chrome-module.md`. Phase B
-  (`check-failure-paths.mjs` and `check-portal.mjs`) starts on the Lead's word, after H6 merges.
+  `refactor/h5-chrome-module` from `3aeec19`, ten scripts moved. It runs its proofs. Brief
+  `scratch/briefs-2026-11-15/h5-step2-chrome-module.md`, report `scratch/briefs-2026-11-15/h5b/report-a.md`. The H6
+  builder's unit mutants ran beside H5's frames at about 10:00, so read r1 against r2 before trusting them. Phase B
+  (`check-failure-paths.mjs` and `check-portal.mjs`) starts on the Lead's word after Phase A's gate, rebased onto
+  `db2b500`.
+- A10, one tap-or-drag rule: the plan `scratch/briefs-2026-11-15/a10/plan.md`, read by Fable
+  (`a10/fable-answer.md`, "VERDICT: build all", 19 findings). The Lead's call: all three surfaces, the stale-press
+  replacement kept, no threshold changed. An Opus builder subagent builds phase 1 (code and unit tests, no browser),
+  brief `scratch/briefs-2026-11-15/a10-build.md`, report `a10/build/report-1.md`. Phase 2 (the browser reds, the
+  mutants) runs on the Lead's word, rebased onto `main` after H5.
 - A11 and B8: the Lead, worktree `/Users/markma/Projects/starry-night-a11`, branch `fix/a11-b8-way-back-fireflies`
-  from `3aeec19`, commits `7344605` and `15fcd1e`. The proof waits for a free machine.
+  from `3aeec19`, commits `7344605`, `15fcd1e` and `b9f86c0` (A19). The proof waits for a free machine (`scratch/a11-b8/set.sh`).
 
-**Done today:** item 29 and item 28 (this file).
+The machine queue: one browser run at a time. H5 Phase A, then A11 with B8's proof, then H5 Phase B, then A10 phase 2.
+
+**Done today:** item 29, item 28 (this file), and H6. H6 (C-08, B6 with C-09, B7, A6) merged as `db2b500` at 10:26,
+PR #57. The Lead's gate is `scratch/h6-gate/gate.out`. Codex reviewed `b311911`, the head, with no findings, and CI
+passed all four checks.
 
 **Mark's calls, decided on his word by the Lead's recommendation (09:30):**
 
@@ -42,6 +53,19 @@ consultant is the Claude (Fable) pane `w4:p6`, in tab `w4:t2`.
   the 500 ms after a navigation guard against the old page's seams, and the 1,000 ms waits come before negative
   asserts. D6 keeps the reject and drops the timeout. No check times out `send` today, and a cap would cut the long
   awaited evaluations.
+
+**The rest of item 17, routed by the Lead (10:20):**
+
+- A19, the portal layer's held frame: built on the A11 branch (`b9f86c0`). The fade sets the layer's width to 0 when it
+  hides it. `check-portal.mjs`'s `enterAndSettle` asserts it on every entry.
+- A7, the light material rebuilt on each pause: no change. Its `paused` is `reduced` (`DioramaExperience.tsx:628`), so
+  it rebuilds only when the visitor changes the system's reduced-motion setting.
+- A18, a still scene that redraws every frame: no change now. A frame loop on demand touches every animated path (the
+  arrival, the flight, the alive clock). The gain is battery on the still state only.
+- B14, C-11 and A20, the frame-loop allocations: no change. No profile shows a collection pause on the walk. They
+  come back if a phone trace shows one.
+- B5, the trail upload, and C-07, `inFootprint`'s 89 ms in the street's build: parked with item 30's finding 3. A
+  desktop's frame time does not show a phone's upload cost, so each needs Mark's phone with `?perf=1` first.
 
 **Item 29, the leftovers:** 10,898 old capture images (13.98 GB) moved from 52 folders in `scratch/` and from
 `output/playwright` and `output/review-2026-07-22` to `~/.Trash/starry-night-leftovers-2026-11-15`. Every brief,
