@@ -83,15 +83,16 @@ the reference studies (`village-study`, `simon-lee-study`, `simon-village`, `vil
 
 **Next:** nothing that does not need Mark.
 
-**For Mark when he is back:**
+**Mark's answers, 2026-11-15 afternoon:**
 
-- First: ten taps on the sky on his phone, at https://starrynight.markma.dev/, and whether each kicks. A10 is live
-  there since 13:35. Production is now `39bcae2`, and its bundle carries A10's latch. A finger that wobbles more than
-  8 px and back was a tap and is now a drag. If real taps stop kicking, the Lead proposes reverting #60's sky change.
-- The walk end's look, on #55's preview link (sent 08:50).
-- Item 30's finding 3, on his phone, with a `?perf=1` trace on the walk for B5 and C-07.
-- The two proposals for his sections of `CLAUDE.md`, below.
-- The Trash folder above holds 14 GB. Empty it when you are content that nothing in it is needed.
+- A10's ten taps on the sky, on his phone at the live site: "Tab kicks". Passed.
+- The walk end (#55), its head turning back before the body at stop 4: "I couldn't tell the difference". It does not
+  show. Closed.
+- `?perf=1` on the walk, on his phone: "60". B5 (the trail upload) is closed with no change: the walk shows no upload
+  cost. Finding 3's start-up dip and first-try load failures, and C-07 (a build cost, not a walk cost), are not answered
+  by a settled reading. The Lead recommends closing them unless Mark has seen a slow start or a failed open since.
+- Item 23's proposals: he asked for recommendations, below.
+- The Trash: emptied.
 
 ## Proposed edits to CLAUDE.md (audit item 23, Mark applies them)
 
@@ -104,6 +105,15 @@ Two of item 23's four claims hold on 2026-11-15. The other two are already fixed
 2. **"its own skills in `.claude/skills/`"** (Self-improvement rules). `.gitignore:27` ignores `.claude/`, and no
    `.claude/skills/` exists, so a skill there would never be tracked. Proposed: either drop the clause, or add
    `!.claude/skills/` to `.gitignore` so that skills there are tracked.
+
+The Lead's recommendations (2026-11-15):
+
+1. Add the URL. The note exists at `https://github.com/markpukete-web/markma.dev`, at the same path (3,820 bytes). The
+   repo is private, so the link works only for Mark's account. The bar is his section, so he makes the edit.
+2. Keep the clause. `.gitignore` now ignores `.claude/*` and keeps `!.claude/skills/`, so a skill there is tracked and
+   the worktrees and local settings stay ignored (`git check-ignore`, checked). A bare `!.claude/skills/` under
+   `.claude/` would not work: git cannot re-include a path whose parent folder is excluded. No edit to CLAUDE.md is
+   needed.
 
 ## Parked ideas (scope growth: do not build without Mark)
 
