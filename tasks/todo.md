@@ -83,10 +83,11 @@ the reference studies (`village-study`, `simon-lee-study`, `simon-village`, `vil
 
 **For Mark when he is back:**
 
+- First: ten taps on the sky on his phone, at https://starrynight.markma.dev/, and whether each kicks. A10 is live
+  there since 13:35. Production is now `39bcae2`, and its bundle carries A10's latch. A finger that wobbles more than
+  8 px and back was a tap and is now a drag. If real taps stop kicking, the Lead proposes reverting #60's sky change.
 - The walk end's look, on #55's preview link (sent 08:50).
 - Item 30's finding 3, on his phone, with a `?perf=1` trace on the walk for B5 and C-07.
-- A10: ten taps on the sky on his phone, on PR #60's preview link, and whether each kicks. A finger that wobbles more than
-  8 px and back was a tap and is now a drag.
 - The two proposals for his sections of `CLAUDE.md`, below.
 - The Trash folder above holds 14 GB. Empty it when you are content that nothing in it is needed.
 
