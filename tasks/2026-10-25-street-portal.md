@@ -120,6 +120,9 @@ that turns red without its fix (`t9/mutants.txt`), except F5, which is checked b
   Fixed: the portal's own move listener marks a press as a drag once it moves past `TOUCH_SURGE.tapPx`, for touch too,
   before the touch return. The sky's surge keeps its own classifier, as Codex advised. Case 7 now drags 24 px out and
   back within 300 ms over a house, with no entry. Without the latch, case 7 fails on that drag.
+  2026-11-15, A10: the sky's own classifier is reversed. The sky, the portal and the street now share one rule,
+  `classifyGesture` in `touchSurge.ts`, with the latch read over every coalesced sample. A flick out and back on the sky
+  no longer kicks. The record is `tasks/2026-11-15-a10-tap-rule.md`.
 - **F3, P2: system reduced motion turned on mid-flight leaves the flight and the drift running.** It holds. Fixed: the
   flying branch takes `still` as the flight's end. It copies the frame on screen with no drift and sends `flown`. A
   media rule pauses a held frame's drift where it is, so it does not jump back. `still` is the system preference only
