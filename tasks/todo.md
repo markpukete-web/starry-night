@@ -90,7 +90,9 @@ the reference studies (`village-study`, `simon-lee-study`, `simon-village`, `vil
   show. Closed.
 - `?perf=1` on the walk, on his phone: "60". B5 (the trail upload) is closed with no change: the walk shows no upload
   cost. Finding 3's start-up dip and first-try load failures, and C-07 (a build cost, not a walk cost), are not answered
-  by a settled reading. The Lead recommends closing them unless Mark has seen a slow start or a failed open since.
+  by a settled reading. The Lead recommended closing them, and Mark: "Close them, go with your recommendations".
+  Closed with no change. Finding 4 (pixel ratio 2 in the street) stays parked: the street holds 60 at 1.5 on his phone,
+  and a ratio of 2 draws 78% more pixels there.
 - Item 23's proposals: he asked for recommendations, below.
 - The Trash: emptied.
 
@@ -109,7 +111,9 @@ Two of item 23's four claims hold on 2026-11-15. The other two are already fixed
 The Lead's recommendations (2026-11-15):
 
 1. Add the URL. The note exists at `https://github.com/markpukete-web/markma.dev`, at the same path (3,820 bytes). The
-   repo is private, so the link works only for Mark's account. The bar is his section, so he makes the edit.
+   repo is private, so the link works only for Mark's account. The bar is his section, so he makes the edit. Mark
+   took it ("go with your recommendations"). The edit, at `CLAUDE.md:23-24`: after "(markma.dev repo," insert
+   "https://github.com/markpukete-web/markma.dev,".
 2. Keep the clause. `.gitignore` now ignores `.claude/*` and keeps `!.claude/skills/`, so a skill there is tracked and
    the worktrees and local settings stay ignored (`git check-ignore`, checked). A bare `!.claude/skills/` under
    `.claude/` would not work: git cannot re-include a path whose parent folder is excluded. No edit to CLAUDE.md is
