@@ -21,7 +21,8 @@ field; the invented back — which a flat painting cannot supply — continues t
 
 Prior art to study — study, never copy implementation or assets: Petros Vrellis' interactive
 Starry Night (flow-field brushstroke animation); the Techartist time-dial diorama (markma.dev
-repo, `docs/superpowers/references/2026-06-12-techartist-time-dial-diorama.md`) for the
+repo, https://github.com/markpukete-web/markma.dev,
+`docs/superpowers/references/2026-06-12-techartist-time-dial-diorama.md`) for the
 preset-switch interaction shape, which is Phase 2 material at the earliest.
 
 ## Operating mode — autonomous, self-improving (decided 2026-06-13)
