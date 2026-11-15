@@ -183,7 +183,11 @@ function chromeFaults(r) {
 async function main() {
   const vite = await startViteIfNeeded(appUrl, appPort)
   const port = debugPort('check-viewport-camera')
-  const chrome = await startChrome({ port, prefix: 'starry-viewport-' })
+  const chrome = await startChrome({ port, prefix: 'starry-viewport-' }).catch((err) => {
+    // a browser that never comes up must not leave this script's own server on the port (Codex, PR #59 P2)
+    if (vite) vite.kill()
+    throw err
+  })
   const errors = []
   const results = []
   try {

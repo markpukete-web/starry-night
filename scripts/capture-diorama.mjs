@@ -135,6 +135,10 @@ async function main() {
     port,
     prefix: 'starry-diorama-chrome-',
     flags: unlocked ? ['--disable-gpu-vsync', '--disable-frame-rate-limit'] : [],
+  }).catch((err) => {
+    // a browser that never comes up must not leave this script's own server on the port (Codex, PR #59 P2)
+    if (vite) vite.kill()
+    throw err
   })
   const errors = []
   const captures = []

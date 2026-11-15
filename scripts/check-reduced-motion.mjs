@@ -75,7 +75,11 @@ async function pair(page, prefix) {
 async function main() {
   const vite = await startViteIfNeeded(appUrl, appPort)
   const port = debugPort('check-reduced-motion')
-  const chrome = await startChrome({ port, prefix: 'starry-reduced-chrome-' })
+  const chrome = await startChrome({ port, prefix: 'starry-reduced-chrome-' }).catch((err) => {
+    // a browser that never comes up must not leave this script's own server on the port (Codex, PR #59 P2)
+    if (vite) vite.kill()
+    throw err
+  })
   // Set the route on top of any query already in DIORAMA_CAPTURE_URL (e.g. ?sky=moving). Appending
   // "?mode=…" to such a URL made sky = "moving?mode=diorama", so the check silently ran the default sky.
   const baseUrl = new URL(appUrl)
