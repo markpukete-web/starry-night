@@ -485,7 +485,6 @@ async function main() {
         await A10[name](page)
       }
       if (page.errors.length) throw new Error(`page errors:\n  ${page.errors.join('\n  ')}`)
-      page.ws.close()
       console.log(`PASS (CASES=${only.join(',')} only)`)
       return
     }
