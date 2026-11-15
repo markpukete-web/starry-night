@@ -523,3 +523,8 @@ The full history, 2026-06-13 to 2026-10-30, is in `tasks/archive/2026-10-30-less
   `pgrep -fl 'vite preview|starry-night[^ ]*/node_modules/.bin/vite|--headless|remote-debugging-port=[1-9]|bin/tsc|bin/eslint|node --test'`. 2026-11-15
 - Codex's `codex-review-state` comment holds nested JSON. A non-greedy match to the first `}` cut it, and a PR waiter
   never saw "completed". Match to the closing `-->`. 2026-11-15
+- The checks' leak count (`countHeadlessChromes`, `scripts/lib/chrome.mjs`) matches every `Chrome.*headless` process
+  on the machine. Playwright's "Google Chrome for Testing", which the Story_Bridge session runs, matches too. A10's
+  walk check passed all 22 cases twice and failed its last line twice: "before=0, after=2". Both times the two were
+  that Chrome, started after the check began. A free machine before the run does not prove a free machine during it.
+  Before a leak line counts as red, list the processes: `pgrep -fl 'Chrome.*headless'`. 2026-11-15
