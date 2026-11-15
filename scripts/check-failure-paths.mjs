@@ -35,22 +35,20 @@
  * 18. `?clean=1&slow=1` has the lighter view's card in the page and hidden; `?slow=1` shows it (A6, H6).
  * Cases 7 to 10 run against the production build (`vite preview`) as well as the dev server.
  * `CASES=3,5` runs those cases alone.
- * Each case prints PASS or throws; the run exits 1 on the first failure. The Chrome launcher and the CDP page are
- * copied from `check-portal.mjs`, which exports neither. The screenshots go to the folder named, by default
- * `output/failure-paths`.
+ * Each case prints PASS or throws; the run exits 1 on the first failure. The screenshots go to the folder named, by
+ * default `output/failure-paths`.
  */
-import { execSync, spawn } from 'node:child_process'
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { PerspectiveCamera, Vector3 } from 'three'
+import { countHeadlessChromes, debugPort, openPage, PORTS, startChrome } from './lib/chrome.mjs'
 import { encodePNG } from './lib/png.ts'
 import { ARRIVAL_CUE, FAILED_LINE, RETRY_LABEL, VINCENTS_CITE } from '../src/scene/arrival.ts'
 import { vincentPlace } from '../src/scene/streetLayout.ts'
 import { WALK } from '../src/scene/streetWalk.ts'
 import { hidden, initialWander, standable, wanderTo } from '../src/scene/streetWander.ts'
 
-const appUrl = process.env.DIORAMA_CAPTURE_URL || 'http://127.0.0.1:5197/'
+const appUrl = process.env.DIORAMA_CAPTURE_URL || `http://127.0.0.1:${PORTS['check-failure-paths'].app}/`
 const origin = new URL(appUrl).origin
 const DESKTOP = { width: 1600, height: 900, deviceScaleFactor: 1, mobile: false }
 const PHONE = { width: 390, height: 844, deviceScaleFactor: 1, mobile: true }
@@ -64,134 +62,24 @@ const OWN_MESSAGE = 'failed to draw its scene'
  */
 const REDUCED = Boolean(process.env.REDUCED)
 
-const chromePath =
-  process.env.CHROME_PATH ||
-  ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser'].find((path) =>
-    existsSync(path),
-  )
-if (!chromePath) {
-  console.error('No Chrome-compatible browser found. Set CHROME_PATH.')
-  process.exit(1)
-}
-
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
-const countHeadlessChromes = () => {
-  try {
-    return parseInt(execSync("pgrep -fl 'Chrome.*headless' 2>/dev/null | wc -l", { encoding: 'utf8' }).trim(), 10) || 0
-  } catch {
-    return 0
-  }
-}
-
-function startChrome(port) {
-  const userDataDir = mkdtempSync(join(tmpdir(), 'starry-failure-'))
-  const child = spawn(
-    chromePath,
-    [
-      '--headless=new',
-      ...(process.env.CHROME_FLAGS ?? '').split(/\s+/).filter(Boolean),
-      '--hide-scrollbars',
-      '--mute-audio',
-      '--disable-background-networking',
-      '--disable-sync',
-      '--disable-extensions',
-      '--no-first-run',
-      '--no-default-browser-check',
-      `--user-data-dir=${userDataDir}`,
-      `--remote-debugging-port=${port}`,
-      'about:blank',
-    ],
-    { stdio: ['ignore', 'ignore', 'ignore'] },
-  )
-  return {
-    cleanup() {
-      child.kill()
-      rmSync(userDataDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 300 })
-    },
-  }
-}
-
-async function waitForChrome(port) {
-  const start = Date.now()
-  while (Date.now() - start < 20000) {
-    try {
-      if ((await fetch(`http://127.0.0.1:${port}/json/version`)).ok) return
-    } catch {
-      /* wait */
-    }
-    await sleep(150)
-  }
-  throw new Error('Chrome DevTools endpoint did not become ready')
-}
-
-class CdpPage {
-  constructor(wsUrl) {
-    this.wsUrl = wsUrl
-    this.seq = 0
-    this.pending = new Map()
-    this.errors = []
-    // every console.error's text, for the failed page's own message
-    this.consoleErrors = []
-  }
-  async connect() {
-    this.ws = new WebSocket(this.wsUrl)
-    this.ws.addEventListener('message', (event) => {
-      const message = JSON.parse(event.data)
-      if (message.id && this.pending.has(message.id)) {
-        const { resolve, reject } = this.pending.get(message.id)
-        this.pending.delete(message.id)
-        if (message.error) reject(new Error(message.error.message))
-        else resolve(message.result)
-      } else if (message.method === 'Runtime.exceptionThrown') {
-        this.errors.push(message.params.exceptionDetails?.exception?.description || message.params.exceptionDetails?.text || 'runtime exception')
-      } else if (message.method === 'Runtime.consoleAPICalled' && message.params.type === 'error') {
-        this.consoleErrors.push(message.params.args.map((a) => a.value ?? a.description ?? '').join(' '))
-      }
-    })
-    await new Promise((resolve, reject) => {
-      this.ws.addEventListener('open', resolve, { once: true })
-      this.ws.addEventListener('error', reject, { once: true })
-    })
-    await this.send('Page.enable')
-    await this.send('Runtime.enable')
-    await this.send('Network.enable')
-  }
-  send(method, params = {}) {
-    const id = ++this.seq
-    this.ws.send(JSON.stringify({ id, method, params }))
-    return new Promise((resolve, reject) => this.pending.set(id, { resolve, reject }))
-  }
-  async evaluate(expression) {
-    const res = await this.send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true })
-    if (res.exceptionDetails) throw new Error(`Evaluation failed: ${res.exceptionDetails.exception?.description ?? res.exceptionDetails.text}`)
-    return res.result?.value
-  }
-  async waitFor(expression, timeoutMs = 30000, what = expression) {
-    const start = Date.now()
-    for (;;) {
-      if (await this.evaluate(`Boolean(${expression})`)) return
-      if (Date.now() - start > timeoutMs) throw new Error(`timed out after ${timeoutMs} ms waiting for ${what}`)
-      await sleep(100)
-    }
-  }
-  /** a press and a release of one mouse button at a point, 50 ms apart: a tap's timing */
-  async click(x, y, button = 'left') {
-    const buttons = { left: 1, right: 2, middle: 4 }[button]
-    await this.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, button: 'none', buttons: 0 })
-    await this.send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button, buttons, clickCount: 1 })
-    await sleep(50)
-    await this.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button, buttons: 0, clickCount: 1 })
-  }
-}
 
 async function newPage(port) {
-  const target = await (await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: 'PUT' })).json()
-  const page = new CdpPage(target.webSocketDebuggerUrl)
-  await page.connect()
-  // one live tab at a time: a tab left open keeps its scene drawing under the next case
-  page.close = async () => {
-    page.ws.close()
-    await fetch(`http://127.0.0.1:${port}/json/close/${target.id}`)
+  const page = await openPage(port, { domains: ['Page', 'Runtime', 'Network'] })
+  // every console.error's text, for the failed page's own message
+  page.consoleErrors = []
+  page.on('Runtime.consoleAPICalled', (params) => {
+    if (params.type === 'error') {
+      page.consoleErrors.push(params.args.map((a) => a.value ?? a.description ?? '').join(' '))
+    }
+  })
+  /** a press and a release of one mouse button at a point, 50 ms apart: a tap's timing */
+  page.click = async (x, y, button = 'left') => {
+    const buttons = { left: 1, right: 2, middle: 4 }[button]
+    await page.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, button: 'none', buttons: 0 })
+    await page.send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button, buttons, clickCount: 1 })
+    await sleep(50)
+    await page.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button, buttons: 0, clickCount: 1 })
   }
   return page
 }
@@ -423,19 +311,18 @@ async function caseFailed(port, name, query, viewport) {
       const prevConsoleErrors = page.consoleErrors.length
       await page.evaluate('window.__beforeReload = true')
       const loaded = new Promise((resolve, reject) => {
+        let done = false
         const timer = setTimeout(() => {
-          page.ws.removeEventListener('message', onMsg)
+          if (done) return
+          done = true
           reject(new Error(`case 3 (${name}, ${size}): timed out waiting for reload after clicking retry`))
         }, 10000)
-        function onMsg(event) {
-          const msg = JSON.parse(event.data)
-          if (msg.method === 'Page.loadEventFired') {
-            clearTimeout(timer)
-            page.ws.removeEventListener('message', onMsg)
-            resolve()
-          }
-        }
-        page.ws.addEventListener('message', onMsg)
+        page.on('Page.loadEventFired', () => {
+          if (done) return
+          done = true
+          clearTimeout(timer)
+          resolve()
+        })
       })
       await page.click(state.buttonCentre.x, state.buttonCentre.y, 'left')
       await loaded
@@ -678,13 +565,10 @@ async function caseReducedBuilds(port) {
 async function caseWorkerFails(port) {
   const page = await newPage(port)
   let paused = 0
-  const onPaused = (event) => {
-    const msg = JSON.parse(event.data)
-    if (msg.method !== 'Fetch.requestPaused') return
+  page.on('Fetch.requestPaused', (params) => {
     paused++
-    page.send('Fetch.failRequest', { requestId: msg.params.requestId, errorReason: 'BlockedByClient' }).catch(() => {})
-  }
-  page.ws.addEventListener('message', onPaused)
+    page.send('Fetch.failRequest', { requestId: params.requestId, errorReason: 'BlockedByClient' }).catch(() => {})
+  })
   try {
     await page.send('Fetch.enable', { patterns: [{ urlPattern: '*movingSky.worker*' }] })
     await open(page, '?arrival=0', DESKTOP, { reduced: false })
@@ -723,7 +607,6 @@ async function caseWorkerFails(port) {
     writeFileSync(file, Buffer.from(shot.data, 'base64'))
     console.log(`PASS 10: with the worker failed (${paused} request${paused === 1 ? '' : 's'} paused) the light sky is built, the sky is ready, and the button reads "${button.text}"; ${file}`)
   } finally {
-    page.ws.removeEventListener('message', onPaused)
     await page.close()
   }
 }
@@ -747,13 +630,12 @@ const RED_PNG = encodePNG(160, 127, new Uint8Array(160 * 127 * 4).map((_, i) => 
 async function caseStreetFails(port, n, what, query, line, { fulfil, blocked } = {}) {
   const page = await newPage(port)
   let answered = 0
-  const onPaused = (event) => {
-    const msg = JSON.parse(event.data)
-    if (msg.method !== 'Fetch.requestPaused') return
-    answered++
-    page.send('Fetch.fulfillRequest', { requestId: msg.params.requestId, responseCode: 200, responseHeaders: [{ name: 'Content-Type', value: fulfil.type }], body: fulfil.body }).catch(() => {})
+  if (fulfil) {
+    page.on('Fetch.requestPaused', (params) => {
+      answered++
+      page.send('Fetch.fulfillRequest', { requestId: params.requestId, responseCode: 200, responseHeaders: [{ name: 'Content-Type', value: fulfil.type }], body: fulfil.body }).catch(() => {})
+    })
   }
-  page.ws.addEventListener('message', onPaused)
   try {
     if (fulfil) await page.send('Fetch.enable', { patterns: [{ urlPattern: fulfil.pattern }] })
     if (blocked) {
@@ -774,7 +656,6 @@ async function caseStreetFails(port, n, what, query, line, { fulfil, blocked } =
       throw new Error(`case ${n}: ${what}: the console holds ${lines.length} [street] lines, not one matching ${line} ${summary}`)
     console.log(`PASS ${n}: ${what} logs ${JSON.stringify(lines[0].slice(0, 160))}, the street settled with nothing drawn and the sky up`)
   } finally {
-    page.ws.removeEventListener('message', onPaused)
     await page.close()
   }
 }
@@ -842,15 +723,17 @@ const wanted = (n) => only.length === 0 || only.includes(n)
 async function main() {
   mkdirSync(outDir, { recursive: true })
   const chromesBefore = countHeadlessChromes()
-  const port = 9300 + Math.floor(Math.random() * 300)
-  const chrome = startChrome(port)
+  const port = debugPort('check-failure-paths')
+  const chrome = await startChrome({ port, prefix: 'starry-failure-' })
   try {
-    await waitForChrome(port)
     const page = await newPage(port)
-    if (wanted(1)) await caseStreetButtons(page)
-    if (wanted(2)) await caseDioramaButtons(page)
-    if (page.errors.length) throw new Error(`page errors in cases 1 and 2:\n  ${page.errors.join('\n  ')}`)
-    await page.close()
+    try {
+      if (wanted(1)) await caseStreetButtons(page)
+      if (wanted(2)) await caseDioramaButtons(page)
+      if (page.errors.length) throw new Error(`page errors in cases 1 and 2:\n  ${page.errors.join('\n  ')}`)
+    } finally {
+      await page.close()
+    }
     for (const viewport of [DESKTOP, PHONE]) {
       for (const [name, query] of VISITS) {
         if (wanted(3)) await caseFailed(port, name, query, viewport)
@@ -867,7 +750,7 @@ async function main() {
     if (wanted(17)) await caseStreetControl(port)
     if (wanted(18)) await caseCleanCard(port)
   } finally {
-    chrome.cleanup()
+    await chrome.close()
   }
   await sleep(500)
   const chromesAfter = countHeadlessChromes()
