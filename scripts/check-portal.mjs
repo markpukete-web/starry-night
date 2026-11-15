@@ -18,6 +18,12 @@
  *    turned on mid-flight ends the flight at once with no drift, and it pauses a held frame's drift (Codex F3).
  * 7. A tap on a house enters and adds no sky surge (a tap on the sky does: the control). A tap on a tree adds a land
  *    touch and does not enter. A drag over a house does not enter, nor one that goes out and comes back (Codex F2).
+ *    A10, the one tap rule (tasks/2026-11-15-a10-tap-rule.md), each part on its own page after case 7. 7b: a mouse out
+ *    and back on the sky adds no kick. 7c: one folded into one move over a house does not enter. 7d: after a mouse's
+ *    lost release a tap on a house enters. 7e: after a lost release on a tree a tap on the sky kicks, its hold released.
+ *    12b: on a phone a two-finger tap kicks nothing and asks nothing. 12c: after a finger's lost release and a tab
+ *    switch a tap on a house asks. 12d: after a finger's lost release on the sky a tap kicks. A part whose gesture spans
+ *    more than the tap's 300 ms by the events' own times fails as invalid. `CASES=7b,12c` runs only the parts named.
  * 8. Escape, the dock and the seam during the flight change nothing.
  * 9. The street through the portal at stop 0 against `?street=1` at stop 0, clocks pinned: byte-identical.
  * 10. A rotation in the street: enter, resize to the other aspect, leave. The pose, the rotation and the lens are a
@@ -41,6 +47,7 @@ import { countHeadlessChromes, debugPort, openPage, PORTS, startChrome } from '.
 import { DIORAMA_CAMERAS, portraitFov } from '../src/scene/dioramaContract.ts'
 import { vincentPlace } from '../src/scene/streetLayout.ts'
 import { initialWander, wanderTo } from '../src/scene/streetWander.ts'
+import { TOUCH_SURGE } from '../src/scene/touchSurge.ts'
 
 const appUrl = process.env.DIORAMA_CAPTURE_URL || `http://127.0.0.1:${PORTS['check-portal'].app}/`
 const origin = new URL(appUrl).origin
@@ -174,6 +181,267 @@ async function enterAndSettle(page, action) {
   return rec
 }
 
+// ---- A10, the one tap rule (tasks/2026-11-15-a10-tap-rule.md): case 7's and case 12's new parts, each on its own page
+
+/** Arms the record of the events' own times: a capture listener on window, kept for the page's life. */
+const SPAN_ARM = `(() => { window.__span = []; if (window.__spanOn) return; window.__spanOn = true; for (const type of ['pointerdown', 'pointerup']) window.addEventListener(type, (e) => window.__span.push({ type, id: e.pointerId, ms: e.timeStamp }), { capture: true, passive: true }) })()`
+
+/**
+ * The gesture's span by its events: the first press after the arm, and the last release of its pointer. Today's rule
+ * times the gesture too, so a part whose span is over the tap's time proves nothing and fails as invalid (the read's
+ * finding 4: other agents' runs on this machine can slow the sends).
+ */
+async function quick(page, name) {
+  const span = await page.evaluate('window.__span')
+  const down = span.find((e) => e.type === 'pointerdown')
+  const up = down && span.findLast((e) => e.type === 'pointerup' && e.id === down.id)
+  if (!up) throw new Error(`${name}: invalid, the page saw no press and release of one pointer (${JSON.stringify(span)})`)
+  const ms = up.ms - down.ms
+  if (ms > TOUCH_SURGE.tapMs) throw new Error(`${name}: invalid, the gesture spanned ${ms.toFixed(0)} ms by its events, over the tap's ${TOUCH_SURGE.tapMs} ms`)
+  return ms
+}
+
+/** A press whose release never comes, as a lost release leaves one: a synthetic pointerdown on the scene's canvas. */
+const lostPress = (page, x, y, pointerType, pointerId) =>
+  page.evaluate(`document.querySelector('canvas').dispatchEvent(new PointerEvent('pointerdown', { pointerId: ${pointerId}, pointerType: '${pointerType}', isPrimary: true, button: 0, buttons: 1, clientX: ${x}, clientY: ${y}, bubbles: true, cancelable: true, composed: true }))`)
+
+/** The fake finger's cancel, so it leaves no pointer in OrbitControls' list (the read's finding 6). */
+const cancelFake = (page, pointerId) => page.evaluate(`window.dispatchEvent(new PointerEvent('pointercancel', { pointerId: ${pointerId}, pointerType: 'touch', isPrimary: true, bubbles: true }))`)
+
+/** The mouse's pointerId, read from the next real press (the read's finding 11). */
+const MOUSE_ID = `window.__pid = null; window.addEventListener('pointerdown', (e) => { window.__pid = e.pointerId }, { once: true })`
+
+/** The tab switch's stand-in: `document.hidden` true, then false, each with its `visibilitychange`, then the page's own again. */
+const TAB_SWITCH = `(() => {
+  const set = (hidden) => {
+    Object.defineProperty(document, 'hidden', { configurable: true, get: () => hidden })
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => (hidden ? 'hidden' : 'visible') })
+    document.dispatchEvent(new Event('visibilitychange'))
+  }
+  set(true)
+  set(false)
+  delete document.hidden
+  delete document.visibilityState
+  return document.hidden
+})()`
+
+/** A sky point on a phone: on the canvas, in the top of the view, and neither village nor land. */
+const SKY_SPOT = `(() => { const c = document.querySelector('canvas'); for (let y = innerHeight * 0.12; y < innerHeight * 0.4; y += 12) for (let x = innerWidth * 0.3; x < innerWidth * 0.9; x += 12) if (document.elementFromPoint(x, y) === c && window.__portalPick(x, y) === null) return [Math.round(x), Math.round(y)]; return null })()`
+
+const kicksOf = (page) => page.evaluate('window.__touchState().kicks.length')
+const card = (page) => page.evaluate(`document.querySelector('.visitor-ask')?.textContent ?? ''`)
+const stay = (page) => page.evaluate(`document.querySelector('button[aria-label="Stay with the painting"]').click()`)
+const fingerTap = async (page, x, y) => {
+  await page.touch('touchStart', x, y)
+  await sleep(50)
+  await page.touch('touchEnd')
+}
+/** Two fingers down and up within 100 ms: the second lands 20 px from the first, and one touchEnd lifts both. */
+const twoFingerTap = async (page, x, y) => {
+  await page.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 0 }] })
+  await page.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 0 }, { x: x + 20, y, id: 1 }] })
+  await sleep(40)
+  await page.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+}
+
+/** A phone's page, opened after the touch emulation is on, since the page reads `phone` once at its mount (the read's finding 2). */
+async function openPhone(page, name, maxTouchPoints) {
+  await page.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints })
+  await open(page, BASE, PHONE)
+  if (!(await page.evaluate(`window.matchMedia('(hover: none) and (pointer: coarse)').matches`))) throw new Error(`${name}: invalid, the touch emulation does not read as a phone`)
+}
+
+const SKY7 = [DESKTOP.width * 0.75, DESKTOP.height * 0.15]
+
+const A10 = {
+  // 7b. a mouse out 24 px and back on the sky, within the tap's time, is a drag: no kick. A plain tap then adds one, so
+  // the list was not full (the read's finding 8)
+  '7b': async (page) => {
+    await open(page, BASE)
+    const [x, y] = SKY7
+    const k0 = await kicksOf(page)
+    await page.evaluate(SPAN_ARM)
+    await page.mouse('mouseMoved', x, y)
+    await page.mouse('mousePressed', x, y)
+    await page.mouse('mouseMoved', x + 24, y, { buttons: 1 })
+    await page.mouse('mouseMoved', x, y, { buttons: 1 })
+    await page.mouse('mouseReleased', x, y)
+    await sleep(200)
+    const ms = await quick(page, 'case 7b')
+    const k1 = await kicksOf(page)
+    if (k1 !== k0) throw new Error(`case 7b: a mouse out 24 px and back on the sky in ${ms.toFixed(0)} ms took the kicks from ${k0} to ${k1}`)
+    // the drag orbited the camera: the tap waits for the damping to settle
+    await sleep(1500)
+    await page.tap(x, y)
+    await sleep(200)
+    const k2 = await kicksOf(page)
+    if (k2 !== k1 + 1) throw new Error(`case 7b: the follow-up failed, a plain tap on the sky took the kicks from ${k1} to ${k2}`)
+    console.log(`PASS 7b: a mouse out 24 px and back on the sky (${ms.toFixed(0)} ms) adds no kick, and a plain tap then adds one`)
+  },
+  // 7c. a mouse out 60 px and back over a house folded into one move does not enter (Codex r1, the street's recipe). A
+  // plain tap on a house then enters, so the portal was not off
+  '7c': async (page) => {
+    await open(page, BASE)
+    const [x, y] = await page.evaluate(`window.__findPick('village', 16)`)
+    await page.evaluate(SPAN_ARM)
+    await page.evaluate(MOUSE_ID)
+    await page.mouse('mouseMoved', x, y)
+    await page.mouse('mousePressed', x, y)
+    const folded = await page.evaluate(
+      `(() => { const o = { pointerId: window.__pid, isPrimary: true, pointerType: 'mouse', buttons: 1, bubbles: true, clientY: ${y} }; const at = (x) => new PointerEvent('pointermove', { ...o, clientX: x }); const e = new PointerEvent('pointermove', { ...o, clientX: ${x + 2}, coalescedEvents: [at(${x + 60}), at(${x + 2})] }); document.querySelector('canvas').dispatchEvent(e); return e.getCoalescedEvents().length })()`,
+    )
+    await page.mouse('mouseReleased', x + 2, y)
+    await sleep(300)
+    const ms = await quick(page, 'case 7c')
+    if (folded !== 2) throw new Error(`case 7c: invalid, the folded move carried ${folded} coalesced samples, not 2`)
+    const place = await placeOf(page)
+    if (place !== 'diorama') throw new Error(`case 7c: a mouse out 60 px and back over a house, folded into one move (${ms.toFixed(0)} ms), took the place to ${place}`)
+    await sleep(1500)
+    const [hx, hy] = await page.evaluate(`window.__findPick('village', 16)`)
+    await page.tap(hx, hy)
+    await sleep(300)
+    if ((await placeOf(page)) === 'diorama') throw new Error('case 7c: the follow-up failed, a plain tap on a house did not enter')
+    console.log(`PASS 7c: a mouse out 60 px and back over a house folded into one move (${ms.toFixed(0)} ms) does not enter, and a plain tap then does`)
+  },
+  // 7d. a mouse's lost release on a house, 400 ms, then a tap at the same point enters with no kick. The lost press is
+  // made at the tap's own point, so the tap's first move is 0 px and OrbitControls, holding the lost press, turns nothing
+  '7d': async (page) => {
+    await open(page, BASE)
+    const [x, y] = await page.evaluate(`window.__findPick('village', 16)`)
+    await page.evaluate(MOUSE_ID)
+    // the control, and the press that reads the mouse's pointerId: a tap on the sky adds one kick
+    const k0 = await kicksOf(page)
+    await page.tap(...SKY7)
+    await sleep(200)
+    const k1 = await kicksOf(page)
+    const pid = await page.evaluate('window.__pid')
+    if (k1 !== k0 + 1 || pid === null) throw new Error(`case 7d: the control failed, a tap on the sky took the kicks from ${k0} to ${k1} (pointerId ${pid})`)
+    await lostPress(page, x, y, 'mouse', pid)
+    await sleep(400)
+    if ((await page.evaluate(`window.__portalPick(${x}, ${y})`)) !== 'village') throw new Error('case 7d: invalid, the lost press moved the camera off the house')
+    await page.evaluate(SPAN_ARM)
+    await page.tap(x, y)
+    await sleep(300)
+    const ms = await quick(page, 'case 7d')
+    const place = await placeOf(page)
+    const k2 = await kicksOf(page)
+    if (place === 'diorama') throw new Error(`case 7d: after a mouse's lost release a tap on a house (${ms.toFixed(0)} ms) did not enter`)
+    if (k2 !== k1) throw new Error(`case 7d: the tap that entered took the kicks from ${k1} to ${k2}`)
+    await page.waitFor(`window.__portal().place === 'street' && window.__portal().layer === 0`, 20000, 'the street after the tap')
+    console.log(`PASS 7d: after a mouse's lost release a tap on a house (${ms.toFixed(0)} ms) enters with no kick`)
+  },
+  // 7e. a mouse's lost release on a tree holds it; the next press, on the sky, releases that hold first, so its tap kicks
+  // (the read's finding 7). The press and the release are synthetic with no move between: a real move off the tree
+  // would release the hold by itself (`useTouchInput.ts`, the move)
+  '7e': async (page) => {
+    await open(page, BASE)
+    await page.evaluate(MOUSE_ID)
+    const k0 = await kicksOf(page)
+    await page.tap(...SKY7)
+    await sleep(200)
+    const pid = await page.evaluate('window.__pid')
+    if ((await kicksOf(page)) !== k0 + 1 || pid === null) throw new Error(`case 7e: the control failed, a tap on the sky added no kick (pointerId ${pid})`)
+    const [tx, ty] = await page.evaluate(`window.__findPick('land', 16)`)
+    await lostPress(page, tx, ty, 'mouse', pid)
+    await sleep(100)
+    if (!((await page.evaluate('window.__landState().heldIndex')) >= 0)) throw new Error('case 7e: invalid, the lost press on a tree holds no land touch')
+    const k1 = await kicksOf(page)
+    await page.evaluate(SPAN_ARM)
+    const [x, y] = SKY7
+    await page.evaluate(
+      `(() => { const o = { pointerId: ${pid}, pointerType: 'mouse', isPrimary: true, button: 0, clientX: ${x}, clientY: ${y}, bubbles: true, cancelable: true, composed: true }; const c = document.querySelector('canvas'); c.dispatchEvent(new PointerEvent('pointerdown', { ...o, buttons: 1 })); c.dispatchEvent(new PointerEvent('pointerup', { ...o, buttons: 0 })) })()`,
+    )
+    await sleep(200)
+    const ms = await quick(page, 'case 7e')
+    const k2 = await kicksOf(page)
+    const held = await page.evaluate('window.__landState().heldIndex')
+    if (k2 !== k1 + 1) throw new Error(`case 7e: after a lost release on a tree a tap on the sky (${ms.toFixed(0)} ms) took the kicks from ${k1} to ${k2}`)
+    if (held >= 0) throw new Error(`case 7e: the tree's hold from the lost press is still held (${held})`)
+    console.log(`PASS 7e: after a mouse's lost release on a tree, a tap on the sky (${ms.toFixed(0)} ms) releases the hold and adds one kick`)
+  },
+  // 12b. on a phone, a two-finger tap is a drag: no kick on the sky, and on a house no question and no entry. A plain tap
+  // follows each part as its control: on the sky it adds a kick, on a house it asks (the read's findings 3 and 8)
+  '12b': async (page) => {
+    await openPhone(page, 'case 12b', 2)
+    const sky = await page.evaluate(SKY_SPOT)
+    if (!sky) throw new Error('case 12b: no sky point on the phone')
+    const k0 = await kicksOf(page)
+    await page.evaluate(SPAN_ARM)
+    await twoFingerTap(page, ...sky)
+    await sleep(300)
+    const msSky = await quick(page, 'case 12b, the sky')
+    const k1 = await kicksOf(page)
+    if (k1 !== k0) throw new Error(`case 12b: a two-finger tap on the sky (${msSky.toFixed(0)} ms) took the kicks from ${k0} to ${k1}`)
+    await sleep(800)
+    await fingerTap(page, ...sky)
+    await sleep(300)
+    const k2 = await kicksOf(page)
+    if (k2 !== k1 + 1) throw new Error(`case 12b: the follow-up failed, a finger's tap on the sky took the kicks from ${k1} to ${k2}`)
+    const house = await page.evaluate(`window.__findPick('village', 8)`)
+    await fingerTap(page, ...house)
+    await sleep(500)
+    const asked = await card(page)
+    if (!asked.includes('computer') || (await placeOf(page)) !== 'diorama') throw new Error(`case 12b: the control failed, a finger's tap on a house showed "${asked}" with the place ${await placeOf(page)}`)
+    await stay(page)
+    await sleep(400)
+    if (await card(page)) throw new Error('case 12b: "Stay with the painting" did not close the card')
+    await page.evaluate(SPAN_ARM)
+    await twoFingerTap(page, ...house)
+    await sleep(500)
+    const msHouse = await quick(page, 'case 12b, the house')
+    const shown = await card(page)
+    const place = await placeOf(page)
+    await page.send('Emulation.setTouchEmulationEnabled', { enabled: false })
+    if (shown || place !== 'diorama') throw new Error(`case 12b: a two-finger tap on a house (${msHouse.toFixed(0)} ms) showed "${shown}" with the place ${place}`)
+    console.log(`PASS 12b: on a phone a two-finger tap adds no kick on the sky (${msSky.toFixed(0)} ms) and asks nothing on a house (${msHouse.toFixed(0)} ms); a plain tap kicks and asks`)
+  },
+  // 12c. on a phone, a finger's lost release on a house, the tab switch's stand-in, then a finger's tap there asks. The
+  // stand-in does not show what a real browser does with the release
+  '12c': async (page) => {
+    await openPhone(page, 'case 12c', 1)
+    const [x, y] = await page.evaluate(`window.__findPick('village', 8)`)
+    await lostPress(page, x, y, 'touch', 50)
+    if ((await page.evaluate(TAB_SWITCH)) !== false) throw new Error('case 12c: invalid, the stand-in left the page hidden')
+    await sleep(200)
+    await page.evaluate(SPAN_ARM)
+    await fingerTap(page, x, y)
+    await sleep(500)
+    const ms = await quick(page, 'case 12c')
+    const asked = await card(page)
+    const place = await placeOf(page)
+    if (asked) await stay(page)
+    await cancelFake(page, 50)
+    await page.send('Emulation.setTouchEmulationEnabled', { enabled: false })
+    if (!asked.includes('computer') || place !== 'diorama') throw new Error(`case 12c: after a finger's lost release and a tab switch, a tap on a house (${ms.toFixed(0)} ms) showed "${asked}" with the place ${place}`)
+    console.log(`PASS 12c: after a finger's lost release and a tab switch, a finger's tap on a house (${ms.toFixed(0)} ms) asks`)
+  },
+  // 12d. on a phone, a finger's lost release on the sky, with no stand-in, then a finger's tap there adds one kick
+  '12d': async (page) => {
+    await openPhone(page, 'case 12d', 1)
+    const sky = await page.evaluate(SKY_SPOT)
+    if (!sky) throw new Error('case 12d: no sky point on the phone')
+    const k0 = await kicksOf(page)
+    await fingerTap(page, ...sky)
+    await sleep(300)
+    const k1 = await kicksOf(page)
+    if (k1 !== k0 + 1) throw new Error(`case 12d: the control failed, a finger's tap on the sky took the kicks from ${k0} to ${k1}`)
+    await lostPress(page, sky[0], sky[1], 'touch', 50)
+    await sleep(200)
+    await page.evaluate(SPAN_ARM)
+    await fingerTap(page, ...sky)
+    await sleep(300)
+    const ms = await quick(page, 'case 12d')
+    const k2 = await kicksOf(page)
+    await cancelFake(page, 50)
+    await page.send('Emulation.setTouchEmulationEnabled', { enabled: false })
+    if (k2 !== k1 + 1) throw new Error(`case 12d: after a finger's lost release on the sky a finger's tap (${ms.toFixed(0)} ms) took the kicks from ${k1} to ${k2}`)
+    console.log(`PASS 12d: after a finger's lost release on the sky a finger's tap (${ms.toFixed(0)} ms) adds one kick`)
+  },
+}
+
+/** `CASES=7b,12c` runs those parts of A10 alone, so each can be seen to fail on a build without its fix. */
+const only = (process.env.CASES ?? '').split(',').filter(Boolean)
+
 async function main() {
   const chromesBefore = countHeadlessChromes()
   const port = debugPort('check-portal')
@@ -181,6 +449,17 @@ async function main() {
   try {
     const page = await newPage(port)
     try {
+
+    if (only.length) {
+      for (const name of only) {
+        if (!A10[name]) throw new Error(`no part ${name}: CASES takes ${Object.keys(A10).join(', ')}`)
+        await A10[name](page)
+      }
+      if (page.errors.length) throw new Error(`page errors:\n  ${page.errors.join('\n  ')}`)
+      page.ws.close()
+      console.log(`PASS (CASES=${only.join(',')} only)`)
+      return
+    }
 
     // stop 0's pose as `?street=1` places it, for case 2
     await page.send('Emulation.setDeviceMetricsOverride', DESKTOP)
@@ -414,6 +693,9 @@ async function main() {
     if (k2 !== k1 || place7 === 'diorama') throw new Error(`case 7: a tap on a house took the kicks from ${k1} to ${k2} and the place to ${place7}`)
     await page.waitFor(`window.__portal().place === 'street' && window.__portal().layer === 0`, 20000, 'the street after the tap')
     console.log(`PASS 7: a tap on a house enters with no surge (kicks ${k1} to ${k2}); a tree bends (${l0} to ${l1}) and does not enter; a drag does not enter, nor one out and back`)
+
+    // ---- A10's parts of cases 7 and 12, each on its own page
+    for (const run of Object.values(A10)) await run(page)
 
     // ---- case 8: the flight ignores the way back
     await open(page, BASE)

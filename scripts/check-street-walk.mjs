@@ -17,6 +17,11 @@
  * 9. The walk's end (tasks/2026-11-14-walk-end-plan.md): on the phone at stop 4, a finger on him turns him, and the
  *    automatic walk takes him back down the lane, facing it and striding.
  * 10. The wheel under reduced motion, off the lane (the audit's item 10): one wheel turn puts him home within two frames.
+ * 11. The one tap rule (A10, tasks/2026-11-15-a10-tap-rule.md), each part on its own page. 11a: a mouse out 60 px and
+ *     back on him, apart and folded into one move, does not toggle the walk. 11b: after a finger's lost release, a tap
+ *     on him toggles it. 11c: a tap during a long frame toggles it. 11d: after a mouse's lost release on him, a press on
+ *     the dock clears the gesture, so the hand moved onto the grass still touches it. A part whose gesture spans more
+ *     than the tap's 300 ms by the events' own times fails as invalid.
  * Cases 8 and 10 read street points as world points: true under the default anchor B only (anchor A moves the street to
  * `STREET.originA`). Do not run them with `?skyAnchor=A` (Fable F3).
  * `CASES=9,10` runs only the cases named. Cases 9 and 10 set their own viewport and media, so each runs alone. An
@@ -28,6 +33,7 @@ import { STATION_T, STREET_HOUSES, laneParam, vincentPlace, walkPose } from '../
 import { inFootprint } from '../src/scene/streetGrass.ts'
 import { PAUSE, WALK } from '../src/scene/streetWalk.ts'
 import { WANDER, followT, hidden, inFrame, initialWander, legSeen, standable, tripFrom, wanderTo } from '../src/scene/streetWander.ts'
+import { TOUCH_SURGE } from '../src/scene/touchSurge.ts'
 
 const appUrl = process.env.DIORAMA_CAPTURE_URL || `http://127.0.0.1:${PORTS['check-street-walk'].app}/`
 const parsedUrl = new URL(appUrl)
@@ -45,9 +51,12 @@ function waitForStreetReady(page, timeoutMs = 25000) {
   return page.waitFor('window.__streetReady', timeoutMs, '__streetReady', 150)
 }
 
-/** `CASES=9,10` runs those cases alone, so each can be seen to fail on a build without its fix. Absent, every case runs. */
-const only = (process.env.CASES ?? '').split(',').filter(Boolean).map(Number)
-const wanted = (n) => only.length === 0 || only.includes(n)
+/**
+ * `CASES=9,10` runs those cases alone, so each can be seen to fail on a build without its fix. Absent, every case runs.
+ * A part has a letter: `CASES=11b` runs that part alone, and `CASES=11` runs every part of case 11.
+ */
+const only = (process.env.CASES ?? '').split(',').filter(Boolean)
+const wanted = (name) => only.length === 0 || only.includes(String(name)) || only.includes(String(name).replace(/[a-z]+$/, ''))
 
 // --- the wander's point choice (pure; Case 8 reads these, and a node dry run can load them) ---
 
@@ -1431,6 +1440,153 @@ async function main() {
       if (home10 > 1e-6) c10(`home under reduced motion he is ${home10} from his slot`)
       await page.send('Emulation.setEmulatedMedia', { media: 'screen', features: [] })
       console.log(`PASS: the wheel under reduced motion, off the lane: one wheel turn puts him home (modes over two frames ${JSON.stringify(modes10)}, ${home10.toExponential(1)} from his slot)`)
+    }
+
+    // -------------------------------------------------------------
+    // Case 11 (A10, the one tap rule): see the header. Each part opens its own page, so the next part's load clears a
+    // lost press (the read's finding 6), and a finger's fake pointer is also cancelled at its part's end
+    // -------------------------------------------------------------
+    const c11 = {
+      fail: (part, msg) => {
+        throw new Error(`Case ${part} failed: ${msg}`)
+      },
+      // the events' own times, from a capture listener on window: the first press after `arm` and the last release of
+      // its pointer. A part whose gesture spans more than the tap's time proves nothing, since today's rule times it too
+      // (the read's finding 4)
+      arm: () =>
+        page.evaluate(`(() => { window.__span = []; if (window.__spanOn) return; window.__spanOn = true; for (const type of ['pointerdown', 'pointerup']) window.addEventListener(type, (e) => window.__span.push({ type, id: e.pointerId, ms: e.timeStamp }), { capture: true, passive: true }) })()`),
+      quick: async (part) => {
+        const span = await page.evaluate('window.__span')
+        const down = span.find((e) => e.type === 'pointerdown')
+        const up = down && span.findLast((e) => e.type === 'pointerup' && e.id === down.id)
+        if (!up) c11.fail(part, `invalid: the page saw no press and release of one pointer (${JSON.stringify(span)})`)
+        const ms = up.ms - down.ms
+        if (ms > TOUCH_SURGE.tapMs) c11.fail(part, `invalid: the gesture spanned ${ms.toFixed(0)} ms by its events, over the tap's ${TOUCH_SURGE.tapMs} ms`)
+        return ms
+      },
+      // a press whose release never comes, as a lost release leaves one: a synthetic pointerdown on the canvas
+      lostPress: (x, y, pointerType, pointerId) =>
+        page.evaluate(`document.querySelector('canvas').dispatchEvent(new PointerEvent('pointerdown', { pointerId: ${pointerId}, pointerType: '${pointerType}', isPrimary: true, button: 0, buttons: 1, clientX: ${x}, clientY: ${y}, bubbles: true, cancelable: true, composed: true }))`),
+      cancel: (pointerId) => page.evaluate(`window.dispatchEvent(new PointerEvent('pointercancel', { pointerId: ${pointerId}, pointerType: 'touch', isPrimary: true, bubbles: true }))`),
+      centre: async () => {
+        const b = await c8.box()
+        return [Math.round((b.x0 + b.x1) / 2), Math.round((b.y0 + b.y1) / 2)]
+      },
+      // a part's control: a plain tap on his box toggles the walk, and a second toggles it back
+      control: async (part, touch) => {
+        const auto0 = await c8.auto()
+        for (const want of [!auto0, auto0]) {
+          const [x, y] = await c11.centre()
+          await c8.tap(touch, x, y)
+          await sleep(300)
+          if ((await c8.auto()) !== want) c11.fail(part, `the control failed, a plain tap on his box left the walk's auto at ${!want}`)
+        }
+        return auto0
+      },
+      frames: () => page.send('Runtime.evaluate', { awaitPromise: true, expression: 'new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(r))))' }),
+    }
+
+    if (wanted('11a')) {
+      // 11a. desktop, stop 1: a mouse out 60 px and back on his box is a drag, as it is off him (Codex F2; the plan's 8e)
+      await c8.open(DESKTOP, false, 1, 'input')
+      const auto11a = await c11.control('11a', false)
+      let [x, y] = await c11.centre()
+      await c11.arm()
+      await c8.outAndBack(false, x, y)
+      await sleep(300)
+      const apart = await c11.quick('11a')
+      if ((await c8.auto()) !== auto11a) c11.fail('11a', 'a mouse out 60 px and back on his box toggled the walk')
+      // the same folded into one move: its own point 2 px from the press, its first coalesced sample 60 px (Codex r1)
+      ;[x, y] = await c11.centre()
+      await c11.arm()
+      await page.evaluate(`window.__pid = null; window.addEventListener('pointerdown', (e) => { window.__pid = e.pointerId }, { once: true })`)
+      await page.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, button: 'none', buttons: 0 })
+      await page.send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1 })
+      const folded = await page.evaluate(`(() => { const o = { pointerId: window.__pid, isPrimary: true, pointerType: 'mouse', buttons: 1, bubbles: true, clientY: ${y} }; const at = (x) => new PointerEvent('pointermove', { ...o, clientX: x }); const e = new PointerEvent('pointermove', { ...o, clientX: ${x + 2}, coalescedEvents: [at(${x + 60}), at(${x + 2})] }); window.dispatchEvent(e); return e.getCoalescedEvents().length })()`)
+      await page.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: x + 2, y, button: 'left', buttons: 0, clickCount: 1 })
+      await sleep(300)
+      const foldedMs = await c11.quick('11a')
+      if (folded !== 2) c11.fail('11a', `invalid: the folded move carried ${folded} coalesced samples, not 2`)
+      if ((await c8.auto()) !== auto11a) c11.fail('11a', 'a mouse out 60 px and back on his box, folded into one move, toggled the walk')
+      // the walk is not stuck: a plain tap still toggles it
+      ;[x, y] = await c11.centre()
+      await c8.tap(false, x, y)
+      await sleep(300)
+      if ((await c8.auto()) === auto11a) c11.fail('11a', 'after the two drags a plain tap on his box did not toggle the walk')
+      console.log(`PASS 11a: a mouse out 60 px and back on his box, apart (${apart.toFixed(0)} ms) and folded into one move (${foldedMs.toFixed(0)} ms), leaves the walk alone, and a plain tap still toggles it`)
+    }
+
+    if (wanted('11b')) {
+      // 11b. the phone, stop 1: after a finger's lost release, a tap on his box toggles the walk (the plan's 3b). The lost
+      // press is on his box, where the grass takes no press (the read's finding 6), with a pointerId no CDP touch uses
+      await c8.open(PHONE, true, 1, 'auto')
+      const auto11b = await c11.control('11b', true)
+      const [lx, ly] = await c11.centre()
+      await c11.lostPress(lx, ly, 'touch', 50)
+      await sleep(100)
+      const [x, y] = await c11.centre()
+      await c11.arm()
+      await c8.tap(true, x, y)
+      await sleep(300)
+      const ms11b = await c11.quick('11b')
+      const after11b = await c8.auto()
+      await c11.cancel(50)
+      await page.send('Emulation.setTouchEmulationEnabled', { enabled: false })
+      if (after11b === auto11b) c11.fail('11b', "after a finger's lost release a tap on his box did not toggle the walk")
+      console.log(`PASS 11b: after a finger's lost release a tap on his box (${ms11b.toFixed(0)} ms) toggles the walk`)
+    }
+
+    if (wanted('11c')) {
+      // 11c. desktop, stop 1: a tap during a long frame (the plan's 8f). A capture listener on window holds the main thread
+      // 400 ms before the release's handler, once. It models a long frame before the handler, not a phone's real frame
+      await c8.open(DESKTOP, false, 1, 'input')
+      const auto11c = await c8.auto()
+      const [x, y] = await c11.centre()
+      // armed first, so its listener records the release before the hold
+      await c11.arm()
+      await page.evaluate(`window.__lag = null; window.addEventListener('pointerup', (e) => { const from = performance.now(); while (performance.now() - from < 400); window.__lag = performance.now() - e.timeStamp }, { capture: true, once: true })`)
+      await c8.tap(false, x, y)
+      await sleep(600)
+      const lag = await page.evaluate('window.__lag')
+      if (!(lag >= 400)) c11.fail('11c', `invalid: the release's handler ran ${lag} ms after its event, not 400`)
+      const ms11c = await c11.quick('11c')
+      if ((await c8.auto()) === auto11c) c11.fail('11c', `a tap on his box of ${ms11c.toFixed(0)} ms by its events, handled ${lag.toFixed(0)} ms after its release, did not toggle the walk`)
+      console.log(`PASS 11c: a tap on his box of ${ms11c.toFixed(0)} ms by its events toggles the walk, its release handled ${lag.toFixed(0)} ms late`)
+    }
+
+    if (wanted('11d')) {
+      // 11d. desktop, stop 1: after a mouse's lost release on him, a press on the dock clears his gesture before its target
+      // test (the read's finding 1). The grass reads the street's gesture, and one standing on him keeps the mouse's hand
+      // off the grass (`StreetGrass.tsx`, the move), so the hand moved onto the grass with the button down shows it
+      await c8.open(DESKTOP, false, 1, 'input')
+      const sc11 = await c8.scene()
+      const G = acceptedPoints(sc11.persp, sc11.size, sc11.box, sc11.view, STATION_T[1], await c8.mask(DESKTOP)).find((p) => inFootprint(p.x, p.z))
+      if (!G) c11.fail('11d', 'no accepted point in the grass footprint at stop 1')
+      const dock = await c8.pauseAt()
+      if (!dock) c11.fail('11d', 'no Pause control on the page')
+      const hit = async () => {
+        await c11.frames()
+        return page.evaluate('window.__grassHit')
+      }
+      // the control: the mouse over the grass gives a hit, and over the dock none
+      await c8.park({ x: G.px, y: G.py })
+      if (!(await hit())) c11.fail('11d', `the control failed, the mouse over the grass at [${G.px.toFixed(0)}, ${G.py.toFixed(0)}] gave no hit`)
+      await c8.park(dock)
+      if (await hit()) c11.fail('11d', 'the control failed, the mouse over the dock left a hit on the grass')
+      // the mouse's pointerId, from a middle press on the dock, which no listener takes as a gesture (the read's finding 11)
+      await page.evaluate(`window.__pid = null; window.addEventListener('pointerdown', (e) => { window.__pid = e.pointerId }, { once: true })`)
+      await page.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: dock.x, y: dock.y, button: 'middle', buttons: 4, clickCount: 1 })
+      await page.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: dock.x, y: dock.y, button: 'middle', buttons: 0, clickCount: 1 })
+      const pid = await page.evaluate('window.__pid')
+      if (pid === null) c11.fail('11d', "invalid: no pointerdown read the mouse's pointerId")
+      const [bx, by] = await c11.centre()
+      await c11.lostPress(bx, by, 'mouse', pid)
+      await page.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: dock.x, y: dock.y, button: 'left', buttons: 1, clickCount: 1 })
+      await page.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: G.px, y: G.py, button: 'left', buttons: 1 })
+      const held = await hit()
+      await page.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: G.px, y: G.py, button: 'left', buttons: 0, clickCount: 1 })
+      if (!held) c11.fail('11d', 'after a lost release on him a press on the dock left his gesture standing: the hand moved onto the grass gave no hit')
+      console.log(`PASS 11d: after a mouse's lost release on him a press on the dock clears his gesture, and the hand moved onto the grass at [${G.px.toFixed(0)}, ${G.py.toFixed(0)}] touches it`)
     }
 
     } finally {
