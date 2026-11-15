@@ -27,7 +27,7 @@ import {
 import { SQUARE_TOP } from './frog.ts'
 import { lanternShown, walkOn, type StreetFlags } from './streetMode.ts'
 import { strokeGeometry } from './strokeGeometry.ts'
-import { classifyGesture, startsGesture, strayed, type PointerSample } from './touchSurge.ts'
+import { classifyGesture, moveSamples, startsGesture, strayed, type Press } from './touchSurge.ts'
 import type { ImageData2D } from './useImageData.ts'
 import {
   buildVincent,
@@ -164,10 +164,10 @@ export default function StreetWalk({
   const heldKeysRef = useRef<HeldKeys>({ forward: false, back: false })
   const activeGestureRef = useRef<{
     pointerId: number
-    down: PointerSample
+    /** the press, timed by the events' `timeStamp`; its `dragged` is set when some sample of the pointer went past the
+     *  tap's allowance, so a release back at the press is not a tap (Codex F2), on Vincent as off him (A10) */
+    down: Press
     vincent: boolean
-    /** some sample of the pointer went past the tap's allowance, so a release back at the press is not a tap (Codex F2) */
-    dragged: boolean
   } | null>(null)
 
   // the wander (2026-10-29): this ref holds his state while he is off the lane. On the lane its `turn` is kept equal to the pause's
@@ -569,19 +569,22 @@ export default function StreetWalk({
 
     const onPointerDown = (e: PointerEvent) => {
       if (!startsGesture(e)) return
-      if (!e.isPrimary || (activeGestureRef.current && activeGestureRef.current.pointerId !== e.pointerId)) {
+      // a second finger clears the gesture. A primary press while one is held means the old release was lost (A10): the
+      // old gesture is cleared before the target test, so a press on the dock leaves the grass no stale gesture, and
+      // the new press then starts its own (a refusal lost the next finger's tap)
+      if (!e.isPrimary || activeGestureRef.current) {
         activeGestureRef.current = null
         setStreetGesture(null)
-        return
       }
+      if (!e.isPrimary) return
       if (e.target !== gl.domElement) return
       const box = flags.vincent ? getVincentBox() : null
       const isVincent = admitGesture(box, e.clientX, e.clientY) === 'vincent'
       activeGestureRef.current = {
         pointerId: e.pointerId,
-        down: { x: e.clientX, y: e.clientY, ms: performance.now() },
+        // the event's own time, not the handler's: a long frame before the handler must not turn a tap into a drag (A10)
+        down: { x: e.clientX, y: e.clientY, ms: e.timeStamp, dragged: false },
         vincent: isVincent,
-        dragged: false,
       }
       setStreetGesture({ pointerId: e.pointerId, vincent: isVincent })
     }
@@ -590,9 +593,7 @@ export default function StreetWalk({
       const g = activeGestureRef.current
       if (g?.pointerId !== e.pointerId) return
       // the browser may fold several samples into one move: read them all, or the move itself where there are none (Codex r1)
-      const folded = e.getCoalescedEvents?.() ?? []
-      const samples = (folded.length ? folded : [e]).map((p) => ({ x: p.clientX, y: p.clientY }))
-      if (strayed(g.down, samples)) g.dragged = true
+      if (strayed(g.down, moveSamples(e))) g.down.dragged = true
     }
 
     const onPointerCancel = (e: PointerEvent) => {
@@ -611,13 +612,12 @@ export default function StreetWalk({
       }
       if (!gesture || gesture.pointerId !== e.pointerId) return
       activeGestureRef.current = null
-      const up: PointerSample = { x: e.clientX, y: e.clientY, ms: performance.now() }
-      const res = classifyGesture(gesture.down, up)
+      const res = classifyGesture(gesture.down, { x: e.clientX, y: e.clientY, ms: e.timeStamp })
       if (res === 'tap' && gesture.vincent && flags.vincent) {
         walkStateRef.current = toggleWalk(walkStateRef.current, still, isPhone)
         // a wheel turned before the tap must not move him after it (Codex K1)
         queuedWheelPxRef.current = 0
-      } else if (res === 'tap' && !gesture.vincent && !gesture.dragged && wanderOn && !reduced && !still) {
+      } else if (res === 'tap' && !gesture.vincent && wanderOn && !reduced && !still) {
         // a tap that misses him: the open ground sends him there, the lane brings him back (l: nothing under reduced motion or the still state)
         const hit = groundHit(e.clientX, e.clientY)
         if (hit) sendTo(hit[0], hit[1], viewNow())

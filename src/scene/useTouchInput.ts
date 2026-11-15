@@ -7,14 +7,16 @@ import { touchTargets } from './skyTargets'
 import {
   classifyGesture,
   hoverDue,
+  moveSamples,
   nearestStar,
   pushFlare,
   pushKick,
   pushSurge,
   startsGesture,
+  strayed,
   TOUCH_SURGE,
   type HoverMark,
-  type PointerSample,
+  type Press,
   type TouchStore,
 } from './touchSurge'
 
@@ -24,9 +26,9 @@ import {
  * raycasting any mesh. `pointerdown` and `pointermove` on the element R3F connects events to (drei's OrbitControls
  * binds there too and never captures the pointer or prevents default, so one finger both orbits and trails);
  * `pointerup` and `pointercancel` on `window`, since a release off the canvas must still close a gesture
- * (review F5). A tap (down to up within 300 ms and 8 px) sends a strong surge with a tempo kick, and flares a
- * star it lands on; a hover or a drag trails gentle lift-only surges. Paused, the hook is off and the sky clears
- * the store.
+ * (review F5). A tap (down to up within 300 ms and 8 px, no sample of a move past 8 px between and no second finger:
+ * the one rule, `classifyGesture`, A10) sends a strong surge with a tempo kick, and flares a star it lands on; a hover
+ * or a drag trails gentle lift-only surges. Paused, the hook is off and the sky clears the store.
  *
  * D1 — touch the land (tasks/2026-10-20-touch-land-d1-plan.md, D1.4): with `land`, the pointer is also cast at the
  * land's opaque bodies with their occluders (landTouch.ts, `landPick`), once per frame on its latest position
@@ -152,7 +154,7 @@ export function useTouchInput({
       p.dirty = false
     }
 
-    let down: PointerSample | null = null
+    let down: Press | null = null
     // the admitted pointer: while a press is down, moves, ups and cancels from any other pointer are not its
     // (a second finger lifting released the first finger's hold and dropped its later moves, Codex PR #17 P2)
     let activeId: number | null = null
@@ -160,6 +162,9 @@ export function useTouchInput({
     let lastHover: HoverMark | null = null
     const onMove = (event: PointerEvent) => {
       if (foreign(event)) return
+      // the one rule (A10): a press that strays past the tap's distance is a drag, even back where it began. Read before
+      // the returns below, or a move off the sky or between hover steps is never read
+      if (down && strayed(down, moveSamples(event))) down.dragged = true
       // a finger trails only while it is down; the mouse trails as it hovers and as it drags
       if (event.pointerType === 'touch' && !down) return
       p.x = event.clientX
@@ -189,9 +194,17 @@ export function useTouchInput({
     }
     const onDown = (event: PointerEvent) => {
       // a right or middle click neither holds the land nor taps the sky on its release
-      if (!event.isPrimary || down || !startsGesture(event)) return
+      if (!startsGesture(event)) return
+      if (!event.isPrimary) {
+        // A10: a second finger makes the held press a drag (two fingers dolly the view)
+        if (down) down.dragged = true
+        return
+      }
+      // A10: a primary press while one is held means the old release was lost; the new press replaces it, and the old
+      // press's land hold is released first, or it stayed held
+      if (down) releaseLand()
       activeId = event.pointerId
-      down = { x: event.clientX, y: event.clientY, ms: event.timeStamp }
+      down = { x: event.clientX, y: event.clientY, ms: event.timeStamp, dragged: false }
       p.x = event.clientX
       p.y = event.clientY
       p.down = true
