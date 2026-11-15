@@ -20,8 +20,10 @@
  * 11. The one tap rule (A10, tasks/2026-11-15-a10-tap-rule.md), each part on its own page. 11a: a mouse out 60 px and
  *     back on him, apart and folded into one move, does not toggle the walk. 11b: after a finger's lost release, a tap
  *     on him toggles it. 11c: a tap during a long frame toggles it. 11d: after a mouse's lost release on him, a press on
- *     the dock clears the gesture, so the hand moved onto the grass still touches it. A part whose gesture spans more
- *     than the tap's 300 ms by the events' own times fails as invalid.
+ *     the dock clears the gesture, so the hand moved onto the grass still touches it. 11e: a press of over 300 ms by its
+ *     events, its handler held 250 ms, does not toggle the walk. A part whose gesture spans more than the tap's 300 ms
+ *     by the events' own times fails as invalid, and 11e fails as invalid unless it is over by the events and under
+ *     by the handlers.
  * Cases 8 and 10 read street points as world points: true under the default anchor B only (anchor A moves the street to
  * `STREET.originA`). Do not run them with `?skyAnchor=A` (Fable F3).
  * `CASES=9,10` runs only the cases named. Cases 9 and 10 set their own viewport and media, so each runs alone. An
@@ -1444,7 +1446,7 @@ async function main() {
 
     // -------------------------------------------------------------
     // Case 11 (A10, the one tap rule): see the header. Each part opens its own page, so the next part's load clears a
-    // lost press (the read's finding 6), and a finger's fake pointer is also cancelled at its part's end
+    // lost press (the read's finding 6)
     // -------------------------------------------------------------
     const c11 = {
       fail: (part, msg) => {
@@ -1467,7 +1469,6 @@ async function main() {
       // a press whose release never comes, as a lost release leaves one: a synthetic pointerdown on the canvas
       lostPress: (x, y, pointerType, pointerId) =>
         page.evaluate(`document.querySelector('canvas').dispatchEvent(new PointerEvent('pointerdown', { pointerId: ${pointerId}, pointerType: '${pointerType}', isPrimary: true, button: 0, buttons: 1, clientX: ${x}, clientY: ${y}, bubbles: true, cancelable: true, composed: true }))`),
-      cancel: (pointerId) => page.evaluate(`window.dispatchEvent(new PointerEvent('pointercancel', { pointerId: ${pointerId}, pointerType: 'touch', isPrimary: true, bubbles: true }))`),
       centre: async () => {
         const b = await c8.box()
         return [Math.round((b.x0 + b.x1) / 2), Math.round((b.y0 + b.y1) / 2)]
@@ -1530,7 +1531,6 @@ async function main() {
       await sleep(300)
       const ms11b = await c11.quick('11b')
       const after11b = await c8.auto()
-      await c11.cancel(50)
       await page.send('Emulation.setTouchEmulationEnabled', { enabled: false })
       if (after11b === auto11b) c11.fail('11b', "after a finger's lost release a tap on his box did not toggle the walk")
       console.log(`PASS 11b: after a finger's lost release a tap on his box (${ms11b.toFixed(0)} ms) toggles the walk`)
@@ -1587,6 +1587,36 @@ async function main() {
       await page.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: G.px, y: G.py, button: 'left', buttons: 0, clickCount: 1 })
       if (!held) c11.fail('11d', 'after a lost release on him a press on the dock left his gesture standing: the hand moved onto the grass gave no hit')
       console.log(`PASS 11d: after a mouse's lost release on him a press on the dock clears his gesture, and the hand moved onto the grass at [${G.px.toFixed(0)}, ${G.py.toFixed(0)}] touches it`)
+    }
+
+    if (wanted('11e')) {
+      // 11e. desktop, stop 1: a press whose handler runs late, the press's own clock. A capture listener on window holds
+      // the main thread 250 ms before the press's handler, once, and the release comes over 300 ms after the press by
+      // the events. Timed by the events it is a drag. Timed by the handlers, about 70 ms apart, it would be a tap
+      await c8.open(DESKTOP, false, 1, 'input')
+      const auto11e = await c8.auto()
+      const [x, y] = await c11.centre()
+      await c11.arm()
+      await page.evaluate(`window.__held = null; window.__upAt = null; window.addEventListener('pointerdown', () => { const from = performance.now(); while (performance.now() - from < 250); window.__held = performance.now() }, { capture: true, once: true }); window.addEventListener('pointerup', () => { window.__upAt = performance.now() }, { capture: true, once: true })`)
+      await page.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, button: 'none', buttons: 0 })
+      await page.send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1 })
+      for (const from = Date.now(); (await page.evaluate('window.__held')) === null; await sleep(20)) if (Date.now() - from > 2000) c11.fail('11e', "invalid: the press's held handler never ran")
+      const wait = await page.evaluate(`${TOUCH_SURGE.tapMs + 20} - (performance.now() - window.__span[0].ms)`)
+      if (wait > 0) await sleep(wait)
+      await page.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 0, clickCount: 1 })
+      await sleep(300)
+      const span = await page.evaluate('window.__span')
+      const down = span.find((e) => e.type === 'pointerdown')
+      const up = span.findLast((e) => e.type === 'pointerup' && e.id === down?.id)
+      const byEvents = up && up.ms - down.ms
+      const byHandlers = await page.evaluate('window.__upAt - window.__held')
+      if (!(byEvents > TOUCH_SURGE.tapMs && byHandlers < TOUCH_SURGE.tapMs)) c11.fail('11e', `invalid: the press spanned ${byEvents} ms by its events and ${byHandlers} ms by its handlers, not over and under ${TOUCH_SURGE.tapMs}`)
+      if ((await c8.auto()) !== auto11e) c11.fail('11e', `a press of ${byEvents.toFixed(0)} ms by its events, ${byHandlers.toFixed(0)} ms by its handlers, toggled the walk`)
+      // the walk is not stuck: a plain tap still toggles it
+      await c8.tap(false, x, y)
+      await sleep(300)
+      if ((await c8.auto()) === auto11e) c11.fail('11e', 'after the slow press a plain tap on his box did not toggle the walk')
+      console.log(`PASS 11e: a press of ${byEvents.toFixed(0)} ms by its events, its handler held 250 ms (${byHandlers.toFixed(0)} ms by the handlers), leaves the walk alone, and a plain tap still toggles it`)
     }
 
     } finally {

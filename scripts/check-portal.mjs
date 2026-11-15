@@ -20,7 +20,8 @@
  *    touch and does not enter. A drag over a house does not enter, nor one that goes out and comes back (Codex F2).
  *    A10, the one tap rule (tasks/2026-11-15-a10-tap-rule.md), each part on its own page after case 7. 7b: a mouse out
  *    and back on the sky adds no kick. 7c: one folded into one move over a house does not enter. 7d: after a mouse's
- *    lost release a tap on a house enters. 7e: after a lost release on a tree a tap on the sky kicks, its hold released.
+ *    lost release a tap on a house enters. 7e: after a lost release on a tree a tap on the sky kicks, its hold
+ *    released. 7f: 7c's folded move on the sky adds no kick.
  *    12b: on a phone a two-finger tap kicks nothing and asks nothing. 12c: after a finger's lost release and a tab
  *    switch a tap on a house asks. 12d: after a finger's lost release on the sky a tap kicks. A part whose gesture spans
  *    more than the tap's 300 ms by the events' own times fails as invalid. `CASES=7b,12c` runs only the parts named.
@@ -181,7 +182,9 @@ async function enterAndSettle(page, action) {
   return rec
 }
 
-// ---- A10, the one tap rule (tasks/2026-11-15-a10-tap-rule.md): case 7's and case 12's new parts, each on its own page
+// ---- A10, the one tap rule (tasks/2026-11-15-a10-tap-rule.md): case 7's and case 12's new parts, each on its own page.
+// The next part's load clears a part's lost press: OrbitControls hears a cancel on its own element, where a fake
+// pointer's cancel would reach `releasePointerCapture` (the read's finding 6)
 
 /** Arms the record of the events' own times: a capture listener on window, kept for the page's life. */
 const SPAN_ARM = `(() => { window.__span = []; if (window.__spanOn) return; window.__spanOn = true; for (const type of ['pointerdown', 'pointerup']) window.addEventListener(type, (e) => window.__span.push({ type, id: e.pointerId, ms: e.timeStamp }), { capture: true, passive: true }) })()`
@@ -205,11 +208,17 @@ async function quick(page, name) {
 const lostPress = (page, x, y, pointerType, pointerId) =>
   page.evaluate(`document.querySelector('canvas').dispatchEvent(new PointerEvent('pointerdown', { pointerId: ${pointerId}, pointerType: '${pointerType}', isPrimary: true, button: 0, buttons: 1, clientX: ${x}, clientY: ${y}, bubbles: true, cancelable: true, composed: true }))`)
 
-/** The fake finger's cancel, so it leaves no pointer in OrbitControls' list (the read's finding 6). */
-const cancelFake = (page, pointerId) => page.evaluate(`window.dispatchEvent(new PointerEvent('pointercancel', { pointerId: ${pointerId}, pointerType: 'touch', isPrimary: true, bubbles: true }))`)
-
 /** The mouse's pointerId, read from the next real press (the read's finding 11). */
 const MOUSE_ID = `window.__pid = null; window.addEventListener('pointerdown', (e) => { window.__pid = e.pointerId }, { once: true })`
+
+/**
+ * A mouse out 60 px and back folded into one move, as a browser may coalesce its samples (Codex r1, the street's
+ * recipe): the move's own point is 2 px from the press, its first coalesced sample 60 px. Returns the samples it carried.
+ */
+const foldedMove = (page, x, y) =>
+  page.evaluate(
+    `(() => { const o = { pointerId: window.__pid, isPrimary: true, pointerType: 'mouse', buttons: 1, bubbles: true, clientY: ${y} }; const at = (x) => new PointerEvent('pointermove', { ...o, clientX: x }); const e = new PointerEvent('pointermove', { ...o, clientX: ${x + 2}, coalescedEvents: [at(${x + 60}), at(${x + 2})] }); document.querySelector('canvas').dispatchEvent(e); return e.getCoalescedEvents().length })()`,
+  )
 
 /** The tab switch's stand-in: `document.hidden` true, then false, each with its `visibilitychange`, then the page's own again. */
 const TAB_SWITCH = `(() => {
@@ -287,9 +296,7 @@ const A10 = {
     await page.evaluate(MOUSE_ID)
     await page.mouse('mouseMoved', x, y)
     await page.mouse('mousePressed', x, y)
-    const folded = await page.evaluate(
-      `(() => { const o = { pointerId: window.__pid, isPrimary: true, pointerType: 'mouse', buttons: 1, bubbles: true, clientY: ${y} }; const at = (x) => new PointerEvent('pointermove', { ...o, clientX: x }); const e = new PointerEvent('pointermove', { ...o, clientX: ${x + 2}, coalescedEvents: [at(${x + 60}), at(${x + 2})] }); document.querySelector('canvas').dispatchEvent(e); return e.getCoalescedEvents().length })()`,
-    )
+    const folded = await foldedMove(page, x, y)
     await page.mouse('mouseReleased', x + 2, y)
     await sleep(300)
     const ms = await quick(page, 'case 7c')
@@ -302,6 +309,30 @@ const A10 = {
     await sleep(300)
     if ((await placeOf(page)) === 'diorama') throw new Error('case 7c: the follow-up failed, a plain tap on a house did not enter')
     console.log(`PASS 7c: a mouse out 60 px and back over a house folded into one move (${ms.toFixed(0)} ms) does not enter, and a plain tap then does`)
+  },
+  // 7f. the same folded move on the sky adds no kick: the sky's latch reads every coalesced sample (7b's separate moves
+  // would pass with the move's own point alone). A plain tap then adds one
+  '7f': async (page) => {
+    await open(page, BASE)
+    const [x, y] = SKY7
+    const k0 = await kicksOf(page)
+    await page.evaluate(SPAN_ARM)
+    await page.evaluate(MOUSE_ID)
+    await page.mouse('mouseMoved', x, y)
+    await page.mouse('mousePressed', x, y)
+    const folded = await foldedMove(page, x, y)
+    await page.mouse('mouseReleased', x + 2, y)
+    await sleep(200)
+    const ms = await quick(page, 'case 7f')
+    if (folded !== 2) throw new Error(`case 7f: invalid, the folded move carried ${folded} coalesced samples, not 2`)
+    const k1 = await kicksOf(page)
+    if (k1 !== k0) throw new Error(`case 7f: a mouse out 60 px and back on the sky, folded into one move (${ms.toFixed(0)} ms), took the kicks from ${k0} to ${k1}`)
+    await sleep(1500)
+    await page.tap(x, y)
+    await sleep(200)
+    const k2 = await kicksOf(page)
+    if (k2 !== k1 + 1) throw new Error(`case 7f: the follow-up failed, a plain tap on the sky took the kicks from ${k1} to ${k2}`)
+    console.log(`PASS 7f: a mouse out 60 px and back on the sky folded into one move (${ms.toFixed(0)} ms) adds no kick, and a plain tap then adds one`)
   },
   // 7d. a mouse's lost release on a house, 400 ms, then a tap at the same point enters with no kick. The lost press is
   // made at the tap's own point, so the tap's first move is 0 px and OrbitControls, holding the lost press, turns nothing
@@ -410,7 +441,6 @@ const A10 = {
     const asked = await card(page)
     const place = await placeOf(page)
     if (asked) await stay(page)
-    await cancelFake(page, 50)
     await page.send('Emulation.setTouchEmulationEnabled', { enabled: false })
     if (!asked.includes('computer') || place !== 'diorama') throw new Error(`case 12c: after a finger's lost release and a tab switch, a tap on a house (${ms.toFixed(0)} ms) showed "${asked}" with the place ${place}`)
     console.log(`PASS 12c: after a finger's lost release and a tab switch, a finger's tap on a house (${ms.toFixed(0)} ms) asks`)
@@ -432,7 +462,6 @@ const A10 = {
     await sleep(300)
     const ms = await quick(page, 'case 12d')
     const k2 = await kicksOf(page)
-    await cancelFake(page, 50)
     await page.send('Emulation.setTouchEmulationEnabled', { enabled: false })
     if (k2 !== k1 + 1) throw new Error(`case 12d: after a finger's lost release on the sky a finger's tap (${ms.toFixed(0)} ms) took the kicks from ${k1} to ${k2}`)
     console.log(`PASS 12d: after a finger's lost release on the sky a finger's tap (${ms.toFixed(0)} ms) adds one kick`)
