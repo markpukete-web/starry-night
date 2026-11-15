@@ -1,4 +1,4 @@
-import { execSync, spawn } from 'node:child_process'
+import { execFileSync, spawn } from 'node:child_process'
 import { existsSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -56,6 +56,7 @@ async function waitForChrome(port, timeoutMs = 20000) {
 }
 
 export async function startChrome({ port, prefix, flags = [] }) {
+  if (!prefix.startsWith('starry-')) throw new Error(`startChrome: prefix ${prefix} must start with starry-, or the leak count misses it`)
   const executable = chromePath()
   const userDataDir = mkdtempSync(join(tmpdir(), prefix))
   const extraFlags = (process.env.CHROME_FLAGS ?? '').split(/\s+/).filter(Boolean)
@@ -138,12 +139,13 @@ export async function startViteIfNeeded(appUrl, port) {
   throw new Error(`Vite did not become ready at ${appUrl}\n${log}`)
 }
 
+// Counts only the browsers startChrome made: each profile folder starts with "starry-". Another session's headless
+// Chrome on this machine is not counted. Playwright's, from the Story_Bridge session, failed three runs (2026-11-15).
 export function countHeadlessChromes() {
   try {
-    const out = execSync("pgrep -fl 'Chrome.*headless' 2>/dev/null | wc -l", { encoding: 'utf8' })
-    return parseInt(out.trim(), 10) || 0
+    return execFileSync('pgrep', ['-f', 'user-data-dir=[^ ]*/starry-'], { encoding: 'utf8' }).trim().split('\n').length
   } catch {
-    return 0
+    return 0 // pgrep exits 1 when nothing matches
   }
 }
 
