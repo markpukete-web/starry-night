@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef } from 'react'
-import { useFrame } from '@react-three/fiber'
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
+import { useFrame, useThree } from '@react-three/fiber'
 import {
   AdditiveBlending,
   BufferAttribute,
@@ -21,6 +21,7 @@ import { mulberry32 } from './brush.ts'
 import type { BrushArraysWithCls } from './streetGeometry.ts'
 import { FOG, fogInjection } from './streetFog.ts'
 import type { ImageData2D } from './useImageData.ts'
+import { LIGHTER } from './lighterView.ts'
 import { pathPoint, pathTangent, STREET_CHURCH, STREET_HOUSES, STREET_TREES } from './streetLayout.ts'
 import { HILL_PAINT, LIFE, lifeTimeUniform, lifeTime, litWindows, hillsGeometry, LAMP_LIGHT, haloScaleOf, radialTexture } from './streetLife.ts'
 
@@ -68,6 +69,9 @@ function hillTexture(painting: ImageData2D): CanvasTexture {
   t.wrapT = MirroredRepeatWrapping
   return t
 }
+
+/** the fireflies' point scale at the cap's pixel ratio (`LIGHTER.dpr`), in drawing-buffer pixels */
+const FIREFLY_SCALE = 1400
 
 const FIREFLY_VERTEX = `
   uniform float uAliveTime;
@@ -143,7 +147,7 @@ export function StreetLife({
     flyGeometry.setAttribute('position', new BufferAttribute(pos, 3))
     flyGeometry.setAttribute('aPhase', new BufferAttribute(phase, 1))
     const flyMaterial = new ShaderMaterial({
-      uniforms: { uAliveTime: lifeTimeUniform, uScale: { value: 1400 }, uColour: { value: new Color(LIFE.glow) } },
+      uniforms: { uAliveTime: lifeTimeUniform, uScale: { value: FIREFLY_SCALE }, uColour: { value: new Color(LIFE.glow) } },
       vertexShader: FIREFLY_VERTEX,
       fragmentShader: FIREFLY_FRAGMENT,
       transparent: true,
@@ -172,6 +176,13 @@ export function StreetLife({
     const blob = new MeshBasicMaterial({ map: texture, color: new Color(0, 0, 0), transparent: true, opacity: 0.6, depthWrite: false, toneMapped: false })
     return { flyGeometry, flyMaterial, texture, pool: glowMaterial(LIFE.pool[1]), halo: glowMaterial(LIFE.halo[1]), lampHalo, hillsGeometry: hillsGeometry(), hills, hillPaint, footTexture, foot, blob }
   }, [painting])
+  // B8 (2026-11-15): gl_PointSize counts the drawing buffer's pixels, so the fireflies keep the size they have at the
+  // cap's pixel ratio, 1.5, at any ratio (the lighter view and a screen of ratio 1 drew them half as large again)
+  const dpr = useThree((s) => s.viewport.dpr)
+  useLayoutEffect(() => {
+    // eslint-disable-next-line react-hooks/immutability -- a three.js uniform is written in place, as the render loop's are
+    parts.flyMaterial.uniforms.uScale.value = FIREFLY_SCALE * (dpr / LIGHTER.dpr)
+  }, [parts, dpr])
   useEffect(() => () => {
     parts.flyGeometry.dispose()
     parts.flyMaterial.dispose()

@@ -20,7 +20,8 @@
  *    touch and does not enter. A drag over a house does not enter, nor one that goes out and comes back (Codex F2).
  * 8. Escape, the dock and the seam during the flight change nothing.
  * 9. The street through the portal at stop 0 against `?street=1` at stop 0, clocks pinned: byte-identical.
- * 10. A rotation in the street: enter, resize to the other aspect, leave; the pose is the saved one within 1e-6.
+ * 10. A rotation in the street: enter, resize to the other aspect, leave. The pose, the rotation and the lens are a
+ *    fresh load's at the new aspect, the pose within 1e-6 (A11, 2026-11-15).
  * 11. Three round trips leave the renderer's geometries and textures where the first left them.
  * 12. On the phone, a finger pressed and dragged over a tree adds sky surges, no land touch and no land cast, and a
  *    finger's tap on a tree adds a kick and no land touch or cast. A mouse over a tree casts and adds one (the control).
@@ -260,6 +261,9 @@ const viewNow = (page) => page.evaluate('window.__portal().view')
 async function enterAndSettle(page, action) {
   const rec = await record(page, action, `window.__portal().place === 'street' && window.__portal().layer === 0`)
   if (!rec.some((f) => f.place === 'street')) throw new Error(`no street within 20 s: [${placesOf(rec)}]`)
+  // A19: the hidden layer has let its frame go
+  const held = await page.evaluate(`document.querySelector('.portal-layer').width`)
+  if (held !== 0) throw new Error(`the hidden layer still holds a frame ${held} px wide (A19)`)
   return rec
 }
 
@@ -525,16 +529,21 @@ async function main() {
     if (order8 !== 'diorama,flying,entering,street' && order8 !== 'flying,entering,street') throw new Error(`case 8: the places ran ${order8}`)
     console.log(`PASS 8: Escape, the seam and the disabled dock during the flight change nothing (${order8})`)
 
-    // ---- case 10: a rotation in the street
+    // ---- case 10: a rotation in the street. The way back reads as a fresh load at the new aspect, as a rotation in the
+    // diorama does (A11, 2026-11-15): the rotation moves the saved pose to the new aspect's home
+    const portrait10 = { ...DESKTOP, width: 900, height: 1600 }
+    await open(page, BASE, portrait10)
+    const fresh10 = await page.evaluate('window.__portal()')
     await open(page, BASE)
-    const view10 = await viewNow(page)
     await enterAndSettle(page, () => page.evaluate('window.__portalEnter()'))
-    await page.send('Emulation.setDeviceMetricsOverride', { ...DESKTOP, width: 900, height: 1600 })
+    await page.send('Emulation.setDeviceMetricsOverride', portrait10)
     await sleep(800)
     const rec10 = await record(page, () => page.key('Escape'), `window.__portal().place === 'diorama'`)
     // a portrait aspect takes the portrait lens, fitted to that aspect (portraitFov, 2026-10-25)
-    const r10 = assertReturn(rec10, 'case 10', view10, { ...DIORAMA_CAMERAS.mobile, fov: portraitFov(900 / 1600) })
-    console.log(`PASS 10: after a rotation in the street the return holds the saved pose (${r10.now}, ${r10.after}), its rotation and the portrait lens`)
+    const r10 = assertReturn(rec10, 'case 10', fresh10.view, { ...DIORAMA_CAMERAS.mobile, fov: portraitFov(900 / 1600) })
+    const home10 = poseGap(rec10.at(-1).pose, fresh10.pose)
+    if (home10 > 1e-6) throw new Error(`case 10: the way back after a rotation is ${home10} from a fresh portrait load's pose`)
+    console.log(`PASS 10: after a rotation in the street the return is a fresh load's pose (${r10.now}, ${r10.after}, ${home10}), its rotation and the portrait lens`)
 
     // ---- case 2, the phone: Vincent held at stop 0 under the layer, then walking
     await open(page, '?portal=1&arrival=0&walkMode=auto', PHONE)
