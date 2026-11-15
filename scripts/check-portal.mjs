@@ -260,6 +260,9 @@ const viewNow = (page) => page.evaluate('window.__portal().view')
 async function enterAndSettle(page, action) {
   const rec = await record(page, action, `window.__portal().place === 'street' && window.__portal().layer === 0`)
   if (!rec.some((f) => f.place === 'street')) throw new Error(`no street within 20 s: [${placesOf(rec)}]`)
+  // A19: the hidden layer has let its frame go
+  const held = await page.evaluate(`document.querySelector('.portal-layer').width`)
+  if (held !== 0) throw new Error(`the hidden layer still holds a frame ${held} px wide (A19)`)
   return rec
 }
 

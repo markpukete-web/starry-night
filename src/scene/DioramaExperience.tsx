@@ -427,6 +427,9 @@ function PortalDriver({
       if (opacity > 0) return false
       layer.style.visibility = 'hidden'
       layer.classList.remove('is-drifting')
+      // A19 (2026-11-15): free the held frame's pixels, up to 18.7 MB at 1920 x 1080. The CSS keeps the layer's box, and
+      // every show copies through `copyToLayer`, which sizes the layer again
+      layer.width = 0
       return true
     }
     if (place === 'flying') {
