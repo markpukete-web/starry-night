@@ -10,6 +10,7 @@ import {
   kickShape,
   kickTerms,
   liftSum,
+  moveSamples,
   strayed,
   nearestStar,
   NO_END,
@@ -157,10 +158,10 @@ test('T22c the lift list: the oldest live one fades on eviction and keeps its sl
 })
 
 test('T23 the classifier: a quick still down-up is a tap, anything longer or further is a drag', () => {
-  assert.equal(classifyGesture({ x: 100, y: 100, ms: 0 }, { x: 104, y: 103, ms: 200 }), 'tap')
-  assert.equal(classifyGesture({ x: 100, y: 100, ms: 0 }, { x: 100, y: 100, ms: 301 }), 'drag')
-  assert.equal(classifyGesture({ x: 100, y: 100, ms: 0 }, { x: 109, y: 100, ms: 100 }), 'drag')
-  assert.equal(classifyGesture({ x: 100, y: 100, ms: 0 }, { x: 100, y: 108, ms: 300 }), 'tap')
+  assert.equal(classifyGesture({ x: 100, y: 100, ms: 0, dragged: false }, { x: 104, y: 103, ms: 200 }), 'tap')
+  assert.equal(classifyGesture({ x: 100, y: 100, ms: 0, dragged: false }, { x: 100, y: 100, ms: 301 }), 'drag')
+  assert.equal(classifyGesture({ x: 100, y: 100, ms: 0, dragged: false }, { x: 109, y: 100, ms: 100 }), 'drag')
+  assert.equal(classifyGesture({ x: 100, y: 100, ms: 0, dragged: false }, { x: 100, y: 108, ms: 300 }), 'tap')
 })
 
 test('T23b strayed: any sample of a move more than tapPx from the press is a drag, the parent alone is not enough (the wander, Codex r1)', () => {
@@ -170,6 +171,35 @@ test('T23b strayed: any sample of a move more than tapPx from the press is a dra
   assert.equal(strayed(down, [{ x: 100, y: 108 }]), false, 'at the allowance, as classifyGesture')
   assert.equal(strayed(down, [{ x: 100, y: 109 }]), true)
   assert.equal(strayed(down, []), false)
+})
+
+test('U1 the one rule (A10): a dragged press is a drag, however quick and still its release', () => {
+  assert.equal(classifyGesture({ x: 100, y: 100, ms: 0, dragged: true }, { x: 100, y: 100, ms: 100 }), 'drag')
+  assert.equal(classifyGesture({ x: 100, y: 100, ms: 0, dragged: false }, { x: 100, y: 100, ms: 100 }), 'tap', 'the control: the same press, never dragged')
+})
+
+test('U2 moveSamples: every coalesced point of a move, or the move\'s own point where the browser gives none (Codex r1, the portal\'s gap)', () => {
+  const at = (x: number) => ({ clientX: x, clientY: 100 })
+  assert.deepEqual(moveSamples({ ...at(102), getCoalescedEvents: () => [at(160), at(102)] }), [{ x: 160, y: 100 }, { x: 102, y: 100 }])
+  assert.deepEqual(moveSamples(at(102)), [{ x: 102, y: 100 }], 'no getCoalescedEvents')
+  assert.deepEqual(moveSamples({ ...at(102), getCoalescedEvents: () => [] }), [{ x: 102, y: 100 }], 'an empty list')
+})
+
+test('U3 the one rule (A10): the latch folded over the moves gives the batch rule\'s answer', () => {
+  // a press, its moves (each a list of samples, as a coalesced move gives them) and its release; one table, so a red run names every row
+  const press = { x: 100, y: 100, ms: 0 }
+  const at = (x: number, y = 100) => ({ x, y })
+  const rows: Record<string, { moves: { x: number; y: number }[][]; up: { x: number; y: number; ms: number }; expected: 'tap' | 'drag' }> = {
+    still: { moves: [[at(101)], [at(102)]], up: { x: 102, y: 100, ms: 120 }, expected: 'tap' },
+    slow: { moves: [[at(101)]], up: { x: 101, y: 100, ms: 301 }, expected: 'drag' },
+    'far at the end': { moves: [[at(104)]], up: { x: 109, y: 100, ms: 120 }, expected: 'drag' },
+    'out 60 px and back, apart': { moves: [[at(130)], [at(160)], [at(130)], [at(102)]], up: { x: 102, y: 100, ms: 200 }, expected: 'drag' },
+    'out 60 px and back, folded': { moves: [[at(160), at(102)]], up: { x: 102, y: 100, ms: 120 }, expected: 'drag' },
+    '8 px, at the allowance': { moves: [[at(100, 108)]], up: { x: 100, y: 100, ms: 120 }, expected: 'tap' },
+    '9 px': { moves: [[at(100, 109)]], up: { x: 100, y: 100, ms: 120 }, expected: 'drag' },
+  }
+  const got = Object.fromEntries(Object.entries(rows).map(([name, row]) => [name, classifyGesture({ ...press, dragged: row.moves.some((m) => strayed(press, m)) }, row.up)]))
+  assert.deepEqual(got, Object.fromEntries(Object.entries(rows).map(([name, row]) => [name, row.expected])))
 })
 
 test('T25 the star hit test and the flare', () => {
