@@ -5,7 +5,7 @@ The open work, with one pickup at the top. The history up to 2026-11-15 is in `t
 2026-11-15 points into that archive, at the same line. Its unchecked boxes sit inside superseded pickups. This file
 names only what is still open.
 
-## Pickup — 2026-11-15 (13:40): H6, A11 with B8 and A19, H5 and A10 merged. The audit's remainder is done but Mark's items
+## Pickup — 2026-11-15 (13:45): the audit's remainder is merged. Only Mark's items are open
 
 Mark, about 09:30, from his phone: "Take the lead and keep tackling the rest of the items without me. Work that needs
 my eye: Can make your best judgement and I will go with your recommendations. When in doubt, discuss with our
@@ -13,11 +13,11 @@ Consultant Fable in next tab." Then: "Also item 29, delete any local leftovers t
 "Merge each slice to main once it passes your gate". The consultant is the Claude (Fable) pane `w4:p6`, in tab
 `w4:t2`.
 
-**Running:** the follow-up to the Chrome leak count, below.
+**Running:** nothing.
 
 The machine queue: one browser run at a time. The Story_Bridge session (tab w5) runs Playwright checks on this machine
-too (`tools/flash-check.mjs`). A wait sees them, and a Chrome count reads them: its Playwright "Google Chrome for
-Testing" matches `countHeadlessChromes` (`scripts/lib/chrome.mjs:143`). The
+too (`tools/flash-check.mjs`). A wait sees them. Since #61 the checks' Chrome leak count does not: it counts only the
+`starry-` profiles that `startChrome` makes. The
 machine check since 10:50 (`tasks/lessons.md`): `pgrep -fl 'vite preview|starry-night[^ ]*/node_modules/.bin/vite|--headless|remote-debugging-port=[1-9]|bin/tsc|bin/eslint|node --test'`.
 
 The 11 frames' reference since #58: `scratch/a11-gate/frames/r1.sha`. B8 changed the seven street frames at the
@@ -35,6 +35,11 @@ or drag in the sky, the portal and the street) merged as `68a1c2b` at 13:35, PR 
 `tasks/2026-11-15-a10-tap-rule.md`, the Lead's gate `scratch/a10-gate/gate.out`. Codex reviewed `ae2c7be`, the head,
 with no findings, and CI passed all four checks. The walk check passed all 22 cases in three runs. Each run's last line
 failed on the leak count, and the third run listed the two it counted: the Story_Bridge session's Playwright Chrome.
+The leak count's fix merged as `39bcae2` at 13:44, PR #61: `countHeadlessChromes` matches the `starry-` profile
+folders only, and `startChrome` refuses another prefix. Its gate is `scratch/leak-gate/gate.out`: the walk check
+exited 0 with the Playwright Chrome running during it. Codex reviewed `7a03564`, the head, with no findings.
+On main after the merge, the other two callers ran clean: `check-portal.mjs` and `check-failure-paths.mjs` exit 0,
+with no `starry-` process left (`scratch/leak-gate/callers.out`).
 
 **Mark's calls, decided on his word by the Lead's recommendation (09:30):**
 
@@ -76,19 +81,20 @@ the reference studies (`village-study`, `simon-lee-study`, `simon-village`, `vil
 `ref`), `output/walk-end` and the small loose files. `scratch/` went from 11 GB to 1.2 GB, `output/` from 3.2 GB to
 9.8 MB. The stash and `t4/` were already gone. The two spike branches exist only on GitHub, so they stay.
 
-**Next, in order:**
+**Next:** nothing that does not need Mark.
 
-1. The leak count counts only this project's Chromes: `countHeadlessChromes` matches the profile folders that
-   `startChrome` makes, not every `Chrome.*headless` process. A small PR, gated with a planted leak.
+**Mark's answers, 2026-11-15 afternoon:**
 
-**For Mark when he is back:**
-
-- The walk end's look, on #55's preview link (sent 08:50).
-- Item 30's finding 3, on his phone, with a `?perf=1` trace on the walk for B5 and C-07.
-- A10: ten taps on the sky on his phone, on PR #60's preview link, and whether each kicks. A finger that wobbles more than
-  8 px and back was a tap and is now a drag.
-- The two proposals for his sections of `CLAUDE.md`, below.
-- The Trash folder above holds 14 GB. Empty it when you are content that nothing in it is needed.
+- A10's ten taps on the sky, on his phone at the live site: "Tab kicks". Passed.
+- The walk end (#55), its head turning back before the body at stop 4: "I couldn't tell the difference". It does not
+  show. Closed.
+- `?perf=1` on the walk, on his phone: "60". B5 (the trail upload) is closed with no change: the walk shows no upload
+  cost. Finding 3's start-up dip and first-try load failures, and C-07 (a build cost, not a walk cost), are not answered
+  by a settled reading. The Lead recommended closing them, and Mark: "Close them, go with your recommendations".
+  Closed with no change. Finding 4 (pixel ratio 2 in the street) stays parked: the street holds 60 at 1.5 on his phone,
+  and a ratio of 2 draws 78% more pixels there.
+- Item 23's proposals: he asked for recommendations, below.
+- The Trash: emptied.
 
 ## Proposed edits to CLAUDE.md (audit item 23, Mark applies them)
 
@@ -101,6 +107,17 @@ Two of item 23's four claims hold on 2026-11-15. The other two are already fixed
 2. **"its own skills in `.claude/skills/`"** (Self-improvement rules). `.gitignore:27` ignores `.claude/`, and no
    `.claude/skills/` exists, so a skill there would never be tracked. Proposed: either drop the clause, or add
    `!.claude/skills/` to `.gitignore` so that skills there are tracked.
+
+The Lead's recommendations (2026-11-15):
+
+1. Add the URL. The note exists at `https://github.com/markpukete-web/markma.dev`, at the same path (3,820 bytes). The
+   repo is private, so the link works only for Mark's account. The bar is his section, so he makes the edit. Mark
+   took it ("go with your recommendations"). The edit, at `CLAUDE.md:23-24`: after "(markma.dev repo," insert
+   "https://github.com/markpukete-web/markma.dev,".
+2. Keep the clause. `.gitignore` now ignores `.claude/*` and keeps `!.claude/skills/`, so a skill there is tracked and
+   the worktrees and local settings stay ignored (`git check-ignore`, checked). A bare `!.claude/skills/` under
+   `.claude/` would not work: git cannot re-include a path whose parent folder is excluded. No edit to CLAUDE.md is
+   needed.
 
 ## Parked ideas (scope growth: do not build without Mark)
 

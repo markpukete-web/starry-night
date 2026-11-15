@@ -24,7 +24,8 @@ dist-ssr
 *.sw?
 scratch/
 .vercel
-.claude/
+.claude/*
+!.claude/skills/
 *.env
 *.env.*
 # `*.env.*` also matches `.env.example`. There is no template here today, but if one is ever added it
