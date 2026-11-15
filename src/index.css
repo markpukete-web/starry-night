@@ -42,7 +42,8 @@ button {
 
 .visitor-shell.is-clean-capture .visitor-title,
 .visitor-shell.is-clean-capture .visitor-dock,
-.visitor-shell.is-clean-capture .visitor-reference {
+.visitor-shell.is-clean-capture .visitor-reference,
+.visitor-shell.is-clean-capture .visitor-ask {
   display: none !important;
 }
 

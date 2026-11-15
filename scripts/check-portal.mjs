@@ -8,7 +8,8 @@
  *    to fade (F4), and walks after.
  * 3. Escape goes back to the diorama, the pose the saved one within 1e-6 the frame after and 0.5 s later, the camera's
  *    rotation the one before the entry and its lens the aspect's default; the layer holds until the diorama, mounted
- *    again, has built (the iPhone fix, 2026-10-28). 3b: Escape while the entry's fade runs still
+ *    again, has built (the iPhone fix, 2026-10-28). The street's seams `__streetReady` and `__streetCounts`, set in the
+ *    street, read as reset on the diorama (B7, H6). 3b: Escape while the entry's fade runs still
  *    fades the return from full, never down then up (Codex branch review F1).
  * 4. The dock's control does the same both ways.
  * 5. `?streetFail=painting` ends on the diorama at the saved pose, the portal still on. A failed chunk ends there too,
@@ -327,8 +328,17 @@ async function main() {
     console.log(`PASS 2: a tap goes ${order2}; the flight ${tFlight.toFixed(2)} s; the camera at stop 0's pose (gap ${camGap}); the diorama unmounted, its callbacks released`)
 
     // ---- case 3: Escape
+    // B7 (audit item 25, H6): the street's ready seams are set in the street and reset when it unmounts
+    const seams3 = `({ ready: window.__streetReady, counts: window.__streetCounts ?? null })`
+    const inStreet3 = await page.evaluate(seams3)
+    if (inStreet3.ready !== true || !(inStreet3.counts?.triangles > 0)) throw new Error(`case 3: in the street the seams are not set: ${JSON.stringify(inStreet3)}`)
     const rec3 = await record(page, () => page.key('Escape'), `window.__portal().place === 'diorama'`)
     const r3 = assertReturn(rec3, 'case 3', view2)
+    for (let start = Date.now(); ; await sleep(100)) {
+      const back3 = await page.evaluate(seams3)
+      if (back3.ready !== true && back3.counts === null) break
+      if (Date.now() - start > 2000) throw new Error(`case 3: back on the diorama the street's seams are not reset after 2000 ms: ${JSON.stringify(back3)}`)
+    }
     const fade3 = rec3.filter((f) => f.place === 'leaving' && f.layer > 0 && f.layer < 1).length
     if (!fade3) throw new Error('case 3: the return did not fade')
     // the layer holds the street's frame until the diorama, mounted again, has built: no fading frame shows it unbuilt

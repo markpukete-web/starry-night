@@ -43,8 +43,8 @@ type StreetWindow = Window & {
  * (`streetMassesUrl`).
  *
  * Through the portal (tasks/2026-10-25-street-portal-plan.md): `onReady` reports once per mount, `ok` false when an asset
- * failed, since `__streetReady` stays set after an unmount; `hold` keeps Vincent at his station while the layer covers
- * the street (plan review F4).
+ * failed; `hold` keeps Vincent at his station while the layer covers the street (plan review F4). `__streetReady` and
+ * `__streetCounts` are reset when the street unmounts (B7).
  */
 export default function Street({
   reduced = false,
@@ -62,8 +62,15 @@ export default function Street({
   const paintingUrl = flags.fail === 'painting' ? '/reference/missing.png' : '/reference/painting.jpg'
   const flowUrl = flags.fail === 'flow' ? '/reference/missing.png' : '/reference/land-flow.png'
   const massesUrl = streetMassesUrl(flags)
-  const paintingData = useImageData(paintingUrl, () => setPaintingFailed(true))
-  const flowData = useImageData(flowUrl, () => setFlowFailed(true))
+  // each failure logs one line by name (B6 and C-09, audit item 25); the street still settles with nothing drawn
+  const paintingData = useImageData(paintingUrl, () => {
+    console.error(`[street] the painting (${paintingUrl}) failed to load; the street is not drawn`)
+    setPaintingFailed(true)
+  })
+  const flowData = useImageData(flowUrl, () => {
+    console.error(`[street] the land's flow (${flowUrl}) failed to load; the street is not drawn`)
+    setFlowFailed(true)
+  })
   const paintingStatus: AssetStatus = paintingFailed ? 'failed' : paintingData ? 'ok' : 'pending'
   const flowStatus: AssetStatus = flowFailed ? 'failed' : flowData ? 'ok' : 'pending'
 
@@ -73,7 +80,11 @@ export default function Street({
     fetch(massesUrl)
       .then((res) => (res.ok ? (res.json() as Promise<BakedMass[]>) : Promise.reject(new Error(String(res.status)))))
       .then((json) => { if (alive) setMassesState({ status: 'ok', data: json }) })
-      .catch(() => { if (alive) setMassesState({ status: 'failed', data: null }) })
+      .catch((error) => {
+        if (!alive) return
+        console.error(`[street] the baked masses (${massesUrl}) failed to load; the flat panel is not drawn`, error)
+        setMassesState({ status: 'failed', data: null })
+      })
     return () => { alive = false }
   }, [massesUrl])
 
@@ -84,7 +95,10 @@ export default function Street({
   const built = useMemo(() => {
     if (!readiness.render) return null
     const build = flags.flat ? buildFlatPanel(paintingData, flowData, massesState.data, flags.grass) : buildStreet(paintingData, flowData, massesState.data, { lit: flags.light, grass: flags.grass })
-    if (!build) return null
+    if (!build) {
+      console.error('[street] the build returned no street; the street is not drawn')
+      return null
+    }
     return { meshes: streetMeshes(build, flags.ids), windows: build.windows, lamps: build.report.lane.lamps, counts: build.counts }
   }, [readiness.render, flags.flat, flags.light, flags.grass, flags.ids, paintingData, flowData, massesState.data])
 
@@ -94,6 +108,14 @@ export default function Street({
     if (built) w.__streetCounts = { ...built.counts, builds: (w.__streetCounts?.builds ?? 0) + 1 }
     else delete w.__streetCounts
   }, [readiness.ready, built])
+  // B7 (audit item 25): both seams are reset on unmount only, so a check after the way back never reads this mount's. A
+  // layout effect, so its cleanup runs before `StreetBoundary.componentDidCatch` sets `__streetReady` for a build that
+  // throws. `__streetReady` is written, not deleted: after a page failure `failPage` holds it true through a setter
+  useLayoutEffect(() => () => {
+    const w = window as StreetWindow
+    w.__streetReady = false
+    delete w.__streetCounts
+  }, [])
   const reportedRef = useRef(false)
   useEffect(() => {
     if (!readiness.ready || reportedRef.current) return

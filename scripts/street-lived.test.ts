@@ -474,8 +474,10 @@ test("K2's street without the lived-in parts", { skip }, () => {
   const build = buildStreet(realPainting, flow, masses, { grass: true, lived: false, flowers: false })!
   assert.deepEqual(build.report.lived, { paths: [], objects: [] })
   const hash = computeBuildHash(build)
-  // rounded to 1e-6 by `roundedJson` at audit item 1 (2026-11-14), so CI's Linux agrees: the same build's full-precision hash on this Mac was 918dd24d40740805
-  assert.equal(hash, '900397b3001c0a90', 'B1 hash matches')
+  // rounded to 1e-6 by `roundedJson` at audit item 1 (2026-11-14), so CI's Linux agrees: the same build's full-precision hash on this Mac was 918dd24d40740805.
+  // Moved at H6 (C-08) from 900397b3001c0a90: the ground drops its unread vertices, and its triangles read through the
+  // indices hash as the base's (`street-grass.test.ts`, C-08)
+  assert.equal(hash, '15440edd79cfcfd6', 'B1 hash matches')
 })
 
 test('the three objects stand by their doors', { skip }, () => {
@@ -909,8 +911,10 @@ test("K2's walls without the lived-in parts", { skip }, () => {
     'every face reports lengthScale 1',
   )
   const hash = computeBuildHash(build)
-  // rounded to 1e-6 by `roundedJson` at audit item 1 (2026-11-14), so CI's Linux agrees: the same build's full-precision hash on this Mac was 918dd24d40740805
-  assert.equal(hash, '900397b3001c0a90', 'B1 hash matches')
+  // rounded to 1e-6 by `roundedJson` at audit item 1 (2026-11-14), so CI's Linux agrees: the same build's full-precision hash on this Mac was 918dd24d40740805.
+  // Moved at H6 (C-08) from 900397b3001c0a90: the ground drops its unread vertices, and its triangles read through the
+  // indices hash as the base's (`street-grass.test.ts`, C-08)
+  assert.equal(hash, '15440edd79cfcfd6', 'B1 hash matches')
 })
 
 const deltaE = (a: readonly number[], b: readonly number[]) =>
@@ -957,6 +961,7 @@ test("a ring of flowers stands in the square lamp's pool, pale heads at the tips
   assert.deepEqual(sa.positions.slice(0, wa.positions.length), wa.positions)                    // the flowers are the bucket's tail
   const ys = sa.positions.filter((_, i) => i >= wa.positions.length && i % 3 === 1)
   assert.ok(Math.min(...ys) >= FLOWERS.rootY - 1e-9 && Math.max(...ys) <= FLOWERS.rootY + 0.03)
-  // rounded to 1e-6 by `roundedJson` at audit item 1 (2026-11-14), so CI's Linux agrees: the same build's full-precision hash on this Mac was 46f2bc6ba04296ab
-  assert.equal(computeBuildHash(without), '2bdd027ea64538e0')                                   // answer 6: the flag off is the base, byte for byte
+  // rounded to 1e-6 by `roundedJson` at audit item 1 (2026-11-14), so CI's Linux agrees: the same build's full-precision hash on this Mac was 46f2bc6ba04296ab.
+  // Moved at H6 (C-08) from 2bdd027ea64538e0, as the B1 hash above
+  assert.equal(computeBuildHash(without), '0388ad925836d1bf')                                  // answer 6: the flag off is the base, byte for byte
 })

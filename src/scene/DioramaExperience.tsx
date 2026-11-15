@@ -62,7 +62,9 @@ class StreetBoundary extends Component<{ children: ReactNode; onFailed?: () => v
   static getDerivedStateFromError() {
     return { failed: true }
   }
-  componentDidCatch() {
+  // the street's chunk that failed to load and a build that threw both end here, and the error names which (B6, C-09)
+  componentDidCatch(error: unknown) {
+    console.error('[street] the street failed to load or to build; the sky stays alone:', error)
     ;(window as Window & { __streetReady?: boolean }).__streetReady = true
     this.props.onFailed?.()
   }
