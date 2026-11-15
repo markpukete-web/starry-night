@@ -5,7 +5,7 @@ The open work, with one pickup at the top. The history up to 2026-11-15 is in `t
 2026-11-15 points into that archive, at the same line. Its unchecked boxes sit inside superseded pickups. This file
 names only what is still open.
 
-## Pickup — 2026-11-15 (12:05): H6, A11 with B8 and A19, and H5 merged. A10's browser batch runs
+## Pickup — 2026-11-15 (13:40): H6, A11 with B8 and A19, H5 and A10 merged. The audit's remainder is done but Mark's items
 
 Mark, about 09:30, from his phone: "Take the lead and keep tackling the rest of the items without me. Work that needs
 my eye: Can make your best judgement and I will go with your recommendations. When in doubt, discuss with our
@@ -13,21 +13,11 @@ Consultant Fable in next tab." Then: "Also item 29, delete any local leftovers t
 "Merge each slice to main once it passes your gate". The consultant is the Claude (Fable) pane `w4:p6`, in tab
 `w4:t2`.
 
-**Running:**
-
-- A10, one tap-or-drag rule: the plan `scratch/briefs-2026-11-15/a10/plan.md`, read by Fable
-  (`a10/fable-answer.md`, "VERDICT: build all", 19 findings). The Lead's call: all three surfaces, the stale-press
-  replacement kept, no threshold changed. An Opus builder subagent builds phase 1 (code and unit tests, no browser),
-  brief `scratch/briefs-2026-11-15/a10-build.md`. Phase 1 is done: worktree
-  `.claude/worktrees/agent-adc72c88847a76df9`, branch `a10-tap-rule`, head `4b24060`, report `a10/build/report-1.md`
-  (15 mutants listed, 5 browser parts beyond the plan). The Lead read the `src` diff. Phase 2 (the browser reds, the
-  mutants, the record) runs on the Lead's word, rebased onto `main` after H5 merges. The builder rebased onto H5's head
-  (`4bc8725`, static checks green). Hydrogen runs the batch from 11:40: brief
-  `scratch/briefs-2026-11-15/a10-phase2-runs.md`, report `a10/build/report-2.md`. Next: the Lead's gate, the record
-  `tasks/2026-11-15-a10-tap-rule.md`, a rebase onto `4239df6`, the PR.
+**Running:** the follow-up to the Chrome leak count, below.
 
 The machine queue: one browser run at a time. The Story_Bridge session (tab w5) runs Playwright checks on this machine
-too (`tools/flash-check.mjs`). A wait sees them, and a Chrome count can read them. The
+too (`tools/flash-check.mjs`). A wait sees them, and a Chrome count reads them: its Playwright "Google Chrome for
+Testing" matches `countHeadlessChromes` (`scripts/lib/chrome.mjs:143`). The
 machine check since 10:50 (`tasks/lessons.md`): `pgrep -fl 'vite preview|starry-night[^ ]*/node_modules/.bin/vite|--headless|remote-debugging-port=[1-9]|bin/tsc|bin/eslint|node --test'`.
 
 The 11 frames' reference since #58: `scratch/a11-gate/frames/r1.sha`. B8 changed the seven street frames at the
@@ -40,7 +30,11 @@ passed all four checks. A11, B8 and A19 merged as `699a674` at 10:57, PR #58. Th
 each mutant fails on its own assert. Codex reviewed `210ad15`, the head, with no findings. H5 (the shared Chrome
 module, D16) merged as `4239df6` at 12:00, PR #59. The Lead's gate is `scratch/h5-gate/gate.out`. Codex's one finding
 (P2, a failed browser start left the script's own Vite server running) is fixed in `980a614`, proved red then green,
-and answered in its thread. The worker's logs moved to `scratch/briefs-2026-11-15/h5b/logs/`.
+and answered in its thread. The worker's logs moved to `scratch/briefs-2026-11-15/h5b/logs/`. A10 (one rule for tap
+or drag in the sky, the portal and the street) merged as `68a1c2b` at 13:36, PR #60. The record is
+`tasks/2026-11-15-a10-tap-rule.md`, the Lead's gate `scratch/a10-gate/gate.out`. Codex reviewed `ae2c7be`, the head,
+with no findings, and CI passed all four checks. The walk check passed all 22 cases in three runs. Each run's last line
+failed on the leak count, and the third run listed the two it counted: the Story_Bridge session's Playwright Chrome.
 
 **Mark's calls, decided on his word by the Lead's recommendation (09:30):**
 
@@ -84,19 +78,15 @@ the reference studies (`village-study`, `simon-lee-study`, `simon-village`, `vil
 
 **Next, in order:**
 
-1. Gate H6, push it with this record, open its PR, read Codex's review, merge.
-2. H5 Phase B on the new `main`. Gate H5, PR, Codex, merge.
-3. A11 and B8: the proof, PR, Codex, merge.
-4. B5, the trail texture: measure the upload's cost on the walk first. A10, one tap-or-drag rule: a plan, read by
-   the Fable pane, built by an Opus builder.
-5. The perf items not routed yet: C-07 (`inFootprint`, 89 ms), A19 (the portal layer's canvas copy, up to 18.7 MB),
-   A18 (a paused scene redraws each frame), A7 (the light material rebuilt on each pause), and B14, C-11 and A20 (the
-   frame loop's allocations).
+1. The leak count counts only this project's Chromes: `countHeadlessChromes` matches the profile folders that
+   `startChrome` makes, not every `Chrome.*headless` process. A small PR, gated with a planted leak.
 
 **For Mark when he is back:**
 
 - The walk end's look, on #55's preview link (sent 08:50).
-- Item 30's finding 3, on his phone.
+- Item 30's finding 3, on his phone, with a `?perf=1` trace on the walk for B5 and C-07.
+- A10: ten taps on the sky on his phone, on PR #60's preview link, and whether each kicks. A finger that wobbles more than
+  8 px and back was a tap and is now a drag.
 - The two proposals for his sections of `CLAUDE.md`, below.
 - The Trash folder above holds 14 GB. Empty it when you are content that nothing in it is needed.
 
