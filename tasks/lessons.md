@@ -528,3 +528,6 @@ The full history, 2026-06-13 to 2026-10-30, is in `tasks/archive/2026-10-30-less
   walk check passed all 22 cases twice and failed its last line twice: "before=0, after=2". Both times the two were
   that Chrome, started after the check began. A free machine before the run does not prove a free machine during it.
   Before a leak line counts as red, list the processes: `pgrep -fl 'Chrome.*headless'`. 2026-11-15
+- A waiter that cannot parse must stop, not loop. PR #60's waiter put backslashes inside an f-string's braces, every
+  poll printed a SyntaxError to a file nobody read, and it ran to its 40-minute cap while Codex had finished in one.
+  Run a new or edited waiter once against a known state before arming it, and make a parse failure exit. 2026-11-15
