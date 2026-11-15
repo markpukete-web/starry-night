@@ -38,6 +38,8 @@ failed on the leak count, and the third run listed the two it counted: the Story
 The leak count's fix merged as `39bcae2` at 13:44, PR #61: `countHeadlessChromes` matches the `starry-` profile
 folders only, and `startChrome` refuses another prefix. Its gate is `scratch/leak-gate/gate.out`: the walk check
 exited 0 with the Playwright Chrome running during it. Codex reviewed `7a03564`, the head, with no findings.
+On main after the merge, the other two callers ran clean: `check-portal.mjs` and `check-failure-paths.mjs` exit 0,
+with no `starry-` process left (`scratch/leak-gate/callers.out`).
 
 **Mark's calls, decided on his word by the Lead's recommendation (09:30):**
 
