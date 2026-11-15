@@ -32,10 +32,7 @@
  *     its pose mid-turn when reduced motion turns on.
  */
 
-import { spawn } from 'node:child_process'
-import { existsSync, mkdtempSync, rmSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { debugPort, openPage, PORTS, startChrome } from './lib/chrome.mjs'
 import { pathPoint, pathTangent, STATION_T, STREET, vincentPlace, walkPose } from '../src/scene/streetLayout.ts'
 import { bladeMoonFacing, bladeVertex, GRASS_BLADE, GRASS_MOON_GLSL } from '../src/scene/grassBlade.ts'
 import { STREET_MOON } from '../src/scene/streetLight.ts'
@@ -43,7 +40,7 @@ import { decodePNG } from './lib/png.ts'
 import { WALK } from '../src/scene/streetWalk.ts'
 import { FROG, FROGS } from '../src/scene/frog.ts'
 
-const appUrl = process.env.DIORAMA_CAPTURE_URL || 'http://127.0.0.1:5191/'
+const appUrl = process.env.DIORAMA_CAPTURE_URL || `http://127.0.0.1:${PORTS['check-street-grass'].app}/`
 const parsedUrl = new URL(appUrl)
 const origin = parsedUrl.origin
 
@@ -51,141 +48,20 @@ const caseArgIdx = process.argv.indexOf('--case')
 const targetCase = caseArgIdx >= 0 ? parseInt(process.argv[caseArgIdx + 1], 10) : null
 const shouldRun = (c) => targetCase === null || targetCase === c
 
-const chromePath =
-  process.env.CHROME_PATH ||
-  [
-    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-    '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser',
-  ].find((path) => existsSync(path))
-
-if (!chromePath) {
-  console.error('No Chrome-compatible browser found. Set CHROME_PATH.')
-  process.exit(1)
-}
-
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
-function startChrome(port) {
-  const userDataDir = mkdtempSync(join(tmpdir(), 'starry-grass-'))
-  const child = spawn(
-    chromePath,
-    [
-      '--headless=new',
-      ...(process.env.CHROME_FLAGS ?? '').split(/\s+/).filter(Boolean),
-      '--hide-scrollbars',
-      '--mute-audio',
-      '--disable-background-networking',
-      '--disable-sync',
-      '--disable-extensions',
-      '--no-first-run',
-      '--no-default-browser-check',
-      `--user-data-dir=${userDataDir}`,
-      `--remote-debugging-port=${port}`,
-      'about:blank',
-    ],
-    { stdio: ['ignore', 'ignore', 'ignore'] },
-  )
-  return {
-    child,
-    userDataDir,
-    // stops only the browser this run started: a machine-wide count would signal another agent's Chrome (Codex F02)
-    async cleanup() {
-      if (child.exitCode === null && child.signalCode === null) {
-        const exited = new Promise((resolve) => child.once('exit', () => resolve(true)))
-        child.kill()
-        if (!(await Promise.race([exited, sleep(5000).then(() => false)]))) {
-          child.kill('SIGKILL')
-          console.error(`FAIL: this run's headless Chrome (pid ${child.pid}) did not exit within 5 s of TERM`)
-          process.exitCode = 1
-        }
-      }
-      rmSync(userDataDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 300 })
-    },
+async function evaluate(page, fnOrExpr, arg) {
+  let expression
+  if (typeof fnOrExpr === 'function') {
+    expression = arg !== undefined ? `(${fnOrExpr.toString()})(${JSON.stringify(arg)})` : `(${fnOrExpr.toString()})()`
+  } else {
+    expression = fnOrExpr
   }
+  return page.evaluate(expression, { awaitPromise: false })
 }
 
-async function waitForChrome(port, timeoutMs = 20000) {
-  const start = Date.now()
-  while (Date.now() - start < timeoutMs) {
-    try {
-      const response = await fetch(`http://127.0.0.1:${port}/json/version`)
-      if (response.ok) return
-    } catch {
-      /* wait */
-    }
-    await sleep(150)
-  }
-  throw new Error('Chrome DevTools endpoint did not become ready')
-}
-
-class CdpPage {
-  constructor(wsUrl) {
-    this.wsUrl = wsUrl
-    this.seq = 0
-    this.pending = new Map()
-    this.errors = []
-  }
-
-  async connect() {
-    this.ws = new WebSocket(this.wsUrl)
-    this.ws.addEventListener('message', (event) => this.onMessage(event))
-    await new Promise((resolve, reject) => {
-      this.ws.addEventListener('open', resolve, { once: true })
-      this.ws.addEventListener('error', reject, { once: true })
-    })
-    await this.send('Page.enable')
-    await this.send('Runtime.enable')
-  }
-
-  onMessage(event) {
-    const message = JSON.parse(event.data)
-    if (message.id && this.pending.has(message.id)) {
-      const { resolve, reject } = this.pending.get(message.id)
-      this.pending.delete(message.id)
-      if (message.error) reject(new Error(message.error.message))
-      else resolve(message.result)
-      return
-    }
-    if (message.method === 'Runtime.exceptionThrown') {
-      this.errors.push(message.params.exceptionDetails?.text || 'runtime exception')
-    }
-  }
-
-  send(method, params = {}) {
-    const id = ++this.seq
-    this.ws.send(JSON.stringify({ id, method, params }))
-    return new Promise((resolve, reject) => this.pending.set(id, { resolve, reject }))
-  }
-
-  async evaluate(fnOrExpr, arg) {
-    let expression
-    if (typeof fnOrExpr === 'function') {
-      expression = arg !== undefined ? `(${fnOrExpr.toString()})(${JSON.stringify(arg)})` : `(${fnOrExpr.toString()})()`
-    } else {
-      expression = fnOrExpr
-    }
-    const res = await this.send('Runtime.evaluate', { expression, returnByValue: true })
-    if (res.exceptionDetails) {
-      throw new Error(`Evaluation failed: ${res.exceptionDetails.text}`)
-    }
-    return res.result?.value
-  }
-
-  async waitForStreetReady(timeoutMs = 25000) {
-    const start = Date.now()
-    for (;;) {
-      await sleep(150)
-      const ready = await this.evaluate('Boolean(window.__streetReady)')
-      if (ready) return
-      if (Date.now() - start > timeoutMs) {
-        throw new Error('Timeout waiting for __streetReady')
-      }
-    }
-  }
-
-  async close() {
-    this.ws.close()
-  }
+function waitForStreetReady(page, timeoutMs = 25000) {
+  return page.waitFor('window.__streetReady', timeoutMs, '__streetReady', 150)
 }
 
 /** S3's verge point by default, `laneAt(0.12, 0.15)`: 0.29 along the lane from stop 0's camera, 0.15 to the right */
@@ -203,22 +79,18 @@ function getVerge3DPoint(t = 0.12, lat = 0.15) {
 
 async function getVergeClientPoint(page, t, lat) {
   const vergePoint = getVerge3DPoint(t, lat)
-  return await page.evaluate((pt) => {
+  return await evaluate(page, (pt) => {
     return window.__walkProject(window.__streetWalk?.t ?? 0, pt)
   }, vergePoint)
 }
 
 async function main() {
-  const port = 9555 + Math.floor(Math.random() * 300)
-  const chrome = startChrome(port)
+  const port = debugPort('check-street-grass')
+  const chrome = await startChrome({ port, prefix: 'starry-grass-' })
 
   try {
-    await waitForChrome(port)
-    const response = await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: 'PUT' })
-    if (!response.ok) throw new Error(`Failed to create Chrome target: ${response.status}`)
-    const target = await response.json()
-    const page = new CdpPage(target.webSocketDebuggerUrl)
-    await page.connect()
+    const page = await openPage(port)
+    try {
 
     // Desktop viewport
     await page.send('Emulation.setDeviceMetricsOverride', {
@@ -235,19 +107,19 @@ async function main() {
     // -------------------------------------------------------------
     if (shouldRun(1)) {
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=input&vincent=0` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
 
-      const stop0GrassCount = await page.evaluate(() => window.__grassCount)
+      const stop0GrassCount = await evaluate(page, () => window.__grassCount)
       if (typeof stop0GrassCount !== 'number' || stop0GrassCount <= 0) {
         throw new Error(`Case 1 precondition failed: invalid __grassCount: ${stop0GrassCount}`)
       }
       console.log(`window.__grassCount at stop 0: ${stop0GrassCount}`)
 
       const [vx1, vy1] = await getVergeClientPoint(page)
-      await page.evaluate(([x, y]) => window.__grassHand(x, y), [vx1, vy1])
+      await evaluate(page, ([x, y]) => window.__grassHand(x, y), [vx1, vy1])
       await sleep(50)
 
-      const c1Hit = await page.evaluate(() => window.__grassHit)
+      const c1Hit = await evaluate(page, () => window.__grassHit)
       if (!c1Hit) {
         throw new Error('Case 1 precondition failed: __grassHit is null inside verge map')
       }
@@ -255,14 +127,14 @@ async function main() {
       const t0Case1 = Date.now()
       let c1Peak = 0
       while (Date.now() - t0Case1 < 300) {
-        c1Peak = await page.evaluate(() => window.__grassPeak ?? 0)
+        c1Peak = await evaluate(page, () => window.__grassPeak ?? 0)
         if (c1Peak > 0.5) break
         await sleep(20)
       }
       if (c1Peak <= 0.5) {
         throw new Error(`Case 1 failed: __grassPeak was ${c1Peak.toFixed(3)}, expected > 0.5 within 0.3 s`)
       }
-      await page.evaluate(() => window.__grassHand(null))
+      await evaluate(page, () => window.__grassHand(null))
       console.log(`PASS: case 1 - hand bends: __grassPeak > 0.5 within 0.3 s (peak=${c1Peak.toFixed(3)})`)
     }
 
@@ -273,8 +145,8 @@ async function main() {
     // -------------------------------------------------------------
     if (shouldRun(2)) {
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=input&ids=1&vincent=0` })
-      await page.waitForStreetReady()
-      await page.evaluate(() => {
+      await waitForStreetReady(page)
+      await evaluate(page, () => {
         window.__skyTime = 1
         window.__grassHand(null)
       })
@@ -293,23 +165,23 @@ async function main() {
       const img1 = decodePNG(bufPre1)
 
       const [vx2, vy2] = await getVergeClientPoint(page)
-      await page.evaluate(([x, y]) => {
+      await evaluate(page, ([x, y]) => {
         window.__skyTime = 1
         window.__grassHand(x, y)
       }, [vx2, vy2])
 
       for (let i = 0; i < 20; i++) {
         await sleep(20)
-        const p = await page.evaluate(() => window.__grassPeak ?? 0)
+        const p = await evaluate(page, () => window.__grassPeak ?? 0)
         if (p > 0.5) break
       }
 
-      await page.evaluate(() => {
+      await evaluate(page, () => {
         window.__skyTime = 1
       })
       const shot2 = await page.send('Page.captureScreenshot', { format: 'png' })
       const img2 = decodePNG(Buffer.from(shot2.data, 'base64'))
-      await page.evaluate(() => {
+      await evaluate(page, () => {
         window.__grassHand(null)
         delete window.__skyTime
       })
@@ -362,14 +234,14 @@ async function main() {
     // -------------------------------------------------------------
     if (shouldRun(3)) {
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=input` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
 
-      const stamps3Before = await page.evaluate(() => window.__grassStamps?.hand ?? 0)
-      await page.evaluate(() => window.__grassHand(800, 100))
+      const stamps3Before = await evaluate(page, () => window.__grassStamps?.hand ?? 0)
+      await evaluate(page, () => window.__grassHand(800, 100))
       await sleep(200)
 
-      const c3Hit = await page.evaluate(() => window.__grassHit)
-      const stamps3After = await page.evaluate(() => window.__grassStamps?.hand ?? 0)
+      const c3Hit = await evaluate(page, () => window.__grassHit)
+      const stamps3After = await evaluate(page, () => window.__grassStamps?.hand ?? 0)
 
       if (c3Hit !== null) {
         throw new Error(`Case 3 failed: __grassHit was not null above horizon (got ${JSON.stringify(c3Hit)})`)
@@ -377,7 +249,7 @@ async function main() {
       if (stamps3After !== stamps3Before) {
         throw new Error(`Case 3 failed: __grassStamps.hand changed from ${stamps3Before} to ${stamps3After}`)
       }
-      await page.evaluate(() => window.__grassHand(null))
+      await evaluate(page, () => window.__grassHand(null))
       console.log('PASS: case 3 - sky and roof: __grassHit null and stamps.hand unchanged')
     }
 
@@ -389,13 +261,13 @@ async function main() {
     // -------------------------------------------------------------
     if (shouldRun(4)) {
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=input` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
 
       const [vx4, vy4] = await getVergeClientPoint(page)
-      await page.evaluate(([x, y]) => window.__grassHand(x, y), [vx4, vy4])
+      await evaluate(page, ([x, y]) => window.__grassHand(x, y), [vx4, vy4])
       await sleep(100)
 
-      const c4Hit0 = await page.evaluate(() => window.__grassHit)
+      const c4Hit0 = await evaluate(page, () => window.__grassHit)
       if (!c4Hit0) throw new Error('Case 4 precondition failed: initial __grassHit is null')
 
       await page.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'ArrowUp', code: 'ArrowUp', windowsVirtualKeyCode: 38 })
@@ -406,7 +278,7 @@ async function main() {
 
       for (let i = 0; i < 10; i++) {
         await sleep(100)
-        const hit = await page.evaluate(() => window.__grassHit)
+        const hit = await evaluate(page, () => window.__grassHit)
         if (!hit) throw new Error(`Case 4 frame ${i}: __grassHit became null`)
         const dt = hit.t - lastT
         if (dt < 0.002) {
@@ -414,7 +286,7 @@ async function main() {
         }
         lastT = hit.t
 
-        const proj = await page.evaluate(
+        const proj = await evaluate(page, 
           ({ t, x, z, y }) => window.__walkProject(t, [x, y, z]),
           { t: hit.t, x: hit.x, z: hit.z, y: castPlaneY },
         )
@@ -428,13 +300,13 @@ async function main() {
       }
 
       await page.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'ArrowUp', code: 'ArrowUp', windowsVirtualKeyCode: 38 })
-      const c4HitFinal = await page.evaluate(() => window.__grassHit)
+      const c4HitFinal = await evaluate(page, () => window.__grassHit)
       const c4Dist = Math.hypot(c4HitFinal.x - c4Hit0.x, c4HitFinal.z - c4Hit0.z)
 
       if (c4Dist <= 0.1) {
         throw new Error(`Case 4 failed: __grassHit moved by ${c4Dist.toFixed(3)}, expected > 0.1`)
       }
-      await page.evaluate(() => window.__grassHand(null))
+      await evaluate(page, () => window.__grassHand(null))
       console.log(
         `PASS: case 4 - walk re-casts: hit moved by ${c4Dist.toFixed(3)} > 0.1, all 10 frames projected within 0.25 px (max error: ${Math.max(...projErrors).toFixed(2)} px)`,
       )
@@ -456,9 +328,9 @@ async function main() {
       })
       await page.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 })
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=auto` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
 
-      const autoInit = await page.evaluate(() => window.__streetWalk?.auto)
+      const autoInit = await evaluate(page, () => window.__streetWalk?.auto)
       if (autoInit !== true) {
         throw new Error(`Case 5 precondition failed: auto is ${autoInit}, expected true`)
       }
@@ -468,14 +340,14 @@ async function main() {
       await sleep(50)
       await page.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
       await sleep(100)
-      const autoPre = await page.evaluate(() => window.__streetWalk?.auto)
+      const autoPre = await evaluate(page, () => window.__streetWalk?.auto)
       if (autoPre !== true) {
         throw new Error('Case 5 precondition failed: tap elsewhere toggled auto')
       }
 
       // Tap on Vincent toggles auto and leaves __grassStamps.hand unchanged
-      const stamps5A = await page.evaluate(() => window.__grassStamps?.hand ?? 0)
-      const vincentBox = await page.evaluate(() => window.__vincentBox())
+      const stamps5A = await evaluate(page, () => window.__grassStamps?.hand ?? 0)
+      const vincentBox = await evaluate(page, () => window.__vincentBox())
       const vcx = Math.round((vincentBox.x0 + vincentBox.x1) / 2)
       const vcy = Math.round((vincentBox.y0 + vincentBox.y1) / 2)
 
@@ -484,8 +356,8 @@ async function main() {
       await page.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
       await sleep(100)
 
-      const autoAfterTapV = await page.evaluate(() => window.__streetWalk?.auto)
-      const stamps5AfterTapV = await page.evaluate(() => window.__grassStamps?.hand ?? 0)
+      const autoAfterTapV = await evaluate(page, () => window.__streetWalk?.auto)
+      const stamps5AfterTapV = await evaluate(page, () => window.__grassStamps?.hand ?? 0)
 
       if (autoAfterTapV !== false) {
         throw new Error(`Case 5 failed: tap on Vincent expected auto false, got ${autoAfterTapV}`)
@@ -495,7 +367,7 @@ async function main() {
       }
 
       // A down 1 px outside his padded box moved 2 px inside by its up bends (hand stamps rise) and does not toggle
-      const padded = await page.evaluate((hitMinHalf) => {
+      const padded = await evaluate(page, (hitMinHalf) => {
         const b = window.__vincentBox()
         const cx = (b.x0 + b.x1) / 2
         const cy = (b.y0 + b.y1) / 2
@@ -508,7 +380,7 @@ async function main() {
       const upX = Math.round(padded.x1 - 1)
       const upY = Math.round(padded.cy)
 
-      const stampsBeforeB = await page.evaluate(() => window.__grassStamps?.hand ?? 0)
+      const stampsBeforeB = await evaluate(page, () => window.__grassStamps?.hand ?? 0)
       await page.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: downX, y: downY, id: 0 }] })
       await sleep(50)
       await page.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: upX, y: upY, id: 0 }] })
@@ -516,8 +388,8 @@ async function main() {
       await page.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
       await sleep(100)
 
-      const autoAfterB = await page.evaluate(() => window.__streetWalk?.auto)
-      const stampsAfterB = await page.evaluate(() => window.__grassStamps?.hand ?? 0)
+      const autoAfterB = await evaluate(page, () => window.__streetWalk?.auto)
+      const stampsAfterB = await evaluate(page, () => window.__grassStamps?.hand ?? 0)
 
       if (autoAfterB !== false) {
         throw new Error('Case 5 failed: down outside moved inside toggled auto (should not toggle)')
@@ -527,7 +399,7 @@ async function main() {
       }
 
       // A touch-drag across the verge bends and leaves auto as it was
-      const stampsBeforeC = await page.evaluate(() => window.__grassStamps?.hand ?? 0)
+      const stampsBeforeC = await evaluate(page, () => window.__grassStamps?.hand ?? 0)
       await page.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 320, y: 481, id: 0 }] })
       await sleep(40)
       await page.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: 350, y: 481, id: 0 }] })
@@ -535,8 +407,8 @@ async function main() {
       await page.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
       await sleep(100)
 
-      const autoAfterC = await page.evaluate(() => window.__streetWalk?.auto)
-      const stampsAfterC = await page.evaluate(() => window.__grassStamps?.hand ?? 0)
+      const autoAfterC = await evaluate(page, () => window.__streetWalk?.auto)
+      const stampsAfterC = await evaluate(page, () => window.__grassStamps?.hand ?? 0)
 
       if (autoAfterC !== false) {
         throw new Error('Case 5 failed: touch-drag across verge changed auto')
@@ -549,9 +421,9 @@ async function main() {
       await page.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 339, y: 481, id: 0 }] })
       await sleep(100)
       await page.send('Input.dispatchTouchEvent', { type: 'touchCancel', touchPoints: [] })
-      const stampsAfterCancel = await page.evaluate(() => window.__grassStamps?.hand ?? 0)
+      const stampsAfterCancel = await evaluate(page, () => window.__grassStamps?.hand ?? 0)
       await sleep(250)
-      const stampsAfterWait = await page.evaluate(() => window.__grassStamps?.hand ?? 0)
+      const stampsAfterWait = await evaluate(page, () => window.__grassStamps?.hand ?? 0)
 
       if (stampsAfterWait !== stampsAfterCancel) {
         throw new Error(`Case 5 failed: hand stamps continued rising after touchCancel (${stampsAfterCancel} -> ${stampsAfterWait})`)
@@ -575,16 +447,16 @@ async function main() {
     // -------------------------------------------------------------
     if (shouldRun(6)) {
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=input&vincent=0` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
 
       const [vx6, vy6] = await getVergeClientPoint(page)
-      await page.evaluate(([x, y]) => window.__grassHand(x, y), [vx6, vy6])
+      await evaluate(page, ([x, y]) => window.__grassHand(x, y), [vx6, vy6])
       await sleep(500)
 
-      const p6Held = await page.evaluate(() => window.__grassPeak ?? 0)
+      const p6Held = await evaluate(page, () => window.__grassPeak ?? 0)
       if (p6Held <= 0.5) throw new Error(`Case 6 precondition failed: peak was ${p6Held.toFixed(3)}, expected > 0.5`)
 
-      await page.evaluate(() => window.__grassHand(null))
+      await evaluate(page, () => window.__grassHand(null))
 
       const t0Case6 = Date.now()
       let sawBelow005 = false
@@ -594,7 +466,7 @@ async function main() {
 
       while (Date.now() - t0Case6 < 5500) {
         await sleep(40)
-        const st = await page.evaluate(() => ({
+        const st = await evaluate(page, () => ({
           peak: window.__grassPeak ?? 0,
           handLive: window.__grassHandLive ?? 0,
         }))
@@ -627,29 +499,29 @@ async function main() {
     // -------------------------------------------------------------
     if (shouldRun(7)) {
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=auto&vincent=1` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
 
-      const feet0 = await page.evaluate(() => window.__grassStamps?.feet ?? 0)
+      const feet0 = await evaluate(page, () => window.__grassStamps?.feet ?? 0)
       await sleep(1500)
-      const feet1 = await page.evaluate(() => window.__grassStamps?.feet ?? 0)
+      const feet1 = await evaluate(page, () => window.__grassStamps?.feet ?? 0)
 
       if (feet1 <= feet0) {
         throw new Error(`Case 7 failed: __grassStamps.feet did not rise while walking (${feet0} -> ${feet1})`)
       }
-      const peakFeet = await page.evaluate(() => window.__grassPeak ?? 0)
+      const peakFeet = await evaluate(page, () => window.__grassPeak ?? 0)
       if (peakFeet <= 0) {
         throw new Error('Case 7 failed: no live texels beside Vincent')
       }
-      const walkT = await page.evaluate(() => window.__streetWalk?.t ?? 0)
+      const walkT = await evaluate(page, () => window.__streetWalk?.t ?? 0)
       const p = vincentPlace(walkT).position
       const q = pathPoint(walkT)
 
-      const pushP = await page.evaluate(([x, z]) => window.__grassPushNear(x, z, 0.06), [p[0], p[2]])
+      const pushP = await evaluate(page, ([x, z]) => window.__grassPushNear(x, z, 0.06), [p[0], p[2]])
       if (pushP <= 0.1) {
         throw new Error(`Case 7 failed: __grassPushNear at Vincent's place was ${pushP.toFixed(3)}, expected > 0.1`)
       }
 
-      const pushQ = await page.evaluate(([x, z]) => window.__grassPushNear(x, z, 0.06), [q[0], q[2]])
+      const pushQ = await evaluate(page, ([x, z]) => window.__grassPushNear(x, z, 0.06), [q[0], q[2]])
       if (pushQ !== 0) {
         throw new Error(`Case 7 failed: __grassPushNear at pathPoint was ${pushQ.toFixed(3)}, expected 0`)
       }
@@ -666,23 +538,23 @@ async function main() {
         features: [{ name: 'prefers-reduced-motion', value: 'reduce' }],
       })
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=input&vincent=0` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
 
       const [vx8, vy8] = await getVergeClientPoint(page)
-      await page.evaluate(([x, y]) => window.__grassHand(x, y), [vx8, vy8])
+      await evaluate(page, ([x, y]) => window.__grassHand(x, y), [vx8, vy8])
       await sleep(300)
 
-      const p8Held = await page.evaluate(() => window.__grassPeak ?? 0)
+      const p8Held = await evaluate(page, () => window.__grassPeak ?? 0)
       if (p8Held <= 0.5) {
         throw new Error(`Case 8 failed: hand held peak was ${p8Held.toFixed(3)}, expected > 0.5`)
       }
 
-      await page.evaluate(() => window.__grassHand(null))
+      await evaluate(page, () => window.__grassHand(null))
 
       let prevPeak8 = p8Held
       for (let i = 0; i < 20; i++) {
         await sleep(50)
-        const curr = await page.evaluate(() => window.__grassPeak ?? 0)
+        const curr = await evaluate(page, () => window.__grassPeak ?? 0)
         if (curr > prevPeak8 + 1e-4) {
           throw new Error(`Case 8 failed: __grassPeak rose after lift under reduced motion (${prevPeak8.toFixed(4)} -> ${curr.toFixed(4)})`)
         }
@@ -709,26 +581,26 @@ async function main() {
     if (shouldRun(9)) {
       await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: '' }] })
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=input&vincent=0` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
 
       const [vx9, vy9] = await getVergeClientPoint(page)
-      await page.evaluate(([x, y]) => window.__grassHand(x, y), [vx9, vy9])
+      await evaluate(page, ([x, y]) => window.__grassHand(x, y), [vx9, vy9])
       await sleep(300)
 
-      const p9Held = await page.evaluate(() => window.__grassPeak ?? 0)
+      const p9Held = await evaluate(page, () => window.__grassPeak ?? 0)
       if (p9Held <= 0.5) throw new Error(`Case 9 precondition failed: peak was ${p9Held.toFixed(3)}`)
 
-      await page.evaluate(() => window.__grassHand(null))
+      await evaluate(page, () => window.__grassHand(null))
       await sleep(100)
 
       // Pause motion on
-      await page.evaluate(() => {
+      await evaluate(page, () => {
         const btn = Array.from(document.querySelectorAll('button')).find(
           (b) => b.textContent?.includes('Pause') || b.getAttribute('aria-label')?.includes('Pause'),
         )
         btn?.click()
       })
-      await page.evaluate(async () => {
+      await evaluate(page, async () => {
         for (let i = 0; i < 30; i++) {
           const btn = Array.from(document.querySelectorAll('button')).find(
             (b) => b.textContent?.includes('Play') || b.getAttribute('aria-label')?.includes('Play') || b.textContent?.includes('Resume'),
@@ -772,28 +644,28 @@ async function main() {
       }
 
       // New hand sweep while paused
-      const stamps9Before = await page.evaluate(() => window.__grassStamps?.hand ?? 0)
-      await page.evaluate(([x, y]) => window.__grassHand(x - 10, y), [vx9, vy9])
+      const stamps9Before = await evaluate(page, () => window.__grassStamps?.hand ?? 0)
+      await evaluate(page, ([x, y]) => window.__grassHand(x - 10, y), [vx9, vy9])
       await sleep(50)
-      await page.evaluate(([x, y]) => window.__grassHand(x + 10, y), [vx9, vy9])
+      await evaluate(page, ([x, y]) => window.__grassHand(x + 10, y), [vx9, vy9])
       await sleep(50)
-      await page.evaluate(() => window.__grassHand(null))
-      const stamps9After = await page.evaluate(() => window.__grassStamps?.hand ?? 0)
+      await evaluate(page, () => window.__grassHand(null))
+      const stamps9After = await evaluate(page, () => window.__grassStamps?.hand ?? 0)
 
       if (stamps9After !== stamps9Before) {
         throw new Error(`Case 9 failed: hand sweep while paused added hand stamps (${stamps9Before} -> ${stamps9After})`)
       }
 
       // Pause off: __grassPeak changes again
-      const peakPaused = await page.evaluate(() => window.__grassPeak ?? 0)
-      await page.evaluate(() => {
+      const peakPaused = await evaluate(page, () => window.__grassPeak ?? 0)
+      await evaluate(page, () => {
         const btn = Array.from(document.querySelectorAll('button')).find(
           (b) => b.textContent?.includes('Resume') || b.textContent?.includes('Play') || b.getAttribute('aria-label')?.includes('Resume'),
         )
         btn?.click()
       })
       await sleep(250)
-      const peakResumed = await page.evaluate(() => window.__grassPeak ?? 0)
+      const peakResumed = await evaluate(page, () => window.__grassPeak ?? 0)
 
       if (Math.abs(peakResumed - peakPaused) < 1e-4) {
         throw new Error(`Case 9 failed: __grassPeak did not change after unpausing (stayed ${peakPaused.toFixed(4)})`)
@@ -808,17 +680,17 @@ async function main() {
     if (shouldRun(10)) {
       // First load without grass=0: canvas cursor must be grab
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=input` })
-      await page.waitForStreetReady()
-      const cursorWithGrass = await page.evaluate(() => document.querySelector('canvas')?.style.cursor)
+      await waitForStreetReady(page)
+      const cursorWithGrass = await evaluate(page, () => document.querySelector('canvas')?.style.cursor)
       if (cursorWithGrass !== 'grab') {
         throw new Error(`Case 10 precondition failed: canvas cursor was "${cursorWithGrass}", expected "grab" with grass enabled`)
       }
 
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=input&grass=0` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
 
-      const count10 = await page.evaluate(() => window.__grassCount)
-      const cursor10 = await page.evaluate(() => document.querySelector('canvas')?.style.cursor)
+      const count10 = await evaluate(page, () => window.__grassCount)
+      const cursor10 = await evaluate(page, () => document.querySelector('canvas')?.style.cursor)
 
       if (count10 !== undefined) {
         throw new Error(`Case 10 failed: __grassCount was defined with grass=0 (${count10})`)
@@ -841,9 +713,9 @@ async function main() {
     if (shouldRun(11)) {
       // Part A: repeat case 1 with &vincent=0 &skyAnchor=A
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=input&vincent=0&skyAnchor=A` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
 
-      const stop0GrassCountA = await page.evaluate(() => window.__grassCount)
+      const stop0GrassCountA = await evaluate(page, () => window.__grassCount)
       if (typeof stop0GrassCountA !== 'number' || stop0GrassCountA <= 0) {
         throw new Error(`Case 11 precondition failed: invalid __grassCount: ${stop0GrassCountA}`)
       }
@@ -854,14 +726,14 @@ async function main() {
         vergeBase[1] + STREET.originA[1],
         vergeBase[2] + STREET.originA[2],
       ]
-      const [vx11, vy11] = await page.evaluate((pt) => {
+      const [vx11, vy11] = await evaluate(page, (pt) => {
         return window.__walkProject(window.__streetWalk?.t ?? 0, pt)
       }, vergePtA)
 
-      await page.evaluate(([x, y]) => window.__grassHand(x, y), [vx11, vy11])
+      await evaluate(page, ([x, y]) => window.__grassHand(x, y), [vx11, vy11])
       await sleep(50)
 
-      const c11Hit = await page.evaluate(() => window.__grassHit)
+      const c11Hit = await evaluate(page, () => window.__grassHit)
       if (!c11Hit) {
         throw new Error('Case 11 (case 1 under anchor A) failed: __grassHit is null inside verge map')
       }
@@ -869,40 +741,40 @@ async function main() {
       const t0Case11 = Date.now()
       let c11Peak = 0
       while (Date.now() - t0Case11 < 300) {
-        c11Peak = await page.evaluate(() => window.__grassPeak ?? 0)
+        c11Peak = await evaluate(page, () => window.__grassPeak ?? 0)
         if (c11Peak > 0.5) break
         await sleep(20)
       }
       if (c11Peak <= 0.5) {
         throw new Error(`Case 11 (case 1 under anchor A) failed: __grassPeak was ${c11Peak.toFixed(3)}, expected > 0.5 within 0.3 s`)
       }
-      await page.evaluate(() => window.__grassHand(null))
+      await evaluate(page, () => window.__grassHand(null))
 
       // Part B: repeat case 7 with &skyAnchor=A
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=auto&vincent=1&skyAnchor=A` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
 
-      const feet11_0 = await page.evaluate(() => window.__grassStamps?.feet ?? 0)
+      const feet11_0 = await evaluate(page, () => window.__grassStamps?.feet ?? 0)
       await sleep(1500)
-      const feet11_1 = await page.evaluate(() => window.__grassStamps?.feet ?? 0)
+      const feet11_1 = await evaluate(page, () => window.__grassStamps?.feet ?? 0)
 
       if (feet11_1 <= feet11_0) {
         throw new Error(`Case 11 (case 7 under anchor A) failed: __grassStamps.feet did not rise while walking (${feet11_0} -> ${feet11_1})`)
       }
-      const peakFeet11 = await page.evaluate(() => window.__grassPeak ?? 0)
+      const peakFeet11 = await evaluate(page, () => window.__grassPeak ?? 0)
       if (peakFeet11 <= 0) {
         throw new Error('Case 11 (case 7 under anchor A) failed: no live texels beside Vincent')
       }
-      const walkT11 = await page.evaluate(() => window.__streetWalk?.t ?? 0)
+      const walkT11 = await evaluate(page, () => window.__streetWalk?.t ?? 0)
       const p11 = vincentPlace(walkT11).position
       const q11 = pathPoint(walkT11)
 
-      const pushP11 = await page.evaluate(([x, z]) => window.__grassPushNear(x, z, 0.06), [p11[0], p11[2]])
+      const pushP11 = await evaluate(page, ([x, z]) => window.__grassPushNear(x, z, 0.06), [p11[0], p11[2]])
       if (pushP11 <= 0.1) {
         throw new Error(`Case 11 (case 7 under anchor A) failed: __grassPushNear at Vincent's place was ${pushP11.toFixed(3)}, expected > 0.1`)
       }
 
-      const pushQ11 = await page.evaluate(([x, z]) => window.__grassPushNear(x, z, 0.06), [q11[0], q11[2]])
+      const pushQ11 = await evaluate(page, ([x, z]) => window.__grassPushNear(x, z, 0.06), [q11[0], q11[2]])
       if (pushQ11 !== 0) {
         throw new Error(`Case 11 (case 7 under anchor A) failed: __grassPushNear at pathPoint was ${pushQ11.toFixed(3)}, expected 0`)
       }
@@ -915,28 +787,28 @@ async function main() {
     // -------------------------------------------------------------
     if (shouldRun(12)) {
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=input&vincent=0` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
       const [vx12, vy12] = await getVergeClientPoint(page)
       const move12 = ([x, y]) =>
         document.querySelector('canvas').dispatchEvent(
           new PointerEvent('pointermove', { clientX: x, clientY: y, pointerType: 'mouse', isPrimary: true, bubbles: true }),
         )
-      const handStamps = () => page.evaluate(() => window.__grassStamps.hand)
+      const handStamps = () => evaluate(page, () => window.__grassStamps.hand)
 
       const s0 = await handStamps()
-      await page.evaluate(move12, [vx12, vy12])
+      await evaluate(page, move12, [vx12, vy12])
       await sleep(250)
       const s1 = await handStamps()
       if (s1 <= s0) throw new Error(`Case 12 precondition failed: a mouse move over the verge added no stamps (${s0} -> ${s1})`)
 
-      await page.evaluate(() => window.dispatchEvent(new Event('blur')))
+      await evaluate(page, () => window.dispatchEvent(new Event('blur')))
       await sleep(50)
       const s2 = await handStamps()
       await sleep(250)
       const s3 = await handStamps()
       if (s3 !== s2) throw new Error(`Case 12 failed: the hand kept stamping after a blur (${s2} -> ${s3})`)
 
-      await page.evaluate(move12, [vx12, vy12])
+      await evaluate(page, move12, [vx12, vy12])
       await sleep(250)
       const s4 = await handStamps()
       if (s4 <= s3) throw new Error(`Case 12 failed: a move after the blur added no stamps (${s3} -> ${s4})`)
@@ -951,14 +823,14 @@ async function main() {
       await page.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true })
       await page.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 })
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walk=0&vincent=0` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
 
       await page.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 320, y: 481, id: 0 }] })
       await sleep(150)
-      const hitA = await page.evaluate(() => window.__grassHit)
+      const hitA = await evaluate(page, () => window.__grassHit)
       await page.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: 350, y: 481, id: 0 }] })
       await sleep(150)
-      const hitB = await page.evaluate(() => window.__grassHit)
+      const hitB = await evaluate(page, () => window.__grassHit)
       await page.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
       await page.send('Emulation.setTouchEmulationEnabled', { enabled: false })
       await page.send('Emulation.setDeviceMetricsOverride', { width: 1600, height: 900, deviceScaleFactor: 1, mobile: false })
@@ -983,7 +855,7 @@ async function main() {
       for (const c of cases14) c.expected = bladeMoonFacing({ lean: c.lean, curl: c.curl, yaw: c.yaw }, c.a, c.right, moon)
       await page.send('Page.navigate', { url: 'about:blank' })
       await sleep(200)
-      const got14 = await page.evaluate(({ glsl, cases, moon }) => {
+      const got14 = await evaluate(page, ({ glsl, cases, moon }) => {
         const canvas = document.createElement('canvas')
         canvas.width = 1
         canvas.height = 1
@@ -1057,22 +929,22 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
       const brightened = {}
       for (const light of ['', '&light=0']) {
         await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=input&vincent=0${light}` })
-        await page.waitForStreetReady()
-        await page.evaluate(() => {
+        await waitForStreetReady(page)
+        await evaluate(page, () => {
           window.__skyTime = 0
           window.__grassHand(null)
         })
         await sleep(300)
         const [vx15, vy15] = await getVergeClientPoint(page, VERGE_15.t, VERGE_15.lat)
         const before = await shot()
-        await page.evaluate(([x, y]) => window.__grassHand(x, y), [vx15, vy15])
+        await evaluate(page, ([x, y]) => window.__grassHand(x, y), [vx15, vy15])
         let peak15 = 0
         for (let i = 0; i < 20 && peak15 <= 0.5; i++) {
           await sleep(20)
-          peak15 = await page.evaluate(() => window.__grassPeak ?? 0)
+          peak15 = await evaluate(page, () => window.__grassPeak ?? 0)
         }
         const after = await shot()
-        await page.evaluate(() => {
+        await evaluate(page, () => {
           window.__grassHand(null)
           delete window.__skyTime
         })
@@ -1099,43 +971,43 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
     // -------------------------------------------------------------
     if (shouldRun(16)) {
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=input&vincent=0` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
       const [vx16, vy16] = await getVergeClientPoint(page)
       const fire16 = ([type, x, y, buttons, onWindow]) => {
         const e = new PointerEvent(type, { clientX: x, clientY: y, pointerType: 'mouse', isPrimary: true, buttons, bubbles: true })
         ;(onWindow ? window : document.querySelector('canvas')).dispatchEvent(e)
       }
-      const cursor16 = () => page.evaluate(() => document.querySelector('canvas')?.style.cursor)
+      const cursor16 = () => evaluate(page, () => document.querySelector('canvas')?.style.cursor)
       // moves at the point for `ms`, the largest push seen and the last
       const hold16 = async (buttons, ms) => {
         let most = 0
         let last = 0
         const t0 = Date.now()
         while (Date.now() - t0 < ms) {
-          await page.evaluate(fire16, ['pointermove', vx16, vy16, buttons, false])
+          await evaluate(page, fire16, ['pointermove', vx16, vy16, buttons, false])
           await sleep(40)
-          last = await page.evaluate(() => window.__grassPeak ?? 0)
+          last = await evaluate(page, () => window.__grassPeak ?? 0)
           most = Math.max(most, last)
         }
         return { most, last }
       }
       const hover16 = await hold16(0, 1000)
       if (hover16.most < 0.3 || hover16.most > 0.62) throw new Error(`Case 16 failed: a hover pushed ${hover16.most.toFixed(3)}, expected 0.3 to 0.62`)
-      await page.evaluate(fire16, ['pointerdown', vx16, vy16, 1, false])
+      await evaluate(page, fire16, ['pointerdown', vx16, vy16, 1, false])
       if ((await cursor16()) !== 'grabbing') throw new Error(`Case 16 failed: the cursor was "${await cursor16()}" on a down, expected grabbing`)
       const press16 = await hold16(1, 1000)
       if (press16.most < hover16.most + 0.2) throw new Error(`Case 16 failed: a press pushed ${press16.most.toFixed(3)}, a hover ${hover16.most.toFixed(3)}`)
-      await page.evaluate(fire16, ['pointerup', 5, 5, 0, true])
+      await evaluate(page, fire16, ['pointerup', 5, 5, 0, true])
       if ((await cursor16()) !== 'grab') throw new Error(`Case 16 failed: the cursor was "${await cursor16()}" after an up on the window, expected grab`)
       const after16 = await hold16(0, 3000)
       if (after16.last > hover16.most + 0.05) throw new Error(`Case 16 failed: 3 s of hover after the lift still pushed ${after16.last.toFixed(3)} (a hover ${hover16.most.toFixed(3)})`)
       const ends16 = {
-        cancel: () => page.evaluate(fire16, ['pointercancel', vx16, vy16, 0, false]),
-        blur: () => page.evaluate(() => window.dispatchEvent(new Event('blur'))),
-        'a move with no button': () => page.evaluate(fire16, ['pointermove', vx16, vy16, 0, false]),
+        cancel: () => evaluate(page, fire16, ['pointercancel', vx16, vy16, 0, false]),
+        blur: () => evaluate(page, () => window.dispatchEvent(new Event('blur'))),
+        'a move with no button': () => evaluate(page, fire16, ['pointermove', vx16, vy16, 0, false]),
       }
       for (const [name, end] of Object.entries(ends16)) {
-        await page.evaluate(fire16, ['pointerdown', vx16, vy16, 1, false])
+        await evaluate(page, fire16, ['pointerdown', vx16, vy16, 1, false])
         if ((await cursor16()) !== 'grabbing') throw new Error(`Case 16 precondition failed: no grabbing before the ${name}`)
         await end()
         if ((await cursor16()) !== 'grab') throw new Error(`Case 16 failed: the cursor was "${await cursor16()}" after a ${name}, expected grab`)
@@ -1145,14 +1017,14 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
         const e = new PointerEvent(type, { clientX: x, clientY: y, pointerType, pointerId: pointerType === 'mouse' ? 1 : 7, isPrimary: true, button, buttons, bubbles: true })
         document.querySelector('canvas').dispatchEvent(e)
       }
-      await page.evaluate(other16, ['pointerdown', vx16, vy16, 'mouse', 2, 2])
+      await evaluate(page, other16, ['pointerdown', vx16, vy16, 'mouse', 2, 2])
       if ((await cursor16()) !== 'grab') throw new Error(`Case 16 failed: the cursor was "${await cursor16()}" after a right button's down, expected grab`)
-      await page.evaluate(fire16, ['pointerdown', vx16, vy16, 1, false])
+      await evaluate(page, fire16, ['pointerdown', vx16, vy16, 1, false])
       for (const type of ['pointerup', 'pointercancel']) {
-        await page.evaluate(other16, [type, vx16, vy16, 'touch', 0, 0])
+        await evaluate(page, other16, [type, vx16, vy16, 'touch', 0, 0])
         if ((await cursor16()) !== 'grabbing') throw new Error(`Case 16 failed: a touch's ${type} ended the mouse's press`)
       }
-      await page.evaluate(fire16, ['pointerup', 5, 5, 0, true])
+      await evaluate(page, fire16, ['pointerup', 5, 5, 0, true])
       if ((await cursor16()) !== 'grab') throw new Error(`Case 16 failed: the mouse's own up did not end its press`)
       console.log(`PASS: case 16 - the press: hover ${hover16.most.toFixed(3)}, press ${press16.most.toFixed(3)}, ${after16.last.toFixed(3)} after 3 s of hover past the lift, grab again after an up, a cancel, a blur and a move with no button; no press on a right button, and a touch's up or cancel leaves the mouse's press`)
     }
@@ -1165,10 +1037,10 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
     if (shouldRun(17)) {
       const B = FROG.blink
       const shutAt = B.first + B.down + B.hold / 2
-      const frog17 = () => page.evaluate(() => window.__frog?.() ?? null)
+      const frog17 = () => evaluate(page, () => window.__frog?.() ?? null)
       // the clock pinned at `t`, three reads 100 ms apart, each within 1e-6 of what the blink expects
       const pinned17 = async (t, shut, label) => {
-        await page.evaluate((v) => { window.__skyTime = v }, t)
+        await evaluate(page, (v) => { window.__skyTime = v }, t)
         await sleep(200)
         for (let i = 0; i < 3; i++) {
           const f = await frog17()
@@ -1182,10 +1054,10 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
         }
       }
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=input` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
       await pinned17(shutAt, 1, `pinned at ${shutAt}`)
       await pinned17(0, 0, 'pinned at 0')
-      await page.evaluate(() => { delete window.__skyTime })
+      await evaluate(page, () => { delete window.__skyTime })
       let live17 = 0
       const t17 = Date.now()
       while (live17 === 0 && Date.now() - t17 < (B.gap[1] + 1) * 1000) {
@@ -1195,12 +1067,12 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
       if (live17 === 0) throw new Error(`Case 17 failed: the live clock did not blink in ${B.gap[1] + 1} s`)
       await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] })
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=input` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
       await pinned17(shutAt, 0, `pinned at ${shutAt} under reduced motion`)
       await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: '' }] })
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=input&grass=0` })
-      await page.waitForStreetReady()
-      if ((await page.evaluate(() => typeof window.__frog)) !== 'undefined') throw new Error('Case 17 failed: a frog with grass=0')
+      await waitForStreetReady(page)
+      if ((await evaluate(page, () => typeof window.__frog)) !== 'undefined') throw new Error('Case 17 failed: a frog with grass=0')
       console.log(`PASS: case 17 - the blink: shut, shrunk and sunk pinned at ${shutAt}, open at 0 and under reduced motion, blinked live (${live17.toFixed(2)}), absent with grass=0`)
     }
 
@@ -1222,7 +1094,7 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
       const own18 = new Set()
       /** the frogs as the frame's cull left them, each judged by its distance; returns each frog's `visible` */
       const judge18 = async (label, station) => {
-        const s = await page.evaluate(() => window.__frogsDrawn?.() ?? null)
+        const s = await evaluate(page, () => window.__frogsDrawn?.() ?? null)
         if (!s || s.frogs.length !== FROGS.length) throw new Error(`Case 18 failed: no __frogsDrawn at ${label}`)
         return s.frogs.map((f, k) => {
           const spec = FROGS[k]
@@ -1239,7 +1111,7 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
       }
       for (const pose of poses18) {
         await page.send('Page.navigate', { url: `${origin}/?street=1&${pose.query}&arrival=0&walkMode=input` })
-        await page.waitForStreetReady()
+        await waitForStreetReady(page)
         await sleep(300)
         await judge18(pose.query, pose.station)
       }
@@ -1249,14 +1121,14 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
       // one page: stop 2's frog (t 0.466) is drawn from 0.40 and hidden from 0.33, stop 4's (t 0.975) hidden from 0.45 and
       // drawn from 0.6; each crossing must flip the frog's `visible` without a reload
       await page.send('Page.navigate', { url: `${origin}/?street=1&walkT=0.4&arrival=0&walkMode=input` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
       await sleep(300)
       const walk18 = [0.4, 0.33, 0.4, 0.45, 0.6, 0.45]
       const seen18 = []
       for (const t of walk18) {
-        await page.evaluate((v) => window.__streetWalk.set(v), t)
+        await evaluate(page, (v) => window.__streetWalk.set(v), t)
         await sleep(300)
-        const walked = await page.evaluate(() => window.__streetWalk.t)
+        const walked = await evaluate(page, () => window.__streetWalk.t)
         if (Math.abs(walked - t) > 1e-9) throw new Error(`Case 18 failed: the walk is at ${walked}, set to ${t}`)
         seen18.push(await judge18(`walk t ${t} on one page`, -1))
       }
@@ -1279,9 +1151,9 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
     // -------------------------------------------------------------
     if (shouldRun(19)) {
       await page.send('Page.navigate', { url: `${origin}/?street=1&walkT=0.44&walkMode=input&vincent=0` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
 
-      const plant = await page.evaluate(() => window.__grassPlants?.[0])
+      const plant = await evaluate(page, () => window.__grassPlants?.[0])
       if (!plant || !plant.blades || plant.blades.length <= 3) {
         throw new Error('Case 19 failed: window.__grassPlants[0] missing or has fewer than 4 blades')
       }
@@ -1301,29 +1173,29 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
       const cx19 = (Math.min(...plant.blades.map((b) => b.x)) + Math.max(...plant.blades.map((b) => b.x))) / 2
       const cz19 = (Math.min(...plant.blades.map((b) => b.z)) + Math.max(...plant.blades.map((b) => b.z))) / 2
 
-      const [px19, py19] = await page.evaluate((pt) => window.__walkProject(0.44, pt), leafPt19)
-      await page.evaluate(([x, y]) => window.__grassHand(x, y), [px19, py19])
+      const [px19, py19] = await evaluate(page, (pt) => window.__walkProject(0.44, pt), leafPt19)
+      await evaluate(page, ([x, y]) => window.__grassHand(x, y), [px19, py19])
       await sleep(100)
 
-      const pushB = await page.evaluate(([x, z]) => window.__grassPushNear(x, z, 0.03), [cx19, cz19])
+      const pushB = await evaluate(page, ([x, z]) => window.__grassPushNear(x, z, 0.03), [cx19, cz19])
       if (pushB <= 0) {
         throw new Error(`Case 19 (anchor B) failed: __grassPushNear at plant centre (${cx19.toFixed(3)}, ${cz19.toFixed(3)}) was ${pushB}, expected > 0`)
       }
 
       // Repeat under skyAnchor=A
       await page.send('Page.navigate', { url: `${origin}/?street=1&walkT=0.44&walkMode=input&vincent=0&skyAnchor=A` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
 
       const leafPt19A = [
         leafPt19[0] + STREET.originA[0],
         leafPt19[1] + STREET.originA[1],
         leafPt19[2] + STREET.originA[2],
       ]
-      const [px19A, py19A] = await page.evaluate((pt) => window.__walkProject(0.44, pt), leafPt19A)
-      await page.evaluate(([x, y]) => window.__grassHand(x, y), [px19A, py19A])
+      const [px19A, py19A] = await evaluate(page, (pt) => window.__walkProject(0.44, pt), leafPt19A)
+      await evaluate(page, ([x, y]) => window.__grassHand(x, y), [px19A, py19A])
       await sleep(100)
 
-      const pushA = await page.evaluate(([x, z]) => window.__grassPushNear(x, z, 0.03), [cx19, cz19])
+      const pushA = await evaluate(page, ([x, z]) => window.__grassPushNear(x, z, 0.03), [cx19, cz19])
       if (pushA <= 0) {
         throw new Error(`Case 19 (anchor A) failed: __grassPushNear at plant centre (${cx19.toFixed(3)}, ${cz19.toFixed(3)}) was ${pushA}, expected > 0`)
       }
@@ -1343,12 +1215,12 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
     // (g) page (a) again, reduced motion turned on once |yaw| >= 0.6: 1 s later yaw holds within 1e-6 (Codex F10).
     // -------------------------------------------------------------
     if (shouldRun(20)) {
-      const owl20 = () => page.evaluate(() => window.__owl?.() ?? null)
+      const owl20 = () => evaluate(page, () => window.__owl?.() ?? null)
       await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: '' }] })
 
       // (a) stop 4 with Vincent at his slot: visible and turned
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=4&walkT=0.9&walkMode=input&arrival=0` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
       await sleep(2500)
       const a20 = await owl20()
       if (!a20 || !a20.visible || Math.abs(a20.yaw) < 0.6) {
@@ -1357,7 +1229,7 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
 
       // (b) stop 3: visible, Vincent 0.786 away so head stays straight
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=3&walkMode=input&arrival=0` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
       await sleep(500)
       const b20 = await owl20()
       if (!b20 || !b20.visible || Math.abs(b20.yaw) >= 0.05) {
@@ -1366,7 +1238,7 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
 
       // (c) stop 0: culled beyond OWL.draw
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&walkMode=input&arrival=0` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
       await sleep(300)
       const c20 = await owl20()
       if (!c20 || c20.visible) {
@@ -1375,7 +1247,7 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
 
       // (d) stop 4 with walk=0: vincentGround is null, head stays straight
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=4&walk=0&walkMode=input&arrival=0` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
       await sleep(500)
       const d20 = await owl20()
       if (!d20 || Math.abs(d20.yaw) >= 0.05) {
@@ -1385,7 +1257,7 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
       // (e) stop 4 under prefers-reduced-motion: reduce from the start: yaw 0 and shut 0 after 2.5 s
       await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] })
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=4&walkMode=input&arrival=0` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
       await sleep(2500)
       const e20 = await owl20()
       if (!e20 || e20.yaw !== 0 || e20.shut !== 0) {
@@ -1395,15 +1267,15 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
 
       // (f) flat=1: no owl mounted
       await page.send('Page.navigate', { url: `${origin}/?street=1&flat=1&walkMode=input&arrival=0` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
       await sleep(300)
-      if ((await page.evaluate(() => typeof window.__owl)) !== 'undefined') {
+      if ((await evaluate(page, () => typeof window.__owl)) !== 'undefined') {
         throw new Error('Case 20(f) failed: window.__owl defined on flat=1')
       }
 
       // (g) page (a) again, then reduced motion turned on once |yaw| >= 0.6: holds within 1e-6 over 1 s (Codex F10)
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=4&walkT=0.9&walkMode=input&arrival=0` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
       let gTurn = null
       const t20 = Date.now()
       while (Date.now() - t20 < 6000) {
@@ -1435,12 +1307,12 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
     //     each window moth beyond 0.6 of the camera at bright 0 and the rest above 0. (b) reduced motion: every moth at its anchor within 1e-6 and time 0. (c) light=0: no __moths.
     // -------------------------------------------------------------
     if (shouldRun(21)) {
-      const moths21 = () => page.evaluate(() => ({ moths: window.__moths?.() ?? null, camera: window.__streetCamera?.() ?? null }))
+      const moths21 = () => evaluate(page, () => ({ moths: window.__moths?.() ?? null, camera: window.__streetCamera?.() ?? null }))
       const dist21 = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2])
       // past the loop: MOTHS.wobble 0.006 and 1.5√3 × MOTHS.jitter 0.0045 (look pass 5 added the jitter, 5668c5c)
       const reach21 = 0.006 + 1.5 * Math.sqrt(3) * 0.0045
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=3&arrival=0&walkMode=input` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
       await sleep(1500)
       const a21 = await moths21()
       if (!a21.moths || !a21.camera) throw new Error('Case 21 failed: no __moths or __streetCamera at stop 3')
@@ -1468,7 +1340,7 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
       }
       await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] })
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=3&arrival=0&walkMode=input` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
       await sleep(1000)
       const b21 = (await moths21()).moths
       if (!b21 || b21.count !== 29) throw new Error('Case 21 failed: no moths under reduced motion')
@@ -1476,8 +1348,8 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
       for (const m of b21.moths) if (dist21(m.at, m.anchor) > 1e-6) throw new Error(`Case 21 failed: a moth ${dist21(m.at, m.anchor)} from its anchor under reduced motion`)
       await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: '' }] })
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=3&arrival=0&walkMode=input&light=0` })
-      await page.waitForStreetReady()
-      if ((await page.evaluate(() => typeof window.__moths)) !== 'undefined') throw new Error('Case 21 failed: moths with light=0')
+      await waitForStreetReady(page)
+      if ((await evaluate(page, () => typeof window.__moths)) !== 'undefined') throw new Error('Case 21 failed: moths with light=0')
       console.log(`PASS: case 21 - the moths: 29 (21 lamp, 8 window) at stop 3, ${near21} window moths lit and ${far21} dark beyond 0.6, at their anchors under reduced motion, absent with light=0`)
     }
 
@@ -1489,11 +1361,11 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
     //     on once |yaw| >= 0.6: yaw holds within 1e-6 over 1 s and the tail rests at 0.
     // -------------------------------------------------------------
     if (shouldRun(22)) {
-      const cat22 = () => page.evaluate(() => window.__cat?.() ?? null)
+      const cat22 = () => evaluate(page, () => window.__cat?.() ?? null)
       await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: '' }] })
 
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=3&walkMode=input&arrival=0` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
       // the headless renderer draws few frames and the ease's step is capped at 0.1 s, so wait for the head to settle
       let a22 = null
       const s22 = Date.now()
@@ -1510,7 +1382,7 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
       if (!a22b || a22b.tail === a22.tail) throw new Error(`Case 22(a) failed: the tail held at ${a22.tail} over 0.5 s`)
 
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=3&walk=0&walkMode=input&arrival=0` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
       await sleep(500)
       const b22 = await cat22()
       if (!b22 || !b22.visible || Math.abs(b22.yaw) >= 0.05) {
@@ -1518,14 +1390,14 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
       }
 
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&walkMode=input&arrival=0` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
       await sleep(300)
       const c22 = await cat22()
       if (!c22 || c22.visible) throw new Error(`Case 22(c) failed: expected a hidden cat at stop 0, got ${JSON.stringify(c22)}`)
 
       await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] })
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=3&walkMode=input&arrival=0` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
       await sleep(2500)
       const d22 = await cat22()
       if (!d22 || d22.yaw !== 0 || d22.shut !== 0 || d22.tail !== 0) {
@@ -1534,13 +1406,13 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
       await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: '' }] })
 
       await page.send('Page.navigate', { url: `${origin}/?street=1&flat=1&walkMode=input&arrival=0` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
       await sleep(300)
-      if ((await page.evaluate(() => typeof window.__cat)) !== 'undefined') throw new Error('Case 22(e) failed: window.__cat defined on flat=1')
+      if ((await evaluate(page, () => typeof window.__cat)) !== 'undefined') throw new Error('Case 22(e) failed: window.__cat defined on flat=1')
 
       // stop 2: Vincent about 98° off the cat's facing, so its head turns through the cone's width (about 1.72 rad)
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=2&walkMode=input&arrival=0` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
       let fTurn = null
       const t22 = Date.now()
       while (Date.now() - t22 < 6000) {
@@ -1562,9 +1434,11 @@ void main() { gl_FragColor = vec4(grassMoonFacing(vec3(0.0), uA, 0.0, 0.036, 0.0
       console.log(`PASS: case 22 - the cat: turned at stop 3 (yaw=${a22.yaw.toFixed(3)}), its tail ${a22.tail.toFixed(3)} -> ${a22b.tail.toFixed(3)}, straight with walk=0 (${b22.yaw.toFixed(3)}), hidden at stop 0, still and open under reduced motion, absent on flat=1, held mid-turn (${f0.yaw.toFixed(4)} -> ${f1.yaw.toFixed(4)})`)
     }
 
-    await page.close()
+    } finally {
+      await page.close()
+    }
   } finally {
-    await chrome.cleanup()
+    await chrome.close()
   }
 }
 

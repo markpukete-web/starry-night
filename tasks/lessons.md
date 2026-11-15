@@ -518,3 +518,8 @@ The full history, 2026-06-13 to 2026-10-30, is in `tasks/archive/2026-10-30-less
 - Write `-(x ** 2)`, not `-x ** 2`. `2026-10-13 · -x ** 2`
 - A red mutant run can be red for another reason. Read the failure line before counting it. An unquoted `$T` with
   two test paths reached node as one argument ("Could not find"), so the Lead's first mutant run was void. 2026-11-14
+- A machine check by process pattern must name this project's servers, not every server. `vite --host` also matched
+  an idle Story_Bridge dev server, and Hydrogen stopped at its 10-check limit with the machine free. The check since:
+  `pgrep -fl 'vite preview|starry-night[^ ]*/node_modules/.bin/vite|--headless|remote-debugging-port=[1-9]|bin/tsc|bin/eslint|node --test'`. 2026-11-15
+- Codex's `codex-review-state` comment holds nested JSON. A non-greedy match to the first `}` cut it, and a PR waiter
+  never saw "completed". Match to the closing `-->`. 2026-11-15

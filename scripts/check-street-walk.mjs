@@ -22,34 +22,28 @@
  * `CASES=9,10` runs only the cases named. Cases 9 and 10 set their own viewport and media, so each runs alone. An
  * earlier case may lean on the viewport the case before it set.
  */
-import { execSync, spawn } from 'node:child_process'
-import { existsSync, mkdtempSync, rmSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { countHeadlessChromes, debugPort, openPage, PORTS, startChrome } from './lib/chrome.mjs'
 import { PerspectiveCamera, Vector3 } from 'three'
 import { STATION_T, STREET_HOUSES, laneParam, vincentPlace, walkPose } from '../src/scene/streetLayout.ts'
 import { inFootprint } from '../src/scene/streetGrass.ts'
 import { PAUSE, WALK } from '../src/scene/streetWalk.ts'
 import { WANDER, followT, hidden, inFrame, initialWander, legSeen, standable, tripFrom, wanderTo } from '../src/scene/streetWander.ts'
 
-const appUrl = process.env.DIORAMA_CAPTURE_URL || 'http://127.0.0.1:5191/'
+const appUrl = process.env.DIORAMA_CAPTURE_URL || `http://127.0.0.1:${PORTS['check-street-walk'].app}/`
 const parsedUrl = new URL(appUrl)
 const origin = parsedUrl.origin
 const L = 2.3962
 
-const chromePath =
-  process.env.CHROME_PATH ||
-  [
-    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-    '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser',
-  ].find((path) => existsSync(path))
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
-if (!chromePath) {
-  console.error('No Chrome-compatible browser found. Set CHROME_PATH.')
-  process.exit(1)
+async function evaluate(page, fnOrExpr) {
+  const expression = typeof fnOrExpr === 'function' ? `(${fnOrExpr.toString()})()` : fnOrExpr
+  return page.evaluate(expression, { awaitPromise: false })
 }
 
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+function waitForStreetReady(page, timeoutMs = 25000) {
+  return page.waitFor('window.__streetReady', timeoutMs, '__streetReady', 150)
+}
 
 /** `CASES=9,10` runs those cases alone, so each can be seen to fail on a build without its fix. Absent, every case runs. */
 const only = (process.env.CASES ?? '').split(',').filter(Boolean).map(Number)
@@ -216,136 +210,14 @@ function wallPoint(persp, size, box, view, t, onCanvas) {
 
 // --- end of the wander's point choice ---
 
-function countHeadlessChromes() {
-  try {
-    const out = execSync("pgrep -fl 'Chrome.*headless' 2>/dev/null | wc -l", { encoding: 'utf8' })
-    return parseInt(out.trim(), 10) || 0
-  } catch {
-    return 0
-  }
-}
-
-function startChrome(port) {
-  const userDataDir = mkdtempSync(join(tmpdir(), 'starry-walk-'))
-  const child = spawn(
-    chromePath,
-    [
-      '--headless=new',
-      ...(process.env.CHROME_FLAGS ?? '').split(/\s+/).filter(Boolean),
-      '--hide-scrollbars',
-      '--mute-audio',
-      '--disable-background-networking',
-      '--disable-sync',
-      '--disable-extensions',
-      '--no-first-run',
-      '--no-default-browser-check',
-      `--user-data-dir=${userDataDir}`,
-      `--remote-debugging-port=${port}`,
-      'about:blank',
-    ],
-    { stdio: ['ignore', 'ignore', 'ignore'] },
-  )
-  return {
-    child,
-    userDataDir,
-    cleanup() {
-      child.kill()
-      rmSync(userDataDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 300 })
-    },
-  }
-}
-
-async function waitForChrome(port, timeoutMs = 20000) {
-  const start = Date.now()
-  while (Date.now() - start < timeoutMs) {
-    try {
-      const response = await fetch(`http://127.0.0.1:${port}/json/version`)
-      if (response.ok) return
-    } catch {
-      /* wait */
-    }
-    await sleep(150)
-  }
-  throw new Error('Chrome DevTools endpoint did not become ready')
-}
-
-class CdpPage {
-  constructor(wsUrl) {
-    this.wsUrl = wsUrl
-    this.seq = 0
-    this.pending = new Map()
-    this.errors = []
-  }
-
-  async connect() {
-    this.ws = new WebSocket(this.wsUrl)
-    this.ws.addEventListener('message', (event) => this.onMessage(event))
-    await new Promise((resolve, reject) => {
-      this.ws.addEventListener('open', resolve, { once: true })
-      this.ws.addEventListener('error', reject, { once: true })
-    })
-    await this.send('Page.enable')
-    await this.send('Runtime.enable')
-  }
-
-  onMessage(event) {
-    const message = JSON.parse(event.data)
-    if (message.id && this.pending.has(message.id)) {
-      const { resolve, reject } = this.pending.get(message.id)
-      this.pending.delete(message.id)
-      if (message.error) reject(new Error(message.error.message))
-      else resolve(message.result)
-      return
-    }
-    if (message.method === 'Runtime.exceptionThrown') {
-      this.errors.push(message.params.exceptionDetails?.text || 'runtime exception')
-    }
-  }
-
-  send(method, params = {}) {
-    const id = ++this.seq
-    this.ws.send(JSON.stringify({ id, method, params }))
-    return new Promise((resolve, reject) => this.pending.set(id, { resolve, reject }))
-  }
-
-  async evaluate(fnOrExpr) {
-    const expression = typeof fnOrExpr === 'function' ? `(${fnOrExpr.toString()})()` : fnOrExpr
-    const res = await this.send('Runtime.evaluate', { expression, returnByValue: true })
-    if (res.exceptionDetails) {
-      throw new Error(`Evaluation failed: ${res.exceptionDetails.text}`)
-    }
-    return res.result?.value
-  }
-
-  async waitForStreetReady(timeoutMs = 25000) {
-    const start = Date.now()
-    for (;;) {
-      await sleep(150)
-      const ready = await this.evaluate('Boolean(window.__streetReady)')
-      if (ready) return
-      if (Date.now() - start > timeoutMs) {
-        throw new Error('Timeout waiting for __streetReady')
-      }
-    }
-  }
-
-  async close() {
-    this.ws.close()
-  }
-}
-
 async function main() {
   const chromesBefore = countHeadlessChromes()
-  const port = 9444 + Math.floor(Math.random() * 400)
-  const chrome = startChrome(port)
+  const port = debugPort('check-street-walk')
+  const chrome = await startChrome({ port, prefix: 'starry-walk-' })
 
   try {
-    await waitForChrome(port)
-    const response = await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: 'PUT' })
-    if (!response.ok) throw new Error(`Failed to create Chrome target: ${response.status}`)
-    const target = await response.json()
-    const page = new CdpPage(target.webSocketDebuggerUrl)
-    await page.connect()
+    const page = await openPage(port)
+    try {
 
     if (wanted(0)) {
       // -------------------------------------------------------------
@@ -361,8 +233,8 @@ async function main() {
       })
       for (const [query, fetches] of [['?street=1&flat=1&arrival=0', true], ['?street=1&station=0&arrival=0', false]]) {
         await page.send('Page.navigate', { url: `${origin}/${query}` })
-        await page.waitForStreetReady()
-        const c0 = await page.evaluate(() => ({ fetched: window.__fetched, counts: window.__streetCounts }))
+        await waitForStreetReady(page)
+        const c0 = await evaluate(page, () => ({ fetched: window.__fetched, counts: window.__streetCounts }))
         if (!Array.isArray(c0.fetched)) throw new Error(`Case 0 precondition failed: no fetch log on ${query}`)
         const masses = c0.fetched.filter((u) => u.includes('land-masses.json')).length
         if (fetches !== masses > 0) {
@@ -387,9 +259,9 @@ async function main() {
         mobile: false,
       })
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=input` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
 
-      const c1Init = await page.evaluate(() => ({
+      const c1Init = await evaluate(page, () => ({
         t: window.__streetWalk?.t,
         cam: window.__streetCamera?.()?.position,
       }))
@@ -401,7 +273,7 @@ async function main() {
       }
 
       for (let i = 0; i < 3; i++) {
-        await page.evaluate(() => {
+        await evaluate(page, () => {
           const canvas = document.querySelector('canvas')
           canvas?.dispatchEvent(new WheelEvent('wheel', { deltaY: 200, deltaMode: 0, bubbles: true, cancelable: true }))
         })
@@ -409,7 +281,7 @@ async function main() {
       }
       await sleep(1000)
 
-      const c1After = await page.evaluate(() => ({
+      const c1After = await evaluate(page, () => ({
         t: window.__streetWalk?.t,
         cam: window.__streetCamera?.()?.position,
       }))
@@ -432,16 +304,16 @@ async function main() {
       // (precondition: target − t > 0.01 / L), a blur event, 0.5 s: t changes by < 0.002 / L after the blur.
       // -------------------------------------------------------------
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=input` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
 
-      const c2T0 = await page.evaluate(() => window.__streetWalk?.t)
+      const c2T0 = await evaluate(page, () => window.__streetWalk?.t)
       if (typeof c2T0 !== 'number') throw new Error('Case 2 precondition failed: __streetWalk missing')
 
       await page.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'ArrowUp', code: 'ArrowUp', windowsVirtualKeyCode: 38 })
       await sleep(1000)
       await page.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'ArrowUp', code: 'ArrowUp', windowsVirtualKeyCode: 38 })
 
-      const c2T1 = await page.evaluate(() => window.__streetWalk?.t)
+      const c2T1 = await evaluate(page, () => window.__streetWalk?.t)
       const c2DeltaT = c2T1 - c2T0
       const c2Expected = 0.15 / L
       if (c2DeltaT < c2Expected * 0.75 || c2DeltaT > c2Expected * 1.25) {
@@ -451,14 +323,14 @@ async function main() {
       // Now hold ArrowUp and fire three wheel events of 300 px
       await page.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'ArrowUp', code: 'ArrowUp', windowsVirtualKeyCode: 38 })
       for (let i = 0; i < 3; i++) {
-        await page.evaluate(() => {
+        await evaluate(page, () => {
           const canvas = document.querySelector('canvas')
           canvas?.dispatchEvent(new WheelEvent('wheel', { deltaY: 300, deltaMode: 0, bubbles: true, cancelable: true }))
         })
         await sleep(20)
       }
 
-      const c2Pre = await page.evaluate(() => ({
+      const c2Pre = await evaluate(page, () => ({
         t: window.__streetWalk?.t,
         target: window.__streetWalk?.target,
       }))
@@ -467,11 +339,11 @@ async function main() {
         throw new Error(`Case 2 precondition failed: target - t is ${c2Lead.toFixed(4)}, expected > ${ (0.01 / L).toFixed(4) }`)
       }
 
-      await page.evaluate(() => window.dispatchEvent(new Event('blur')))
+      await evaluate(page, () => window.dispatchEvent(new Event('blur')))
       await page.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'ArrowUp', code: 'ArrowUp', windowsVirtualKeyCode: 38 })
-      const c2TAfterBlur = await page.evaluate(() => window.__streetWalk?.t)
+      const c2TAfterBlur = await evaluate(page, () => window.__streetWalk?.t)
       await sleep(500)
-      const c2TEnd = await page.evaluate(() => window.__streetWalk?.t)
+      const c2TEnd = await evaluate(page, () => window.__streetWalk?.t)
       const c2ChangeAfterBlur = Math.abs(c2TEnd - c2TAfterBlur)
       if (c2ChangeAfterBlur >= 0.002 / L) {
         throw new Error(`Case 2 failed: t changed by ${c2ChangeAfterBlur.toFixed(5)} after blur, expected < ${ (0.002 / L).toFixed(5) }`)
@@ -497,9 +369,9 @@ async function main() {
       })
       await page.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 })
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=auto` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
 
-      const c3Init = await page.evaluate(() => ({
+      const c3Init = await evaluate(page, () => ({
         t: window.__streetWalk?.t,
         auto: window.__streetWalk?.auto,
       }))
@@ -508,12 +380,12 @@ async function main() {
       }
 
       await sleep(2000)
-      const c3T1 = await page.evaluate(() => window.__streetWalk?.t)
+      const c3T1 = await evaluate(page, () => window.__streetWalk?.t)
       if (c3T1 <= c3Init.t + 0.02 / L) {
         throw new Error(`Case 3 precondition failed: t did not rise over 2 s (init=${c3Init.t}, after=${c3T1})`)
       }
 
-      const box = await page.evaluate(() => window.__vincentBox?.())
+      const box = await evaluate(page, () => window.__vincentBox?.())
       if (!box) throw new Error('Case 3 precondition failed: __vincentBox missing')
       const cx = Math.round((box.x0 + box.x1) / 2)
       const cy = Math.round((box.y0 + box.y1) / 2)
@@ -529,20 +401,20 @@ async function main() {
         touchPoints: [],
       })
 
-      const c3Auto1 = await page.evaluate(() => window.__streetWalk?.auto)
+      const c3Auto1 = await evaluate(page, () => window.__streetWalk?.auto)
       if (c3Auto1 !== false) {
         throw new Error(`Case 3 failed: tap on Vincent expected auto false, got ${c3Auto1}`)
       }
 
-      const c3TStop1 = await page.evaluate(() => window.__streetWalk?.t)
+      const c3TStop1 = await evaluate(page, () => window.__streetWalk?.t)
       await sleep(1000)
-      const c3TStop2 = await page.evaluate(() => window.__streetWalk?.t)
+      const c3TStop2 = await evaluate(page, () => window.__streetWalk?.t)
       if (c3TStop2 !== c3TStop1) {
         throw new Error(`Case 3 failed: t changed while stopped (drift: ${c3TStop2 - c3TStop1})`)
       }
 
       // Second tap on Vincent: auto true
-      const box2 = await page.evaluate(() => window.__vincentBox?.())
+      const box2 = await evaluate(page, () => window.__vincentBox?.())
       const cx2 = Math.round((box2.x0 + box2.x1) / 2)
       const cy2 = Math.round((box2.y0 + box2.y1) / 2)
       await page.send('Input.dispatchTouchEvent', {
@@ -555,13 +427,13 @@ async function main() {
         touchPoints: [],
       })
 
-      const c3Auto2 = await page.evaluate(() => window.__streetWalk?.auto)
+      const c3Auto2 = await evaluate(page, () => window.__streetWalk?.auto)
       if (c3Auto2 !== true) {
         throw new Error(`Case 3 failed: second tap on Vincent expected auto true, got ${c3Auto2}`)
       }
 
       // Tap on Pause motion button
-      const pausePos = await page.evaluate(() => {
+      const pausePos = await evaluate(page, () => {
         const btn = Array.from(document.querySelectorAll('button')).find(
           (b) => b.textContent?.includes('Pause') || b.getAttribute('aria-label')?.includes('Pause'),
         )
@@ -582,20 +454,20 @@ async function main() {
       })
       await sleep(100)
 
-      const c3TPause0 = await page.evaluate(() => window.__streetWalk?.t)
-      const c3AutoPause0 = await page.evaluate(() => window.__streetWalk?.auto)
+      const c3TPause0 = await evaluate(page, () => window.__streetWalk?.t)
+      const c3AutoPause0 = await evaluate(page, () => window.__streetWalk?.auto)
       if (!c3AutoPause0) throw new Error('Case 3 failed: auto should still be true after pause button tap')
 
       await sleep(1000)
-      const c3TPause1 = await page.evaluate(() => window.__streetWalk?.t)
-      const c3AutoPause1 = await page.evaluate(() => window.__streetWalk?.auto)
+      const c3TPause1 = await evaluate(page, () => window.__streetWalk?.t)
+      const c3AutoPause1 = await evaluate(page, () => window.__streetWalk?.auto)
       if (c3TPause1 !== c3TPause0) {
         throw new Error(`Case 3 failed: t moved while paused (drift: ${c3TPause1 - c3TPause0})`)
       }
       if (!c3AutoPause1) throw new Error('Case 3 failed: auto should remain true while paused')
 
       // Resume motion by tapping Play motion
-      const playPos = await page.evaluate(() => {
+      const playPos = await evaluate(page, () => {
         const btn = Array.from(document.querySelectorAll('button')).find(
           (b) => b.textContent?.includes('Play') || b.getAttribute('aria-label')?.includes('Play'),
         )
@@ -630,20 +502,20 @@ async function main() {
       }
 
       const positiveControl = async (name) => {
-        const box = await page.evaluate(() => window.__vincentBox?.())
+        const box = await evaluate(page, () => window.__vincentBox?.())
         if (!box) throw new Error(`Case 3 precondition failed: __vincentBox missing before ${name}`)
         const x = Math.round((box.x0 + box.x1) / 2)
         const y = Math.round((box.y0 + box.y1) / 2)
 
-        const autoBefore = await page.evaluate(() => window.__streetWalk?.auto)
+        const autoBefore = await evaluate(page, () => window.__streetWalk?.auto)
         await tapAt(x, y)
-        const autoToggled = await page.evaluate(() => window.__streetWalk?.auto)
+        const autoToggled = await evaluate(page, () => window.__streetWalk?.auto)
         if (autoToggled === autoBefore) {
           throw new Error(`Case 3 failed: positive control before ${name} did not toggle auto`)
         }
 
         await tapAt(x, y)
-        const autoRestored = await page.evaluate(() => window.__streetWalk?.auto)
+        const autoRestored = await evaluate(page, () => window.__streetWalk?.auto)
         if (autoRestored !== autoBefore) {
           throw new Error(`Case 3 failed: positive control before ${name} did not restore auto`)
         }
@@ -655,7 +527,7 @@ async function main() {
       const pt2 = await positiveControl('second touch')
 
       // Second touch while first touch is held
-      const autoBefore2nd = await page.evaluate(() => window.__streetWalk?.auto)
+      const autoBefore2nd = await evaluate(page, () => window.__streetWalk?.auto)
       await page.send('Input.dispatchTouchEvent', {
         type: 'touchStart',
         touchPoints: [{ x: pt2.x, y: pt2.y, id: 0 }],
@@ -672,7 +544,7 @@ async function main() {
         type: 'touchEnd',
         touchPoints: [{ x: pt2.x + 2, y: pt2.y + 2, id: 1 }],
       })
-      const autoAfter2nd = await page.evaluate(() => window.__streetWalk?.auto)
+      const autoAfter2nd = await evaluate(page, () => window.__streetWalk?.auto)
       if (autoAfter2nd !== autoBefore2nd) {
         throw new Error(`Case 3 failed: second touch changed auto (before=${autoBefore2nd}, after=${autoAfter2nd})`)
       }
@@ -680,7 +552,7 @@ async function main() {
         type: 'touchEnd',
         touchPoints: [],
       })
-      const autoAfter1stEnd = await page.evaluate(() => window.__streetWalk?.auto)
+      const autoAfter1stEnd = await evaluate(page, () => window.__streetWalk?.auto)
       if (autoAfter1stEnd !== autoBefore2nd) {
         throw new Error(`Case 3 failed: first touch ending after second touch changed auto (before=${autoBefore2nd}, after=${autoAfter1stEnd})`)
       }
@@ -689,7 +561,7 @@ async function main() {
       const ptCancel = await positiveControl('touchCancel')
 
       // Touch ended by touchCancel: auto unchanged
-      const autoBeforeCancel = await page.evaluate(() => window.__streetWalk?.auto)
+      const autoBeforeCancel = await evaluate(page, () => window.__streetWalk?.auto)
       await page.send('Input.dispatchTouchEvent', {
         type: 'touchStart',
         touchPoints: [{ x: ptCancel.x, y: ptCancel.y, id: 0 }],
@@ -699,7 +571,7 @@ async function main() {
         type: 'touchCancel',
         touchPoints: [],
       })
-      const autoAfterCancel = await page.evaluate(() => window.__streetWalk?.auto)
+      const autoAfterCancel = await evaluate(page, () => window.__streetWalk?.auto)
       if (autoAfterCancel !== autoBeforeCancel) {
         throw new Error('Case 3 failed: touchCancel changed auto')
       }
@@ -708,7 +580,7 @@ async function main() {
       const ptDrag = await positiveControl('drag')
 
       // Touch that moves 20 px: auto unchanged
-      const autoBeforeMove = await page.evaluate(() => window.__streetWalk?.auto)
+      const autoBeforeMove = await evaluate(page, () => window.__streetWalk?.auto)
       await page.send('Input.dispatchTouchEvent', {
         type: 'touchStart',
         touchPoints: [{ x: ptDrag.x, y: ptDrag.y, id: 0 }],
@@ -723,7 +595,7 @@ async function main() {
         type: 'touchEnd',
         touchPoints: [],
       })
-      const autoAfterMove = await page.evaluate(() => window.__streetWalk?.auto)
+      const autoAfterMove = await evaluate(page, () => window.__streetWalk?.auto)
       if (autoAfterMove !== autoBeforeMove) {
         throw new Error('Case 3 failed: drag > 20px changed auto')
       }
@@ -742,16 +614,16 @@ async function main() {
         features: [{ name: 'prefers-reduced-motion', value: 'reduce' }],
       })
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=auto` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
 
-      const c4T0 = await page.evaluate(() => window.__streetWalk?.t)
+      const c4T0 = await evaluate(page, () => window.__streetWalk?.t)
       if (c4T0 !== 0) throw new Error(`Case 4 precondition failed: t0 is ${c4T0}, expected 0`)
 
       await sleep(2000)
-      const c4T1 = await page.evaluate(() => window.__streetWalk?.t)
+      const c4T1 = await evaluate(page, () => window.__streetWalk?.t)
       if (c4T1 !== 0) throw new Error(`Case 4 failed: t changed under reduced motion (drift: ${c4T1})`)
 
-      const box4 = await page.evaluate(() => window.__vincentBox?.())
+      const box4 = await evaluate(page, () => window.__vincentBox?.())
       const cx4 = Math.round((box4.x0 + box4.x1) / 2)
       const cy4 = Math.round((box4.y0 + box4.y1) / 2)
 
@@ -765,7 +637,7 @@ async function main() {
         touchPoints: [],
       })
 
-      const c4TapT = await page.evaluate(() => window.__streetWalk?.t)
+      const c4TapT = await evaluate(page, () => window.__streetWalk?.t)
       if (c4TapT !== 0.23) {
         throw new Error(`Case 4 failed: tap on Vincent gave t=${c4TapT}, expected exactly 0.23`)
       }
@@ -793,10 +665,10 @@ async function main() {
         mobile: false,
       })
       await page.send('Page.navigate', { url: `${origin}/?street=1&flat=1&arrival=0` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
       await sleep(1000)
 
-      const c5State = await page.evaluate(() => ({
+      const c5State = await evaluate(page, () => ({
         cam: typeof window.__streetCamera === 'function' ? window.__streetCamera() : null,
         walk: window.__streetWalk,
         vincent: window.__vincentBox,
@@ -823,19 +695,19 @@ async function main() {
       // Case 6: Codex's review, K1–K4 (the Lead, 2026-10-24). Each event pair is dispatched in one evaluate, so no
       // frame runs between them, and each check has its positive control first.
       // -------------------------------------------------------------
-      const tNow = () => page.evaluate(() => window.__streetWalk?.t)
+      const tNow = () => evaluate(page, () => window.__streetWalk?.t)
       const wheelOnCanvas = `document.querySelector('canvas').dispatchEvent(new WheelEvent('wheel', { deltaY: 600, deltaMode: 0, bubbles: true, cancelable: true }))`
 
       // K1, blur: a wheel turned and a blur before the next frame leave him where he stands
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=input` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
       await sleep(500)
       const k1T0 = await tNow()
-      await page.evaluate(wheelOnCanvas)
+      await evaluate(page, wheelOnCanvas)
       await sleep(800)
       // he is still walking at the cap from the first wheel: read t in the same task as the pair, so no frame falls
       // between them (a frame there moved him 0.0035, the flake of 2026-10-26 and 10-29)
-      const k1T1 = await page.evaluate(`(() => { const t = window.__streetWalk.t; ${wheelOnCanvas}; window.dispatchEvent(new Event('blur')); return t })()`)
+      const k1T1 = await evaluate(page, `(() => { const t = window.__streetWalk.t; ${wheelOnCanvas}; window.dispatchEvent(new Event('blur')); return t })()`)
       if (!(k1T1 - k1T0 > 0.01 / L)) throw new Error(`Case 6 precondition failed: a synthetic wheel did not walk (Δt ${k1T1 - k1T0})`)
       await sleep(800)
       const k1Drift = Math.abs((await tNow()) - k1T1)
@@ -843,37 +715,37 @@ async function main() {
 
       // K1, tap: a wheel turned and a tap that stops the automatic walk, before the next frame, leave him where he stands
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=auto` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
       await sleep(800)
       const tapOnVincent = `(() => {
         const b = window.__vincentBox(); const x = (b.x0 + b.x1) / 2, y = (b.y0 + b.y1) / 2
         const c = document.querySelector('canvas'), o = { pointerId: 1, isPrimary: true, clientX: x, clientY: y, bubbles: true }
         c.dispatchEvent(new PointerEvent('pointerdown', o)); c.dispatchEvent(new PointerEvent('pointerup', o))
       })()`
-      await page.evaluate(tapOnVincent)
+      await evaluate(page, tapOnVincent)
       await sleep(200)
-      if ((await page.evaluate(() => window.__streetWalk?.auto)) !== false) throw new Error('Case 6 precondition failed: a synthetic tap on Vincent did not stop the walk')
-      await page.evaluate(tapOnVincent)
+      if ((await evaluate(page, () => window.__streetWalk?.auto)) !== false) throw new Error('Case 6 precondition failed: a synthetic tap on Vincent did not stop the walk')
+      await evaluate(page, tapOnVincent)
       await sleep(800)
-      if ((await page.evaluate(() => window.__streetWalk?.auto)) !== true) throw new Error('Case 6 precondition failed: a second synthetic tap did not restart the walk')
-      await page.evaluate(`${wheelOnCanvas}; ${tapOnVincent}`)
+      if ((await evaluate(page, () => window.__streetWalk?.auto)) !== true) throw new Error('Case 6 precondition failed: a second synthetic tap did not restart the walk')
+      await evaluate(page, `${wheelOnCanvas}; ${tapOnVincent}`)
       await sleep(800)
       const k1TapT1 = await tNow()
       await sleep(800)
       const k1TapDrift = Math.abs((await tNow()) - k1TapT1)
-      if ((await page.evaluate(() => window.__streetWalk?.auto)) !== false) throw new Error('Case 6 failed (K1): the tap with a queued wheel did not stop the walk')
+      if ((await evaluate(page, () => window.__streetWalk?.auto)) !== false) throw new Error('Case 6 failed (K1): the tap with a queued wheel did not stop the walk')
       if (k1TapDrift >= 0.002 / L) throw new Error(`Case 6 failed (K1): a wheel before a stopping tap moved him by ${k1TapDrift.toFixed(5)} after it`)
 
       // K2: a key held over the scene and released over an input stops him
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=input` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
       await sleep(500)
       const k2T0 = await tNow()
-      await page.evaluate(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', code: 'ArrowUp' })))
+      await evaluate(page, () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', code: 'ArrowUp' })))
       await sleep(500)
       const k2T1 = await tNow()
       if (!(k2T1 - k2T0 > 0.01 / L)) throw new Error(`Case 6 precondition failed: a synthetic keydown did not walk (Δt ${k2T1 - k2T0})`)
-      await page.evaluate(() => {
+      await evaluate(page, () => {
         const input = document.createElement('input')
         document.body.appendChild(input)
         input.focus()
@@ -889,12 +761,12 @@ async function main() {
       // K3: under skyAnchor=A the street, the camera and Vincent move by the anchor's 5 once, so his box does not move
       const poseAt = async (extra) => {
         await page.send('Page.navigate', { url: `${origin}/?street=1&station=2&arrival=0&walkMode=input${extra}` })
-        await page.waitForStreetReady()
+        await waitForStreetReady(page)
         // V1: his box takes in his figure, which turns side-on after a rest. Read it once he has turned and the lantern
         // has settled (τ 0.15 s), not mid-turn, where two loads differ by the turn's timing
-        for (let i = 0; i < 150 && !((await page.evaluate(() => window.__vincentForm?.()))?.turn >= 1); i++) await sleep(100)
+        for (let i = 0; i < 150 && !((await evaluate(page, () => window.__vincentForm?.()))?.turn >= 1); i++) await sleep(100)
         await sleep(1000)
-        return page.evaluate(() => ({ pose: window.__vincentPose?.(), box: window.__vincentBox?.() }))
+        return evaluate(page, () => ({ pose: window.__vincentPose?.(), box: window.__vincentBox?.() }))
       }
       const k3B = await poseAt('')
       const k3A = await poseAt('&skyAnchor=A')
@@ -908,16 +780,16 @@ async function main() {
 
       // K4: the gait the frame loop applies is on the rendered figure while he walks, and gone once he stands
       await page.send('Page.navigate', { url: `${origin}/?street=1&station=0&arrival=0&walkMode=input` })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
       await sleep(500)
-      const k4Rest = await page.evaluate(() => window.__vincentPose?.())
+      const k4Rest = await evaluate(page, () => window.__vincentPose?.())
       if (!k4Rest) throw new Error('Case 6 precondition failed: __vincentPose missing')
       await page.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'ArrowUp', code: 'ArrowUp', windowsVirtualKeyCode: 38 })
       let k4Roll = 0
       let k4Arm = 0
       for (let i = 0; i < 12; i++) {
         await sleep(100)
-        const p = await page.evaluate(() => window.__vincentPose?.())
+        const p = await evaluate(page, () => window.__vincentPose?.())
         k4Roll = Math.max(k4Roll, Math.abs(p.roll))
         k4Arm = Math.max(k4Arm, Math.abs(p.arm))
       }
@@ -928,10 +800,10 @@ async function main() {
       let k4Turn = 0
       for (let i = 0; i < 150 && !(k4Turn >= 1 - 1e-9); i++) {
         await sleep(100)
-        k4Turn = (await page.evaluate(() => window.__vincentForm?.()))?.turn ?? 0
+        k4Turn = (await evaluate(page, () => window.__vincentForm?.()))?.turn ?? 0
       }
       if (!(k4Turn >= 1 - 1e-9)) throw new Error(`Case 6 failed (K4): standing, his turn was ${k4Turn} after 15 s, expected 1`)
-      const k4End = await page.evaluate(() => window.__vincentPose?.())
+      const k4End = await evaluate(page, () => window.__vincentPose?.())
       if (Math.abs(k4End.roll) > 1e-6 || Math.abs(k4End.arm + 0.75) > 1e-6 || Math.abs(k4End.armRight) > 1e-6) {
         throw new Error(`Case 6 failed (K4): standing and turned, his roll ${k4End.roll}, left arm ${k4End.arm} and right arm ${k4End.armRight}, expected 0, -0.75 and 0`)
       }
@@ -952,7 +824,7 @@ async function main() {
       await page.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 })
       const c7Url = `${origin}/?street=1&walkT=0.2&walkMode=auto&arrival=0`
       await page.send('Page.navigate', { url: c7Url })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
       const c7Run = await page.send('Runtime.evaluate', {
         awaitPromise: true,
         returnByValue: true,
@@ -984,18 +856,18 @@ async function main() {
 
       // the tap leg
       await page.send('Page.navigate', { url: c7Url })
-      await page.waitForStreetReady()
+      await waitForStreetReady(page)
       const waitFor = async (fn, ms) => {
         const from = Date.now()
         while (Date.now() - from < ms) {
-          if (await page.evaluate(fn)) return true
+          if (await evaluate(page, fn)) return true
           await sleep(50)
         }
         return false
       }
       if (!(await waitFor(() => window.__vincentForm?.().dwell > 0, 40000))) throw new Error('Case 7 failed: no dwell began within 40 s')
       const c7Tap = async () => {
-        const b = await page.evaluate(() => window.__vincentBox?.())
+        const b = await evaluate(page, () => window.__vincentBox?.())
         if (!b) throw new Error('Case 7 precondition failed: __vincentBox missing')
         const x = Math.round((b.x0 + b.x1) / 2)
         const y = Math.round((b.y0 + b.y1) / 2)
@@ -1005,7 +877,7 @@ async function main() {
       }
       await c7Tap()
       if (!(await waitFor(() => window.__vincentForm?.().dwell === 0 && window.__vincentForm?.().auto === false, 2000))) {
-        throw new Error(`Case 7 failed: after a tap in the dwell, state is ${JSON.stringify(await page.evaluate(() => window.__vincentForm?.()))}, expected dwell 0 and auto false`)
+        throw new Error(`Case 7 failed: after a tap in the dwell, state is ${JSON.stringify(await evaluate(page, () => window.__vincentForm?.()))}, expected dwell 0 and auto false`)
       }
       await c7Tap()
       if (!(await waitFor(() => window.__vincentForm?.().auto === true, 2000))) throw new Error('Case 7 failed: a second tap did not start the walk again')
@@ -1027,8 +899,8 @@ async function main() {
       until: async (expr, ms, what) => {
         const from = Date.now()
         for (;;) {
-          if (await page.evaluate(`Boolean(${expr})`)) return Date.now() - from
-          if (Date.now() - from > ms) c8.fail(`${what} not within ${ms} ms (${expr}); state ${JSON.stringify(await page.evaluate('window.__wander?.()'))}`)
+          if (await evaluate(page, `Boolean(${expr})`)) return Date.now() - from
+          if (Date.now() - from > ms) c8.fail(`${what} not within ${ms} ms (${expr}); state ${JSON.stringify(await evaluate(page, 'window.__wander?.()'))}`)
           await sleep(40)
         }
       },
@@ -1037,33 +909,33 @@ async function main() {
         await page.send('Emulation.setDeviceMetricsOverride', vp)
         await page.send('Emulation.setTouchEmulationEnabled', touch ? { enabled: true, maxTouchPoints: 5 } : { enabled: false })
         await page.send('Page.navigate', { url: `${origin}/?street=1&station=${station}&arrival=0&walkMode=${mode}` })
-        await page.waitForStreetReady()
+        await waitForStreetReady(page)
         await c8.until('window.__wander && window.__vincentBox && window.__streetCamera', 10000, 'the seams')
       },
-      wander: () => page.evaluate('window.__wander()'),
-      pose: () => page.evaluate('window.__vincentPose()'),
-      cam: () => page.evaluate('window.__streetCamera()'),
-      auto: () => page.evaluate('window.__streetWalk.auto'),
-      t: () => page.evaluate('window.__streetWalk.t'),
+      wander: () => evaluate(page, 'window.__wander()'),
+      pose: () => evaluate(page, 'window.__vincentPose()'),
+      cam: () => evaluate(page, 'window.__streetCamera()'),
+      auto: () => evaluate(page, 'window.__streetWalk.auto'),
+      t: () => evaluate(page, 'window.__streetWalk.t'),
       // his box as a tap reads it: at least `WALK.hitMin` square about its centre
       box: async () => {
-        const b = await page.evaluate('window.__vincentBox()')
+        const b = await evaluate(page, 'window.__vincentBox()')
         const cx = (b.x0 + b.x1) / 2
         const cy = (b.y0 + b.y1) / 2
         const hw = Math.max((b.x1 - b.x0) / 2, WALK.hitMin / 2)
         const hh = Math.max((b.y1 - b.y0) / 2, WALK.hitMin / 2)
         return { x0: cx - hw, x1: cx + hw, y0: cy - hh, y1: cy + hh }
       },
-      onCanvas: (px, py) => page.evaluate(`document.elementFromPoint(${px}, ${py}) === document.querySelector('canvas')`),
+      onCanvas: (px, py) => evaluate(page, `document.elementFromPoint(${px}, ${py}) === document.querySelector('canvas')`),
       // a synchronous canvas test for the point choice: the page's chrome (title, dock, placard) as boxes of a 12 px grid
       mask: async (vp) => {
-        const blocked = await page.evaluate(`(() => { const out = []; const c = document.querySelector('canvas'); for (let y = 0; y < ${vp.height}; y += 12) for (let x = 0; x < ${vp.width}; x += 12) if (document.elementFromPoint(x + 6, y + 6) !== c) out.push([x, y]); return out })()`)
+        const blocked = await evaluate(page, `(() => { const out = []; const c = document.querySelector('canvas'); for (let y = 0; y < ${vp.height}; y += 12) for (let x = 0; x < ${vp.width}; x += 12) if (document.elementFromPoint(x + 6, y + 6) !== c) out.push([x, y]); return out })()`)
         const set = new Set(blocked.map(([x, y]) => `${x},${y}`))
         return (px, py) => !set.has(`${Math.floor(px / 12) * 12},${Math.floor(py / 12) * 12}`)
       },
       // the live scene as node sees it: camera, canvas rectangle, his box and the view a tap would use
       scene: async () => {
-        const size = await page.evaluate(() => {
+        const size = await evaluate(page, () => {
           const r = document.querySelector('canvas').getBoundingClientRect()
           return { left: r.left, top: r.top, width: r.width, height: r.height }
         })
@@ -1104,7 +976,7 @@ async function main() {
       },
       // a mouse parked over the Pause control is off the canvas, so the hand stays off the grass; the control's label says its state
       pauseAt: () =>
-        page.evaluate(() => {
+        evaluate(page, () => {
           const b = Array.from(document.querySelectorAll('button')).find((e) => /Pause|Play/.test(e.getAttribute('aria-label') ?? ''))
           if (!b) return null
           const r = b.getBoundingClientRect()
@@ -1116,7 +988,7 @@ async function main() {
         await page.send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1 })
         await page.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 0, clickCount: 1 })
       },
-      wheel: () => page.evaluate(`document.querySelector('canvas').dispatchEvent(new WheelEvent('wheel', { deltaY: 200, deltaMode: 0, bubbles: true, cancelable: true }))`),
+      wheel: () => evaluate(page, `document.querySelector('canvas').dispatchEvent(new WheelEvent('wheel', { deltaY: 200, deltaMode: 0, bubbles: true, cancelable: true }))`),
       settle: async (what) => {
         await c8.until('window.__vincentForm().settled', 25000, `${what}: settled`)
         const run = await page.send('Runtime.evaluate', {
@@ -1187,10 +1059,10 @@ async function main() {
 
       // the same drag folded into one move, as a browser may coalesce its samples (Codex r1): the move's own point is 2 px
       // from the press, its first coalesced sample 60 px
-      await page.evaluate(`window.__pid = null; window.addEventListener('pointerdown', (e) => { window.__pid = e.pointerId }, { once: true })`)
+      await evaluate(page, `window.__pid = null; window.addEventListener('pointerdown', (e) => { window.__pid = e.pointerId }, { once: true })`)
       await page.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: P.px, y: P.py, button: 'none', buttons: 0 })
       await page.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: P.px, y: P.py, button: 'left', buttons: 1, clickCount: 1 })
-      const folded = await page.evaluate(`(() => { const o = { pointerId: window.__pid, isPrimary: true, pointerType: 'mouse', buttons: 1, bubbles: true, clientY: ${P.py} }; const at = (x) => new PointerEvent('pointermove', { ...o, clientX: x }); const e = new PointerEvent('pointermove', { ...o, clientX: ${P.px + 2}, coalescedEvents: [at(${P.px + 60}), at(${P.px + 2})] }); window.dispatchEvent(e); return e.getCoalescedEvents().length })()`)
+      const folded = await evaluate(page, `(() => { const o = { pointerId: window.__pid, isPrimary: true, pointerType: 'mouse', buttons: 1, bubbles: true, clientY: ${P.py} }; const at = (x) => new PointerEvent('pointermove', { ...o, clientX: x }); const e = new PointerEvent('pointermove', { ...o, clientX: ${P.px + 2}, coalescedEvents: [at(${P.px + 60}), at(${P.px + 2})] }); window.dispatchEvent(e); return e.getCoalescedEvents().length })()`)
       await page.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: P.px + 2, y: P.py, button: 'left', buttons: 0, clickCount: 1 })
       await sleep(400)
       if (folded !== 2) c8.fail(`the folded move carried ${folded} coalesced samples, not 2`)
@@ -1222,7 +1094,7 @@ async function main() {
       // the trail at his feet: at 6.5 s after the tap, none at his slot and some at his point; the hand stayed on the Pause control
       const spent = Date.now() - tapMs
       if (spent < 6500) await sleep(6500 - spent)
-      const pushAt = (x, z) => page.evaluate(`window.__grassPushNear(${x}, ${z}, 0.03)`)
+      const pushAt = (x, z) => evaluate(page, `window.__grassPushNear(${x}, ${z}, 0.03)`)
       const slotPush = await pushAt(slotX, slotZ)
       const herePush = await pushAt(P.x, P.z)
       if (!(herePush > 0)) c8.fail(`the trail at his point is ${herePush} at 6.5 s, expected over 0`)
@@ -1391,7 +1263,7 @@ async function main() {
       await c8.open(PHONE, true, 1, 'auto')
       await c8.until(`window.__vincentForm().dwell > 0 && window.__streetWalk.t === ${t2d}`, 8000, 'the automatic walk dwelling at stop 2')
       await c8.until('window.__vincentForm().turn === 1', 2000, 'the lantern raised in the dwell')
-      const left = await page.evaluate('window.__vincentForm().dwell')
+      const left = await evaluate(page, 'window.__vincentForm().dwell')
       if (left < 0.8) c8.fail(`only ${left} s of the dwell left for the tap`)
       await c8.tap(true, R.px, R.py)
       await c8.until(`window.__wander().mode === 'going'`, 1000, 'a finger in the dwell sending him')
@@ -1476,21 +1348,21 @@ async function main() {
       await page.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true })
       await page.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 })
       await page.send('Page.navigate', { url: `${origin}/?street=1&arrival=0&walkMode=auto&walkT=0.9` })
-      await page.waitForStreetReady()
-      const c9Init = await page.evaluate(() => ({ t: window.__streetWalk?.t, auto: window.__streetWalk?.auto }))
+      await waitForStreetReady(page)
+      const c9Init = await evaluate(page, () => ({ t: window.__streetWalk?.t, auto: window.__streetWalk?.auto }))
       if (c9Init.t !== 0.9 || c9Init.auto !== false) throw new Error(`Case 9 precondition failed: opened at ${JSON.stringify(c9Init)}, expected t 0.9 with the walk stopped`)
-      const b9 = await page.evaluate(() => window.__vincentBox?.())
+      const b9 = await evaluate(page, () => window.__vincentBox?.())
       if (!b9) throw new Error('Case 9 precondition failed: __vincentBox missing')
       const x9 = Math.round((b9.x0 + b9.x1) / 2)
       const y9 = Math.round((b9.y0 + b9.y1) / 2)
-      if (!(await page.evaluate(`document.elementFromPoint(${x9}, ${y9}) === document.querySelector('canvas')`))) {
+      if (!(await evaluate(page, `document.elementFromPoint(${x9}, ${y9}) === document.querySelector('canvas')`))) {
         throw new Error(`Case 9 precondition failed: his box's centre [${x9}, ${y9}] is not on the canvas`)
       }
       await page.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x9, y: y9, id: 0 }] })
       await sleep(50)
       await page.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
       // `t` and his pose from one evaluate, so they are the same frame's
-      const read9 = () => page.evaluate(() => ({ t: window.__streetWalk.t, pose: window.__vincentPose() }))
+      const read9 = () => evaluate(page, () => ({ t: window.__streetWalk.t, pose: window.__vincentPose() }))
       const from9 = Date.now()
       let r9 = await read9()
       while (!(r9.t < 0.85)) {
@@ -1561,9 +1433,11 @@ async function main() {
       console.log(`PASS: the wheel under reduced motion, off the lane: one wheel turn puts him home (modes over two frames ${JSON.stringify(modes10)}, ${home10.toExponential(1)} from his slot)`)
     }
 
-    await page.close()
+    } finally {
+      await page.close()
+    }
   } finally {
-    chrome.cleanup()
+    await chrome.close()
   }
 
   const chromesAfter = countHeadlessChromes()

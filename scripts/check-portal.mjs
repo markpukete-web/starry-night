@@ -32,146 +32,53 @@
  *    `__wander().mode` is `going` and he has moved); Escape and a second entry start him on the lane (`mode` `lane`, no route).
  * Each case prints PASS or throws; the run exits 1 on the first failure.
  */
-import { execFileSync, execSync, spawn } from 'node:child_process'
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { countHeadlessChromes, debugPort, openPage, PORTS, startChrome } from './lib/chrome.mjs'
 import { DIORAMA_CAMERAS, portraitFov } from '../src/scene/dioramaContract.ts'
 import { vincentPlace } from '../src/scene/streetLayout.ts'
 import { initialWander, wanderTo } from '../src/scene/streetWander.ts'
 
-const appUrl = process.env.DIORAMA_CAPTURE_URL || 'http://127.0.0.1:5198/'
+const appUrl = process.env.DIORAMA_CAPTURE_URL || `http://127.0.0.1:${PORTS['check-portal'].app}/`
 const origin = new URL(appUrl).origin
 const here = dirname(fileURLToPath(import.meta.url))
 const DESKTOP = { width: 1600, height: 900, deviceScaleFactor: 1, mobile: false }
 const PHONE = { width: 390, height: 844, deviceScaleFactor: 1, mobile: true }
 const BASE = '?portal=1&arrival=0&walkMode=input'
 
-const chromePath =
-  process.env.CHROME_PATH ||
-  ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser'].find((path) =>
-    existsSync(path),
-  )
-if (!chromePath) {
-  console.error('No Chrome-compatible browser found. Set CHROME_PATH.')
-  process.exit(1)
-}
-
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
-const countHeadlessChromes = () => {
-  try {
-    return parseInt(execSync("pgrep -fl 'Chrome.*headless' 2>/dev/null | wc -l", { encoding: 'utf8' }).trim(), 10) || 0
-  } catch {
-    return 0
-  }
-}
 
-function startChrome(port) {
-  const userDataDir = mkdtempSync(join(tmpdir(), 'starry-portal-'))
-  const child = spawn(
-    chromePath,
-    [
-      '--headless=new',
-      ...(process.env.CHROME_FLAGS ?? '').split(/\s+/).filter(Boolean),
-      '--hide-scrollbars',
-      '--mute-audio',
-      '--disable-background-networking',
-      '--disable-sync',
-      '--disable-extensions',
-      '--no-first-run',
-      '--no-default-browser-check',
-      `--user-data-dir=${userDataDir}`,
-      `--remote-debugging-port=${port}`,
-      'about:blank',
-    ],
-    { stdio: ['ignore', 'ignore', 'ignore'] },
-  )
-  return {
-    cleanup() {
-      child.kill()
-      rmSync(userDataDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 300 })
-    },
-  }
-}
-
-async function waitForChrome(port) {
-  const start = Date.now()
-  while (Date.now() - start < 20000) {
-    try {
-      if ((await fetch(`http://127.0.0.1:${port}/json/version`)).ok) return
-    } catch {
-      /* wait */
-    }
-    await sleep(150)
-  }
-  throw new Error('Chrome DevTools endpoint did not become ready')
-}
-
-class CdpPage {
-  constructor(wsUrl) {
-    this.wsUrl = wsUrl
-    this.seq = 0
-    this.pending = new Map()
-    this.errors = []
-  }
-  async connect() {
-    this.ws = new WebSocket(this.wsUrl)
-    this.ws.addEventListener('message', (event) => {
-      const message = JSON.parse(event.data)
-      if (message.id && this.pending.has(message.id)) {
-        const { resolve, reject } = this.pending.get(message.id)
-        this.pending.delete(message.id)
-        if (message.error) reject(new Error(message.error.message))
-        else resolve(message.result)
-      } else if (message.method === 'Runtime.exceptionThrown') {
-        this.errors.push(message.params.exceptionDetails?.exception?.description || message.params.exceptionDetails?.text || 'runtime exception')
-      }
+async function newPage(port) {
+  const page = await openPage(port, { domains: ['Page', 'Runtime', 'Network'] })
+  page.touch = (type, x, y) =>
+    page.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y, id: 1 }] })
+  page.mouse = (type, x, y, extra = {}) =>
+    page.send('Input.dispatchMouseEvent', {
+      type,
+      x,
+      y,
+      button: type === 'mouseMoved' ? 'none' : 'left',
+      buttons: type === 'mousePressed' ? 1 : 0,
+      clickCount: 1,
+      pointerType: 'mouse',
+      ...extra,
     })
-    await new Promise((resolve, reject) => {
-      this.ws.addEventListener('open', resolve, { once: true })
-      this.ws.addEventListener('error', reject, { once: true })
-    })
-    await this.send('Page.enable')
-    await this.send('Runtime.enable')
-    await this.send('Network.enable')
+  page.tap = async (x, y) => {
+    await page.mouse('mouseMoved', x, y)
+    await page.mouse('mousePressed', x, y)
+    await page.mouse('mouseReleased', x, y)
   }
-  send(method, params = {}) {
-    const id = ++this.seq
-    this.ws.send(JSON.stringify({ id, method, params }))
-    return new Promise((resolve, reject) => this.pending.set(id, { resolve, reject }))
-  }
-  async evaluate(expression) {
-    const res = await this.send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true })
-    if (res.exceptionDetails) throw new Error(`Evaluation failed: ${res.exceptionDetails.exception?.description ?? res.exceptionDetails.text}`)
-    return res.result?.value
-  }
-  async waitFor(expression, timeoutMs = 30000, what = expression) {
-    const start = Date.now()
-    for (;;) {
-      if (await this.evaluate(`Boolean(${expression})`)) return
-      if (Date.now() - start > timeoutMs) throw new Error(`timed out after ${timeoutMs} ms waiting for ${what}`)
-      await sleep(100)
-    }
-  }
-  touch(type, x, y) {
-    return this.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y, id: 1 }] })
-  }
-  mouse(type, x, y, extra = {}) {
-    return this.send('Input.dispatchMouseEvent', { type, x, y, button: type === 'mouseMoved' ? 'none' : 'left', buttons: type === 'mousePressed' ? 1 : 0, clickCount: 1, pointerType: 'mouse', ...extra })
-  }
-  async tap(x, y) {
-    await this.mouse('mouseMoved', x, y)
-    await this.mouse('mousePressed', x, y)
-    await this.mouse('mouseReleased', x, y)
-  }
-  key(key) {
+  page.key = (key) => {
     const code = key === 'Escape' ? 27 : 0
     return Promise.all([
-      this.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key, code: key, windowsVirtualKeyCode: code }),
-      this.send('Input.dispatchKeyEvent', { type: 'keyUp', key, code: key, windowsVirtualKeyCode: code }),
+      page.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key, code: key, windowsVirtualKeyCode: code }),
+      page.send('Input.dispatchKeyEvent', { type: 'keyUp', key, code: key, windowsVirtualKeyCode: code }),
     ])
   }
+  return page
 }
 
 // In the page: the hit of a kind nearest the hits' centre, the recorder of every frame's place, layer and pose
@@ -269,13 +176,11 @@ async function enterAndSettle(page, action) {
 
 async function main() {
   const chromesBefore = countHeadlessChromes()
-  const port = 9600 + Math.floor(Math.random() * 300)
-  const chrome = startChrome(port)
+  const port = debugPort('check-portal')
+  const chrome = await startChrome({ port, prefix: 'starry-portal-' })
   try {
-    await waitForChrome(port)
-    const target = await (await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: 'PUT' })).json()
-    const page = new CdpPage(target.webSocketDebuggerUrl)
-    await page.connect()
+    const page = await newPage(port)
+    try {
 
     // stop 0's pose as `?street=1` places it, for case 2
     await page.send('Emulation.setDeviceMetricsOverride', DESKTOP)
@@ -692,9 +597,11 @@ async function main() {
     console.log(`PASS 14: sent to ${spot14.map((v) => v.toFixed(3))} (${Math.hypot(off14.x - here14.x, off14.z - here14.z).toFixed(3)} off his slot before Escape), then Escape and a second entry: mode ${second14.mode}`)
 
     if (page.errors.length) throw new Error(`page errors:\n  ${page.errors.join('\n  ')}`)
-    page.ws.close()
+    } finally {
+      await page.close()
+    }
   } finally {
-    chrome.cleanup()
+    await chrome.close()
   }
 
   // ---- case 9: the street through the portal against ?street=1, clocks pinned, by the capture script

@@ -12,117 +12,14 @@
  * - Exit 1 otherwise.
  */
 import assert from 'node:assert/strict'
-import { spawn } from 'node:child_process'
-import { existsSync, mkdtempSync, rmSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
 import { Matrix4, Quaternion, Vector3 } from 'three'
 import { DIORAMA_CAMERAS } from '../src/scene/dioramaContract.ts'
+import { debugPort, openPage, PORTS, startChrome } from './lib/chrome.mjs'
 
-const appUrl = process.env.DIORAMA_CAPTURE_URL || 'http://127.0.0.1:5181/'
+const appUrl = process.env.DIORAMA_CAPTURE_URL || `http://127.0.0.1:${PORTS['check-sky-transform'].app}/`
 const origin = new URL(appUrl).origin
 
-const chromePath =
-  process.env.CHROME_PATH ||
-  [
-    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-    '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser',
-  ].find((path) => existsSync(path))
-
-if (!chromePath) {
-  console.error('No Chrome-compatible browser found. Set CHROME_PATH.')
-  process.exit(1)
-}
-
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
-
-function startChrome(port) {
-  const userDataDir = mkdtempSync(join(tmpdir(), 'starry-sky-transform-'))
-  const child = spawn(
-    chromePath,
-    [
-      '--headless=new',
-      ...(process.env.CHROME_FLAGS ?? '').split(/\s+/).filter(Boolean),
-      '--hide-scrollbars',
-      '--mute-audio',
-      '--disable-background-networking',
-      '--disable-sync',
-      '--disable-extensions',
-      '--no-first-run',
-      '--no-default-browser-check',
-      `--user-data-dir=${userDataDir}`,
-      `--remote-debugging-port=${port}`,
-      'about:blank',
-    ],
-    { stdio: ['ignore', 'ignore', 'ignore'] },
-  )
-  return {
-    child,
-    userDataDir,
-    cleanup() {
-      child.kill()
-      rmSync(userDataDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 300 })
-    },
-  }
-}
-
-async function waitForChrome(port, timeoutMs = 20000) {
-  const start = Date.now()
-  while (Date.now() - start < timeoutMs) {
-    try {
-      const response = await fetch(`http://127.0.0.1:${port}/json/version`)
-      if (response.ok) return
-    } catch {
-      /* wait */
-    }
-    await sleep(150)
-  }
-  throw new Error('Chrome DevTools endpoint did not become ready')
-}
-
-class CdpPage {
-  constructor(wsUrl) {
-    this.wsUrl = wsUrl
-    this.seq = 0
-    this.pending = new Map()
-    this.errors = []
-  }
-
-  async connect() {
-    this.ws = new WebSocket(this.wsUrl)
-    this.ws.addEventListener('message', (event) => this.onMessage(event))
-    await new Promise((resolve, reject) => {
-      this.ws.addEventListener('open', resolve, { once: true })
-      this.ws.addEventListener('error', reject, { once: true })
-    })
-    await this.send('Page.enable')
-    await this.send('Runtime.enable')
-  }
-
-  onMessage(event) {
-    const message = JSON.parse(event.data)
-    if (message.id && this.pending.has(message.id)) {
-      const { resolve, reject } = this.pending.get(message.id)
-      this.pending.delete(message.id)
-      if (message.error) reject(new Error(message.error.message))
-      else resolve(message.result)
-      return
-    }
-    if (message.method === 'Runtime.exceptionThrown') {
-      this.errors.push(message.params.exceptionDetails?.text || 'runtime exception')
-    }
-  }
-
-  send(method, params = {}) {
-    const id = ++this.seq
-    this.ws.send(JSON.stringify({ id, method, params }))
-    return new Promise((resolve, reject) => this.pending.set(id, { resolve, reject }))
-  }
-
-  async close() {
-    this.ws.close()
-  }
-}
 
 async function dragCanvas(page, dx, dy = 0) {
   const result = await page.send('Runtime.evaluate', {
@@ -161,11 +58,7 @@ const cases = [
 ]
 
 async function runCase(port, { name, url, reducedMotion }) {
-  const res = await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: 'PUT' })
-  if (!res.ok) throw new Error(`Failed to create target: ${res.status}`)
-  const target = await res.json()
-  const page = new CdpPage(target.webSocketDebuggerUrl)
-  await page.connect()
+  const page = await openPage(port)
 
   try {
     await page.send('Emulation.setDeviceMetricsOverride', { width: 1600, height: 900, deviceScaleFactor: 1, mobile: false })
@@ -179,16 +72,7 @@ async function runCase(port, { name, url, reducedMotion }) {
     await page.send('Page.navigate', { url })
 
     // Wait for canvas
-    const start = Date.now()
-    for (;;) {
-      await sleep(250)
-      const probe = await page.send('Runtime.evaluate', {
-        expression: `Boolean(document.querySelector('canvas')) && typeof window.__skyTransform === 'function'`,
-        returnByValue: true,
-      })
-      if (probe.result?.value === true) break
-      if (Date.now() - start > 25000) throw new Error(`Timeout waiting for canvas and __skyTransform at ${url}`)
-    }
+    await page.waitFor("document.querySelector('canvas') && typeof window.__skyTransform === 'function'", 25000, `canvas and __skyTransform at ${url}`, 250)
 
     // Drag canvas 240 px right
     await dragCanvas(page, 240, 0)
@@ -236,16 +120,15 @@ async function runCase(port, { name, url, reducedMotion }) {
 }
 
 async function main() {
-  const port = 9223 + Math.floor(Math.random() * 500)
-  const chrome = startChrome(port)
+  const port = debugPort('check-sky-transform')
+  const chrome = await startChrome({ port, prefix: 'starry-sky-transform-' })
   try {
-    await waitForChrome(port)
     for (const c of cases) {
       await runCase(port, c)
     }
     console.log('ALL SKY TRANSFORM CHECKS PASSED')
   } finally {
-    chrome.cleanup()
+    await chrome.close()
   }
 }
 

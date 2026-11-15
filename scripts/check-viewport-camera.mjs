@@ -15,25 +15,14 @@
  *
  *   npm run check:viewport
  */
-import { spawn } from 'node:child_process'
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { chromePath, debugPort, openPage, PORTS, startChrome, startViteIfNeeded } from './lib/chrome.mjs'
 
 const outDir = process.argv[2] || 'output/playwright/viewport-camera'
-const appUrl = process.env.DIORAMA_CAPTURE_URL || 'http://127.0.0.1:5179/'
+const appUrl = process.env.DIORAMA_CAPTURE_URL || `http://127.0.0.1:${PORTS['check-viewport-camera'].app}/`
 const appPort = new URL(appUrl).port || '80'
-const chromePath =
-  process.env.CHROME_PATH ||
-  [
-    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-    '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser',
-  ].find((path) => existsSync(path))
-
-if (!chromePath) {
-  console.error('No Chrome-compatible browser found. Set CHROME_PATH to a browser executable.')
-  process.exit(1)
-}
+chromePath()
 mkdirSync(outDir, { recursive: true })
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const SETTLE_MS = Number(process.env.CAPTURE_SETTLE_MS ?? 0) || 0
@@ -58,101 +47,6 @@ const CHROME_VIEWPORTS = [
   ['phone-320', { width: 320, height: 568 }],
 ]
 
-async function urlOk(url) {
-  try {
-    const res = await fetch(url)
-    return res.ok && (await res.text()).includes('The Starry Night')
-  } catch {
-    return false
-  }
-}
-
-async function startViteIfNeeded() {
-  if (await urlOk(appUrl)) return null
-  const child = spawn('npm', ['run', 'dev', '--', '--host', '127.0.0.1', '--port', appPort, '--strictPort'], {
-    stdio: ['ignore', 'pipe', 'pipe'],
-  })
-  let log = ''
-  child.stdout.on('data', (c) => (log += c))
-  child.stderr.on('data', (c) => (log += c))
-  const start = Date.now()
-  while (Date.now() - start < 25000) {
-    if (await urlOk(appUrl)) return child
-    await sleep(300)
-  }
-  child.kill()
-  throw new Error(`Vite did not become ready at ${appUrl}\n${log}`)
-}
-
-function startChrome(port) {
-  const userDataDir = mkdtempSync(join(tmpdir(), 'starry-viewport-'))
-  const child = spawn(
-    chromePath,
-    [
-      '--headless=new',
-      // Extra launch flags, e.g. CHROME_FLAGS=--no-sandbox: Chrome refuses to run as root without it, which is
-      // the case in a cloud session. Empty by default, so a Mac run launches exactly as before.
-      ...(process.env.CHROME_FLAGS ?? '').split(/\s+/).filter(Boolean),
-      '--hide-scrollbars',
-      '--mute-audio',
-      '--disable-background-networking',
-      '--disable-sync',
-      '--disable-extensions',
-      '--no-first-run',
-      '--no-default-browser-check',
-      `--user-data-dir=${userDataDir}`,
-      `--remote-debugging-port=${port}`,
-      'about:blank',
-    ],
-    { stdio: ['ignore', 'ignore', 'ignore'] },
-  )
-  return {
-    cleanup() {
-      child.kill()
-      rmSync(userDataDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 300 })
-    },
-  }
-}
-
-class CdpPage {
-  constructor(wsUrl, errors) {
-    this.wsUrl = wsUrl
-    this.errors = errors
-    this.seq = 0
-    this.pending = new Map()
-  }
-  async connect() {
-    this.ws = new WebSocket(this.wsUrl)
-    this.ws.addEventListener('message', (event) => {
-      const m = JSON.parse(event.data)
-      if (m.id && this.pending.has(m.id)) {
-        const { resolve, reject } = this.pending.get(m.id)
-        this.pending.delete(m.id)
-        if (m.error) reject(new Error(m.error.message))
-        else resolve(m.result)
-        return
-      }
-      if (m.method === 'Runtime.exceptionThrown') this.errors.push(`exception: ${m.params.exceptionDetails?.text}`)
-      if (m.method === 'Log.entryAdded' && m.params.entry?.level === 'error') this.errors.push(`log: ${m.params.entry.text}`)
-    })
-    await new Promise((resolve, reject) => {
-      this.ws.addEventListener('open', resolve, { once: true })
-      this.ws.addEventListener('error', reject, { once: true })
-    })
-    await this.send('Page.enable')
-    await this.send('Runtime.enable')
-    await this.send('Log.enable')
-  }
-  send(method, params = {}) {
-    const id = ++this.seq
-    this.ws.send(JSON.stringify({ id, method, params }))
-    return new Promise((resolve, reject) => this.pending.set(id, { resolve, reject }))
-  }
-  close() {
-    this.ws.close()
-  }
-}
-
 async function setViewport(page, viewport) {
   await page.send('Emulation.setDeviceMetricsOverride', {
     width: viewport.width,
@@ -163,40 +57,36 @@ async function setViewport(page, viewport) {
 }
 
 async function newPage(port, viewport, errors, { clean = true } = {}) {
-  const res = await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: 'PUT' })
-  if (!res.ok) throw new Error(`Failed to create Chrome target: ${res.status}`)
-  const target = await res.json()
-  const page = new CdpPage(target.webSocketDebuggerUrl, errors)
-  await page.connect()
-  await page.send('Emulation.setEmulatedMedia', {
-    features: [{ name: 'prefers-reduced-motion', value: 'reduce' }],
-  })
-  await setViewport(page, viewport)
-  // Built with URL, not by appending `?mode=…`: a base that carries a query of its own got a second `?`, and
-  // `arrival=0` read as "0?mode=diorama", so the opt-out was lost (Codex, PR #14 P2). The opening is on by
-  // default (2026-10-20) and this check wants the steady state, so it opts out unless the base URL carries an
-  // `arrival` value of its own.
-  const pageUrl = new URL(appUrl)
-  pageUrl.searchParams.set('mode', 'diorama')
-  // the chrome checks need the chrome: a `clean=1` carried by the base must go on those pages (Codex, PR #14 P2)
-  if (clean) pageUrl.searchParams.set('clean', '1')
-  else pageUrl.searchParams.delete('clean')
-  if (!pageUrl.searchParams.has('arrival')) pageUrl.searchParams.set('arrival', '0')
-  await page.send('Page.navigate', { url: pageUrl.toString() })
-  const start = Date.now()
-  for (;;) {
-    await sleep(500)
-    const probe = await page.send('Runtime.evaluate', {
-      expression: `Boolean(document.querySelector('canvas'))`,
-      returnByValue: true,
+  const page = await openPage(port, { domains: ['Page', 'Runtime', 'Log'] })
+  try {
+    page.on('Log.entryAdded', (params) => {
+      if (params.entry?.level === 'error') errors.push(`log: ${params.entry.text}`)
     })
-    if (probe.result.value === true) break
-    if (Date.now() - start > 25000) throw new Error('no canvas')
+    await page.send('Emulation.setEmulatedMedia', {
+      features: [{ name: 'prefers-reduced-motion', value: 'reduce' }],
+    })
+    await setViewport(page, viewport)
+    // Built with URL, not by appending `?mode=…`: a base that carries a query of its own got a second `?`, and
+    // `arrival=0` read as "0?mode=diorama", so the opt-out was lost (Codex, PR #14 P2). The opening is on by
+    // default (2026-10-20) and this check wants the steady state, so it opts out unless the base URL carries an
+    // `arrival` value of its own.
+    const pageUrl = new URL(appUrl)
+    pageUrl.searchParams.set('mode', 'diorama')
+    // the chrome checks need the chrome: a `clean=1` carried by the base must go on those pages (Codex, PR #14 P2)
+    if (clean) pageUrl.searchParams.set('clean', '1')
+    else pageUrl.searchParams.delete('clean')
+    if (!pageUrl.searchParams.has('arrival')) pageUrl.searchParams.set('arrival', '0')
+    await page.send('Page.navigate', { url: pageUrl.toString() })
+    await page.waitFor("document.querySelector('canvas')", 25000, 'canvas', 500)
+    // CAPTURE_SETTLE_MS: software WebGL in a cloud session draws the cypress ~10 s late, and a fresh-load frame
+    // without it never matches the rotated one. Unset on a Mac.
+    await sleep(2500 + SETTLE_MS)
+    return page
+  } catch (err) {
+    errors.push(...page.errors)
+    await page.close()
+    throw err
   }
-  // CAPTURE_SETTLE_MS: software WebGL in a cloud session draws the cypress ~10 s late, and a fresh-load frame
-  // without it never matches the rotated one. Unset on a Mac.
-  await sleep(2500 + SETTLE_MS)
-  return page
 }
 
 async function shot(page, file) {
@@ -291,13 +181,16 @@ function chromeFaults(r) {
 }
 
 async function main() {
-  const vite = await startViteIfNeeded()
-  const port = 9700 + Math.floor(Math.random() * 300)
-  const chrome = startChrome(port)
+  const vite = await startViteIfNeeded(appUrl, appPort)
+  const port = debugPort('check-viewport-camera')
+  const chrome = await startChrome({ port, prefix: 'starry-viewport-' }).catch((err) => {
+    // a browser that never comes up must not leave this script's own server on the port (Codex, PR #59 P2)
+    if (vite) vite.kill()
+    throw err
+  })
   const errors = []
   const results = []
   try {
-    await sleep(1200)
     console.log('Camera framing — rotated page vs fresh load:')
     for (const [name, from, to] of [
       ['landscape-to-portrait', LANDSCAPE, PORTRAIT],
@@ -306,15 +199,25 @@ async function main() {
       // the framing of a fresh load at the taller size
       ['bars-collapse', { width: 440, height: 735 }, { width: 440, height: 956 }],
     ]) {
-      let page = await newPage(port, to, errors)
-      const fresh = await shot(page, join(outDir, `${name}-fresh.png`))
-      page.close()
+      let fresh
+      const freshPage = await newPage(port, to, errors)
+      try {
+        fresh = await shot(freshPage, join(outDir, `${name}-fresh.png`))
+      } finally {
+        errors.push(...freshPage.errors)
+        await freshPage.close()
+      }
 
-      page = await newPage(port, from, errors)
-      await setViewport(page, to)
-      await sleep(2500 + SETTLE_MS)
-      const rotated = await shot(page, join(outDir, `${name}-rotated.png`))
-      page.close()
+      let rotated
+      const rotatedPage = await newPage(port, from, errors)
+      try {
+        await setViewport(rotatedPage, to)
+        await sleep(2500 + SETTLE_MS)
+        rotated = await shot(rotatedPage, join(outDir, `${name}-rotated.png`))
+      } finally {
+        errors.push(...rotatedPage.errors)
+        await rotatedPage.close()
+      }
 
       const identical = readFileSync(fresh).equals(readFileSync(rotated))
       results.push({ name, identical })
@@ -326,15 +229,19 @@ async function main() {
 
     // --- visitor chrome geometry, fresh and after a rotation ---
     console.log('\nVisitor chrome (attribution, dock, placard) — clipping and overlap:')
-    const chrome = []
+    const chromeResults = []
     for (const [name, viewport] of CHROME_VIEWPORTS) {
       const page = await newPage(port, viewport, errors, { clean: false })
-      await showOriginal(page)
-      const rects = await chromeRects(page)
-      const faults = chromeFaults(rects)
-      chrome.push({ case: `fresh ${name}`, viewport, faults, rects })
-      console.log(`  ${`fresh ${name}`.padEnd(30)} ${faults.length ? `FAIL — ${faults.join('; ')}` : 'clean'}`)
-      page.close()
+      try {
+        await showOriginal(page)
+        const rects = await chromeRects(page)
+        const faults = chromeFaults(rects)
+        chromeResults.push({ case: `fresh ${name}`, viewport, faults, rects })
+        console.log(`  ${`fresh ${name}`.padEnd(30)} ${faults.length ? `FAIL — ${faults.join('; ')}` : 'clean'}`)
+      } finally {
+        errors.push(...page.errors)
+        await page.close()
+      }
     }
     // The gap this closes: the chrome had only ever been laid out at fixed viewports, never across
     // a live rotation. Media queries re-evaluate natively, but that is a claim worth testing.
@@ -345,21 +252,25 @@ async function main() {
       ['resize phone->320', { width: 390, height: 844 }, { width: 320, height: 568 }],
     ]) {
       const page = await newPage(port, from, errors, { clean: false })
-      await showOriginal(page)
-      await setViewport(page, to)
-      await sleep(900)
-      const rects = await chromeRects(page)
-      const faults = chromeFaults(rects)
-      chrome.push({ case: name, from, to, faults, rects })
-      console.log(`  ${name.padEnd(30)} ${faults.length ? `FAIL — ${faults.join('; ')}` : 'clean'}`)
-      page.close()
+      try {
+        await showOriginal(page)
+        await setViewport(page, to)
+        await sleep(900)
+        const rects = await chromeRects(page)
+        const faults = chromeFaults(rects)
+        chromeResults.push({ case: name, from, to, faults, rects })
+        console.log(`  ${name.padEnd(30)} ${faults.length ? `FAIL — ${faults.join('; ')}` : 'clean'}`)
+      } finally {
+        errors.push(...page.errors)
+        await page.close()
+      }
     }
 
     writeFileSync(
       join(outDir, 'viewport-summary.json'),
-      JSON.stringify({ camera: results, chrome, errors }, null, 2),
+      JSON.stringify({ camera: results, chrome: chromeResults, errors }, null, 2),
     )
-    const chromeFailed = chrome.filter((c) => c.faults.length)
+    const chromeFailed = chromeResults.filter((c) => c.faults.length)
     if (cameraFailed.length || chromeFailed.length || errors.length) {
       if (errors.length) console.error(errors.join('\n'))
       console.error(
@@ -376,7 +287,7 @@ async function main() {
       console.log('\nPASS: camera and visitor chrome both survive a live rotation')
     }
   } finally {
-    chrome.cleanup()
+    await chrome.close()
     if (vite) vite.kill()
   }
 }

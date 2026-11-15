@@ -5,7 +5,7 @@ The open work, with one pickup at the top. The history up to 2026-11-15 is in `t
 2026-11-15 points into that archive, at the same line. Its unchecked boxes sit inside superseded pickups. This file
 names only what is still open.
 
-## Pickup — 2026-11-15 (10:30): H6 merged, H5 Phase A proves, A10 builds
+## Pickup — 2026-11-15 (11:00): H6 and A11 with B8 and A19 merged, H5 Phase B proves, A10 phase 1 done
 
 Mark, about 09:30, from his phone: "Take the lead and keep tackling the rest of the items without me. Work that needs
 my eye: Can make your best judgement and I will go with your recommendations. When in doubt, discuss with our
@@ -15,25 +15,30 @@ Consultant Fable in next tab." Then: "Also item 29, delete any local leftovers t
 
 **Running:**
 
-- H5 step 2, Phase A: Hydrogen (`w4:p5`), worktree `/Users/markma/Projects/starry-night-h5`, branch
-  `refactor/h5-chrome-module` from `3aeec19`, ten scripts moved. It runs its proofs. Brief
-  `scratch/briefs-2026-11-15/h5-step2-chrome-module.md`, report `scratch/briefs-2026-11-15/h5b/report-a.md`. The H6
-  builder's unit mutants ran beside H5's frames at about 10:00, so read r1 against r2 before trusting them. Phase B
-  (`check-failure-paths.mjs` and `check-portal.mjs`) starts on the Lead's word after Phase A's gate, rebased onto
-  `db2b500`.
+- H5 step 2: Hydrogen (`w4:p5`), worktree `/Users/markma/Projects/starry-night-h5`, branch
+  `refactor/h5-chrome-module`, rebased onto `db2b500`, head `63ca6ae`, all twelve scripts moved. Phase A passed the
+  Lead's interim gate (10:35, the diff of the two largest scripts is the `evaluate` rewrite only). Phase B's runs are
+  under way. Brief `scratch/briefs-2026-11-15/h5-step2-chrome-module.md`, reports `h5b/report-a.md` and
+  `h5b/report-b.md`. Next: the Lead rebases it onto `699a674` and gates it there.
 - A10, one tap-or-drag rule: the plan `scratch/briefs-2026-11-15/a10/plan.md`, read by Fable
   (`a10/fable-answer.md`, "VERDICT: build all", 19 findings). The Lead's call: all three surfaces, the stale-press
   replacement kept, no threshold changed. An Opus builder subagent builds phase 1 (code and unit tests, no browser),
-  brief `scratch/briefs-2026-11-15/a10-build.md`, report `a10/build/report-1.md`. Phase 2 (the browser reds, the
-  mutants) runs on the Lead's word, rebased onto `main` after H5.
-- A11 and B8: the Lead, worktree `/Users/markma/Projects/starry-night-a11`, branch `fix/a11-b8-way-back-fireflies`
-  from `3aeec19`, commits `7344605`, `15fcd1e` and `b9f86c0` (A19). The proof waits for a free machine (`scratch/a11-b8/set.sh`).
+  brief `scratch/briefs-2026-11-15/a10-build.md`. Phase 1 is done: worktree
+  `.claude/worktrees/agent-adc72c88847a76df9`, branch `a10-tap-rule`, head `4b24060`, report `a10/build/report-1.md`
+  (15 mutants listed, 5 browser parts beyond the plan). The Lead read the `src` diff. Phase 2 (the browser reds, the
+  mutants, the record) runs on the Lead's word, rebased onto `main` after H5 merges.
 
-The machine queue: one browser run at a time. H5 Phase A, then A11 with B8's proof, then H5 Phase B, then A10 phase 2.
+The machine queue: one browser run at a time. H5 Phase B's runs, then the Lead's H5 gate, then A10 phase 2. The
+machine check since 10:50 (`tasks/lessons.md`): `pgrep -fl 'vite preview|starry-night[^ ]*/node_modules/.bin/vite|--headless|remote-debugging-port=[1-9]|bin/tsc|bin/eslint|node --test'`.
+
+The 11 frames' reference since #58: `scratch/a11-gate/frames/r1.sha`. B8 changed the seven street frames at the
+fireflies only. `h4-gate/r1.sha` stays the reference for a branch based before `699a674`.
 
 **Done today:** item 29, item 28 (this file), and H6. H6 (C-08, B6 with C-09, B7, A6) merged as `db2b500` at 10:26,
 PR #57. The Lead's gate is `scratch/h6-gate/gate.out`. Codex reviewed `b311911`, the head, with no findings, and CI
-passed all four checks.
+passed all four checks. A11, B8 and A19 merged as `699a674` at 10:57, PR #58. The Lead's gate is
+`scratch/a11-gate/gate.out`: at a pixel ratio of 1.5 the frames equal the base's, at 1 only the fireflies change, and
+each mutant fails on its own assert. Codex reviewed `210ad15`, the head, with no findings.
 
 **Mark's calls, decided on his word by the Lead's recommendation (09:30):**
 
