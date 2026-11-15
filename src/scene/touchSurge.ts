@@ -77,7 +77,7 @@ export const TOUCH_SURGE = {
   hoverAmp: 0.5,
   hoverMs: 60,
   hoverU: 0.02,
-  /** a tap: pointerdown to pointerup within this time and distance; longer or further is a drag */
+  /** a tap: pointerdown to pointerup within this time and distance, no move's sample past the distance between; else a drag */
   tapMs: 300,
   tapPx: 8,
   /** a tap this close (isotropic painting units) to a star, or the moon, flares it */
@@ -258,16 +258,38 @@ export function pushFlare(flares: Flare[], flare: Flare, now: number, T = TOUCH_
 
 export type PointerSample = { x: number; y: number; ms: number }
 
-/** A tap is a down and an up within the time and the distance; anything else is a drag (the orbit's). */
-export function classifyGesture(down: PointerSample, up: PointerSample, T = TOUCH_SURGE): 'tap' | 'drag' {
-  const quick = up.ms - down.ms <= T.tapMs
-  const still = Math.hypot(up.x - down.x, up.y - down.y) <= T.tapPx
+/**
+ * A press being followed: where and when it began (`ms` from the event's `timeStamp`), and whether it has stopped
+ * being a tap: a sample of a move strayed past `tapPx` (`strayed` over `moveSamples`), or a second pointer went down.
+ */
+export type Press = PointerSample & { dragged: boolean }
+
+/**
+ * The one rule (A10, tasks/2026-11-15-a10-tap-rule.md), for the sky's hook, the portal and the street: a tap is a
+ * press never `dragged`, released within `tapMs` and `tapPx` of it. Anything else is a drag (the orbit's). `dragged`
+ * is required, so a caller cannot leave the latch out, though it can still never set it: the browser checks pin that.
+ */
+export function classifyGesture(press: Press, up: PointerSample, T = TOUCH_SURGE): 'tap' | 'drag' {
+  if (press.dragged) return 'drag'
+  const quick = up.ms - press.ms <= T.tapMs
+  const still = Math.hypot(up.x - press.x, up.y - press.y) <= T.tapPx
   return quick && still ? 'tap' : 'drag'
+}
+
+/** A move's samples: every coalesced point, or the move's own point where the browser gives none (Codex r1). */
+export function moveSamples(e: {
+  clientX: number
+  clientY: number
+  getCoalescedEvents?: () => readonly { clientX: number; clientY: number }[]
+}): { x: number; y: number }[] {
+  const folded = e.getCoalescedEvents?.() ?? []
+  return (folded.length ? folded : [e]).map((p) => ({ x: p.clientX, y: p.clientY }))
 }
 
 /**
  * A press that may start a gesture: a finger, a pen, or a mouse's main button. A right or middle click is no tap (on
- * Windows a right click sent Vincent walking, the audit's item 5); `StreetGrass.tsx` and `usePortalPointer.ts` refuse it too.
+ * Windows a right click sent Vincent walking, the audit's item 5). The sky's hook, the portal and the street ask it,
+ * and `StreetGrass.tsx` refuses the same buttons with its own test.
  */
 export function startsGesture(press: { pointerType: string; button: number }): boolean {
   return press.pointerType !== 'mouse' || press.button === 0

@@ -5,7 +5,7 @@ The open work, with one pickup at the top. The history up to 2026-11-15 is in `t
 2026-11-15 points into that archive, at the same line. Its unchecked boxes sit inside superseded pickups. This file
 names only what is still open.
 
-## Pickup — 2026-11-15 (11:00): H6 and A11 with B8 and A19 merged, H5 Phase B proves, A10 phase 1 done
+## Pickup — 2026-11-15 (12:05): H6, A11 with B8 and A19, and H5 merged. A10's browser batch runs
 
 Mark, about 09:30, from his phone: "Take the lead and keep tackling the rest of the items without me. Work that needs
 my eye: Can make your best judgement and I will go with your recommendations. When in doubt, discuss with our
@@ -15,20 +15,19 @@ Consultant Fable in next tab." Then: "Also item 29, delete any local leftovers t
 
 **Running:**
 
-- H5 step 2: Hydrogen (`w4:p5`), worktree `/Users/markma/Projects/starry-night-h5`, branch
-  `refactor/h5-chrome-module`, rebased onto `db2b500`, head `63ca6ae`, all twelve scripts moved. Phase A passed the
-  Lead's interim gate (10:35, the diff of the two largest scripts is the `evaluate` rewrite only). Phase B's runs are
-  under way. Brief `scratch/briefs-2026-11-15/h5-step2-chrome-module.md`, reports `h5b/report-a.md` and
-  `h5b/report-b.md`. Next: the Lead rebases it onto `699a674` and gates it there.
 - A10, one tap-or-drag rule: the plan `scratch/briefs-2026-11-15/a10/plan.md`, read by Fable
   (`a10/fable-answer.md`, "VERDICT: build all", 19 findings). The Lead's call: all three surfaces, the stale-press
   replacement kept, no threshold changed. An Opus builder subagent builds phase 1 (code and unit tests, no browser),
   brief `scratch/briefs-2026-11-15/a10-build.md`. Phase 1 is done: worktree
   `.claude/worktrees/agent-adc72c88847a76df9`, branch `a10-tap-rule`, head `4b24060`, report `a10/build/report-1.md`
   (15 mutants listed, 5 browser parts beyond the plan). The Lead read the `src` diff. Phase 2 (the browser reds, the
-  mutants, the record) runs on the Lead's word, rebased onto `main` after H5 merges.
+  mutants, the record) runs on the Lead's word, rebased onto `main` after H5 merges. The builder rebased onto H5's head
+  (`4bc8725`, static checks green). Hydrogen runs the batch from 11:40: brief
+  `scratch/briefs-2026-11-15/a10-phase2-runs.md`, report `a10/build/report-2.md`. Next: the Lead's gate, the record
+  `tasks/2026-11-15-a10-tap-rule.md`, a rebase onto `4239df6`, the PR.
 
-The machine queue: one browser run at a time. H5 Phase B's runs, then the Lead's H5 gate, then A10 phase 2. The
+The machine queue: one browser run at a time. The Story_Bridge session (tab w5) runs Playwright checks on this machine
+too (`tools/flash-check.mjs`). A wait sees them, and a Chrome count can read them. The
 machine check since 10:50 (`tasks/lessons.md`): `pgrep -fl 'vite preview|starry-night[^ ]*/node_modules/.bin/vite|--headless|remote-debugging-port=[1-9]|bin/tsc|bin/eslint|node --test'`.
 
 The 11 frames' reference since #58: `scratch/a11-gate/frames/r1.sha`. B8 changed the seven street frames at the
@@ -38,7 +37,10 @@ fireflies only. `h4-gate/r1.sha` stays the reference for a branch based before `
 PR #57. The Lead's gate is `scratch/h6-gate/gate.out`. Codex reviewed `b311911`, the head, with no findings, and CI
 passed all four checks. A11, B8 and A19 merged as `699a674` at 10:57, PR #58. The Lead's gate is
 `scratch/a11-gate/gate.out`: at a pixel ratio of 1.5 the frames equal the base's, at 1 only the fireflies change, and
-each mutant fails on its own assert. Codex reviewed `210ad15`, the head, with no findings.
+each mutant fails on its own assert. Codex reviewed `210ad15`, the head, with no findings. H5 (the shared Chrome
+module, D16) merged as `4239df6` at 12:00, PR #59. The Lead's gate is `scratch/h5-gate/gate.out`. Codex's one finding
+(P2, a failed browser start left the script's own Vite server running) is fixed in `980a614`, proved red then green,
+and answered in its thread. The worker's logs moved to `scratch/briefs-2026-11-15/h5b/logs/`.
 
 **Mark's calls, decided on his word by the Lead's recommendation (09:30):**
 
